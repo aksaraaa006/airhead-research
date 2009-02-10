@@ -50,11 +50,13 @@ def createGraph(listOfNVNTuples):
     # once all the vertices are in place, determine any relationship between
     # them that might link them together
     #
-    # NOTE: this is an n^2 algorith, and could probably be improved
+    # NOTE: this is an n^2 algorithm, and could probably be improved
     alreadyCompared = set()
     for sense in synsetGraph:
         # add in the identity set because we don't need to compare that
         alreadyCompared.add((sense, sense)) 
+        hypernyms = sense.hyponyms()
+
         for other in synsetGraph:
             if (sense, other) in alreadyCompared:
                 continue
@@ -65,7 +67,6 @@ def createGraph(listOfNVNTuples):
 
             # check for all the different WordNet relations
             # and the coordinate relation (i.e. sibling, share a hypernym)
-            hypernyms = sense.hyponyms()
             if other in sense.hyponyms():
                 synsetGraph.add_edge(sense, other)
             elif other in hypernyms:
