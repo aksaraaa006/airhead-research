@@ -44,6 +44,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
+/**
+ * A class for creating the term-document matrix.
+ */
 public class TermDocumentMatrixCreator {
 
     private final ConcurrentMap<String,Integer> termToIndex;
@@ -73,13 +76,7 @@ public class TermDocumentMatrixCreator {
     private final Set<String> validTerms;
 
     public TermDocumentMatrixCreator() {
-	termToIndex = new ConcurrentHashMap<String,Integer>();
-	spellChecker = loadSpellChecker();
-	termIndexCounter = new AtomicInteger(0);
-	docIndexCounter = new AtomicInteger(0);
-	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
-	indexToTerm = new String[2500000];
-	validTerms = null;
+	this(null);
     }
 
     public TermDocumentMatrixCreator(String validTermsFileName) {
@@ -89,10 +86,15 @@ public class TermDocumentMatrixCreator {
 	docIndexCounter = new AtomicInteger(0);
 	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
 	indexToTerm = new String[2500000];
-	validTerms = loadValidTermSet(validTermsFileName);
+	validTerms = (validTermsFileName == null)
+	    ? null : loadValidTermSet(validTermsFileName);
 	
     }
     
+    /**
+     * Returns a set of terms based on the contents of the provided file.  Each
+     * word is expected to be on its own line.
+     */
     private static Set<String> loadValidTermSet(String validTermsFileName) {
 	Set<String> validTerms = new HashSet<String>();
 	try {
@@ -109,6 +111,11 @@ public class TermDocumentMatrixCreator {
 	return validTerms;
     }
 
+    /**
+     * Attempts to load the spell checker from the {@code dictionary/english}
+     * path, and returns it.  If no spell checker can be found, returns {@code
+     * null}
+     */ 
     private static SpellChecker loadSpellChecker() {
 	try {
 	    String DICTIONARY_PATH = "dictionary/english/";
@@ -133,6 +140,8 @@ public class TermDocumentMatrixCreator {
     }
 
     /**
+     * Parses the document and prints all the term occurrences to the provided
+     * {@code termDocumentMatrixWriter}
      *
      * @return the number of unique words seen in this document
      */
@@ -150,10 +159,16 @@ public class TermDocumentMatrixCreator {
 	int lineNum = 0;
 	for (String line = br.readLine(); line != null; line = br.readLine()) {
 
-	    // split the line based on whitespace
+	    // replace all non-word characters with whitespace.  We also include
+	    // some uncommon characters (such as those with the eacute).
 	    line = line.replaceAll("[^A-Za-z0-9'\u00E0-\u00FF]", " ").
 		toLowerCase();
+
+	    // split the line based on whitespace
 	    String[] text = line.split("\\s+");
+
+	    // for each word in the text document, keep a count of how many
+	    // times it has occurred
 	    for (String word : text) {
 		if (word.length() == 0)
 		    continue;
@@ -165,8 +180,14 @@ public class TermDocumentMatrixCreator {
 		    continue;
 		
 		//System.out.println(cleaned);
+		
+		// Add the term to the total list of terms to ensure it has a
+		// proper index.  If the term was already added, this method is
+		// a no-op
 		addTerm(cleaned);
 		Integer termCount = termCounts.get(cleaned);
+
+		// update the term count
 		termCounts.put(cleaned, (termCount == null) 
 			       ? Integer.valueOf(1)
 			       : Integer.valueOf(1 + termCount.intValue()));
@@ -175,8 +196,9 @@ public class TermDocumentMatrixCreator {
 
 	br.close();
 
-	// once the document has been fully parsed, output all of the sparse
-	// data points using the writer
+	// Once the document has been fully parsed, output all of the sparse
+	// data points using the writer.  Synchronize on the writer to prevent
+	// any interleaving of output by other threads
 	synchronized(termDocumentMatrixWriter) {
 	    for (Map.Entry<String,Integer> e : termCounts.entrySet()) {
 		String term = e.getKey();
@@ -201,7 +223,11 @@ public class TermDocumentMatrixCreator {
 	
 	return termCounts.size();
     }
-
+    
+    /**
+     * Adds the term to the list of terms and gives it an index, or if the term
+     * has already been added, does nothing.
+     */
     private void addTerm(String term) {
 	// ensure that we are using the canonical version of this term so that
 	// we can properly lock on it.
@@ -237,14 +263,7 @@ public class TermDocumentMatrixCreator {
 	    : spellChecker.isCorrect(word);
     }
 
-    private static String cleanup(String word) {
-	// remove all non-letter characters
-	word = word.replaceAll("\\W", "");
-	// make the string lower case
-	return word.toLowerCase().intern();
-    }
-
-
+    // NOTE: current unused; use multi-threaded version
     private void parseDocumentsSingleThreaded(String documentsListing, 
 					     String termDocumentMatrixFilePrefix)
 	throws IOException {
@@ -287,6 +306,10 @@ public class TermDocumentMatrixCreator {
 	pw.close();
     }
 
+    /**
+     * Parses all the documents in the provided list and writes the resulting
+     * term-document matrix to the provided file
+     */
     private void parseDocumentsMultiThreaded(String documentsListing, 
 					     String termDocumentMatrixFilePrefix)
 	throws IOException {
@@ -312,6 +335,8 @@ public class TermDocumentMatrixCreator {
 	while ((document = br.readLine()) != null) {
 	    final String toParse = document;
 	    final int docNumber = count.incrementAndGet();
+
+	    // enqueue a runnable for each document we want to parse
 	    executor.submit(new Runnable() {
 		    public void run() {
 			long startTime = System.currentTimeMillis();
@@ -354,20 +379,20 @@ public class TermDocumentMatrixCreator {
 
 	System.out.println("writing index-term map file termIndex.txt");
 
+	// Last, write out the index-to-term map that will allow us to
+	// reconstruct which row a term is in the term-document matrix
 	String indexToTermFileName = 
 	    termDocumentMatrixFilePrefix + TERM_INDEX_SUFFIX;
-
+	
 	PrintWriter pw = new PrintWriter(indexToTermFileName);
 	int termIndex = 0;
 	for (Map.Entry<String,Integer> e : termToIndex.entrySet())
 	    pw.printf("%07d\t%d\t%s%n", (termIndex = e.getValue().intValue()),
 		      termCountsForAllDocs.get(termIndex), e.getKey());
 	pw.close();
-
-	
-	//pruneIndices(termDocumentMatrixFilePrefix);
     }
 
+    // NOTE: currently unused
     private void pruneIndices(String termDocumentMatrixFilePrefix) 
 	throws IOException {
 

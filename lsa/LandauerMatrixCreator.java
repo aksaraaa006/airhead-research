@@ -1,18 +1,21 @@
 import java.io.*;
 import java.util.*;
 
+/**
+ * Transforms a term-document matrix using log and entropy techniques
+ */
 public class LandauerMatrixCreator {
 
     public static void main(String[] args) {
 	try {
 	    if (args.length != 2) {
-		System.out.println("usage: java <input matrix file> <output file>");
+		System.out.println("usage: java <input matrix file> "+
+				   "<output file>");
 		System.exit(0);
 	    }
 
 	    // for each document and for each term in that document how many
 	    // times did that term appear
-	    //  Map<Pair,Integer> docToTermFreq = new HashMap<Pair,Integer>();
 	    Map<Integer,Map<Integer,Integer>> docToTermFreq = 
 		new HashMap<Integer,Map<Integer,Integer>>();
 
@@ -24,6 +27,8 @@ public class LandauerMatrixCreator {
 	    Map<Integer,Integer> docToTermCount = 
 		new HashMap<Integer,Integer>();
 
+	    // the number of terms and number of documents that was used to
+	    // generate the term-document matrix
 	    int numTerms = 0;
 	    int numDocs = 0;	   	    
 
@@ -64,8 +69,8 @@ public class LandauerMatrixCreator {
  		    docToTermFreq.put(doc, docTerms);
  		}
  		docTerms.put(term,count);
-// 		docToTermFreq.put(new Pair(term, doc), count);
 	    }
+
 	    br.close();
 
 	    // See page 17 of Landauer et al. "An Introduction to Latent
@@ -86,12 +91,17 @@ public class LandauerMatrixCreator {
 		    entropy += p * log;
 		}
 
+		// the entropy value is negative, so make it positive for the
+		// remaining calculations
 		entropy = -entropy;
 
 		// now print out the noralized values
 		for (Map.Entry<Integer,Integer> termCount : e.getValue().entrySet()) {
 		    int term = termCount.getKey().intValue();
-		    double log = Math.log(termCount.getValue().doubleValue() + 1) / Math.log(2);
+		    // add 1 (as the paper describes) to ensure we have a log
+		    // value greater than 0 
+		    double log = Math.log(termCount.getValue().doubleValue() + 1) 
+			/ Math.log(2);
 		    pw.println(term + "\t" +
 			       doc + "\t" +
 			       (log / entropy));
@@ -103,7 +113,8 @@ public class LandauerMatrixCreator {
 	    t.printStackTrace();
 	}
     }
-    
+
+    // NOTE: Unused
     private static class Pair {
 	
 	Integer term;

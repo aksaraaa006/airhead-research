@@ -12,8 +12,6 @@ public class TermFrequencyInverseDocumentFrequencyMatrixCreator {
 
 	    // for each document and for each term in that document how many
 	    // times did that term appear
-// 	    Map<Integer,Map<Integer,Integer>> docToTermFreq = 
-// 		new HashMap<Integer,Map<Integer,Integer>>();
 	    Map<Pair,Integer> docToTermFreq = new HashMap<Pair,Integer>();
 
 	    // for each term, in how many documents did that term appear?
@@ -24,6 +22,7 @@ public class TermFrequencyInverseDocumentFrequencyMatrixCreator {
 	    Map<Integer,Integer> docToTermCount = 
 		new HashMap<Integer,Integer>();
 
+	    // how many different terms and documents were used in the matrix
 	    int numTerms = 0;
 	    int numDocs = 0;	   	    
 
@@ -49,21 +48,12 @@ public class TermFrequencyInverseDocumentFrequencyMatrixCreator {
 					? Integer.valueOf(1) 
 					: Integer.valueOf(termOccurences + 1));
 		
-		// increase the total term count for the document in which this
-		// term occurs
+		// increase the total count of terms seen in ths document
 		Integer docTermCount = docToTermCount.get(doc);
 		docToTermCount.put(doc, (docTermCount == null)
 				   ? count
 				   : Integer.valueOf(count + docTermCount));
-
-		// cache the term occurence count for the document for later
-		// processing
-// 		Map<Integer,Integer> docTerms = docToTermFreq.get(doc);
-// 		if (docTerms == null) {
-// 		    docTerms = new HashMap<Integer,Integer>();
-// 		    docToTermFreq.put(doc, docTerms);
-// 		}
-// 		docTerms.put(term,count);
+		
 		docToTermFreq.put(new Pair(term, doc), count);
 	    }
 	    br.close();
