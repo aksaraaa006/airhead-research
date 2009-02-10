@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/pytho
 from nltk.corpus import wordnet as wn
 import networkx as nx # for graph
 import os.path
@@ -207,7 +206,11 @@ def main(argv=None):
     verbToTriplets, sortedVerbs = parseFile(tripletFile)    
 
     for verb in sortedVerbs:
-        disambiguate(verbToTriplets[verb])
+        triplets = verbToTriplets[verb];
+        if len(triplets) > 200:
+            print "skipping list of size %d" % (len(triplets))
+        else:
+            disambiguate(triplets)
 
 def usage():
     print "usage: <triplet file>"
