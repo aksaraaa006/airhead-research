@@ -1,9 +1,10 @@
-
+/*
 import com.swabunga.spell.engine.SpellDictionaryHashMap;
 import com.swabunga.spell.engine.SpellDictionary;
 
 import com.swabunga.spell.event.SpellChecker;
 import com.swabunga.spell.event.StringWordTokenizer;
+*/
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.StringReader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
+//import java.util.NavigableSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
@@ -51,7 +53,7 @@ public class TermDocumentMatrixCreator {
 
     private final ConcurrentMap<String,Integer> termToIndex;
 
-    private final SpellChecker spellChecker;
+    // private final SpellChecker spellChecker;
 
     private final AtomicInteger termIndexCounter;
 
@@ -81,7 +83,7 @@ public class TermDocumentMatrixCreator {
 
     public TermDocumentMatrixCreator(String validTermsFileName) {
 	termToIndex = new ConcurrentHashMap<String,Integer>();
-	spellChecker = loadSpellChecker();
+	//spellChecker = loadSpellChecker();
 	termIndexCounter = new AtomicInteger(0);
 	docIndexCounter = new AtomicInteger(0);
 	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
@@ -116,6 +118,7 @@ public class TermDocumentMatrixCreator {
      * path, and returns it.  If no spell checker can be found, returns {@code
      * null}
      */ 
+    /*
     private static SpellChecker loadSpellChecker() {
 	try {
 	    String DICTIONARY_PATH = "dictionary/english/";
@@ -137,7 +140,7 @@ public class TermDocumentMatrixCreator {
 	    System.out.println("No spell checker available");
 	    return null;
 	}
-    }
+	}*/
 
     /**
      * Parses the document and prints all the term occurrences to the provided
@@ -145,7 +148,7 @@ public class TermDocumentMatrixCreator {
      *
      * @return the number of unique words seen in this document
      */
-    private int parseDocument(String document,
+    private int parseDocument(BufferedReader document,
 			      PrintWriter termDocumentMatrixWriter)
 	throws IOException {
 
@@ -154,10 +157,8 @@ public class TermDocumentMatrixCreator {
 	Map<String,Integer> termCounts = 
 	    new LinkedHashMap<String,Integer>(1 << 10, 16f);	
 
-	BufferedReader br = new BufferedReader(new FileReader(document));
-
 	int lineNum = 0;
-	for (String line = br.readLine(); line != null; line = br.readLine()) {
+	for (String line = null; (line = document.readLine()) != null; ) {
 
 	    // replace all non-word characters with whitespace.  We also include
 	    // some uncommon characters (such as those with the eacute).
@@ -192,9 +193,9 @@ public class TermDocumentMatrixCreator {
 			       ? Integer.valueOf(1)
 			       : Integer.valueOf(1 + termCount.intValue()));
 	    }
-	}	
+	}
 
-	br.close();
+	document.close();
 
 	// Once the document has been fully parsed, output all of the sparse
 	// data points using the writer.  Synchronize on the writer to prevent
@@ -256,67 +257,17 @@ public class TermDocumentMatrixCreator {
      * checker, or returns {@code true} if no spell checker has been loaded.
      */
     private boolean isValid(String word) {
-	if (validTerms != null) 
-	    return validTerms.contains(word);
-	return (spellChecker == null) 
-	    ? true
-	    : spellChecker.isCorrect(word);
-    }
-
-    // NOTE: current unused; use multi-threaded version
-    private void parseDocumentsSingleThreaded(String documentsListing, 
-					     String termDocumentMatrixFilePrefix)
-	throws IOException {
-
-	BufferedReader br = 
-	    new BufferedReader(new FileReader(documentsListing));
-		
-	PrintWriter termDocumentMatrixFileWriter = 
-	    new PrintWriter(new File(termDocumentMatrixFilePrefix + 
-				     TERM_MATRIX_SUFFIX));
-
-	String document = null;
-	int count = 0;
-
-	while ((document = br.readLine()) != null) {
-	    System.out.print("parsing document " + (count++) + ": "
-			     + document + "...");
-	    long startTime = System.currentTimeMillis();
-	    try {
-		parseDocument(document, termDocumentMatrixFileWriter);
-	    } catch (Throwable t) {
-		t.printStackTrace();
-	    }
-	    long endTime = System.currentTimeMillis();
-	    System.out.printf("complete (%.3f seconds)%n",
-			      (endTime - startTime) / 1000d);
-	}
-
-	System.out.printf("Saw %d terms over %d documents%n",
-			  termToIndex.size(), count);
-
-	System.out.println("writing index-term map file " + 
-			   termDocumentMatrixFilePrefix + 
-			   TERM_INDEX_SUFFIX);
-
-	PrintWriter pw = new PrintWriter(termDocumentMatrixFilePrefix + 
-					 ".indexToTerm.dat");
-	for (Map.Entry<String,Integer> e : termToIndex.entrySet())
-	    pw.printf("%06d\t%s%n", e.getValue().intValue(), e.getKey());
-	pw.close();
+	return  (validTerms == null) || validTerms.contains(word);
     }
 
     /**
      * Parses all the documents in the provided list and writes the resulting
      * term-document matrix to the provided file
      */
-    private void parseDocumentsMultiThreaded(String documentsListing, 
+    private void parseDocumentsMultiThreaded(final DocumentIterator docIter, 
 					     String termDocumentMatrixFilePrefix)
 	throws IOException {
 
-	BufferedReader br = 
-	    new BufferedReader(new FileReader(documentsListing));
-		
 	final String termDocumentMatrixFileName = 
 	    termDocumentMatrixFilePrefix + 
 	    TERM_MATRIX_SUFFIX;
@@ -324,50 +275,49 @@ public class TermDocumentMatrixCreator {
 	final PrintWriter termDocumentMatrixFileWriter = 
 	    new PrintWriter(new File(termDocumentMatrixFileName));
 
-	int NUM_THREADS = 8;
+	int NUM_THREADS = 4;
+	Collection<Thread> threads = new LinkedList<Thread>();
 
-	ThreadPoolExecutor executor = 
-	    new ScheduledThreadPoolExecutor(NUM_THREADS);
-
-	String document = null;
-	AtomicInteger count = new AtomicInteger(0);	
+	final AtomicInteger count = new AtomicInteger(0);
 	
-	while ((document = br.readLine()) != null) {
-	    final String toParse = document;
-	    final int docNumber = count.incrementAndGet();
 
-	    // enqueue a runnable for each document we want to parse
-	    executor.submit(new Runnable() {
+	for (int i = 0; i < NUM_THREADS; ++i) {
+	    Thread t = new Thread() {
 		    public void run() {
-			long startTime = System.currentTimeMillis();
-			int terms = 0;
-			try {
-			    terms = parseDocument(toParse, 
+			// repeatedly try to process documents while some still remain
+			while (docIter.hasNext()) {
+			    long startTime = System.currentTimeMillis();
+			    Document doc = docIter.next();
+			    int docNumber = count.incrementAndGet();
+			    int terms = 0;
+			    try {
+				terms = 
+				    parseDocument(doc.reader(), 
 						  termDocumentMatrixFileWriter);
-			} catch (Throwable t) {
-			    t.printStackTrace();
+			    } catch (Throwable t) {
+				t.printStackTrace();
+			    }
+			    long endTime = System.currentTimeMillis();
+			    System.out.printf("parsed document #" + docNumber + 
+					      " (" + terms +
+					      " terms) in %.3f seconds)%n",
+					      ((endTime - startTime) / 1000d));
 			}
-			long endTime = System.currentTimeMillis();
-			System.out.printf("parsed document #" + docNumber + 
-					  " " + toParse + " (" + terms +
-					  " terms) in %.3f seconds)%n",
-					  ((endTime - startTime) / 1000d));
 		    }
-		});
+		};
+	    threads.add(t);
 	}
 	
-	System.out.println("Enqueued tasks to parse all documents");
-		
-	// notify the executor that no futher tasks will be submitted
-	// and that it should shut down after finishing the current
-	// queue
-	executor.shutdown();
+	// start all the threads processing
+	for (Thread t : threads)
+	    t.start();
 
 	System.out.println("Awaiting finishing");
 
 	// wait until all the documents have been parsed
 	try {
-	    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+	    for (Thread t : threads)
+		t.join();
 	} catch (InterruptedException ie) {
 	    ie.printStackTrace();
 	}
@@ -390,7 +340,9 @@ public class TermDocumentMatrixCreator {
 	    pw.printf("%07d\t%d\t%s%n", (termIndex = e.getValue().intValue()),
 		      termCountsForAllDocs.get(termIndex), e.getKey());
 	pw.close();
+
     }
+
 
     // NOTE: currently unused
     private void pruneIndices(String termDocumentMatrixFilePrefix) 
@@ -454,16 +406,152 @@ public class TermDocumentMatrixCreator {
     public static void main(String[] args) {
 	if (args.length != 2 && args.length != 3) {
 	    System.out.println("usage: java TermDocumentMatrixCreator " + 
-			       "<doc file> <output term-doc matrix file>" +
-			       " [valid terms list]");
+			       "[--fileList=<file>|--docFile=<file>] " +
+			       "<output term-doc matrix file> " +
+			       "[valid terms list]");
+	    return;
 	}
 	try {
+	    // figure out what kind of document file we're getting
+	    String[] typeAndFile = args[1].split("=");
+	    if (typeAndFile.length != 2) {
+		System.out.println("invalid document file arg: " + args[1]);
+		return;
+	    }
+		
+	    DocumentIterator docIter = null;
+	    if (typeAndFile[0].equals("--fileList")) {
+		// we have a file that contains the list of all document files
+		// we are to process
+		docIter = new FileListDocumentIterator(typeAndFile[1]);
+	    }
+	    else if (typeAndFile[0].equals("--docFile")) {
+		// all the documents are listed in one file, with one
+		// document per line
+		docIter = new SingleFileDocumentIterator(typeAndFile[1]);
+	    }
+	    else {
+		System.out.println("invalid document file arg: " + args[1]);
+		return;
+	    }
+	    
 	    ((args.length == 2)
 	     ? new TermDocumentMatrixCreator()
 	     : new TermDocumentMatrixCreator(args[2]))
-		.parseDocumentsMultiThreaded(args[0], args[1]);
+		.parseDocumentsMultiThreaded(docIter, args[1]);
 	} catch (Throwable t) {
 	    t.printStackTrace();
 	}
     }
+
+    public interface Document {
+
+	/**
+	 * Returns the {@code BufferedReader} for this document's text
+	 */
+	BufferedReader reader();
+
+    }
+
+    public interface DocumentIterator {
+	
+	/**
+	 * Returns {@code true} if there are still documents left.
+	 */
+	boolean hasNext();
+
+	Document next();
+	
+    }
+
+    public static class FileListDocumentIterator implements DocumentIterator {
+
+	private final Queue<String> filesToProcess;
+
+	public FileListDocumentIterator(String fileListName) 
+	    throws IOException {
+	    
+	    filesToProcess = new ConcurrentLinkedQueue<String>();
+	    
+	    // read in all the files we have to process
+	    BufferedReader br = 
+		new BufferedReader(new FileReader(fileListName));
+	    for (String line = null; (line = br.readLine()) != null; )
+		filesToProcess.offer(line.trim());	    
+	}
+
+	public boolean hasNext() {
+	    return !filesToProcess.isEmpty();
+	}
+
+	public Document next() {
+	    String fileName = filesToProcess.poll();
+	    return (fileName == null) ? null : new FileDocument(fileName);
+	}	
+    }
+
+    public static class SingleFileDocumentIterator implements DocumentIterator {
+
+	private final BufferedReader documentsReader;
+
+	private String nextLine;
+
+	public SingleFileDocumentIterator(String documentsFile) 
+	    throws IOException {
+	    
+	    documentsReader = new BufferedReader(new FileReader(documentsFile));
+	    nextLine = documentsReader.readLine();
+	}
+
+	public synchronized boolean hasNext() {
+	    return nextLine != null;
+	}
+
+	public synchronized Document next() {
+	    Document next = new StringDocument(nextLine);
+	    try {
+		nextLine = documentsReader.readLine();
+	    } catch (Throwable t) {
+		t.printStackTrace();
+		nextLine = null;
+	    }
+	    return next;
+	}	
+    }
+    
+
+    private static class FileDocument implements Document {
+	
+	private final BufferedReader reader;
+
+	public FileDocument(String fileName) {
+	    BufferedReader r = null;
+	    try {
+		r = new BufferedReader(new FileReader(fileName));
+	    } catch (Throwable t) {
+		t.printStackTrace();
+	    }
+	    reader = r;
+	}
+
+	public BufferedReader reader() {
+	    return reader;
+	}
+
+    }
+
+    private static class StringDocument implements Document {
+	
+	private final BufferedReader reader;
+
+	private StringDocument(String docText) {
+	    reader = new BufferedReader(new StringReader(docText));
+	}
+
+	public BufferedReader reader() {
+	    return reader;
+	}
+	
+    }
+    
 }
