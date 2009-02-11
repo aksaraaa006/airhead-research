@@ -87,7 +87,7 @@ public class TermDocumentMatrixCreator {
 	termIndexCounter = new AtomicInteger(0);
 	docIndexCounter = new AtomicInteger(0);
 	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
-	indexToTerm = new String[2500000];
+	indexToTerm = new String[100000000]; // 10 million
 	validTerms = (validTermsFileName == null)
 	    ? null : loadValidTermSet(validTermsFileName);
 	
@@ -152,8 +152,6 @@ public class TermDocumentMatrixCreator {
 			      PrintWriter termDocumentMatrixWriter)
 	throws IOException {
 
-	int documentIndex = docIndexCounter.incrementAndGet();
-
 	Map<String,Integer> termCounts = 
 	    new LinkedHashMap<String,Integer>(1 << 10, 16f);	
 
@@ -196,6 +194,15 @@ public class TermDocumentMatrixCreator {
 	}
 
 	document.close();
+
+	// check that we actually loaded in some terms before we increase the
+	// documentIndex.  This could possibly save some dimensions in the final
+	// array for documents that were essentially blank.  If we didn't see
+	// any terms, just return 0
+	if (termCounts.isEmpty())
+	    return 0;
+
+	int documentIndex = docIndexCounter.incrementAndGet();
 
 	// Once the document has been fully parsed, output all of the sparse
 	// data points using the writer.  Synchronize on the writer to prevent
