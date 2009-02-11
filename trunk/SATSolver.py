@@ -78,7 +78,7 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs):
         for a, b in list:
             similarity = (getWordSimilarity(source[0],a)
                           + getWordSimilarity(source[1],b))
-            if (similarity > highestSimilarity):
+            if (similarity >= highestSimilarity):
                 highestSimilarity = similarity
         listToHighestSimilarity[listIndex] = highestSimilarity
         listOfScoreAndList.append((highestSimilarity, list))
@@ -86,6 +86,10 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs):
     # sort with highest similarity first (inverse sort routine)
     listOfScoreAndList.sort(invComp)
     
+    if len(listOfScoreAndList) == 0:
+        print "could not find answer???"
+        return False
+
     # In decreasing order of similarity to the source, use the list of analogous
     # items to look for the list whose similarity is closest to the options
     for score, list in listOfScoreAndList:
