@@ -105,9 +105,13 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs):
                 if (similarity > mostSimilar[0]):
                     mostSimilar = (similarity, (c, d))
 
-        print "SELECTING: %s:%s::%s:%s" % (source[0], source[1], 
-                                           (mostSimilar[1])[0],
-                                           (mostSimilar[1])[1])
+        try:
+            print "SELECTING: %s:%s::%s:%s" % (source[0], source[1], 
+                                               (mostSimilar[1])[0],
+                                               (mostSimilar[1])[1])
+        except IndexError:
+            print "BLARGH: fix this case, most similar: %s" % ("".join(mostSimilar))
+            return false
         
         if ((mostSimilar[1])[0] == (options[correctIndex])[0] and 
             (mostSimilar[1])[1] == (options[correctIndex])[1]):
