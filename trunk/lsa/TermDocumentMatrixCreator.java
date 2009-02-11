@@ -413,9 +413,9 @@ public class TermDocumentMatrixCreator {
 	}
 	try {
 	    // figure out what kind of document file we're getting
-	    String[] typeAndFile = args[1].split("=");
+	    String[] typeAndFile = args[0].split("=");
 	    if (typeAndFile.length != 2) {
-		System.out.println("invalid document file arg: " + args[1]);
+		System.out.println("invalid document file arg: " + args[0]);
 		return;
 	    }
 		
@@ -431,7 +431,7 @@ public class TermDocumentMatrixCreator {
 		docIter = new SingleFileDocumentIterator(typeAndFile[1]);
 	    }
 	    else {
-		System.out.println("invalid document file arg: " + args[1]);
+		System.out.println("invalid document file arg: " + args[0]);
 		return;
 	    }
 	    
