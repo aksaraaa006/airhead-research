@@ -1,0 +1,71 @@
+# is-a (alive things)
+dog	canine
+wolf	canine
+tiger	cat
+cheetah	cat
+parrot	bird
+chimpanzee	ape
+camel	dromedary
+mouse	rodent
+
+# lives-in
+fish	sea
+birds	air
+birds	sky
+dog	land
+cat	house
+horse	farm
+cow	barn
+chicken	coop
+
+# uses
+sculpture	stone
+painting	canvas
+carving	wood
+drawing	paper
+
+# rotates-around
+electron	nucleus
+moon	earth
+planet	sun
+
+# opposites
+giant	dwarf
+black	white
+pond	ocean
+mountain	mole hill
+shout	whisper
+storm	calm
+danger	safety
+
+# works-at
+judge	court
+fireman	fire station
+policeman	police station
+doctor	hospital
+lumberjack	forest
+teacher	school
+professor	university
+scientist	lab
+
+# is-a
+sapphire	gem
+milk	drink
+german	ethnicity
+chair	furnature
+euro	currency
+fork	utensil
+red	color
+cup	container
+granite	stone
+
+# similar terms
+dinner	supper
+cat	kitty
+gift	present
+motor	engine
+university	college
+forest	grove
+mom	mother
+gateway	entrance
+lawn	yard
