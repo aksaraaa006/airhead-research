@@ -1,0 +1,95 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citename{Banerjee and Pedersen}2003]{banerjee03extendedgloss}
+Satanjeev Banerjee and Ted Pedersen.
+\newblock 2003.
+\newblock Extended gloss overlaps as a measure of semantic relatedness.
+\newblock In {\em Proceedings of the Eighteenth International Joint Conference
+  on Artificial Intelligence}, pages 805--810.
+
+\bibitem[\protect\citename{Bicici and Yuret}2006]{bicici06clustering}
+E.~Bicici and D.~Yuret.
+\newblock 2006.
+\newblock Clustering word pairs to answer analogy questions.
+\newblock In {\em Proceedings of the Fifteenth Turkish Symposium on Artificial
+  Intelligence and Neural Networks (TAINN 2006)}.
+
+\bibitem[\protect\citename{Brin and Page}1998]{brin98anatomy}
+S.~Brin and L.~Page.
+\newblock 1998.
+\newblock The anatomy of a large-scale hyper-textual web search engine.
+\newblock {\em Computer Networks and ISDN Systems}, 30(1-–7).
+
+\bibitem[\protect\citename{Fellbaum}1998]{fellbaum98wordnet}
+C. ~Fellbaum.
+\newblock 1998 
+\newblock WordNet, An Eletronic Database.
+
+\bibitem[\protect\citename{Gentner}1983]{gentner83structure}
+D.~Gentner.
+\newblock 1983.
+\newblock Structure-mapping: A theoretical framework for analogy.
+\newblock {\em Cognitive Science}, 7(2).
+
+\bibitem[\protect\citename{Mangalath \bgroup et al.\egroup
+  }2004]{mangalath04analogy}
+P.~Mangalath, J.~Quesada, and W.~Kintsch.
+\newblock 2004.
+\newblock Analogy-making as predication using relational information and lsa
+  vectors.
+\newblock In {\em Proceedings of the 26th Annual Meeting of the Cognitive
+  Science Society}.
+
+\bibitem[\protect\citename{Mihalcea}2006]{mihalcea06randomwalks}
+R. ~Mihalcea.
+\newblock 2006
+\newblock Random Walks on Text Structures.
+\newblock In {\em Computational Linguistics and Intelligent Text Processing},
+pages 249--262
+
+\bibitem[\protect\citename{Mihalcea, Tarau and Figa}2004]{mihalcea04pagerankwsd}
+R. ~Mihalcea and P. ~Tarau and E. ~Figa.
+\newblock 2004
+\newblock PageRank on semantic networks with application to word sense
+disambiguation.
+\newblock In {\em Proceedings of the 20th International Conference on
+Computational Linguistics},
+
+\bibitem[\protect\citename{Schwartz and Gomez}2008]{schartz08selectors}
+H. ~Schwartz and F. ~Gomez.
+\newblock 2008
+\newblock Acquiring Knowledge from the Web to be used as Selectors for Noun
+Sense Disambiguation.
+\newblock In {\em CoNLL 2008: Proceedings of the Twelfth Conference on Computational Natural Language Learning},
+
+\bibitem[\protect\citename{Silva \bgroup et al.\egroup
+  }2007]{silva07analogical}
+R.~Silva, K.~Heller, and Z.~Ghahramani.
+\newblock 2007.
+\newblock Analogical reasoning with relational bayesian sets.
+\newblock In {\em 11th International Conference on Artificial Intelligence and
+  Statistics}.
+
+\bibitem[\protect\citename{Turney and Littman}2005]{turney05corpus}
+Peter~D. Turney and Michael~L. Littman.
+\newblock 2005.
+\newblock Corpus-based learning of analogies and semantic relations.
+\newblock {\em Machine Learning}, 60:251--278.
+
+\bibitem[\protect\citename{Turney \bgroup et al.\egroup
+  }2003]{turney03combining}
+P.D. Turney, M.L. Littman, J.~Bigham, and V.~Shnayder.
+\newblock 2003.
+\newblock Combining independent modules to solve multiple-choice synonym and
+  analogy problems.
+\newblock In {\em Proceedings of the International Conference on Recent
+  Advances in Natural Language Processing (RANLP-03)}, pages 482--489.
+
+\bibitem[\protect\citename{Veale}2004]{veale04wordnet}
+T.~Veale.
+\newblock 2004.
+\newblock Wordnet sits the sat: A knowledge-based approach to lexical analogy.
+\newblock In {\em Proceedings of the 16th European Conference on Artificial
+  Intelligence (ECAI 2004)}, pages 606--–612.
+
+\end{thebibliography}

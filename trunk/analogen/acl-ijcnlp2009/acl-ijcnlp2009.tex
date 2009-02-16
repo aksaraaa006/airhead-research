@@ -1,0 +1,388 @@
+\documentclass[11pt]{article}
+
+\usepackage{acl-ijcnlp2009}
+
+\usepackage{epsfig}
+\usepackage{times}
+\usepackage{url}
+\usepackage{latexsym}
+
+\title{Discovering Analogous Pairs of Words using WordNet and PageRank}
+
+
+\author{First Author\\
+  Affiliation / Address line 1\\
+  Affiliation / Address line 2\\
+  {\tt email@domain}  \And
+  Second Author\\
+  Affiliation / Address line 1\\
+  Affiliation / Address line 2\\
+  {\tt  email@domain}}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+We present an unsupervised algorithm for identifying analogous pairs of concepts
+based on corpus statistics and PageRank.  \emph{Some sentence here on the
+  general context of the paper.} The algorithm uses context to identify word
+pairs that are most likely to share the same relation.  To move from words to
+concepts, for each grouping of analogous word pairs we build a graph of all the
+possible senses and apply the PageRank algorithm to determine which are most
+likely.  We test how analogous are the resulting lists of concepts with the SAT
+analogy questions used in \cite{turney03combining}.  \emph{Some closing sentence
+  here about what we found out based on the results.}
+
+
+\end{abstract}
+
+\section{Introduction}
+
+Humans are adept at discovering analogous relationships between pairs of
+concepts.  The concepts may be closely related such as ``fish swim in the sea;
+birds fly in the sky,'' or unrelated ``electrons orbit protons; plants orbit
+stars.''  There has been much work on how computers might emulate this {\bf
+  discovery process}\cite{gentner83structure}.  \emph{Either cite a bunch of
+  things here, or add a short setence or two describing the work}.  Furthermore,
+recent work has show how text-only based approaches can identify analogous words
+or concepts\cite{mangalath04analogy,turney05corpus,bicici06clustering}.  We
+propose a novel algorithm for identifying analogous pairs of concepts by
+combining at context statistics for word usage and PageRank\cite{brin98anatomy}
+to determine what concepts those words represents.
+
+{\bf This paragraph should outline the specifics of what problem is addressed in
+  this paper.  This paragraph must catch the reader/reviewrs attention and make
+  them believe the problem is important.}
+\begin{enumerate}
+  \item Writing does not often contain explicit phrases of the type ``\emph{a}
+    is to \emph{b} as \emph{c} is to \emph{d}''
+  \item Even when we look for words that appear in simiar context, there  may
+    not be many occurrences.
+  \item words can take on a number of meanings, so a solution must be more than
+    just extraction context-related words
+\end{enumerate}
+
+{\bf Next, we outline our proposed solution and how we address the problems in
+  the previous paragraph.  We should give a motivating example here}  
+
+Our hypothesis is that Pairs of words that appear in similar semantic contexts
+are likely to share some relation to each other.  In this paper we focus
+specifically on pairs of nouns that are likely to share a relation when the
+pairs or their synonyms occur in the presence of verbs with similar semantics.  
+
+\emph{This could be a footnote:} Note that our approach does not extract what the
+specific relationship is between concepts.  Determining the relation is a task
+of language generation and could require significant background knowledge for
+complex relationships, both of which is outside the current scope of the task.
+
+{\bf Then we need to frame our work in the existing body of work and state how
+  we will measure up to prior examples.  Stating what we can use the work for is
+  also a plus.}
+
+{\bf Last, give a paragraph outline of the paper.}  The general outline of our
+paper is as follows: Bob Lob Law.
+
+\section{Background}
+
+I'm not sure if we need this section.  Possibilities for what goes in it are
+WordNet, Open Mind Common Sense and analogy.  We should change the
+section title based on whatever goes in here.
+
+Wordnet \cite{fellbaum98wordnet} is a commonly used Lexical database, primarily used for Word Sense
+Disambiguation.  For all open class words, such as nouns and verbs, WordNet
+contains a collection of synsets which represent possible meanings of a
+particular word.  For instance, the word car could refer to an automobile,
+typically with 4 wheels, or it could also refer to a wheeled vehicle for use on
+railroad lines.  Each of these possible meanings is reprensented as a synset,
+which encompasses a collction of words which have the same meaning.  In this
+case, the word car is contained in 5 possible sense, and is considered to be
+ambigious.  
+
+WordNet is further organized to include various relations between synsets, the
+most important of which are: Hypernym, which provides a more general synset;
+Hyponym, which provides a more specific synset; meronymy, which provides synsets
+which are a part of another synset (i.e. finger is a meronym of hand); and
+holonymy, which are the synsets which are a composition of this synset and
+others (i.e. hand is a holonym of finger).  We primarily focus on using the
+Hypernym and Hyponym relations in WordNet, which is commonly refered to as the
+IS-A hierarchy
+
+While WordNet is an excellent resrouce for WSD, it alone does not provide enough
+information to generate analogies.  For the purpose of extracting potential
+noun-noun pairs which can participate in an analogy, we make use of the Open
+Mind Common Sense \cite{omcs?} which is a large database of human written common
+sense facts.  These facts are written in a simplified version of english which
+provides a vast amount of facts and relations between concepts.  Due to the
+simplified english, and wide range of provided relations, OMCS appears to be an
+excellent resource for analogy generation, and has been used in similar projects
+\cite{analogyspace}.
+
+Other corpora were initially explored, such as a variety of books from Project
+Gutenberg\cite{gutenberg}, but various stages in our pipeline could not
+properly handle the advanced use of english and metaphors.  Most specificly, it
+was most challenging to extract sensible analogy candidates from the corpus, and
+finding generalizations of the noun-noun pairs was also difficult to discover
+since WordNet does not contain an entry for all nouns and verbs.
+
+\subsection{Selecting a Corpus}
+
+\begin{enumerate}
+  \item why we chose it
+  \item how big is our corpus and what is it made of
+  \item what percentage of sentences had data of the form we were looking for?
+\end{enumerate}
+
+\section{Identifying Analogous Pairs}
+
+\emph{Insert general introductory paragraph that oulines the algorithm and how
+  it will be broken up and explained}.
+
+We are interested in determining if there exists a relationship between a pair
+of nouns, which is dependent on identifying the semantic context in which the
+nouns are used.  We use the verb as the key indicator of context and a good
+starting point for identifying a possible noun-noun relation.  The general theme
+of the algorithm is that two pairings of nouns will share a relation when the
+nouns or their synonyms occur in the presence of verbs with similar semantics.
+Consider the following sentences:
+\begin{enumerate}
+  \item The thisty man guzzled the water.
+  \item The old car guzzled gas quickly.
+\end{enumerate}
+
+In a simple case such as this, the relation between man and water is the same as
+the relation between car and gas.  It might also be true that the car, gas
+relation mighthold to other things which a man might guzzle, or beings which
+might guzzle water.  To account for this, our approach is to expand a potential
+noun-noun pair by searching the corpus itself for other noun-noun pairs which
+might have a similar meaning according to context.
+
+This process takes place in three major steps
+\begin{enumerate}
+  \item Itdentifying candidate noun-noun pairs
+  \item Expanding each noun-noun pair
+  \item Removing expanded pairs which are unrelated
+\end{enumerate}
+
+The following subsections will cover each stem is more detail.
+
+\subsection{Generating Candidate Analogies}
+
+This paragraph should focus on the first step n-v-n extraction from the corpus.
+We allow that nouns may be separated from the verb by one or more word of
+non-noun parts of speech.  We also filter out the nouns in prepositional
+phrases.  Last, we allow nouns to be collocations, e.g. ``white house''.
+
+\subsection{Moving From Word to Concept}
+
+Once a list of n-v-n triplets have been extracted from the corpus, we need to
+expand each one to it's set of extended relations.  The first step is to search
+the corpus for other triplets which match the pattern of *-v-n and n-v-*.  This
+will find triplets which contains words which might be viewed as synonymous in
+some way and is loosely related to finding Selectors for WSD \cite{}.  An
+additional way to generate additional relations is to produce a new triplet
+n-v-n2i for each synoynm of the second noun and n1i-v-n for each synoynm of the
+first nound.  Since we are making use of WordNet as our definition of word
+meaning, it is most applicable to extract synonyms from the dominate sense of
+each word in the triplet.  
+
+This generation step has the potential of creading a vast number of n-v-n
+triplets which we consider to be synonomous to each other, and a simple,
+unsupervised approach needs to be taken to reduce the size of the expanded list
+for later steps.  To this end, we chose to make use of PageRank when applied to
+WSD.  The rest of this section will focus on how the graph is built, and how
+it's computation reflects on the expansion list.
+
+Our use of PageRank is an extension of it's application towards WSD
+\cite{mihalcea04pagerankwsd} and \cite{mihalcea06randomwalks}.  For each word in
+the expansion list, we obtain the first three possible synsets for the word and
+add edges from each competeing synset to all other synsets currently in the
+graph based on the semantic similarity as defined by
+\cite{banerjee03extendedgloss}.  One detail to note, is that competing synsets
+for a given word are only added to the graph onces, regardless of the number of
+times it occurs in the extension list, and these competing synsets are not
+given edges to each other. 
+
+Once the graph has been built with all the possible sense of each word that
+occurs in the expansion list, assign an arbitrary score to each node in the
+graph, and begin iteratively updating the score for each node based on the the
+following algorithm:
+
+\emph{figure out how to write an algorithm here}
+
+This update is done on each node until the scores of each node converges within
+a difference of \emph{10 to -6}.  Typically this can be done in lesss than 40
+iterations through the graph.  This scoring mechanism will 
+\subsection{Moving from Concepts to Categories}
+
+{\bf We may not get to trying this} One thought I had was to try to cluster
+concepts from within the list itself.  We would still maintain the invariant
+that all pairs are still analogous, but this would at least give us:
+\begin{enumerate}
+  \item a way of moving from concepts to categories, i.e. are there certain
+    pairs of categories that are analogous?
+  \item if we can extract categories, then we might be able to better identify
+    new analogies.  For example, if we find that we have the categorical analogy
+    ``animal:type'' and we see narwhal, we know it fits in the animal category
+    even if we have never see ``narwhal'' or any of its synonyms.
+\end{enumerate}
+
+
+
+
+
+\section{Evaluation}
+
+The important evaluation criteria is whether all the pairs in a generated set of
+analogous pairs actually share the same relation.  We test this criteria using
+SAT analogy questions of the form shown in figure \ref{fig:sat-question}.  A
+question will provide an exemplar pair with a certain relation and a list of
+possible analogous pairs; the correct answer requires identifying the option
+with the pair that shares the same relationship.  For evaluation we use the 374
+SAT analogy problems used in \cite{turney03combining}, which provide five
+options to select from.  
+
+\begin{figure}
+  \begin{tabular}{lrl}
+    \hline
+    Provided example: & & mason:stone \\
+    \hline
+    Option & (a) & teacher:chalk \\
+    & (b) & carpenter:wood  \\
+    & (c) & soldier:gun \\
+    & (d) & photograph:camera \\
+    & (e) & book:word \\
+    Solution & (b) & carpenter:wood  \\
+    \hline
+  \end{tabular}
+  \caption{An example SAT analogy question.  Example reproduced from
+    \cite{turney03combining}.}
+  \label{fig:sat-question}
+\end{figure}
+
+\subsection{Rationale}
+
+Our algorithm for selecting which option is summarized as choosing the set that
+contains both the provided pair and the selected option, with possibilities for
+substituting words in each pair with their synonyms.  We have purposefully kept
+the algorithm for answering SAT analogy questions simple to focus primarily on
+on evaluating the validity of the relationship within the sets and not on our
+ability to correctly answer all the questions.  We find the information
+retrieval concepts of precision and recall useful in this evaluation; we define
+precision as a function of how well our algorithm does at producing a set with a
+specific relationship, and recall as a function of the corpus.  If the algorithm
+groups pairs with too broad of a relationship or no relationship at all, then
+selecting the correct option from an SAT question will generate multiple false
+positives.  However, if the corpus from which the sets are extracted does not
+contain enough exemplars of a relationship, then the sets will be impoverished
+and given an analogy question, no set will contain both the provided example and
+one of the options.  Therefore, we provide two statistics, one for questions for
+which the algorithm was able to find a set containing both the example and an
+option (precision), and a second for which we were unable to find such a set.
+
+
+\subsection{SAT Question Algorithm}
+
+Our algoirthm for solving SAT-style analogy questions is as
+follows. \emph{reword this all later.  This might be better presented using
+  paragraphs}
+
+\begin{enumerate}
+  \item sets $S_1 \ldots S_n$ of analogous pairs are generated by the algorithm
+  \item the input is a pair of words denoted $a:b$
+  \item[] {\bf First determine which set contains pairs that have the same
+    relation as the input.}
+  \item for each synonym of $a$ and $b$, generate a new pair $a':b'$.
+  \item find all pairs in the provided sets that match $a_i:y$ and $x:b_i$.  Let
+    the set of mathes be $M$.
+  \item for each pair $a_i:b_j \in M$ compute the Banerjee distance from $a$ to
+    $a_i$ and $b$ to $b_i$ and find set that contains the pair with the lowest
+    sum.  Let the resultings set me known as $X$ \emph{need a better name}.
+    Note that if the input pair is in the provided sets, the distance will be 0
+    and so the set containing the input pair will be used.
+  \item If $|X| = 0$, return that no analogy could be found
+  \item[] {\bf Second determine which option has the analogous relation.}
+  \item for each option, $c:d$, generate a new pair $c':d'$ based on the
+    synonyms of $c$ and $d$.
+  \item find all pairs in $X$ that are of the form $c_i:y$ or $y:d_i$, and let
+    this set be $N$
+  \item for each pair $c_i:d_i \in N$, find the pair with the lowest Banerjee
+    distance to the original option pair from which it was generated.  ({\bf
+      What to do in case of ties?  Idea: use the option that is deepest in the
+      tree?})    
+  \item If $|N| = 0$ return that no analogy coudl be found.  Otherwise, select
+    the option with the lowest distance.
+\end{enumerate}
+These Banerjee distance used in Steps ? and ? are weighting factors for the
+semantic distance from the provided analogous pair.  We use these to account for
+any differences in semantics when searching for the closest pair in the provided
+sets
+
+We allow synonyms of the all the pairs to account for some missing features in
+the corpus.  \emph{more details and example here.}
+
+\subsection{Results}
+
+\emph{I sure hope these are good...; Save the analysis until the discussion
+  section}
+
+\section{Related Work}
+
+Banerjee and Pedersen\cite{banerjee03extendedgloss} use the gloss (dictionary
+def.) provided by WordNet to determine simiarlity.  \emph{not sure if this even
+  goes here}.
+
+Bicici and Yuret \cite{bicici06clustering} use neural networks. \emph{TO READ}.
+
+Mangalath et al. \cite{mangalath04analogy} use LSA to identify sturctural
+similarity. \emph{TO READ}.
+
+Silva et al. \cite{silva07analogical} solve the problem of finding new pairs
+that share a relation given some example pairs that are known to share the same
+relation.  Their approach differs in that pairs are known to share some relation
+are provided as prior knowledge.
+
+Turney et al. \cite{turney03combining} does something \emph{TO READ}.
+
+Turney and Littman\cite{turney05corpus} generate semantics representation by
+mining large corpora.  These representations are used to solve analogy questions of
+the form ``a is to b as c is to ?,'' where the list of possible analogous items
+is provided.
+
+Veale \cite{veale04wordnet} uses WordNet \emph{TO READ.}
+
+\section{Discussion}
+
+Hopefully we have good results and this section can focus on putting them in
+context.  Key questions we can address are
+\begin{enumerate}
+  \item Why does this approach work?
+  \item Are there cases where it doesn't work?
+  \item Could we improve the SAT question answering algorithm?
+  \item How does our model fit in with the rest of the field.  This point should
+    draw upon all of the related work to paint a picture of the research
+    landscape.  Can we combine our approach with others (e.g. use us as input
+    for Sivla et al.), or adapt some techniques of other's papers?
+  \item Aren't we just taking advantage of the knowledge contained in corpus (to
+    some degree, yes)
+  \item How we can improve this approach, i.e. future work.  One possibility is
+    to move to analogous verbs, adjectives.  A second is to adapt the triplet
+    extractor to be more general.  A third is to try to move to new specific
+    domains, e.g. mine medical journal papers/abstracts to find analogous
+    things.
+\end{enumerate}
+
+\section{Acknowledgements}
+
+We should probably thank Peter Turney for the SAT Questions and Catherine Havasi
+for giving us the OMCS data set.  Also, if we do, due to the double-blind
+reviewing process we can't include it in the paper until the print copy since it
+gives it away that we're not them.
+
+\bibliographystyle{acl}
+\bibliography{acl-ijcnlp2009}
+
+\end{document}
