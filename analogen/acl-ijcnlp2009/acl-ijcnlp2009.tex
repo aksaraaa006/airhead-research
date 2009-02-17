@@ -99,6 +99,7 @@ complex relationships, both of which is outside the current scope of the task.
 The general outline of our paper is as follows: Bob Lob Law.
 
 \section{Background}
+\label{sec:background}
 
 Our analogy discovery system makes use of two well established databases of
 knowledge, WordNet \cite{fellbaum98wordnet} and the Open Mind Common Sense
@@ -124,15 +125,16 @@ the IS-A hierarchy.
 While WordNet is an excellent resrouce for WSD, it alone does not provide enough
 information to generate analogies.  For the purpose of extracting potential
 noun-noun pairs which can participate in an analogy, we make use of the Open
-Mind Common Sense.  The facts in OMCS are written in a simplified version of english which
-provides a vast amount of facts and relations between concepts.  These facts
-are primairly collections of attributes for a particular topic, such facts as:
-``paper is white```, ``paper is for writing on``, etc.  Due to the
+Mind Common Sense.  The facts in OMCS are written in a simplified version of
+english which provides a vast amount of facts and relations between concepts.
+These facts are primairly collections of attributes for a particular topic, such
+facts as: ``paper is white```, ``paper is for writing on``, etc.  Due to the
 simplified english, and wide range of provided relations, OMCS appears to be an
 excellent resource for analogy generation, and has been used in similar projects
-\cite{analogyspace}. From OMCS, we make use of approximately 130,000 $noun\_verb\_noun$ triplets,
-which is a reasonable sized corpus for discovering groups of related noun-noun
-pairs.
+\cite{speer08analogyspace}.  From OMCS, we make use of approximately 130,000
+$noun\_verb\_noun$ triplets, which is a reasonable sized corpus for discovering
+groups of related noun-noun pairs.
+
 
 Initially, other corpora were explored in the hopes of extracting suitable
 analogies.  A variety of books from Project Gutenberg were explored, Moby Dick,
@@ -145,6 +147,7 @@ real world examples, leaving the discovery of analogies to traversal of WordNet
 relations, which is perhaps beyond the scope of WordNet's intended usage.
 
 \section{Identifying Analogous Pairs}
+\label{sec:indetifying}
 
 \emph{Insert general introductory paragraph that oulines the algorithm and how
   it will be broken up and explained}.
@@ -291,6 +294,7 @@ that all pairs are still analogous, but this would at least give us:
 \end{enumerate}
 
 \section{Evaluation}
+\label{sec:eval}
 
 The important evaluation criteria is whether all the pairs in a generated set of
 analogous pairs actually share the same relation.  We test this criteria using
@@ -386,27 +390,75 @@ the corpus.  \emph{more details and example here.}
   section}
 
 \section{Related Work}
+\label{sec:related}
 
-Bicici and Yuret \cite{bicici06clustering} use neural networks. \emph{TO READ}.
+%Banerjee and Pedersen\cite{banerjee03extendedgloss} use the gloss (dictionary
+%def.) provided by WordNet to determine simiarlity.  \emph{not sure if this even
+%  goes here}.
 
-Mangalath et al. \cite{mangalath04analogy} use LSA to identify sturctural
-similarity. \emph{TO READ}.
+Mangalath et al. extend LSA\cite{landauer88introduction} with a way determine
+relation categories for word pairs\cite{mangalath04analogy}.  The authors define
+ten types of relations and words that are describe the relations, e.g. the
+relation synonymy and desciptors ``equivalent,'' ``equal,'' and ``match.''  For
+each of these ten relations, the authors use LSA vectors to compute the cosine
+similarity between the words and each provided pair and each alternative.  The
+alternative whose similarities are most correlated with the provided pair is
+selected as the answer.
 
-Silva et al. \cite{silva07analogical} solve the problem of finding new pairs
-that share a relation given some example pairs that are known to share the same
-relation.  Their approach differs in that pairs are known to share some relation
-are provided as prior knowledge.
+Nakov and Hearst indentify the semantic relation between compound noun by seeing
+what verbs might be used to related them\cite{nakov06using}.  Given some pair of
+words that constitutes a compound noun, they search web pages for short phrases
+where the two nouns are linked by a verb.  The types of verbs found indicate the
+type of relationship between the nouns.  Unlike this work, no attempt is made to
+automatically group noun pairs according to the relations they share. 
 
-Turney et al. \cite{turney03combining} does something \emph{TO READ}.
+Silva et al. use Bayesian statistics to solve the problem of finding new pairs
+that share a relation, given some example pairs that are known to share the same
+relation\cite{silva07analogical}.  Their approach differs in that which concepts
+are related is provided as background knowledge.  
 
-Turney and Littman\cite{turney05corpus} generate semantics representation by
-mining large corpora.  These representations are used to solve analogy questions of
-the form ``a is to b as c is to ?,'' where the list of possible analogous items
-is provided.
+Speer et al. also use the Open Mind Common Sense knowledge base (KB) to find
+analogies\cite{speer08analogyspace}.  Natural language assertions are redefined
+as a concept and a features; for example ``a trunk is a part of a car,'' is
+turned into the concept``trunk'' with the feature ``part-of(car).''  The entire
+KB is used to construct the matrix of concept $\times$ feature.  This matrix is
+sparse due to missing data, and also may contain erroneous features due to
+incorrect assertions in the KB.  Therefore, in order to smooth out the data, the
+matrix is refactored using Singular Value Decomposition, keeping only a few
+dimensions, SVD$_k(A) = U_kS_kV_k^{\top}$.  Concepts are represented as rows
+in the $U_k$ matrix, and analogous concepts can be found by looking for those
+concept vectors whose cosine similarity is highest.
 
-Veale \cite{veale04wordnet} uses WordNet \emph{TO READ.}
+Turney et al. combine several techniques for solving analogy questions and use a
+weighting mechanism to achieve a better total accuracy than any of the
+individual techniques alone\cite{turney03combining}.  The authors include common
+techniques for comparing word similarity such WordNet relations (e.g. hypernyn,
+meronym) and gloss overlap.  Another notable technique, the authors express the
+realtionship between two words X and Y as a 128 element vector; the elements are
+the frequencies returned by a search engine query of the form ``X $P$ Y'', where
+$P$ is one of 128 predetermined relation-like phrases such as ``for,'' ``with,''
+or ``in the.''  These phrases provide a closed-set of ways of relating the
+nouns; in comparison, our approach uses verbs to relate, which makes a
+vector-like representation impossible due to the open-class nature of verbs.  In
+\cite{turney05corpus}, Turney and Littman use a similar vector representation
+for words to solve analogy questions.
+
+Bi\c{c}ici and Yuret extend the work by \cite{turney05corpus} by clustering the
+vector representations of words\cite{bicici06clustering}.  The authors compute
+multiple cluster segmentations using $k$-means and spectral clustering.  Analogy
+questions are then answered by counting how many clusters contain both the query
+pair and each option; the option that occurs most frequently with the querty
+pair in the clusters is selected as the answer.  {\bf mention that they do worse
+  than Turney?}
+
+Veale also uses gloss overlap and the hypernym trees from WordNet as a part of
+solving analogy questions\cite{veale04wordnet}.  Word sense similarity is
+computed using a combination of exponentially-weighted gloss overlap and depth
+of the common hypernym ancester of both senses.  Analogy questions are solved by
+finding the choice pair with the highest similarity to the provided pair.
 
 \section{Discussion}
+\label{sec:discussion}
 
 Hopefully we have good results and this section can focus on putting them in
 context.  Key questions we can address are
