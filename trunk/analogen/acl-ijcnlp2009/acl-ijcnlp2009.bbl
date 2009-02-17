@@ -7,8 +7,8 @@ Satanjeev Banerjee and Ted Pedersen.
 \newblock In {\em Proceedings of the Eighteenth International Joint Conference
   on Artificial Intelligence}, pages 805--810.
 
-\bibitem[\protect\citename{Bicici and Yuret}2006]{bicici06clustering}
-E.~Bicici and D.~Yuret.
+\bibitem[\protect\citename{Bi\c{c}ici and Yuret}2006]{bicici06clustering}
+E.~Bi\c{c}ici and D.~Yuret.
 \newblock 2006.
 \newblock Clustering word pairs to answer analogy questions.
 \newblock In {\em Proceedings of the Fifteenth Turkish Symposium on Artificial
@@ -21,15 +21,31 @@ S.~Brin and L.~Page.
 \newblock {\em Computer Networks and ISDN Systems}, 30(1-–7).
 
 \bibitem[\protect\citename{Fellbaum}1998]{fellbaum98wordnet}
-C. ~Fellbaum.
-\newblock 1998 
-\newblock WordNet, An Eletronic Database.
+C.~Fellbaum.
+\newblock 1998.
+\newblock Wordnet, an electronic database.
 
 \bibitem[\protect\citename{Gentner}1983]{gentner83structure}
 D.~Gentner.
 \newblock 1983.
 \newblock Structure-mapping: A theoretical framework for analogy.
 \newblock {\em Cognitive Science}, 7(2).
+
+\bibitem[\protect\citename{Havasi \bgroup et al.\egroup
+  }2007]{havasi07conceptnet}
+C.~Havasi, R.~Speer, and J.~Alonso.
+\newblock 2007.
+\newblock Conceptnet 3: a flexible, multilingual semantic network for common
+  sense knowledge.
+\newblock In {\em Proceedings of Recent Advances in Natural Languges
+  Processing}.
+
+\bibitem[\protect\citename{Landauer \bgroup et al.\egroup
+  }1998]{landauer88introduction}
+T.~Landauer, P.~W. Foltz, and D.~Laham.
+\newblock 1998.
+\newblock Introduction to latent semantic analysis.
+\newblock {\em Discourse Processes}, (25):259--–284.
 
 \bibitem[\protect\citename{Mangalath \bgroup et al.\egroup
   }2004]{mangalath04analogy}
@@ -41,26 +57,27 @@ P.~Mangalath, J.~Quesada, and W.~Kintsch.
   Science Society}.
 
 \bibitem[\protect\citename{Mihalcea}2006]{mihalcea06randomwalks}
-R. ~Mihalcea.
-\newblock 2006
-\newblock Random Walks on Text Structures.
-\newblock In {\em Computational Linguistics and Intelligent Text Processing},
-pages 249--262
+R.~Mihalcea.
+\newblock 2006.
+\newblock Random walks on text structures.
+\newblock {\em Computational Linguistics and Intelligent Text Processing},
+  3878:249--262.
 
-\bibitem[\protect\citename{Mihalcea, Tarau and Figa}2004]{mihalcea04pagerankwsd}
-R. ~Mihalcea and P. ~Tarau and E. ~Figa.
-\newblock 2004
-\newblock PageRank on semantic networks with application to word sense
-disambiguation.
-\newblock In {\em Proceedings of the 20th International Conference on
-Computational Linguistics},
+\bibitem[\protect\citename{Nakov and Hearst}2006]{nakov06using}
+Preslav Nakov and Marti Hearst.
+\newblock 2006.
+\newblock Using verbs to characterize noun-noun relations.
+\newblock In {\em Artificial Intelligence: Methodology, Systems, and
+  Applications}, volume 4183.
 
 \bibitem[\protect\citename{Schwartz and Gomez}2008]{schwartz08selectors}
 H.~Schwartz and F.~Gomez.
-\newblock 2008
-\newblock Acquiring Knowledge from the Web to be used as Selectors for Noun
-Sense Disambiguation.
-\newblock In {\em CoNLL 2008: Proceedings of the Twelfth Conference on Computational Natural Language Learning},
+\newblock 2008.
+\newblock Acquiring knowledge from the web to be used as selectors for noun
+  sense disambiguation.
+\newblock In {\em CoNLL 2008: Proceedings of the Twelfth Conference on
+  Computational Natural Language Learning}, pages 105--112, Manchester,
+  England, August. Coling 2008 Organizing Committee.
 
 \bibitem[\protect\citename{Silva \bgroup et al.\egroup
   }2007]{silva07analogical}
@@ -70,8 +87,16 @@ R.~Silva, K.~Heller, and Z.~Ghahramani.
 \newblock In {\em 11th International Conference on Artificial Intelligence and
   Statistics}.
 
+\bibitem[\protect\citename{Speer \bgroup et al.\egroup
+  }2008]{speer08analogyspace}
+Robert Speer, Catherine Havasi, and Henry Lieberman.
+\newblock 2008.
+\newblock Analogyspace: Reducing the dimensionality of commonsense knowledge.
+\newblock In {\em Conference of the Association for the Advancement of
+  Artificial Intelligence (AAAI-08)}, Chicago, July.
+
 \bibitem[\protect\citename{Turney and Littman}2005]{turney05corpus}
-P.D. ~Turney and M.L. Littman.
+Peter~D. Turney and Michael~L. Littman.
 \newblock 2005.
 \newblock Corpus-based learning of analogies and semantic relations.
 \newblock {\em Machine Learning}, 60:251--278.
