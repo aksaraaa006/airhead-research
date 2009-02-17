@@ -207,15 +207,34 @@ times it occurs in the extension list, and these competing synsets are not
 given edges to each other. 
 
 Once the graph has been built with all the possible sense of each word that
-occurs in the expansion list, assign an arbitrary score to each node in the
-graph, and begin iteratively updating the score for each node based on the the
-following algorithm:
+occurs in the expansion list, an arbitrary score is assigned to each node in the
+graph.  This score will represent the importance of the particular synset, such
+that a higher score implies that the synset is more fitting for the word given
+the context, and conversely a lower score implies that the synset would not be a
+fitting sense.  Note that since PageRank will rely on converging the score for
+each node, the initial scores do not affect the final value, instead they only
+affect the number of iterations needed for convergence.  For simplicity, we
+select initial values of 1 for every node.  
 
-\emph{figure out how to write an algorithm here}
+Since our graph assigns edge weights to every edge between 
+nodes, and each edge is un directed, we iteratively update the scores for each
+synset with algorithm as follows, which is adapted from \cite{mihalcea06randomwalks}.   
 
-This update is done on each node until the scores of each node converges within
-a difference of \emph{10 to -6}.  Typically this can be done in lesss than 40
-iterations through the graph.  This scoring mechanism will 
+\[  PR(V_i) = (1-d) + d*\sum_{V_j \in Edge(V_i)} w_{ij} \frac{PR(V_j)}
+   {\displaystyle\sum_{V_k \in Edge(V_j)} w_{jk}}
+   \]
+
+This update will run until for each node \(V_i\) the difference \(PR^{K+1}(V_i)
+- PR^{K}(V_i)\), changes less than some threshold, where ours is \(10^{-6}\).
+Typically, this can be done in lesss than 40 iterations through the graph.
+
+The final step utilizing PageRank and the expansion list s filtering out n-v-n
+triplets which are not semanticly related to the others.  Each word that occured
+in the expansion list is then given a score according to the number of synsets
+for the word which has a pagerank score above some threshold \(t\).  Then, each
+  n-v-n triplet is given a score based on the following equation:
+
+\[ score(n-v-n) = \sum_{w \in nounsOf(n-v-n)} \]
 \subsection{Moving from Concepts to Categories}
 
 {\bf We may not get to trying this} One thought I had was to try to cluster
@@ -229,10 +248,6 @@ that all pairs are still analogous, but this would at least give us:
     ``animal:type'' and we see narwhal, we know it fits in the animal category
     even if we have never see ``narwhal'' or any of its synonyms.
 \end{enumerate}
-
-
-
-
 
 \section{Evaluation}
 
