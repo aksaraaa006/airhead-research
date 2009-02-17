@@ -7,6 +7,9 @@ import getopt
 import nltk    
 import pickle
 
+import thread
+import Queue
+
 # Loads the SAT questions from a file and returns a list of tuples of the form
 # ((source pair), (list of possible target pair tuples), <int of which tuple in
 # the list is correct>
@@ -58,6 +61,21 @@ def loadQuestions(SATfile):
                           correctIndex))
     return questions
     
+def getSimilarityOfMostSimilarPair(listOfAnalogousPairs, sourcePair):
+    highestSimilarity = 0
+    for a, b in listOfAnalogousPairs:
+        similarity = (getWordSimilarity(sourcePair[0],a) +
+                      getWordSimilarity(sourcePair[1],b))
+        if (similarity >= highestSimilarity):
+            highestSimilarity = similarity
+    return highestSimilarity
+
+def getAverageSimilarity(listOfAnalogousPairs, sourcePair):
+    similaritySum = 0.0
+    for a, b in listOfAnalogousPairs:
+        similaritySum += (getWordSimilarity(sourcePair[0],a) +
+                          getWordSimilarity(sourcePair[1],b))
+    return similaritySum / float(len(listOfAnalogousPairs))
 
 def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs):
 
@@ -70,18 +88,11 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs):
 
     listIndex = 0
     listOfScoreAndList = []
-    listToHighestSimilarity = dict()
 
     # find the list of tuples which maximizes the similarity to the source pair
     for list in listOfListOfAnalogousPairs:
-        highestSimilarity = 0
-        for a, b in list:
-            similarity = (getWordSimilarity(source[0],a)
-                          + getWordSimilarity(source[1],b))
-            if (similarity >= highestSimilarity):
-                highestSimilarity = similarity
-        listToHighestSimilarity[listIndex] = highestSimilarity
-        listOfScoreAndList.append((highestSimilarity, list))
+        similarity = getAverageSimilarity(list, source) 
+        listOfScoreAndList.append((similarity, list))
     
     # sort with highest similarity first (inverse sort routine)
     listOfScoreAndList.sort(invComp)
@@ -110,7 +121,7 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs):
                                                (mostSimilar[1])[0],
                                                (mostSimilar[1])[1])
         except IndexError:
-            print "BLARGH: fix this case, most similar: %s" % ("".join(mostSimilar))
+            print "BLARGH: fix this case"
             return false
         
         if ((mostSimilar[1])[0] == (options[correctIndex])[0] and 
@@ -131,6 +142,157 @@ def invComp(x, y):
     else:
         return -1
 
+
+def findBestRelationForList(listOfAnalogousPairs):
+
+    memberHolonymSimSum = 0.0
+    substanceHolonymSimSum = 0.0
+    partHolonymSimSum = 0.0
+
+    memberMeronymSimSum = 0.0
+    substanceMeronymSimSum = 0.0
+    partMeronymSimSum = 0.0
+
+    attributeSimSum = 0.0
+    entailmentSimSum = 0.0
+    causesSimSum = 0.0
+
+    for a, b in listOfAnalogousPairs:
+        synsets1 = wn.synsets(a, wn.NOUN)
+        synsets2 = wn.synsets(b, wn.NOUN)
+ 
+        # sums of the highest similarity score for each pair-wise synset
+        # relationship search
+        memberMerSim = 0
+        substanceMerSim = 0
+        partMerSim = 0
+
+        memberHolSim = 0
+        substanceHolSim = 0
+        partHol = 0
+        
+        attrSim = 0
+        entailSim = 0
+        causesSim = 0
+
+        # for the pair-wise comparison of synsets between two words, find the
+        # relation (part-whole, meronym, cause, etc.) that minimizes the distance
+        # between the two
+        for s1 in synset1:
+
+            # load all of comparison sysets
+            memberMer = s1.member_meronyms()
+            substanceMer = s1.substance_meronyms()
+            partMer = s1.part_meronyms()
+            
+            memberHol = s1.member_holonyms()
+            substanceHol = s1.substance_holonyms()
+            partHolSim = s1.part_holonyms()
+
+            attributes = s1.attributes()
+            entailments = s1.entailments()
+            causes = s1.causes()
+
+            # See how similar the second synset is the related-set from the
+            # first.  For example, if the relation ship is "cause", and we see
+            # spark.causes() = {flame}, then any synset that is similar to
+            # "flame" (e.g. fire) should have a close hypernym relation to it.
+            #
+            # Therefore, for each item in the sets related to the first,
+            # calculate the scaled similarity between it.  The set that contains
+            # the synset with the highest similarity could likely indicate which
+            # type of relationship exists between the words (over all the
+            # synsets)
+            for s2 = synset2:
+
+                for (s3 in memberMer):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > memberMerSim):
+                        memberMerSim = sim
+                for (s3 in substanceMer):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > substanceMerSim):
+                        substanceMerSim = sim
+                for (s3 in partMer):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > partMerSim):
+                        partMerSim = sim
+
+                for (s3 in memberHol):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > memberHolSim):
+                        memberHolSim = sim
+                for (s3 in substanceHol):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > substanceHolSim):
+                        substanceHolSim = sim
+                for (s3 in partHol):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > partHolSim):
+                        partHolSim = sim
+
+                for (s3 in attributes):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > attrSim):
+                        attrSim = sim
+                for (s3 in entailments):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > entailSim):
+                        entailSim = sim
+                for (s3 in causes):
+                    sim = getScaledSimilarity(s3, s2)
+                    if (sim > causesSim):
+                        causesSim = sim
+        
+        # once all the pair-wise combinations for the each synset of the two
+        # words have been computed add the highest similarity score to the
+        # appropriate sum for the list.
+
+
+        listOfSims = (memberMerSim, substanceMerSim, partMerSim,
+                      memberHolSim, substanceHolSim, partHolSim,
+                      attrSim, entailSim, causesSim)
+
+
+        substanceMerSim
+        partMerSim
+
+        memberHolSim
+        substanceHolSim
+        partHolSim
+        
+        attrSim
+        entailSim
+        causesSim
+
+        if isMax(memberHolonymSimSum, listOfSims):
+            memberHolonymSimSum += memberHolSim
+        elif isMax(substanceHolonymSimSum, listOfSims):
+            substanceHolonymSimSum += substanceHolSim
+        elif isMax(partHolonymSimSum, listOfSims):
+            partHolonymSimSum += partHolSim
+
+        elif isMax(memberMerSim, listOfSims):
+            memberMeronymSimSum += memberMerSim
+        elif isMax(substanceMerSim, listOfSims):
+            substanceMeronymSimSum += substanceMerSim
+        elif isMax(partMeronymSimSum, listOfSims):
+            partMeronymSimSum += partMerSim
+
+        elif isMax(attributeSimSum, listOfSims):
+            attributeSimSum += attrSim
+        elif isMax(entailmentSimSum, listOfSims):
+            entailmentSimSum += entailSim
+        else:
+            causesSimSum += causesSim
+    
+
+
+def isMax(val, listOfVals):
+    for v in listOfVals:
+        if v > val:
+            return False
+    return True
 
 def getWordSimilarity(word1, word2):
     # NB: I sure hope both of these words are nouns!
@@ -244,7 +406,7 @@ def getAverageDescendantDepth(synset):
                     if hyp not in alreadySeen:
                         hyponyms.append(hyp)
         
-        avgDescDepth = float(depthSum) / float(leaves)if leaves > 0 else depth
+        avgDescDepth = float(depthSum) / float(leaves) if leaves > 0 else depth
 #        if leaves > 1000:
 #            print "%s: depth %f, leaves %d, avg desc. depth %f" % (synset, depth, leaves, avgDescDepth)
         AVG_DESCENDENT_DEPTH_CACHE[synset] = avgDescDepth
@@ -267,6 +429,9 @@ def getDepth(synset):
     #print "depth(%s) = %f" % (synset, depth)
     return depth
 
+correct = Queue.Queue()
+questions = Queue.Queue()
+NUM_THREADS = 1
 
 def main(argv=None):
     if argv is None:
@@ -278,18 +443,39 @@ def main(argv=None):
 
     # parse and load all of the SAT questions into a list of tuples
     listOfQuestions = loadQuestions(argv[1])
-    
+    for q in listOfQuestions:
+        questions.put(q, False)
+
     # unpickle the list of list of pairs of analogous words.
     fileHandle = open(argv[2]);
     listOfListOfAnalogousPairs = pickle.load(fileHandle)
 
-    # compute the answers
-    correct = 0
-    for question in listOfQuestions:
-        if answerSATQuestion(question, listOfListOfAnalogousPairs):
-            correct += 1
-    print "Answered %d/%d correct" % (correct, len(listOfQuestions))
+    if NUM_THREADS > 1:
+        for i in range(NUM_THREADS):
+            t = thread.start_new_thread(answerQuestion, (listOfListOfAnalogousPairs, ()))
+        
+        questions.join()
+        print "Answered %d/%d correct" % (len(correct), len(listOfQuestions))
 
+    else:
+        # compute the answers and calculate how many we got right
+        correctAns = 0
+        for question in listOfQuestions:
+            if answerSATQuestion(question, listOfListOfAnalogousPairs):
+                correctAns += 1
+        print "Answered %d/%d correct" % (correctAns, len(listOfQuestions))
+
+
+def answerQuestion(listOfListOfAnalogousPairs, dummy):
+    while True:
+        try:
+            question = questions.get(False)        
+            if answerSATQuestion(question, listOfListOfAnalogousPairs):
+                correct.put(1)
+        except Queue.Empty:
+            return
+
+        
 
 def usage():
     print "usage: <SAT questions file> <analogous-pairs pickle>"

@@ -15,6 +15,7 @@ NOT_FOUND = 2
 # whether to expand the various lists when looking for analogies
 EXPAND_OPTION_PAIRS = False
 EXPAND_EXAMPLE_PAIR = False
+CONSIDER_HYPERNYMS = True
 
 # Loads the SAT questions from a file and returns a list of tuples of the form
 # ((source pair), (list of possible target pair tuples), <int of which tuple in
@@ -67,6 +68,13 @@ def loadQuestions(SATfile):
                           correctIndex))
     return questions
 
+def loadListFromFile(listFile):
+    if True:
+        handle = open(listFile)
+        return pickle.load(handle)
+    else:
+        # TODO: load from text file
+        return []
 
 def buildInverseIndices(listOfListOfAnalogousPairs):
 
@@ -86,7 +94,7 @@ def buildInverseIndices(listOfListOfAnalogousPairs):
     # word occurs.
     listIndex = 0
     for listOfPairs in listOfListOfAnalgousPairs:
-        for a, b in listOfPairs:
+        for (a, aSyn), (b, bSyn) in listOfPairs:
             # update the set of list indicies for the first element
             if firstInvIndex.has_key(a):
                 lists = firstInvIndex[a]
@@ -171,9 +179,69 @@ def selectOptionFromList(options, listIndicesWithExampleAnalogy,
                 largestListSize = len(list)
                 opt = option
         selectedOption = opt
+        
+    # if we didn't find any options, then consider looking at the hypernyms of
+    # the synsets in the list.
+    elif CONSIDER_HYPERNYMS:
+
+        curDepth = 0
+        for index in listIndicesWithExampleAnalogy:
+            listWithAnalogy = listOfListOfAnalogousPairs[index]
+            
+            optionIndex = 0
+            closestMatch = sys.maxint # really large value
+
+            for c, d in options:
+
+                # generate a list of all the synset combinations for c and d
+                pairs = generateSynsetPairs(c,d)
+                for e, f in pairs:
+                    # compute the distance between each pair and all the options
+                    # in the liste
+                    for a, aSyn, b, bSyn in listWithAnalogy:
+                        # check that we actually have a synset listed for the
+                        # word
+                        if aSyn == "None" or bSyn == "None":
+                            continue
+                        try:
+                            dist1 = e.shortestPathDist(wn.synset(aSyn))
+                            dist2 = f.shortestPathDist(wn.synset(bSyn))
+                            # check that there was a path for both synsets
+                            if dist1 == -1 and dist2 == -1:
+                                continue                            
+                            dist = dist1 + dist2
+
+                            # if the distance between these the generated synset
+                            # pair and some synset pair in the list is less than
+                            # any we've seen before, then we should select
+                            # whatever option we are currently on
+                            if dist < closestMatch:
+                                selectedOption = optionIndex
+                                closestMatch = dist
+
+                        # WordNet will throw a value error for rare cases where
+                        # the name contains extra '.'s, e.g. Ph.D. so proctect
+                        # against this case
+                        except ValueError:
+                            continue
+                        
+                
 
 
-    return selectedOptions
+    return selectedOption
+
+
+
+# For two words, c and d, generate all of their synsets and return a list of
+# tuples that results from the pair-wise combination of each synset list
+def generateSynsetPairs(c,d):
+    cSyns = wn.synsets(c)
+    dSyns = wn.sysnets(d)
+    pairs = []
+    for e in cSyns:
+        for f in dSyns:
+            pairs.append((e,f))
+    return pairs
 
 
 def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs, 
@@ -287,9 +355,8 @@ def main(argv=None):
     # parse and load all of the SAT questions into a list of tuples
     listOfQuestions = loadQuestions(argv[1])
 
-    # unpickle the list of list of pairs of analogous words.
-    fileHandle = open(argv[2]);
-    listOfListOfAnalogousPairs = pickle.load(fileHandle)
+    # unpickle the list of list of pairs of analogous words.   
+    listOfListOfAnalogousPairs = loadListFromFile(listFile)
 
     # build the inverse indicies from each word in a tuple to any list that
     # contains it
