@@ -57,6 +57,19 @@ to determine what concepts those words represents.
 {\bf This paragraph should outline the specifics of what problem is addressed in
   this paper.  This paragraph must catch the reader/reviewrs attention and make
   them believe the problem is important.}
+
+A significant challenge with generating analogies directly from text is that
+standard english writing does not frequently contain phrases such as ``\emph{a}
+is to \emph{b} as \emph{c} is to \emph{d}``.  Another which occurs in writings
+is a lack of comparable contexts, such that if you are given a $noun\_verb\_noun$
+triple, there are few occurances of $*\_verb\_noun$ and $noun\_verb\_*$, and
+even fewer occurances of $noun\_otherverb\_noun$.  An important contribution of
+this paper is the use of the Open Mind Common Sense \cite{havasi07conceptnet} 
+collection of common sense facts.
+
+Additionally, we handle the issue of many potential meanings for words by
+combining new approaches to Word Sense Disambiguation, which not only provides
+more accuate relations, but can also reduce the scope of our problem. 
 \begin{enumerate}
   \item Writing does not often contain explicit phrases of the type ``\emph{a}
     is to \emph{b} as \emph{c} is to \emph{d}''
@@ -83,14 +96,15 @@ complex relationships, both of which is outside the current scope of the task.
   we will measure up to prior examples.  Stating what we can use the work for is
   also a plus.}
 
-{\bf Last, give a paragraph outline of the paper.}  The general outline of our
-paper is as follows: Bob Lob Law.
+The general outline of our paper is as follows: Bob Lob Law.
 
 \section{Background}
 
-I'm not sure if we need this section.  Possibilities for what goes in it are
-WordNet, Open Mind Common Sense and analogy.  We should change the
-section title based on whatever goes in here.
+Our analogy discovery system makes use of two well established databases of
+knowledge, WordNet \cite{fellbaum98wordnet} and the Open Mind Common Sense
+\cite{havasi07conceptnet} collection.  Both of these provide suitable search
+spaces for analogous noun-noun pairs, and a means of putting a reasonable scope
+to the problem.
 
 Wordnet \cite{fellbaum98wordnet} is a commonly used Lexical database, primarily used for Word Sense
 Disambiguation.  For all open class words, such as nouns and verbs, WordNet
@@ -98,43 +112,37 @@ contains a collection of synsets which represent possible meanings of a
 particular word.  For instance, the word car could refer to an automobile,
 typically with 4 wheels, or it could also refer to a wheeled vehicle for use on
 railroad lines.  Each of these possible meanings is reprensented as a synset,
-which encompasses a collction of words which have the same meaning.  In this
-case, the word car is contained in 5 possible sense, and is considered to be
-ambigious.  
+which encompasses a collction of words which have the same meaning.
 
 WordNet is further organized to include various relations between synsets, the
 most important of which are: Hypernym, which provides a more general synset;
-Hyponym, which provides a more specific synset; meronymy, which provides synsets
-which are a part of another synset (i.e. finger is a meronym of hand); and
-holonymy, which are the synsets which are a composition of this synset and
-others (i.e. hand is a holonym of finger).  We primarily focus on using the
-Hypernym and Hyponym relations in WordNet, which is commonly refered to as the
-IS-A hierarchy
+and Hyponym, which provides a more specific synset.  Additionally WordNet
+contains relations for similar-to relations, meronymy, holonymy, and more, but
+we primarily focus only on hyponyms and hypernyms.  Traditionally this is called
+the IS-A hierarchy.
 
 While WordNet is an excellent resrouce for WSD, it alone does not provide enough
 information to generate analogies.  For the purpose of extracting potential
 noun-noun pairs which can participate in an analogy, we make use of the Open
-Mind Common Sense \cite{omcs?} which is a large database of human written common
-sense facts.  These facts are written in a simplified version of english which
-provides a vast amount of facts and relations between concepts.  Due to the
+Mind Common Sense.  The facts in OMCS are written in a simplified version of english which
+provides a vast amount of facts and relations between concepts.  These facts
+are primairly collections of attributes for a particular topic, such facts as:
+``paper is white```, ``paper is for writing on``, etc.  Due to the
 simplified english, and wide range of provided relations, OMCS appears to be an
 excellent resource for analogy generation, and has been used in similar projects
-\cite{analogyspace}.
+\cite{analogyspace}. From OMCS, we make use of approximately 130,000 $noun\_verb\_noun$ triplets,
+which is a reasonable sized corpus for discovering groups of related noun-noun
+pairs.
 
-Other corpora were initially explored, such as a variety of books from Project
-Gutenberg\cite{gutenberg}, but various stages in our pipeline could not
-properly handle the advanced use of english and metaphors.  Most specificly, it
-was most challenging to extract sensible analogy candidates from the corpus, and
-finding generalizations of the noun-noun pairs was also difficult to discover
-since WordNet does not contain an entry for all nouns and verbs.
-
-\subsection{Selecting a Corpus}
-
-\begin{enumerate}
-  \item why we chose it
-  \item how big is our corpus and what is it made of
-  \item what percentage of sentences had data of the form we were looking for?
-\end{enumerate}
+Initially, other corpora were explored in the hopes of extracting suitable
+analogies.  A variety of books from Project Gutenberg were explored, Moby Dick,
+Childrens Novels, Paradise Lost, etc.  Unfortunately, due to the advanced use of
+english in the majority of these texts we ran into several problems.  The first
+problem encountered as a lack of sensible $noun\_verb\_noun$ triplets from the
+corpora.  Second, we were unable to find additional examples of triplets based
+on synonyms of nouns and verbs, which left a remarkable small search space for
+real world examples, leaving the discovery of analogies to traversal of WordNet
+relations, which is perhaps beyond the scope of WordNet's intended usage.
 
 \section{Identifying Analogous Pairs}
 
@@ -162,34 +170,43 @@ might have a similar meaning according to context.
 
 This process takes place in three major steps
 \begin{enumerate}
-  \item Itdentifying candidate noun-noun pairs
+  \item Identify candidate noun-noun pairs
   \item Expanding each noun-noun pair
-  \item Removing expanded pairs which are unrelated
+  \item Remove expanded pairs which are unrelated
+  \item Categorize the expanded pairs for comparison
 \end{enumerate}
 
-The following subsections will cover each stem is more detail.
+The following subsections will cover each step is more detail.
 
 \subsection{Generating Candidate Analogies}
 
-This paragraph should focus on the first step n-v-n extraction from the corpus.
+This paragraph should focus on the first step $noun\_verb\_noun$ extraction from the corpus.
 We allow that nouns may be separated from the verb by one or more word of
 non-noun parts of speech.  We also filter out the nouns in prepositional
 phrases.  Last, we allow nouns to be collocations, e.g. ``white house''.
 
 \subsection{Moving From Word to Concept}
 
-Once a list of n-v-n triplets have been extracted from the corpus, we need to
+Once a list of $n_1\_v\_n_2$ triplets have been extracted from the corpus, we need to
 expand each one to it's set of extended relations.  The first step is to search
-the corpus for other triplets which match the pattern of *-v-n and n-v-*.  This
+the corpus for other triplets which match the pattern of $n_1\_v\_*$ and
+$*\_v\_n_2$.  This
 will find triplets which contains words which might be viewed as synonymous in
-some way and is loosely related to finding Selectors for WSD \cite{}.  An
-additional way to generate additional relations is to produce a new triplet
-n-v-n2i for each synoynm of the second noun and n1i-v-n for each synoynm of the
-first nound.  Since we are making use of WordNet as our definition of word
-meaning, it is most applicable to extract synonyms from the dominate sense of
-each word in the triplet.  
+some way and is loosely related to finding Selectors for WSD \cite{schwartz08selectors}.  An
+additional way to generate additional relations is to produce a new triplets
+according to:
 
-This generation step has the potential of creading a vast number of n-v-n
+$n_1\_v\_n_{2i} \forall n_{2i} \in synonym(n_2)$
+
+and
+
+$n_{1i}\_v\_n_2 \forall n_{1i} \in synonym(n_1)$. 
+
+Since we are making use of
+WordNet as our definition of word meaning, it is most applicable to extract synonyms
+from the dominate sense of each word in the triplet.  
+
+This generation step has the potential of creading a vast number of $noun\_verb\_noun$
 triplets which we consider to be synonomous to each other, and a simple,
 unsupervised approach needs to be taken to reduce the size of the expanded list
 for later steps.  To this end, we chose to make use of PageRank when applied to
@@ -206,6 +223,24 @@ for a given word are only added to the graph onces, regardless of the number of
 times it occurs in the extension list, and these competing synsets are not
 given edges to each other. 
 
+The semantic similarity metric defined by \cite{banerjee03extendedgloss} gives a
+score based on the gloss overlap of two synsets, along with gloss overlap of
+their respective Hyponyms and hypernyms.  Their approach can be extended to take
+into account additional WordNet relations, but we only evaluate the hyponym and
+hypernym glosses in addtion to the synset glosses themselves.  The formulate
+used is as follows:
+
+\small
+$similarity(A, B) = score(gloss(A), gloss(b)) + score(hyper(A), hyper(B)) +
+score(hypo(A), hypo(B)) + score(hyper(A), gloss(B)) + score(gloss(A), hyper(B))
+$
+
+\normalsize
+Where the score function is a sum of the number of words overlapping in the two
+definitions, giving a higher weight to longer sequences of words which match.
+For the hypernym and hyponym relations, we take only the first hypernym or hyponym
+synset given by wordnet, as opposed to concatening each of their glosses together.  
+
 Once the graph has been built with all the possible sense of each word that
 occurs in the expansion list, an arbitrary score is assigned to each node in the
 graph.  This score will represent the importance of the particular synset, such
@@ -220,21 +255,27 @@ Since our graph assigns edge weights to every edge between
 nodes, and each edge is un directed, we iteratively update the scores for each
 synset with algorithm as follows, which is adapted from \cite{mihalcea06randomwalks}.   
 
-\[  PR(V_i) = (1-d) + d*\sum_{V_j \in Edge(V_i)} w_{ij} \frac{PR(V_j)}
+\small
+\[PR(V_i) = (1-d) + d*\sum_{V_j \in Edge(V_i)} w_{ij} \frac{PR(V_j)}
    {\displaystyle\sum_{V_k \in Edge(V_j)} w_{jk}}
    \]
+\normalsize
 
 This update will run until for each node \(V_i\) the difference \(PR^{K+1}(V_i)
 - PR^{K}(V_i)\), changes less than some threshold, where ours is \(10^{-6}\).
 Typically, this can be done in lesss than 40 iterations through the graph.
 
-The final step utilizing PageRank and the expansion list s filtering out n-v-n
+The final step utilizing PageRank and the expansion list s filtering out $noun\_verb\_noun$
 triplets which are not semanticly related to the others.  Each word that occured
 in the expansion list is then given a score according to the number of synsets
 for the word which has a pagerank score above some threshold \(t\).  Then, each
-  n-v-n triplet is given a score based on the following equation:
+  $noun\_verb\_noun$ triplet is given a score based on the following equation:
 
-\[ score(n-v-n) = \sum_{w \in nounsOf(n-v-n)} \]
+\small
+\[ PairScore(nvn) = \frac {\displaystyle\sum_{w \in NounsOf(nvn)} {score(w) * count(w)}}
+                          {\displaystyle\sum_{x \in UniqueWord(expansionList)} count(x)} \]
+\normalsize
+
 \subsection{Moving from Concepts to Categories}
 
 {\bf We may not get to trying this} One thought I had was to try to cluster
@@ -345,10 +386,6 @@ the corpus.  \emph{more details and example here.}
   section}
 
 \section{Related Work}
-
-Banerjee and Pedersen\cite{banerjee03extendedgloss} use the gloss (dictionary
-def.) provided by WordNet to determine simiarlity.  \emph{not sure if this even
-  goes here}.
 
 Bicici and Yuret \cite{bicici06clustering} use neural networks. \emph{TO READ}.
 

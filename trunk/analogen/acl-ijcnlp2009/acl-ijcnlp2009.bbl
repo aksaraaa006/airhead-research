@@ -55,8 +55,8 @@ disambiguation.
 \newblock In {\em Proceedings of the 20th International Conference on
 Computational Linguistics},
 
-\bibitem[\protect\citename{Schwartz and Gomez}2008]{schartz08selectors}
-H. ~Schwartz and F. ~Gomez.
+\bibitem[\protect\citename{Schwartz and Gomez}2008]{schwartz08selectors}
+H.~Schwartz and F.~Gomez.
 \newblock 2008
 \newblock Acquiring Knowledge from the Web to be used as Selectors for Noun
 Sense Disambiguation.
@@ -71,7 +71,7 @@ R.~Silva, K.~Heller, and Z.~Ghahramani.
   Statistics}.
 
 \bibitem[\protect\citename{Turney and Littman}2005]{turney05corpus}
-Peter~D. Turney and Michael~L. Littman.
+P.D. ~Turney and M.L. Littman.
 \newblock 2005.
 \newblock Corpus-based learning of analogies and semantic relations.
 \newblock {\em Machine Learning}, 60:251--278.
