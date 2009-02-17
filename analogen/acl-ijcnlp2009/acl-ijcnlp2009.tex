@@ -96,7 +96,12 @@ complex relationships, both of which is outside the current scope of the task.
   we will measure up to prior examples.  Stating what we can use the work for is
   also a plus.}
 
-The general outline of our paper is as follows: Bob Lob Law.
+The general outline of our paper is as follows.  Section \ref{sec:background}
+covers background material on WordNet and Open Mind Common Sense.  Section
+\ref{sec:identifying} outlines our approach in identifying analous pairs and
+section \ref{sec:evaluation} evaluates the results.  Last, section
+\ref{sec:background} reviews related work and section \ref{sec:discussion}
+addresses the results and future work.
 
 \section{Background}
 \label{sec:background}
@@ -147,7 +152,7 @@ real world examples, leaving the discovery of analogies to traversal of WordNet
 relations, which is perhaps beyond the scope of WordNet's intended usage.
 
 \section{Identifying Analogous Pairs}
-\label{sec:indetifying}
+\label{sec:identifying}
 
 \emph{Insert general introductory paragraph that oulines the algorithm and how
   it will be broken up and explained}.
@@ -217,7 +222,7 @@ WSD.  The rest of this section will focus on how the graph is built, and how
 it's computation reflects on the expansion list.
 
 Our use of PageRank is an extension of it's application towards WSD
-\cite{mihalcea04pagerankwsd} and \cite{mihalcea06randomwalks}.  For each word in
+\cite{mihalcea04wsdpagerank} and \cite{mihalcea06randomwalks}.  For each word in
 the expansion list, we obtain the first three possible synsets for the word and
 add edges from each competeing synset to all other synsets currently in the
 graph based on the semantic similarity as defined by
@@ -294,7 +299,7 @@ that all pairs are still analogous, but this would at least give us:
 \end{enumerate}
 
 \section{Evaluation}
-\label{sec:eval}
+\label{sec:evaluation}
 
 The important evaluation criteria is whether all the pairs in a generated set of
 analogous pairs actually share the same relation.  We test this criteria using
