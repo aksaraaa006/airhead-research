@@ -145,11 +145,14 @@ Initially, other corpora were explored in the hopes of extracting suitable
 analogies.  A variety of books from Project Gutenberg were explored, Moby Dick,
 Childrens Novels, Paradise Lost, etc.  Unfortunately, due to the advanced use of
 english in the majority of these texts we ran into several problems.  The first
-problem encountered as a lack of sensible $noun\_verb\_noun$ triplets from the
+problem encountered was a lack of sensible $noun\_verb\_noun$ triplets from the
 corpora.  Second, we were unable to find additional examples of triplets based
-on synonyms of nouns and verbs, which left a remarkable small search space for
+on synonyms of nouns and verbs, which left a remarkably small search space for
 real world examples, leaving the discovery of analogies to traversal of WordNet
-relations, which is perhaps beyond the scope of WordNet's intended usage.
+relations, which is not only beyond the scope of WordNet's intended usage, but
+also induces a combinatorial explosion of ways to expand triplets.  For these
+reasons, we only use WordNet as a means of clarifying word senses, and instead
+focus on OMCS for discovering more analgous pairs.
 
 \section{Identifying Analogous Pairs}
 \label{sec:identifying}
@@ -170,13 +173,13 @@ Consider the following sentences:
 \end{enumerate}
 
 In a simple case such as this, the relation between man and water is the same as
-the relation between car and gas.  It might also be true that the car, gas
-relation mighthold to other things which a man might guzzle, or beings which
+the relation between car and gas.  It might also be true that the car:gas
+relation mighthold to other things which a man might guzzle, or other beings which
 might guzzle water.  To account for this, our approach is to expand a potential
 noun-noun pair by searching the corpus itself for other noun-noun pairs which
 might have a similar meaning according to context.
 
-This process takes place in three major steps
+This process takes place in four major steps
 \begin{enumerate}
   \item Identify candidate noun-noun pairs
   \item Expanding each noun-noun pair
@@ -187,6 +190,9 @@ This process takes place in three major steps
 The following subsections will cover each step is more detail.
 
 \subsection{Generating Candidate Analogies}
+
+\emph{David, you should fill out this part since you got the most high quality
+triplets}
 
 This paragraph should focus on the first step $noun\_verb\_noun$ extraction from the corpus.
 We allow that nouns may be separated from the verb by one or more word of
@@ -204,8 +210,8 @@ a large number of additional triplets, but some which do not have the same
 relation.  
 
 The first step of expansion is to search the corpus for other triplets which match
-the pattern of $n_1\_v\_*$ and $*\_v\_n_2$.  This step finds contextual
-selectors, similar to \cite{schwartz08selectors}, in the corpus itself for each of
+the pattern of $n_1\_v\_*$ and $*\_v\_n_2$.  This finds contextual
+selectors, similar to \cite{schwartz08selectors}, in the corpus itself, for each of
 the nouns present in the intial triplet.  The triplets constructed from the
 selectors should have some analogous relationship, for example "pills are 
 medicine" would likely have "penicillin is medicine", yet also could expand to
@@ -214,9 +220,9 @@ previous two triplets.
 
 With this vast number of potentially analgous $noun\_verb\_noun$ triplets, a
 simple unsupervised approach needs to be taken to determine that within this
-small context, the meaning of each noun, and especially the verb, is the same
+small context, the meaning of each noun is the same
 within all of the generated triplets.  Any triplet which is not found to be
-closely related to the other present in the \emph{expansion list} can then be
+closely related to the other triplets present in the \emph{expansion list} can then be
 removed.  To this end, we chose to make use of PageRank when applied to
 WSD.  The rest of this section will focus on how the graph is built, and how
 it's computation reflects on the \emph{expansion list}.
@@ -270,8 +276,8 @@ synset with algorithm as follows, which is adapted from \cite{mihalcea06randomwa
    \]
 \normalsize
 
-This update will until for each node \(V_i\) the difference \(PR^{K+1}(V_i)
-- PR^{K}(V_i)\), is less than some threshold, where ours is \(10^{-6}\).
+This will update until for each node \(V_i\) the difference \(PR^{K+1}(V_i)
+- PR^{K}(V_i)\), becomes less than some threshold, where ours is \(10^{-6}\).
 Typically, this can be done in lesss than 40 iterations through the graph.
 
 The final step utilizing PageRank and the \emph{expansion list} is filtering out all $noun\_verb\_noun$
@@ -283,8 +289,11 @@ for the word which have a pagerank score above some threshold \(t\).  Then, each
 \small
 $ PairScore(nvn) = \frac {\displaystyle\sum_{w \in NounsOf(nvn)} {score(w) * count(w)}}
                           {\displaystyle\sum_{x \in UniqueWord(expansionList)}
-                          {count(x)} * score(w)} $ 
+                          {count(x)} * score(x)} $ 
 \normalsize
+
+Where for noun $y$ $score(y)$ is the number of valid synsets extracted, and $count(y)$ is the
+number of times $y$ occurs in the \emph{expansion list}.
 
 This will assign some normalized score to each triplet in the \emph{expansion
 list},
@@ -437,9 +446,9 @@ the corpus.  \emph{more details and example here.}
 %def.) provided by WordNet to determine simiarlity.  \emph{not sure if this even
 %  goes here}.
 
-Mangalath et al. extend LSA\cite{landauer88introduction} with a way determine
+Mangalath et al. extend LSA\cite{landauer88introduction} with a way to determine
 relation categories for word pairs\cite{mangalath04analogy}.  The authors define
-ten types of relations and words that are describe the relations, e.g. the
+ten types of relations and words that describe the relations, e.g. the
 relation synonymy and desciptors ``equivalent,'' ``equal,'' and ``match.''  For
 each of these ten relations, the authors use LSA vectors to compute the cosine
 similarity between the words and each provided pair and each alternative.  The
@@ -448,7 +457,7 @@ selected as the answer.
 
 Nakov and Hearst indentify the semantic relation between compound noun by seeing
 what verbs might be used to related them\cite{nakov06using}.  Given some pair of
-words that constitutes a compound noun, they search web pages for short phrases
+words that constitutes a compound nouns, they search web pages for short phrases
 where the two nouns are linked by a verb.  The types of verbs found indicate the
 type of relationship between the nouns.  Unlike this work, no attempt is made to
 automatically group noun pairs according to the relations they share. 
@@ -470,10 +479,10 @@ dimensions, SVD$_k(A) = U_kS_kV_k^{\top}$.  Concepts are represented as rows
 in the $U_k$ matrix, and analogous concepts can be found by looking for those
 concept vectors whose cosine similarity is highest.
 
-Turney et al. combine several techniques for solving analogy questions and use a
+Turney et al. combine several techniques for solving analogy questions and uses a
 weighting mechanism to achieve a better total accuracy than any of the
 individual techniques alone\cite{turney03combining}.  The authors include common
-techniques for comparing word similarity such WordNet relations (e.g. hypernyn,
+techniques for comparing word similarity such as WordNet relations (e.g. hypernyn,
 meronym) and gloss overlap.  Another notable technique, the authors express the
 realtionship between two words X and Y as a 128 element vector; the elements are
 the frequencies returned by a search engine query of the form ``X $P$ Y'', where
