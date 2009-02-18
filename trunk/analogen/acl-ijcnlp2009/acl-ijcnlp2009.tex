@@ -196,44 +196,45 @@ phrases.  Last, we allow nouns to be collocations, e.g. ``white house''.
 \subsection{Moving From Word to Concept}
 
 Once a list of $n_1\_v\_n_2$ triplets have been extracted from the corpus, we need to
-expand each one to it's set of extended relations.  The first step is to search
-the corpus for other triplets which match the pattern of $n_1\_v\_*$ and
-$*\_v\_n_2$.  This
-will find triplets which contains words which might be viewed as synonymous in
-some way and is loosely related to finding Selectors for WSD \cite{schwartz08selectors}.  An
-additional way to generate additional relations is to produce a new triplets
-according to:
+expand each triplet to it's set of extended relations.  This \emph{expansion
+list} should contain additional $n\_v\_n$ triplets which share the same verb,
+and one of the nouns, or possibly it's synonym.  The process of expanding a
+single triplet into other related triplets has the chance of producing not only
+a large number of additional triplets, but some which do not have the same
+relation.  
 
-$n_1\_v\_n_{2i} \forall n_{2i} \in synonym(n_2)$
+The first step of expansion is to search the corpus for other triplets which match
+the pattern of $n_1\_v\_*$ and $*\_v\_n_2$.  This step finds contextual
+selectors, similar to \cite{schwartz08selectors}, in the corpus itself for each of
+the nouns present in the intial triplet.  The triplets constructed from the
+selectors should have some analogous relationship, for example "pills are 
+medicine" would likely have "penicillin is medicine", yet also could expand to
+"laughter is medicine" which does not quite hold the same relation as the
+previous two triplets.  
 
-and
-
-$n_{1i}\_v\_n_2 \forall n_{1i} \in synonym(n_1)$. 
-
-Since we are making use of
-WordNet as our definition of word meaning, it is most applicable to extract synonyms
-from the dominate sense of each word in the triplet.  
-
-This generation step has the potential of creading a vast number of $noun\_verb\_noun$
-triplets which we consider to be synonomous to each other, and a simple,
-unsupervised approach needs to be taken to reduce the size of the expanded list
-for later steps.  To this end, we chose to make use of PageRank when applied to
+With this vast number of potentially analgous $noun\_verb\_noun$ triplets, a
+simple unsupervised approach needs to be taken to determine that within this
+small context, the meaning of each noun, and especially the verb, is the same
+within all of the generated triplets.  Any triplet which is not found to be
+closely related to the other present in the \emph{expansion list} can then be
+removed.  To this end, we chose to make use of PageRank when applied to
 WSD.  The rest of this section will focus on how the graph is built, and how
-it's computation reflects on the expansion list.
+it's computation reflects on the \emph{expansion list}.
 
-Our use of PageRank is an extension of it's application towards WSD
-\cite{mihalcea04wsdpagerank} and \cite{mihalcea06randomwalks}.  For each word in
-the expansion list, we obtain the first three possible synsets for the word and
+Our use of PageRank is an extension of it's application towards WSD,
+\cite{mihalcea04wsdpagerank,mihalcea06randomwalks}.  For each word in
+the \emph{expansion list}, we obtain the first three possible synsets for the word and
 add edges from each competeing synset to all other synsets currently in the
 graph based on the semantic similarity as defined by
-\cite{banerjee03extendedgloss}.  One detail to note, is that competing synsets
+\cite{banerjee03extendedgloss}.  One detail to note, is that candidate synsets
 for a given word are only added to the graph onces, regardless of the number of
-times it occurs in the extension list, and these competing synsets are not
+times it occurs in the extension list, and these candidate synsets are not
 given edges to each other. 
 
 The semantic similarity metric defined by \cite{banerjee03extendedgloss} gives a
 score based on the gloss overlap of two synsets, along with gloss overlap of
-their respective Hyponyms and hypernyms.  Their approach can be extended to take
+their respective hyponyms and hypernyms.  This approach has been shown to give a
+stronger similarity metric than other gloss based measures.  Their approach can be extended to take
 into account additional WordNet relations, but we only evaluate the hyponym and
 hypernym glosses in addtion to the synset glosses themselves.  The formulate
 used is as follows:
@@ -250,7 +251,7 @@ For the hypernym and hyponym relations, we take only the first hypernym or hypon
 synset given by wordnet, as opposed to concatening each of their glosses together.  
 
 Once the graph has been built with all the possible sense of each word that
-occurs in the expansion list, an arbitrary score is assigned to each node in the
+occurs in the \emph{expansion list}, an arbitrary score is assigned to each node in the
 graph.  This score will represent the importance of the particular synset, such
 that a higher score implies that the synset is more fitting for the word given
 the context, and conversely a lower score implies that the synset would not be a
@@ -260,7 +261,7 @@ affect the number of iterations needed for convergence.  For simplicity, we
 select initial values of 1 for every node.  
 
 Since our graph assigns edge weights to every edge between 
-nodes, and each edge is un directed, we iteratively update the scores for each
+synsets, and each edge is un directed, we iteratively update the scores for each
 synset with algorithm as follows, which is adapted from \cite{mihalcea06randomwalks}.   
 
 \small
@@ -269,23 +270,62 @@ synset with algorithm as follows, which is adapted from \cite{mihalcea06randomwa
    \]
 \normalsize
 
-This update will run until for each node \(V_i\) the difference \(PR^{K+1}(V_i)
-- PR^{K}(V_i)\), changes less than some threshold, where ours is \(10^{-6}\).
+This update will until for each node \(V_i\) the difference \(PR^{K+1}(V_i)
+- PR^{K}(V_i)\), is less than some threshold, where ours is \(10^{-6}\).
 Typically, this can be done in lesss than 40 iterations through the graph.
 
-The final step utilizing PageRank and the expansion list s filtering out $noun\_verb\_noun$
-triplets which are not semanticly related to the others.  Each word that occured
-in the expansion list is then given a score according to the number of synsets
-for the word which has a pagerank score above some threshold \(t\).  Then, each
+The final step utilizing PageRank and the \emph{expansion list} is filtering out all $noun\_verb\_noun$
+triplets which are not semanticly related to the others.  To start, each noun that occured
+in the \emph{expansion list} is given a score according to the number of synsets
+for the word which have a pagerank score above some threshold \(t\).  Then, each
   $noun\_verb\_noun$ triplet is given a score based on the following equation:
 
 \small
-\[ PairScore(nvn) = \frac {\displaystyle\sum_{w \in NounsOf(nvn)} {score(w) * count(w)}}
-                          {\displaystyle\sum_{x \in UniqueWord(expansionList)} count(x)} \]
+$ PairScore(nvn) = \frac {\displaystyle\sum_{w \in NounsOf(nvn)} {score(w) * count(w)}}
+                          {\displaystyle\sum_{x \in UniqueWord(expansionList)}
+                          {count(x)} * score(w)} $ 
 \normalsize
+
+This will assign some normalized score to each triplet in the \emph{expansion
+list},
+allowing us to easily filter out any triplets which have a score below some
+threshold, in this case we selected \(.80\).  From this point on, the verbs are
+left out of the \emph{expansion list}, and so each $noun\_verb\_noun$ triplet becomes a
+$noun\_noun$ pair.
 
 \subsection{Moving from Concepts to Categories}
 
+An interesting piece of data we would like to extract from a generated
+\emph{expansion list} is the dominating sense for all the first nouns in each
+pair, and the dominating sense for all the second nouns in each pair.  Our hope
+is that in general, most, if not all, of the nouns will map to the same general, but
+not too general, hypernym.  This can easily be done by scoring each hypernym of
+every synset in the \emph{expansion list}, or as follows:
+
+\small
+\[ HyperScore(s) = \displaystyle\sum_{w \in FirstNouns(expansionList)}
+ParentScore(s, w) 
+\]
+
+\normalsize
+where
+
+\small
+\[ ParentScore(synset, w) = \left\{ 
+ \begin{array}{l l}
+   {\frac {MaxDepth(synset)} {MaxDepth(w)}} & \mbox{if $synset$ in Hyper($w$)}\\
+   0 & \mbox{else}\\
+ \end{array} \right.
+\]
+
+\normalsize
+This method will assign a score to each hypernym based on the number of times 
+
+Which is done for the first nouns of pairs in the \emph{expansion list}, and a
+second set of scores is computed using the same method for the second nouns of
+pairs in the \emph{expansion list}.  The hypernym which is most likely to
+dominate it's respective set of nouns would then be the synset with the highest
+score.  
 {\bf We may not get to trying this} One thought I had was to try to cluster
 concepts from within the list itself.  We would still maintain the invariant
 that all pairs are still analogous, but this would at least give us:
