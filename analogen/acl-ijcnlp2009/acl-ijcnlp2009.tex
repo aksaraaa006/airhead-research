@@ -300,11 +300,10 @@ An interesting piece of data we would like to extract from a generated
 pair, and the dominating sense for all the second nouns in each pair.  Our hope
 is that in general, most, if not all, of the nouns will map to the same general, but
 not too general, hypernym.  This can easily be done by scoring each hypernym of
-every synset in the \emph{expansion list}, or as follows:
+every synset in the \emph{expansion list}, as follows:
 
 \small
-\[ HyperScore(s) = \displaystyle\sum_{w \in FirstNouns(expansionList)}
-ParentScore(s, w) 
+\[ HyperScore(s) = \displaystyle\sum_{w \in Nouns} ParentScore(s, w) 
 \]
 
 \normalsize
@@ -319,24 +318,21 @@ where
 \]
 
 \normalsize
-This method will assign a score to each hypernym based on the number of times 
+This method will assign a score to each hypernym based on the number of times it
+occurs as node in the hypernym path of a generated nouns.  The hypernym with the
+highest score is then chosen as the one most likely to dominate it's set of nouns.
+If done naievly, this method will simply choose the root synset \emph{entity} as
+the dominating synset for any set of nouns.  To give more preference
+to hypernyms which are deeper in the tree, and thus provide more specific
+information, we scale the score contributed by each noun by the hypernym's
+depth in the tree over the noun's depth in the tree.  This should prevent top
+level synsets such as \emph{entity}, and \emph{thing}, from being selected as 
+the dominating hypersense for a set of words.  
 
-Which is done for the first nouns of pairs in the \emph{expansion list}, and a
-second set of scores is computed using the same method for the second nouns of
-pairs in the \emph{expansion list}.  The hypernym which is most likely to
-dominate it's respective set of nouns would then be the synset with the highest
-score.  
-{\bf We may not get to trying this} One thought I had was to try to cluster
-concepts from within the list itself.  We would still maintain the invariant
-that all pairs are still analogous, but this would at least give us:
-\begin{enumerate}
-  \item a way of moving from concepts to categories, i.e. are there certain
-    pairs of categories that are analogous?
-  \item if we can extract categories, then we might be able to better identify
-    new analogies.  For example, if we find that we have the categorical analogy
-    ``animal:type'' and we see narwhal, we know it fits in the animal category
-    even if we have never see ``narwhal'' or any of its synonyms.
-\end{enumerate}
+This process can then be done for the set of first nouns in the \emph{expansion
+list} and the set of second nouns in the \emph{expansion list}.  With this, we
+finally get a top level $noun\_noun$ pair which is a generalization of all the
+$noun\_noun$ pairs in the \emph{expansion list}.
 
 \section{Evaluation}
 \label{sec:evaluation}
