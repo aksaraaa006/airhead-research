@@ -95,7 +95,7 @@ spaces for analogous noun-noun pairs, and a means of putting a reasonable scope
 to the problem.
 
 Wordnet \cite{fellbaum98wordnet} is a commonly used Lexical database, primarily used for Word Sense
-Disambiguation.  For all open class words, such as nouns and verbs, WordNet
+Disambiguation (WSD).  For all open class words, such as nouns and verbs, WordNet
 contains a collection of synsets which represent possible meanings of a
 particular word.  For instance, the word car could refer to an automobile,
 typically with 4 wheels, or it could also refer to a wheeled vehicle for use on
@@ -112,7 +112,7 @@ the IS-A hierarchy.
 While WordNet is an excellent resrouce for WSD, it alone does not provide enough
 information to generate analogies.  For the purpose of extracting potential
 noun-noun pairs which can participate in an analogy, we make use of the Open
-Mind Common Sense.  The facts in OMCS are written in a simplified version of
+Mind Common Sense (OMCS) database.  The facts in OMCS are written in a simplified version of
 english which provides a vast amount of facts and relations between concepts.
 These facts are primairly collections of attributes for a particular topic, such
 facts as: ``paper is white```, ``paper is for writing on``, etc.  Due to the
@@ -256,7 +256,7 @@ select initial values of 1 for every node.
 
 Since our graph assigns edge weights to every edge between 
 synsets, and each edge is un directed, we iteratively update the scores for each
-synset with algorithm as follows, which is adapted from \cite{mihalcea06randomwalks}.   
+synset with the following algorithm, adapted from \cite{mihalcea06randomwalks}.   
 
 \small
 \[PR(V_i) = (1-d) + d*\sum_{V_j \in Edge(V_i)} w_{ij} \frac{PR(V_j)}
@@ -316,7 +316,7 @@ where
 
 \normalsize
 This method will assign a score to each hypernym based on the number of times it
-occurs as node in the hypernym path of a generated nouns.  The hypernym with the
+occurs as node in the hypernym path of generated nouns.  The hypernym with the
 highest score is then chosen as the one most likely to dominate it's set of nouns.
 If done naievly, this method will simply choose the root synset \emph{entity} as
 the dominating synset for any set of nouns.  To give more preference
