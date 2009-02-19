@@ -207,11 +207,9 @@ simple unsupervised approach needs to be taken to determine that within this
 small context, the meaning of each noun is the same
 within all of the generated triplets.  Any triplet which is not found to be
 closely related to the other triplets present in the \emph{expansion list} can then be
-removed.  To this end, we chose to make use of PageRank when applied to
-WSD.  The rest of this section will focus on how the graph is built, and how
-it's computation reflects on the \emph{expansion list}.
+removed.
 
-Our use of PageRank is an extension of it's application towards WSD,
+To reduce the size of the \emph{expansion list} we use PageRank as an extension of it's application towards WSD
 \cite{mihalcea04wsdpagerank,mihalcea06randomwalks}.  For each word in
 the \emph{expansion list}, we obtain the first three possible synsets for the word and
 add edges from each competeing synset to all other synsets currently in the
@@ -307,16 +305,16 @@ every synset in the \emph{expansion list}, as follows:
 where
 
 \small
-\[ ParentScore(synset, w) = \left\{ 
+$ ParentScore(synset, w) = \left\{ 
  \begin{array}{l l}
    {\frac {MaxDepth(synset)} {MaxDepth(w)}} & \mbox{if $synset$ in Hyper($w$)}\\
    0 & \mbox{else}\\
  \end{array} \right.
-\]
+$
 
 \normalsize
 This method will assign a score to each hypernym based on the number of times it
-occurs as node in the hypernym path of generated nouns.  The hypernym with the
+occurs as a node in the hypernym path of generated nouns.  The hypernym with the
 highest score is then chosen as the one most likely to dominate it's set of nouns.
 If done naievly, this method will simply choose the root synset \emph{entity} as
 the dominating synset for any set of nouns.  To give more preference

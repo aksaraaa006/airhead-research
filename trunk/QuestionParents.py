@@ -3,18 +3,32 @@
 from nltk.corpus import wordnet
 
 import pickle
+import SATSolver as ss
 import sys
+
+def getWordSimilarity(sat_word, possible_word):
+  # NB: I sure hope both of these words are nouns!
+  synsets1 = wordnet.synsets(sat_word, pos='n')
+  if possible_word == "None":
+    return 0
+  synset2 = wordnet.synset(possible_word)
+  
+  highestSimilarity = 0
+  for s1 in synsets1:
+    similarity = ss.getScaledSimilarityMeasure(s1, synset2)
+    if (similarity > highestSimilarity):
+      highestSimilarity = similarity
+          
+  return highestSimilarity
 
 def readSatQuestions(in_file):
   question_list = []
   sat_str = open(in_file).read()
   num_relations = 0
   for sat_question in sat_str.split("\n\n"):
-    question = sat_question.split("\n")
-    first = question[1].split()
-    options = [q.split() for q in question[2:7]]
-    print options
-
+    question = tuple(sat_question.split("\n"))
+    first = tuple(question[1].split())
+    options = tuple([tuple(q.split()) for q in question[2:7]])
     second = question[ord(question[7]) - ord('a') + 2].split()
     question_list.append((first, second, options))
   return question_list
@@ -56,6 +70,53 @@ def attemptAnswer(question, answer, options, parent_list):
         ambigious = 1
   return ambigious
 
+def similarityAnswer(sat_file, expanded_file):
+  question_list = readSatQuestions(sat_file)
+  expanded_tuples = pickle.load(open(expanded_file))
+  exp_and_parents = [ (exp, paren) for (exp,paren) in expanded_tuples if
+                      paren[0] != "None" and paren[1] != "None"]
+  score = 0
+  for (question, answer,options) in question_list:
+    print "answering question: ", question
+    good_expansions = []
+    for (expand_list, (l_parent, r_parent)) in exp_and_parents:
+      if isParent(l_parent, question[0]) and isParent(r_parent, question[1]):
+        good_expansions.append(expand_list)
+    option_scores = {}
+    for opt in options:
+      option_scores[opt] = 0
+    for generalized_list in good_expansions:
+      best_score = 0
+      best_option = None
+      print generalized_list
+      for opt in options:
+        sim = getSimilarity(generalized_list, opt)
+        if sim > best_score:
+          best_score = sim
+          best_option = opt
+      if not best_option:
+        option_scores[best_option] += 1
+    best_score = 0
+    best_answer = None
+    for key in option_scores:
+      if option_scores[key] > best_score:
+        best_score = option_scores[key]
+        best_answer = key
+    print "best answer is: ", best_answer
+    print "real answer is: ", answer
+    if best_answer == answer:
+      score += 1
+  print score, len(question_list)
+
+def getSimilarity(listOfAnalogousPairs, sourcePair):
+    highestSimilarity = 0
+    for (n1, s1), (n2, s2) in listOfAnalogousPairs:
+        similarity = (getWordSimilarity(sourcePair[0],s1) +
+                      getWordSimilarity(sourcePair[1],s2))
+        if (similarity >= highestSimilarity):
+            highestSimilarity = similarity
+    return highestSimilarity
+
 def answerSAT(sat_file, expanded_file):
   question_list = readSatQuestions(sat_file)
   parent_list = readParents(expanded_file)
@@ -70,4 +131,11 @@ def answerSAT(sat_file, expanded_file):
   print score, multiple, len(question_list)
 
 if __name__ == "__main__":
-  answerSAT(sys.argv[1], sys.argv[2])
+  if sys.argv[1] == 's':
+    print "testing SAT using similarity metric"
+    similarityAnswer(sys.argv[2], sys.argv[3])
+  elif sys.argv[1] == 'p':
+    print "testing SAT using parent generalizations"
+    answerSAT(sys.argv[2], sys.argv[3])
+  else:
+    print "Usage: ./QuestionParents.py [sp] sat_question_file expanded.pickle"
