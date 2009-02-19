@@ -203,43 +203,43 @@ def findBestRelationForList(listOfAnalogousPairs):
             # the synset with the highest similarity could likely indicate which
             # type of relationship exists between the words (over all the
             # synsets)
-            for s2 = synset2:
+            for s2 in synset2:
 
-                for (s3 in memberMer):
+                for s3 in memberMer:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > memberMerSim):
                         memberMerSim = sim
-                for (s3 in substanceMer):
+                for s3 in substanceMer:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > substanceMerSim):
                         substanceMerSim = sim
-                for (s3 in partMer):
+                for s3 in partMer:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > partMerSim):
                         partMerSim = sim
 
-                for (s3 in memberHol):
+                for s3 in memberHol:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > memberHolSim):
                         memberHolSim = sim
-                for (s3 in substanceHol):
+                for s3 in substanceHol:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > substanceHolSim):
                         substanceHolSim = sim
-                for (s3 in partHol):
+                for s3 in partHol:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > partHolSim):
                         partHolSim = sim
 
-                for (s3 in attributes):
+                for s3 in attributes:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > attrSim):
                         attrSim = sim
-                for (s3 in entailments):
+                for s3 in entailments:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > entailSim):
                         entailSim = sim
-                for (s3 in causes):
+                for s3 in causes:
                     sim = getScaledSimilarity(s3, s2)
                     if (sim > causesSim):
                         causesSim = sim
@@ -342,6 +342,8 @@ def getSimilarityMeasure(synset1, synset2):
         if depth >= deepest[0]:
             deepest = (depth, ancestor)
     
+    if not deepest[1]:
+      return 0
         
     return getNormalizedDepth(deepest[1])
 
