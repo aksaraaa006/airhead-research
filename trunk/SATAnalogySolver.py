@@ -16,6 +16,7 @@ NOT_FOUND = 2
 EXPAND_OPTION_PAIRS = False
 EXPAND_EXAMPLE_PAIR = False
 CONSIDER_HYPERNYMS = True
+USE_PARENT_INFORMATION = True
 
 # Loads the SAT questions from a file and returns a list of tuples of the form
 # ((source pair), (list of possible target pair tuples), <int of which tuple in
@@ -205,6 +206,7 @@ def selectOptionFromList(options, listIndicesWithExampleAnalogy,
     # text here]
     elif len(optionIndexToList) > 1:
         print "EDGE: found key in multiple lists, and then value in multiple lists"
+        print optionIndexToList.keys()
         # IDEA: choose the largest list (it has the most examples of the
         # relation)?
         largestListSize = -1
@@ -294,6 +296,8 @@ SHORTEST_PATH_DISTANCE_CACHE = dict()
 def getShortestPathDistance(synset1, synset2):
     if (synset1, synset2) not in SHORTEST_PATH_DISTANCE_CACHE:
         dist = synset1.shortest_path_distance(synset2)
+        if dist < 0:
+            dist = sys.maxint
         SHORTEST_PATH_DISTANCE_CACHE[(synset1, synset2)] = dist
         return dist
 
@@ -302,8 +306,8 @@ def getShortestPathDistance(synset1, synset2):
 # For two words, c and d, generate all of their synsets and return a list of
 # tuples that results from the pair-wise combination of each synset list
 def generateSynsetPairs(c,d):
-    cSyns = wn.synsets(c)
-    dSyns = wn.synsets(d)
+    cSyns = wn.synsets(c, wn.NOUN)
+    dSyns = wn.synsets(d, wn.NOUN)
     pairs = []
     for e in cSyns:
         for f in dSyns:
@@ -370,6 +374,60 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs,
         # add whatever list had the closest match to the list with the selected
         # value
         listIndicesWithExampleAnalogy.add(listIndex)
+
+    # If we weren't able to the find the example, search all the lists and look
+    # for parents that map to the example pair.  Uses these lists to find the
+    # lists that contains the closest match
+    elif len(listIndicesWithExampleAnalogy) == 0 and USE_PARENT_INFORMATION:
+        
+        print "Using parent information"
+
+        # generate the synset possibilities for the example
+        expandedExamples = generateSynsetPairs(examplePair[0], examplePair[1])
+        closestDist = sys.maxint
+        closestSynset = ()
+        closestParent = ()
+        listIndex = None
+
+        for a, b in expandedExamples:
+
+            curIndex = 0        
+            # then see if any of the lists have parent relations that are
+            # hypernyms of these
+            for list, parents in listOfListOfAnalogousPairs:
+
+
+                # skip malformatted parents
+                if parents[0] == "None" or parents[1] == "None":
+                    continue
+
+                try:
+                    dist = (getShortestPathDistance(a, wn.synset(parents[0])) +
+                            getShortestPathDistance(b, wn.synset(parents[1])))
+
+                    if dist >= 0 and dist < closestDist:
+                        closestDist = dist
+                        closestSynset = (a, b)
+                        closestParent = parents
+                        listIndex = curIndex
+                except ValueError:
+                    curIndex += 1
+                    continue
+
+                curIndex += 1
+
+        # add whatever list had the closest match to the list with the selected
+        # value
+        if listIndex != None:
+            listIndicesWithExampleAnalogy.add(listIndex)
+        if len(closestSynset) > 0 and len(closestParent) > 0:
+            print "closest parent to example: %s:%s::%s:%s" % (closestSynset[0].name, 
+                                                               closestSynset[1].name,
+                                                               closestParent[0],
+                                                               closestParent[1])
+        else:
+            print "unable to find a parent in the same hypernym tree"
+
 
             
     # default value of -1 indicates that we were unable to find an option
