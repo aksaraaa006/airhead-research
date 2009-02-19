@@ -94,7 +94,7 @@ def similarityAnswer(sat_file, expanded_file):
         if sim > best_score:
           best_score = sim
           best_option = opt
-      if not best_option:
+      if best_option:
         option_scores[best_option] += 1
     best_score = 0
     best_answer = None
