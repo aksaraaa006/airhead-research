@@ -57,6 +57,7 @@ def attemptAnswer(question, answer, options, parent_list):
   answerable at all, 1 means it could be answered but with multiple options, and
   2 means it could be answered perfectly"""
   ambigious = 0
+  multi_options = []
   for (l_parent, r_parent) in parent_list:
     print "Checking question %s:%s with parents %s:%s" %(question[0],
         question[1], l_parent, r_parent)
@@ -64,11 +65,12 @@ def attemptAnswer(question, answer, options, parent_list):
       chosen_options = chooseOptions(options, l_parent, r_parent)
       if len(chosen_options) == 1 and chosen_options[0] == answer:
         print "answer %s:%s chosen for question" %(answer[0], answer[1])
-        return 2 
-      elif len(chosen_options) > 0:
+        return 2, [] 
+      elif len(chosen_options) > 0 and answer in chosen_options:
         print "several options chosen for parents %s:%s" %(l_parent, r_parent)
         ambigious = 1
-  return ambigious
+        multi_options.append(chosen_options)
+  return ambigious, multi_options
 
 def similarityAnswer(sat_file, expanded_file):
   question_list = readSatQuestions(sat_file)
@@ -120,14 +122,17 @@ def getSimilarity(listOfAnalogousPairs, sourcePair):
 def answerSAT(sat_file, expanded_file):
   question_list = readSatQuestions(sat_file)
   parent_list = readParents(expanded_file)
+  ambig_dict = {}
   score = 0
   multiple = 0
   for (question, answer,options) in question_list:
-    answer = attemptAnswer(question, answer, options, parent_list)
+    answer, spares = attemptAnswer(question, answer, options, parent_list)
     if answer == 1:
       multiple += 1
+      ambig_dict[question] = spares
     elif answer == 2:
       score += 1
+  print ambig_dict
   print score, multiple, len(question_list)
 
 if __name__ == "__main__":
