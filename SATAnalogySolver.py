@@ -66,12 +66,20 @@ def loadQuestions(SATfile):
                            (opt4[0], opt4[1]),
                            (opt5[0], opt5[1])),
                           correctIndex))
+
+    print "loaded %d questions" % (len(questions))
     return questions
 
 def loadListFromFile(listFile):
     if True:
         handle = open(listFile)
-        return pickle.load(handle)
+        listOfLists = pickle.load(handle)
+        listSum = 0;
+        for list, parent in listOfLists:
+            listSum += len(list)
+        print "loaded %d lists of avg length %d" % (len(listOfLists), 
+                                                    listSum / len(listOfLists))
+        return listOfLists
     else:
         # TODO: load from text file
         return []
@@ -81,7 +89,9 @@ def buildInverseIndices(listOfListOfAnalogousPairs):
     # these will map words to the lists that contain them.  We use two lists
     # here to speed up indexing based on either word in the related pair
     firstInvIndex = dict()
+    firstSynsetInvIndex = dict()
     secondInvIndex = dict()
+    secondSynsetInvIndex = dict()
     
     # Iterater through each list, mapping each word to the set of lists in which
     # it occurs.  We need to use a set of lists instead of a lists of lists to
@@ -93,27 +103,49 @@ def buildInverseIndices(listOfListOfAnalogousPairs):
     # are required to map a word to the set of indices of the lists in which the
     # word occurs.
     listIndex = 0
-    for listOfPairs in listOfListOfAnalgousPairs:
+    for listOfPairs, parents in listOfListOfAnalogousPairs:
         for (a, aSyn), (b, bSyn) in listOfPairs:
             # update the set of list indicies for the first element
             if firstInvIndex.has_key(a):
                 lists = firstInvIndex[a]
                 lists.add(listIndex);
             else:
-                lists = set(listIndex);
+                lists = set();
+                lists.add(listIndex)
                 firstInvIndex[a] = lists
-                
+                                
             # then for the second element
             if secondInvIndex.has_key(b):
                 lists = secondInvIndex[b]
                 lists.add(listIndex);
             else:
-                lists = set(listIndex);
+                lists = set();
+                lists.add(listIndex)
                 secondInvIndex[b] = lists
+                
+            # then for the synsets
+            if firstSynsetInvIndex.has_key(aSyn):
+                lists = firstSynsetInvIndex[aSyn]
+                lists.add(listIndex);
+            else:
+                lists = set();
+                lists.add(listIndex)
+                firstSynsetInvIndex[aSyn] = lists
+                                
+            # then for the second element
+            if secondSynsetInvIndex.has_key(bSyn):
+                lists = secondSynsetInvIndex[bSyn]
+                lists.add(listIndex);
+            else:
+                lists = set();
+                lists.add(listIndex)
+                secondSynsetInvIndex[bSyn] = lists
+
                 
         listIndex += 1
                 
-    return (firstInvIndex, secondInvIndex)
+    return (firstInvIndex, firstSynsetInvIndex, 
+            secondInvIndex, secondSynsetInvIndex)
 
 # Given some list of pairs (a,b), returns a list at least as large whose pairs
 # are generated using semantically related words to the original pairs.
@@ -137,6 +169,8 @@ def expandList(listOfPairs):
     return expanded
 
 def selectOptionFromList(options, listIndicesWithExampleAnalogy, 
+                         firstInvIndex,
+                         secondInvIndex,
                          listOfListOfAnalogousPairs):
 
     optionIndexToList = dict()
@@ -144,22 +178,23 @@ def selectOptionFromList(options, listIndicesWithExampleAnalogy,
     selectedOption = -1
     
     for index in listIndicesWithExampleAnalogy:
-        listWithAnalogy = listOfListOfAnalogousPairs[index]
+        listWithAnalogy, parents = listOfListOfAnalogousPairs[index]
         
         optionIndex = 0
         for c, d in options:
             if c in firstInvIndex and d in secondInvIndex:
-                listIndices = set()
-                listIndices.copy(firstInvIndex[c])
+                listIndices = set(firstInvIndex[c])
                 listIndices.intersection(secondInvIndex[d])
                 
                 # add whatever list indices were found to the mapping from
                 # option to list that supports the option as being correct
                 if optionIndex in optionIndexToList:
-                    optionIndexToList[optionIndex].add(listIndices)
+                    indices = optionIndexToList[optionIndex]
+                    for index in listIndices:
+                        indices.add(index)
                 else:
                     optionIndexToList[optionIndex] = listIndices
-                    optionIndex += 1
+            optionIndex += 1
                     
     # hopefully we found only one list or in thoses list we only found one
     # option.
@@ -174,7 +209,7 @@ def selectOptionFromList(options, listIndicesWithExampleAnalogy,
         # relation)?
         largestListSize = -1
         opt = -1
-        for option, list in optionIndexToList:
+        for option, list in optionIndexToList.items():
             if len(list) > largestListSize:
                 largestListSize = len(list)
                 opt = option
@@ -183,60 +218,92 @@ def selectOptionFromList(options, listIndicesWithExampleAnalogy,
     # if we didn't find any options, then consider looking at the hypernyms of
     # the synsets in the list.
     elif CONSIDER_HYPERNYMS:
-
-        curDepth = 0
-        for index in listIndicesWithExampleAnalogy:
-            listWithAnalogy = listOfListOfAnalogousPairs[index]
             
-            optionIndex = 0
-            closestMatch = sys.maxint # really large value
+        optionIndex = 0
+        closestMatch = sys.maxint # really large value
 
-            for c, d in options:
+        for c, d in options:
+            #print "searching for list that is most similar to %s:%s" % (c,d)
 
-                # generate a list of all the synset combinations for c and d
-                pairs = generateSynsetPairs(c,d)
+            # generate a list of all the synset combinations for c and d
+            #print "generating alternate pairs"
+            pairs = generateSynsetPairs(c,d)
+            #print "created %d alternates" % (len(pairs))
+            
+            # look at each list that we determined might have the target analogy
+            for index in listIndicesWithExampleAnalogy:
+
+                listWithAnalogy, parents = listOfListOfAnalogousPairs[index]
+
+                # for each alternate, look at the distance between it at all the
+                # target lists.  If some list contains a pair whose distance the
+                # closest we've seen to the alternate, then we should choose
+                # that option
                 for e, f in pairs:
-                    # compute the distance between each pair and all the options
-                    # in the liste
-                    for a, aSyn, b, bSyn in listWithAnalogy:
-                        # check that we actually have a synset listed for the
-                        # word
-                        if aSyn == "None" or bSyn == "None":
-                            continue
-                        try:
-                            dist1 = e.shortestPathDist(wn.synset(aSyn))
-                            dist2 = f.shortestPathDist(wn.synset(bSyn))
-                            # check that there was a path for both synsets
-                            if dist1 == -1 and dist2 == -1:
-                                continue                            
-                            dist = dist1 + dist2
-
-                            # if the distance between these the generated synset
-                            # pair and some synset pair in the list is less than
-                            # any we've seen before, then we should select
-                            # whatever option we are currently on
-                            if dist < closestMatch:
-                                selectedOption = optionIndex
-                                closestMatch = dist
-
-                        # WordNet will throw a value error for rare cases where
-                        # the name contains extra '.'s, e.g. Ph.D. so proctect
-                        # against this case
-                        except ValueError:
-                            continue
+                    dist = findClosestDistInList(e, f, listWithAnalogy)
+                    if dist < closestMatch:
+                        closestMatch = dist
+                        selectedOption = optionIndex
                         
-                
-
-
+            # increment the option index to point to the option we are looking
+            # at next
+            optionIndex += 1
+                        
+             
     return selectedOption
 
 
+#
+# Returns the closest distance between (c,d) and each (a,b) pair in the provided
+# list.  The distance function is determined by the wordnet
+# sysnet.shortest_path_distance function
+#
+def findClosestDistInList(c, d, listWithAnalogy):
+    
+    closestDist = sys.maxint
+
+    # compute the distance between each pair and all the options
+    # in the liste
+    for (a, aSyn), (b, bSyn) in listWithAnalogy:
+        # check that we actually have a synset listed for the word
+        if aSyn == "None" or bSyn == "None":
+            continue
+        try:
+            dist1 = getShortestPathDistance(c, wn.synset(aSyn))
+            dist2 = getShortestPathDistance(d, wn.synset(bSyn))
+            # check that there was a path for both synsets
+            if dist1 == -1 and dist2 == -1:
+                continue                            
+            dist = dist1 + dist2
+
+            # if the distance between these the generated synset pair and some
+            # synset pair in the list is less than any we've seen before, then
+            # we should select whatever option we are currently on
+            if dist < closestDist:
+                closestDist = dist
+
+                # WordNet will throw a value error for rare cases where
+                # the name contains extra '.'s, e.g. Ph.D. so proctect
+                # against this case
+        except ValueError:
+            continue
+    return closestDist
+
+
+SHORTEST_PATH_DISTANCE_CACHE = dict()
+def getShortestPathDistance(synset1, synset2):
+    if (synset1, synset2) not in SHORTEST_PATH_DISTANCE_CACHE:
+        dist = synset1.shortest_path_distance(synset2)
+        SHORTEST_PATH_DISTANCE_CACHE[(synset1, synset2)] = dist
+        return dist
+
+    return SHORTEST_PATH_DISTANCE_CACHE[(synset1, synset2)]
 
 # For two words, c and d, generate all of their synsets and return a list of
 # tuples that results from the pair-wise combination of each synset list
 def generateSynsetPairs(c,d):
     cSyns = wn.synsets(c)
-    dSyns = wn.sysnets(d)
+    dSyns = wn.synsets(d)
     pairs = []
     for e in cSyns:
         for f in dSyns:
@@ -245,10 +312,11 @@ def generateSynsetPairs(c,d):
 
 
 def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs, 
-                      firstInvIndex, secondInvIndex):
+                      firstInvIndex, firstSynsetInvIndex, 
+                      secondInvIndex, secondSynsetInvIndex):
 
     examplePair = SATQuestion[0];
-    print "Question %s:%s" % (source)
+    print "Question %s:%s" % (examplePair)
     options = SATQuestion[1];
     for option in options:
         print "\t%s:%s" % (option)
@@ -258,13 +326,55 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs,
 
     # first see if we can find the example pair in any of the lists
     if examplePair[0] in firstInvIndex and examplePair[1] in secondInvIndex:
-        listIndices = set()
-        listIndices.copy(fistInvIndex[examplePair[0]])
+        listIndices = set(firstInvIndex[examplePair[0]])
         listIndices.intersection(secondInvIndex[examplePair[1]])
-        listIndicesWithExampleAnalogy.add(listIndices)
+        for list in listIndices:
+            listIndicesWithExampleAnalogy.add(list)
+
+    # If we didn't find the example pair, try searching for it using hypernym
+    if len(listIndicesWithExampleAnalogy) == 0 and CONSIDER_HYPERNYMS and False:
+        print "didn't find the example pair in any list, so searching using closest path distance"
+        
+        closestDist = sys.maxint
+        listIndex = None
+
+        # generated all the possible synsets for the example pair
+        expandedExamples = generateSynsetPairs(examplePair[0], examplePair[1])
+        #print "consider %d synset options for example" % (len(expandedExamples))
+
+        for a, b in expandedExamples:
+
+            listIndicesWithBothExpandedSynsets = set()
+            
+            # find lists in which both occur
+            if a.name in firstSynsetInvIndex and b.name in secondSynsetInvIndex:
+                listIndicesWithBothExpandedSynsets = set(firstSynsetInvIndex[a.name])
+                listIndicesWithBothExpandedSynsets.intersection(secondSynsetInvIndex[b.name])
+                
+            #print "for x-example %s:%s, saw %d lists that had it" % (a.name, b.name,
+            #                                                         len(listIndicesWithBothExpandedSynsets))
+        
+
+            curIndex = 0
+            for index in listIndicesWithBothExpandedSynsets:
+
+                list, parents = listOfListOfAnalogousPairs[index]
+                dist = findClosestDistInList(a, b, list)
+                if dist < closestDist:
+                    closestDist = dist
+                    listIndex = curIndex
+                    if curIndex % 100 == 0:
+                        print "\t list %d" % (curIndex)
+                curIndex += 1
+
+        # add whatever list had the closest match to the list with the selected
+        # value
+        listIndicesWithExampleAnalogy.add(listIndex)
+
             
     # default value of -1 indicates that we were unable to find an option
     selectedOption = -1
+
 
     # if we found the example pair in at least one list, then try to choose an
     # answer from the list of options
@@ -275,21 +385,28 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs,
         # the criteria defined in the function.
         selectedOption = selectOptionFromList(options, 
                                               listIndicesWithExampleAnalogy, 
-                                              listOfListOfAnalogousPairs):        
+                                              firstInvIndex,
+                                              secondInvIndex,
+                                              listOfListOfAnalogousPairs)        
 
-        # if we didn't find the options in any of the lists, consider expanding
-        # the options using their synonyms
-        elif selectedOption == -1 and EXPAND_OPTION_PAIRS:
-            print "Unable to find options in selected list(s), so expanding"
-            expandedOptions, expandedToOriginal = expandList(options)
-            expandedOptionSelection = selectOptionFromList(expandedOptions, 
-                                                           listIndicesWithExampleAnalogy, 
-                                                           listOfListOfAnalogousPairs):   
-            # remap whatever option we really chose to the original option from
-            # which it came
-            if expandedOptionSelection >= 0:
-                selectedOption = expandedToOriginal[expandedOptions[ExpandedOptionSelection]]
+    # if we didn't find the options in any of the lists, consider expanding
+    # the options using their synonyms
+    elif selectedOption == -1 and EXPAND_OPTION_PAIRS:
+        print "Unable to find options in selected list(s), so expanding"
+        expandedOptions, expandedToOriginal = expandList(options)
+        expandedOptionSelection = selectOptionFromList(expandedOptions, 
+                                                       listIndicesWithExampleAnalogy, 
+                                                       firstInvIndex,
+                                                       secondInvIndex,
+                                                       listOfListOfAnalogousPairs)
+        # remap whatever option we really chose to the original option from
+        # which it came
+        if expandedOptionSelection >= 0:
+            selectedOption = expandedToOriginal[expandedOptions[ExpandedOptionSelection]]
+
+
             
+        
 
     # If we didn't find the example pair, we can try expanding it by using
     # synonyms of the words.
@@ -299,31 +416,35 @@ def answerSATQuestion(SATQuestion, listOfListOfAnalogousPairs,
         expandedExample, unusedMap = expandList((examplePair))
         for a, b in expandedExample:
             if a in firstInvIndex and b in secondInvIndex:
-                listIndices = set()
-                listIndices.copy(fistInvIndex[a])
+                listIndices = set(firstInvIndex[a])
                 listIndices.intersection(secondInvIndex[b])
-                listIndicesWithExampleAnalogy.add(listIndices)
+                for list in listIndices:
+                    listIndicesWithExampleAnalogy.add(list)
         
         # look at all the lists that contain the example pair and see if any of
         # those lists contain one of the options.  Select the option based on
         # the criteria defined in the function.
         selectedOption = selectOptionFromList(options, 
                                               listIndicesWithExampleAnalogy, 
-                                              listOfListOfAnalogousPairs):        
+                                              firstInvIndex,
+                                              secondInvIndex,
+                                              listOfListOfAnalogousPairs)     
 
-        # if we didn't find the options in any of the lists, consider expanding
-        # the options using their synonyms
-        elif selectedOption == -1 and EXPAND_OPTION_PAIRS:
-            print "Unable to find options in selected list(s), so expanding"
-            expandedOptions, expandedToOriginal = expandList(options)
-            expandedOptionSelection = selectOptionFromList(expandedOptions, 
-                                                           listIndicesWithExampleAnalogy, 
-                                                           listOfListOfAnalogousPairs):   
-            # remap whatever option we really chose to the original option from
-            # which it came
-            if expandedOptionSelection >= 0:
-                selectedOption = expandedToOriginal[expandedOptions[ExpandedOptionSelection]]
-
+    # if we didn't find the options in any of the lists, consider expanding
+    # the options using their synonyms
+    elif selectedOption == -1 and EXPAND_OPTION_PAIRS:
+        print "Unable to find options in selected list(s), so expanding"
+        expandedOptions, expandedToOriginal = expandList(options)
+        expandedOptionSelection = selectOptionFromList(expandedOptions, 
+                                                       listIndicesWithExampleAnalogy, 
+                                                       firstInvIndex,
+                                                       secondInvIndex,
+                                                       listOfListOfAnalogousPairs)
+        # remap whatever option we really chose to the original option from
+        # which it came
+        if expandedOptionSelection >= 0:
+            selectedOption = expandedToOriginal[expandedOptions[ExpandedOptionSelection]]
+            
         
 
     # Finally, determine if we made a selection and whether it was correct
@@ -356,26 +477,30 @@ def main(argv=None):
     listOfQuestions = loadQuestions(argv[1])
 
     # unpickle the list of list of pairs of analogous words.   
-    listOfListOfAnalogousPairs = loadListFromFile(listFile)
+    listOfListOfAnalogousPairs = loadListFromFile(argv[2])
 
     # build the inverse indicies from each word in a tuple to any list that
     # contains it
-    firstInvIndex, secondInvIndex = buildInverseIndices(listOfListOfAnalogousPairs)
+    firstInvIndex, firstSynsetInvIndex, secondInvIndex, secondSynsetInvIndex = buildInverseIndices(listOfListOfAnalogousPairs)
 
     # now try to answer each question, keeping track of how many we get correct
     correctAnswers = 0
+    answeredQuestions = 0
     exampleNotFoundAnswers = 0
     for question in listOfQuestions:
-        result = answerQuestion(question, listOfListOfAnalogousPairs, 
-                                firstInvIndex, secondInvIndex):
+        result = answerSATQuestion(question, listOfListOfAnalogousPairs, 
+                                   firstInvIndex, firstSynsetInvIndex, 
+                                   secondInvIndex, secondSynsetInvIndex)
+        if result != NOT_FOUND:
+            answeredQuestions += 1
         if result == CORRECT:
             correctAnswers += 1
         elif result == NOT_FOUND:
             exampleNotFoundAnswers += 1
-        print "Answered %d/%d correct" % (len(correct), len(listOfQuestions))
+        print "Answered %d/%d correct" % (correctAnswers, answeredQuestions)
 
     # print out the summary results
-    print "Finally: answered %d/%d correct, skipped %d" % (len(correct), 
+    print "Finally: answered %d/%d correct, skipped %d" % (correctAnswers, 
                                                            len(listOfQuestions) - exampleNotFoundAnswers,
                                                            exampleNotFoundAnswers)
 
