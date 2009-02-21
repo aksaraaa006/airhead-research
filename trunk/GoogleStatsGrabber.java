@@ -21,6 +21,12 @@ public class GoogleStatsGrabber {
 	    return;
 	}
 	try {
+	    File outputDir = new File(args[1]);
+	    if (!outputDir.isDirectory()) {
+		System.out.println("second arg must be a directory");
+		return;
+	    }
+
 	    List<List<String>> listOfXLists = new ArrayList<List<String>>(5000);
 	    BufferedReader br = new BufferedReader(new FileReader(args[0]));
 	    ArrayList<String> xList = null;
@@ -54,10 +60,11 @@ public class GoogleStatsGrabber {
 	    }
 
 	    System.out.println("saw " + listOfXLists.size() + " x-lists");
+
 	    
 	    // once we've finished parsing the x-lists and verbs, generate
 	    // statistics for each one
-	    getStatistics(listOfXLists, verbs, new PrintWriter(args[1]));
+	    getStatistics(listOfXLists, verbs, outputDir);
 	}
 	catch (Throwable t) {
 	    t.printStackTrace();
@@ -66,47 +73,50 @@ public class GoogleStatsGrabber {
     
     private static void getStatistics(List<List<String>> listOfXLists,
 				      Set<String> verbs, 
-				      PrintWriter outfile) throws Exception {
+				      File outputDir) throws Exception {
 	
-	// randomize to avoid 503
-	Collections.shuffle(listOfXLists);
+	Map<Integer,Map<String,Map<String,Integer>>> xListIndexToPairCountMap =
+	    new HashMap<Integer,Map<String,Map<String,Integer>>>();
 
-	int listNum = 0;
+	ArrayList<Runnable> queries = 
+	    new ArrayList<Runnable>(1000000);
 
+
+	int listIndex = 0;
 	for (List<String> xList : listOfXLists) {
 
-	    System.out.println("processing list: " + listNum);
-	    listNum++;
+	    System.out.println("building queries for: " + listIndex);
+	    final Integer listId = Integer.valueOf(listIndex);
 
-	    final Map<String,Integer> pairToCount = new HashMap();
-	    ArrayList<Runnable> queries = 
-		new ArrayList<Runnable>(xList.size() *verbs.size());
+	    final Map<String,Map<String,Integer>> pairToVerbCounts = 
+		new HashMap<String,Map<String,Integer>>();
+
+	    xListIndexToPairCountMap.put(listId, pairToVerbCounts);
 
 	    for (String pair : xList) {
 	       	
 		// split into individual components
 		String[] words = pair.split(",");
-		System.out.println(pair);
+		// System.out.println(pair);
 
 		// sanity check to ensure that if either of the words is a
 		// compound noun, that our google * query will still work
 		String first = words[0].trim().replaceAll(" ", "+");
 		String last = words[1].trim().replaceAll(" ", "+");
 
-		Map<String,Integer> verbToPageCountSum = 
+		final Map<String,Integer> verbToPageCountSum = 
 		    new HashMap<String,Integer>();
 
 		final String pairKey = first + "," + last;
-		pairToCount.put(pairKey, Integer.valueOf(0));
+		pairToVerbCounts.put(pairKey, verbToPageCountSum);
 		
 		
 		// for each verb, see how many google hits we get within a
 		// sliding range of wildcard (*) words
 		for (String verb : verbs) {
-		    
-		    // fetch all of the pages in parallel
-		    Collection<Thread> threads = new LinkedList<Thread>();
-		    final AtomicInteger pageCount = new AtomicInteger(0);	  
+		    		  
+		    final String v = verb; // for inner class
+		    verbToPageCountSum.put(v, Integer.valueOf(0));
 		    
 		    int NUM_WILDCARDS = 3;
 		    for (int stars = 0; stars < NUM_WILDCARDS; ++stars) {
@@ -127,36 +137,38 @@ public class GoogleStatsGrabber {
 			    final String query = queryPrefix + leading + verb + 
 				trailing + "+" + last + "\"&btnG=Search";
 			    
-			    // one thread per query
+			    // one runnable per query
 			    queries.add(new Runnable() {
  				    public void run() {
 					System.out.println(query);
-					int curCount = 
-					    pairToCount.get(pairKey).intValue();
+					int curCount = verbToPageCountSum.
+					    get(v).intValue();
 					int count = getPageCount(query);
-					pairToCount.put(pairKey, 
-							curCount + count);
+					verbToPageCountSum.put(v, 
+							       curCount+count);
  				    }
  				});
-// 			    t.start();
-// 			    threads.add(t);			    
 			}
-		    }
-		    
-		    try {
-			for (Thread t : threads)
-			    t.join();
-		    } catch (Throwable t) { 
-			t.printStackTrace();
-		    }
-
-		    verbToPageCountSum.put(verb, pageCount.intValue());
+		    }		    
 		}
-
-		// generate the vector for this pair 	       
 	    }
-	    
-	    System.out.println("executing queries for x-list");
+
+
+	    // increment the list index
+	    listIndex++;
+
+	    double numQueries = queries.size();	    
+	    System.out.printf("executing %d queries for x-list", 
+			      (int)numQueries);
+
+	    long SLEEP_TIME = 2000;
+	    long RANDOM_BUFFER = 1000;
+	    long QUERIES_PER_MIN = 60 / (SLEEP_TIME / 1000 + 
+					 RANDOM_BUFFER / 2000); // expected value
+	    System.out.printf("estimating %.0f minutes (%.2f hours (%.2f days))",
+			      (numQueries / QUERIES_PER_MIN), 
+			      (numQueries / (QUERIES_PER_MIN * 60)),
+			      (numQueries / (QUERIES_PER_MIN * 1440)));
 	    
 	    // We need to shuffle to ensure that successive queries don't look
 	    // too similar, otherwise Google thinks we're a DOS attack and we
@@ -165,19 +177,41 @@ public class GoogleStatsGrabber {
 	    for (Runnable r : queries) {
 		// add a 1 second sleep in just in case latency factors into
 		// Google's 503-response threshold.
-		Thread.sleep(1000 + (long)(Math.random() * 2000));
+		Thread.sleep(SLEEP_TIME + (long)(Math.random()* RANDOM_BUFFER));
 		r.run();
+	    }	    
+	}
+
+	for (Map.Entry<Integer,Map<String,Map<String,Integer>>> e : 
+		 xListIndexToPairCountMap.entrySet()) {
+
+	    Integer xListId = e.getKey();
+	    Map<String,Map<String,Integer>> pairToVerbVector =
+		e.getValue();
+	    PrintWriter xListPrinter = new PrintWriter(
+		new File(outputDir, xListId + ".vectors"));
+
+	    
+	    for (Map.Entry<String,Map<String,Integer>> e2 :
+		     pairToVerbVector.entrySet()) {
+		
+		String pair = e2.getKey();
+		Map<String,Integer> verbToCount = e2.getValue();
+
+		StringBuffer vectorStr = new StringBuffer();
+		Iterator<Map.Entry<String,Integer>> it = 
+		    verbToCount.entrySet().iterator();
+		while (it.hasNext()) {
+		    Map.Entry<String,Integer> e3 = it.next();
+		    vectorStr.append(e3.getValue());
+		    if (it.hasNext())
+			vectorStr.append(",");
+		}
+		xListPrinter.println(pair + "|" + vectorStr.toString());
 	    }
 
-	    //
-	    // THIS IS WHERE WE WOULD GENERATE THE pair x verb MATRIX AND EITHER
-	    // PRINT IT OUT OR COMPUTE THE SVD OR SOMETHING AWESOME.
-	    //
-	    // REMINDER: how do we name the x-lists for output?
-	    //
-	     
-	    
-	}    
+	    xListPrinter.close();
+	}
     }
 
 
