@@ -22,7 +22,7 @@ def parsePairs(triple_list, verbs):
     l = g.replace("Synset", "").translate(empty_trans, del_chars).split('\'')
     try:
       [n1, s1, n2, s2] = [x.strip() for x in l if x != '' and x != ' ']
-      print n1, n2
+      print n1, ",", n2
     except ValueError:
       pass
 
