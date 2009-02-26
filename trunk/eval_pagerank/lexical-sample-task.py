@@ -93,6 +93,7 @@ def runWSD(test_cases, use_scaling=True, use_banner=True):
     wsd_graph = pr.PageRank(sim_func)
     wsd_graph.buildMatrixGraph(cleanSent(tree_words), scaler)
     wsd_graph.convergeMatrix()
+    print wsd_graph.node_ranks
     final_synset = wsd_graph.findBestMSynset(target_tuple)
     #wsd_graph.buildGraph(cleanSent(tree_words), scaler)
     #wsd_graph.convergeGraph()
