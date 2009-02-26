@@ -2,10 +2,7 @@
 
 import string
 
-BANNER_CACHE = {}
 def bannerSim(syn1, syn2, def_dict):
-  if (syn1, syn2) in BANNER_CACHE:
-    return BANNER_CACHE[(syn1, syn2)]
   try:
     hyper1 = syn1.hypernyms()[0]
     hyper2 = syn2.hypernyms()[0]
@@ -18,7 +15,6 @@ def bannerSim(syn1, syn2, def_dict):
              bannerScore(syn1, hyper2, def_dict[syn1], def_dict[hyper2]))
   except IndexError:
     score = bannerScore(syn1, syn2, def_dict[syn1], def_dict[syn2])
-  BANNER_CACHE[(syn1, syn2)] = score
   return score
 
 def bannerScore(syn1, syn2, def1, def2):

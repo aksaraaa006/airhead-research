@@ -46,8 +46,8 @@ def cleanSent(tagged_sent):
 def syntaxScale(word_dict, (word1, word2)):
   if word1 not in word_dict or word2 not in word_dict:
     return 0
-  (tree_path1, _) = word_dict[word1]
-  (tree_path2, _) = word_dict[word2]
+  tree_path1 = word_dict[word1]
+  tree_path2 = word_dict[word2]
   path_length1 = len(tree_path1)
   path_length2 = len(tree_path2)
   nodes_matched = 0
@@ -67,7 +67,7 @@ def buildSentInfo(syntax_tree):
   for index in range(len(tags)):
     (word, pos) = tags[index]
     tree_position = syntax_tree.leaf_treeposition(index)
-    word_dict[(word, index)] = (tree_position, pos)
+    word_dict[(word, index)] = tree_position
   return word_dict
 
 def runWSD(test_cases, use_scaling=True, use_banner=True):
