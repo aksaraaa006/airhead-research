@@ -119,16 +119,16 @@ def runWSD(test_cases, parse_trees, use_scaling=True, use_banner=True):
       wsd_graph.convergeMatrix()
       # for each word to disambiguate in the case_dict, pull it out of the graph
       tagged_sent = tree.pos()
-      for case_index in test_cases[1][j]:
+      for case_index in test_cases[i][j]:
         # For each case, pull it out of the tagged sentence, then clean it up
         # (in the case that it has non alpha characters, split it into multiple
         # words).  Then for all the words in the target case, find a lemma which
         # matches it best.
         (word, pos) = tagged_sent[case_index+target_offset]
-        target_words = addCleanWord(word, pos, case_index)
+        target_words = addCleanWord(word, pos, case_index+target_offset)
         lemmas = []
         for target_word in target_words:
-          final_synset = wsd_graph.findBestSynset(target_word)
+          final_synset = wsd_graph.findBestMSynset(target_word)
           lemmas.append(pickLemma(final_synset, target_word))
         print "d%03d d%03d.s%03d.t%03d" %(i, i, j, case_index), "".join(lemmas)
 
@@ -144,14 +144,16 @@ def pickLemma(synset, target_word):
   if synset:
     if len(synset.lemmas) == 0:
       return synest.lemmas()[0].key + " "
-    for lemma in synset.lemmas():
+    for lemma in synset.lemmas:
       if lemma.name in possible_names:
         return lemma.key + " "
-  backups = wn.synsets(target_word[0], pos=target_word[1])
-  if len(backups) > 0:
-    for lemma in backups[0].lemmas:
-      if lemma.name in possible_names:
-        return lemma.key + " "
+  else:
+    print target_word, "Woah no sense found"
+  #backups = wn.synsets(target_word[0], pos=target_word[1])
+  #if len(backups) > 0:
+  #  for lemma in backups[0].lemmas:
+  #    if lemma.name in possible_names:
+  #      return lemma.key + " "
   return "U "
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ class PageRank():
     synset_keys = [(sense, target_word) for sense in synsets]
     top_score = 0
     top_synset = None
+    #print synset_keys
+    #print self.synsets.keys()
     for key in synset_keys:
       if key in self.synsets:
         (_, index) = self.synsets[key]
