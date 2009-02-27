@@ -170,8 +170,8 @@ if __name__ == "__main__":
       sim_type = value
     if option == '-u':
       usage()
-  valid_sims = {'c': scorer.comboSim, 'b': scorer.bannerSim,
-                'l': scorer.leskSim}
+  valid_sims = {'c': scorer.comboSim, 'banner': scorer.bannerSim,
+      'lesk': scorer.leskSim, 'jcn': scorer.jcnSim, 'lch':scorer.lchSim }
   if sim_type not in valid_sims:
     usage()
     sys.exit(1)

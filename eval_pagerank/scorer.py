@@ -2,18 +2,25 @@
 
 from nltk.corpus import wordnet_ic
 
-brown_ic = wordnet_ic.ic('ic-semcor.dat')
+brown_ic = wordnet_ic.ic('ic-brown17.dat')
 
 import string
 
 def comboSim(syn1, syn2, def_dict):
-  if syn1.pos == 'v' and syn2.pos == 'v':
-    return syn1.lch_similarity(syn2)
-  if syn1.pos == 'n' and syn2.pos == 'n':
-    print syn1, syn2
-    return syn1.jcn_similarity(syn2, brown_ic)
-  else:
-    return bannerSim(syn1, syn2, def_dict)
+  try:
+    if syn1.pos == 'v' and syn2.pos == 'v':
+      return syn1.lch_similarity(syn2)
+    if syn1.pos == 'n' and syn2.pos == 'n':
+      return syn1.jcn_similarity(syn2, brown_ic)
+  except OverflowError:
+    pass
+  return bannerSim(syn1, syn2, def_dict)
+
+def lchSim(syn1, syn2, def_dict):
+  return syn1.lch_similarity(syn2)
+
+def jcnSim(syn1, syn2, def_dict):
+  return syn1.jscn_similarity(syn2, brown_ic)
 
 def bannerSim(syn1, syn2, def_dict):
   try:
