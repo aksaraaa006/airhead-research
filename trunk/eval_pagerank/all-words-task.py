@@ -82,6 +82,8 @@ def runWSD(test_cases, parse_trees, sim_func, use_scaling=True):
     # Go through each parse tree using indexes, so again we can latter refer to
     # the relevant test case.
     for j in range(len(curr_sample)):
+      if j not in test_cases[i]:
+        continue
       # Build up a parse tree composed of the previous sentence, the current
       # sentence, and the next sentence, or as many of them that exist.
       context_tree = "(S "
@@ -142,13 +144,11 @@ def pickLemma(synset, target_word):
     for lemma in synset.lemmas:
       if lemma.name in possible_names:
         return lemma.key + " "
-  else:
-    print target_word, "Woah no sense found"
-  #backups = wn.synsets(target_word[0], pos=target_word[1])
-  #if len(backups) > 0:
-  #  for lemma in backups[0].lemmas:
-  #    if lemma.name in possible_names:
-  #      return lemma.key + " "
+  backups = wn.synsets(target_word[0], pos=target_word[1])
+  if len(backups) > 0:
+    for lemma in backups[0].lemmas:
+      if lemma.name in possible_names:
+        return lemma.key + " "
   return "U "
 
 def usage():
