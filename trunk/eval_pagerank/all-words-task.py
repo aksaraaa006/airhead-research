@@ -74,7 +74,7 @@ def buildSentInfo(syntax_tree):
     word_dict[(word, index)] = tree_position
   return word_dict
 
-def runWSD(test_cases, parse_trees, use_scaling=True, use_banner=True):
+def runWSD(test_cases, parse_trees, sim_func, use_scaling=True):
   # go through each corpus file given, using indexes so we can latter refer to
   # the test_case's relevant.
   for i in range(len(parse_trees)):
@@ -105,11 +105,6 @@ def runWSD(test_cases, parse_trees, use_scaling=True, use_banner=True):
         scaler = (lambda x: syntaxScale(word_info, x))
       else:
         scaler = (lambda x: 1)
-
-      if use_banner:
-        sim_func = scorer.bannerSim
-      else:
-        sim_func = scorer.leskSim
 
       tree_words = cleanSent(tree.pos())
 
@@ -156,22 +151,30 @@ def pickLemma(synset, target_word):
   #      return lemma.key + " "
   return "U "
 
+def usage():
+  print """
+  Usage eval-all-english.py [OPTION] test_case parse_trees 
+  Options are:
+  n: do not use syntax scaling
+  s: set the similarity measure used, valid choices are: l, b, c 
+  u: print this usage"""
+
 if __name__ == "__main__":
-  opts, args = getopt.getopt(sys.argv[1:], 'nlu')
-  use_banner = True
+  opts, args = getopt.getopt(sys.argv[1:], 'ns:u')
+  sim_type = 'b'
   use_syntax = True
   for option, value in opts:
     if option == '-n':
       use_syntax = False
-    if option == '-l':
-      use_banner = False
+    if option == '-s':
+      sim_type = value
     if option == '-u':
-      print """
-      Usage eval-all-english.py [OPTION] test_case parse_trees 
-      Options are:
-      n: do not use syntax scaling
-      l: use Lesk similarity metric instead of banner's
-      u: print this usage"""
+      usage()
+  valid_sims = {'c': scorer.comboSim, 'b': scorer.bannerSim,
+                'l': scorer.leskSim}
+  if sim_type not in valid_sims:
+    usage()
+    sys.exit(1)
   test_cases = pickle.load(open(args[0]))
   parse_trees = pickle.load(open(args[1]))
-  runWSD(test_cases, parse_trees, use_syntax, use_banner)
+  runWSD(test_cases, parse_trees, valid_sims[sim_type], use_syntax)
