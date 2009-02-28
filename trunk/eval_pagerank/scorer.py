@@ -20,7 +20,7 @@ def lchSim(syn1, syn2, def_dict):
   return syn1.lch_similarity(syn2)
 
 def jcnSim(syn1, syn2, def_dict):
-  return syn1.jscn_similarity(syn2, brown_ic)
+  return syn1.jcn_similarity(syn2, brown_ic)
 
 def bannerSim(syn1, syn2, def_dict):
   try:
