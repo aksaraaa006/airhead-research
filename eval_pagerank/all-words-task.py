@@ -74,7 +74,7 @@ def buildSentInfo(syntax_tree):
     word_dict[(word, index)] = tree_position
   return word_dict
 
-def runWSD(test_cases, parse_trees, sim_func, use_scaling=True):
+def runWSD(test_cases, parse_trees, sim_func, use_scaling=True, use_limit=False):
   # go through each corpus file given, using indexes so we can latter refer to
   # the test_case's relevant.
   for i in range(len(parse_trees)):
@@ -111,7 +111,7 @@ def runWSD(test_cases, parse_trees, sim_func, use_scaling=True):
       tree_words = cleanSent(tree.pos())
 
       # Add everything to the graph and disambiguate!
-      wsd_graph = pr.PageRank(sim_func)
+      wsd_graph = pr.PageRank(sim_func, use_limit)
       wsd_graph.buildMatrixGraph(tree_words, scaler)
       wsd_graph.convergeMatrix()
       # for each word to disambiguate in the case_dict, pull it out of the graph
@@ -163,6 +163,7 @@ if __name__ == "__main__":
   opts, args = getopt.getopt(sys.argv[1:], 'ns:u')
   sim_type = 'b'
   use_syntax = True
+  use_limit = False
   for option, value in opts:
     if option == '-n':
       use_syntax = False
@@ -170,6 +171,8 @@ if __name__ == "__main__":
       sim_type = value
     if option == '-u':
       usage()
+    if option == '-l':
+      use_limit = True
   valid_sims = {'c': scorer.comboSim, 'banner': scorer.bannerSim,
       'lesk': scorer.leskSim, 'jcn': scorer.jcnSim, 'lch':scorer.lchSim }
   if sim_type not in valid_sims:
@@ -177,4 +180,4 @@ if __name__ == "__main__":
     sys.exit(1)
   test_cases = pickle.load(open(args[0]))
   parse_trees = pickle.load(open(args[1]))
-  runWSD(test_cases, parse_trees, valid_sims[sim_type], use_syntax)
+  runWSD(test_cases, parse_trees, valid_sims[sim_type], use_syntax, use_limit)

@@ -8,13 +8,14 @@ import numpy
 import string
 
 class PageRank():
-  def __init__(self, scorer, use_cuda=False):
+  def __init__(self, scorer, use_cuda=False, limit=0):
     self.wordnet_graph = None
     self.node_ranks = {} 
     self.synset_defs = {}
     self.walk_chance = .75
     self.scorer = scorer
     self.use_cuda = use_cuda
+    self.limit = limit
     self.wn = WordNetCorpusReader(nltk.data.find('corpora/wordnet17'))
 
   def cleanDefinition(self, sense):
@@ -64,6 +65,11 @@ class PageRank():
     except IndexError:
       pass
 
+  def inRange(self, index1, index2):
+    if self.limit != 0:
+      return abs(index1 - index2) < self.limit
+    return True
+
   def buildMatrixGraph(self, words, scaler):
     self.synsets = {}
     index = 0
@@ -87,7 +93,7 @@ class PageRank():
       for (sense2, word2) in unexamined_keys:
         ignore_list, index2 = self.synsets[(sense2, word2)]
         score = 0
-        if (sense1, word1) not in ignore_list and abs(index1 - index2) < 10:
+        if (sense1, word1) not in ignore_list and self.inRange(index1, index2):
           scale = scaler(((word1[0], word1[2]), (word2[0], word2[2])))
           score = self.scorer(sense1, sense2, self.synset_defs) * scale
         self.matrix[index1][index2] = score
