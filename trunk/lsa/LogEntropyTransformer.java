@@ -17,6 +17,9 @@ public class LogEntropyTransformer {
 	    Map<Integer,Integer> docToNumTerms = 
 		new HashMap<Integer,Integer>();
 
+	    Map<Integer,Integer> termToGlobalCount = 
+		new HashMap<Integer,Integer>();
+
 	    System.out.println("calculating document statistics");
 
 	    // calculate how many terms were in each document for the original
@@ -34,13 +37,20 @@ public class LogEntropyTransformer {
 		docToNumTerms.put(doc, (docTermCount == null)
 				  ? count
 				  : Integer.valueOf(count + docTermCount));
+
+		Integer termGlobalCount = termToGlobalCount.get(term);
+		termToGlobalCount.put(term, (termGlobalCount == null)
+				      ? count
+				      : termGlobalCount + count);
+				      
 	    }
 
 	    br.close();
 
 	    System.out.println("calculating term entropy");
 
-	    Map<Integer,Double> termToEntropySum = new HashMap<Integer,Double>();
+	    Map<Integer,Double> termToEntropySum = new 
+		HashMap<Integer,Double>();
 
 	    // now go through and find the probability that the term appears in
 	    // the document given how many terms it has to begin with
@@ -53,15 +63,20 @@ public class LogEntropyTransformer {
 		Integer count = Integer.valueOf(termDocCount[2]);
 
 		double numTermsInDoc = docToNumTerms.get(doc).doubleValue();
+		double globalTermCount = 
+		    termToGlobalCount.get(term).doubleValue();
 
-		double probability = count.doubleValue() / numTermsInDoc;
-		double entropy = probability * log(probability);
+		double termFreq = count.doubleValue() / numTermsInDoc;
+		double probability = count / globalTermCount;
 		
+		double d = (probability * log(probability)) / 
+		    log(docToNumTerms.size());
+
 		// NOTE: keep the entropy sum a positive value
 		Double entropySum = termToEntropySum.get(term);
 		termToEntropySum.put(term, (entropySum == null)
-				     ? -entropy
-				     : entropySum + -entropy);
+				     ? d
+				     : entropySum + d);
 	    }
 	    br.close();
 	   
@@ -84,11 +99,12 @@ public class LogEntropyTransformer {
 		double log = log(count.doubleValue() + 1);
 		
 		double entropySum = termToEntropySum.get(term).doubleValue();
+		double entropy = 1 - entropySum;
 		
 		// now print out the noralized values
 		pw.println(term + "\t" +
 			   doc + "\t" +
-			   (log / entropySum));	    
+			   (log / entropy));	    
 	    }
 	    br.close();
 	    pw.close();
