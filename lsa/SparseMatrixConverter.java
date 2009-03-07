@@ -5,9 +5,7 @@ public class SparseMatrixConverter {
 
     public static void main(String[] args) {
 	try {
-	    BufferedReader br = (args.length == 0)
-		? new BufferedReader(new InputStreamReader(System.in))
-		: new BufferedReader(new FileReader(args[0]));
+	    BufferedReader br = new BufferedReader(new FileReader(args[0]));
 
 	    Map<Integer,Integer> colToNonZero = 
 		new HashMap<Integer,Integer>();
@@ -32,6 +30,8 @@ public class SparseMatrixConverter {
 	    // 0, so decrement the total number of rows and columns
 	    --rows;
 	    --cols;
+
+	    br = new BufferedReader(new FileReader(args[0]));
 
 	    // loop through a second time and convert each of the rows into its
 	    // SVDLIBC sparse format
