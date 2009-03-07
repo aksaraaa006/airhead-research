@@ -5,7 +5,7 @@ public class SparseMatrixConverter {
 
     public static void main(String[] args) {
 	try {
-	    BufferedReader br = (args.length > 0)
+	    BufferedReader br = (args.length == 0)
 		? new BufferedReader(new InputStreamReader(System.in))
 		: new BufferedReader(new FileReader(args[0]));
 
