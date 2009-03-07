@@ -96,7 +96,7 @@ public class LogEntropyTransformer {
 		double log = log1p(count.doubleValue());
 		
 		double entropySum = termToEntropySum.get(term).doubleValue();
-		double entropy = 1 - entropySum;
+		double entropy = -entropySum;
 		
 		// now print out the noralized values
 		pw.println(term + "\t" +
