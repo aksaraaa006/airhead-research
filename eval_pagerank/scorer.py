@@ -43,6 +43,13 @@ def bannerScore(syn1, syn2, def1, def2):
   score = 0
   old_score = 1
   while old_score != score:
+    curr_def = 
+def bannerScore(syn1, syn2, def1, def2):
+  def1 = list(def1)
+  def2 = list(def2)
+  score = 0
+  old_score = 1
+  while old_score != score:
     old_score = score
     i = 0
     j = 0
