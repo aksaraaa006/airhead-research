@@ -48,6 +48,7 @@ public class SparseMatrixConverter {
 		    }
 		    // print the new header
 		    int colCount = colToNonZero.get(col);
+		    lastCol = col;
 		    System.out.println(colCount);		    
 		}
 		System.out.println(rowColVal[0] + "\t" + rowColVal[2]);
