@@ -6,7 +6,7 @@ brown_ic = wordnet_ic.ic('ic-brown17.dat')
 
 import string
 
-def comboSim(syn1, syn2, def_dict):
+def comboSim(baseSim, syn1, syn2, def_dict):
   try:
     if syn1.pos == 'v' and syn2.pos == 'v':
       return syn1.lch_similarity(syn2)
@@ -14,7 +14,7 @@ def comboSim(syn1, syn2, def_dict):
       return syn1.jcn_similarity(syn2, brown_ic)
   except OverflowError:
     pass
-  return bannerSim(syn1, syn2, def_dict)
+  return baseSim(syn1, syn2, def_dict)
 
 def lchSim(syn1, syn2, def_dict):
   return syn1.lch_similarity(syn2)
@@ -58,7 +58,6 @@ def bannerScore(syn1, syn2, def1, def2):
     for i in range(len(def2)):
       if def1[0] == def2[i]:
         score += lengthMatch(def1, def2, i)
-        print def1, def2, score
     def1 = def1[1:]
   return score
 
