@@ -58,8 +58,8 @@ class PageRank():
   def addDefinition(self, synset):
     self.synset_defs[synset] = self.cleanDefinition(synset)
     try:
-      hyper = [word for word in d for d in synset.hypernyms()]
-      hypo = [word for word in d for d in synset.hyponyms()]
+      hyper = synset.hypernyms()[0]
+      hypo = synset.hyponyms()[0]
       self.synset_defs[hyper] = self.cleanDefinition(hyper)
       self.synset_defs[hypo] = self.cleanDefinition(hypo)
     except IndexError:

@@ -111,7 +111,7 @@ def runWSD(test_cases, parse_trees, sim_func, use_scaling=True, use_limit=False)
       tree_words = cleanSent(tree.pos())
 
       # Add everything to the graph and disambiguate!
-      wsd_graph = pr.PageRank(sim_func, use_limit)
+      wsd_graph = pr.PageRank(sim_func, use_limit*10)
       wsd_graph.buildMatrixGraph(tree_words, scaler)
       wsd_graph.convergeMatrix()
       # for each word to disambiguate in the case_dict, pull it out of the graph
@@ -160,8 +160,8 @@ def usage():
   u: print this usage"""
 
 if __name__ == "__main__":
-  opts, args = getopt.getopt(sys.argv[1:], 'ns:u')
-  sim_type = 'b'
+  opts, args = getopt.getopt(sys.argv[1:], 'lns:u')
+  sim_type = 'banner'
   use_syntax = True
   use_limit = False
   for option, value in opts:
@@ -175,7 +175,7 @@ if __name__ == "__main__":
       use_limit = True
   valid_sims = {'c': scorer.comboSim, 'banner': scorer.bannerSim,
       'lesk': scorer.leskSim, 'jcn': scorer.jcnSim, 'lch':scorer.lchSim }
-  if sim_type not in valid_sims:
+  if sim_type not in valid_sims or len(args) != 2:
     usage()
     sys.exit(1)
   test_cases = pickle.load(open(args[0]))
