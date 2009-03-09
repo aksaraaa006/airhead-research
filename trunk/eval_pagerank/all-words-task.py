@@ -173,8 +173,12 @@ if __name__ == "__main__":
       usage()
     if option == '-l':
       use_limit = True
-  valid_sims = {'c': scorer.comboSim, 'banner': scorer.bannerSim,
-      'lesk': scorer.leskSim, 'jcn': scorer.jcnSim, 'lch':scorer.lchSim }
+  valid_sims = {'cl': (lambda x,y,z: scorer.comboSim(scorer.leskSim, x, y, z)),
+                'cb': (lambda x,y,z: scorer.comboSim(scorer.bannerSim, x, y, z)),
+                'banner': scorer.bannerSim,
+                'lesk': scorer.leskSim,
+                'jcn': scorer.jcnSim,
+                'lch':scorer.lchSim }
   if sim_type not in valid_sims or len(args) != 2:
     usage()
     sys.exit(1)
