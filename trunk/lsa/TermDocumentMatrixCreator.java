@@ -160,8 +160,8 @@ public class TermDocumentMatrixCreator {
 
 	    // replace all non-word characters with whitespace.  We also include
 	    // some uncommon characters (such as those with the eacute).
-	    line = line.replaceAll("[^A-Za-z0-9'\u00E0-\u00FF]", " ").
-		toLowerCase();
+	    //line = line.replaceAll("[^A-Za-z0-9'\u00E0-\u00FF]", " ").
+	    line = line.replaceAll("\\W"," ").toLowerCase();
 
 	    // split the line based on whitespace
 	    String[] text = line.split("\\s+");
@@ -291,7 +291,8 @@ public class TermDocumentMatrixCreator {
 	for (int i = 0; i < NUM_THREADS; ++i) {
 	    Thread t = new Thread() {
 		    public void run() {
-			// repeatedly try to process documents while some still remain
+			// repeatedly try to process documents while some still
+			// remain
 			while (docIter.hasNext()) {
 			    long startTime = System.currentTimeMillis();
 			    Document doc = docIter.next();
