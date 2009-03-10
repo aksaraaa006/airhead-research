@@ -105,13 +105,13 @@ public class LogEntropyTransformer {
 		Integer doc   = Integer.valueOf(termDocCount[1]);
 		Integer count = Integer.valueOf(termDocCount[2]);
 
-		double termFreq = count.doubleValue() /
-		    docToNumTerms.get(doc).doubleValue();
+// 		double termFreq = count.doubleValue() /
+// 		    docToNumTerms.get(doc).doubleValue();
 
-		double log = log1p(termFreq);
+		double log = log1p(count);
 		
 		double entropySum = termToEntropySum.get(term).doubleValue();
-		double entropy = (1 + entropySum) / log(numDocs);
+		double entropy = 1 + (entropySum / log(numDocs));
 		
 		// now print out the noralized values
 		pw.println(term + "\t" +
