@@ -100,11 +100,11 @@ class PageRank():
         self.matrix[index2][index1] = score
       unexamined_keys = unexamined_keys[1:]
 
-    #row_sum = self.matrix.sum(axis=1).reshape((-1,1))
-    #for i in row_sum:
-    #  if i[0] == 0:
-    #    i[0] = 1
-    row_sum = self.matrix.max()
+    row_sum = self.matrix.sum(axis=1).reshape((-1,1))
+    for i in row_sum:
+      if i[0] == 0:
+        i[0] = 1
+    #row_sum = self.matrix.max()
 
     self.matrix = self.matrix / row_sum
     self.matrix = numpy.transpose(self.matrix)
