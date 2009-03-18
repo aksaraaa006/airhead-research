@@ -12,7 +12,7 @@ class PageRank():
     self.wordnet_graph = None
     self.node_ranks = {} 
     self.synset_defs = {}
-    self.walk_chance = .75
+    self.walk_chance = .85
     self.scorer = scorer
     self.use_cuda = use_cuda
     self.limit = limit
@@ -112,14 +112,10 @@ class PageRank():
   def convergeMatrix(self):
     if len(self.node_ranks) <= 0:
       return
-    eps = .000001
-    max_error = 1
     M = numpy.zeros(self.node_ranks.shape, dtype=numpy.float32) * (1-self.walk_chance)
     d = self.walk_chance
-    while max_error > eps: 
-      max_error = 0
+    for i in range(30):
       PR_NEW = M + d*numpy.dot(self.matrix, self.node_ranks)
-      max_error = numpy.fabs(PR_NEW - self.node_ranks).max()
       self.node_ranks = PR_NEW
 
   def buildGraph(self, words, scaler):
