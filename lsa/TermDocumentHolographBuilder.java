@@ -28,32 +28,20 @@ class TermDocumentHolographBuilder {
     indexVectorSize = 2048;
   }
 
-  public void parseDocument(String filename) throws IOException {
+  public void parseDocument(String line) throws IOException {
     docCount++;
-    BufferedReader br = new BufferedReader(new FileReader(filename));
-    String line = null;
-    int lineNum = 0;
-    while ((line = br.readLine()) != null) {
-      if (lineNum++ < LINES_TO_SKIP)
-        continue;
-
-      if (lineNum > MAX_LINES)
-        break;
-
-      // split the line based on whitespace
-      String[] text = line.split("\\s");
-      for (String word : text) {
-      // clean up each word before entering it into the matrix
+    // split the line based on whitespace
+    String[] text = line.split("\\s");
+    for (String word : text) {
+    // clean up each word before entering it into the matrix
       String cleaned = cleanup(word);
       // skip any mispelled or unknown words
       if (!isValid(cleaned))
         continue;
       words.add(cleaned);
       indexBuilder.addTermIfMissing(cleaned);
-      updateHolograph(filename);
-      }
+      updateHolograph("" + docCount);
     }
-    br.close();
   }
 
   private void updateHolograph(String filename) {
