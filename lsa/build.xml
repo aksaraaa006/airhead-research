@@ -1,0 +1,33 @@
+<project name="tensor-lsa" default="compile">
+  <property file="build.properties"/>
+  <target name="compile">
+    <mkdir dir="bin"/>
+    <delete>
+      <fileset dir="bin" includes="**"/>
+    </delete>
+    <javac destdir="bin">
+      <src path="."/>
+      <include name="HolographSVD.java"/>
+    </javac>
+  </target>
+
+  <property file="build.properties"/>
+  <target name="test">
+    <mkdir dir="bin"/>
+    <delete>
+      <fileset dir="bin" includes="**"/>
+    </delete>
+    <javac destdir="bin">
+      <src path="."/>
+      <include name="tests/**"/>
+      <include name="RandomIndexBuilder.java"/>
+      <include name="TermDocumentHolographBuilder.java"/>
+    </javac>
+  </target>
+
+  <target name="clean">
+    <delete dir="gensrc"/>
+    <delete dir="results"/>
+    <delete dir="bin"/>
+  </target>
+</project>

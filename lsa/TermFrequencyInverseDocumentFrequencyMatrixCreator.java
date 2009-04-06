@@ -77,32 +77,4 @@ public class TermFrequencyInverseDocumentFrequencyMatrixCreator {
 	    t.printStackTrace();
 	}
     }
-    
-    private static class Pair {
-	
-	Integer term;
-	Integer doc;
-
-	public Pair(Integer term, Integer doc) {
-	    this.term = term;
-	    this.doc = doc;
-	}
-
-	public boolean equals(Object o) {
-	    if (o instanceof Pair) {
-		Pair p = (Pair)o;
-		return p.term.equals(term) && p.term.equals(term);
-	    }
-	    return false;
-	}
-
-	public int hashCode() {
-	    return term.hashCode() + doc.hashCode();
-	}
-	
-    }
-
 }
-
-
-
