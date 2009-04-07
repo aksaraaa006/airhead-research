@@ -99,8 +99,6 @@ class RandomIndexBuilder {
     Matrix result = newVector(0);
     left = changeVector(left,permute1);
     right = changeVector(right,permute2);
-    //reorderVector(left, order1);
-    //reorderVector(right, order2);
     fft(left);
     fft(right);
     result = left.arrayTimes(right);
