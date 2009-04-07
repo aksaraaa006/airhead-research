@@ -14,14 +14,14 @@ class TermDocumentHolographBuilder {
 
   private final RandomIndexBuilder indexBuilder;
   private final LinkedList<String> words;
-  private final HashMap<Index, Matrix> termDocHolographs;
+ // private final HashMap<Index, Matrix> termDocHolographs;
   private final HashMap<String, Matrix> termHolographs;
   private final int indexVectorSize;
   private int docCount;
 
   public TermDocumentHolographBuilder() {
     indexBuilder = new RandomIndexBuilder();
-    termDocHolographs = new HashMap<Index, Matrix>();
+    //termDocHolographs = new HashMap<Index, Matrix>();
     termHolographs = new HashMap<String, Matrix>();
     words = new LinkedList<String>();
     docCount = 0;
@@ -51,14 +51,16 @@ class TermDocumentHolographBuilder {
     String[] context = words.toArray(new String[0]);
     String mainWord = context[1];
     context[1] = "";
-    Index index = new Index(mainWord, filename);
-    Matrix meaning = termDocHolographs.get(index);
+    //Index index = new Index(mainWord, filename);
+    Matrix meaning = termHolographs.get(mainWord);
+    //termDocHolographs.get(index);
     if (meaning == null) {
       meaning = new Matrix(indexVectorSize, 1, 0);
-      termDocHolographs.put(index, meaning);
-      termHolographs.put(mainWord, new Matrix(meaning.getArray()));
+      //termDocHolographs.put(index, meaning);
+      //termHolographs.put(mainWord, new Matrix(meaning.getArray()));
+      termHolographs.put(mainWord, meaning);
     }
-    indexBuilder.updateMeaningWithTerm(meaning, context);
+    //indexBuilder.updateMeaningWithTerm(meaning, context);
     indexBuilder.updateMeaningWithTerm(termHolographs.get(mainWord), context);
     words.removeFirst();
   }
