@@ -14,15 +14,15 @@ class TermDocumentHolographBuilder {
 
   private final RandomIndexBuilder indexBuilder;
   private final LinkedList<String> words;
- // private final HashMap<Index, Matrix> termDocHolographs;
-  private final HashMap<String, Matrix> termHolographs;
+ // private final HashMap<Index, double[]> termDocHolographs;
+  private final HashMap<String, double[]> termHolographs;
   private final int indexVectorSize;
   private int docCount;
 
   public TermDocumentHolographBuilder() {
     indexBuilder = new RandomIndexBuilder();
-    //termDocHolographs = new HashMap<Index, Matrix>();
-    termHolographs = new HashMap<String, Matrix>();
+    //termDocHolographs = new HashMap<Index, double[]>();
+    termHolographs = new HashMap<String, double[]>();
     words = new LinkedList<String>();
     docCount = 0;
     indexVectorSize = 2048;
@@ -48,30 +48,32 @@ class TermDocumentHolographBuilder {
     if (words.size() < CONTEXT_SIZE) {
       return;
     }
+    /*
     String[] context = words.toArray(new String[0]);
-    String mainWord = context[1];
     context[1] = "";
+    */
+    String mainWord = words.get(1);
     //Index index = new Index(mainWord, filename);
-    Matrix meaning = termHolographs.get(mainWord);
+    double[] meaning = termHolographs.get(mainWord);
     //termDocHolographs.get(index);
     if (meaning == null) {
-      meaning = new Matrix(indexVectorSize, 1, 0);
+      meaning = new double[indexVectorSize];
       //termDocHolographs.put(index, meaning);
-      //termHolographs.put(mainWord, new Matrix(meaning.getArray()));
+      //termHolographs.put(mainWord, new double[](meaning.getArray()));
       termHolographs.put(mainWord, meaning);
     }
     //indexBuilder.updateMeaningWithTerm(meaning, context);
-    indexBuilder.updateMeaningWithTerm(termHolographs.get(mainWord), context);
+    //indexBuilder.updateMeaningWithTerm(termHolographs.get(mainWord), context);
     words.removeFirst();
   }
 
-  private double cosineSimilarity(Matrix a, Matrix b) {
+  private double cosineSimilarity(double[] a, double[] b) {
     double dotProduct = 0.0;
     double aMagnitude = 0.0;
     double bMagnitude = 0.0;
     for (int i = 0; i < indexVectorSize; i++) {
-      double aValue = a.get(i,0);
-      double bValue = b.get(i,0);
+      double aValue = a[i];
+      double bValue = b[i];
       aMagnitude += aValue * aValue;
       bMagnitude += bValue * bValue;
       dotProduct += aValue * bValue;
