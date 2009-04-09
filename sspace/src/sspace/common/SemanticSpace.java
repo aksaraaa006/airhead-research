@@ -1,6 +1,6 @@
 package sspace.common;
 
-import java.io.IOException
+import java.io.IOException;
 
 // A SemanticSpace implementation should implement each of the following
 // methods in such a way that it conforms to the expected format of document
