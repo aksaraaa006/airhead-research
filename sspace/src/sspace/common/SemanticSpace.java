@@ -10,7 +10,7 @@ import java.io.IOException;
 //   2) processSpace()
 //   3) reduce()
 //   4) at least 1 call to computeDistances()
-interface SemanticSpace {
+public interface SemanticSpace {
   // Implementation should read from the given filename and process all of the
   // words in the document.  Models may consider filename to be a unique string
   // identifying the document if this is needed.  Implementations may throw an
