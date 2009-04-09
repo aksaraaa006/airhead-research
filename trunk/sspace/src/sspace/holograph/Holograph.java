@@ -24,12 +24,12 @@ public class Holograph implements SemanticSpace {
   private int docCount;
 
   public Holograph() {
+    indexVectorSize = 2048;
     indexBuilder = new RandomIndexBuilder();
     termDocHolographs = new HashMap<Index, double[]>();
     termHolographs = new HashMap<String, double[]>();
     words = new LinkedList<String>();
     docCount = 0;
-    indexVectorSize = 2048;
   }
 
   public void parseDocument(String line) throws IOException {
