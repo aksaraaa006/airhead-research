@@ -62,7 +62,7 @@ class TermDocumentHolographBuilder {
       //termHolographs.put(mainWord, new double[](meaning.getArray()));
       termHolographs.put(mainWord, meaning);
     }
-    //indexBuilder.updateMeaningWithTerm(meaning, context);
+    indexBuilder.updateMeaningWithTerm(meaning, context);
     //indexBuilder.updateMeaningWithTerm(termHolographs.get(mainWord), context);
     words.removeFirst();
   }
