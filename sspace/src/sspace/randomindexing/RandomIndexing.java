@@ -323,7 +323,7 @@ public class RandomIndexing {
 
 	    File outputDir = new File(args[1]);
 	    for (String word : ri.getWords()) {
-		VectorIO.printVector(
+		VectorIO.writeVector(
 		    ri.getSemanticVector(word).getVector(),
 		    word, outputDir);
 	    }
