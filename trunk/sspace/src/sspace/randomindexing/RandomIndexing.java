@@ -279,15 +279,22 @@ public class RandomIndexing {
 		System.out.println("doc # " + (++i));
 	    }
 
-	    File outputDir = new File(args[0]);
+	    File outputDir = new File(args[1]);
 	    for (String word : ri.getWords()) {
-		PrintWriter pw = new PrintWriter(
-		    new File(outputDir, word + ".ri-vector"));
-		int[] vector = ri.getSemanticVector(word).vector;
-		for (int j = 0; j < vector.length - 1; ++j)
-		    pw.print(vector[j] + "\t");
-		pw.print(vector[vector.length-1]);
-		pw.close();
+		// keep going even in the event of an error due to some word
+		// having an incompatiable file name.
+		try {
+		    word = word.replaceAll("/","-SLASH-");
+		    PrintWriter pw = new PrintWriter(
+			new File(outputDir, word + ".ri-vector"));
+		    int[] vector = ri.getSemanticVector(word).vector;
+		    for (int j = 0; j < vector.length - 1; ++j)
+			pw.print(vector[j] + "\t");
+		    pw.print(vector[vector.length-1]);
+		    pw.close();
+		} catch (Throwable th) {
+		    th.printStackTrace();
+		}
 	    }	    
 	}
 	catch (Throwable t) {
