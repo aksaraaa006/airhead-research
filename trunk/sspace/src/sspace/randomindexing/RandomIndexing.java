@@ -316,6 +316,7 @@ public class RandomIndexing {
 	    System.out.println("processing documents");
 	    int i = 0;
 	    for (String line = null; (line = br.readLine()) != null; ){ 
+		line = line.replaceAll("\\W", "").toLowerCase();
 		ri.processText(line);
 		System.out.println("doc # " + (++i));
 	    }
