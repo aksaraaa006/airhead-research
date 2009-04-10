@@ -44,4 +44,51 @@ public class Similarity {
 	bMagnitude = Math.sqrt(bMagnitude);
 	return dotProduct / (aMagnitude * bMagnitude);
     }
+
+    // REMINDER: this could be made more effecient by not looping
+    private static double computeCorrelation(double[] arr1, double[] arr2) {
+	double xSum = 0;
+	double ySum = 0;
+	for (int i = 0; i < arr1.length; ++i) {
+	    xSum += arr1[i];
+	    ySum += arr2[i];
+	}
+	
+	double xMean = xSum / arr1.length;
+	double yMean = ySum / arr1.length;
+	
+	double numerator = 0, xSqSum = 0, ySqSum = 0;
+	for (int i = 0; i < arr1.length; ++i) {
+	    double x = arr1[i] - xMean;
+	    double y = arr2[i] - yMean;
+	    numerator += x * y;
+	    xSqSum += (x * x);
+	    ySqSum += (y * y);
+	}
+	return numerator / Math.sqrt(xSqSum * ySqSum);
+    }
+
+    // REMINDER: this could be made more effecient by not looping
+    private static double computeCorrelation(int[] arr1, int[] arr2) {
+	long xSum = 0;
+	long ySum = 0;
+	for (int i = 0; i < arr1.length; ++i) {
+	    xSum += arr1[i];
+	    ySum += arr2[i];
+	}
+	
+	double xMean = xSum / (int)(arr1.length);
+	double yMean = ySum / (int)(arr1.length);
+	
+	double numerator = 0, xSqSum = 0, ySqSum = 0;
+	for (int i = 0; i < arr1.length; ++i) {
+	    double x = arr1[i] - xMean;
+	    double y = arr2[i] - yMean;
+	    numerator += x * y;
+	    xSqSum += (x * x);
+	    ySqSum += (y * y);
+	}
+	return numerator / Math.sqrt(xSqSum * ySqSum);
+    }
+
 }
