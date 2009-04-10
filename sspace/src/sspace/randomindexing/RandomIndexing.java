@@ -17,6 +17,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import sspace.common.VectorIO;
+
 public class RandomIndexing {
 
     //
@@ -153,39 +155,78 @@ public class RandomIndexing {
     }
 
     private class SemanticVector {
+
+	private static final double MAX_SPARSE_DENSITY = .5;
 	
-	private final int[] vector;
+	private int[] vector;
+
+	private Map<Integer,Integer> sparseVector;
+
+	private final int length;
 
 	public SemanticVector(int length) {
-	    vector = new int[length];
+	    this.length = length;
+
+	    // start out sparse
+	    sparseVector = new HashMap<Integer,Integer>(length / 2, 1f);
+	    vector = null;
 	}
 	
 	public void add(IndexVector v) {
-	    for (int p : v.positiveDimensions()) {
-		vector[p]++;
+	    if (isSparse()) {
+		for (int p : v.positiveDimensions()) {
+		    Integer i = sparseVector.get(p);
+		    sparseVector.put(p, (i == null) 
+				     ? Integer.valueOf(1)
+				     : Integer.valueOf(i.intValue() + 1));
+		}
+
+		for (int n : v.negativeDimensions()) {
+		    Integer i = sparseVector.get(n);
+		    sparseVector.put(n, (i == null) 
+				     ? Integer.valueOf(-1)
+				     : Integer.valueOf(i.intValue() - 1));
+		}
+
+		// check to see that we haven't gone over the maximum sparsity
+		// density
+		checkSparse();
 	    }
-	    for (int n : v.negativeDimensions()) {
-		vector[n]--;
+	    else {
+		for (int p : v.positiveDimensions()) {
+		    vector[p]++;
+		}
+		for (int n : v.negativeDimensions()) {
+		    vector[n]--;
+		}
 	    }
 	}
 
-	public double cosineSimilarity(SemanticVector other) {
-	
-	    int dotProduct = 0;
-	    int aMagSum = 0;
-	    int bMagSum = 0;
-	    for (int i = 0; i < vector.length; ++i) {
-		int d = vector[i];
-		aMagSum += d * d;
-		int e = other.vector[i];
-		bMagSum += e * e;
-		dotProduct += d * e;
+	private void checkSparse() {
+	    double density =  sparseVector.size() / (double)length;
+	    // revert to using the full vector
+	    if (density > MAX_SPARSE_DENSITY) {
+		vector = getVector();
+		sparseVector = null;
 	    }
-	    
-	    double aMag = Math.sqrt(aMagSum);
-	    double bMag = Math.sqrt(bMagSum);
+	}
 	
-	    return Math.acos(dotProduct / (aMag * bMag));
+	public int[] getVector() {
+	    if (isSparse()) {
+		// convert the map to an array
+		int[] full = new int[length];
+		for (int i = 0; i < length; ++i) {
+		    Integer j = sparseVector.get(Integer.valueOf(i));
+		    full[i] = (j == null) ? 0 : j.intValue(); 
+		}
+		return full;
+	    }
+	    else
+		return vector;
+	}
+
+	private boolean isSparse() {
+	    return sparseVector != null;
 	}
     }
 
@@ -281,23 +322,11 @@ public class RandomIndexing {
 
 	    File outputDir = new File(args[1]);
 	    for (String word : ri.getWords()) {
-		// keep going even in the event of an error due to some word
-		// having an incompatiable file name.
-		try {
-		    word = word.replaceAll("/","-SLASH-");
-		    PrintWriter pw = new PrintWriter(
-			new File(outputDir, word + ".ri-vector"));
-		    int[] vector = ri.getSemanticVector(word).vector;
-		    for (int j = 0; j < vector.length - 1; ++j)
-			pw.print(vector[j] + "\t");
-		    pw.print(vector[vector.length-1]);
-		    pw.close();
-		} catch (Throwable th) {
-		    th.printStackTrace();
-		}
-	    }	    
-	}
-	catch (Throwable t) {
+		VectorIO.printVector(
+		    ri.getSemanticVector(word).getVector(),
+		    word, outputDir);
+	    }
+	} catch (Throwable t) {
 	    t.printStackTrace();
 	}
     }
