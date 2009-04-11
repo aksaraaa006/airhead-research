@@ -2,6 +2,8 @@
 
 import numpy
 import random
+import sys
+
 from learningAgent import learningAgent
 
 VECTOR_SIZE = 60
@@ -26,8 +28,8 @@ class LearningGame():
       random.shuffle(new_object)
       self.objects.append(numpy.array(new_object))
   
-  def playGame(self):
-    for i in range(1000):
+  def playGame(self, num_times):
+    for i in range(num_times):
       [speaker, hearer] = random.sample(self.learners, 2)
       word, context = speaker.generateUtterance()
       #print "speaker says: ", word, context
@@ -38,5 +40,5 @@ class LearningGame():
 
 if __name__ == "__main__":
   game = LearningGame()
-  game.playGame()
+  game.playGame(int(sys.argv[1]))
 

@@ -3,6 +3,7 @@
 import math
 import numpy
 import random
+import pylab
 
 from math import sqrt
 from numpy import linalg
@@ -10,6 +11,9 @@ from numpy import linalg
 def inRange(node1, node2, range):
   return (sqrt(pow(node1[0]- node2[0],2) + pow(node1[1] - node2[1],2)) <
           range)
+
+def distance(v1, v2):
+  return sqrt(numpy.power(v1 - v2, 2).sum())
 
 class learningAgent():
   def __init__(self, vector_size, game):
@@ -35,7 +39,7 @@ class learningAgent():
     # Select the word which best describes the subject according the to agents
     # own SOM.
     best_node, min_sim, max_sim, neighbors = self.getBestNode(context)
-    if min_sim > 1.5:
+    if min_sim > 1.5 or best_node.word == "":
       word = self.generateWord()
       best_node.word = word
     else:
@@ -87,7 +91,9 @@ class learningAgent():
   def printMap(self):
     for node in self.som:
       if node.word != "":
-        print node.loc, node.word
+        t = pylab.text(node.loc[0], node.loc[1], node.word)
+    pylab.axis([0, 60, 0, 60])
+    pylab.show()
 
 class SOMNode():
   def __init__(self, x_pos, y_pos, learning_delta, vector_size):
@@ -104,9 +110,9 @@ class SOMNode():
       self.n_range -= math.floor(time/100)
 
   def similarity(self, meaning_vector):
-    """Compute the cosine similarity of this nodes meaning with the given
+    """Compute the euclidian similarity of this nodes meaning with the given
     meaning_vector."""
-    return sqrt(numpy.power(self.meaning - meaning_vector, 2).sum())
+    return distance(meaning_vector, self.meaning)
 
   def updateMeaning(self, meaning_vector):
     """Update the meaning of this node to incorporate the given meaning vector
