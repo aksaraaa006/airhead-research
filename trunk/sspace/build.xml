@@ -1,6 +1,16 @@
 <project name="semanticspaces" default="compile">
   <property file="build.properties"/>
 
+  <property name="lib.dir" value="lib"/>
+  <property name="build.dir" value="classes"/>
+  
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    <fileset dir="${lib.dir}/jnt" includes="**/*.class"/>
+    <fileset dir="${build.dir}" includes="**/*.java"/>    
+  </path>
+
+
   <target name="all">
     <!-- put in dependencies here -->
   </target>
@@ -9,7 +19,6 @@
     <!-- Ensure that the build output directories are always present -->
     <!-- REMINDER: since these are present in the svn repository, do we really
 	 need to do this? -->
-    <mkdir dir="bin"/> 
     <mkdir dir="classes"/>
     
     <!-- remove old jars and classes -->
@@ -19,10 +28,10 @@
 
     <!-- Compile all of the classes and put the results in the classes
 	 directory -->
-    <javac destdir="classes">
-      <src path="."/>
-      <include name="src/**"/>
+    <javac srcdir="src" destdir="classes" classpathref="classpath">
+<!--      <include name="src/**"/>
       <include name="lib/**"/>
+      <include name="classes/**"/> -->
     </javac>  
   </target>
 
@@ -41,9 +50,22 @@
   </target>
 
   <!-- TODO: Create runnable targets -->
+  <target name="jar" depends="compile">
+    <mkdir dir="build/bin"/>
+    <jar destfile="bin/lsa.jar" basedir="classes">
+      <manifest>
+        <attribute name="Main-Class" value="edu.ucla.sspace.lsa.LSA"/>
+      </manifest>
+    </jar>
+  </target>
 
-  <!-- TODO: Create javadoc -->
 
-  <!-- TODO: Create runnable targets -->
+  <target name="javadoc" description="Create Javadocs" depends="compile">
+    <javadoc destdir="javadoc/">
+      <fileset dir="${basedir}/" includes="**/*.java"/>
+    </javadoc>
+  </target>
+
+
 
 </project>
