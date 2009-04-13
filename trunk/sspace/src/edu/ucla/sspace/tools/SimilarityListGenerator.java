@@ -1,4 +1,4 @@
-package sspace.tools;
+package edu.ucla.sspace.tools;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -15,10 +15,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import sspace.common.BoundedSortedMap;
-import sspace.common.Pair;
-import sspace.common.Similarity;
-import sspace.common.VectorIO;
+import edu.ucla.sspace.common.BoundedSortedMap;
+import edu.ucla.sspace.common.Pair;
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.VectorIO;
 
 /**
  * A utility tool for generating lists of most similar word vectors for each
