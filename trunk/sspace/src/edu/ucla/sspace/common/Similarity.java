@@ -1,5 +1,9 @@
-package sspace.common;
+package edu.ucla.sspace.common;
 
+/**
+ * A collection of static methods for computing the similarity between different
+ * vectors.  Semantic space implementations should use this class.
+ */
 public class Similarity {
     
     /**
