@@ -10,6 +10,7 @@ import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 public class Holograph implements SemanticSpace {
   public static final int CONTEXT_SIZE = 6;
@@ -82,6 +83,30 @@ public class Holograph implements SemanticSpace {
       return 0.0;
     return Similarity.cosineSimilarity(termHolographs.get(left),
                                        termHolographs.get(right));
+  }
+
+  public void lutherTest() {
+    double[] lutherMeaning = termHolographs.get("luther");
+    double[] right = indexBuilder.decode(lutherMeaning, true);
+    double[] left = indexBuilder.decode(lutherMeaning, false);
+    double maxLeft = 0;
+    double maxright = 0;
+    String leftWord = "";
+    String rightWord = "";
+    for (Map.Entry<String, double[]> entry : termHolographs.entrySet()) {
+      double leftSim = Similarity.cosineSimilarity(entry.getValue(), left);
+      if (leftSim > maxLeft) {
+        maxLeft = leftSim;
+        leftWord = entry.getKey();
+      }
+      double rightSim = Similarity.cosineSimilarity(entry.getValue(), right);
+      if (rightSim > maxLeft) {
+        maxLeft = rightSim;
+        rightWord = entry.getKey();
+      }
+    }
+    System.out.println("for luther we get for left: " + leftWord +
+                       ", and right: " + rightWord);
   }
 
   private boolean isValid(String word) {

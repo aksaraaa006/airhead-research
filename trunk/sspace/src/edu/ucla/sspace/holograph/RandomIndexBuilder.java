@@ -83,7 +83,7 @@ class RandomIndexBuilder {
     plusEquals(meaning, orderVector);
   }
 
-  public double[] groupConvolution(String[] context) {
+  private double[] groupConvolution(String[] context) {
     double[] result = newVector(0);
 
     // Do the convolutions starting at index 0.
@@ -116,7 +116,7 @@ class RandomIndexBuilder {
     return result;
   }
 
-  public double[] decode(String word, double[] meaning, boolean side) {
+  public double[] decode(double[] meaning, boolean side) {
     double[] environ;
     if (side)
       environ = changeVector(placeHolder, permute1);
