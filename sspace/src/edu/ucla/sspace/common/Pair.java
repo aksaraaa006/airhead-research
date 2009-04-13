@@ -1,4 +1,4 @@
-package sspace.common;
+package edu.ucla.sspace.common;
 
 public class Pair<T> {
 

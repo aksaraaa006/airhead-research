@@ -1,4 +1,4 @@
-package sspace.common;
+package edu.ucla.sspace.common;
 
 import java.io.BufferedReader;
 import java.io.IOException;

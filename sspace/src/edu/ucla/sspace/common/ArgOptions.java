@@ -1,4 +1,4 @@
-package edu.ucla.sspace.mains;
+package edu.ucla.sspace.common;
 
 import java.util.HashMap;
 import java.util.Map;
