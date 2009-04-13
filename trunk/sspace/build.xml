@@ -1,18 +1,49 @@
 <project name="semanticspaces" default="compile">
   <property file="build.properties"/>
+
+  <target name="all">
+    <!-- put in dependencies here -->
+  </target>
+  
   <target name="compile">
-    <mkdir dir="bin"/>
+    <!-- Ensure that the build output directories are always present -->
+    <!-- REMINDER: since these are present in the svn repository, do we really
+	 need to do this? -->
+    <mkdir dir="bin"/> 
+    <mkdir dir="classes"/>
+    
+    <!-- remove old jars and classes -->
     <delete>
-      <fileset dir="bin" includes="**"/>
+      <fileset dir="classes" includes="**"/>
     </delete>
-    <javac destdir="bin">
+
+    <!-- Compile all of the classes and put the results in the classes
+	 directory -->
+    <javac destdir="classes">
       <src path="."/>
       <include name="src/**"/>
       <include name="lib/**"/>
-    </javac>
+    </javac>  
   </target>
 
+  <!-- Removes all class files and built jar executables -->
   <target name="clean">
-    <delete dir="bin"/>
+    <delete>
+      <fileset dir="bin" includes="**"/>
+      <fileset dir="classes" includes="**"/>
+      <fileset dir="javadoc" includes="**"/>
+    </delete>
   </target>
+
+
+  <target name="dist">
+    <!-- TODO: Create jar executables for all of the major algorithms -->
+  </target>
+
+  <!-- TODO: Create runnable targets -->
+
+  <!-- TODO: Create javadoc -->
+
+  <!-- TODO: Create runnable targets -->
+
 </project>
