@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,10 +61,10 @@ public class LSAMain {
 	    lsa.loadWordDocumentMatrix(matrixFile);
 	}
 	else if (options.hasOption("docsFile")) {
-	    Strng docFile = options.getStringOption("docsFile");
-	    input = docsFile;
+	    String docFile = options.getStringOption("docsFile");
+	    input = docFile;
 	    BufferedReader br = 
-		new BufferedReader(new FileReader(docsFile));
+		new BufferedReader(new FileReader(docFile));
 	    String document = null;
 	    int count = 0;
 	    while ((document = br.readLine()) != null) {
@@ -84,8 +85,10 @@ public class LSAMain {
 	    return;
 	}
 
+    /*
 	System.out.printf("Loaded %d words by %d documents%n",
 			  lsa.getWordCount(), lsa.getDocCount());
+    */
 	
 	System.out.print("Saving word by document matrix ... ");
 	long startTime = System.currentTimeMillis();

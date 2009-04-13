@@ -70,7 +70,6 @@ public class Holograph implements SemanticSpace {
     if (meaning == null) {
       meaning = new double[indexVectorSize];
       //termDocHolographs.put(index, meaning);
-      //termHolographs.put(mainWord, new double[](meaning.getArray()));
       termHolographs.put(mainWord, meaning);
     }
     indexBuilder.updateMeaningWithTerm(meaning, context);

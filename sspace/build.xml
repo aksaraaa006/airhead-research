@@ -28,10 +28,10 @@
 
     <!-- Compile all of the classes and put the results in the classes
 	 directory -->
-    <javac srcdir="src" destdir="classes" classpathref="classpath">
-<!--      <include name="src/**"/>
+     <javac srcdir="./" destdir="classes" classpathref="classpath">
+      <include name="src/**"/>
       <include name="lib/**"/>
-      <include name="classes/**"/> -->
+      <!--      <include name="classes/**"/> -->
     </javac>  
   </target>
 

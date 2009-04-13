@@ -12,6 +12,7 @@ class RandomIndexBuilder {
   private HashMap<String, double[]> termToRandomIndex;
   private RealDoubleFFT_Radix2 fft;
   private int indexVectorSize;
+  private double[] placeHolder;
   private double stdev;
   private Random randomGenerator;
   private int[] permute1;
@@ -36,6 +37,7 @@ class RandomIndexBuilder {
     permute1 = new int[indexVectorSize];
     permute2 = new int[indexVectorSize];
     randomPermute(permute1);
+    placeHolder = generateRandomVector();
     randomPermute(permute2);
   }
 
@@ -56,50 +58,91 @@ class RandomIndexBuilder {
     }
   }
 
+  private double[] generateRandomVector() {
+    double[] termVector = new double[indexVectorSize];
+    for (int i = 0; i < indexVectorSize; i++)
+      termVector[i] = randomGenerator.nextGaussian() * stdev;
+    return termVector;
+  }
+
   public void addTermIfMissing(String term) {
-    if (!termToRandomIndex.containsKey(term)) {
-      double[] termVector = new double[indexVectorSize];
-      for (int i = 0; i < indexVectorSize; i++)
-        termVector[i] = randomGenerator.nextGaussian() * stdev;
-      termToRandomIndex.put(term, termVector);
-    }
+    if (!termToRandomIndex.containsKey(term))
+      termToRandomIndex.put(term, generateRandomVector());
   }
 
   // Context must have one word before the term being considered, and 4 words
   // after it.  If nothing is available, simply add empty strings.
   // Additionally, they term itself should be replaced with the empty string.
-  public void updateMeaningWithTerm(double[] meaning,
-                                    String[] context) {
+  public void updateMeaningWithTerm(double[] meaning, String[] context) {
     double[] contextVector = newVector(0); 
     for (String term: context)
       plusEquals(contextVector, termToRandomIndex.get(term));
     plusEquals(meaning, contextVector);
     double[] orderVector = newVector(0);
-    plusEquals(orderVector, groupConvolution(context, 0));
-    plusEquals(orderVector, groupConvolution(context, 1));
+    plusEquals(orderVector, groupConvolution(context));
     plusEquals(meaning, orderVector);
   }
 
-  public double[] groupConvolution(String[] context, int start) {
+  public double[] groupConvolution(String[] context) {
     double[] result = newVector(0);
-    double[] tempConvolution = convolute(termToRandomIndex.get(context[start]),
-                                termToRandomIndex.get(context[start+1]));
+
+    // Do the convolutions starting at index 0.
+    double[] tempConvolution = convolute(termToRandomIndex.get(context[0]),
+                                         placeHolder);
     plusEquals(result, tempConvolution);
     tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[start+2]));
+                                termToRandomIndex.get(context[2]));
     plusEquals(result, tempConvolution);
     tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[start+3]));
+                                termToRandomIndex.get(context[3]));
     plusEquals(result, tempConvolution);
     tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[start+4]));
+                                termToRandomIndex.get(context[4]));
     plusEquals(result, tempConvolution);
+
+    // Do the convolutions starting at index 1.
+    tempConvolution = convolute(placeHolder, termToRandomIndex.get(context[2]));
+    plusEquals(result, tempConvolution);
+    tempConvolution = convolute(tempConvolution,
+                                termToRandomIndex.get(context[3]));
+    plusEquals(result, tempConvolution);
+    tempConvolution = convolute(tempConvolution,
+                                termToRandomIndex.get(context[4]));
+    plusEquals(result, tempConvolution);
+    tempConvolution = convolute(tempConvolution,
+                                termToRandomIndex.get(context[5]));
+    plusEquals(result, tempConvolution);
+
     return result;
+  }
+
+  public double[] decode(String word, double[] meaning, boolean side) {
+    double[] environ;
+    if (side)
+      environ = changeVector(placeHolder, permute1);
+    else
+      environ = changeVector(placeHolder, permute2);
+    double[] result = circularCorrelation(environ, meaning);
+    if (side)
+      return demute(result, permute2);
+    else 
+      return demute(result, permute1);
   }
 
   private void plusEquals(double[] left, double[] right) {
     for (int i = 0; i < indexVectorSize; ++i)
       left[i] += right[i];
+  }
+
+  private double[] circularCorrelation(double[] arr1, double[] arr2) {
+    double[] result = new double[arr1.length];
+    for (int i = 0; i < arr1.length; ++i) {
+      result[i] = 0;
+      for (int j = 0; j < arr1.length; ++j) {
+        result[i] += arr1[j] * arr2[(i+j) % arr1.length];
+      }
+    }
+    return result;
   }
 
   private double[] convolute(double[] left, double[] right) {
@@ -124,6 +167,13 @@ class RandomIndexBuilder {
     double[] result = new double[indexVectorSize];
     for (int i = 0; i < indexVectorSize; i++)
       result[i] = data[orderVector[i]];
+    return result;
+  }
+
+  private double[] demute(double[] data, int[] orderVector) {
+    double[] result = new double[indexVectorSize];
+    for (int i = 0; i < indexVectorSize; ++i)
+      result[orderVector[i]] = data[i];
     return result;
   }
 
