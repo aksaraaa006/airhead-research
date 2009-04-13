@@ -1,9 +1,9 @@
-package sspace.lsa;
+package edu.ucla.sspace.lsa;
 
-import sspace.common.Index;
-import sspace.common.BoundedSortedMap;
-import sspace.common.Similarity;
-import sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.Index;
+import edu.ucla.sspace.common.BoundedSortedMap;
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.SemanticSpace;
 
 import java.io.BufferedReader;
 import java.io.File;
