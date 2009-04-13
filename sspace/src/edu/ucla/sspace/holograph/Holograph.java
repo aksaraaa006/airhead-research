@@ -1,8 +1,8 @@
-package sspace.holograph;
+package edu.ucla.sspace.holograph;
 
-import sspace.common.Index;
-import sspace.common.Similarity;
-import sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.Index;
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.SemanticSpace;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
