@@ -56,6 +56,7 @@ class HolographMain {
                          holographBuilder.computeDistance("car", "boat"));
       System.out.println("similarity between car and driver: " + 
                          holographBuilder.computeDistance("car", "truck"));
+      holographBuilder.lutherTest();
     }
   }
 }

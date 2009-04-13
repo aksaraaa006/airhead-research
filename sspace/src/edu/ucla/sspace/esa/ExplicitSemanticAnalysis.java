@@ -380,7 +380,7 @@ public class ExplicitSemanticAnalysis {
 			String linkedArticleTitle = linkedArticleRawName.
 			    replaceAll("/", " ").toLowerCase();
 			linkedArticleTitle = 
-			    unescapeHTML(linkedArticleTitle, 0);
+			    StringUtils.unescapeHTML(linkedArticleTitle, 0);
 			
 			// don't include Image, foreign language or
 			// disambiguation links
@@ -432,7 +432,7 @@ public class ExplicitSemanticAnalysis {
 		    } // end [[ loop    
 	   	    
 		    String scrubbed = phase4sb.toString();
-		    scrubbed = unescapeHTML(scrubbed,0).
+		    scrubbed = StringUtils.unescapeHTML(scrubbed,0).
 			//replaceAll("[^A-Za-z0-9'\u00E0-\u00FF]", " ").
 			replaceAll("#REDIRECT","");
 		    

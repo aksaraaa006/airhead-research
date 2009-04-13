@@ -1,3 +1,5 @@
+package edu.ucla.sspace.common;
+
 /*
  * Partially from:
  *
