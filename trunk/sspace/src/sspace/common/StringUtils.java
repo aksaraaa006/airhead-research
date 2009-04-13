@@ -112,7 +112,7 @@ public class StringUtils {
      * (e.g. <pre>&nbsp;</pre>) have been replaced with their utf8 equivalents.
      */
     public static final String unescapeHTML(String source) {
-	unescapeHTML(source, 0);
+	  return unescapeHTML(source, 0);
     }
 
     public static final String unescapeHTML(String source, int start){

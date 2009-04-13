@@ -410,7 +410,7 @@ public class LSA implements SemanticSpace {
       if (word.equals(other))
         continue;
       double[] vec2 = f.getValue();
-      Double cosDist = Double.valueOf(Similarity.cosineDistance(vec, vec2));
+      Double cosDist = Double.valueOf(Similarity.cosineSimilarity(vec, vec2));
       mostSimilar.put(cosDist,other);		
       }
     }
