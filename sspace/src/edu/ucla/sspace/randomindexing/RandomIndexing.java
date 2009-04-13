@@ -1,9 +1,4 @@
-package sspace.randomindexing;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.PrintWriter;
+package edu.ucla.sspace.randomindexing;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,8 +12,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import sspace.common.VectorIO;
 
+/**
+ *
+ */
 public class RandomIndexing {
 
     //
@@ -156,77 +153,24 @@ public class RandomIndexing {
 
     private class SemanticVector {
 
-	private static final double MAX_SPARSE_DENSITY = .5;
-	
 	private int[] vector;
 
-	private Map<Integer,Integer> sparseVector;
-
-	private final int length;
-
 	public SemanticVector(int length) {
-	    this.length = length;
-
-	    // start out sparse
-	    sparseVector = new HashMap<Integer,Integer>(length / 2, 1f);
-	    vector = null;
+	    vector = new int[length];
 	}
 	
 	public void add(IndexVector v) {
-	    if (isSparse()) {
-		for (int p : v.positiveDimensions()) {
-		    Integer i = sparseVector.get(p);
-		    sparseVector.put(p, (i == null) 
-				     ? Integer.valueOf(1)
-				     : Integer.valueOf(i.intValue() + 1));
-		}
 
-		for (int n : v.negativeDimensions()) {
-		    Integer i = sparseVector.get(n);
-		    sparseVector.put(n, (i == null) 
-				     ? Integer.valueOf(-1)
-				     : Integer.valueOf(i.intValue() - 1));
-		}
-
-		// check to see that we haven't gone over the maximum sparsity
-		// density
-		checkSparse();
-	    }
-	    else {
-		for (int p : v.positiveDimensions()) {
-		    vector[p]++;
-		}
-		for (int n : v.negativeDimensions()) {
-		    vector[n]--;
-		}
-	    }
+	    for (int p : v.positiveDimensions()) 
+		vector[p]++;
+		
+	    for (int n : v.negativeDimensions()) 
+		vector[n]--;
 	}
 
-	private void checkSparse() {
-	    double density =  sparseVector.size() / (double)length;
-	    // revert to using the full vector
-	    if (density > MAX_SPARSE_DENSITY) {
-		vector = getVector();
-		sparseVector = null;
-	    }
-	}
 	
 	public int[] getVector() {
-	    if (isSparse()) {
-		// convert the map to an array
-		int[] full = new int[length];
-		for (int i = 0; i < length; ++i) {
-		    Integer j = sparseVector.get(Integer.valueOf(i));
-		    full[i] = (j == null) ? 0 : j.intValue(); 
-		}
-		return full;
-	    }
-	    else
-		return vector;
-	}
-
-	private boolean isSparse() {
-	    return sparseVector != null;
+	    return vector;
 	}
     }
 
@@ -236,8 +180,6 @@ public class RandomIndexing {
 	private static final int BITS_TO_SET = 9; // +/- 3
 	private static final int BIT_VARIANCE = 3;
 
-	//private final Set<Integer> positive;
-	//private final Set<Integer> negative;
 	int[] positive;
 	int[] negative;
 
@@ -301,34 +243,6 @@ public class RandomIndexing {
 
 	public int[] positiveDimensions() {
 	    return positive;
-	}
-    }
-
-    public static void main(String[] args) {
-	try {
-	    if (args.length != 2) {
-		System.out.println("usage: java RI <doc file> <output dir>");
-		return;
-	    }
-	    
-	    RandomIndexing ri = new RandomIndexing();
-	    BufferedReader br = new BufferedReader(new FileReader(args[0]));
-	    System.out.println("processing documents");
-	    int i = 0;
-	    for (String line = null; (line = br.readLine()) != null; ){ 
-		line = line.replaceAll("\\W", "").toLowerCase();
-		ri.processText(line);
-		System.out.println("doc # " + (++i));
-	    }
-
-	    File outputDir = new File(args[1]);
-	    for (String word : ri.getWords()) {
-		VectorIO.writeVector(
-		    ri.getSemanticVector(word).getVector(),
-		    word, outputDir);
-	    }
-	} catch (Throwable t) {
-	    t.printStackTrace();
 	}
     }
 }
