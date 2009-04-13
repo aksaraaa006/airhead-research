@@ -1,4 +1,4 @@
-package sspace.holograph;
+package edu.ucla.sspace.holograph;
 
 import jnt.FFT.RealDoubleFFT_Radix2;
 

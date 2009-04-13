@@ -1,6 +1,6 @@
-package sspace.mains;
+package edu.ucla.sspace.mains;
 
-import sspace.holograph.Holograph;
+import edu.ucla.sspace.holograph.Holograph;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
