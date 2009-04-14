@@ -2,15 +2,21 @@ package edu.ucla.sspace.common;
 
 import java.io.IOException;
 
-// A SemanticSpace implementation should implement each of the following
-// methods in such a way that it conforms to the expected format of document
-// input, and the stage of method calls.  For each SemanticSpace, the expected
-// sequence of calls will be:
-//   1) at least 1 call to parseDocument()
-//   2) processSpace()
-//   3) reduce()
-//   4) at least 1 call to computeDistances()
+/**
+ * A SemanticSpace implementation should implement each of the following
+ * methods in such a way that it conforms to the expected format of document
+ * input, and the stage of method calls.  For each SemanticSpace, the expected
+ * sequence of calls will be:
+ *
+ * <ol>
+ * <li> at least 1 call to {@link #parseDocument()}
+ * <li> {@link #processSpace()}
+ * <li> {@link #reduce()}
+ * <li> at least 1 call to {@link #computeDistances()}
+ * </ol>
+ */
 public interface SemanticSpace {
+
   // Implementation should read from the given filename and process all of the
   // words in the document.  Models may consider filename to be a unique string
   // identifying the document if this is needed.  Implementations may throw an

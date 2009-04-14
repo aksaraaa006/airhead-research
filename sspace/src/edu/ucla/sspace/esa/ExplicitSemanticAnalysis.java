@@ -1,9 +1,24 @@
 package edu.ucla.sspace.esa;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
+
+import java.util.logging.Logger;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.ucla.sspace.common.StringUtils;
 
@@ -20,77 +35,350 @@ import edu.ucla.sspace.common.StringUtils;
  */
 public class ExplicitSemanticAnalysis {
 
-    public static class FileCache {
+    /**
+     * The logger for this class based on the fully qualified class name
+     */
+    private static final Logger ESA_LOGGER = 
+	Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
+
+    private final Map<String,SemanticVector> wikipediaTerms;
+
+    public ExplicitSemanticAnalysis() {
+	wikipediaTerms = new HashMap<String,SemanticVector>();
+    }
+
+    public void generateSpace(File wikipediaSnapshotFile) throws IOException {
+
+	// parse and clean the wiki snapshot, while recording the incoming and
+	// outgoing link counts for each article
+	WikiParseResult fileAndLinkCount = 
+	    parseWikipediaSnapshot(wikipediaSnapshotFile);	
+
+	// threshold off rarely linked articles and small articles
+	Set<String> validArticles = 
+	    thresholdArticles(fileAndLinkCount.parsedWikiSnapshot,
+			      fileAndLinkCount.incomingLinkCounts);
 	
-	public static final int CACHE_SIZE = 32;
+	// use the remaining articles for the ESA set
+    }
 
-	private final Queue<String> fileNames;
-
-	private final BlockingQueue<OpenedFile> cachedFiles;
-
-	public FileCache(Queue<String> fileNamesP) {
-	    this.fileNames = fileNamesP;
-	    cachedFiles = new LinkedBlockingQueue<OpenedFile>();
+    private static boolean skipArticle(String articleName) {
+	return linkedArticleTitle.startsWith("image:") ||
+	    linkedArticleTitle.startsWith("wikipedia:") ||
+	    linkedArticleTitle.startsWith("template:") ||
+	    linkedArticleTitle.startsWith("category:") ||
+	    (linkedArticleTitle.length() >= 3 && 
+	     linkedArticleTitle.charAt(2) == ':') ||
+	    linkedArticleTitle.contains("(disambiguation)");
+    }
+    
+    /**
+     * Parses the Wikipedia snapshot file into a temporary file containing all
+     * the incoming and outgoing link information, along with a normalized
+     * string representation that is free of Wiki markup and escaped HTML
+     *
+     * @param wikiSnapshot a {@code File} containing a Wikipedia snapshot
+     *
+     * @return a pair of temporary {@code File} containing the parsed Wikipedia
+     *         articles and a list of incoming link counts for each article
+     *
+     * @throws IOException on any error
+     */
+    private WikiParseResult parseWikipediaSnapshot(File wikiSnapshot) 
+	throws IOException {
+	       
+	DocumentBufferedQueue docQueue = 
+	    new DocumentBufferedQueue(wikiSnapshot);
 	    
-	    for (int i = 0; i < CACHE_SIZE; ++i) 
-		new Thread() {
-		    public void run() {
-			String fileName = fileNames.poll();
-			if (fileName != null) {
-			    try {
-				cachedFiles.
-				    offer(new OpenedFile(fileName,
-							 new FileReader(fileName)));
-			    } 
-			    catch (Throwable t) {
-				t.printStackTrace();
-			    }
-			}
-		    }
-		}.start();
+	File parsedOutput = File.createTempFile("esa-parsed-snapshot", "tmp");
+	PrintWriter parsedOutputWriter = new PrintWriter(parsedOutput);
 
-	}
-
-	public boolean hasNext() {
-	    return !cachedFiles.isEmpty() || !fileNames.isEmpty();
-	}
+	// NOTE: we are able to use an IdentityHashMap only because we call
+	// .intern() on all the article name strings to be used as keys
+	Map<String,Integer> articleToIncomingLinkCount = 
+	    new IdentityHashMap<String,Integer>(8000000);	    	    
+	    
+	int fileNum = 0;
 	
-	public OpenedFile next() throws InterruptedException {
-	    if (cachedFiles.isEmpty() && fileNames.isEmpty())
-		return null;
-	    // start a thread to open up the next file.
-	    new Thread() {
-		public void run() {
-		    String fileName = fileNames.poll();
-		    if (fileName != null) {
-			try {
-			    cachedFiles.
-				offer(new OpenedFile(fileName,
-						     new FileReader(fileName)));
-			} 
-			catch (Throwable t) {
-			    t.printStackTrace();
-			}	
+	// next go through the raw articles and look for link counts
+	while (docQueue.hasNext()) {
+	    fileNum++;
+	    
+	    WikiDoc doc = docQueue.next();
+	    
+	    if (doc == null) {
+		// rare, but we guard against it.
+		ESA_LOGGER.warning("race condition in the document caching...");
+		break;
+	    }
+
+	    String rawArticleName = doc.name;
+	    // sanity check in case we didn't get a valid document
+	    if (rawArticleName == null || doc.text == null) {
+		ESA_LOGGER.warning("race condition in the document caching...");
+		break;
+	    }
+
+	    // NOTE: we only call .intern() if the article is a topic
+	    String articleName = StringUtils.unescapeHTML(rawArticleName).
+		replaceAll("/"," ").toLowerCase().trim();
+	    
+	    // skip articles that are not text-based or are
+	    // wikipedia-specific
+	    if (skipArticle(articleName)) {
+		ESA_LOGGER.fine(String.format("skipping Wikipedia-specific " +
+					      "file %d: %s%n", 
+					      fileNum, articleName));
+		continue;
+	    }
+
+	    else if (doc.text.contains("#REDIRECT")) {
+		ESA_LOGGER.fine(String.format("skipping redirect file, %d:" +
+					      " %s%n", fileNum, articleName));
+		continue;
+	    }
+
+	    else {
+		// intern the article name since it will be around a for the
+		// lifetime of the program
+		articleName = articleName.intern();
+	    }
+			
+	    ESA_LOGGER.fine(String.format("parsing file %d: %s ", 
+					  fileNum, articleName));
+		    
+		    
+	    String article = doc.text;
+	    
+	    int lastGoodIndex = 0;				
+	    StringBuilder noHtml = new StringBuilder(article.length());
+		    
+	    // remove all html tags before we unescape the text itself and
+	    // possibly introduce non-html < characters
+	    int startOfTextTag = article.indexOf("<text");
+	    int endOfStart  = article.indexOf(">", startOfTextTag);
+	    
+	    int closingTextTag = article.indexOf("</text");
+	    String noHtmlStr = article.substring(endOfStart+1, closingTextTag);
+		    
+	    /*
+	     * now get rid of {{wiki-stuff}} tags
+	     */
+	    
+	    ESA_LOGGER.finer("Removing {{wiki}} tags");
+		    
+	    String phase2 = noHtmlStr;
+	    
+	    StringBuilder phase3sb = new StringBuilder(phase2.length());
+	    lastGoodIndex = 0;
+		    
+	    if (phase2.indexOf("{{") >= 0) {
+		// remove all html tags before we unescape the text itself and
+		// possibly introduce non-html < characters
+		for (int i = 0; (i = phase2.indexOf("{{", i)) >= 0; ) {
+		    String s = phase2.substring(lastGoodIndex,i);
+
+		    phase3sb.append(s);
+		    lastGoodIndex = phase2.indexOf("}}", i) + 2;
+		    i = lastGoodIndex;
+		    // REMINDER: this is doing extra work, this loop should be
+		    // rewritten
+		    if (phase2.indexOf("{{", i) == -1) {
+			phase3sb.append(phase2.
+					substring(lastGoodIndex));
+			break;
 		    }
+		} 
+	    }
+	    // in case there is no wiki mark-up
+	    else
+		phase3sb.append(phase2);
+		    
+		    
+	    /*
+	     * Replace [[link]] tags with link name.
+	     *
+	     * Also update link counts
+	     */
+	    ESA_LOGGER.finer("replacing [[link]] with link name");
+
+	    String phase3 = phase3sb.toString();
+	    StringBuilder phase4sb = new StringBuilder(phase2.length());
+	    lastGoodIndex = 0;
+	    int outgoingLinks = 0;
+	    int prevTotalIncomingLinks = 
+		articleToIncomingLinkCount.size();
+	    
+	    // remove all html tags before we unescape the text itself
+	    // and possibly introduce non-html < characters
+	    for (int i = 0; (i = phase3.indexOf("[[", i)) > 0; ) {
+		
+		phase4sb.append(phase3.substring(lastGoodIndex,i));
+		
+		// grab the linked article name which is all text to the next
+		// ]], or to the next | in the case where the article is given a
+		// different name in the text, e.g.  [[article title|link text]]
+		int j = phase3.indexOf("]]", i);
+		int k = phase3.indexOf("|", i);
+		int linkEnd = (k > 0) ? (j < 0) ? k : Math.min(j,k) : j;
+		
+		// transform the file name to get rid of any special
+		// characters
+		String linkedArticleRawName = 
+		    phase3.substring(i+2,linkEnd);
+		String linkedArticleTitle = linkedArticleRawName.
+		    replaceAll("/", " ").toLowerCase();
+		linkedArticleTitle = 
+		    StringUtils.unescapeHTML(linkedArticleTitle);
+		
+		// don't include Image, foreign language or disambiguation links
+		if (!skipArticle(linkedArticleTitle)) {
+			    
+		    // if the artile is actually a reasonable (e.g. non-image)
+		    // article, then intern its string to save memory
+		    linkedArticleTitle = linkedArticleTitle.intern();
+		    
+		    // print out the link name so that it gets included
+		    // in the term list
+		    phase4sb.append(linkedArticleTitle).append(" ");
+		    
+		    // increase the link counts accordingly
+		    //
+		    // NOTE: we have linkedArticleTitle is the canonical copy of
+		    // the string (via intern()), and so this put() call works
+		    // correctly, i.e. doesn't create duplicate keys
+		    Integer incomingLinks = articleToIncomingLinkCount.
+			get(linkedArticleTitle);
+		    
+		    articleToIncomingLinkCount.
+			put(linkedArticleTitle, (incomingLinks == null)
+			    ? Integer.valueOf(1)
+			    : Integer.valueOf(1 + incomingLinks));
+		    
+		    ++outgoingLinks;		    
 		}
-	    }.start();	    
-	    return cachedFiles.poll(10000L, TimeUnit.MILLISECONDS);
+		
+		lastGoodIndex = phase3.indexOf("]]", i) + 2;
+		i = lastGoodIndex;
+		
+		// the "j < 0" condition is for malformed wiki pages where there
+		// is no closing ]] for the link.
+		if (phase3.indexOf("[[", i) < 0 || j < 0) {
+		    phase4sb.append(phase3.substring(lastGoodIndex));
+		    break;
+		}
+	    } // end [[ loop    
 	    
-	}
+	    String scrubbed = phase4sb.toString();
+	    scrubbed = StringUtils.unescapeHTML(scrubbed).
+		replaceAll("#REDIRECT","");
+		    
+	    
+	    /*
+	     * END PARSING STEPS
+	     */
+
+	    parsedOutputWriter.println(articleName + "|" + outgoingLinks
+				       + "|" + scrubbed);
+	    parsedOutputWriter.flush();
+	    
+	    int newIncomingLinks = articleToIncomingLinkCount.size() -
+		prevTotalIncomingLinks;
+	    Integer curIncoming = 
+		articleToIncomingLinkCount.get(articleName);
+	    
+	    ESA_LOGGER.fine("link summary: " + outgoingLinks + 
+			    " outgoing, (" + newIncomingLinks + 
+			    " new docs); "
+			    + ((curIncoming == null) ? "0" :
+			       curIncoming.toString())
+			    + " incoming");
+	} // end file loop
+
+
+	// Once all the articles have been processed, write the incoming link
+	// count for each article
+
+	parsedOutputWriter.close();
+	return new WikiParseResult(parsedOutput, articleToIncomingLinkCount);
     }
 
-    private static final class OpenedFile {
 
-	public final String fileName;
-	public final FileReader reader;
+    /**
+     * Removes Wikipedia articles from the ESA processes if they fail to meet a
+     * minimum word count or incoming and outgoing link count.
+     *
+     * @param parsedWiki the {@code File} output form {@link
+     *        #parseWikipediaSnapshot(File)}
+     *
+     * @return the set of Wikipedia articles that meet the minimum
+     *         qualifications
+     */
+    private Set<String> thresholdArticles(File parsedWiki, 
+					  Map<String,Integer> incomingLinkCounts)
+	throws IOException {
 
-	public OpenedFile(String fileName, FileReader reader) {
-	    this.fileName = fileName;
-	    this.reader = reader;
+	ESA_LOGGER.info("Thresholding Articles");
+	
+	Set<String> validArticles = new HashSet<String>();
+	
+	// now read it back in and decide which of the term documents should
+	// actually get included in the output
+	int removed = 0 ;
+
+	BufferedReader br =  new BufferedReader(new FileReader(parsedWiki));
+
+	for (String line = null; (line = br.readLine()) != null; ) {
+	    
+	    String[] arr = line.split("\\|");
+	    String articleName = arr[0].intern();
+	    int outgoing = Integer.parseInt(arr[1]);
+
+	    // If there weren't any incoming links, then the map will be
+	    // null for the article
+	    Integer incoming = articleToIncomingLinkCount.get(term);
+	    if (incoming == null)
+		incoming = Integer.valueOf(0);			       
+
+	    if ((incoming + outgoing) < 5) {
+		ESA_LOGGER.fine("excluding article " + articleName + " for " +
+				"too few incoming and outgoing links: " + 
+				(incoming + outgoing));
+		continue;
+	    }
+		
+	    // NOTE: For some articles, the document will be rended empty by the
+	    //       preprocessing steps.
+	    String articleText = (arr.length < 2) ? "" : arr[2];
+
+	    // this is a very rough estimate
+	    int wordCount = articleText.split("\\s+").length;
+
+	    if (wordCount < 100) {
+		ESA_LOGGER.fine("excluding article " + articleName + " for " +
+				"too few words: " +  wordCount);
+		continue;		
+	    }
+	    
+	    validArticles.add(articleName);
 	}
+	br.close();
+	
+	return validArticles;
+    }
+
+
+    private void computeESA(File parsedWikiSnapshot, Set<String> validArticles)
+	throws IOException {
 
     }
 
+
+    /**
+     * A utility class for buffering Wikipedia articles for processing.  This
+     * allows concurrent reading of the Wikipedia snapshot file with ESA
+     * processing.
+     */
     private static class DocumentBufferedQueue {
 	
 	private static final int DOCS_TO_CACHE = 100;
@@ -102,9 +390,12 @@ public class ExplicitSemanticAnalysis {
 	private final BlockingQueue<WikiDoc> cachedDocs;
 
 	private final AtomicBoolean isReaderOpen;
-	
-	public DocumentBufferedQueue(String wikipediaFile) 
-	    throws IOException {
+
+	public DocumentBufferedQueue(String wikipediaFile) throws IOException {
+	    this(new File(wikipediaFile));
+	}
+
+	public DocumentBufferedQueue(File wikipediaFile) throws IOException {
 
 	    wikiReader = new BufferedReader(new FileReader(wikipediaFile));
 	    cachedDocs = new LinkedBlockingQueue<WikiDoc>();
@@ -116,7 +407,7 @@ public class ExplicitSemanticAnalysis {
 		    cachedDocs.offer(d);
 	    }
 	}
-
+	
 	private synchronized WikiDoc cacheDoc() throws IOException {
 	    StringBuilder sb = new StringBuilder();
 	    String articleTitle = null;
@@ -176,10 +467,21 @@ public class ExplicitSemanticAnalysis {
 		    }
 		}
 	    }.start();
-	    // Don't block.  Wait up to 10 minutes (in case of GC) to poll. 
+	    // HORRIBLE HACK: Don't block.  Wait up to 10 minutes (in case of
+	    //                GC) to poll.  This should be fixed when time
+	    //                allows, but works in the present case.
 	    return cachedDocs.poll(60 * 10 * 1000L, TimeUnit.MILLISECONDS);
 	}
     }
+
+    public static void main(String[] args) {
+	if (args.length < 3) {
+	    System.out.println("usage java <raw-wikipedia-snapshot> "
+			       + "<output-file> <valid-terms-file>");
+	    return;
+	}
+    }
+
 
     private static class WikiDoc {
 	
@@ -192,320 +494,16 @@ public class ExplicitSemanticAnalysis {
 	}
     }
 
-    public static void main(String[] args) {
-	if (args.length < 3) {
-	    System.out.println("usage java <raw-wikipedia-dump> "
-			       + "<output-file> <valid-terms-file>");
-	    return;
+    private static class WikiParseResult {
+
+	public final File parsedWikiSnapshot;
+	public final Map<String,Integer> incomingLinkCounts;
+
+	public WikiParseResult(File parsedWikiSnapshot,
+			       Map<String,Integer> incomingLinkCounts) {
+	    this.parsedWikiSnapshot = parsedWikiSnapshot;
+	    this.incomingLinkCounts = incomingLinkCounts;
 	}
-	try {
-	    // read in the list of valid words
-	    System.out.print("reading in valid terms...");
-	    NavigableSet<String> validWords = new TreeSet<String>();
-	    BufferedReader wordReader = 
-		new BufferedReader(new FileReader(args[2]));	
-	    for (String line = null; (line = wordReader.readLine()) != null; ) {
-		validWords.add(line.toLowerCase().trim());
-	    }
-	    System.out.println(validWords.size() + " total terms");
-	    
-	    /*
-	    Queue<String> rawFileNames = new ConcurrentLinkedQueue<String>();
-	    BufferedReader rawFileReader = 
-		new BufferedReader(new FileReader(args[0]));
-	    for (String line = null; (line = rawFileReader.readLine()) != null; ) {
-		rawFileNames.add(line.trim());
-	    }
-	    rawFileReader.close();
-	    System.out.printf("preparing to read in %d files%n",
-			      rawFileNames.size());
-	    FileCache fileCache = new FileCache(rawFileNames);
-	    */
-
-	    DocumentBufferedQueue docQueue = 
-		new DocumentBufferedQueue(args[0]);
-	    
-	    String outputFile = args[1];
-	    PrintWriter tmpOutput = new PrintWriter(outputFile + ".tmp");
-	    PrintWriter termsOutput = new PrintWriter(outputFile + ".terms");
-
-	    // NOTE: this map only works because we call .intern() on all the
-	    // strings to be used as keys
-	    Map<String,Integer> articleToIncomingLinkCount = 
-		new IdentityHashMap<String,Integer>(8000000);	    	    
-	    
-	    int files = 0;
-	    // next go through the raw articles and look for link counts
-	    //Iterator<String> fileNameIter = rawFileNames.iterator();
-	    //for (String rawFileName : rawFileNames) {
-	    //while (fileNameIter.hasNext()) {
-	    while (docQueue.hasNext()) {
-		//OpenedFile openedFile = fileCache.next();
-		WikiDoc doc = docQueue.next();
-		
-		if (doc == null) {
-		    System.out.println("race condition in the document " +
-				       "caching; continuing...");
-		    break;
-		}
-
-		String rawArticleName = doc.name;
-		// sanity check in case we didn't get a valid document
-		if (rawArticleName == null || doc.text == null) {
-		    System.out.println("race condition in the document " +
-				       "caching; continuing...");
-		    break;
-		}
-		String articleName = StringUtils.unescapeHTML(rawArticleName,0).
-		    replaceAll("/"," ").toLowerCase().trim();
-		
-		try {
-		    // skip articles that are not text-based or are
-		    // wikipedia-specific
-		    if (articleName.startsWith("image:") ||
-			articleName.startsWith("wikipedia:") ||
-			articleName.startsWith("template:") ||
-			articleName.startsWith("category:") ||
-			articleName.contains("(disambiguation)")) {
-			
-			System.out.printf("skipping file %d: %s%n", 
-					  ++files, articleName);
-			continue;
-		    }
-		    else if (doc.text.contains("#REDIRECT")) {
-			System.out.printf("skipping redirect %d: %s%n", 
-					  ++files, articleName);
-		    }
-		    else {
-			// intern the article name since it will be around a
-			// while
-			articleName = articleName.intern();
-		    }
-			
-		    System.out.printf("parsing file %d: %s ", 
-				      ++files, articleName);
-		    
-		    //System.out.println(articleToIncomingLinkCount);
-		    //System.out.println(articleToOutgoingLinkCount);
-		    
-		    //System.out.println("Removing HTML");
-		    
-		    String article = doc.text;;
-		    //System.out.println("RAW: " + article);
-		    int lastGoodIndex = 0;				
-		    StringBuilder noHtml = new StringBuilder(article.length());
-		    
-		    // remove all html tags before we unescape the text itself
-		    // and possibly introduce non-html < characters
-		    int startOfTextTag = article.indexOf("<text");
-		    int endOfStart  = article.indexOf(">", startOfTextTag);
-		    
-		    int closingTextTag = article.indexOf("</text");
-		    String noHtmlStr = article.substring(endOfStart+1, 
-							 closingTextTag);
-		    
-		    /*
-		     * now get rid of {{wiki-stuff}} tags
-		     */
-		    
-		    //System.out.println("Removing {{wiki}} tags");
-		    
-		    String phase2 = noHtmlStr;
-		    //System.out.println("NO HTML OR LINKS: "	 
-		    // + noHtmlOrLinksStr);
-		    StringBuilder phase3sb = 
-			new StringBuilder(phase2.length());
-		    lastGoodIndex = 0;
-		    
-		    if (phase2.indexOf("{{") >= 0) {
-			// remove all html tags before we unescape the text
-			// itself and possibly introduce non-html < characters
-			for (int i = 0; (i = phase2.indexOf("{{", i)) >= 0; ) {
-			    String s = phase2.substring(lastGoodIndex,i);
-			    //System.out.println("clean substr: " + s);
-			    phase3sb.append(s);
-			    lastGoodIndex = phase2.indexOf("}}", i) + 2;
-			    i = lastGoodIndex;
-			    // REMINDER: this is doing extra work, this loop
-			    // should be rewritten
-			    if (phase2.indexOf("{{", i) == -1) {
-				phase3sb.append(phase2.
-						substring(lastGoodIndex));
-				break;
-			    }
-			} 
-		    }
-		    // in case there is no wiki mark-up
-		    else
-			phase3sb.append(phase2);
-		    
-		    
-		    /*
-		     * Replace [[link]] tags with link name.
-		     *
-		     * Also update link counts
-		     */
-		    //System.out.println("NO HTML: " + noHtmlStr);
-		    //System.out.println("Replacing [[link]] tags");
-		    String phase3 = phase3sb.toString();
-		    StringBuilder phase4sb = new StringBuilder(phase2.length());
-		    lastGoodIndex = 0;
-		    int outgoingLinks = 0;
-		    int prevTotalIncomingLinks = 
-			articleToIncomingLinkCount.size();
-		    //System.out.println(phase3);
-
-		    // remove all html tags before we unescape the text itself
-		    // and possibly introduce non-html < characters
-		    for (int i = 0; (i = phase3.indexOf("[[", i)) > 0; ) {
-			
-			phase4sb.append(phase3.substring(lastGoodIndex,i));
-			
-			// grab the linked article name which is all text to the
-			// next ]], or to the next | in the case where the
-			// article is given a different name in the text, e.g.
-			// [[article title|link text]]
-			int j = phase3.indexOf("]]", i);
-			int k = phase3.indexOf("|", i);
-			int linkEnd = (k > 0) ? (j < 0) ? k : Math.min(j,k) : j;
-			
-			//System.out.printf("i: %d, j: %d, k: %d, end: %d%n",
-			// i,j,k,linkEnd);
-			
-			
-			// transform the file name to get rid of any special
-			// characters
-			String linkedArticleRawName = 
-			    phase3.substring(i+2,linkEnd);
-			String linkedArticleTitle = linkedArticleRawName.
-			    replaceAll("/", " ").toLowerCase();
-			linkedArticleTitle = 
-			    StringUtils.unescapeHTML(linkedArticleTitle, 0);
-			
-			// don't include Image, foreign language or
-			// disambiguation links
-			if (!(linkedArticleTitle.startsWith("image:") ||
-			      linkedArticleTitle.startsWith("wikipedia:") ||
-			      linkedArticleTitle.startsWith("template:") ||
-			      linkedArticleTitle.startsWith("category:") ||
-			      (linkedArticleTitle.length() >= 3 && 
-			       linkedArticleTitle.charAt(2) == ':') ||
-			      linkedArticleTitle.contains("(disambiguation)")))
-			    {
-			    
-			    // if the artile is actually a reasonable
-			    // (e.g. non-image) article, then intern its string
-			    // to save memory
-			    linkedArticleTitle = linkedArticleTitle.intern();
-
-			    // print out the link name so that it gets included
-			    // in the term list
-			    phase4sb.append(linkedArticleTitle).append(" ");
-
-			    // increase the link counts accordingly
-			    //
-			    // NOTE: we have linkedArticleTitle is the canonical
-			    // copy of the string (via intern()), and so this
-			    // put() call works correctly, i.e. doesn't create
-			    // duplicate keys
-			    Integer incomingLinks = articleToIncomingLinkCount.
-				get(linkedArticleTitle);
-
-			    articleToIncomingLinkCount.
-				put(linkedArticleTitle, (incomingLinks == null)
-				    ? Integer.valueOf(1)
-				    : Integer.valueOf(1 + incomingLinks));
-
-			    ++outgoingLinks;
-			    
-			}
-			
-			lastGoodIndex = phase3.indexOf("]]", i) + 2;
-			i = lastGoodIndex;
-			
-			// the "j < 0" condition is for malformed wiki pages
-			// where there is no closing ]] for the link.
-			if (phase3.indexOf("[[", i) < 0 || j < 0) {
-			    phase4sb.append(phase3.substring(lastGoodIndex));
-			    break;
-			}
-		    } // end [[ loop    
-	   	    
-		    String scrubbed = phase4sb.toString();
-		    scrubbed = StringUtils.unescapeHTML(scrubbed,0).
-			//replaceAll("[^A-Za-z0-9'\u00E0-\u00FF]", " ").
-			replaceAll("#REDIRECT","");
-		    
-		    //System.out.println("CLEANED:" + scrubbed);
-		    //articleToText.put(articleName,scrubbed);
-		    //System.out.println("ARTICLE NAME: " + articleName);
-
-		    tmpOutput.println(articleName + "|" + outgoingLinks
-				      + "|" + scrubbed);		 
-		    tmpOutput.flush();
-		    
-		    int newIncomingLinks = articleToIncomingLinkCount.size() -
-			prevTotalIncomingLinks;
-		    Integer curIncoming = 
-			articleToIncomingLinkCount.get(articleName);
-		    
-		    System.out.println("link summary: " + outgoingLinks + 
-				       " outgoing, (" + newIncomingLinks + 
-				       " new docs); "
-				       + ((curIncoming == null) ? "0" :
-					  curIncoming.toString())
-				       + " incoming");
-		} 
-		catch (Throwable t) {
-		    t.printStackTrace();
-		}
-	    } // end file loop
-
-	    tmpOutput.close();
-
-	    System.out.println("REMOVING DOCUMENTS");
-	    PrintWriter output = new PrintWriter(outputFile);
-	    PrintWriter incomingLinkCounts = 
-		new PrintWriter(outputFile + ".incoming");
-	    //System.out.println("INCOMING: " + articleToIncomingLinkCount);
-	    //System.out.println("OUTGOING: " + articleToOutgoingLinkCount);
-
-	    // now read it back in and decide which of the term documents should
-	    // actually get included in the output
-	    int removed = 0 ;
-	    BufferedReader br = 
-		new BufferedReader(new FileReader(outputFile + ".tmp"));
-	    for (String line = null; (line = br.readLine()) != null; ) {
-		try {
-		    String[] arr = line.split("\\|");
-		    String term = arr[0].intern();
-		    int outgoing = Integer.parseInt(arr[1]);
-		    
-		    String doc = (arr.length < 2) ? "" : arr[2];
-		    Integer incoming = articleToIncomingLinkCount.get(term);
-		    if (incoming == null)
-			incoming = Integer.valueOf(0);
-		    incomingLinkCounts.println(term + "|" + incoming);
-		    
-		    termsOutput.println(term);
-		    termsOutput.flush();
-		    output.println(term + "|" + incoming + "|" + 
-				   outgoing + "|" + doc);
-		    output.flush();
-		    incomingLinkCounts.flush();
-		    
-		} catch (Throwable t) {
-		    t.printStackTrace();
-		}
-	    }
-
-	    incomingLinkCounts.close();
-	    termsOutput.close();
-	    output.close();
-
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}	
     }
 
 }
