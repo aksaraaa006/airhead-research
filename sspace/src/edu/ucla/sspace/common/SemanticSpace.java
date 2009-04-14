@@ -26,11 +26,6 @@ public interface SemanticSpace {
   // done for COALS.
   public void parseDocument(String filename) throws IOException;
 
-  // Implementation should read from the given filename and compute the
-  // similarity between each of the word pairs read.  This function needs a
-  // little more discussion.
-  public void computeDistances(String filename, int similarCount);
-
   public double computeSimilarity(String word1, String word2);
 
   // If the Semantic Space model requires some method of reduction, most notably
