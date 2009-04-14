@@ -31,6 +31,8 @@ public interface SemanticSpace {
   // little more discussion.
   public void computeDistances(String filename, int similarCount);
 
+  public double computeSimilarity(String word1, String word2);
+
   // If the Semantic Space model requires some method of reduction, most notably
   // the use of SVD, it should be executed when this method is called.  It is
   // assumed that processSpace will be called prior to reduce.

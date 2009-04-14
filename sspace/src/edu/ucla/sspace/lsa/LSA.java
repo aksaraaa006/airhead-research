@@ -392,6 +392,10 @@ public class LSA implements SemanticSpace {
     return resized;
   }
 
+  public double computeSimilarity(String word1, String word2) {
+    return 0.0;
+  }
+
   public void computeDistances(String filename, int similarCount) {
     System.out.print("computing word similarities ...");
     long startTime = System.currentTimeMillis();

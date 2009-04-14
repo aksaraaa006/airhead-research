@@ -78,7 +78,7 @@ public class Holograph implements SemanticSpace {
     words.removeFirst();
   }
 
-  public double computeDistance(String left, String right) {
+  public double computeSimilarity(String left, String right) {
     if (!termHolographs.containsKey(left) || !termHolographs.containsKey(right))
       return 0.0;
     return Similarity.cosineSimilarity(termHolographs.get(left),
