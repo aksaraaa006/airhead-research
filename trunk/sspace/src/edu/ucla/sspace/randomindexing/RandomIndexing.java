@@ -100,7 +100,7 @@ public class RandomIndexing {
     
 
     // package protected
-    SemanticVector getSemanticVector(String word) {
+    public SemanticVector getSemanticVector(String word) {
 	// ensure we are using the canonical copy of the word by interning it
 	// 
 	// NOTE: currently disabled.  We have to ensure that only interned
@@ -151,7 +151,7 @@ public class RandomIndexing {
 	return v;
     }
 
-    private class SemanticVector {
+    public class SemanticVector {
 
 	private int[] vector;
 
