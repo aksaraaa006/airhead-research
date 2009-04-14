@@ -1,0 +1,3 @@
+#summary Coding standards for the SSpace code packages
+
+We use the Java coding conventions: [http://java.sun.com/docs/codeconv/html/CodeConvTOC.doc.html]
