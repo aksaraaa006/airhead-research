@@ -85,8 +85,10 @@ public class LSAMain {
 	    return;
 	}
 
+    /*
 	System.out.printf("Loaded %d words by %d documents%n",
 			  lsa.getWordCount(), lsa.getDocCount());
+              */
 	
 	System.out.print("Saving word by document matrix ... ");
 	long startTime = System.currentTimeMillis();

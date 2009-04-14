@@ -1,8 +1,9 @@
 package edu.ucla.sspace.holograph;
 
 import edu.ucla.sspace.common.Index;
-import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -38,10 +39,10 @@ public class Holograph implements SemanticSpace {
     // split the line based on whitespace
     String[] text = line.split("\\s");
     for (String word : text) {
-    // clean up each word before entering it into the matrix
-      String cleaned = cleanup(word);
+      // clean up each word before entering it into the matrix
+      String cleaned = StringUtils.cleanup(word);
       // skip any mispelled or unknown words
-      if (!isValid(cleaned))
+      if (!StringUtils.isValid(cleaned))
         continue;
       words.add(cleaned);
       indexBuilder.addTermIfMissing(cleaned);
@@ -107,16 +108,5 @@ public class Holograph implements SemanticSpace {
     }
     System.out.println("for luther we get for left: " + leftWord +
                        ", and right: " + rightWord);
-  }
-
-  private boolean isValid(String word) {
-    return true;
-  }
-
-  private static String cleanup(String word) {
-    // remove all non-letter characters
-    word = word.replaceAll("\\W", "");
-    // make the string lower case
-    return word.toLowerCase();
   }
 }

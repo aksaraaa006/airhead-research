@@ -129,4 +129,15 @@ public class StringUtils {
 	sb.append(source.substring(last));
 	return sb.toString();
     }
+
+  public static boolean isValid(String word) {
+    return true;
+  }
+
+  public static String cleanup(String word) {
+    // remove all non-letter characters
+    word = word.replaceAll("\\W", "");
+    // make the string lower case
+    return word.toLowerCase();
+  }
 }
