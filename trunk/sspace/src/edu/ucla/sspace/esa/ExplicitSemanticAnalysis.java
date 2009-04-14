@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -41,10 +43,13 @@ public class ExplicitSemanticAnalysis {
     private static final Logger ESA_LOGGER = 
 	Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
 
-    private final Map<String,SemanticVector> wikipediaTerms;
+    private final Map<String,SemanticVector> wikipediaTermsToVector;
+    
+    private final Map<String,Integer> wikipediaTermsToIndex;
 
     public ExplicitSemanticAnalysis() {
-	wikipediaTerms = new HashMap<String,SemanticVector>();
+ 	wikipediaTermsToVector = new HashMap<String,SemanticVector>();
+	wikipediaTermsToIndex = new HashMap<String,Integer>();
     }
 
     public void generateSpace(File wikipediaSnapshotFile) throws IOException {
@@ -62,14 +67,19 @@ public class ExplicitSemanticAnalysis {
 	// use the remaining articles for the ESA set
     }
 
+    /**
+     * Returns {@code true} if the article with the provided name has Wikipedia
+     * specific or non-text content (e.g. an image article) and should therefore
+     * be excluded from the ESA processing.
+     */
     private static boolean skipArticle(String articleName) {
-	return linkedArticleTitle.startsWith("image:") ||
-	    linkedArticleTitle.startsWith("wikipedia:") ||
-	    linkedArticleTitle.startsWith("template:") ||
-	    linkedArticleTitle.startsWith("category:") ||
-	    (linkedArticleTitle.length() >= 3 && 
-	     linkedArticleTitle.charAt(2) == ':') ||
-	    linkedArticleTitle.contains("(disambiguation)");
+	return articleName.startsWith("image:") ||
+	    articleName.startsWith("wikipedia:") ||
+	    articleName.startsWith("template:") ||
+	    articleName.startsWith("category:") ||
+	    (articleName.length() >= 3 && 
+	     articleName.charAt(2) == ':') ||
+	    articleName.contains("(disambiguation)");
     }
     
     /**
@@ -336,7 +346,7 @@ public class ExplicitSemanticAnalysis {
 
 	    // If there weren't any incoming links, then the map will be
 	    // null for the article
-	    Integer incoming = articleToIncomingLinkCount.get(term);
+	    Integer incoming = incomingLinkCounts.get(articleName);
 	    if (incoming == null)
 		incoming = Integer.valueOf(0);			       
 
@@ -367,10 +377,22 @@ public class ExplicitSemanticAnalysis {
 	return validArticles;
     }
 
-
+    /**
+     * 
+     */
     private void computeESA(File parsedWikiSnapshot, Set<String> validArticles)
 	throws IOException {
+	
+	// Iterate through the set of valid documents to find what is the
+	// largest n-gram that is a single article name.  We will use this for
+	// searching
+	int longestNgram = 1;
+	for (String s : validArticles) {
+	    
+	}
 
+	BufferedReader br =  
+	    new BufferedReader(new FileReader(parsedWikiSnapshot));
     }
 
 
@@ -454,7 +476,7 @@ public class ExplicitSemanticAnalysis {
 	    return cachedDocs.size() > 0 || isReaderOpen.get();
 	}
 
-	public WikiDoc next() throws InterruptedException {
+	public WikiDoc next() throws IOException {
 	    new Thread() {
 		public void run() {
 		    try {
@@ -470,7 +492,12 @@ public class ExplicitSemanticAnalysis {
 	    // HORRIBLE HACK: Don't block.  Wait up to 10 minutes (in case of
 	    //                GC) to poll.  This should be fixed when time
 	    //                allows, but works in the present case.
-	    return cachedDocs.poll(60 * 10 * 1000L, TimeUnit.MILLISECONDS);
+	    try {
+		return cachedDocs.poll(60 * 10 * 1000L, TimeUnit.MILLISECONDS);
+	    } catch (InterruptedException ie) {
+		// re-throw as IOE
+		throw new IOException(ie);
+	    }
 	}
     }
 
@@ -505,5 +532,31 @@ public class ExplicitSemanticAnalysis {
 	    this.incomingLinkCounts = incomingLinkCounts;
 	}
     }
+ 
+    private final class SemanticVector {
+	private final Map<Integer,Integer> sparseVector;
 
+	public SemanticVector() {
+	    sparseVector = new HashMap<Integer,Integer>();
+	}
+
+	public void increment(String articleName) {
+	    Integer index = wikipediaTermsToIndex.get(articleName);
+	    Integer count = sparseVector.get(index);
+	    sparseVector.put(index, (count == null) ? 1 : count + 1);
+	}
+
+	public int[] toIntArray() {
+	    int size = wikipediaTermsToIndex.size();
+	    int[] full = new int[size];
+	    for (int i = 0; i < size; ++i) {
+		Integer count = sparseVector.get(Integer.valueOf(i));
+		if (count != null) {
+		    full[i] = count.intValue();
+		}
+	    }
+	    return full;
+	}
+    }
+   
 }
