@@ -45,17 +45,17 @@ class HolographMain {
         System.exit(0);
       }
       System.out.println("similarity between Eat and Eaten: " + 
-                         holographBuilder.computeDistance("eat", "eaten"));
+                         holographBuilder.computeSimilarity("eat", "eaten"));
       System.out.println("similarity between Eat and buy: " + 
-                         holographBuilder.computeDistance("eat", "buy"));
+                         holographBuilder.computeSimilarity("eat", "buy"));
       System.out.println("similarity between Eat and feed: " + 
-                         holographBuilder.computeDistance("eat", "feed"));
+                         holographBuilder.computeSimilarity("eat", "feed"));
       System.out.println("similarity between car and driver: " + 
-                         holographBuilder.computeDistance("car", "driver"));
+                         holographBuilder.computeSimilarity("car", "driver"));
       System.out.println("similarity between car and driver: " + 
-                         holographBuilder.computeDistance("car", "boat"));
+                         holographBuilder.computeSimilarity("car", "boat"));
       System.out.println("similarity between car and driver: " + 
-                         holographBuilder.computeDistance("car", "truck"));
+                         holographBuilder.computeSimilarity("car", "truck"));
       holographBuilder.lutherTest();
     }
   }
