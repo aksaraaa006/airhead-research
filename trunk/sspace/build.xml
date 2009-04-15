@@ -49,7 +49,8 @@
 	  depends="compile">
     <mkdir dir="classes"/>
     <!-- <ivy:cachepath conf="test" pathid="test.refid"/> -->
-    <javac srcdir="test" destdir="classes" classpath="classes" target="1.5">	   
+    <javac srcdir="test" destdir="classes" classpath="classes,lib"
+      classpathref="classpath" target="1.5">	   
       <compilerarg value="-Xlint"/>
     </javac>
   </target>
@@ -71,10 +72,11 @@
   <target name="test" depends="compile-tests">
     <junit printsummary="yes" fork="yes" haltonfailure="no">
       <classpath>
-	<pathelement location="classes"/>
+        <pathelement location="classes"/>
       </classpath>
       <formatter type="plain"/>
       <test name="edu.ucla.sspace.common.TrieMapTests"/>
+      <test name="edu.ucla.sspace.common.NormalizeTest"/>
     </junit>
   </target>
 
