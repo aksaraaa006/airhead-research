@@ -25,6 +25,7 @@ public class Coals implements SemanticSpace {
     wordToIndex = new HashMap<String, Integer>();
     wordWindow = new ArrayList<String>();
     isFilling = true;
+    finalCorrelation = null;
   }
 
   public void parseDocument(String document) {
@@ -34,6 +35,7 @@ public class Coals implements SemanticSpace {
       wordWindow.add(word.toLowerCase());
       update();
     }
+    finishUpdates();
   }
 
   private void addIfMissing(Index i, double value) {
@@ -43,36 +45,39 @@ public class Coals implements SemanticSpace {
       correlation.put(i, correlation.get(i).doubleValue() + value);
   }
 
+  private void finishUpdates() {
+    int size = wordWindow.size();
+    for (int i = 0; i < 4; ++i) {
+      String mainWord = wordWindow.get(4);
+      for (int j = 0; j < 4; j++)
+        addIfMissing(new Index(mainWord, wordWindow.get(j)), j+1);
+      for (int j = 5; j < wordWindow.size(); j++)
+        addIfMissing(new Index(mainWord, wordWindow.get(j)), 9-j);
+      wordWindow.remove(0);
+    }
+  }
+
   private void update() {
     int size = wordWindow.size();
-    if (size < 9 && isFilling && size < 5) {
-      String mainWord = wordWindow.get(size - 1);
-      for (int i = 0; i < size - 2; i++)
-        addIfMissing(new Index(mainWord, wordWindow.get(i)), i+1);
+    if (size < 9 && isFilling)
       return;
-    } else if (size < 9 && !isFilling) {
-      if (size <= 5) {
-        String mainWord = wordWindow.get(0);
-        for (int i = 1; i < size; i++)
-          addIfMissing(new Index(mainWord, wordWindow.get(i)), 5-i);
-      } else {
-        String mainWord = wordWindow.get(size - 5);
-        for (int i = 0; i < size-5; i++)
-          addIfMissing(new Index(mainWord, wordWindow.get(i)), i - (size - 5) + 1);
-        for (int i = 5; i < size; i++)
-          addIfMissing(new Index(mainWord, wordWindow.get(i)), 9-i);
+    else if (size >= 9 && isFilling) {
+      for (int i = 0; i < 4; i++) {
+        String mainWord = wordWindow.get(i);
+        for (int j = 0; j < i; j++)
+          addIfMissing(new Index(mainWord, wordWindow.get(j)), j-i+5);
+        for (int j = i+1; j < i+5; j++)
+          addIfMissing(new Index(mainWord, wordWindow.get(j)), i+5-j);
       }
-      return;
-    } else
       isFilling = false;
+    }
 
     String mainWord = wordWindow.get(4);
     for (int i = 0; i < 4; i++)
       addIfMissing(new Index(mainWord, wordWindow.get(i)), i+1);
     for (int i = 5; i < size; i++)
       addIfMissing(new Index(mainWord, wordWindow.get(i)), 9-i);
-    if (size >= 9) 
-      wordWindow.remove(0);
+    wordWindow.remove(0);
   }
 
   public void reduce() {
@@ -83,6 +88,21 @@ public class Coals implements SemanticSpace {
   }
 
   public void processSpace() {
+    finalCorrelation = buildMatrix();
+    //Normalize.byCorrelation(finalCorrelation);
+    /*
+    for (int i = 0; i < wordCount; ++i) {
+      for (int j = 0; j < wordCount; ++j) {
+        if (correl.get(i,j) < 0)
+          correl.set(i,j, 0);
+        else
+          correl.set(i, j, Math.pow(correl.get(i, j), 2));
+      }
+    }
+    */
+  }
+
+  private Matrix buildMatrix() {
     HashSet<String> wordSet = new HashSet<String>();
     for (Index index : correlation.keySet()) {
       wordSet.add(index.word);
@@ -102,20 +122,15 @@ public class Coals implements SemanticSpace {
       int index2 = wordToIndex.get(key.document).intValue();
       correl.set(index1, index2, value);
     }
-    //Normalize.byCorrelation(correl);
-    /*
-    for (int i = 0; i < wordCount; ++i) {
-      for (int j = 0; j < wordCount; ++j) {
-        if (correl.get(i,j) < 0)
-          correl.set(i,j, 0);
-        else
-          correl.set(i, j, Math.pow(correl.get(i, j), 2));
-      }
-    }
-    */
-    finalCorrelation = correl;
+    return correl;
   }
 
+  public Matrix compareToMatrix(Matrix o) {
+    if (finalCorrelation == null)
+      finalCorrelation = buildMatrix();
+    return finalCorrelation.minus(o);
+  }
+   
   public void printCorrelations() {
     finalCorrelation.print(5, 2);
     for (Map.Entry<String, Integer> entry : wordToIndex.entrySet())
