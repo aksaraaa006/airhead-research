@@ -1,3 +1,5 @@
+package edu.ucla.sspace.lsa;
+
 import java.io.*;
 import java.util.*;
 

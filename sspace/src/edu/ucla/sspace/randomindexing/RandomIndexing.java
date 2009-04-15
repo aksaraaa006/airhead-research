@@ -190,9 +190,10 @@ public class RandomIndexing {
 	    HashSet<Integer> neg = new HashSet<Integer>();
 	    this.length = length;
 
-	    // randomly set bits
+	    // randomly set bits in the index vector
 	    int bitsToSet = BITS_TO_SET +
-		(int)(BIT_VARIANCE * ((RANDOM.nextDouble() > .5) ? 1 : -1));
+		(int)(RANDOM.nextDouble() * BIT_VARIANCE *
+		      ((RANDOM.nextDouble() > .5) ? 1 : -1));
 	    for (int i = 0; i < bitsToSet; ++i) {
 
 		boolean picked = false;
