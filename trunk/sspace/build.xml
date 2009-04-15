@@ -31,8 +31,8 @@
      <javac srcdir="./" destdir="classes" classpathref="classpath">
       <include name="src/**"/>
       <include name="lib/**"/>
-      <exclude name="src/edu/ucla/sspace/esa/**"/>
-      <!--      <include name="classes/**"/> -->
+      <!--      <exclude name="src/edu/ucla/sspace/esa/**"/>
+      <include name="classes/**"/> -->
     </javac>  
   </target>
 
