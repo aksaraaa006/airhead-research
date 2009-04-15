@@ -6,6 +6,8 @@ import java.util.TreeMap;
 public class BoundedSortedMap<K,V> extends TreeMap<K,V> {
   private final int bound;
 
+  private static final long serialVersionUID = 1;
+
   public BoundedSortedMap(int bound) {
     super();
     this.bound = bound;

@@ -82,8 +82,8 @@ public class Similarity {
 	    ySum += arr2[i];
 	}
 	
-	double xMean = xSum / (int)(arr1.length);
-	double yMean = ySum / (int)(arr1.length);
+	double xMean = xSum / (double)(arr1.length);
+	double yMean = ySum / (double)(arr1.length);
 	
 	double numerator = 0, xSqSum = 0, ySqSum = 0;
 	for (int i = 0; i < arr1.length; ++i) {
