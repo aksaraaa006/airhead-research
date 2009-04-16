@@ -4,7 +4,7 @@ import edu.ucla.sspace.coals.Coals;
 
 import Jama.Matrix;
 
-class CoalsMain {
+public class CoalsMain {
   public static void main(String[] args) {
     Coals coals = new Coals();
     String testDocument = "How much wood would a woodchuck chuck , if a woodchuck could chuck wood ? As much wood as a woodchuck would , if a woodchuck could chuck wood .";

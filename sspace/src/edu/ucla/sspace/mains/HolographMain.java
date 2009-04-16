@@ -5,7 +5,7 @@ import edu.ucla.sspace.holograph.Holograph;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-class HolographMain {
+public class HolographMain {
   public static void usage() {
     System.out.println("use --docsFile");
   }
