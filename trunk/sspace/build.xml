@@ -31,7 +31,8 @@
 
     <!-- Compile all of the classes and put the results in the classes
 	 directory -->
-     <javac srcdir="./" destdir="classes" classpathref="classpath">
+     <javac srcdir="./" destdir="classes" classpathref="classpath" 
+	    debug="true" debuglevel="lines,source">
        <compilerarg value="-Xlint"/>
        <compilerarg value="-g"/>
       <include name="src/**"/>
@@ -52,9 +53,10 @@
 	  depends="compile">
     <mkdir dir="classes"/>
     <!-- <ivy:cachepath conf="test" pathid="test.refid"/> -->
-    <javac srcdir="test" destdir="classes"
-      classpathref="classpath" target="1.5">	   
+    <javac srcdir="test" destdir="classes" debug="true"
+      classpathref="classpath" target="1.5" debuglevel="lines,source">	   
       <compilerarg value="-Xlint"/>
+      <compilerarg value="-g"/>
     </javac>
   </target>
 
@@ -74,6 +76,8 @@
 
   <target name="test" depends="compile-tests">
     <junit printsummary="yes" fork="yes" haltonfailure="no">
+      <jvmarg value="-Xmx1g"/>
+      <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
       <test name="edu.ucla.sspace.common.TrieMapTests"/>
