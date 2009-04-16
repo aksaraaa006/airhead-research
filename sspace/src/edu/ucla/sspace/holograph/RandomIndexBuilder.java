@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-class RandomIndexBuilder {
+public class RandomIndexBuilder {
   private static final int DEFAULT_INDEX_VECTOR_SIZE = 2048;
 
   private HashMap<String, double[]> termToRandomIndex;
