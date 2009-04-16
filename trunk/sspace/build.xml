@@ -3,6 +3,7 @@
 
   <property name="lib.dir" value="lib"/>
   <property name="build.dir" value="classes"/>
+  <property name="package" value="edu.ucla.sspace"/>
   
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -84,6 +85,10 @@
     <javadoc destdir="javadoc/">
       <fileset dir="${basedir}/" includes="**/*.java"/>
     </javadoc>
+  </target>
+
+  <target name="coals">
+    <java classname="${package}.mains.CoalsMain" classpathref="run-classpath"/>
   </target>
 
 </project>
