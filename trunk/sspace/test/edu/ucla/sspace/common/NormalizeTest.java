@@ -23,7 +23,7 @@ public class NormalizeTest {
                                     {0, 5, 3, 2, 0, 0, 3, 6, 1, 0, 0, 0, 0}};
     Matrix testIn = new Matrix(testCorrelations);
     double[][] testResults = { {-.167,-.014, .014, .009,-.017, .085,-.018,-.033, .096, .069, .085,-.055,-.079},
-                               {-.014, 0.31,-.048,-.049,-.037,-.077, .133, .103,-.054,-.021,-.050,-.037, .133},
+                               {-.014, .031,-.048,-.049,-.037,-.077, .133, .103,-.054,-.021,-.050,-.037, .133},
                                { .014,-.048,-.113, .094,-.045, .021,-.061, .031, .048,-.046,-.002, .088, .031},
                                { .009,-.049, .094,-.075,-.037, .033,-.070, .022, .049,-.075,-.021, .069, .023},
                                {-.017,-.037,-.045,-.037,-.018,-.037, .192, .070,-.055, .069,-.037,-.018,-.026},
@@ -37,22 +37,17 @@ public class NormalizeTest {
                                {-.079, .133, .031, .023,-.026,-.053, .072, .100,-.051,-.053,-.053,-.026,-.037}};
     Matrix testOut = new Matrix(testResults);
     Normalize.byCorrelation(testIn);
+    testIn.print(6,4);
     Matrix result = testIn.minus(testOut);
     result.print(6, 4);
     double sum = 0;
     for (int i = 0; i < result.getRowDimension(); ++i) {
       for (int j = 0; j < result.getColumnDimension(); ++j) {
-        sum += result.get(i,j);
+        assertEquals(0.0, result.get(i,j), .001);
       }
     }
-    assertEquals(sum, 0.0, .00001);
   }
 
-  public static void main(String args[]) {
-    System.out.println("Holy fucking shitkciker " + NormalizeTest.class.getName());
-	org.junit.runner.JUnitCore.main(NormalizeTest.class.getName());
-  }
-  
   public static junit.framework.Test suite() {
     return new junit.framework.JUnit4TestAdapter(NormalizeTest.class);
   }
