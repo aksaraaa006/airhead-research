@@ -26,8 +26,7 @@ public class HolographMain {
             String document = null;
             int count = 0;
             while ((document = br.readLine()) != null) {
-            System.out.print("parsing document " + (count++) + ": "
-                   + document + " ...");
+            System.out.print("parsing document " + (count++));
             long startTime = System.currentTimeMillis();
             holographBuilder.parseDocument(document);
             long endTime = System.currentTimeMillis();
