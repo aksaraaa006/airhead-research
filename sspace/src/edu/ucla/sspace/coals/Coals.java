@@ -96,7 +96,7 @@ public class Coals implements SemanticSpace {
         if (correl.get(i,j) < 0)
           correl.set(i,j, 0);
         else
-          correl.set(i, j, Math.pow(correl.get(i, j), 2));
+          correl.set(i, j, Math.sqrt(correl.get(i, j));
       }
     }
     */

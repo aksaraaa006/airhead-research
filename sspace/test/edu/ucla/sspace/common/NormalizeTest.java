@@ -1,14 +1,12 @@
-package test.edu.ucla.sspace.common;
+package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.common.Normalize;
-
-import org.junit.Test;
+import org.junit.*;
 
 import static org.junit.Assert.*;
 
 import Jama.Matrix;
 
-class NormalizeTest {
+public class NormalizeTest {
   @Test public void testCorrelation() {
     double[][] testCorrelations = { {0, 5, 9, 6, 1,10, 4, 8,18, 9,10, 0, 0},
                                     {5, 4, 2, 1, 0, 0, 7,10, 3, 2, 1, 0, 5},
@@ -40,6 +38,7 @@ class NormalizeTest {
     Matrix testOut = new Matrix(testResults);
     Normalize.byCorrelation(testIn);
     Matrix result = testIn.minus(testOut);
+    result.print(6, 4);
     double sum = 0;
     for (int i = 0; i < result.getRowDimension(); ++i) {
       for (int j = 0; j < result.getColumnDimension(); ++j) {
@@ -48,4 +47,14 @@ class NormalizeTest {
     }
     assertEquals(sum, 0.0, .00001);
   }
+
+  public static void main(String args[]) {
+    System.out.println("Holy fucking shitkciker " + NormalizeTest.class.getName());
+	org.junit.runner.JUnitCore.main(NormalizeTest.class.getName());
+  }
+  
+  public static junit.framework.Test suite() {
+    return new junit.framework.JUnit4TestAdapter(NormalizeTest.class);
+  }
+ 
 }

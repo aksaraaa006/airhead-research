@@ -6,10 +6,12 @@
   
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
-    <fileset dir="${lib.dir}/jnt" includes="**/*.class"/>
-    <fileset dir="${build.dir}" includes="**/*.java"/>    
   </path>
 
+  <path id="run-classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.dir}"/>
+  </path>
 
   <target name="all">
     <!-- put in dependencies here -->
@@ -49,7 +51,7 @@
 	  depends="compile">
     <mkdir dir="classes"/>
     <!-- <ivy:cachepath conf="test" pathid="test.refid"/> -->
-    <javac srcdir="test" destdir="classes" classpath="classes,lib"
+    <javac srcdir="test" destdir="classes"
       classpathref="classpath" target="1.5">	   
       <compilerarg value="-Xlint"/>
     </javac>
@@ -71,22 +73,17 @@
 
   <target name="test" depends="compile-tests">
     <junit printsummary="yes" fork="yes" haltonfailure="no">
-      <classpath>
-        <pathelement location="classes"/>
-      </classpath>
+      <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
       <test name="edu.ucla.sspace.common.TrieMapTests"/>
       <test name="edu.ucla.sspace.common.NormalizeTest"/>
     </junit>
   </target>
 
-
   <target name="javadoc" description="Create Javadocs" depends="compile">
     <javadoc destdir="javadoc/">
       <fileset dir="${basedir}/" includes="**/*.java"/>
     </javadoc>
   </target>
-
-
 
 </project>
