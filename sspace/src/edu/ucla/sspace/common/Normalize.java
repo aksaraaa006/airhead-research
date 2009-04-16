@@ -55,9 +55,9 @@ public class Normalize {
     }
     for (int i = 0; i < m.getRowDimension(); ++i) {
       for (int j = 0; j< m.getColumnDimension(); ++j) {
-        double newVal = totalSum * m.get(i,j) - rowSums[i] * colSums[j] /
-                        Math.sqrt(rowSums[i]*(totalSum - rowSums[i]) *
-                                  colSums[j]*(totalSum - colSums[j]));
+        double newVal = (totalSum * m.get(i,j) - rowSums[i] * colSums[j]) /
+                        Math.sqrt(rowSums[i] * (totalSum - rowSums[i]) *
+                                  colSums[j] * (totalSum - colSums[j]));
         m.set(i,j, newVal);
       }
     }

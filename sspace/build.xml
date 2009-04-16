@@ -82,6 +82,7 @@
       <formatter type="plain"/>
       <test name="edu.ucla.sspace.common.TrieMapTests"/>
       <test name="edu.ucla.sspace.common.NormalizeTest"/>
+      <test name="edu.ucla.sspace.coals.CoalsTest"/>
     </junit>
   </target>
 
@@ -90,9 +91,4 @@
       <fileset dir="${basedir}/" includes="**/*.java"/>
     </javadoc>
   </target>
-
-  <target name="coals">
-    <java classname="${package}.mains.CoalsMain" classpathref="run-classpath"/>
-  </target>
-
 </project>
