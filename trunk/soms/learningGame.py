@@ -34,9 +34,24 @@ class LearningGame():
       word, context = speaker.generateUtterance()
       #print "speaker says: ", word, context
       hearer.recieveUtterance(word, context)
+    k_n = []
     for learner in self.learners:
       print "mappings for learner"
       learner.printMap()
+      k_n.append(learner.getNearestNeighbors(5))
+
+    [l1, l2] = k_n
+    for word in l1:
+      l1_neighs = l1[word]
+      if word not in l2:
+        print "missing word: ", word
+        continue
+      l2_neighs = l2[word]
+      sim_count = 0
+      for neigh in l1_neighs:
+        if neigh in l2_neighs:
+          sim_count += 1
+      print "sim count for %s: %d" %(word, sim_count)
 
 if __name__ == "__main__":
   game = LearningGame()
