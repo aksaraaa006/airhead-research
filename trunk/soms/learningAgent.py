@@ -70,6 +70,16 @@ class learningAgent():
     #  context += object_frame[i]
     return word, context
 
+  def getBestWord(self, object):
+    min_sim = 1000000
+    best_word = ""
+    for node in self.som:
+      sim = node.similarity(object)
+      if min_sim > sim:
+        min_sim = sim
+        best_word = node.word
+    return best_word
+
   def getBestNode(self, context):
     min_sim = 1000000
     best_node = None
@@ -77,7 +87,6 @@ class learningAgent():
     neighborhood = []
     for node in self.som:
       sim = node.similarity(context)
-      print sim
       distances.append((node.loc, sim, node))
       if min_sim > sim:
         min_sim = sim
