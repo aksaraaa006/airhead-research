@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,6 +29,27 @@ public class TrieMapTests {
 	TrieMap<String> m = new TrieMap<String>();
     }
 
+    @Test public void testMapConstructor() {
+
+	Map<String,String> control = new HashMap<String,String>();
+	
+	for (int i = 0; i < 512; ++i) {
+	    String s = Integer.toHexString(i);
+	    control.put(s, s);
+	}
+
+	TrieMap<String> test = new TrieMap<String>(control);
+
+	assertEquals(control.size(), test.size());
+	assertTrue(control.keySet().containsAll(test.keySet()));
+	assertTrue(control.values().containsAll(test.values()));
+    }    
+
+    @Test(expected=NullPointerException.class) 
+    public void testMapConstructorNull() {
+	TrieMap<String> m = new TrieMap<String>(null);
+    }
+
     @Test public void testPut() {
 	TrieMap<String> m = new TrieMap<String>();
 	m.put("a", "1");
@@ -45,6 +67,12 @@ public class TrieMapTests {
     public void testPutNullValue() {
 	TrieMap<String> m = new TrieMap<String>();
 	m.put("key", null);
+    }
+
+    @Test public void testPutEmptyString() {
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("", "empty");
+	assertEquals("empty", m.get(""));
     }
 
     @Test public void testPutDifferentFirstChars() {
@@ -169,13 +197,6 @@ public class TrieMapTests {
 	    control.add(s);
 	}
 
-	System.out.println("size() = " + m.size());
-	int size = 0;
-	for (String s : m.values())
-	    size++;
-	System.out.println("manual size = " + size);
-	System.out.println(m);
-
 	assertEquals(control.size(), m.size());
 	assertTrue(control.containsAll(m.keySet()));
     }    
@@ -189,17 +210,8 @@ public class TrieMapTests {
 	    control.add(s);
 	}
 
- 	System.out.println("\n\nqsize() = " + m.size());
- 	int size = 0;
- 	for (String s : m.values())
- 	    size++;
- 	System.out.println("manual size = " + size);
- 	System.out.println(m);
-
-
 	assertEquals(control.size(), m.size());
 	assertTrue(control.containsAll(m.keySet()));
-
     }
     
 
@@ -251,14 +263,11 @@ public class TrieMapTests {
 	m.put("banana", "4");
 
 	Set<Map.Entry<CharSequence,String>> test = m.entrySet();
-	System.out.println(m.entrySet());
 
 	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
 	    e.setValue(e.getKey().toString());
 	}
 	
-	System.out.println(m.entrySet());
-
 	assertEquals("cat", m.get("cat"));
 	assertEquals("category", m.get("category"));
 	assertEquals("catamaran", m.get("catamaran"));
@@ -379,6 +388,14 @@ public class TrieMapTests {
 	assertEquals(0, m.size());
     }
 
+    @Test public void testRemoveEmptyString() {
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("", "empty");
+	assertEquals("empty", m.get(""));
+	m.remove("");
+	assertFalse(m.containsKey(""));
+    }
+
     @Test public void testRemoveIntermediate() {
 	TrieMap<String> m = new TrieMap<String>();
 	m.put("cat", "cat");
@@ -477,8 +494,6 @@ public class TrieMapTests {
 	m.put("bee", "3");
 	m.put("boy", "4");
 	m.put("cat", "5");
-
-	System.out.println(m.keySet());
 	
 	SortedSet<CharSequence> control = 
 	    new TreeSet<CharSequence>(m.keySet());

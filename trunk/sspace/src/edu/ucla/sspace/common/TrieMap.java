@@ -1,5 +1,7 @@
 package edu.ucla.sspace.common;
 
+import java.io.Serializable;
+
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -35,9 +37,9 @@ import java.util.TreeMap;
  *
  * <p>
  *
- * This class does not permit {@code null} keys or values.  In addition this
- * class does not permit the use of an empty {@code CharSequence} of length
- * {@code 0} as a key.
+ * This class does not permit {@code null} keys or values.  However, this class
+ * does permit the use of the empty string (a {@code CharSequence} of length
+ * {@code 0}).
  *
  * <p>
  *
@@ -50,23 +52,28 @@ import java.util.TreeMap;
  *
  * @author David Jurgens
  */
-public class TrieMap<V> implements Map<CharSequence,V> {
+public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
+
+    private static final long serialVersionUID = 1;
 
     private static final AlphabeticComparator ALPHABETIC_COMPARATOR = 
 	new AlphabeticComparator();
 
-    private Map<Character,Node<V>> root;
+    private final RootNode<V> rootNode;
 
     private int size = 0;
     
     public TrieMap() {
 	// create the root mapping with an alphabetically sorted order
-	root = new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
+	rootNode = new RootNode<V>();
 	size = 0;
     }
 
     public TrieMap(Map<? extends CharSequence,? extends V> m) {
 	this();
+	if (m == null) {
+	    throw new NullPointerException("map cannot be null");
+	}
 	putAll(m);
     }
 
@@ -82,17 +89,10 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	if (!(key instanceof CharSequence)) {
 	    throw new ClassCastException("key not an instance of CharSequence");
 	}
-	else {
-	    CharSequence cs = (CharSequence)key;
-	    if (cs.length() == 0) {
-		throw new IllegalArgumentException(
-		    "the empty stirng is not allowed");
-	    }
-	}
     }
 
     public void clear() {
-	root.clear();
+	rootNode.clear();
 	size = 0;
     }
     
@@ -142,7 +142,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
     }
 
     public boolean isEmpty() {
-	return root.isEmpty();
+	return rootNode.getChildren().isEmpty();
     }
 
     public Set<CharSequence> keySet() {
@@ -155,13 +155,14 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	}
 	
 	int length = key.length();
+
+	// special case for empty string
 	if (length == 0) {
-	    throw new IllegalArgumentException(
-		"key length must be greater than 0");
+	    return rootNode;
 	}
 
 	char head = key.charAt(0);
-	Node<V> cur = root.get(head);
+	Node<V> cur = rootNode.getChild(head);
 	for (int pos = 0; pos < length; ++pos) {
 
 	    // see if the current node as the same character as the current
@@ -210,15 +211,18 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    throw new NullPointerException("keys and values cannot be null");
 	}
 	int keyLength = key.length();
-
+	
+	// special case for empty string
 	if (keyLength == 0) {
-	    throw new IllegalArgumentException(
-		"keys must contain at least one character");
+	    V old = rootNode.setValue(value);
+	    return old;
 	}
 	
-	Map<Character,Node<V>> curTransition = root;
+	Node<V> curParent = rootNode;
 
 	for (int keyChar = 0; keyChar < keyLength; ++keyChar) {
+
+	    Map<Character,Node<V>> curTransition = curParent.getChildren();
 
 	    // Check for an edge to a new node in the trie based on the current
 	    // character of the key
@@ -229,7 +233,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    // current location
 	    if (n == null) {
 		Node<V> newNode = new Node<V>(curChar, key, keyChar + 1, value);
-		curTransition.put(curChar, newNode);		
+		curParent.addChild(curChar, newNode);		
 		size++;
 		return null;
 	    }
@@ -262,7 +266,8 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    // otherwise, if no part overlapped, then continue and see if the
 	    // next key character can be used to transition to a new Node
 	    else {
-		curTransition = n.children;
+		curTransition = n.getChildren();
+		curParent = n;
 	    }
 	}
 	return null;
@@ -321,7 +326,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    return old;	    
 	}
 	else {
-	    return n.value;
+	    return (n == null) ? null : n.value;
 	}
     }
     
@@ -367,7 +372,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	for (int i = 0; i < nodesToCreate; ++i) {
 	    char c = oldTail.charAt(i);
 	    Node<V> n = new Node<V>(c, "", null);
-	    cur.children.put(c, n);
+	    cur.addChild(c, n);
 	    cur = n;
 	}
 	
@@ -378,7 +383,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 
 	    char newChildChar = newTail.charAt(0);
 	    Node<V> newNode = new Node<V>(newChildChar, newTail, 1, value);
-	    cur.children.put(newChildChar, newNode);
+	    cur.addChild(newChildChar, newNode);
 	}
 	// 
 	else if (newTail.length() == 0) {
@@ -386,7 +391,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    Node<V> remainingTail = 
 		new Node<V>(old, oldTail, nodesToCreate + 1, node.value);
 	    cur.value = value;
-	    cur.children.put(old, remainingTail);
+	    cur.addChild(old, remainingTail);
 	    cur.setTail("");
 	}
 	//
@@ -397,8 +402,8 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    char newChildChar = newTail.charAt(0);
 	    Node<V> newNode = new Node<V>(newChildChar, newTail, 1, value);
 	    
-	    cur.children.put(old, remainingTail);
-	    cur.children.put(newChildChar, newNode);	
+	    cur.addChild(old, remainingTail);
+	    cur.addChild(newChildChar, newNode);	
 
 	}
 	
@@ -440,7 +445,9 @@ public class TrieMap<V> implements Map<CharSequence,V> {
      *
      *
      */
-    private static class Node<V> {
+    private static class Node<V> implements Serializable {
+
+	private static final long serialVersionUID = 1;
 
 	private char head;
 
@@ -448,7 +455,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 
 	private V value;
 
-	private Map<Character,Node<V>> children;
+	protected Map<Character,Node<V>> children;
 
 	/**
 	 * Constructs a new {@code Node}.
@@ -469,27 +476,28 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    this.head = head;
 	    this.tailChars = toArray(seq, tailStart);
 	    this.value = value;
-	    children = new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
+	    children = null; // new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
 	}
 
 	public Node(char head, CharSequence tail, V value) {
 	    this(head, tail, 0, value);
 	}
 
-	private static char[] toArray(CharSequence seq) {
-	    return toArray(seq, 0);
-	}
-
-	private static char[] toArray(CharSequence seq, int start) {
-	    char[] arr = new char[seq.length() - start];
-	    for (int i = 0; i < arr.length; ++i) {
-		arr[i] = seq.charAt(i + start);
+	public void addChild(char c, Node<V> child) {
+	    if (children == null) {
+		children = 
+		    new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
 	    }
-	    return arr;
+	    children.put(c, child);
+	}
+	
+	public Node<V> getChild(char c) {
+	    return (children == null) ? null : children.get(c);
 	}
 
-	public Node<V> getChild(char c) {
-	    return children.get(c);
+	public Map<Character,Node<V>> getChildren() {
+	    return (children == null) 
+		? new HashMap<Character,Node<V>>() : children;
 	}
 
 	public CharSequence getTail() {
@@ -525,10 +533,44 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    return false;
 	}
 
+	private static char[] toArray(CharSequence seq) {
+	    return toArray(seq, 0);
+	}
+
+	private static char[] toArray(CharSequence seq, int start) {
+	    char[] arr = new char[seq.length() - start];
+	    for (int i = 0; i < arr.length; ++i) {
+		arr[i] = seq.charAt(i + start);
+	    }
+	    return arr;
+	}
+
 	public String toString() {
 	    return "(" + head + "," + 
 		((tailChars.length == 0) ? "\"\"" : new String(tailChars))
 		+ ": " + value + ", children: " + children + ")";
+	}
+    }
+
+    private static class RootNode<V> extends Node<V> {
+	
+	private static final long serialVersionUID = 1;
+
+	public RootNode() {
+	    super('\0', "", null);
+	    children = new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
+	}
+
+	public void clear() {
+	    children.clear();
+	}
+
+	void setTail(CharSequence seq) {
+	    throw new IllegalStateException("cannot set tail on root node");
+	}
+
+	boolean tailMatches(CharSequence seq) {
+	    return seq.length() == 0;
 	}
     }
 
@@ -637,7 +679,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	public TrieIterator() {
 	    
 	    dfsFrontier = new ArrayDeque<AnnotatedNode<V>>();
-	    for (Node<V> n : root.values())
+	    for (Node<V> n : rootNode.getChildren().values())
 		dfsFrontier.push(new AnnotatedNode<V>(n, ""));
 
 	    next = null;
@@ -660,7 +702,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    // or we find a terminal node
 	    while (n != null && !n.node.isTerminal()) {
 		// remove the top of the stack and add its children
-		for (Node<V> child : n.node.children.values()) {
+		for (Node<V> child : n.node.getChildren().values()) {
 		    dfsFrontier.push(new AnnotatedNode<V>(
 				     child, n.prefix + n.node.head));
 		}
@@ -673,7 +715,7 @@ public class TrieMap<V> implements Map<CharSequence,V> {
 	    else {
 		next = createEntry(n);
 		// add all of the children of the former top of the stack.
-		for (Node<V> child : n.node.children.values()) {
+		for (Node<V> child : n.node.getChildren().values()) {
 		    dfsFrontier.push(new AnnotatedNode<V>(
 				     child, n.prefix + n.node.head));
 		}		
@@ -861,8 +903,10 @@ public class TrieMap<V> implements Map<CharSequence,V> {
      * alphabetically.
      */
     private static final class AlphabeticComparator 
-	implements Comparator<Character> {
+	implements Comparator<Character>, Serializable {
 	
+	private static final long serialVersionUID = 1;
+
 	public int compare(Character c1, Character c2) {
 	    return -(c1.compareTo(c2));
 	}
