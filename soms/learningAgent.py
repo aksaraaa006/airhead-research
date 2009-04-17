@@ -25,6 +25,23 @@ class learningAgent():
         self.som.append(SOMNode(i,j,.001, vector_size))
     self.game = game
 
+  def getNearestNeighbors(self, k):
+    word_mappings = {}
+    for node in self.som:
+      if node.word != "":
+        word_mappings[node.word] = node.meaning
+
+    nearest_neighbors = {} 
+    for word in word_mappings:
+      node_sims = []
+      for other_word in word_mappings:
+        node_sims.append((other_word,
+                           distance(word_mappings[word],
+                                    word_mappings[other_word])))
+      node_sims.sort()
+      nearest_neighbors[word] = node_sims[:k]
+    return nearest_neighbors
+
   def generateUtterance(self):
     """Generate a context vector, which is the sum of some subject representation,
     along with the meaning vector of 3 other random objects which are in the
