@@ -3,6 +3,7 @@
 
   <property name="lib.dir" value="lib"/>
   <property name="build.dir" value="classes"/>
+  <property name="report.dir" value="reports"/>
   <property name="package" value="edu.ucla.sspace"/>
   
   <path id="classpath">
@@ -81,10 +82,11 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
-      <test name="edu.ucla.sspace.common.DocumentPreprocessorTest"/>
-      <test name="edu.ucla.sspace.common.TrieMapTests"/>
-      <test name="edu.ucla.sspace.common.NormalizeTest"/>
-      <test name="edu.ucla.sspace.coals.CoalsTest"/>
+
+      <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.DocumentPreprocessorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
     </junit>
   </target>
 

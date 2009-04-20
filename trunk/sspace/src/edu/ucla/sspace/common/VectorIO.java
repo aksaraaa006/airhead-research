@@ -7,9 +7,8 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 
 /**
- * A shared utility for printing vector arrays to files in a uniform manner
+ * A shared utility for printing vectors to files in a uniform manner.
  */
-
 public class VectorIO {
     
     /**
@@ -19,7 +18,7 @@ public class VectorIO {
 
     public static double[] readVector(File f) throws IOException {
 	BufferedReader br = new BufferedReader(new FileReader(f));
-	String[] valueStrs = (br.readLine()).trim().split("\t");
+	String[] valueStrs = (br.readLine()).trim().split("\\s+");
 	double[] values = new double[valueStrs.length];
 	for (int i = 0; i < valueStrs.length; ++i) {
 	    values[i] = Double.parseDouble(valueStrs[i]);
@@ -32,7 +31,7 @@ public class VectorIO {
 	throws IOException {
 
 	for (int i = 0; i < vector.length - 1; ++i)
-	    pw.print(vector[i] + "\t");
+	    pw.print(vector[i] + " ");
 	pw.print(vector[vector.length-1]);
 	pw.close();
     }
