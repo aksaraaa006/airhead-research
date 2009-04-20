@@ -1,4 +1,4 @@
-//package edu.ucla.sspace.lra;
+package edu.ucla.sspace.lra;
 
 import edu.ucla.sspace.common.Index;
 import edu.smu.tspell.wordnet.*;

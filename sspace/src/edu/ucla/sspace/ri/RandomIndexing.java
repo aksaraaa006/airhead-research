@@ -1,4 +1,4 @@
-package edu.ucla.sspace.randomindexing;
+package edu.ucla.sspace.ri;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -99,7 +99,9 @@ public class RandomIndexing {
     }
     
 
-    // package protected
+    /**
+     *
+     */
     public SemanticVector getSemanticVector(String word) {
 	// ensure we are using the canonical copy of the word by interning it
 	// 
