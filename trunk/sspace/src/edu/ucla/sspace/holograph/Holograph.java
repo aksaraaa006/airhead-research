@@ -1,6 +1,5 @@
 package edu.ucla.sspace.holograph;
 
-import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.StringUtils;
@@ -20,7 +19,6 @@ public class Holograph implements SemanticSpace {
 
   private final RandomIndexBuilder indexBuilder;
   private final LinkedList<String> words;
-  private final HashMap<Index, double[]> termDocHolographs;
   private final HashMap<String, double[]> termHolographs;
   private final int indexVectorSize;
   private int docCount;
@@ -28,7 +26,6 @@ public class Holograph implements SemanticSpace {
   public Holograph() {
     indexVectorSize = 2048;
     indexBuilder = new RandomIndexBuilder();
-    termDocHolographs = new HashMap<Index, double[]>();
     termHolographs = new HashMap<String, double[]>();
     words = new LinkedList<String>();
     docCount = 0;
@@ -50,9 +47,6 @@ public class Holograph implements SemanticSpace {
     }
   }
   
-  public void computeDistances(String filename, int similarCount) {
-  }
-
   public void processSpace() {
   }
 
@@ -66,16 +60,12 @@ public class Holograph implements SemanticSpace {
     String[] context = words.toArray(new String[0]);
     String mainWord = context[1];
     context[1] = "";
-    //Index index = new Index(mainWord, filename);
     double[] meaning = termHolographs.get(mainWord);
-    //termDocHolographs.get(index);
     if (meaning == null) {
       meaning = new double[indexVectorSize];
-      //termDocHolographs.put(index, meaning);
       termHolographs.put(mainWord, meaning);
     }
     indexBuilder.updateMeaningWithTerm(meaning, context);
-    //indexBuilder.updateMeaningWithTerm(termHolographs.get(mainWord), context);
     words.removeFirst();
   }
 
