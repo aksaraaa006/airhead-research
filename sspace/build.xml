@@ -37,6 +37,7 @@
        <compilerarg value="-g"/>
       <include name="src/**"/>
       <include name="lib/**"/>
+      <exclude name="src/edu/ucla/sspace/lra/**"/>
     </javac>  
   </target>
 
@@ -80,6 +81,7 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
+      <test name="edu.ucla.sspace.common.DocumentPreprocessorTest"/>
       <test name="edu.ucla.sspace.common.TrieMapTests"/>
       <test name="edu.ucla.sspace.common.NormalizeTest"/>
       <test name="edu.ucla.sspace.coals.CoalsTest"/>

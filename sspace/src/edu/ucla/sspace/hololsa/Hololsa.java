@@ -12,6 +12,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -48,8 +49,9 @@ public class Hololsa implements SemanticSpace {
       if (!StringUtils.isValid(cleaned))
         continue;
       if (!termFileWriters.containsKey(cleaned))
-        termFileWriters.put(cleaned,
-                            new BufferedWriter(new FileWriter(cleaned+".txt")));
+        termFileWriters.put(
+            cleaned, 
+            new BufferedWriter(new FileWriter(makeFileName(cleaned))));
       words.add(cleaned);
       indexBuilder.addTermIfMissing(cleaned);
       updateHolograph();
@@ -57,11 +59,15 @@ public class Hololsa implements SemanticSpace {
     dumpMeaningToFile(""+docCount);
   }
   
+  private String makeFileName(String term) {
+    return "." + term + ".txt";
+  }
+
   private void dumpMeaningToFile(String document) {
     try {
       for (Map.Entry<String, double[]> entry : termDocHolographs.entrySet()) {
         BufferedWriter writer = termFileWriters.get(entry.getKey());
-        writer.write(document + " : ");
+        writer.write(document + " ");
         double[] value = entry.getValue();
         for (int i = 0; i < indexVectorSize; ++i)
           writer.write(value[i] + " ");
@@ -71,10 +77,35 @@ public class Hololsa implements SemanticSpace {
     }
   }
 
-  public void computeDistances(String filename, int similarCount) {
+  private ArrayList<DocHolographPair> uploadTermMeaning(String term) {
+    try {
+      BufferedReader reader =
+        new BufferedReader(new FileReader(makeFileName(term)));
+      String newLine = null;
+      ArrayList<DocHolographPair> termVectors =
+        new ArrayList<DocHolographPair>();
+      while ((newLine = reader.readLine()) != null) {
+        String[] splitLine = newLine.split(" ");
+        if (splitLine.length != (indexVectorSize + 1))
+          continue;
+        double[] holograph = new double[indexVectorSize];
+        for (int i = 1; i < splitLine.length; ++i)
+          holograph[i-1] = Double.valueOf(splitLine[i]);
+        termVectors.add(new DocHolographPair(splitLine[0], holograph));
+      }
+      return termVectors;
+    } catch (IOException ioe) {
+      return null;
+    }
   }
 
   public void processSpace() {
+    for (String key in termDocHolographs.keySet()) {
+      ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
+      // Cluster the vectors, how? fuck if i know.
+      // Then splitup the lsa lines for this vector into however many senses we
+      // find.
+    }
   }
 
   public void reduce() {
@@ -102,5 +133,15 @@ public class Hololsa implements SemanticSpace {
       return 0.0;
     return Similarity.cosineSimilarity(termDocHolographs.get(left),
                                        termDocHolographs.get(right));
+  }
+
+  private class DocHolographPair {
+    String documentName;
+    double[] holograph;
+
+    public DocHolographPair(String docName, double[] h) {
+      documentName = docName;
+      holograph = h;
+    }
   }
 }
