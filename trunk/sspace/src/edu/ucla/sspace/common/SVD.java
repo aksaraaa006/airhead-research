@@ -113,6 +113,8 @@ public class SVD {
 		return jamaSVD(matrix, dimensions);
 	    case MATLAB:
 		return matlabSVDS(matrix, dimensions);
+	    case OCTAVE:
+		return octaveSVDS(matrix, dimensions);
 	    }
 	}
 	catch (IOException ioe) {
@@ -301,10 +303,10 @@ public class SVD {
 		"% Remove the raw data file to save space\n" +
 		"clear Z;\n" + 
 		"[U, S, V] = svds(A, " + dimensions + " );\n" +
-		"save(\"-ascii\", " + uOutput.getAbsolutePath() + ", \"U\");" +
-		"save(\"-ascii\", " + sOutput.getAbsolutePath() + ", \"S\");" +
-		"save(\"-ascii\", " + vOutput.getAbsolutePath() + ", \"V\");" +
-		"fprintf('Octave Finished\\n');");
+		"save(\"-ascii\", \"" + uOutput.getAbsolutePath() + "\", \"U\");\n" +
+		"save(\"-ascii\", \"" + sOutput.getAbsolutePath() + "\", \"S\");\n" +
+		"save(\"-ascii\", \"" + vOutput.getAbsolutePath() + "\", \"V\");\n" +
+		"fprintf('Octave Finished\\n');\n");
 	    pw.close();
 
 	    String commandLine = "octave " + octaveFile.getAbsolutePath();

@@ -100,7 +100,7 @@ public class Hololsa implements SemanticSpace {
   }
 
   public void processSpace() {
-    for (String key in termDocHolographs.keySet()) {
+      for (String key : termDocHolographs.keySet()) {
       ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
       // Cluster the vectors, how? fuck if i know.
       // Then splitup the lsa lines for this vector into however many senses we
