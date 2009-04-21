@@ -82,11 +82,11 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
-
-      <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.common.DocumentPreprocessorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.ClusterTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.DocumentPreprocessorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
     </junit>
   </target>
 

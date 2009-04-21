@@ -1,5 +1,6 @@
 package edu.ucla.sspace.hololsa;
 
+import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.StringUtils;
@@ -28,11 +29,13 @@ public class Hololsa implements SemanticSpace {
   private final HashMap<String, BufferedWriter> termFileWriters;
   private final int indexVectorSize;
   private int docCount;
+  private final Map<Index,Integer> wordToDocumentCount;
 
   public Hololsa() {
     indexVectorSize = 2048;
     indexBuilder = new RandomIndexBuilder();
     termFileWriters = new HashMap<String, BufferedWriter>();
+	wordToDocumentCount = new HashMap<Index,Integer>();
     words = new LinkedList<String>();
     docCount = 0;
   }
@@ -55,6 +58,7 @@ public class Hololsa implements SemanticSpace {
       words.add(cleaned);
       indexBuilder.addTermIfMissing(cleaned);
       updateHolograph();
+      String filename = ""+docCount;
     }
     dumpMeaningToFile(""+docCount);
   }
@@ -100,7 +104,7 @@ public class Hololsa implements SemanticSpace {
   }
 
   public void processSpace() {
-      for (String key : termDocHolographs.keySet()) {
+    for (String key : termFileWriters.keySet()) {
       ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
       // Cluster the vectors, how? fuck if i know.
       // Then splitup the lsa lines for this vector into however many senses we
