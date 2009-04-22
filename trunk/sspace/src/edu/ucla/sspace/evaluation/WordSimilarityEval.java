@@ -27,7 +27,7 @@ public class WordSimilarityEval {
       for (int i = 0; i < inputRatings.size(); ++i) {
         String[] text = inputRatings.get(i);
         goldScores[i] = Double.valueOf(text[2]).doubleValue();
-        evalScores[i] = space.computeSimilarity(text[0], text[1]);
+        evalScores[i] = -1; // FIXME: space.computeSimilarity(text[0], text[1]);
       }
       double goldSum = 0;
       double evalSum = 0;

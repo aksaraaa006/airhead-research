@@ -4,6 +4,7 @@
   <property name="lib.dir" value="lib"/>
   <property name="build.dir" value="classes"/>
   <property name="report.dir" value="reports"/>
+  <property name="src.dir" value="src"/>
   <property name="package" value="edu.ucla.sspace"/>
   
   <path id="classpath">
@@ -91,8 +92,9 @@
   </target>
 
   <target name="javadoc" description="Create Javadocs" depends="compile">
-    <javadoc destdir="javadoc/">
-      <fileset dir="${basedir}/" includes="**/*.java"/>
+    <javadoc destdir="javadoc/" classpathref="classpath">
+      <link href="http://java.sun.com/javase/6/docs/api/"/>
+      <fileset dir="${src.dir}/" includes="**/*.java"/>
     </javadoc>
   </target>
 </project>

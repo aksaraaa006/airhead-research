@@ -23,12 +23,18 @@ import java.util.regex.Pattern;
 
 import edu.ucla.sspace.common.ArgOptions;
 
-import edu.ucla.sspace.lsa.LSA;
+import edu.ucla.sspace.lsa.LatentSemanticAnalysis;
 
 /**
  *
  */
 public class LSAMain {
+
+    private static final String TERM_MATRIX_SUFFIX =
+	"-term-document-matrix.dat";
+    
+    private static final String TERM_INDEX_SUFFIX =
+	".indexToTerm.dat";
     
     public static void main(String[] args) {
 		
@@ -48,73 +54,160 @@ public class LSAMain {
     
     private static void run(String[] args) throws Exception {
 
-	LSA lsa = new LSA();
-	String input = null;
+	LatentSemanticAnalysis lsa = new LatentSemanticAnalysis();
 	
 	// process command line args
 	ArgOptions options = new ArgOptions(args);
 
-	// REMDINER: really should put in extra checks for conflicting options
-	if (options.hasOption("matrixFile")) {
-	    String matrixFile = options.getStringOption("matrixFile");
-	    input = matrixFile;
-	    lsa.loadWordDocumentMatrix(matrixFile);
-	}
-	else if (options.hasOption("docsFile")) {
-	    String docsFile = options.getStringOption("docsFile");
-	    input = docsFile;
-	    BufferedReader br = 
-		new BufferedReader(new FileReader(docsFile));
-	    String document = null;
-	    int count = 0;
-	    while ((document = br.readLine()) != null) {
-		System.out.print("parsing document " + (count++) + ": " +
-				 document + " ...");
-		long startTime = System.currentTimeMillis();
-		lsa.parseDocument(document);
-		long endTime = System.currentTimeMillis();
-		System.out.printf("complete (%.3f seconds)%n",
-				  (endTime - startTime) / 1000d);
-		
-	    }
-	}
-	else {
-	    System.out.println("unrecognized arguments: " + 
-			       Arrays.toString(args));
-	    usage();
+
+	if (args.length != 2 && args.length != 3) {
+	    System.out.println("usage: java TermDocumentMatrixCreator " + 
+			       "[--fileList=<file>|--docFile=<file>] " +
+			       "<output term-doc matrix file> " +
+			       "[valid terms list]");
 	    return;
 	}
+// 	try {
+// 	    // figure out what kind of document file we're getting
+// 	    String[] typeAndFile = args[0].split("=");
+// 	    if (typeAndFile.length != 2) {
+// 		System.out.println("invalid document file arg: " + args[0]);
+// 		return;
+// 	    }
+		
+// 	    DocumentIterator docIter = null;
+// 	    if (typeAndFile[0].equals("--fileList")) {
+// 		// we have a file that contains the list of all document files
+// 		// we are to process
+// 		docIter = new FileListDocumentIterator(typeAndFile[1]);
+// 	    }
+// 	    else if (typeAndFile[0].equals("--docFile")) {
+// 		// all the documents are listed in one file, with one
+// 		// document per line
+// 		docIter = new SingleFileDocumentIterator(typeAndFile[1]);
+// 	    }
+// 	    else {
+// 		System.out.println("invalid document file arg: " + args[0]);
+// 		return;
+// 	    }
+	    
+// 	    ((args.length == 2)
+// 	     ? new TermDocumentMatrixCreator()
+// 	     : new TermDocumentMatrixCreator(args[2]))
+// 		.parseDocumentsMultiThreaded(docIter, args[1]);
+// 	} catch (Throwable t) {
+// 	    t.printStackTrace();
+// 	}
 
-    /*
-	System.out.printf("Loaded %d words by %d documents%n",
-			  lsa.getWordCount(), lsa.getDocCount());
-              */
+    }
+
+
+
+//     /**
+//      * Parses all the documents in the provided list and writes the resulting
+//      * term-document matrix to the provided file
+//      */
+//     private void parseDocumentsMultiThreaded(final DocumentIterator docIter, 
+// 					     String termDocumentMatrixFilePrefix)
+// 	throws IOException {
+
+// 	final String termDocumentMatrixFileName = 
+// 	    termDocumentMatrixFilePrefix + 
+// 	    TERM_MATRIX_SUFFIX;
 	
-	System.out.print("Saving word by document matrix ... ");
-	long startTime = System.currentTimeMillis();
-	lsa.saveWordDocumentMatrix("wordDocumentMatrix.txt");
+// 	final PrintWriter termDocumentMatrixFileWriter = 
+// 	    new PrintWriter(new File(termDocumentMatrixFileName));
+
+// 	int NUM_THREADS = 5;
+// 	Collection<Thread> threads = new LinkedList<Thread>();
+
+// 	final AtomicInteger count = new AtomicInteger(0);
 	
-	long endTime = System.currentTimeMillis();
-	System.out.printf("complete (%.3f seconds)%n",
-			      (endTime - startTime) / 1000d);
+
+// 	for (int i = 0; i < NUM_THREADS; ++i) {
+// 	    Thread t = new Thread() {
+// 		    public void run() {
+// 			// repeatedly try to process documents while some still
+// 			// remain
+// 			while (docIter.hasNext()) {
+// 			    long startTime = System.currentTimeMillis();
+// 			    Document doc = docIter.next();
+// 			    int docNumber = count.incrementAndGet();
+// 			    int terms = 0;
+// 			    try {
+// 				parseDocument(doc.reader());
+// 			    } catch (Throwable t) {
+// 				t.printStackTrace();
+// 			    }
+// 			    long endTime = System.currentTimeMillis();
+// 			    System.out.printf("parsed document #" + docNumber + 
+// 					      " (" + terms +
+// 					      " terms) in %.3f seconds)%n",
+// 					      ((endTime - startTime) / 1000d));
+// 			}
+// 		    }
+// 		};
+// 	    threads.add(t);
+// 	}
 	
-	if (options.hasOption("computeTfIdf")) {
-	    System.out.print("computing TF-IDF ...");
-	    startTime = System.currentTimeMillis();
-	    lsa.processSpace();
-	    endTime = System.currentTimeMillis();
-	    System.out.printf("complete (%.3f seconds)%n",
-			      (endTime - startTime) / 1000d);	    	    
+// 	// start all the threads processing
+// 	for (Thread t : threads)
+// 	    t.start();
+
+// 	System.out.println("Awaiting finishing");
+
+// 	// wait until all the documents have been parsed
+// 	try {
+// 	    for (Thread t : threads)
+// 		t.join();
+// 	} catch (InterruptedException ie) {
+// 	    ie.printStackTrace();
+// 	}
+
+// 	termDocumentMatrixFileWriter.close();
+
+// 	System.out.printf("Saw %d terms over %d documents%n",
+// 			  termToIndex.size(), count.get());
+
+// 	System.out.println("writing index-term map file termIndex.txt");
+
+// 	// Last, write out the index-to-term map that will allow us to
+// 	// reconstruct which row a term is in the term-document matrix
+// 	String indexToTermFileName = 
+// 	    termDocumentMatrixFilePrefix + TERM_INDEX_SUFFIX;
+	
+// 	PrintWriter pw = new PrintWriter(indexToTermFileName);
+// 	int termIndex = 0;
+// 	for (Map.Entry<String,Integer> e : termToIndex.entrySet())
+// 	    pw.printf("%07d\t%d\t%s%n", (termIndex = e.getValue().intValue()),
+// 		      termCountsForAllDocs.get(termIndex), e.getKey());
+// 	pw.close();
+
+//     }
+
+
+
+    /**
+     * Returns a set of terms based on the contents of the provided file.  Each
+     * word is expected to be on its own line.
+     */
+    private static Set<String> loadValidTermSet(String validTermsFileName) {
+	Set<String> validTerms = new HashSet<String>();
+	try {
+	    BufferedReader br = new BufferedReader(
+		new FileReader(validTermsFileName));
+	    String line = null;
+	    while ((line = br.readLine()) != null) {
+		validTerms.add(line);
+	    }
+	    br.close();
+	} catch (Throwable t) {
+	    t.printStackTrace();
 	}
-	
-
-	lsa.saveSVDresults(input + ".svd.serialized");
-	lsa.computeDistances(null, 4);
+	return validTerms;
     }
     
     private static void usage() {
-	System.out.println("java LSA <options>\n" +
-			   "\t--matrixFile=<file> (or)\n" + 
-			   "\t--docsFile=<file>");
+	System.out.println("java LSAMain <options>\n");
     }
 }

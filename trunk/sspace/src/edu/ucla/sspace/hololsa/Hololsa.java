@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-public class Hololsa implements SemanticSpace {
+public class Hololsa {
   public static final int CONTEXT_SIZE = 6;
   public static final int LINES_TO_SKIP = 40;
   public static final int MAX_LINES = 500;

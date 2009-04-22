@@ -1,17 +1,26 @@
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.common.matrix;
 
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import edu.ucla.sspace.common.Matrix;
+
 /**
  * A Matrix implementation that uses a binary file to read and write Returns a
  * copy of the specified rowvalues of the matrix.  The matrix is stored in
  * row-column order on disk, so in-order column accesses to elments in a row
  * will perform much better than sequential row accesses to the same column.
+ *
+ * <p>
+ *
+ * If a {@link IOException} is ever raised as a part of executing an the methods
+ * of an instance, the exception is rethrown as a {@link IOError}.
+ *
+ * @author David Jurgens
  */
-public class OnDiskMatrix {
+public class OnDiskMatrix implements Matrix {
     
     /**
      * The size of two ints that denote the number of rows and columns
@@ -111,7 +120,7 @@ public class OnDiskMatrix {
 	}
     }
 
-    private void set(int row, int col, double val) {
+    public void set(int row, int col, double val) {
 	try {
 	    checkIndices(row, col);
 	    seek(row, col);
