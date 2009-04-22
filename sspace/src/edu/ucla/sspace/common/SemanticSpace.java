@@ -1,41 +1,64 @@
 package edu.ucla.sspace.common;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 
+import java.util.Properties;
+import java.util.Set;
+
 /**
- * A SemanticSpace implementation should implement each of the following
- * methods in such a way that it conforms to the expected format of document
- * input, and the stage of method calls.  For each SemanticSpace, the expected
- * sequence of calls will be:
+ * A common interface for interacting with semantic space models of meaning.
+ * Implementations should expect the following sequence  of processing.
  *
  * <ol>
- * <li> at least 1 call to {@link #parseDocument()}
- * <li> {@link #processSpace()}
- * <li> {@link #reduce()}
- * <li> at least 1 call to {@link #computeDistances()}
+
+ * <li> {@link #processDocument(BufferedReader) processDocument} will be called
+ *      one or more times with the text of the corpus.
+ *
+ * <li> {@link #processSpace(Properties) processSpace} will be called after all
+ *      the documents have been used.  Once this method has been called, no
+ *      further calls to {@code processDocument} should be made
+ *
+ * <li> {@link #getVectorFor(String) getVectorFor} may be called after the space
+ *      has been processed.  Implementations may optionally support this method
+ *      being called prior to {@code processSpace} but this is not required.
+ *
  * </ol>
+ *
+ * In addition, {@link #getWords()} may be called at any time to determine which
+ * words are currently represented in the space.  Implementations should specify
+ * in their class documentations what parameters are available as properties for
+ * the {@code processSpace} method, and what the default value of those
+ * parameters are.
  */
 public interface SemanticSpace {
 
-  // Implementation should read from the given filename and process all of the
-  // words in the document.  Models may consider filename to be a unique string
-  // identifying the document if this is needed.  Implementations may throw an
-  // IOException if needed.  
-  // This function may be called several times, such as for LSA, or it might be
-  // called once with one file containing all the relevant text, as might be
-  // done for COALS.
-  public void parseDocument(String filename) throws IOException;
+    /**
+     * Processes the contents of the provided file as a document.
+     */
+    void processDocument(BufferedReader document) throws IOException;
 
-  public double computeSimilarity(String word1, String word2);
+    /**
+     * Returns the set of words that are represented in this semantic space.
+     */
+    Set<String> getWords();
 
-  // If the Semantic Space model requires some method of reduction, most notably
-  // the use of SVD, it should be executed when this method is called.  It is
-  // assumed that processSpace will be called prior to reduce.
-  public void reduce();
+    /**
+     * Returns the semantic vector for the provided word.
+     */
+    double[] getVectorFor(String word);
 
-  // Do any processing of the Semantic Space model once all the documents have
-  // been processed.  Likely implementations of this would be to compute TFID,
-  // normalize values, or any other non-dimensionality reducing post-processing
-  // techniques.
-  public void processSpace();
+    /**
+     * Once all the documents have been processed, performs any post-processing
+     * steps on the data.  An algorithm should treat this as a no-op if no
+     * post-processing is required.  Callers may specify the values for any
+     * exposed parameters using the {@code properties} argument.
+     *
+     * <p>
+     *
+     * By general contract, once this method has been called, {@code
+     * processDocument} will not be called again.
+     */
+    void processSpace(Properties properties);
+
 }

@@ -1,14 +1,19 @@
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.common.matrix;
 
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import edu.ucla.sspace.common.Matrix;
+
 /**
  * A {@code Matrix} backed by an array.
+ *
+ *
+ * @author David Jurgens
  */
-public class ArrayMatrix {
+public class ArrayMatrix implements Matrix {
     
     private final int rows;
 
@@ -76,7 +81,7 @@ public class ArrayMatrix {
 	return (row * cols) + col;
     }
 
-    private void set(int row, int col, double val) {
+    public void set(int row, int col, double val) {
 	int index = getIndex(row, col);
 	matrix[index] = val;
     }

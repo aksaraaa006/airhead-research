@@ -15,7 +15,7 @@ import java.util.PriorityQueue;
 
 import Jama.Matrix;
 
-public class Coals implements SemanticSpace {
+public class Coals {
   private HashMap<Index, Double> correlation;
   private HashMap<String, Integer> wordToIndex;
   private HashMap<String, Integer> wordFreq;
