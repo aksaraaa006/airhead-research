@@ -18,7 +18,8 @@ public class ClusterTest {
     {0, 0, 0, 0, 0, 3, 3, 4, 6, 5}};
     for (int i = 0; i < 6; ++i)
       testVectors.add(testValues[i]);
-    int[] results = Cluster.kMeansCluster(testVectors, 2, 10);
+    double[][] centers = Cluster.kMeansCluster(testVectors, 2, 10);
+    int[] results = Cluster.kMeansClusterAssignments(testVectors, centers);
     assertEquals(6, results.length);
     assertTrue((results[0] == 0 && results[1] == 0 && results[2] == 0) ||
                (results[0] == 1 && results[1] == 1 && results[2] == 1));

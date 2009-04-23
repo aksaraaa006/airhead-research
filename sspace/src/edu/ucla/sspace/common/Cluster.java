@@ -17,9 +17,9 @@ public class Cluster {
    * @return An array of the same size as dataPoints, where each index indicates
    * which cluster number the i'th dataPoint belongs to.
    */
-  public static int[] kMeansCluster(ArrayList<double[]> dataPoints,
-                                    int k,
-                                    int indexVectorSize) {
+  public static double[][] kMeansCluster(ArrayList<double[]> dataPoints,
+                                         int k,
+                                         int indexVectorSize) {
     double[][] kCenters = new double[k][indexVectorSize];
     HashSet<Integer> randomCenters = new HashSet<Integer>(k);
     Random numGenerator = new Random();
@@ -28,8 +28,7 @@ public class Cluster {
     }
     int k_index = 0;
     for (Integer index : randomCenters) {
-      kCenters[k_index] = dataPoints.get(index.intValue());
-      k_index++;
+      kCenters[k_index] = dataPoints.get(index.intValue()); k_index++;
     }
 
     boolean converged = false;
@@ -78,15 +77,42 @@ public class Cluster {
         }
       }
     }
-    if (clusters == null)
-      return null;
+    return kCenters;
+  }
 
+  public static int[] kMeansClusterAssignments(ArrayList<double[]> dataPoints,
+                                               double[][] centers) {
     int[] resultClustering = new int[dataPoints.size()];
-    for (int i = 0; i < k; ++i) {
-      for (int j = 0; j < clusters.get(i).size(); ++j) {
-        resultClustering[clusters.get(i).get(j).intValue()] = i;
+    for (int i = 0; i < dataPoints.size(); ++i) {
+      double[] dataPoint = dataPoints.get(i);
+      double minClusterDist =
+        Similarity.euclideanDistance(centers[0], dataPoint);
+      resultClustering[i] = 0;
+      for (int j = 1; j < centers.length; ++j) {
+        double clusterDist = 
+          Similarity.euclideanDistance(centers[j], dataPoint);
+        if (clusterDist < minClusterDist)
+          resultClustering[i] = j;
       }
     }
     return resultClustering;
+  }
+
+  public static double kMeansPotential(ArrayList<double[]> dataPoints,
+                                       double[][] centers,
+                                       double scalingFactor) {
+    double sum = 0;
+    for (double[] dataPoint : dataPoints) {
+      double minClusterDist =
+        Similarity.euclideanDistance(centers[0], dataPoint);
+      for (int i = 1; i < centers.length; ++i) {
+        double clusterDist = 
+          Similarity.euclideanDistance(centers[i], dataPoint);
+        if (clusterDist < minClusterDist)
+          minClusterDist = clusterDist;
+      }
+      sum += minClusterDist * scalingFactor;
+    }
+    return sum;
   }
 }

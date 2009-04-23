@@ -6,6 +6,12 @@ package edu.ucla.sspace.common;
  */
 public class Similarity {
     
+  public enum SimType {
+    COSINE,
+    CORRELATION,
+    EUCLIDEAN,
+  }
+
     /**
      * Uninstantiable
      */
@@ -122,5 +128,11 @@ public class Similarity {
 	return Math.sqrt(sum);
     }
 
+    public static double euclideanSimilarity(int[] a, int[] b) {
+      return 1 / (1 + euclideanDistance(a,b));
+    }
 
+    public static double euclideanSimilarity(double[] a, double[] b) {
+      return 1 / (1 + euclideanDistance(a,b));
+    }
 }
