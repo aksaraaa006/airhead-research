@@ -17,17 +17,19 @@ import java.util.logging.Logger;
  *
  * <ul> 
  *
- * <li> Landauer, T. K., Foltz, P. W., & Laham, D. (1998).  Introduction to
- *      Latent Semantic Analysis. <i>Discourse Processes</i>, <b>25</b>,
- *      259-284.</li>
+ * <li style="font-family:Garamond, Georgia, serif"> Landauer, T. K., Foltz,
+ *      P. W., & Laham, D. (1998).  Introduction to Latent Semantic
+ *      Analysis. <i>Discourse Processes</i>, <b>25</b>, 259-284.</li>
  *
- * <li> S. Dumais, “Enhancing performance in latent semantic indexing (LSI)
- *      retrieval,” Bellcore, Morristown (now Telcordia Technologies),
- *      Tech. Rep. TM-ARH-017527, 1990. </li>
+ * <li style="font-family:Garamond, Georgia, serif"> S. Dumais, “Enhancing
+ *      performance in latent semantic indexing (LSI) retrieval,” Bellcore,
+ *      Morristown (now Telcordia Technologies), Tech. Rep. TM-ARH-017527,
+ *      1990. </li>
  *
- * <li> P. Nakov, A. Popova, and P. Mateev, “Weight functions impact on LSA
- *      performance,” in <i>Proceedings of the EuroConference Recent Advances in
- *      Natural Language Processing, (RANLP’01)</i>, 2001, pp. 187–193. </li>
+ * <li style="font-family:Garamond, Georgia, serif"> P. Nakov, A. Popova, and
+ *      P. Mateev, “Weight functions impact on LSA performance,” in
+ *      <i>Proceedings of the EuroConference Recent Advances in Natural Language
+ *      Processing, (RANLP’01)</i>, 2001, pp. 187–193. </li>
  *
  * </ul>
  *
@@ -48,19 +50,19 @@ public class LogEntropyTransformer implements MatrixTransformer {
      */
     public LogEntropyTransformer() { }
 
-    public static void main(String[] args) {
-	try {
-	    if (args.length != 2) {
-		System.out.println("usage: java <input matrix file> "+
-				   "<output file>");
-		System.exit(0);
-	    }
-	    new LogEntropyTransformer().
-		transform(new File(args[0]), new File(args[1]));
-	} catch (IOException ioe) {
-	    ioe.printStackTrace();
-	}
-    }
+//     public static void main(String[] args) {
+// 	try {
+// 	    if (args.length != 2) {
+// 		System.out.println("usage: java <input matrix file> "+
+// 				   "<output file>");
+// 		System.exit(0);
+// 	    }
+// 	    new LogEntropyTransformer().
+// 		transform(new File(args[0]), new File(args[1]));
+// 	} catch (IOException ioe) {
+// 	    ioe.printStackTrace();
+// 	}
+//     }
 
     public File transform(File input) throws IOException {
 	// create a temp file for the output

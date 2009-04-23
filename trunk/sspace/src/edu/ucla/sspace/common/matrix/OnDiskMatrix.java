@@ -40,39 +40,79 @@ public class OnDiskMatrix implements Matrix {
 
     /**
      * Create a matrix of the provided size using a temporary file.
+     *
+     * @throws IOError if the backing file for this matrix cannot be created
      */
-    public OnDiskMatrix(int rows, int cols) throws IOException {
-	this(rows, cols, File.createTempFile("OnDiskMatrix","matrix"));
+    public OnDiskMatrix(int rows, int cols) {
+	this(rows, cols, createTempFile());
     }
     
     /**
      * Create a matrix of the provided size using a file created with the
      * specified name.
+     *
+     * @throws IOError if the backing file for this matrix cannot be created
      */
-    public OnDiskMatrix(int rows, int cols, String filename) 
-	    throws IOException {
-	this(rows, cols, new RandomAccessFile(filename, "rw"));
+    public OnDiskMatrix(int rows, int cols, String filename) {
+	this(rows, cols, convertToRandomAccess(filename));
     }
 
     /**
      * Create a matrix of the provided size using the provided file and the data
      * contained by that file.
+     *
+     * @throws IOError if the backing file for this matrix cannot be created
      */
-    public OnDiskMatrix(int rows, int cols, File f) throws IOException {
-	this(rows, cols, new RandomAccessFile(f, "rw"));
+    public OnDiskMatrix(int rows, int cols, File f) {
+	this(rows, cols, convertToRandomAccess(f));
     }
 
-    OnDiskMatrix(int rows, int cols, RandomAccessFile raf) throws IOException {
-	this.matrix = raf;
-	this.rows = rows;
-	this.cols = cols;
-
-	// initialize the matrix in memory;
-	matrix.setLength(HEADER_LENGTH + (rows * cols * BYTES_PER_FLOAT));
-	matrix.seek(0);
-	matrix.writeInt(rows);
-	matrix.writeInt(cols);
+    /**
+     *
+     *
+     * @throws IOError if the backing file for this matrix cannot be created
+     */
+    OnDiskMatrix(int rows, int cols, RandomAccessFile raf) {
+	try {
+	    this.matrix = raf;
+	    this.rows = rows;
+	    this.cols = cols;
+	    
+	    // initialize the matrix in memory;
+	    matrix.setLength(HEADER_LENGTH + (rows * cols * BYTES_PER_FLOAT));
+	    matrix.seek(0);
+	    matrix.writeInt(rows);
+	    matrix.writeInt(cols);
+	} catch (IOException ioe) {
+	    throw new IOError(ioe);
+	}
     }
+
+    private static RandomAccessFile createTempFile() {
+	try {
+	    return new RandomAccessFile(
+		File.createTempFile("OnDiskMatrix","matrix"), "rw");
+	} catch (IOException ioe) {
+	    throw new IOError(ioe);
+	}
+    }
+
+    private static RandomAccessFile convertToRandomAccess(File f) {
+	try {
+	    return new RandomAccessFile(f, "rw");
+	} catch (IOException ioe) {
+	    throw new IOError(ioe);
+	}
+    }
+
+    private static RandomAccessFile convertToRandomAccess(String filename) {
+	try {
+	    return new RandomAccessFile(new File(filename), "rw");
+	} catch (IOException ioe) {
+	    throw new IOError(ioe);
+	}
+    }
+
 
     private void checkIndices(int row, int col) {
 	if (row < 0 || col < 0 || row >= rows || col >= cols) {

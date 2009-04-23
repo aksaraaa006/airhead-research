@@ -61,7 +61,9 @@ import edu.ucla.sspace.common.SVD;
  *    <a href="http://lsa.colorado.edu/papers/plato/plato.annote.html">here</a>
  *    </li>
  *
- * </ul>
+ * </ul> See the Wikipedia page on <a
+ * href="http://en.wikipedia.org/wiki/Latent_semantic_analysis"> Latent Semantic
+ * Analysis </a> for an execuative summary.
  *
  * <p>
  * 
@@ -325,11 +327,24 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * {@inheritDoc}
      */
     public double[] getVectorFor(String word) {
-	return null;
+	// determine the index for the word
+	Integer index = termToIndex.get(word);
+	return (index == null)
+	    ? null
+	    : wordSpace.getRow(index.intValue());
     }
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     *
+     * This method is thread-safe and may be called in parallel with separate
+     * documents to speed up overall processing time.
+     *
+     * @param properties {@inheritDoc} See this class's {@link
+     *        LatentSemanticAnalysis javadoc} for the full list of supported
+     *        properties.
      */
     public void processSpace(Properties properties) {
 	try {
