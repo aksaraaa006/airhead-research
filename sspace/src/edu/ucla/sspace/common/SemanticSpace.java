@@ -35,16 +35,27 @@ public interface SemanticSpace {
 
     /**
      * Processes the contents of the provided file as a document.
+     *
+     * @param document a reader that allows access to the text of the document
+     *
+     * @throws IOException if any error occurs while reading the document
      */
     void processDocument(BufferedReader document) throws IOException;
 
     /**
      * Returns the set of words that are represented in this semantic space.
+     *
+     * @return the set of words that are represented in this semantic space.
      */
     Set<String> getWords();
 
     /**
      * Returns the semantic vector for the provided word.
+     *
+     * @param word a word in the semantic space
+     *
+     * @return the vector for the provided word or {@code null} if the word was
+     *         not in the space.
      */
     double[] getVectorFor(String word);
 
@@ -58,6 +69,9 @@ public interface SemanticSpace {
      *
      * By general contract, once this method has been called, {@code
      * processDocument} will not be called again.
+     *
+     * @param properties a set of properties and values that may be used to
+     *        configure any exposed parameters of the algorithm.
      */
     void processSpace(Properties properties);
 

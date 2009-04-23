@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.ucla.sspace.common.MatrixIO.Format;
+import edu.ucla.sspace.common.Matrix.Type;
 
 /**
  * A utililty class for invoking different implementations of the <a
@@ -254,8 +255,22 @@ public class SVD {
 		MatrixIO.writeMatrixArray(matrixArray, tmpFile);
 		usv[i] = tmpFile;
 	    }
-	    // return usv;
-	    return new Matrix[] { };
+
+	    // The JAMA SVD returns the matrices in U, S, V with none of them
+	    // transposed.  To ensure consistence, transpose the last matrix
+	    return new Matrix[] { 
+		// load U in memory, since that is what most algorithms will be
+		// using (i.e. it is the word space)
+		MatrixIO.readMatrix(usv[0], Format.DENSE_TEXT, 
+				    Type.DENSE_IN_MEMORY),
+		// Sigma only has n values for an n^2 matrix, so make it sparse
+		MatrixIO.readMatrix(usv[1], Format.DENSE_TEXT, 
+				    Type.SPARSE_ON_DISK),
+		// V could be large, so just keep it on disk.  Furthermore, JAMA
+		// does not transpose V, so transpose it
+		MatrixIO.transpose(MatrixIO.readMatrix(usv[2],
+			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
+	    };
 	    
 	} catch (ClassNotFoundException cnfe) {
 	    SVD_LOGGER.log(Level.SEVERE, "JAMA", cnfe);
@@ -316,10 +331,22 @@ public class SVD {
 		File S  = new File(outputMatrixPrefix + "-S");
 		File Vt = new File(outputMatrixPrefix + "-Vt");
 		    
-		// transpose the matrices
-
-		return new Matrix[] { };
-
+		// SVDLIBC returns the matrices in U', S, V' with U and V of
+		// transposed.  To ensure consistence, transpose the U matrix
+		return new Matrix[] { 
+		    // load U in memory, since that is what most algorithms will
+		    // be using (i.e. it is the word space).  SVDLIBC returns
+		    // this as U transpose, so correct it.
+		    MatrixIO.transpose(MatrixIO.readMatrix(Ut,
+				Format.SVDLIBC_DENSE_TEXT, Type.DENSE_IN_MEMORY)),
+		    // Sigma only has n values for an n^2 matrix, so make it
+		    // sparse
+		    MatrixIO.readMatrix(S, Format.SVDLIBC_DENSE_TEXT, 
+					Type.SPARSE_ON_DISK),
+		    // V could be large, so just keep it on disk.  
+		    MatrixIO.readMatrix(Vt, Format.SVDLIBC_DENSE_TEXT, 
+					Type.DENSE_ON_DISK)
+		};
 	    }
 	    else {
 		// warning or error?
@@ -388,10 +415,24 @@ public class SVD {
 	    int exitStatus = matlab.waitFor();
 	    SVD_LOGGER.severe("Matlab svds exit status: " + exitStatus);
 
-	    // If SVDLIBC was successful in generating the files, return them.
+	    // If Matlab was successful in generating the files, return them.
 	    if (exitStatus == 0) {
-		// uOutput, sOutput, vOutput
-		return new Matrix[] {  };
+
+ 		// Matlab returns the matrices in U, S, V, with none of
+		// transposed.  To ensure consistence, transpose the V matrix
+		return new Matrix[] { 
+		// load U in memory, since that is what most algorithms will be
+		// using (i.e. it is the word space)
+		MatrixIO.readMatrix(uOutput, Format.DENSE_TEXT, 
+				    Type.DENSE_IN_MEMORY),
+		// Sigma only has n values for an n^2 matrix, so make it sparse
+		MatrixIO.readMatrix(sOutput, Format.DENSE_TEXT, 
+				    Type.SPARSE_ON_DISK),
+		// V could be large, so just keep it on disk.  Furthermore,
+		// Matlab does not transpose V, so transpose it
+		MatrixIO.transpose(MatrixIO.readMatrix(vOutput,
+			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
+		};
 	    }
 
 	} catch (IOException ioe) {
@@ -456,10 +497,24 @@ public class SVD {
 	    int exitStatus = octave.waitFor();
 	    SVD_LOGGER.severe("Octave svds exit status: " + exitStatus);
 
-	    // If SVDLIBC was successful in generating the files, return them.
+	    // If Octave was successful in generating the files, return them.
 	    if (exitStatus == 0) {
-		// uOutput, sOutput, vOutput
-		return new Matrix[] {  };
+
+ 		// Octave returns the matrices in U, S, V, with none of
+		// transposed.  To ensure consistence, transpose the V matrix
+		return new Matrix[] { 
+		// load U in memory, since that is what most algorithms will be
+		// using (i.e. it is the word space)
+		MatrixIO.readMatrix(uOutput, Format.DENSE_TEXT, 
+				    Type.DENSE_IN_MEMORY),
+		// Sigma only has n values for an n^2 matrix, so make it sparse
+		MatrixIO.readMatrix(sOutput, Format.DENSE_TEXT, 
+				    Type.SPARSE_ON_DISK),
+		// V could be large, so just keep it on disk.  Furthermore,
+		// Octave does not transpose V, so transpose it
+		MatrixIO.transpose(MatrixIO.readMatrix(vOutput,
+			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
+		};
 	    }
 
 	} catch (IOException ioe) {
