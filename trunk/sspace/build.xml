@@ -88,6 +88,8 @@
       <test name="edu.ucla.sspace.common.DocumentPreprocessorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>
     </junit>
   </target>
 
