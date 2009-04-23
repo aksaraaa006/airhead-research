@@ -1,5 +1,7 @@
 package edu.ucla.sspace.common;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,26 +10,24 @@ import java.util.Map;
  */
 public class ArgOptions {
     
-    private final String[] args;
+    private final List<String> args;
 
     private final Map<String,String> options;
 
-    public ArgOptions(String[] args) {
-	this.args = args;
+    public ArgOptions(String[] commandLineArgs) {
+	args = new ArrayList<String>();;
 	options = new HashMap<String,String>();
-	parseOptions(args);
+	parseOptions(commandLineArgs);
     }
 
-    private void parseOptions(String[] args) {
-	for (int i = 0; i < args.length; ++i) {
+    private void parseOptions(String[] commandLineArgs) {
+	for (int i = 0; i < commandLineArgs.length; ++i) {
 	    
-	    String arg = args[i];
+	    String arg = commandLineArgs[i];
 
 	    String option = null, value = null;
 
 	    if (arg.startsWith("--")) {
-
-
 
 		option = arg.substring(2);
 		// check whether the formatting is 
@@ -45,8 +45,9 @@ public class ArgOptions {
 		    int j = i + 1;
 		    // if there is another arg for a value, and that arg isn't
 		    // itself an option, then use it as the value.
-		    if (j <  args.length && !args[j].startsWith("-")) {
-			value = args[j];
+		    if (j <  commandLineArgs.length && 
+			    !commandLineArgs[j].startsWith("-")) {
+			value = commandLineArgs[j];
 			i = j; // skip in th next loop
 		    }
 		}
@@ -58,7 +59,7 @@ public class ArgOptions {
 		options.put(option, value);
 	    }
 	    else if (arg.startsWith("-")) {
-		char[] flags = args[i].toCharArray();
+		char[] flags = commandLineArgs[i].toCharArray();
 		for (char f : flags) {
 		    String flag = String.valueOf(f);
 		    if (options.containsKey(flag)) {
@@ -72,24 +73,31 @@ public class ArgOptions {
 		int j = i + 1;
 		// if there is another arg for a value, and that arg isn't
 		// itself an option, then use it as the value.
-		if (j <  args.length && !args[j].startsWith("-")) {
-		    value = args[j];
+		if (j <  commandLineArgs.length && !commandLineArgs[j].startsWith("-")) {
+		    value = commandLineArgs[j];
 		    i = j; // skip in th next loop
 		}
 
-		
+		options.put(option, value);
 	    }	    
 	    else {
-		throw new IllegalArgumentException(
-		    "Unrecognized argument formatting: " + args[i]);
+		// the string isn't attached to any option, so delcare it an
+		// ordered argument
+		args.add(arg);
 	    }
-
-	    options.put(option, value);
 	}
     }
     
-    public int size() {
+    public int numArgs() {
+	return args.size();
+    }
+
+    public int numOptions() {
 	return options.size();
+    }
+
+    public String getArg(int argNum) {
+	return args.get(argNum);
     }
 
     public Integer getIntOption(String key) {

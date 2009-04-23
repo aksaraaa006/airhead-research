@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import edu.ucla.sspace.common.BoundedSortedMap;
 import edu.ucla.sspace.common.Index;
@@ -161,14 +160,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      */
     private final AtomicInteger docIndexCounter;
     
-    private final AtomicIntegerArray termCountsForAllDocs;    
-
-    /**
-     * A reverse mapping from a word's index to the {@code String} form of the
-     * word.
-     */
-    private final String[] indexToTerm;
-
     /**
      * A file in {@link edu.ucla.sspace.common.MatrixIO.Format#MATLAB_SPARSE
      * MATLAB_SPARSE} format.
@@ -195,11 +186,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     public LatentSemanticAnalysis() throws IOException {
 
 	termToIndex = new ConcurrentHashMap<String,Integer>();
-	//spellChecker = loadSpellChecker();
 	termIndexCounter = new AtomicInteger(0);
 	docIndexCounter = new AtomicInteger(0);
-	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
-	indexToTerm = new String[100000000]; // 10 million
 
 	rawTermDocMatrix = 
 	    File.createTempFile("lsa-term-document-matrix", "dat");
@@ -278,15 +266,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	    rawTermDocMatrixWriter.flush();
 	}
 
-	// then update the final counts for each term.  Note that we do this in
-	// a separate loop since the printing must be synchronized but these
-	// term counts can be written concurrently.
-	for (Map.Entry<String,Integer> e : termCounts.entrySet()) {
-	    termCountsForAllDocs.addAndGet(termToIndex.
-					   get(e.getKey()).intValue(),
-					   e.getValue().intValue());
-	}
-	
     }
 	
     /**
@@ -310,7 +289,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 		if (index == null) {
 		    index = Integer.valueOf(termIndexCounter.incrementAndGet());
 		    termToIndex.put(term, index);
-		    indexToTerm[index.intValue()] = term;
 		}
 	    }
 	}

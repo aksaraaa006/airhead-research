@@ -29,11 +29,28 @@ public class VectorIO {
 
     public static void writeVector(int[] vector, PrintWriter pw) 
 	throws IOException {
-
-	for (int i = 0; i < vector.length - 1; ++i)
-	    pw.print(vector[i] + " ");
-	pw.print(vector[vector.length-1]);
+	pw.println(toString(vector));
 	pw.close();
+    }
+
+    public static String toString(double[] vector) {
+	StringBuilder sb = new StringBuilder(vector.length * 5);
+	
+	for (int i = 0; i < vector.length - 1; ++i)
+	    sb.append(vector[i]).append(" ");
+	sb.append(vector[vector.length-1]);
+	
+	return sb.toString();
+    }
+
+    public static String toString(int[] vector) {
+	StringBuilder sb = new StringBuilder(vector.length * 3);
+	
+	for (int i = 0; i < vector.length - 1; ++i)
+	    sb.append(vector[i]).append(" ");
+	sb.append(vector[vector.length-1]);
+	
+	return sb.toString();
     }
     
     public static void writeVector(int[] vector, File f)
