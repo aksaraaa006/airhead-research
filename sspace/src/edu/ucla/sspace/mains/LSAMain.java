@@ -168,6 +168,8 @@ public class LSAMain {
 
 	parseDocumentsMultiThreaded(lsa, docIter, props, numThreads);
 
+	lsa.processSpace();
+	
 	File output = (overwrite)
 	    ? new File(outputDir, LSA_SEMANTIC_SPACE_FILE_NAME)
 	    : File.createTempFile("lsa-semantic-space", "sspace", outputDir);
@@ -229,7 +231,7 @@ public class LSAMain {
 
 	verbose("parsed %d document in %.3f total seconds)%n",
 		count.get(),
-		((threadStart - System.currentTimeMillis()) / 1000d));
+		((System.currentTimeMillis() - threadStart) / 1000d));
     }
 
 
