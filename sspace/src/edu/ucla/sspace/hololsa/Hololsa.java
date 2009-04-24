@@ -1,73 +1,227 @@
 package edu.ucla.sspace.hololsa;
 
-import edu.ucla.sspace.common.Index;
+import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.StringUtils;
+import edu.ucla.sspace.common.SVD;
+
+import edu.ucla.sspace.lsa.MatrixTransformer;
+import edu.ucla.sspace.lsa.LogEntropyTransformer;
 
 import edu.ucla.sspace.holograph.RandomIndexBuilder;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOError;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
-public class Hololsa {
-  public static final int CONTEXT_SIZE = 6;
-  public static final int LINES_TO_SKIP = 40;
-  public static final int MAX_LINES = 500;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
+public class Hololsa implements SemanticSpace {
+  private static final int CONTEXT_SIZE = 7;
+  public static final String MATRIX_TRANSFORM_PROPERTY =
+  "edu.ucla.sspace.lsa.LatentSemanticAnalysis.transform";
+
+  public static final String LSA_DIMENSIONS_PROPERTY =
+  "edu.ucla.sspace.lsa.LatentSemanticAnalysis.dimensions";
+
+  /**
+   * Beagle based builder for random index vectors.
+   */
   private final RandomIndexBuilder indexBuilder;
-  private final LinkedList<String> words;
-  private HashMap<String, double[]> termDocHolographs;
-  private final HashMap<String, BufferedWriter> termFileWriters;
+  /**
+   * Sparse matrix map which will contain the raw lsa counts in memory.
+   */
+  private final ConcurrentMap<Index,Integer> termDocCount;
+  /**
+   * File writers for each term.  This will be used to temporarily store the
+   * holoraphs for each term.
+   */
+  private final ConcurrentMap<String, BufferedWriter> termFileWriters;
+  /**
+   * A mapping from term to the document id's which this word appears in.  Used
+   * primarily so that the term's lsa vector can easily be split up into more
+   * senses.
+   */
+  private final ConcurrentMap<String, Set<Integer>> termToDocs;
+  /**
+   * A mapping from a word to the row index in the that word-document matrix
+   * that contains occurrence counts for that word.
+   */
+  private final ConcurrentMap<String,Integer> termToIndex;
+  /**
+   * The size which the Beagle based holograph vectors will be.
+   */
   private final int indexVectorSize;
-  private int docCount;
-  private final Map<Index,Integer> wordToDocumentCount;
+
+  /**
+   * Total count of occurances for every term.
+   */
+  private final AtomicIntegerArray termCountsForAllDocs;    
+  /**
+   * The counter for recording the current, largest word index in the
+   * word-document matrix.
+   */
+  private final AtomicInteger termIndexCounter;
+
+  /**
+   * The counter for recording the current, largest document index in the
+   * word-document matrix.
+   */
+  private final AtomicInteger docIndexCounter;
+
+  /**
+   * The word space of the LSA model.  This matrix is only available after the
+   * {@link #processSpace(Properties) processSpace} method has been called.
+   */
+  private Matrix wordSpace;
 
   public Hololsa() {
-    indexVectorSize = 2048;
+	termIndexCounter = new AtomicInteger(0);
+	docIndexCounter = new AtomicInteger(0);
+	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
+
     indexBuilder = new RandomIndexBuilder();
-    termFileWriters = new HashMap<String, BufferedWriter>();
-	wordToDocumentCount = new HashMap<Index,Integer>();
-    words = new LinkedList<String>();
-    docCount = 0;
+	termDocCount = new ConcurrentHashMap<Index,Integer>();
+    termFileWriters = new ConcurrentHashMap<String, BufferedWriter>();
+	termToIndex = new ConcurrentHashMap<String,Integer>();
+	termToDocs = new ConcurrentHashMap<String, Set<Integer>>();
+    indexVectorSize = 2048;
   }
 
-  public void parseDocument(String line) throws IOException {
-    docCount++;
+  public Set<String> getWords() {
+    return termToIndex.keySet();
+  }
+
+  public double[] getVectorFor(String word) {
+    return new double[0];
+  }
+
+  public void processDocument(BufferedReader document) throws IOException {
     // split the line based on whitespace
-    termDocHolographs = new HashMap<String, double[]>();
-    String[] text = line.split("\\s");
-    for (String word : text) {
-      // clean up each word before entering it into the matrix
-      String cleaned = StringUtils.cleanup(word);
-      // skip any mispelled or unknown words
-      if (!StringUtils.isValid(cleaned))
-        continue;
-      if (!termFileWriters.containsKey(cleaned))
-        termFileWriters.put(
-            cleaned, 
-            new BufferedWriter(new FileWriter(makeFileName(cleaned))));
-      words.add(cleaned);
-      indexBuilder.addTermIfMissing(cleaned);
-      updateHolograph();
-      String filename = ""+docCount;
+    HashMap<String, double[]> termDocHolographs = new HashMap<String, double[]>();
+    LinkedList<String> words = new LinkedList<String>();
+	Map<String,Integer> termCounts = 
+        new LinkedHashMap<String,Integer>(1 << 10, 16f);	
+    for (String line = null; (line = document.readLine()) != null;) {
+      String[] text = line.split("\\s");
+      for (String word : text) {
+        // clean up each word before entering it into the matrix
+        String cleaned = StringUtils.cleanup(word);
+        // skip any mispelled or unknown words
+        if (!StringUtils.isValid(cleaned))
+          continue;
+        words.add(cleaned);
+        // update the holographs, first adding new index vectors if needed.
+        indexBuilder.addTermIfMissing(cleaned);
+        updateHolograph(words, termDocHolographs);
+
+        // Update the lsa based information.
+		addTerm(cleaned);
+		Integer termCount = termCounts.get(cleaned);
+
+		// update the term count
+		termCounts.put(cleaned, (termCount == null) 
+			       ? Integer.valueOf(1)
+			       : Integer.valueOf(1 + termCount.intValue()));
+      }
     }
-    dumpMeaningToFile(""+docCount);
-  }
-  
-  private String makeFileName(String term) {
-    return "." + term + ".txt";
+    document.close();
+	// check that we actually loaded in some terms before we increase the
+	// documentIndex.  This could possibly save some dimensions in the final
+	// array for documents that were essentially blank.  If we didn't see
+	// any terms, just return 0
+	if (termCounts.isEmpty())
+	    return;
+
+	int documentIndex = docIndexCounter.incrementAndGet();
+    for (String key : termCounts.keySet()) {
+      synchronized(key) {
+        BufferedWriter writer = termFileWriters.get(key);
+        if (writer == null)
+          termFileWriters.put(key, getNewWriter(key));
+
+        Set<Integer> docSet = termToDocs.get(key);
+        if (docSet == null) {
+          docSet = new HashSet<Integer>();
+          termToDocs.put(key, docSet);
+        }
+        docSet.add(documentIndex);
+      }
+    }
+
+    dumpHolographsToFile(termDocHolographs, documentIndex);
+
+	// Once the document has been fully parsed, output all of the space values
+    // into the main concurrent map. 
+    for (Map.Entry<String,Integer> e : termCounts.entrySet()) {
+      String term = e.getKey();
+      Index index = new Index(termToIndex.get(term), documentIndex);
+      int count = e.getValue().intValue();
+      termDocCount.put(index, count);
+      termCountsForAllDocs.addAndGet(
+          termToIndex.get(e.getKey()).intValue(),
+          e.getValue().intValue());
+    }
   }
 
-  private void dumpMeaningToFile(String document) {
+  /**
+   * Adds the term to the list of terms and gives it an index, or if the term
+   * has already been added, does nothing.
+   */
+  private void addTerm(String term) {
+    // ensure that we are using the canonical version of this term so that
+    // we can properly lock on it.
+    term = term.intern();
+    Integer index = termToIndex.get(term);
+    if (index == null) {
+      // lock on the term itself so that only two threads trying to add
+      // the same term will block on each other
+      synchronized(term) {
+        // recheck to see if the term was added while blocking
+        index = termToIndex.get(term);
+        // if some other thread has not already added this term while
+        // the current thread was blocking waiting on the lock, then add
+        // it.
+        if (index == null) {
+          index = Integer.valueOf(termIndexCounter.incrementAndGet());
+          termToIndex.put(term, index);
+        }
+      }
+    }
+  }
+    
+  private void addDocToTerm(String term, int docId) {
+  }
+    
+  private BufferedWriter getNewWriter(String term) throws IOException {
+    return new BufferedWriter(new FileWriter(
+          File.createTempFile(term, ".txt")));
+  }
+
+  private String makeFileName(String term) {
+    return term + ".txt";
+  }
+
+  private void dumpHolographsToFile(HashMap<String, double[]> termDocHolographs, int document) {
     try {
       for (Map.Entry<String, double[]> entry : termDocHolographs.entrySet()) {
         BufferedWriter writer = termFileWriters.get(entry.getKey());
@@ -75,7 +229,7 @@ public class Hololsa {
         double[] value = entry.getValue();
         for (int i = 0; i < indexVectorSize; ++i)
           writer.write(value[i] + " ");
-        writer.write("\n");
+        writer.newLine();
       }
     } catch (IOException e) {
     }
@@ -103,19 +257,76 @@ public class Hololsa {
     }
   }
 
-  public void processSpace() {
+  public void processSpace(Properties properties) {
     for (String key : termFileWriters.keySet()) {
       ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
       // Cluster the vectors, how? fuck if i know.
       // Then splitup the lsa lines for this vector into however many senses we
       // find.
     }
+    try {
+      File rawTermDocMatrix = dumpLSAMatrix();
+      MatrixTransformer transform = new LogEntropyTransformer();
+
+      String transformClass = 
+      properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
+      if (transformClass != null) {
+        try {
+          Class clazz = Class.forName(transformClass);
+          transform = (MatrixTransformer)(clazz.newInstance());
+        } 
+        // perform a general catch here due to the number of possible
+        // things that could go wrong.  Rethrow all exceptions as an
+        // error.
+        catch (Exception e) {
+          throw new Error(e);
+        } 
+      }
+
+      // Convert the raw term counts using the specified transform
+      File processedTermDocumentMatrix = 
+      transform.transform(rawTermDocMatrix);
+      
+      int dimensions = 300; // default
+      String userSpecfiedDims = 
+      properties.getProperty(LSA_DIMENSIONS_PROPERTY);
+      if (userSpecfiedDims != null) {
+        try {
+          dimensions = Integer.parseInt(userSpecfiedDims);
+        } catch (NumberFormatException nfe) {
+          throw new IllegalArgumentException(
+            LSA_DIMENSIONS_PROPERTY + " is not an integer: " +
+          userSpecfiedDims);
+        }
+      }
+      // Compute SVD on the pre-processed matrix.
+      Matrix[] usv = SVD.svd(processedTermDocumentMatrix, dimensions);
+      
+      // Load the left factor matrix, which is the word semantic space
+      wordSpace = usv[0];
+
+    } catch (IOException ioe) {
+      throw new IOError(ioe);
+    }
   }
 
-  public void reduce() {
+  private File dumpLSAMatrix() throws IOException {
+    File lsaFile = File.createTempFile("hermit-term-doc-matrix", ".tmp'");
+    PrintWriter lsaWriter = new PrintWriter(lsaFile);
+    for (Map.Entry<Index,Integer> e : termDocCount.entrySet()) {
+      Index index = e.getKey();
+      int count = e.getValue().intValue();
+      StringBuffer sb = new StringBuffer(32);
+      sb.append(index.termId).append("\t").
+          append(index.docId).append("\t").append(count);
+      lsaWriter.println(sb.toString());
+    }
+    lsaWriter.flush();
+    return lsaFile;
   }
 
-  private void updateHolograph() {
+  private void updateHolograph(LinkedList<String> words,
+                               HashMap<String, double[]> termDocHolographs) {
     if (words.size() < CONTEXT_SIZE) {
       return;
     }
@@ -132,11 +343,7 @@ public class Hololsa {
   }
 
   public double computeSimilarity(String left, String right) {
-    if (!termDocHolographs.containsKey(left) ||
-        !termDocHolographs.containsKey(right))
-      return 0.0;
-    return Similarity.cosineSimilarity(termDocHolographs.get(left),
-                                       termDocHolographs.get(right));
+    return 0.0;
   }
 
   private class DocHolographPair {
@@ -146,6 +353,16 @@ public class Hololsa {
     public DocHolographPair(String docName, double[] h) {
       documentName = docName;
       holograph = h;
+    }
+  }
+
+  private class Index {
+    public int docId;
+    public int termId;
+
+    public Index(int d, int t) {
+      docId = d;
+      termId = t;
     }
   }
 }

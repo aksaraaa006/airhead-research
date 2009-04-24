@@ -1,15 +1,19 @@
 package edu.ucla.sspace.holograph;
 
+import edu.ucla.sspace.common.IndexBuilder;
+
 import jnt.FFT.RealDoubleFFT_Radix2;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class RandomIndexBuilder {
+import java.util.concurrent.ConcurrentHashMap;
+
+public class RandomIndexBuilder implements IndexBuilder {
   private static final int DEFAULT_INDEX_VECTOR_SIZE = 2048;
 
-  private HashMap<String, double[]> termToRandomIndex;
+  private ConcurrentHashMap<String, double[]> termToRandomIndex;
   private RealDoubleFFT_Radix2 fft;
   private int indexVectorSize;
   private double[] placeHolder;
@@ -17,6 +21,7 @@ public class RandomIndexBuilder {
   private Random randomGenerator;
   private int[] permute1;
   private int[] permute2;
+  private double[] newestRandomVector;
 
   public RandomIndexBuilder() {
     init(DEFAULT_INDEX_VECTOR_SIZE);
@@ -27,9 +32,10 @@ public class RandomIndexBuilder {
   }
 
   private void init(int s) {
-    termToRandomIndex = new HashMap<String, double[]>();
+    termToRandomIndex = new ConcurrentHashMap<String, double[]>();
     indexVectorSize = s;
     fft = new RealDoubleFFT_Radix2(indexVectorSize);
+    newestRandomVector = generateRandomVector(); 
     // Enter the zero vector for the empty string.
     termToRandomIndex.put("", newVector(0));
     randomGenerator = new Random();
@@ -66,8 +72,8 @@ public class RandomIndexBuilder {
   }
 
   public void addTermIfMissing(String term) {
-    if (!termToRandomIndex.containsKey(term))
-      termToRandomIndex.put(term, generateRandomVector());
+    if (termToRandomIndex.putIfAbsent(term, newestRandomVector) == null)
+      newestRandomVector = generateRandomVector();
   }
 
   // Context must have one word before the term being considered, and 4 words
