@@ -240,7 +240,7 @@ public class MatrixIO {
 	int lastCol = 0;
 	for (String line = null; (line = br.readLine()) != null; ) {
 	    String[] rowColVal = line.split("\\s+");
-	    int col = Double.parseDouble(rowColVal[1]);
+	    int col = Integer.parseInt(rowColVal[1]);
 	    if (col != lastCol) {
 		// print any missing colums in case not all the columns have
 		// data
@@ -459,7 +459,7 @@ public class MatrixIO {
 		int col = valuesSeen % cols;
 		int row = valuesSeen / cols;
 		
-		int val = Double.parseDouble(colVals[index]);
+		double val = Double.parseDouble(colVals[index]);
 		m.set(row, col, val);
 		
 		++valuesSeen;
