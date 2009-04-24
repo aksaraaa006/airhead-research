@@ -1,16 +1,21 @@
 package edu.ucla.sspace.coals;
 
+import edu.ucla.sspace.common.document.StringDocument;
+
 import org.junit.*;
 
 import static org.junit.Assert.*;
 
 import Jama.Matrix;
 
+import java.io.IOException;
+
 public class CoalsTest {
-  @Test public void testCoals() {
+  @Test public void testCoals() throws IOException {
     Coals coals = new Coals();
     String testDocument = "How much wood would a woodchuck chuck , if a woodchuck could chuck wood ? As much wood as a woodchuck would , if a woodchuck could chuck wood .";
-    coals.parseDocument(testDocument);
+    StringDocument sDoc = new StringDocument(testDocument);
+    coals.processDocument(sDoc.reader());
     double[][] testCorrelations = { {0, 0, 0,10, 1, 4, 2, 0, 8, 0, 0,10, 5},
                                     {0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 4, 1, 0},
                                     {0, 0, 0, 0, 5, 3, 2, 0, 0, 3, 6, 1, 0},
@@ -28,7 +33,7 @@ public class CoalsTest {
     for (int i = 0; i < resultCorrel.getRowDimension(); ++i)
       for (int j = 0; j < resultCorrel.getColumnDimension(); ++j)
         assertEquals(0, resultCorrel.get(i, j), .0001);
-    coals.processSpace();
+    coals.processSpace(null);
     double[][] testFinal = { {   0,   0,   0,.291,   0,   0,   0,   0,.372,   0,   0,.291,.246},
                              {   0,   0,   0,   0,   0,.297,.263,   0,   0,   0,.333,   0,   0},
                              {   0,   0,   0,   0,.365,.175,.151,   0,   0,.268,.317,   0,   0},
@@ -50,11 +55,12 @@ public class CoalsTest {
 
   }
   
-  @Test public void testMaxSize() {
+  @Test public void testMaxSize() throws IOException {
     Coals coals = new Coals(2);
     String testDocument = "word word cat dog dog";
     double[][] testCorrelations = { {8, 8}, {8, 8} };
-    coals.parseDocument(testDocument);
+    StringDocument sDoc = new StringDocument(testDocument);
+    coals.processDocument(sDoc.reader());
     Matrix resultCorrel = coals.compareToMatrix(new Matrix(testCorrelations));
     coals.printCorrelations();
     resultCorrel.print(6, 4);

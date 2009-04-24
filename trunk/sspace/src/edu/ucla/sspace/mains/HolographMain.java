@@ -1,10 +1,12 @@
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.common.document.Document;
+import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
 import edu.ucla.sspace.holograph.Holograph;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-
+/**
+ * This main is slightly out of date and can probably be ignored
+ */
 public class HolographMain {
   public static void usage() {
     System.out.println("use --docsFile");
@@ -21,17 +23,17 @@ public class HolographMain {
             String docsFile = 
             args[0].substring("--docsFile=".length());
             input = docsFile;
-            BufferedReader br = 
-            new BufferedReader(new FileReader(docsFile));
-            String document = null;
+            OneLinePerDocumentIterator docIter = 
+              new OneLinePerDocumentIterator(docsFile);
             int count = 0;
-            while ((document = br.readLine()) != null) {
-            System.out.print("parsing document " + (count++));
-            long startTime = System.currentTimeMillis();
-            holographBuilder.parseDocument(document);
-            long endTime = System.currentTimeMillis();
-            System.out.printf("complete (%.3f seconds)%n",
-                      (endTime - startTime) / 1000d);
+            while (docIter.hasNext()) {
+              Document doc = docIter.next();
+              System.out.print("parsing document " + (count++));
+              long startTime = System.currentTimeMillis();
+              holographBuilder.processDocument(doc.reader());
+              long endTime = System.currentTimeMillis();
+              System.out.printf("complete (%.3f seconds)%n",
+                        (endTime - startTime) / 1000d);
             }
         }
         catch (Throwable t) {
@@ -43,6 +45,7 @@ public class HolographMain {
         usage();
         System.exit(0);
       }
+      /*
       System.out.println("similarity between Eat and Eaten: " + 
                          holographBuilder.computeSimilarity("eat", "eaten"));
       System.out.println("similarity between Eat and buy: " + 
@@ -55,6 +58,7 @@ public class HolographMain {
                          holographBuilder.computeSimilarity("car", "boat"));
       System.out.println("similarity between car and driver: " + 
                          holographBuilder.computeSimilarity("car", "truck"));
+                         */
       holographBuilder.lutherTest();
     }
   }
