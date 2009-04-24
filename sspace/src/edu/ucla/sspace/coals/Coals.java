@@ -5,17 +5,42 @@ import edu.ucla.sspace.common.Normalize;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StringUtils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 import Jama.Matrix;
 
-public class Coals {
+/**
+ * An implementation of the COALS Semantic Space model.  This implementation is
+ * based on:
+ *
+ * <p style="font-family:Garamond, Georgia, serif"> Rohde, D. L. T.,
+ * Gonnerman, L. M., Plaut, D. C. (2005).  An Improved Model of Semantic
+ * Similarity Based on Lexical Co-Occurrence. <i>Cognitive Science</i>
+ * <b>(submitted)</b>.  Available <a
+ * href="http://www.cnbc.cmu.edu/~plaut/papers/pdf/RohdeGonnermanPlautSUB-CogSci.COALS.pdf">here</a></p>
+ *
+ * COALS first computes a term by term co-occurrance using a ramped 4-word
+ * window.  Once all documents have been processed, the raw counts are converted
+ * into correlations.  Negative values are replaced with 0, and all other values
+ * are replaced with their square root.  
+ * From there, the semantic similarity of two words is best evaluated as the 
+ * correlation of their vectors.
+ *
+ * As of right now this class is not thread safe, and still relies on the Jama
+ * Matrix class.  It also does not accept any Properties.
+ */
+public class Coals implements SemanticSpace {
   private HashMap<Index, Double> correlation;
   private HashMap<String, Integer> wordToIndex;
   private HashMap<String, Integer> wordFreq;
@@ -42,20 +67,39 @@ public class Coals {
     finalCorrelation = null;
   }
 
-  public void parseDocument(String document) {
-    String[] text = document.split("\\s");
-    for (String word : text) {
-      //String cleaned = StringUtils.cleanup(word);
-      String cleaned = word.toLowerCase();
-      wordWindow.add(cleaned);
-      int updatedFreq = 1;
-      if (wordFreq.containsKey(cleaned))
-        updatedFreq = wordFreq.get(cleaned).intValue() + 1;
-      wordFreq.put(cleaned, updatedFreq);
-      update();
-      System.out.println(word + " : " + wordWindow.size());
+  /**
+   * {@inheritDoc}
+   */
+  public Set<String> getWords() {
+    return wordToIndex.keySet();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public double[] getVectorFor(String term) {
+    return new double[0];
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void processDocument(BufferedReader document) throws IOException {
+    for (String line = null; (line = document.readLine()) != null;) {
+      String[] text = line.split("\\s");
+      for (String word : text) {
+        //String cleaned = StringUtils.cleanup(word);
+        String cleaned = word.toLowerCase();
+        wordWindow.add(cleaned);
+        int updatedFreq = 1;
+        if (wordFreq.containsKey(cleaned))
+          updatedFreq = wordFreq.get(cleaned).intValue() + 1;
+        wordFreq.put(cleaned, updatedFreq);
+        update();
+        System.out.println(word + " : " + wordWindow.size());
+      }
+      finishUpdates();
     }
-    finishUpdates();
   }
 
   private void addIfMissing(Index i, double value) {
@@ -113,14 +157,10 @@ public class Coals {
     wordWindow.remove(0);
   }
 
-  public void reduce() {
-  }
-
-  public double computeSimilarity(String word1, String word2) {
-    return 0.0;
-  }
-
-  public void processSpace() {
+  /**
+   * {@inheritDoc}
+   */
+  public void processSpace(Properties properties) {
     finalCorrelation = buildMatrix();
     int wordCount = finalCorrelation.getRowDimension();
     Normalize.byCorrelation(finalCorrelation);
