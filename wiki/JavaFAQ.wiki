@@ -1,0 +1,12 @@
+#Java Frequently Asked Questions
+
+= FAQ =
+
+Q: What would be a useful classpath?
+
+A: For Linux users using bash, one can do:
+export CLASSPATH=bin/:classes/:.
+for csh one can do:
+setenv CLASSPATH "bin/:classes/:."
+
+This will allow you to easily run ant at the base of the sspace directory, and immediate run any of the runnable classes produced from the same directory.
