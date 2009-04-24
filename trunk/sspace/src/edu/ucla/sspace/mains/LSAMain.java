@@ -168,7 +168,7 @@ public class LSAMain {
 
 	parseDocumentsMultiThreaded(lsa, docIter, props, numThreads);
 
-	lsa.processSpace();
+	lsa.processSpace(props);
 	
 	File output = (overwrite)
 	    ? new File(outputDir, LSA_SEMANTIC_SPACE_FILE_NAME)
