@@ -189,6 +189,8 @@ class learningAgent():
       self.word_list.append(word)
     m_data = self.learnPatterns(context, word[0])
     m_data[0].value = word[0] 
+    # potentially remove the next line if things go badly.
+    m_data[0].updateAttention(context)
     self.updateTimeValues()
 
   def printMap(self):
@@ -203,7 +205,18 @@ class SOMNode():
     self.loc = (x_pos, y_pos)
     self.meaning = numpy.random.rand(vector_size)
     self.attention = numpy.ones_like(self.meaning)
+    self.average = numpy.zeros_like(self.meaning)
+    self.mean = numpy.zeros_like(self.meaning)
     self.value = None
+    self.value_count = 0
+
+  def updateAttention(self, meaning_vector):
+    self.value_count += 1
+    delta = meaning_vector - self.average
+    self.average += (delta/self.value_count)
+    self.mean += delta * (meaning_vector - self.average)
+    variance = self.mean / self.value_count
+    self.attention = 1 / (1 + variance)
 
   def similarity(self, meaning_vector):
     """Compute the euclidian similarity of this nodes meaning with the given
@@ -214,11 +227,11 @@ class SOMNode():
     self.activation = 0
 
   def updateActivation(self, meaning_vector, best_node, min_dist, max_dist):
-    meaning_dist = distance(meaning_vector, self.meaning)
+    meaning_dist = distance(self.attention * meaning_vector, self.meaning)
     self.activation = 1 - ((meaning_dist - min_dist) / (max_dist - min_dist))
 
   def updateMeaning(self, meaning_vector, learning_rate):
     """Update the meaning of this node to incorporate the given meaning vector
     if this node is in the neighborhood of other_node."""
     self.meaning += (learning_rate *
-                     (meaning_vector - self.meaning))
+                     (self.attention * meaning_vector - self.meaning))
