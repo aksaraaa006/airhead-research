@@ -1,27 +1,29 @@
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.common.Matrix;
+import edu.ucla.sspace.common.matrix.ArrayMatrix;
+
 import org.junit.*;
 
 import static org.junit.Assert.*;
 
-import Jama.Matrix;
-
 public class NormalizeTest {
   @Test public void testCorrelation() {
-    double[][] testCorrelations = { {0, 5, 9, 6, 1,10, 4, 8,18, 9,10, 0, 0},
-                                    {5, 4, 2, 1, 0, 0, 7,10, 3, 2, 1, 0, 5},
-                                    {9, 2, 0, 8, 0, 5, 1, 9,11, 2, 4, 3, 3},
-                                    {6, 1, 8, 0, 0, 4, 0, 6, 8, 0, 2, 2, 2},
-                                    {1, 0, 0, 0, 0, 0, 4, 3, 0, 2, 0, 0, 0},
-                                    {10,0, 5, 4, 0, 0, 0, 0,10, 3, 8, 0, 0},
-                                    {4, 7, 1, 0, 4, 0, 0,10, 2, 3, 0, 0, 3},
-                                    {8,10, 9, 6, 3, 0,10, 2, 8, 5, 0, 4, 6},
-                                    {18,3,11, 8, 0,10, 2, 8, 0, 8, 10,1, 1},
-                                    {9, 2, 2, 0, 2, 3, 3, 5, 8, 0, 5, 0, 0},
-                                    {10, 1, 4, 2, 0, 8, 0, 0,10, 5,0, 0, 0},
-                                    {0, 0, 3, 2, 0, 0, 0, 4, 1, 0, 0, 0, 0},
-                                    {0, 5, 3, 2, 0, 0, 3, 6, 1, 0, 0, 0, 0}};
-    Matrix testIn = new Matrix(testCorrelations);
+    // 13 x 13 matrix.
+    double[] testCorrelations = {0, 5, 9, 6, 1,10, 4, 8,18, 9,10, 0, 0,
+                                 5, 4, 2, 1, 0, 0, 7,10, 3, 2, 1, 0, 5,
+                                 9, 2, 0, 8, 0, 5, 1, 9,11, 2, 4, 3, 3,
+                                 6, 1, 8, 0, 0, 4, 0, 6, 8, 0, 2, 2, 2,
+                                 1, 0, 0, 0, 0, 0, 4, 3, 0, 2, 0, 0, 0,
+                                 10,0, 5, 4, 0, 0, 0, 0,10, 3, 8, 0, 0,
+                                 4, 7, 1, 0, 4, 0, 0,10, 2, 3, 0, 0, 3,
+                                 8,10, 9, 6, 3, 0,10, 2, 8, 5, 0, 4, 6,
+                                 18,3,11, 8, 0,10, 2, 8, 0, 8, 10,1, 1,
+                                 9, 2, 2, 0, 2, 3, 3, 5, 8, 0, 5, 0, 0,
+                                 10, 1, 4, 2, 0, 8, 0, 0,10, 5,0, 0, 0,
+                                 0, 0, 3, 2, 0, 0, 0, 4, 1, 0, 0, 0, 0,
+                                 0, 5, 3, 2, 0, 0, 3, 6, 1, 0, 0, 0, 0};
+    Matrix testIn = new ArrayMatrix(13, 13, testCorrelations);
     double[][] testResults = { {-.167,-.014, .014, .009,-.017, .085,-.018,-.033, .096, .069, .085,-.055,-.079},
                                {-.014, .031,-.048,-.049,-.037,-.077, .133, .103,-.054,-.021,-.050,-.037, .133},
                                { .014,-.048,-.113, .094,-.045, .021,-.061, .031, .048,-.046,-.002, .088, .031},
@@ -35,15 +37,10 @@ public class NormalizeTest {
                                { .085,-.050,-.002,-.021,-.037, .138,-.071,-.106, .085, .060,-.077,-.037,-.053},
                                {-.055,-.037, .088, .069,-.018,-.037,-.034, .111,-.017,-.037,-.037,-.018,-.026},
                                {-.079, .133, .031, .023,-.026,-.053, .072, .100,-.051,-.053,-.053,-.026,-.037}};
-    Matrix testOut = new Matrix(testResults);
     Normalize.byCorrelation(testIn);
-    testIn.print(6,4);
-    Matrix result = testIn.minus(testOut);
-    result.print(6, 4);
-    double sum = 0;
-    for (int i = 0; i < result.getRowDimension(); ++i) {
-      for (int j = 0; j < result.getColumnDimension(); ++j) {
-        assertEquals(0.0, result.get(i,j), .001);
+    for (int i = 0; i < 13; ++i) {
+      for (int j = 0; j < 13; ++j) {
+        assertEquals(0.0, testResults[i][j] - testIn.get(i, j), .001);
       }
     }
   }
