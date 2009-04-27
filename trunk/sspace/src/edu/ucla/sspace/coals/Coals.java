@@ -5,11 +5,15 @@ import edu.ucla.sspace.common.matrix.ArrayMatrix;
 
 import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.Matrix;
+import edu.ucla.sspace.common.MatrixIO;
 import edu.ucla.sspace.common.Normalize;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StringUtils;
+import edu.ucla.sspace.common.SVD;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -43,6 +47,11 @@ import java.util.Set;
  * Matrix class.  It also does not accept any Properties.
  */
 public class Coals implements SemanticSpace {
+  public static final String REDUCE_MATRIX_PROPERTY =
+    "edu.ucla.sspace.coals.Coals.reduce";
+  public static final String REDUCE_MATRIX_DIMENSION_PROPERTY =
+    "edu.ucla.sspace.coals.Coals.dimension";
+
   private HashMap<Index, Integer> correlation;
   private HashMap<String, Integer> wordToIndex;
   private HashMap<String, Integer> totalWordFreq;
@@ -78,7 +87,9 @@ public class Coals implements SemanticSpace {
    * {@inheritDoc}
    */
   public double[] getVectorFor(String term) {
-    return new double[0];
+    if (wordToIndex.containsKey(term))
+      return finalCorrelation.getRow(wordToIndex.get(term).intValue());
+    return null;
   }
 
   /**
@@ -199,6 +210,25 @@ public class Coals implements SemanticSpace {
         finalCorrelation.set(i,j, newValue);
       }
     }
+    String reduceMatrix = properties.getProperty(REDUCE_MATRIX_PROPERTY);
+    if (reduceMatrix != null) {
+      try {
+        File coalsMatrixFile =
+          File.createTempFile("coals-term-doc-matrix", "txt");
+        MatrixIO.writeMatrix(finalCorrelation, coalsMatrixFile);
+        String dims = properties.getProperty(REDUCE_MATRIX_DIMENSION_PROPERTY);
+        int dimensions = 300;
+        if (dims != null)
+          dimensions = Integer.parseInt(dims);
+        Matrix[] usv = SVD.svd(coalsMatrixFile, 300);
+        finalCorrelation = usv[0];
+      } catch (IOException ioe) {
+        throw new IOError(ioe);
+      } catch (NumberFormatException nfe) {
+        throw new IllegalArgumentException(
+            REDUCE_MATRIX_DIMENSION_PROPERTY + " is not an integer");
+      }
+    }
   }
 
   private Matrix buildMatrix() {
@@ -245,6 +275,10 @@ public class Coals implements SemanticSpace {
     return returnMatrix;
   }
    
+  public void dump(File output) throws IOException {
+    MatrixIO.writeMatrix(finalCorrelation, output);
+  }
+
   private class EntryComp implements Comparator<Map.Entry<String,Integer>> {
     public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
       int diff = o2.getValue().intValue() - o1.getValue().intValue();

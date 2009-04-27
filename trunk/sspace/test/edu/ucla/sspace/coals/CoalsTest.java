@@ -10,7 +10,26 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 
+import java.util.Properties;
+import java.util.Set;
+
 public class CoalsTest {
+  @Test public void testSVDCoals() throws IOException {
+    Coals coals = new Coals();
+    String testDocument = "how much wood would a woodchuck chuck , if a woodchuck could chuck wood ? as much wood as a woodchuck would , if a woodchuck could chuck wood .";
+    StringDocument sDoc = new StringDocument(testDocument);
+    coals.processDocument(sDoc.reader());
+    Properties props = new Properties();
+    props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "");
+    props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY, "3");
+    coals.processSpace(props);
+    Set<String> wordSet = coals.getWords();
+    assertTrue(wordSet.contains("woodchuck"));
+    double[] woodchuckMeaning = coals.getVectorFor("woodchuck");
+    assertTrue(woodchuckMeaning != null);
+    assertEquals(3, woodchuckMeaning.length);
+  }
+
   @Test public void testCoals() throws IOException {
     Coals coals = new Coals();
     String testDocument = "how much wood would a woodchuck chuck , if a woodchuck could chuck wood ? as much wood as a woodchuck would , if a woodchuck could chuck wood .";
@@ -35,7 +54,8 @@ public class CoalsTest {
     for (int i = 0; i < resultCorrel.rows(); ++i)
       for (int j = 0; j < resultCorrel.columns(); ++j)
         assertEquals(0, resultCorrel.get(i, j), .0001);
-    coals.processSpace(null);
+    Properties prop = new Properties();
+    coals.processSpace(prop);
     // 13 x 13 matrix.
     double[] testFinal = {   0,   0,   0,.291,   0,   0,   0,   0,.372,   0,   0,.291,.246,
                              0,   0,   0,   0,   0,.297,.263,   0,   0,   0,.333,   0,   0,
