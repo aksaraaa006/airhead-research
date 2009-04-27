@@ -12,13 +12,16 @@ import java.io.IOException;
 public class OneLineDocumentCleaner {
   public static void main(String[] args) {
     try {
-      File wordList = new File(args[1]);
+      File wordList = new File(args[0]);
       DocumentPreprocessor processor = new DocumentPreprocessor(wordList);
-      BufferedReader br = new BufferedReader(new FileReader(args[2]));
-      BufferedWriter bw = new BufferedWriter(new FileWriter(args[3]));
+      BufferedReader br = new BufferedReader(new FileReader(args[1]));
+      BufferedWriter bw = new BufferedWriter(new FileWriter(args[2]));
       for (String line = null; (line = br.readLine()) != null;) {
         String cleaned = processor.process(line);
-        bw.write(cleaned);
+        if (!cleaned.equals("")){
+          bw.write(cleaned);
+          bw.newLine();
+        }
       }
       bw.close();
     } catch (IOException e) {
