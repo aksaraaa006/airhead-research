@@ -1,0 +1,71 @@
+#summary A description of the Latent Semantic Analysis implementation of the S-Space package.
+#labels Featured
+
+= Introduction =
+
+Latent Semantic Analysis (LSA) is an algorithm that uses a collection of documents to construct a a semantic space.  The algorithm constructs a word-by-document matrix where each row corresponds to a unique word in the document corpus and each row corresponds to a document.  The value at each position is how many times the row's word occurs in the column's document.  Then the [http://en.wikipedia.org/wiki/Singular_value_decomposition Singular Value Decomposition] (SVD) is calculated for the word-document matrix to produce three matrices, U - the wordspace, &Sigma; - the singular values, and V - the document space.  (See Wikipedia for more details on the SVD).  The columns of U are then truncated to a small number of dimensions (typically 300), which produces the final semantic vectors.
+
+For more information on LSA, see the Wikipedia [http://en.wikipedia.org/wiki/Latent_semantic_analysis  page] on LSA.  Also the following papers give a good introduction to the uses of LSA:
+
+  * T. K. Landauer and S. T. Dumais, "A solution to Plato’s problem: The Latent Semantic Analysis theory of the acquisition, induction, and representation of knowledge," _Psychological Review_, vol. 104, pp. 211–240, 1997.
+
+  * T. K. Landauer, P. W. Foltz, and D. Laham, "Introduction to Latent Semantic Analysis," _Discourse Processes_, no. 25, pp. 259–284, 1998. 
+
+= S-Space Implementation =
+
+The current S-Space implementation of LSA is captured in two files.  {{{LatentSemanticAnalysis.java}}} contains all of the algorithmic implementation, and is suitable for use in other code as a library.  {{{LSAMain.java}}} is a command-line invokable version of LSA that uses the {{{LatentSemanticAnalysis}}} class.  This class is provided as lsa.jar on the release packages.
+
+== Software Requirements ==
+
+The S-Space implementation uses existing software implementations of the SVD.  At least one of the following packages should be installed:
+
+  # [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC]
+  # [http://www.mathworks.com/products/matlab Matlab]
+  # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
+  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.
+
+The S-Space implementation will work with any of these implementations.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.
+
+== Preprocessing the word-document matrix ==
+
+Many studies have shown that preprocessing the word-document matrix can improve the resulting word semantics.  The S-Space package provides three preprocessing classes that are commonly used:
+
+  * Log-Entropy - {{{LogEntropyTransform.java}}}.
+  * Term-Frequency Inverse Document-Frequency - {{{TfIdfTransform.java}}}.  See the Wikipedia [http://en.wikipedia.org/wiki/Tf%E2%80%93idf page] for details.
+  * None - {{{NoTransform.java}}}.  Does nothing to the matrix.
+
+In addition, the S-Space implementation also provides the ability for users to provide their own transformation.  Users can implement the {{{MatrixTransformer}}} interface, and specify their class as the transform that LSA should use.
+
+For further details of preprocessing, see the following two papers:
+
+  *  S. Dumais, “Enhancing performance in latent semantic indexing (LSI) retrieval,” Bellcore, Morristown (now Telcordia Technologies), Tech. Rep. TM-ARH-017527, 1990.
+  * P. Nakov, A. Popova, and P. Mateev, “Weight functions impact on LSA performance,” in _Proceedings of the EuroConference Recent Advances in Natural Language Processing, (RANLP’01)_, 2001, pp. 187–193. 
+
+== Running LSA from the command-line ==
+
+LSA can be invoked either using {{{java edu.ucla.sspace.mains.LSAMain}}} or through the jar release {{{java -jar lsa.jar}}}.  Both ways are equivalent.
+
+We provide the following options for changing the behavior of LSA and how the program is run.
+
+  * Input document sources (must provide at least one)
+    * {{{--fileList=<filename>}}} a file containing a list of file names, each of which is treated as a separate document.
+    * {{{--docFile=<filename>}}} a file where each line is treated as a separate document. This is the preferred option for LSA operations for large numbers of documents due to reduced I/O demands. 
+
+  * LSA Options
+    * {{{--dimensions=<int>}}} how many dimensions to use for the LSA vectors. See LatentSemanticAnalysis for default value
+    * {{{--preprocess=<class name>}}} specifies an instance of MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
+
+  * Program Options
+    * {{{--threads=<int>}}} how many threads to use when processing the documents. The default is one per core.
+    * {{{--overwrite=<boolean>}}} specifies whether to overwrite the existing output files. The default is true. If set to false, a unique integer is inserted into the file name.
+    * {{{--verbose | -v}}} specifies whether to print runtime information to standard out
+
+
+The program will then produce a file that contains the entire semantic space.  Each line in the file is formatted as the word name followed by all the values for the vector.
+
+= Acknowledgments =
+
+  * We are grateful for the advice and assistance of Tom Landauer, Walter Kintsch and Praful Mangalath of the Latent Semantic Analysis group at the University of Colorado, Boulder.
+
+  * We are grateful to Doug Rohde for making the SVDLIBC program freely available.
+ 
