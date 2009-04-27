@@ -507,6 +507,25 @@ public class MatrixIO {
 	return transpose;
     }
 
+    /**
+     * A rudimentary writer for a generic Matrix in the file type accepted by
+     * matlab.
+     */
+    public static void writeMatrix(Matrix matrix, File output)
+        throws IOException {
+      if (matrix.rows() == 0 || matrix.columns() == 0)
+	    throw new IllegalArgumentException("invalid matrix dimensions");
+      PrintWriter pw = new PrintWriter(output);
+      for (int i = 0; i < matrix.rows(); ++i) {
+        for (int j = 0; j < matrix.columns(); ++j) {
+          StringBuffer sb = new StringBuffer(32);
+          sb.append(i).append("\t").append(j)
+            .append("\t").append(matrix.get(i,j));
+          pw.println(sb.toString());
+        }
+      }
+      pw.close();
+    }
 
     public static void writeMatrixArray(double[][] matrix, File output) 
 	    throws IOException {
