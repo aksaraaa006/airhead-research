@@ -83,20 +83,48 @@ public class LSAMain {
      * internal flag for printing verbose information to stdout.
      */
     private boolean verbose;
+
+    private final ArgOptions argOptions;
     
     private LSAMain() {
+	argOptions = new ArgOptions();
+	addOptions();
+    }
 
+    /**
+     * Adds all of the options to the {@link ArgOptions}.
+     */
+    private void addOptions() {
+	argOptions.addOption('l', "fileList", "a list of document files", 
+			     true, "file name", "Required (at least one of)");
+	argOptions.addOption('d', "docFile", 
+			     "a file where each line is a document", true,
+			     "file name", "Required (at least one of)");
+
+	argOptions.addOption('n', "dimensions", 
+			     "the number of dimensions in the semantic space",
+			     true, "int"); 
+	argOptions.addOption('t', "threads", "the number of threads to use",
+			     true, "int");
+	argOptions.addOption('p', "preprocess", "a MatrixTransform class to "
+			     + "use for preprocessing", true, "class name");
+	argOptions.addOption('w', "overwrite", "specifies whether to " +
+			     "overwrite the existing output", true, "boolean");
+
+	argOptions.addOption('v', "verbose", "prints verbose output");
     }
 
     public static void main(String[] args) {
 		
+	LSAMain lsa = new LSAMain();
+
 	if (args.length == 0) {
-	    usage();
+	    lsa.usage();
 	    return;
 	}
 
 	try {
-	    new LSAMain().run(args);
+	    lsa.run(args);
 	}
 	catch (Throwable t) {
 	    t.printStackTrace();
@@ -106,13 +134,13 @@ public class LSAMain {
     private void run(String[] args) throws Exception {
 	
 	// process command line args
-	ArgOptions options = new ArgOptions(args);
+	argOptions.parseOptions(args);
 
-	if (options.numArgs() == 0) {
+	if (argOptions.numPositionalArgs() == 0) {
 	    throw new IllegalArgumentException("must specify output directory");
 	}
 
-	File outputDir = new File(options.getArg(0));
+	File outputDir = new File(argOptions.getPositionalArg(0));
 	if (!outputDir.isDirectory()){
 	    throw new IllegalArgumentException(
 		"output directory is not a directory: " + outputDir);
@@ -120,11 +148,16 @@ public class LSAMain {
 
 	LatentSemanticAnalysis lsa = new LatentSemanticAnalysis();
 	
-	verbose = options.hasOption("v") || options.hasOption("verbose");
+	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
 
 	Iterator<Document> docIter = null;
-	String fileList = options.getStringOption("fileList");
-	String docFile = options.getStringOption("docFile");
+	String fileList = (argOptions.hasOption("fileList"))
+	    ? argOptions.getStringOption("fileList")
+	    : null;
+
+	String docFile = (argOptions.hasOption("docFile"))
+	    ? argOptions.getStringOption("docFile")
+	    : null;
 	if (fileList == null && docFile == null) {
 	    throw new Error("must specify document sources");
 	}
@@ -143,27 +176,27 @@ public class LSAMain {
 	}
 	
 	int numThreads = Runtime.getRuntime().availableProcessors();
-	if (options.hasOption("threads")) {
-	    numThreads = options.getIntOption("threads");
+	if (argOptions.hasOption("threads")) {
+	    numThreads = argOptions.getIntOption("threads");
 	}
 
 	boolean overwrite = true;
-	if (options.hasOption("overwrite")) {
-	    overwrite = options.getBooleanOption("overwrite");
+	if (argOptions.hasOption("overwrite")) {
+	    overwrite = argOptions.getBooleanOption("overwrite");
 	}
 	
 	// use the System properties in case the user specified them as
 	// -Dprop=<val> to the JVM directly.
 	Properties props = System.getProperties();
 
-	if (options.hasOption("dimensions")) {
+	if (argOptions.hasOption("dimensions")) {
 	    props.setProperty(LatentSemanticAnalysis.LSA_DIMENSIONS_PROPERTY,
-			      options.getStringOption("dimensions"));
+			      argOptions.getStringOption("dimensions"));
 	}
 
-	if (options.hasOption("preprocess")) {
+	if (argOptions.hasOption("preprocess")) {
 	    props.setProperty(LatentSemanticAnalysis.MATRIX_TRANSFORM_PROPERTY,
-			      options.getStringOption("preprocess"));
+			      argOptions.getStringOption("preprocess"));
 	}
 
 	parseDocumentsMultiThreaded(lsa, docIter, props, numThreads);
@@ -271,16 +304,9 @@ public class LSAMain {
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
-    private static void usage() {
-	System.out.println(
-	    "usage: java LSAMain [options] <document source> <output-dir>\n" + 
-	    "\tdocument sources (select one):\n" +
-	    "\t [--fileList=<file containing document file names>\n" +
-	    "\t  | --docFile=<file with one document per line>]\n" +
-	    "\toptions:\n" +
-	    "\t [--dimensions=<int>]\n" +
-	    "\t [--threads=<int>]\n" +
-	    "\t [--preprocess=<MatrixTransform implementation name>]\n" +
-	    "\t [--overwrite=[true|false] (overwrite existing files)\n");
+    private void usage() {
+ 	System.out.println(
+ 	    "usage: java LSAMain [options] <output-dir>\n" + 
+	    argOptions.prettyPrint());
     }
 }
