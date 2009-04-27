@@ -428,7 +428,7 @@ public class MatrixIO {
      * @param matrix
      * @param matrixType
      *
-     * @return as
+     * @return a matrix whose data was specified by the provided file
      */
     private static Matrix readDenseSVDLIBCtext(File matrix, Type matrixType) 
 	    throws IOException {
@@ -439,36 +439,40 @@ public class MatrixIO {
 	// equivalent.  Therefore, someone could just print all of the matrix
 	// values on a single line.
 	
-	// determine how big the matrix is
-	String line = br.readLine();
-	String[] dimensions = line.split("\\s+");
-	
-	int rows = Integer.parseInt(dimensions[0]);
-	int cols = Integer.parseInt(dimensions[1]);
-	
-	// REMINDER: possibly use on disk if the matrix is too big
-	Matrix m = createMatrix(matrixType, rows, cols);
-	
-	// keep track of how many values we have seen rather that the
-	// current row in order to support the white space formating
+	int rows = -1;
+	int cols = -1;
 	int valuesSeen = 0;
-	int index = 2; //
-	String[] colVals = dimensions;
-	do {
-	    for (; index < colVals.length; ++index) {
-		int col = valuesSeen % cols;
-		int row = valuesSeen / cols;
+	// REMINDER: possibly use on disk if the matrix is too big
+	Matrix m = null; 
+
+	for (String line = null; (line = br.readLine()) != null; ) {
+	    String[] vals = line.split("\\s+");
+	    for (int i = 0; i < vals.length; ++i) {
+		// rows is specified first
+		if (rows == -1) {
+		    rows = Integer.parseInt(vals[i]);
+		}
+		// cols will be second
+		else if (cols == -1) {
+		    cols = Integer.parseInt(vals[i]);
+
+		    // once both rows and cols have been assigned, create the
+		    // matrix
+		    m = createMatrix(matrixType, rows, cols);
+		}
+		else {
+		    int row = valuesSeen / cols;
+		    int col = valuesSeen % cols;
 		
-		double val = Double.parseDouble(colVals[index]);
-		m.set(row, col, val);
+		    double val = Double.parseDouble(vals[i]);
+		    m.set(row, col, val);
 		
-		++valuesSeen;
+		    // increment the number of values seen to properly set the
+		    // next index of the matrix
+		    ++valuesSeen;
+		}
 	    }
-		
-	    String next = br.readLine();
-	    colVals = (next == null) ? null : next.split("\\s+");
-	    index = 0;
-	} while (colVals != null);
+	}
 	
 	return m;
     }

@@ -2,45 +2,25 @@ package edu.ucla.sspace.lsa;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StringReader;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Queue;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import edu.ucla.sspace.common.BoundedSortedMap;
-import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.SVD;
 
 /**
