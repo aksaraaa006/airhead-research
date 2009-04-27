@@ -22,6 +22,7 @@ import edu.ucla.sspace.common.document.FileListDocumentIterator;
 import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.lsa.LatentSemanticAnalysis;
+import edu.ucla.sspace.lsa.MatrixTransformer;
 
 /**
  * An executable class for running {@link LatentSemanticAnalysis} (LSA) from the
@@ -62,17 +63,19 @@ import edu.ucla.sspace.lsa.LatentSemanticAnalysis;
  *
  * <p>
  *
- * An invocation will produce one file as output
- *
- * <ol>
- *
- *   <li> {@code 
- *
- * <p>
+ * An invocation will produce one file as output {@code
+ * lsa-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * this file will be replaced for each new semantic space.  Otherwise, a new
+ * output file of the format {@code lsa-semantic-space<number>.sspace} will be
+ * created, where {@code <number>} is a unique identifier for that program's
+ * invocation.  The output file will be placed in the directory specified on the
+ * command line.
  *
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core.
  *
+ * @see LatentSemanticAnalysis
+ * @see MatrixTransform
  */
 public class LSAMain {
 
@@ -242,7 +245,7 @@ public class LSAMain {
 				t.printStackTrace();
 			    }
 			    long endTime = System.currentTimeMillis();
-			    verbose("parsed document #%d in %.3f seconds)%n",
+			    verbose("parsed document #%d in %.3f seconds%n",
 				    docNumber, ((endTime - startTime) / 1000d));
 			}
 		    }
