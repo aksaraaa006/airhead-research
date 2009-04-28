@@ -56,7 +56,6 @@ public class Coals implements SemanticSpace {
   private HashMap<String, Integer> wordToIndex;
   private HashMap<String, Integer> totalWordFreq;
   Matrix finalCorrelation;
-  private boolean isFilling;
   private int maxWords;
 
   public Coals() {
@@ -72,7 +71,6 @@ public class Coals implements SemanticSpace {
     correlation = new HashMap<Index, Integer>();
     wordToIndex = new HashMap<String, Integer>();
     totalWordFreq = new HashMap<String, Integer>();
-    isFilling = true;
     finalCorrelation = null;
   }
 
@@ -99,6 +97,7 @@ public class Coals implements SemanticSpace {
     ArrayList<String> wordWindow = new ArrayList<String>();
     HashMap<String, Integer> wordFreq = new HashMap<String, Integer>();
     HashMap<Index, Integer> documentCorrels = new HashMap<Index, Integer>();
+    boolean isFilling = true;
     for (String line = null; (line = document.readLine()) != null;) {
       String[] text = line.split("\\s");
       for (String word : text) {
@@ -107,9 +106,9 @@ public class Coals implements SemanticSpace {
         if (wordFreq.containsKey(word))
           updatedFreq = wordFreq.get(word).intValue() + 1;
         wordFreq.put(word, updatedFreq);
-        update(documentCorrels, wordWindow);
+        isFilling = update(documentCorrels, wordWindow, isFilling);
       }
-      finishUpdates(documentCorrels, wordWindow);
+      finishUpdates(documentCorrels, wordWindow, isFilling);
     }
     for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
       synchronized (entry.getKey()) {
@@ -145,7 +144,8 @@ public class Coals implements SemanticSpace {
   }
 
   private void finishUpdates(HashMap<Index, Integer> map,
-                             ArrayList<String> wordWindow) {
+                             ArrayList<String> wordWindow,
+                             boolean isFilling) {
     if (isFilling) {
       int size = wordWindow.size();
       for (int i = 0; i < size; ++i) {
@@ -169,11 +169,12 @@ public class Coals implements SemanticSpace {
     }
   }
 
-  private void update(HashMap<Index, Integer> map,
-                      ArrayList<String> wordWindow) {
+  private boolean update(HashMap<Index, Integer> map,
+                         ArrayList<String> wordWindow,
+                         boolean isFilling) {
     int size = wordWindow.size();
     if (size < 9 && isFilling)
-      return;
+      return true;
     else if (size >= 9 && isFilling) {
       for (int i = 0; i < 4; i++) {
         String mainWord = wordWindow.get(i);
@@ -182,7 +183,6 @@ public class Coals implements SemanticSpace {
         for (int j = i+1; j < i+5; j++)
           addIfMissing(map, new Index(mainWord, wordWindow.get(j)), i+5-j);
       }
-      isFilling = false;
     }
 
     String mainWord = wordWindow.get(4);
@@ -191,6 +191,7 @@ public class Coals implements SemanticSpace {
     for (int i = 5; i < size; i++)
       addIfMissing(map, new Index(mainWord, wordWindow.get(i)), 9-i);
     wordWindow.remove(0);
+    return false;
   }
 
   /**
