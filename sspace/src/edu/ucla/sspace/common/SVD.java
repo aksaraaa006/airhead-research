@@ -1,7 +1,29 @@
+/*
+ * Copyright 2009 David Jurgens
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package edu.ucla.sspace.common;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -15,6 +37,8 @@ import java.util.logging.Logger;
 
 import edu.ucla.sspace.common.MatrixIO.Format;
 import edu.ucla.sspace.common.Matrix.Type;
+
+import edu.ucla.sspace.common.matrix.SparseMatrix;
 
 /**
  * A utililty class for invoking different implementations of the <a
@@ -341,8 +365,7 @@ public class SVD {
 				Format.SVDLIBC_DENSE_TEXT, Type.DENSE_IN_MEMORY)),
 		    // Sigma only has n values for an n^2 matrix, so make it
 		    // sparse
-		    MatrixIO.readMatrix(S, Format.SVDLIBC_DENSE_TEXT, 
-					Type.SPARSE_ON_DISK),
+		    readSVDLIBCsingularVector(S),
 		    // V could be large, so just keep it on disk.  
 		    MatrixIO.readMatrix(Vt, Format.SVDLIBC_DENSE_TEXT, 
 					Type.DENSE_ON_DISK)
@@ -359,6 +382,32 @@ public class SVD {
 
 	throw new UnsupportedOperationException(
 	    "SVDLIBC is not correctly installed on this system");
+    }
+
+    private static Matrix readSVDLIBCsingularVector(File sigmaMatrixFile)
+	    throws IOException {
+
+	BufferedReader br = 
+	    new BufferedReader(new FileReader(sigmaMatrixFile)); 
+
+	int dimension = -1;
+	int valsSeen = 0;
+	Matrix m = null;
+	for (String line = null; (line = br.readLine()) != null; ) {
+	    String[] vals = line.split("\\s+");
+	    for (int i = 0; i < vals.length; ++i) {
+		// the first value seen should be the number of singular values
+		if (dimension == -1) {
+		    dimension = Integer.parseInt(vals[i]);
+		    m = new SparseMatrix(dimension, dimension);
+		}
+		else {
+		    m.set(valsSeen, valsSeen, Double.parseDouble(vals[i]));
+		    ++valsSeen;
+		}
+	    }
+	}
+	return m;
     }
 
     /**
