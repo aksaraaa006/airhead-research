@@ -123,6 +123,7 @@ public class Coals implements SemanticSpace {
     for (String line = null; (line = document.readLine()) != null;) {
       String[] text = line.split("\\s");
       for (String word : text) {
+        word = word.intern();
         wordWindow.add(word);
         int updatedFreq = 1;
         if (wordFreq.containsKey(word))
@@ -133,7 +134,7 @@ public class Coals implements SemanticSpace {
       finishUpdates(documentCorrels, wordWindow, isFilling);
     }
     for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
-      synchronized (entry.getKey()) {
+      synchronized (entry.getKey().word) {
         int newValue = 0;
         if (correlation.containsKey(entry.getKey())) {
           newValue = correlation.get(entry.getKey()).intValue() +
