@@ -99,7 +99,7 @@ import edu.ucla.sspace.common.SVD;
  *
  * <p>
  *
- * This class offer configurable preprocessing and dimensionality reduction.
+ * This class offers configurable preprocessing and dimensionality reduction.
  * through two parameters.
  *
  * <dl style="margin-left: 1em">

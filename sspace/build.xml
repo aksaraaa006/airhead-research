@@ -27,6 +27,8 @@
   <property name="report.dir" value="reports"/>
   <property name="src.dir" value="src"/>
   <property name="package" value="edu.ucla.sspace"/>
+  <property name="bin.dir" value="bin"/>
+  <property name="version" value="0.1"/>
   
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -55,7 +57,7 @@
     <!-- Compile all of the classes and put the results in the classes
 	 directory -->
      <javac srcdir="./" destdir="classes" classpathref="classpath" 
-	    debug="true" debuglevel="lines,source">
+	    debug="true" debuglevel="lines,source" target="1.5">
        <compilerarg value="-Xlint"/>
        <compilerarg value="-g"/>
       <include name="src/**"/>
@@ -84,16 +86,22 @@
     </javac>
   </target>
 
-  <target name="dist">
+  <target name="dist" depends="lsa-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
-
-  <!-- TODO: Create runnable targets -->
-  <target name="jar" depends="compile">
-    <mkdir dir="build/bin"/>
-    <jar destfile="bin/lsa.jar" basedir="classes">
+  
+  <target name="lsa-jar" depends="compile">
+    <jar destfile="${bin.dir}/lsa.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
       <manifest>
-        <attribute name="Main-Class" value="edu.ucla.sspace.lsa.LSA"/>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Latent Semantic Analysis"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.LSAMain"/>
       </manifest>
     </jar>
   </target>
@@ -110,7 +118,8 @@
       <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>      
+      <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>
     </junit>
   </target>
 

@@ -19,29 +19,24 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.mains;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.PrintWriter;
-
-import edu.ucla.sspace.common.VectorIO;
-
-import edu.ucla.sspace.ri.RandomIndexing;
+package edu.ucla.sspace.ri;
 
 /**
+ * An invertible permutation function.
  *
+ * @see RandomIndexing
  */
-public class RandomIndexingMain {
+public interface PermutationFunction {
 
+    /**
+     * Permutes the provided {@code IndexVector} the specified number of times.
+     *
+     * @param v an index vector to permute
+     * @param numPermutations the number of times the permutation function
+     *        should be applied to the provided index vector.
+     *
+     * @return the original index vector permuted the specified number of times
+     */
+    IndexVector permute(IndexVector v, int numPermutations);
 
-    public static void main(String[] args) {
-	try {
-	    // Implement me
-
-	} catch (Throwable t) {
-	    t.printStackTrace();
-	}
-    }
 }
