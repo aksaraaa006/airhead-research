@@ -120,8 +120,7 @@ public class Cluster {
   }
 
   public static double kMeansPotential(ArrayList<double[]> dataPoints,
-                                       double[][] centers,
-                                       double scalingFactor) {
+                                       double[][] centers) {
     double sum = 0;
     for (double[] dataPoint : dataPoints) {
       double minClusterDist =
@@ -132,7 +131,7 @@ public class Cluster {
         if (clusterDist < minClusterDist)
           minClusterDist = clusterDist;
       }
-      sum += minClusterDist * scalingFactor;
+      sum += minClusterDist;
     }
     return sum;
   }
