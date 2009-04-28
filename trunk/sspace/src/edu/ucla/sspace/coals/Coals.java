@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.matrix.ArrayMatrix;
 import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.MatrixIO;
+import edu.ucla.sspace.common.MatrixIO.Format;
 import edu.ucla.sspace.common.Normalize;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StringUtils;
@@ -219,7 +220,8 @@ public class Coals implements SemanticSpace {
    * {@inheritDoc}
    */
   public void processSpace(Properties properties) {
-    finalCorrelation = buildMatrix();
+    if (finalCorrelation == null)
+      finalCorrelation = buildMatrix();
     int wordCount = finalCorrelation.rows();
     Normalize.byCorrelation(finalCorrelation);
     for (int i = 0; i < wordCount; ++i) {
@@ -233,17 +235,18 @@ public class Coals implements SemanticSpace {
       }
     }
     String reduceMatrix = properties.getProperty(REDUCE_MATRIX_PROPERTY);
-    System.out.println(wordCount);
     if (reduceMatrix != null) {
       try {
         File coalsMatrixFile =
           File.createTempFile("coals-term-doc-matrix", "txt");
-        MatrixIO.writeMatrix(finalCorrelation, coalsMatrixFile);
+        MatrixIO.writeMatrix(finalCorrelation,
+                             coalsMatrixFile,
+                             Format.SVDLIBC_DENSE_BINARY);
         String dims = properties.getProperty(REDUCE_MATRIX_DIMENSION_PROPERTY);
-        int dimensions = 300;
+        int dimensions = (300 > wordCount) ? wordCount : 300;
         if (dims != null)
           dimensions = Integer.parseInt(dims);
-        Matrix[] usv = SVD.svd(coalsMatrixFile, 300);
+        Matrix[] usv = SVD.svd(coalsMatrixFile, SVD.Algorithm.ANY, Format.SVDLIBC_DENSE_BINARY, dimensions);
         finalCorrelation = usv[0];
       } catch (IOException ioe) {
         throw new IOError(ioe);
@@ -299,7 +302,7 @@ public class Coals implements SemanticSpace {
   }
    
   public void dump(File output) throws IOException {
-    MatrixIO.writeMatrix(finalCorrelation, output);
+    MatrixIO.writeMatrix(finalCorrelation, output, MatrixIO.Format.MATLAB_SPARSE);
   }
 
   private class EntryComp implements Comparator<Map.Entry<String,Integer>> {

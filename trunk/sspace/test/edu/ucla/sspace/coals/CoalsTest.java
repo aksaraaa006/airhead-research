@@ -35,6 +35,21 @@ import java.util.Properties;
 import java.util.Set;
 
 public class CoalsTest {
+  @Test public void testGetWords() throws IOException {
+    Coals coals = new Coals();
+    String testDocument = "how much wood would a woodchuck chuck , if a woodchuck could chuck wood ? as much wood as a woodchuck would , if a woodchuck could chuck wood .";
+    StringDocument sDoc = new StringDocument(testDocument);
+    coals.processDocument(sDoc.reader());
+    Properties props = new Properties();
+    coals.processSpace(props);
+    Set<String> wordSet = coals.getWords();
+    assertEquals(13, wordSet.size());
+    assertTrue(wordSet.contains("woodchuck"));
+    double[] woodchuckMeaning = coals.getVectorFor("woodchuck");
+    assertTrue(woodchuckMeaning != null);
+    assertEquals(13, woodchuckMeaning.length);
+  }
+
   @Test public void testSVDCoals() throws IOException {
     Coals coals = new Coals();
     String testDocument = "how much wood would a woodchuck chuck , if a woodchuck could chuck wood ? as much wood as a woodchuck would , if a woodchuck could chuck wood .";
@@ -44,11 +59,9 @@ public class CoalsTest {
     props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "");
     props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY, "3");
     coals.processSpace(props);
-    Set<String> wordSet = coals.getWords();
-    assertTrue(wordSet.contains("woodchuck"));
-    double[] woodchuckMeaning = coals.getVectorFor("woodchuck");
-    assertTrue(woodchuckMeaning != null);
-    assertEquals(3, woodchuckMeaning.length);
+    double[] woodchuck = coals.getVectorFor("woodchuck");
+    assertTrue(woodchuck != null);
+    assertEquals(3, woodchuck.length);
   }
 
   @Test public void testCoals() throws IOException {
@@ -72,6 +85,7 @@ public class CoalsTest {
                                  5, 0, 0, 9, 2, 2, 0, 2, 3, 3, 5, 8, 0};
     Matrix resultCorrel =
       coals.compareToMatrix(new ArrayMatrix(13, 13, testCorrelations));
+    assertEquals(13, resultCorrel.rows());
     for (int i = 0; i < resultCorrel.rows(); ++i)
       for (int j = 0; j < resultCorrel.columns(); ++j)
         assertEquals(0, resultCorrel.get(i, j), .0001);
@@ -92,6 +106,7 @@ public class CoalsTest {
                           .291,   0,   0,.310,   0,.220,.221,   0,.291,   0,   0,   0,.221,
                           .246,   0,   0,.262,   0,   0,   0,.263,.076,.136,.034,.221,   0};
     resultCorrel = coals.compareToMatrix(new ArrayMatrix(13, 13, testFinal));
+    assertEquals(13, resultCorrel.rows());
     for (int i = 0; i < resultCorrel.rows(); ++i)
       for (int j = 0; j < resultCorrel.columns(); ++j)
         assertEquals(0, resultCorrel.get(i, j), .001);
