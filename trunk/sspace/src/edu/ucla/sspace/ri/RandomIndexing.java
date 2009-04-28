@@ -28,29 +28,153 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * A co-occurrence based approach to statistical semantics.  This implementation
+ * is based on three papers:
+ * <ul>
  *
+ *   <li style="font-family:Garamond, Georgia, serif">M. Sahlgren, "Vector-based
+ *     semantic analysis: Representing word meanings based on random labels," in
+ *     <i>Proceedings of the ESSLLI 2001 Workshop on Semantic Knowledge
+ *     Acquisition and Categorisation</i>, Helsinki, Finland, 2001.</li>
+ *
+ *   <li style="font-family:Garamond, Georgia, serif">M. Sahlgren, "An
+ *     introduction to random indexing," in <i>Proceedings of the Methods and
+ *     Applicatons of Semantic Indexing Workshop at the 7th International
+ *     Conference on Terminology and Knowledge Engineering</i>, 2005.</li>
+ *
+ *   <li style="font-family:Garamond, Georgia, serif">M. Sahlgren, A. Holst, and
+ *     P. Kanerva, "Permutations as a means to encode order in word space," in
+ *     <i>Proceedings of the 30th Annual Meeting of the Cognitive Science
+ *     Society (CogSci’08)</i>, 2008.</li>
+ *
+ * </ul>
+ *
+ * Random Indexing (RI) is an efficient way of capturing word co-occurence.  In
+ * most co-occurence models, a word-by-word matrix is constructed, where the
+ * values denote how many times the columns's word occurred in the context of
+ * the row's word.  RI instead represents co-occurrence through index vectors.
+ * Each word is assigned a high-dimensional, random vector that is known as its
+ * index vector.  These index vectors are very sparse - typically 7 &plusmn; 2
+ * non zero bits for a vector of length 2048, which ensures that the the chance
+ * of any two arbitrary index vectors having an overlapping meaning (i.e. a
+ * cosine similarity that is non-zero) is very low.  Word semantics are
+ * calculated for each word by keeping a running sum of all of the index vectors
+ * for the words that co-occur.
+ *
+ * <p>
+ *
+ * <span style="font-family:Garamond, Georgia, serif">Sahlgren et
+ * al. (2008)</span> introduced another variation on RI, where the semantics
+ * also capture word order by using a permutation function.  For each occurrence
+ * of a word, rather than summing the index vectors of the co-occurring words,
+ * the permutation function is used to transform the co-occurring words based on
+ * their position.  For example, consider the sentece, "the quick brown fox
+ * jumps over the lazy dog."  With a window-size of 2, the semantic vector for
+ * "fox" is added with the values &Pi;<sup>-2</sup>(quick<sub>index</sub>) +
+ * &Pi;<sup>-1</sup>(brown<sub>index</sub>) +
+ * &Pi;<sup>1</sup>(jumps<sub>index</sub>) +
+ * &Pi;<sup>2</sup>(over<sub>index</sub>), where &Pi;<sup>{@code k}</sup>
+ * denotes the {@code k}<sup>th</sup> permutation of the specified index vector.
+ *
+ * <p>
+ *
+ * This class provides four paramaters
+ *
+ * <dl style="margin-left: 1em">
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #WINDOW_SIZE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code 5}
+ *
+ * <dd style="padding-top: .5em">This variable sets the number of words before
+ *      and after that are counted as co-occurring.  With the default value,
+ *      {@code 5} words are counted before and {@code 5} words are counter
+ *      after.  This class always uses a symmetric window. <p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_VECTOR_LENGTH}
+ *
+ * <dd style="padding-top: .5em">This variable sets the number of dimensions to
+ *      be used for the index and semantic vectors. <p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #USE_PERMUTATIONS_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code false}
+ *
+ * <dd style="padding-top: .5em">This property specifies whether to enable
+ *      permuting the index vectors of co-occurring words.  Enabling this option
+ *      will cause the word semantics to include word-ordering information.
+ *      However this option is best used with a larger corpus.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link DefaultPermutationFunction edu.ucla.sspace.ri.DefaultPermutationFunction} 
+ *
+ * <dd style="padding-top: .5em">This property specifies the fully qualified
+ *      class name of a {@link PermutationFunction} instance that will be used
+ *      to permute index vectors.  If the {@value #USE_PERMUTATIONS_PROPERTY} is
+ *      set to {@code false}, the value of this property has no effect.<p>
+ *
+ * </dl> <p>
+ *
+ * This class is thread-safe for concurrent calls of {@link
+ * #processDocument(BufferedReader) processDocument}.  Once {@link
+ * #processSpace(Properties) processSpace} has been called, no further calls to
+ * {@code processDocument} should be made.
+ * 
+ * @see PermutationFunction
+ * @see IndexVector
+ * 
+ * @author David Jurgens
  */
 public class RandomIndexing {
 
-    //
-    // IMPLEMENTATION NOTES:
-    //
-    // 1. All word strings should be the canonical copy acquired from
-    //    String.intern().  This reduces the memory footprint dramatically by
-    //    eliminate duplicate strings in heap.
-    //
-    // 2. Because we are using the canonical copy of string, we use the
-    //    IndentityHashMap implementation of Map, which gives better performance
-    //    than HashMap.
+    /**
+     * The prefix for naming public properties.
+     */
+    private static final String PROPERTY_PREFIX = 
+	"edu.ucla.sspace.ri.RandomIndexing";
 
-    private static final int WINDOW_SIZE = 10; // +5/-5
+    /**
+     * The property to specify the number of dimensions to be used by the index
+     * and semantic vectors.
+     */
+    public static final String VECTOR_LENGTH_PROPERTY = 
+	PROPERTY_PREFIX + ".vectorLength";
+
+    /**
+     * The property to specify the number of words to view before and after each
+     * word in focus.
+     */
+    public static final String WINDOW_SIZE_PROPERTY = 
+	PROPERTY_PREFIX + ".windowSize";
+
+    /**
+     * The property to specify whether the index vectors for co-occurrent words
+     * should be permuted based on their relative position.
+     */
+    public static final String USE_PERMUTATIONS_PROPERTY = 
+	PROPERTY_PREFIX + ".windowSize";
+
+    /**
+     * The property to specify the fully qualified named of a {@link
+     * PermutationFunction} if using permutations is enabled.
+     */
+    public static final String PERMUTATION_FUNCTION_PROPERTY = 
+	PROPERTY_PREFIX + ".permutationFunction";
+
+
+    private static final int DEFAULT_WINDOW_SIZE = 5; // +5/-5
 
     private static final int DEFAULT_VECTOR_LENGTH = 2048;
 
@@ -59,22 +183,81 @@ public class RandomIndexing {
      */
     // We use our own source rather than Math.random() to ensure reproduceable
     // behavior when a specific seed is set.
-    private static final Random RANDOM = new Random();
+    //
+    // NOTE: intentionally package-private to allow other RI-related classes to
+    // based their randomness on a this class's seed.
+    static final Random RANDOM = new Random();
 
     private final Map<String,IndexVector> wordToIndexVector;
 
     private final Map<String,SemanticVector> wordToMeaning;
 
+    /**
+     * The number of dimensions for the semantic and index vectors.
+     */
     private final int vectorLength;
 
-    public RandomIndexing() {
-	this(DEFAULT_VECTOR_LENGTH);
+    /**
+     * How many words to view before and after each word in focus.
+     */
+    private final int windowSize;
+
+    /**
+     * Whether the index vectors for co-occurrent words should be permuted based
+     * on their relative position.
+     */
+    private final boolean usePermutations;
+
+    /**
+     * If permutations are enabled, what permutation function to use on the
+     * index vectors.
+     */
+    private final PermutationFunction permutationFunc;
+
+    public RandomIndexing(Properties properties) {
+
+	String vectorLengthProp = 
+	    properties.getProperty(VECTOR_LENGTH_PROPERTY);
+	vectorLength = (vectorLengthProp != null)
+	    ? Integer.parseInt(vectorLengthProp)
+	    : DEFAULT_VECTOR_LENGTH;
+
+	String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
+	windowSize = (windowSizeProp != null)
+	    ? Integer.parseInt(windowSizeProp)
+	    : DEFAULT_WINDOW_SIZE;
+
+	String usePermutationsProp = 
+	    properties.getProperty(USE_PERMUTATIONS_PROPERTY);
+	usePermutations = (usePermutationsProp != null)
+	    ? Boolean.parseBoolean(usePermutationsProp)
+	    : false;
+
+	String permutationFuncProp =
+	    properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
+	permutationFunc = (permutationFuncProp != null)
+	    ? loadPermutationFunction(permutationFuncProp)
+	    : null; //new DefaultPermutationFunction;
+
+	wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
+	wordToMeaning = new ConcurrentHashMap<String,SemanticVector>();
     }
 
-    public RandomIndexing(int vectorLength) {
-	this.vectorLength = vectorLength;
-	wordToIndexVector = new IdentityHashMap<String,IndexVector>();
-	wordToMeaning = new IdentityHashMap<String,SemanticVector>();
+    /**
+     * Returns an instance of the the provided class name, that implements
+     * {@code PermutationFunction}.
+     *
+     * @param className the fully qualified name of a class
+     */ 
+    private static PermutationFunction 
+	    loadPermutationFunction(String className) {
+	try {
+	    Class clazz = Class.forName(className);
+	    return (PermutationFunction)(clazz.newInstance());
+	} catch (Exception ex) {
+	    // catch all of the exception and rethrow them as an error
+	    throw new Error(ex);
+	}
     }
 
     public Set<String> getWords() {
@@ -87,8 +270,8 @@ public class RandomIndexing {
 	StringTokenizer st = new StringTokenizer(document);
 	String focusWord = null;
 
-	// prefetch the first (window_size / 2) words 
-	for (int i = 0; i < WINDOW_SIZE / 2 && st.hasMoreTokens(); ++i)
+	// prefetch the first windowSize words 
+	for (int i = 0; i < windowSize && st.hasMoreTokens(); ++i)
 	    nextWords.offer(st.nextToken().intern());
 	
 	while (!nextWords.isEmpty()) {
@@ -114,7 +297,7 @@ public class RandomIndexing {
 	    // last put, this focus word in the prev words and shift off the
 	    // front if it is larger than the window
 	    prevWords.offer(focusWord);
-	    if (prevWords.size() > WINDOW_SIZE / 2)
+	    if (prevWords.size() > windowSize)
 		prevWords.remove();
 	}	
     }
@@ -195,78 +378,5 @@ public class RandomIndexing {
 	public int[] getVector() {
 	    return vector;
 	}
-    }
-
-    
-    private class IndexVector {
-
-	private static final int BITS_TO_SET = 9; // +/- 3
-	private static final int BIT_VARIANCE = 3;
-
-	int[] positive;
-	int[] negative;
-
-	private final int length;
-
-	public IndexVector(int length) {
-	    HashSet<Integer> pos = new HashSet<Integer>();
-	    HashSet<Integer> neg = new HashSet<Integer>();
-	    this.length = length;
-
-	    // randomly set bits in the index vector
-	    int bitsToSet = BITS_TO_SET +
-		(int)(RANDOM.nextDouble() * BIT_VARIANCE *
-		      ((RANDOM.nextDouble() > .5) ? 1 : -1));
-	    for (int i = 0; i < bitsToSet; ++i) {
-
-		boolean picked = false;
-		// loop to ensure we actually pick the full number of bits
-		while (!picked) {
-		    // pick some random index
-		    int index = (int)(RANDOM.nextDouble() * length);
-		    
-		    // check that we haven't already added this index
-		    if (pos.contains(index) || neg.contains(index))
-			continue;
-		    
-		    // decide positive or negative
-		    ((RANDOM.nextDouble() > .5) ? pos : neg).add(index);
-		    picked = true;
-		}
-	    }
-	    
-	    positive = new int[pos.size()];
-	    negative = new int[neg.size()];
-
-	    Iterator<Integer> it = pos.iterator();
-	    for (int i = 0; i < positive.length; ++i) 
-		positive[i] = it.next();
-
-	    it = neg.iterator();
-	    for (int i = 0; i < negative.length; ++i) 
-		negative[i] = it.next();		
-
-	    // sort so we can use a binary search in getValue()
-	    Arrays.sort(positive);
-	    Arrays.sort(negative);
-	}
-
-	public int getValue(int index) {
-	    if (Arrays.binarySearch(positive,index) >= 0)
-		return 1;
-	    else return (Arrays.binarySearch(negative,index) >= 0) ? -1 : 0;
-	}
-	
-	public int length() {
-	    return length;
-	}
-
-	public int[] negativeDimensions() {
-	    return negative;
-	}
-
-	public int[] positiveDimensions() {
-	    return positive;
-	}
-    }
+    }    
 }
