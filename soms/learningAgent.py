@@ -47,7 +47,7 @@ class learningAgent():
 
     suc, m_data, best_word = self.produceWord(context)
     if not suc:# or m_data[1] > 1.5:
-      best_word = self.pickNewWord()
+      best_word = self.game.pickNewWord()
       m_data[0].value = best_word[0]
 
     self.learnPatterns(context, best_word[0])
@@ -65,12 +65,8 @@ class learningAgent():
     m_data = self.getBestNode(self.m_som, object_rep)
     m_som_best, m_min_dist, m_max_dist, m_near, m_rest = m_data
 
-    #print object_rep
-    #print "found node with phoneme_rep", m_data[0].loc, m_min_dist, m_data[0].value
     if m_som_best.value != None and m_min_dist < 1.5:
       return True, m_data, (m_som_best.value, None)
-    if m_som_best.value == None:
-      print "empty best value"
     return False, m_data, None
 
     if learning:
