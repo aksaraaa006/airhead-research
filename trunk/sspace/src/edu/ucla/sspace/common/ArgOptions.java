@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A utility class for parsing command line arguments.
@@ -183,7 +184,7 @@ public class ArgOptions {
 	    }
 	    Set<Option> groupMembers = groupToOptions.get(optionGroupName);
 	    if (groupMembers == null) {
-		groupMembers = new HashSet<Option>();
+		groupMembers = new TreeSet<Option>();
 		groupToOptions.put(optionGroupName, groupMembers);
 	    }
 	    groupMembers.add(o);
@@ -403,7 +404,7 @@ public class ArgOptions {
 	    
 	    int spacesToAppend = -1;
 	    if (o.longName != null) {
-		sb.append(", ").append(o.longName);
+		sb.append(", --").append(o.longName);
 		spacesToAppend = (maxNameLength - o.longName.length()) + 4;
 	    }
 	    else {
@@ -462,7 +463,7 @@ public class ArgOptions {
     /**
      * A helper class for containing all the information on an option.
      */
-    private static class Option {
+    private static class Option implements Comparable<Option> {
 
 	final char shortName;
 	
@@ -478,6 +479,10 @@ public class ArgOptions {
 	    this.longName = longName;
 	    this.description = description;
 	    this.valueName = valueName;
+	}
+
+	public int compareTo(Option o) {
+	    return shortName - o.shortName;
 	}
 	
 	public boolean equals(Object o) {

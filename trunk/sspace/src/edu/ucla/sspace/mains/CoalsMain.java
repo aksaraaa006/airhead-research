@@ -72,16 +72,6 @@ import edu.ucla.sspace.coals.Coals;
  * <p>
  *
  * An invocation will produce one file as output
- *
- * <ol>
- *
- *   <li> {@code 
- *
- * <p>
- *
- * This class is desgined to run multi-threaded and performs well with one
- * thread per core.
- *
  */
 public class CoalsMain {
 
@@ -105,8 +95,6 @@ public class CoalsMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     private void addOptions() {
-	argOptions.addOption('l', "fileList", "a list of document files", 
-			     true, "file name", "Required (at least one of)");
 	argOptions.addOption('d', "docFile", 
 			     "a file where each line is a document", true,
 			     "file name", "Required (at least one of)");
