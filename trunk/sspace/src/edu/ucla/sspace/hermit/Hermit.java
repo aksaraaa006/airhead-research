@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.hermit;
 
+import edu.ucla.sspace.common.Cluster;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
@@ -88,12 +89,7 @@ public class Hermit implements SemanticSpace {
    * holoraphs for each term.
    */
   private final ConcurrentMap<String, BufferedWriter> termFileWriters;
-  /**
-   * A mapping from term to the document id's which this word appears in.  Used
-   * primarily so that the term's lsa vector can easily be split up into more
-   * senses.
-   */
-  private final ConcurrentMap<String, Set<Integer>> termToDocs;
+
   /**
    * A mapping from a word to the row index in the that word-document matrix
    * that contains occurrence counts for that word.
@@ -138,7 +134,6 @@ public class Hermit implements SemanticSpace {
 	termDocCount = new ConcurrentHashMap<Index,Integer>();
     termFileWriters = new ConcurrentHashMap<String, BufferedWriter>();
 	termToIndex = new ConcurrentHashMap<String,Integer>();
-	termToDocs = new ConcurrentHashMap<String, Set<Integer>>();
     indexVectorSize = 2048;
   }
 
@@ -204,13 +199,6 @@ public class Hermit implements SemanticSpace {
         BufferedWriter writer = termFileWriters.get(key);
         if (writer == null)
           termFileWriters.put(key, getNewWriter(key));
-
-        Set<Integer> docSet = termToDocs.get(key);
-        if (docSet == null) {
-          docSet = new HashSet<Integer>();
-          termToDocs.put(key, docSet);
-        }
-        docSet.add(documentIndex);
       }
     }
 
@@ -285,10 +273,12 @@ public class Hermit implements SemanticSpace {
     try {
       for (Map.Entry<String, double[]> entry : termDocHolographs.entrySet()) {
         BufferedWriter writer = termFileWriters.get(entry.getKey());
-        writer.write(document + " ");
+        StringBuffer sb = new StringBuffer();
+        sb.append(document).append(" ");
         double[] value = entry.getValue();
         for (int i = 0; i < indexVectorSize; ++i)
-          writer.write(value[i] + " ");
+          sb.append(value[i]).append(" ");
+        writer.write(sb.toString());
         writer.newLine();
       }
     } catch (IOException e) {
@@ -313,9 +303,10 @@ public class Hermit implements SemanticSpace {
         if (splitLine.length != (indexVectorSize + 1))
           continue;
         double[] holograph = new double[indexVectorSize];
+        int docId = Integer.valueOf(splitLine[0]);
         for (int i = 1; i < splitLine.length; ++i)
           holograph[i-1] = Double.valueOf(splitLine[i]);
-        termVectors.add(new DocHolographPair(splitLine[0], holograph));
+        termVectors.add(new DocHolographPair(docId, holograph));
       }
       return termVectors;
     } catch (IOException ioe) {
@@ -336,9 +327,38 @@ public class Hermit implements SemanticSpace {
   public void processSpace(Properties properties) {
     for (String key : termFileWriters.keySet()) {
       ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
-      // Cluster the vectors, how? fuck if i know.
-      // Then splitup the lsa lines for this vector into however many senses we
-      // find.
+      ArrayList<double[]> termMeanings =
+        new ArrayList<double[]>(termVectors.size());
+      for (DocHolographPair docPair : termVectors)
+        termMeanings.add(docPair.holograph);
+      double oldPotential = 0;
+      double potential = 0;
+      int[] bestAssignments = null;
+      int[] assignments = null;
+      int k = 1;
+      do {
+        double[][] kClusters =
+          Cluster.kMeansCluster(termMeanings, k, indexVectorSize);
+        oldPotential = potential;
+        bestAssignments = assignments;
+        potential = Cluster.kMeansPotential(termMeanings, kClusters);
+        assignments = Cluster.kMeansClusterAssignments(termMeanings, kClusters);
+        k++;
+      } while (potential > oldPotential);
+      if (k == 1)
+        continue;
+      for (int i = 1; i < k; ++i)
+        addTerm(key+ "|" + k);
+      for (int i = 0; i < termVectors.size(); ++i) {
+        if (assignments[i] == 0)
+          continue;
+        Index oldIndex =
+          new Index(termToIndex.get(key), termVectors.get(i).docId);
+        Index newIndex = new Index(termToIndex.get(key + "|" + assignments[i]),
+                                   termVectors.get(i).docId);
+        termDocCount.put(newIndex, termDocCount.get(oldIndex));
+        termDocCount.remove(oldIndex);
+      }
     }
     try {
       File rawTermDocMatrix = dumpLSAMatrix();
@@ -435,11 +455,11 @@ public class Hermit implements SemanticSpace {
    * to some particular word.
    */
   private class DocHolographPair {
-    String documentName;
+    int docId;
     double[] holograph;
 
-    public DocHolographPair(String docName, double[] h) {
-      documentName = docName;
+    public DocHolographPair(int d, double[] h) {
+      docId = d;
       holograph = h;
     }
   }
