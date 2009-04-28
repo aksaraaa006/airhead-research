@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.lsa;
+package edu.ucla.sspace.tools;
 
 import java.io.*;
 import java.util.*;
