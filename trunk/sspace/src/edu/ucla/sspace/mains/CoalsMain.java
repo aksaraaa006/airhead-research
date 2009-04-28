@@ -95,8 +95,6 @@ public class CoalsMain {
 			     true, "int"); 
 	argOptions.addOption('t', "threads", "the number of threads to use",
 			     true, "int");
-	argOptions.addOption('p', "preprocess", "a MatrixTransform class to "
-			     + "use for preprocessing", true, "class name");
 	argOptions.addOption('w', "overwrite", "specifies whether to " +
 			     "overwrite the existing output", true, "boolean");
 
@@ -121,6 +119,7 @@ public class CoalsMain {
     }
     
     private void run(String[] args) throws Exception {
+    argOptions.parseOptions(args);
 	
 	if (argOptions.numPositionalArgs() == 0) {
 	    throw new IllegalArgumentException("must specify output directory");
@@ -233,26 +232,6 @@ public class CoalsMain {
 	verbose("parsed %d document in %.3f total seconds)%n",
 		count.get(),
 		((System.currentTimeMillis() - threadStart) / 1000d));
-    }
-
-    /**
-     * Returns a set of terms based on the contents of the provided file.  Each
-     * word is expected to be on its own line.
-     */
-    private static Set<String> loadValidTermSet(String validTermsFileName) {
-	Set<String> validTerms = new HashSet<String>();
-	try {
-	    BufferedReader br = new BufferedReader(
-		new FileReader(validTermsFileName));
-	    String line = null;
-	    while ((line = br.readLine()) != null) {
-		validTerms.add(line);
-	    }
-	    br.close();
-	} catch (Throwable t) {
-	    t.printStackTrace();
-	}
-	return validTerms;
     }
 
     private void verbose(String msg) {

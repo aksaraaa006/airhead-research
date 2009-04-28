@@ -211,6 +211,7 @@ public class Coals implements SemanticSpace {
       }
     }
     String reduceMatrix = properties.getProperty(REDUCE_MATRIX_PROPERTY);
+    System.out.println(wordCount);
     if (reduceMatrix != null) {
       try {
         File coalsMatrixFile =
