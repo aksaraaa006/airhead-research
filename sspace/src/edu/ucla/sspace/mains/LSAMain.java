@@ -69,7 +69,7 @@ import edu.ucla.sspace.lsa.MatrixTransformer;
  *      documents.  The default is one per core.
  * 
  * <li> {@code --preprocess=<class name>} specifies an instance of {@link
- *      MatrixTransform} to use in preprocessing the word-document matrix
+ *      MatrixTransformer} to use in preprocessing the word-document matrix
  *      compiled by LSA prior to computing the SVD.  See {@link
  *      LatentSemanticAnalysis} for default value
  *
