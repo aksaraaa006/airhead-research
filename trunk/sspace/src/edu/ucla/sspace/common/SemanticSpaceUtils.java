@@ -32,7 +32,7 @@ public class SemanticSpaceUtils {
 	pw.println(words.size() + " " + dimensions);
 
 	for (String word : words) {
-	    pw.println(word + " " + 
+	    pw.println(word + "|" + 
 		       VectorIO.toString(sspace.getVectorFor(word)));
 	}
 	pw.close();

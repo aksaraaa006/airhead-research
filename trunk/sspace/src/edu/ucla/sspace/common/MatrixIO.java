@@ -1,3 +1,24 @@
+/*
+ * Copyright 2009 David Jurgens
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package edu.ucla.sspace.common;
 
 import java.io.BufferedReader;
@@ -29,6 +50,8 @@ import edu.ucla.sspace.common.matrix.SparseMatrix;
  * @see MatrixIO.Format
  * @see Matrix
  * @see Matrix.Type
+ *
+ * @author David Jurgens
  */
 public class MatrixIO {
 
@@ -203,6 +226,10 @@ public class MatrixIO {
 	    " is not currently supported");
     }       
 
+    /**
+     * Reads in a matrix in the {@link Format#MATLAB_SPARSE} format and writes
+     * it to the output file in {@link Format#SVDLIBC_SPARSE_TEXT} format.
+     */
     private static void matlabToSVDLIBCsparse(File input, File output) 
 	    throws IOException {
 
@@ -225,11 +252,6 @@ public class MatrixIO {
 		colToNonZero.put(col, (colCount == null) ? 1 : colCount + 1);
 	}
 	br.close();
-
-	// Matlab indices are indexed starting at 1, while SVDLIBC start at 0,
-	// so decrement the total number of rows and columns
-	--rows;
-	--cols;
 	
 	br = new BufferedReader(new FileReader(input));
 	PrintWriter pw = new PrintWriter(output);
@@ -459,12 +481,18 @@ public class MatrixIO {
 		    // once both rows and cols have been assigned, create the
 		    // matrix
 		    m = createMatrix(matrixType, rows, cols);
+		    MATRIX_IO_LOGGER.log(Level.FINE, 
+			"created matrix of size {0} x {1}", 
+			new Object[] {Integer.valueOf(rows), 
+				      Integer.valueOf(cols)});
 		}
 		else {
 		    int row = valuesSeen / cols;
 		    int col = valuesSeen % cols;
-		
+
 		    double val = Double.parseDouble(vals[i]);
+
+		    //System.out.printf("setting %d, %d -> %f%n", row, col, val);
 		    m.set(row, col, val);
 		
 		    // increment the number of values seen to properly set the
@@ -499,8 +527,6 @@ public class MatrixIO {
 	else {
 	    transpose = new OnDiskMatrix(cols, rows);
 	}
-
-	
 
 	for (int row = 0; row < rows; ++row) {
 	    for (int col = 0; col < cols; ++col) {

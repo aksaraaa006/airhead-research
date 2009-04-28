@@ -48,8 +48,11 @@ public class ArrayMatrix implements Matrix {
     }
     
     private void checkIndices(int row, int col) {
-	if (row < 0 || col < 0 || row >= rows || col >= cols) {
-	    throw new ArrayIndexOutOfBoundsException();
+	if (row < 0 || row >= rows) {
+	    throw new ArrayIndexOutOfBoundsException("row: " + row);
+	}
+	else if (col < 0 || col >= cols) {
+	    throw new ArrayIndexOutOfBoundsException("column: " + col);
 	}
     }
 
@@ -62,6 +65,9 @@ public class ArrayMatrix implements Matrix {
      * Returns a copy of the specified row.
      */
     public double[] getRow(int row) {
+	if (row >= rows) {
+	    throw new ArrayIndexOutOfBoundsException("row: " + rows);
+	}
 	double[] rowArr = new double[cols];
 	int index = getIndex(row, 0);
 	for (int i = 0; i < cols; ++i) {
@@ -71,12 +77,15 @@ public class ArrayMatrix implements Matrix {
     }
 
     /**
-     *
+     * Returns the number of columns in the matrix.
      */
     public int columns() {
 	return cols;
     }
-
+ 
+    /**
+     * Returns the one-dimension index in the matrix for the row and column.
+     */
     private int getIndex(int row, int col) {
 	return (row * cols) + col;
     }
