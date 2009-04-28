@@ -191,7 +191,7 @@ public class SVD {
 	    case SVDLIBC:
 		File converted = MatrixIO.convertFormat(
 		    matrix, format, Format.SVDLIBC_SPARSE_TEXT);
-		return svdlibc(converted, dimensions);		
+		return svdlibc(converted, dimensions, Format.SVDLIBC_SPARSE_TEXT);		
 	    case JAMA:
 		return jamaSVD(matrix, dimensions);
 	    case MATLAB:
@@ -203,9 +203,19 @@ public class SVD {
 		// order of speed.  If any algorithm causes an error, go on to
 		// the next until all are exhausted.
 		try {
-		    converted = MatrixIO.convertFormat(
-			matrix, format, Format.SVDLIBC_SPARSE_TEXT);		
-		    return svdlibc(converted, dimensions);		
+            switch (format) {
+              case SVDLIBC_DENSE_BINARY:
+              case SVDLIBC_DENSE_TEXT:
+              case SVDLIBC_SPARSE_TEXT:
+              case SVDLIBC_SPARSE_BINARY:
+                converted = matrix;
+                break;
+              default:
+                converted = MatrixIO.convertFormat(
+                matrix, format, Format.SVDLIBC_SPARSE_TEXT);		
+                break;
+            }
+		    return svdlibc(converted, dimensions, format);		
 		} catch (UnsupportedOperationException uoe) { }
 		try {
 		    converted = MatrixIO.convertFormat(
@@ -326,14 +336,29 @@ public class SVD {
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
-    static Matrix[] svdlibc(File matrix, int dimensions) {
+    static Matrix[] svdlibc(File matrix, int dimensions, Format format) {
 	try {
+        String formatString = "";
+        switch (format) {
+            case SVDLIBC_DENSE_BINARY:
+              formatString = " -r db ";
+              break;
+            case SVDLIBC_DENSE_TEXT:
+              formatString = " -r dt ";
+              break;
+            case SVDLIBC_SPARSE_TEXT:
+              // Do nothing since it's the default format.
+              break;
+            default:
+              throw new UnsupportedOperationException(
+                  "Format type is not accepted");
+        }
 	    String outputMatrixPrefix = 
 		File.createTempFile("svdlibc", "dat").getAbsolutePath();
 	    SVD_LOGGER.severe("creating SVDLIBC factor matrices at: " + 
 			      outputMatrixPrefix);
-	    String commandLine = "svd -o " + outputMatrixPrefix + " -d " + 
-		dimensions + " " + matrix.getAbsolutePath();
+	    String commandLine = "svd -o " + outputMatrixPrefix + formatString +
+          " -d " + dimensions + " " + matrix.getAbsolutePath();
 	    SVD_LOGGER.severe(commandLine);
 	    Process svdlibc = Runtime.getRuntime().exec(commandLine);
 

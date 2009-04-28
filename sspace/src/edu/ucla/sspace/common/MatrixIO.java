@@ -22,7 +22,9 @@
 package edu.ucla.sspace.common;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
@@ -541,20 +543,55 @@ public class MatrixIO {
      * A rudimentary writer for a generic Matrix in the file type accepted by
      * matlab.
      */
-    public static void writeMatrix(Matrix matrix, File output)
+    public static void writeMatrix(Matrix matrix, File output, Format format)
         throws IOException {
       if (matrix.rows() == 0 || matrix.columns() == 0)
 	    throw new IllegalArgumentException("invalid matrix dimensions");
-      PrintWriter pw = new PrintWriter(output);
-      for (int i = 0; i < matrix.rows(); ++i) {
-        for (int j = 0; j < matrix.columns(); ++j) {
-          StringBuffer sb = new StringBuffer(32);
-          sb.append(i).append("\t").append(j)
-            .append("\t").append(matrix.get(i,j));
-          pw.println(sb.toString());
+      switch (format) {
+        case SVDLIBC_DENSE_TEXT: {
+          PrintWriter pw = new PrintWriter(output);
+          pw.println(matrix.rows() + " " + matrix.columns());
+          for (int i = 0; i < matrix.rows(); ++i) {
+            StringBuffer sb = new StringBuffer(32);
+            for (int j = 0; j < matrix.columns(); ++j) {
+              sb.append(matrix.get(i,j)).append(" ");
+            }
+            pw.println(sb.toString());
+          }
+          pw.close();
+          break;
         }
+        case SVDLIBC_DENSE_BINARY: {
+          DataOutputStream outStream =
+            new DataOutputStream(new FileOutputStream(output));
+          outStream.writeInt(matrix.rows());
+          outStream.writeInt(matrix.columns());
+          for (int i = 0; i < matrix.rows(); ++i) {
+            for (int j = 0; j < matrix.columns(); ++j) {
+              outStream.writeFloat(new Double(matrix.get(i,j)).floatValue());
+            }
+          }
+          outStream.close();
+          break;
+        }
+        case MATLAB_SPARSE: {
+          PrintWriter pw = new PrintWriter(output);
+          for (int j = 0; j < matrix.columns(); ++j) {
+            for (int i = 0; i < matrix.rows(); ++i) {
+              if (matrix.get(i,j) == 0)
+                continue;
+              StringBuffer sb = new StringBuffer(32);
+              sb.append(i).append(" ").append(j)
+                .append(" ").append(matrix.get(i,j));
+              System.out.println(sb.toString());
+              pw.println(sb.toString());
+            }
+          }
+          pw.close();
+          break;
+        }
+        default:
       }
-      pw.close();
     }
 
     public static void writeMatrixArray(double[][] matrix, File output) 
