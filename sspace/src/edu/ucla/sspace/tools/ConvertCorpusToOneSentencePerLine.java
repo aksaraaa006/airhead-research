@@ -21,26 +21,43 @@
 
 package edu.ucla.sspace.tools;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
+/**
+ * A utility tool for converting a corpus into a one-sentence-per-line format.
+ * This tool is not guaranteed to be accurate, but empirically performs quite
+ * well.  This tool prints the converted corpus directly to {@code stdout}.
+ */ 
 public class ConvertCorpusToOneSentencePerLine {
     
     public static void main(String[] args) {
 	if (args.length == 0) { 
-	    System.out.println("must provide input file name");
+	    System.out.println("usage: java <class name> <input file>");
 	    return;
 	}
 
 	try {
 	    BufferedReader br = new BufferedReader(new FileReader(args[0]));
 	    StringBuilder sb = new StringBuilder();
+	    boolean inQuotation = false;
 	    for (String line = null; (line = br.readLine()) != null; ) {
 		String[] tokens = line.split("\\s+");
 		for (String token : tokens) {
+
+		    if (token.startsWith("\"")) {
+			inQuotation = true;
+		    }
+
+		    if (token.endsWith(".\"")) {
+			inQuotation = false;
+		    }
+		    
 		    // look for end of setnences
-		    if (token.endsWith("!") || 
+		    if (!inQuotation && 
+			token.endsWith("!") || 
 			token.endsWith("?") || 
-			token.endsWith(".\"") || 			
+			token.endsWith(".\"") ||
 			(token.endsWith(".") 
 			 && !isInitial(token) 
 			 && !isAbbreviation(token))) {
@@ -77,6 +94,10 @@ public class ConvertCorpusToOneSentencePerLine {
 	    s.equals("dr.") ||
 	    s.equals("drs.") ||
 	    s.equals("fr.") ||
+
+	    // surnames
+	    s.equals("jr.") ||
+	    s.equals("sr.") ||
 
 	    // streets
 	    s.equals("st.") ||

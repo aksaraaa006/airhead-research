@@ -21,10 +21,11 @@
 
 package edu.ucla.sspace.ri;
 
-import java.util.Arrays;
+import java.io.BufferedReader;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -32,9 +33,10 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import java.util.concurrent.ConcurrentHashMap;
+
+import edu.ucla.sspace.common.WordIterator;
 
 /**
  * A co-occurrence based approach to statistical semantics.  This implementation
@@ -93,7 +95,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <dt> <i>Property:</i> <code><b>{@value #WINDOW_SIZE_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@code 5}
+ *      <i>Default:</i> {@value #DEFAULT_WINDOW_SIZE}
  *
  * <dd style="padding-top: .5em">This variable sets the number of words before
  *      and after that are counted as co-occurring.  With the default value,
@@ -132,12 +134,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * #processSpace(Properties) processSpace} has been called, no further calls to
  * {@code processDocument} should be made.
  * 
+ * This class <i>does</i> allow calls to {@link #getSemanticVector
+ *
  * @see PermutationFunction
  * @see IndexVector
  * 
  * @author David Jurgens
  */
-public class RandomIndexing {
+public class RandomIndexing { //implements SemanticSpace {
 
     /**
      * The prefix for naming public properties.
@@ -173,11 +177,17 @@ public class RandomIndexing {
     public static final String PERMUTATION_FUNCTION_PROPERTY = 
 	PROPERTY_PREFIX + ".permutationFunction";
 
+    /**
+     * The default number of words to view before and after each word in focus.
+     */
+    public static final int DEFAULT_WINDOW_SIZE = 5; // +5/-5
 
-    private static final int DEFAULT_WINDOW_SIZE = 5; // +5/-5
-
-    private static final int DEFAULT_VECTOR_LENGTH = 2048;
-
+    /**
+     * The default number of dimensions to be used by the index and semantic
+     * vectors.
+     */
+    public static final int DEFAULT_VECTOR_LENGTH = 2048;
+    
     /**
      * A private source of randomization used for creating the index vectors.
      */
@@ -260,51 +270,30 @@ public class RandomIndexing {
 	}
     }
 
-    public Set<String> getWords() {
-	return wordToMeaning.keySet();
-    }
+    /**
+     * Returns the index vector for the provided word.
+     */
+    private IndexVector getIndexVector(String word) {
 
-    public void processText(String document) {
-	Queue<String> prevWords = new LinkedList<String>();
-	Queue<String> nextWords = new LinkedList<String>();
-	StringTokenizer st = new StringTokenizer(document);
-	String focusWord = null;
-
-	// prefetch the first windowSize words 
-	for (int i = 0; i < windowSize && st.hasMoreTokens(); ++i)
-	    nextWords.offer(st.nextToken().intern());
-	
-	while (!nextWords.isEmpty()) {
-	    
-	    focusWord = nextWords.remove();
-	    SemanticVector focusMeaning = getSemanticVector(focusWord);
-
-	    // shift over the window to the next word
-	    if (st.hasMoreTokens()) {
-		String windowEdge = st.nextToken().intern();
-		nextWords.offer(windowEdge);
-	    }    
-
-	    // Sum up the index vector for all the surrounding words.  Note that
-	    // these strings are necessarily interned when they are added to the
-	    // nextWords Queue.
-	    for (String word : prevWords) 
-		focusMeaning.add(getIndexVector(word));
-
-	    for (String word : nextWords) 
-		focusMeaning.add(getIndexVector(word));
-
-	    // last put, this focus word in the prev words and shift off the
-	    // front if it is larger than the window
-	    prevWords.offer(focusWord);
-	    if (prevWords.size() > windowSize)
-		prevWords.remove();
-	}	
-    }
-    
+	IndexVector v = wordToIndexVector.get(word);
+	if (v == null) {
+	    // lock on th word in case multiple threads attempt to add it at
+	    // once
+	    synchronized(word) {
+		// recheck in case another thread added it while we were waiting
+		// for the lock
+		v = wordToIndexVector.get(word);
+		if (v == null) {
+		    v = new IndexVector(vectorLength);
+		    wordToIndexVector.put(word, v);
+		}
+	    }
+	}
+	return v;
+    }  
 
     /**
-     *
+     * {@inheritDoc}
      */
     public SemanticVector getSemanticVector(String word) {
 	// ensure we are using the canonical copy of the word by interning it
@@ -329,32 +318,84 @@ public class RandomIndexing {
 	    }
 	}
 	return v;
-
     }
 
-    private IndexVector getIndexVector(String word) {
-	// ensure we are using the canonical copy of the word by interning it
-	// 
-	// NOTE: currently disabled.  We have to ensure that only interned
-	// strings make it to this point.
-	// 
-	// word = word.intern();
-
-	IndexVector v = wordToIndexVector.get(word);
+    /**
+     * {@inheritDoc}
+     */ 
+    public double[] getVectorFor(String word) {
+	SemanticVector v = wordToMeaning.get(word);
 	if (v == null) {
-	    // lock on th word in case multiple threads attempt to add it at
-	    // once
-	    synchronized(word) {
-		// recheck in case another thread added it while we were waiting
-		// for the lock
-		v = wordToIndexVector.get(word);
-		if (v == null) {
-		    v = new IndexVector(vectorLength);
-		    wordToIndexVector.put(word, v);
-		}
-	    }
+	    return null;
 	}
-	return v;
+	int[] vec = v.getVector();
+	double[] dVec = new double[vec.length];
+	for (int i = 0; i < vec.length; ++i) {
+	    dVec[i] = vec[i];
+	}
+	return dVec;
+    }
+
+    /**
+     * {@inheritDoc}
+     */ 
+    public Set<String> getWords() {
+	return Collections.unmodifiableSet(wordToIndexVector.keySet());
+    }
+
+    /**
+     * Updates the semantic vectors based on the words in the document.
+     *
+     * @param document {@inheritDoc}
+     */
+    public void processDocument(BufferedReader document) {
+
+	Queue<String> prevWords = new LinkedList<String>();
+	Queue<String> nextWords = new LinkedList<String>();
+
+	WordIterator it = new WordIterator(document);
+
+	String focusWord = null;
+
+	// prefetch the first windowSize words 
+	for (int i = 0; i < windowSize && it.hasNext(); ++i)
+	    nextWords.offer(it.next());
+	
+	while (!nextWords.isEmpty()) {
+	    
+	    focusWord = nextWords.remove();
+	    SemanticVector focusMeaning = getSemanticVector(focusWord);
+
+	    // shift over the window to the next word
+	    if (it.hasNext()) {
+		String windowEdge = it.next();
+		nextWords.offer(windowEdge);
+	    }    
+
+	    // Sum up the index vector for all the surrounding words.  Note that
+	    // these strings are necessarily interned when they are added to the
+	    // nextWords Queue.
+	    for (String word : prevWords) 
+		focusMeaning.add(getIndexVector(word));
+
+	    for (String word : nextWords) 
+		focusMeaning.add(getIndexVector(word));
+
+	    // last put, this focus word in the prev words and shift off the
+	    // front if it is larger than the window
+	    prevWords.offer(focusWord);
+	    if (prevWords.size() > windowSize)
+		prevWords.remove();
+	}	
+    }
+    
+    /**
+     * Does nothing.
+     *
+     * @param properties {@inheritDoc}
+     */
+    public void processSpace(Properties properties) {
+	
     }
 
     public class SemanticVector {

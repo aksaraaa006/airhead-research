@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /** A new Semantic Space model which tries to combine the techniques of LSA
- * {@link edu.ucla.space.lsa.LatentSemanticAnalysis} and Beagle {@link
+ * {@link edu.ucla.sspace.lsa.LatentSemanticAnalysis} and Beagle {@link
  * edu.ucla.sspace.holograph.Holograph}.  The central goal of this algorithm is
  * to be capable of expanding the results of LSA to take into account multiple
  * senses of a word.  This will be accomplished mainly by building Holograph
