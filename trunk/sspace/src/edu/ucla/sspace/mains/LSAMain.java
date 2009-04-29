@@ -96,7 +96,7 @@ import edu.ucla.sspace.lsa.MatrixTransformer;
  * thread per core.
  *
  * @see LatentSemanticAnalysis
- * @see MatrixTransform
+ * @see MatrixTransformer
  */
 public class LSAMain {
 
