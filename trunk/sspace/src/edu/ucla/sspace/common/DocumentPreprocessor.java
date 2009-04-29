@@ -45,13 +45,21 @@ public class DocumentPreprocessor {
 
     private final Set<String> validWords;
 
+    /**
+     * Constructs a {@code DocumentPreprocessor} where the provided file 
+     * contains the list all valid words for the output documents.
+     *
+     * @param wordList a file containing a list of all valid words for
+     *        outputting
+     */
     public DocumentPreprocessor(File wordList) throws IOException {
+
 	processedDocs = new HashSet<DocHash>();
 	validWords = new HashSet<String>();
-	BufferedReader br = new BufferedReader(new FileReader(wordList));
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    for (String s : line.split("\\W"))
-		validWords.add(s);
+	WordIterator it = new WordIterator(
+	    new BufferedReader(new FileReader(wordList)));
+	while (it.hasNext()) {
+	    validWords.add(it.next());
 	}
     }
 
@@ -63,10 +71,19 @@ public class DocumentPreprocessor {
     public DocumentPreprocessor(String[] wordList) {
 	processedDocs = new HashSet<DocHash>();
 	validWords = new HashSet<String>();
-    for (int i = 0; i < wordList.length; ++i)
-      validWords.add(wordList[i]);
+	for (String word : wordList) {
+	    validWords.add(word);
+	}
     }
-  
+
+    /**
+     * Processes the provided document and returns the cleaned version of the
+     * document.
+     *
+     * @param document a document to process
+     *
+     * @return a cleaned version of the document
+     */
     public String process(String document) {
 	
 	// Step 1: Removing images, non-ascii codes, and HTML tags.
@@ -85,13 +102,13 @@ public class DocumentPreprocessor {
 		    // protect against malformed tags or other wierdness
 		    if (start < pos) {
 			String text = tok.substring(start+1, pos);
-            htmlFree.append(text).append(" ");
+			htmlFree.append(text).append(" ");
 		    }		
 		}
 	    } else {
-	    // if it wasn't a tag, just append it
-	    htmlFree.append(tok).append(" ");
-        }
+		// if it wasn't a tag, just append it
+		htmlFree.append(tok).append(" ");
+	    }
 	}
 	document = htmlFree.toString();
 	
@@ -149,15 +166,32 @@ public class DocumentPreprocessor {
 
 	//document = document.replaceAll("[^\\w$<>]","");
 
-
+	// Separate all punctionation from words that it might touch.  This
+	// effectively turns the punction into a separate token for 
+	// co-occurrence counting purposes.
+	document.replaceAll("'", " ' ");
+	document.replaceAll("!", " ! ");
+	document.replaceAll(".", " . ");
+	document.replaceAll("?", " ? ");
+	document.replaceAll(";", " ; ");
+	document.replaceAll(",", " , ");
+	document.replaceAll("(", " ( ");
+	document.replaceAll(")", " ) ");
+	document.replaceAll("[", " [ ");
+	document.replaceAll("]", " ] ");
+	document.replaceAll("/", " / ");
+	document.replaceAll(":", " : ");
+	document.replaceAll("\"", " \" ");
+	
 
 	// Step 3: Removing words over 20 characters in length.
 	st = new StringTokenizer(document);
 	StringBuilder shortWords = new StringBuilder(document.length());
 	while (st.hasMoreTokens()) {
 	    String tok = st.nextToken();
-	    if (tok.length() <= 20)
+	    if (tok.length() <= 20) {
 		shortWords.append(tok).append(" ");
+	    }
 	}
 	document = shortWords.toString().trim();
 	       
