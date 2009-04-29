@@ -212,6 +212,7 @@ public class CoalsMain {
 			    Document doc = docIter.next();
 			    int docNumber = count.incrementAndGet();
 			    int terms = 0;
+			    verbose("starting document #%d%n", docNumber);
 			    try {
 				lsa.processDocument(doc.reader());
 			    } catch (Throwable t) {

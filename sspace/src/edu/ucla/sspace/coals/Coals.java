@@ -48,6 +48,8 @@ import java.util.Properties;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * An implementation of the COALS Semantic Space model.  This implementation is
  * based on:
@@ -74,9 +76,9 @@ public class Coals implements SemanticSpace {
   public static final String REDUCE_MATRIX_DIMENSION_PROPERTY =
     "edu.ucla.sspace.coals.Coals.dimension";
 
-  private HashMap<Index, Integer> correlation;
+  private Map<Index, Integer> correlation;
   private HashMap<String, Integer> wordToIndex;
-  private HashMap<String, Integer> totalWordFreq;
+  private Map<String, Integer> totalWordFreq;
   Matrix finalCorrelation;
   private int maxWords;
 
@@ -90,9 +92,9 @@ public class Coals implements SemanticSpace {
 
   public void init(int numWords) {
     maxWords = numWords;
-    correlation = new HashMap<Index, Integer>();
+    correlation = new ConcurrentHashMap<Index, Integer>();
     wordToIndex = new HashMap<String, Integer>();
-    totalWordFreq = new HashMap<String, Integer>();
+    totalWordFreq = new ConcurrentHashMap<String, Integer>();
     finalCorrelation = null;
   }
 
@@ -133,27 +135,24 @@ public class Coals implements SemanticSpace {
       }
       finishUpdates(documentCorrels, wordWindow, isFilling);
     }
+    System.out.println("adding correlations");
     for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
+      System.out.println("adding for " + entry.getKey().word);
       synchronized (entry.getKey().word) {
-        int newValue = 0;
-        if (correlation.containsKey(entry.getKey())) {
-          newValue = correlation.get(entry.getKey()).intValue() +
-                     entry.getValue().intValue();
-        } else {
-          newValue = entry.getValue().intValue();
-        }
+        int newValue = entry.getValue().intValue();
+        Integer v = correlation.get(entry.getKey());
+        if (v != null)
+          newValue += v.intValue();
         correlation.put(entry.getKey(), newValue);
       }
     }
+    System.out.println("adding frequency counts");
     for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
       synchronized (entry.getKey()) {
-        int newValue = 0;
-        if (totalWordFreq.containsKey(entry.getKey())) {
-          newValue = totalWordFreq.get(entry.getKey()).intValue() +
-                     entry.getValue().intValue();
-        } else {
-          newValue = entry.getValue().intValue();
-        }
+        int newValue = entry.getValue().intValue();
+        Integer v = totalWordFreq.get(entry.getKey());
+        if (v != null)
+          newValue += v.intValue();
         totalWordFreq.put(entry.getKey(), newValue);
       }
     }
@@ -172,22 +171,22 @@ public class Coals implements SemanticSpace {
     if (isFilling) {
       int size = wordWindow.size();
       for (int i = 0; i < size; ++i) {
-        String mainWord = wordWindow.get(i);
+        String mainWord = wordWindow.get(i).intern();
         for (int j = 0; j < i; ++j)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j)), j-i+5);
+          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), j-i+5);
         for (int j = i+1; j < i+5 && j < size; j++)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j)), i+5-j);
+          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), i+5-j);
       }
       return;
     }
 
     int size = wordWindow.size();
     for (int i = 0; i < 4; ++i) {
-      String mainWord = wordWindow.get(4);
+      String mainWord = wordWindow.get(4).intern();
       for (int j = 0; j < 4; j++)
-        addIfMissing(map, new Index(mainWord, wordWindow.get(j)), j+1);
+        addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), j+1);
       for (int j = 5; j < wordWindow.size(); j++)
-        addIfMissing(map, new Index(mainWord, wordWindow.get(j)), 9-j);
+        addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), 9-j);
       wordWindow.remove(0);
     }
   }
@@ -200,19 +199,19 @@ public class Coals implements SemanticSpace {
       return true;
     else if (size >= 9 && isFilling) {
       for (int i = 0; i < 4; i++) {
-        String mainWord = wordWindow.get(i);
+        String mainWord = wordWindow.get(i).intern();
         for (int j = 0; j < i; j++)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j)), j-i+5);
+          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), j-i+5);
         for (int j = i+1; j < i+5; j++)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j)), i+5-j);
+          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), i+5-j);
       }
     }
 
-    String mainWord = wordWindow.get(4);
+    String mainWord = wordWindow.get(4).intern();
     for (int i = 0; i < 4; i++)
-      addIfMissing(map, new Index(mainWord, wordWindow.get(i)), i+1);
+      addIfMissing(map, new Index(mainWord, wordWindow.get(i).intern()), i+1);
     for (int i = 5; i < size; i++)
-      addIfMissing(map, new Index(mainWord, wordWindow.get(i)), 9-i);
+      addIfMissing(map, new Index(mainWord, wordWindow.get(i).intern()), 9-i);
     wordWindow.remove(0);
     return false;
   }
