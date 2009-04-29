@@ -61,6 +61,8 @@ import edu.ucla.sspace.common.WordIterator;
  *
  * </ul>
  *
+ * <p>
+ *
  * Random Indexing (RI) is an efficient way of capturing word co-occurence.  In
  * most co-occurence models, a word-by-word matrix is constructed, where the
  * values denote how many times the columns's word occurred in the context of
@@ -135,7 +137,10 @@ import edu.ucla.sspace.common.WordIterator;
  * #processSpace(Properties) processSpace} has been called, no further calls to
  * {@code processDocument} should be made.
  * 
- * This class <i>does</i> allow calls to {@link #getSemanticVector
+ * <p>
+ *
+ * This class <i>does</i> allow calls to {@link #getVectorFor(String)} prior to
+ * the final call to {@link #processSpace(Properties)}
  *
  * @see PermutationFunction
  * @see IndexVector
@@ -294,9 +299,15 @@ public class RandomIndexing implements SemanticSpace {
     }  
 
     /**
-     * {@inheritDoc}
+     * Returns the current semantic vector for the provided word, or if the word
+     * is not currently in the semantic space, a vector is added for it and
+     * returned.
+     *
+     * @param word a word
+     *
+     * @return the {@code SemanticVector} for the provide word.
      */
-    public SemanticVector getSemanticVector(String word) {
+    private SemanticVector getSemanticVector(String word) {
 	// ensure we are using the canonical copy of the word by interning it
 	// 
 	// NOTE: currently disabled.  We have to ensure that only interned

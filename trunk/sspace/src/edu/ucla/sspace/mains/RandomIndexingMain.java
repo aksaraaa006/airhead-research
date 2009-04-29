@@ -39,7 +39,63 @@ import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
 import edu.ucla.sspace.ri.RandomIndexing;
 
 /**
+ * An executable class for running {@link RandomIndexing} from the command line.
+ * This class provides several options:
  *
+ * <ul>
+ *
+ * <li><u>Required (at least one of)</u>:
+ *   <ul>
+ *
+ *   <li> {@code -d}, {@code --docFile} a file where each line is a document
+ *
+ *   <li> {@code -f}, {@code --fileList} a list of document files
+ *   </ul>
+ *
+ * <li><u>Algorithm Options</u>:
+ *   <ul>
+ *   
+ *   <li>  {@code -l}, {@code --vectorLength}  length of semantic vectors
+
+ *   <li> {@code -n}, {@code --permutationFunction} permutation function to use
+
+ *   <li> {@code -p}, {@code --usePermutations} whether to permute index vectors
+ *        based on word order
+
+ *   <li> {@code -s}, {@code --windowSize} how many words to consider in each
+ *        direction
+ *   </ul> 
+ *
+ * <li><u>Program Options</u>:
+ *   <ul>
+ *   <li> {@code -t}, {@code --threads} the number of threads to use
+ *
+ *   <li> {@code -v}, {@code --verbose} prints verbose output
+ *
+ *   <li> {@code -w}, {@code --overwrite} specifies whether to overwrite the
+ *        existing output
+ *   </ul>
+ *
+ * </ul>
+ *
+ * <p>
+ *
+ * An invocation will produce one file as output {@code
+ * random-indexing-semantic-space.sspace}.  If {@code overwrite} was set to
+ * {@code true}, this file will be replaced for each new semantic space.
+ * Otherwise, a new output file of the format {@code
+ * random-indexing-semantic-space<number>.sspace} will be created, where {@code
+ * <number>} is a unique identifier for that program's invocation.  The output
+ * file will be placed in the directory specified on the command line.
+ *
+ * <p>
+ *
+ * This class is desgined to run multi-threaded and performs well with one
+ * thread per core, which is the default setting.
+ *
+ * @see RandomIndexing
+ * 
+ * @author David Jurgens
  */
 public class RandomIndexingMain extends GenericMain {
 
@@ -198,7 +254,7 @@ public class RandomIndexingMain extends GenericMain {
 
 	File output = (overwrite)
 	    ? new File(outputDir, RANDOM_INDEXING_SPACE_FILE_NAME)
-	    : File.createTempFile("random-indexing-semantic-space", "sspace", 
+	    : File.createTempFile("random-indexing-semantic-space", "sspace",
 				  outputDir);
 
 	SemanticSpaceUtils.printSemanticSpace(ri, output);

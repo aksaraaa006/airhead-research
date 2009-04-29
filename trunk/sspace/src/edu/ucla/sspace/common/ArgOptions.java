@@ -398,28 +398,32 @@ public class ArgOptions {
 
 	// start with regular options
 	Set<Option> regular = groupToOptions.get(null);
-	sb.append("Options:\n");
-	for (Option o : regular) {
-	    sb.append("  -").append(o.shortName);
-	    
-	    int spacesToAppend = -1;
-	    if (o.longName != null) {
-		sb.append(", --").append(o.longName);
-		spacesToAppend = (maxNameLength - o.longName.length()) + 4;
-	    }
-	    else {
-		spacesToAppend = maxNameLength + 4;
-	    }
 
-	    // pad the white space for nice formatting
-	    for (int i = 0; i < spacesToAppend; ++i) {
-		sb.append(" ");
-	    }
-
-	    if (o.description != null) {
-		sb.append(o.description);
-	    }
-	    sb.append("\n");
+	// check to ensure that the user defined at least one regular option
+	if (regular != null) {
+	    sb.append("Options:\n");
+	    for (Option o : regular) {
+		sb.append("  -").append(o.shortName);
+		
+		int spacesToAppend = -1;
+		if (o.longName != null) {
+		    sb.append(", --").append(o.longName);
+		    spacesToAppend = (maxNameLength - o.longName.length()) + 4;
+		}
+		else {
+		    spacesToAppend = maxNameLength + 4;
+		}
+		
+		// pad the white space for nice formatting
+		for (int i = 0; i < spacesToAppend; ++i) {
+		    sb.append(" ");
+		}
+		
+		if (o.description != null) {
+		    sb.append(o.description);
+		}
+		sb.append("\n");
+	    }	    
 	}
 
 	// now print the remaining options
