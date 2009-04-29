@@ -86,11 +86,15 @@ import edu.ucla.sspace.lsa.MatrixTransformer;
  * invocation.  The output file will be placed in the directory specified on the
  * command line.
  *
+ * <p>
+ *
  * This class is desgined to run multi-threaded and performs well with one
- * thread per core.
+ * thread per core, which is the default setting.
  *
  * @see LatentSemanticAnalysis
  * @see MatrixTransformer
+ *
+ * @author David Jurgens
  */
 public class LSAMain extends GenericMain {
 
