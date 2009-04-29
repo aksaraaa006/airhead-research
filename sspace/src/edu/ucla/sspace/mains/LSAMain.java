@@ -23,17 +23,11 @@ package edu.ucla.sspace.mains;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Properties;
-import java.util.Set;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
@@ -98,7 +92,7 @@ import edu.ucla.sspace.lsa.MatrixTransformer;
  * @see LatentSemanticAnalysis
  * @see MatrixTransformer
  */
-public class LSAMain {
+public class LSAMain extends GenericMain {
 
     public static final String LSA_SEMANTIC_SPACE_FILE_NAME =
 	"lsa-semantic-space.sspace";
@@ -236,94 +230,6 @@ public class LSAMain {
 
 
 
-     /**
-      *
-      */
-    private void parseDocumentsMultiThreaded(final LatentSemanticAnalysis lsa,
-					     final Iterator<Document> docIter, 
-					     final Properties properties,
-					     int numThreads)	
-	    throws IOException, InterruptedException {
-
-	Collection<Thread> threads = new LinkedList<Thread>();
-
-	final AtomicInteger count = new AtomicInteger(0);
-
-	
-	for (int i = 0; i < numThreads; ++i) {
-	    Thread t = new Thread() {
-		    public void run() {
-			// repeatedly try to process documents while some still
-			// remain
-			while (docIter.hasNext()) {
-			    long startTime = System.currentTimeMillis();
-			    Document doc = docIter.next();
-			    int docNumber = count.incrementAndGet();
-			    int terms = 0;
-			    try {
-				lsa.processDocument(doc.reader());
-			    } catch (Throwable t) {
-				t.printStackTrace();
-			    }
-			    long endTime = System.currentTimeMillis();
-			    verbose("parsed document #%d in %.3f seconds%n",
-				    docNumber, ((endTime - startTime) / 1000d));
-			}
-		    }
-		};
-	    threads.add(t);
-	}
-
-	long threadStart = System.currentTimeMillis();
-	
-	// start all the threads processing
-	for (Thread t : threads)
-	    t.start();
-
-	verbose("Beginning processing using %d threads", numThreads);
-
-	// wait until all the documents have been parsed
-	for (Thread t : threads)
-	    t.join();
-
-	verbose("parsed %d document in %.3f total seconds)%n",
-		count.get(),
-		((System.currentTimeMillis() - threadStart) / 1000d));
-    }
-
-
-
-    /**
-     * Returns a set of terms based on the contents of the provided file.  Each
-     * word is expected to be on its own line.
-     */
-    private static Set<String> loadValidTermSet(String validTermsFileName) {
-	Set<String> validTerms = new HashSet<String>();
-	try {
-	    BufferedReader br = new BufferedReader(
-		new FileReader(validTermsFileName));
-	    String line = null;
-	    while ((line = br.readLine()) != null) {
-		validTerms.add(line);
-	    }
-	    br.close();
-	} catch (Throwable t) {
-	    t.printStackTrace();
-	}
-	return validTerms;
-    }
-
-    private void verbose(String msg) {
-	if (verbose) {
-	    System.out.println(msg);
-	}
-    }
-
-    private void verbose(String format, Object... args) {
-	if (verbose) {
-	    System.out.printf(format, args);
-	}
-    }
 
     /**
      * Prints the instructions on how to execute this program to standard out.

@@ -36,6 +36,7 @@ import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.WordIterator;
 
 /**
@@ -141,7 +142,7 @@ import edu.ucla.sspace.common.WordIterator;
  * 
  * @author David Jurgens
  */
-public class RandomIndexing { //implements SemanticSpace {
+public class RandomIndexing implements SemanticSpace {
 
     /**
      * The prefix for naming public properties.
@@ -372,9 +373,7 @@ public class RandomIndexing { //implements SemanticSpace {
 		nextWords.offer(windowEdge);
 	    }    
 
-	    // Sum up the index vector for all the surrounding words.  Note that
-	    // these strings are necessarily interned when they are added to the
-	    // nextWords Queue.
+	    // Sum up the index vector for all the surrounding words.
 	    for (String word : prevWords) 
 		focusMeaning.add(getIndexVector(word));
 
