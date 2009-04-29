@@ -86,7 +86,7 @@
     </javac>
   </target>
 
-  <target name="dist" depends="lsa-jar">
+  <target name="dist" depends="lsa-jar,ri-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
   
@@ -105,6 +105,23 @@
       </manifest>
     </jar>
   </target>
+
+  <target name="ri-jar" depends="compile">
+    <jar destfile="${bin.dir}/random-indexing.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Random Indexing"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.RandomIndexingMain"/>
+      </manifest>
+    </jar>
+  </target>
+
 
   <target name="test" depends="compile-tests">
     <junit printsummary="yes" fork="yes" haltonfailure="no">
