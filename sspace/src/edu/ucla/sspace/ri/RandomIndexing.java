@@ -140,7 +140,7 @@ import edu.ucla.sspace.common.WordIterator;
  * <p>
  *
  * This class <i>does</i> allow calls to {@link #getVectorFor(String)} prior to
- * the final call to {@link #processSpace(Properties)}
+ * the final call to {@link #processSpace(Properties) processSpace}
  *
  * @see PermutationFunction
  * @see IndexVector
@@ -174,7 +174,7 @@ public class RandomIndexing implements SemanticSpace {
      * should be permuted based on their relative position.
      */
     public static final String USE_PERMUTATIONS_PROPERTY = 
-	PROPERTY_PREFIX + ".windowSize";
+	PROPERTY_PREFIX + ".usePermutations";
 
     /**
      * The property to specify the fully qualified named of a {@link
@@ -280,7 +280,7 @@ public class RandomIndexing implements SemanticSpace {
      * Returns the index vector for the provided word.
      */
     private IndexVector getIndexVector(String word) {
-
+	
 	IndexVector v = wordToIndexVector.get(word);
 	if (v == null) {
 	    // lock on th word in case multiple threads attempt to add it at
@@ -380,7 +380,11 @@ public class RandomIndexing implements SemanticSpace {
 
 	    // shift over the window to the next word
 	    if (it.hasNext()) {
-		String windowEdge = it.next();
+		// NB: we call .intern() on the string to ensure that we are
+		// always dealing with the canonical copy of the word when
+		// processing.  This ensures that any locks acquired just on
+		// that word will be protected against duplicate copies.
+		String windowEdge = it.next().intern();
 		nextWords.offer(windowEdge);
 	    }    
 
@@ -408,15 +412,18 @@ public class RandomIndexing implements SemanticSpace {
 	
     }
 
-    public class SemanticVector {
+    /**
+     *
+     */
+    class SemanticVector {
 
-	private int[] vector;
+	private final int[] vector;
 
 	public SemanticVector(int length) {
 	    vector = new int[length];
 	}
 	
-	public void add(IndexVector v) {
+	public synchronized void add(IndexVector v) {
 
 	    for (int p : v.positiveDimensions()) 
 		vector[p]++;

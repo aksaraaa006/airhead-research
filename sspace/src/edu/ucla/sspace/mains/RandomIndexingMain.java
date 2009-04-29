@@ -103,11 +103,6 @@ public class RandomIndexingMain extends GenericMain {
     public static final String RANDOM_INDEXING_SPACE_FILE_NAME =
 	"random-indexing-space.sspace";
 
-    /**
-     * internal flag for printing verbose information to stdout.
-     */
-    private boolean verbose;
-
     private final ArgOptions argOptions;
     
     private RandomIndexingMain() {
@@ -244,6 +239,7 @@ public class RandomIndexingMain extends GenericMain {
 	    overwrite = argOptions.getBooleanOption("overwrite");
 	}
 
+	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
 	
 	// Once all the optional properties are known and set, create the
 	// RandomIndexing algorithm using them
