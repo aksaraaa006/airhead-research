@@ -93,8 +93,11 @@ public class RandomIndexBuilder implements IndexBuilder {
   }
 
   public void addTermIfMissing(String term) {
-    if (termToRandomIndex.putIfAbsent(term, newestRandomVector) == null)
-      newestRandomVector = generateRandomVector();
+    term = term.intern();
+    synchronized (newestRandomVector) {
+      if (termToRandomIndex.putIfAbsent(term, newestRandomVector) == null)
+        newestRandomVector = generateRandomVector();
+    }
   }
 
   // Context must have one word before the term being considered, and 4 words
