@@ -138,6 +138,7 @@
       <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>      
       <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.tools.FileBasedSemanticSpaceTest" todir="${report.dir}"/>
     </junit>
   </target>
 

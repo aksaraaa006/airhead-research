@@ -272,14 +272,16 @@ public class Hermit implements SemanticSpace {
   private void dumpHolographsToFile(HashMap<String, double[]> termDocHolographs, int document) {
     try {
       for (Map.Entry<String, double[]> entry : termDocHolographs.entrySet()) {
-        BufferedWriter writer = termFileWriters.get(entry.getKey());
-        StringBuffer sb = new StringBuffer();
-        sb.append(document).append(" ");
-        double[] value = entry.getValue();
-        for (int i = 0; i < indexVectorSize; ++i)
-          sb.append(value[i]).append(" ");
-        writer.write(sb.toString());
-        writer.newLine();
+          BufferedWriter writer = termFileWriters.get(entry.getKey());
+        synchronized (writer) {
+          StringBuffer sb = new StringBuffer();
+          sb.append(document).append(" ");
+          double[] value = entry.getValue();
+          for (int i = 0; i < indexVectorSize; ++i)
+            sb.append(value[i]).append(" ");
+          writer.write(sb.toString());
+          writer.newLine();
+        }
       }
     } catch (IOException e) {
     }
