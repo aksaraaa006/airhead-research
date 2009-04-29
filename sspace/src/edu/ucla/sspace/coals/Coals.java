@@ -35,8 +35,12 @@ import edu.ucla.sspace.common.SVD;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,7 +80,17 @@ public class Coals implements SemanticSpace {
   public static final String REDUCE_MATRIX_DIMENSION_PROPERTY =
     "edu.ucla.sspace.coals.Coals.dimension";
 
-  private Map<Index, Integer> correlation;
+  /**
+   * A temporary file containing temprorary word co-occurance counts from each
+   * document.
+   */
+  private File rawOccurances;
+
+  /**
+   * The writer to the {@code rawTermDocMatrix}.
+   */
+  private PrintWriter rawOccuranceWriter;
+
   private HashMap<String, Integer> wordToIndex;
   private Map<String, Integer> totalWordFreq;
   Matrix finalCorrelation;
@@ -92,9 +106,15 @@ public class Coals implements SemanticSpace {
 
   public void init(int numWords) {
     maxWords = numWords;
-    correlation = new ConcurrentHashMap<Index, Integer>();
     wordToIndex = new HashMap<String, Integer>();
     totalWordFreq = new ConcurrentHashMap<String, Integer>();
+    try {
+      rawOccurances = File.createTempFile("coals-occurance-values", "dat");
+      rawOccuranceWriter = new PrintWriter(rawOccurances);
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      System.exit(1);
+    }
     finalCorrelation = null;
   }
 
@@ -135,9 +155,15 @@ public class Coals implements SemanticSpace {
       }
       finishUpdates(documentCorrels, wordWindow, isFilling);
     }
-    System.out.println("adding correlations");
-    for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
-      System.out.println("adding for " + entry.getKey().word);
+    synchronized (rawOccuranceWriter) {
+      for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
+        StringBuffer sb = new StringBuffer(32);
+        sb.append(entry.getKey().word).append("|")
+          .append(entry.getKey().document).append("|").append(entry.getValue());
+        rawOccuranceWriter.println(sb.toString());
+      }
+    }
+    /*
       synchronized (entry.getKey().word) {
         int newValue = entry.getValue().intValue();
         Integer v = correlation.get(entry.getKey());
@@ -146,7 +172,7 @@ public class Coals implements SemanticSpace {
         correlation.put(entry.getKey(), newValue);
       }
     }
-    System.out.println("adding frequency counts");
+    */
     for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
       synchronized (entry.getKey()) {
         int newValue = entry.getValue().intValue();
@@ -272,20 +298,34 @@ public class Coals implements SemanticSpace {
     for (int i = 0; i < wordCount; ++i)
       wordToIndex.put(keys[i], i);
 
-    Matrix correl = new SparseMatrix(wordCount, wordCount);
-    for (Map.Entry<Index, Integer> entry : correlation.entrySet()) {
-      Index key = entry.getKey();
-      double value = entry.getValue().intValue();
-      if (!wordToIndex.containsKey(key.word) ||
-          !wordToIndex.containsKey(key.document))
-        continue;
-      int index1 = wordToIndex.get(key.word).intValue();
-      int index2 = wordToIndex.get(key.document).intValue();
-      correl.set(index1, index2, value);
+    synchronized (rawOccuranceWriter) {
+      rawOccuranceWriter.close();
     }
-    totalWordFreq.clear();
-    correlation.clear();
-    return correl;
+    
+    try {
+      BufferedReader br = new BufferedReader(new FileReader(rawOccurances));
+      String line = null;
+      Matrix correl = new SparseMatrix(wordCount, wordCount);
+      while ((line = br.readLine()) != null) {
+        String[] splitLine = line.split("\\|");
+        System.out.println(splitLine[0]);
+        System.out.println(splitLine[1]);
+        Integer r = wordToIndex.get(splitLine[0]);
+        Integer c = wordToIndex.get(splitLine[1]);
+        if (r == null || c == null)
+          continue;
+        System.out.println("holy shit i'm updating things");
+        double value = Double.parseDouble(splitLine[2]);
+        correl.set(r.intValue(), c.intValue(),
+                   value + correl.get(r.intValue(), c.intValue()));
+      }
+      totalWordFreq.clear();
+      return correl;
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      System.exit(1);
+    }
+    return null;
   }
 
   public Matrix compareToMatrix(Matrix o) {
