@@ -21,66 +21,206 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.SemanticSpaceUtils;
+
 import edu.ucla.sspace.common.document.Document;
+import edu.ucla.sspace.common.document.FileListDocumentIterator;
 import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+
 import edu.ucla.sspace.holograph.Holograph;
+import edu.ucla.sspace.holograph.RandomIndexBuilder;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Properties;
 
 /**
- * This main is slightly out of date and can probably be ignored
- */
-public class HolographMain {
-  public static void usage() {
-    System.out.println("use --docsFile");
-  }
+ * An executable class for running {@link Holograph} (LSA) from the
+ * command line.  This class takes in several command line arguments.
+ *
+ * <ul>
+ * <li> document sources (must provide one)
+ *   <ul>
+ *
+ *   <li> {@code --fileList=<filename>} a file containing a list of file names, each of
+ *        which is treated as a separate document.
 
-  public static void main(String[] args) {
-    Holograph holographBuilder = new Holograph();
-	String input = null;
-	if (args.length == 0)
-	    usage();
-	else { 
-      if (args[0].startsWith("--docsFile=")) {
-        try {
-            String docsFile = 
-            args[0].substring("--docsFile=".length());
-            input = docsFile;
-            OneLinePerDocumentIterator docIter = 
-              new OneLinePerDocumentIterator(docsFile);
-            int count = 0;
-            while (docIter.hasNext()) {
-              Document doc = docIter.next();
-              System.out.print("parsing document " + (count++));
-              long startTime = System.currentTimeMillis();
-              holographBuilder.processDocument(doc.reader());
-              long endTime = System.currentTimeMillis();
-              System.out.printf("complete (%.3f seconds)%n",
-                        (endTime - startTime) / 1000d);
-            }
-        }
-        catch (Throwable t) {
-            t.printStackTrace();
-        }
-      }
-      else {
-        System.out.println("unrecognized argument: " + args[0]);
-        usage();
-        System.exit(0);
-      }
-      /*
-      System.out.println("similarity between Eat and Eaten: " + 
-                         holographBuilder.computeSimilarity("eat", "eaten"));
-      System.out.println("similarity between Eat and buy: " + 
-                         holographBuilder.computeSimilarity("eat", "buy"));
-      System.out.println("similarity between Eat and feed: " + 
-                         holographBuilder.computeSimilarity("eat", "feed"));
-      System.out.println("similarity between car and driver: " + 
-                         holographBuilder.computeSimilarity("car", "driver"));
-      System.out.println("similarity between car and driver: " + 
-                         holographBuilder.computeSimilarity("car", "boat"));
-      System.out.println("similarity between car and driver: " + 
-                         holographBuilder.computeSimilarity("car", "truck"));
-                         */
-      holographBuilder.lutherTest();
+ *   <li> {@code --docFile=<filename>} a file where each line is treated as a separate
+ *        document.  This is the preferred option for LSA operations for large
+ *        numbers of documents due to reduced I/O demands.
+ *
+ *   </ul>
+ *
+ * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA vectors.
+ *      See {@link Holograph} for default value
+ *
+ * <li> {@code --threads=<int>} how many threads to use when processing the
+ *      documents.  The default is one per core.
+ * 
+ * <li> {@code --preprocess=<class name>} specifies an instance of {@link
+ *      MatrixTransformer} to use in preprocessing the word-document matrix
+ *      compiled by LSA prior to computing the SVD.  See {@link
+ *      Holograph} for default value
+ *
+ * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
+ *      existing output files.  The default is {@code true}.  If set to {@code
+ *      false}, a unique integer is inserted into the file name.
+ *
+ * <li> {@code --verbose | -v} specifies whether to print runtime
+ *      information to standard out
+ *
+ * </ul>
+ *
+ * <p>
+ *
+ * An invocation will produce one file as output {@code
+ * lsa-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * this file will be replaced for each new semantic space.  Otherwise, a new
+ * output file of the format {@code lsa-semantic-space<number>.sspace} will be
+ * created, where {@code <number>} is a unique identifier for that program's
+ * invocation.  The output file will be placed in the directory specified on the
+ * command line.
+ *
+ * <p>
+ *
+ * This class is desgined to run multi-threaded and performs well with one
+ * thread per core, which is the default setting.
+ *
+ * @see Holograph
+ * @see MatrixTransformer
+ *
+ * @author David Jurgens
+ */
+public class HolographMain extends GenericMain {
+
+    public static final String LSA_SEMANTIC_SPACE_FILE_NAME =
+	"lsa-semantic-space.sspace";
+
+    /**
+     * internal flag for printing verbose information to stdout.
+     */
+    private boolean verbose;
+
+    private final ArgOptions argOptions;
+    
+    private HolographMain() {
+	argOptions = new ArgOptions();
+	addOptions();
     }
-  }
+
+    /**
+     * Adds all of the options to the {@link ArgOptions}.
+     */
+    private void addOptions() {
+	argOptions.addOption('l', "fileList", "a list of document files", 
+			     true, "file name", "Required (at least one of)");
+	argOptions.addOption('d', "docFile", 
+			     "a file where each line is a document", true,
+			     "file name", "Required (at least one of)");
+
+	argOptions.addOption('t', "threads", "the number of threads to use",
+			     true, "int");
+	argOptions.addOption('w', "overwrite", "specifies whether to " +
+			     "overwrite the existing output", true, "boolean");
+
+	argOptions.addOption('v', "verbose", "prints verbose output");
+    }
+
+    public static void main(String[] args) {
+		
+	HolographMain hMain = new HolographMain();
+
+	if (args.length == 0) {
+	    hMain.usage();
+	    return;
+	}
+
+	try {
+	    hMain.run(args);
+	}
+	catch (Throwable t) {
+	    t.printStackTrace();
+	}
+    }
+    
+    private void run(String[] args) throws Exception {
+	
+	// process command line args
+	argOptions.parseOptions(args);
+
+	if (argOptions.numPositionalArgs() == 0) {
+	    throw new IllegalArgumentException("must specify output directory");
+	}
+
+	File outputDir = new File(argOptions.getPositionalArg(0));
+	if (!outputDir.isDirectory()){
+	    throw new IllegalArgumentException(
+		"output directory is not a directory: " + outputDir);
+	}
+
+	Holograph h = new Holograph(new RandomIndexBuilder());
+	
+	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
+
+	Iterator<Document> docIter = null;
+	String fileList = (argOptions.hasOption("fileList"))
+	    ? argOptions.getStringOption("fileList")
+	    : null;
+
+	String docFile = (argOptions.hasOption("docFile"))
+	    ? argOptions.getStringOption("docFile")
+	    : null;
+	if (fileList == null && docFile == null) {
+	    throw new Error("must specify document sources");
+	}
+	else if (fileList != null && docFile != null) {
+	    throw new Error("cannot specify both docFile and fileList");
+	}
+	else if (fileList != null) {
+	    // we have a file that contains the list of all document files we
+	    // are to process
+	    docIter =  new FileListDocumentIterator(fileList);
+	}
+	else {
+	    // all the documents are listed in one file, with one document per
+	    // line
+	    docIter = new OneLinePerDocumentIterator(docFile);
+	}
+	
+	int numThreads = Runtime.getRuntime().availableProcessors();
+	if (argOptions.hasOption("threads")) {
+	    numThreads = argOptions.getIntOption("threads");
+	}
+
+	boolean overwrite = true;
+	if (argOptions.hasOption("overwrite")) {
+	    overwrite = argOptions.getBooleanOption("overwrite");
+	}
+	
+	Properties props = System.getProperties();
+
+	parseDocumentsMultiThreaded(h, docIter, props, numThreads);
+
+	h.processSpace(props);
+
+	File output = (overwrite)
+	    ? new File(outputDir, LSA_SEMANTIC_SPACE_FILE_NAME)
+	    : File.createTempFile("holograph-semantic-space", "sspace", outputDir);
+
+	SemanticSpaceUtils.printSemanticSpace(h, output);
+    }
+
+    /**
+     * Prints the instructions on how to execute this program to standard out.
+     */
+    private void usage() {
+ 	System.out.println(
+ 	    "usage: java LSAMain [options] <output-dir>\n" + 
+	    argOptions.prettyPrint());
+    }
 }

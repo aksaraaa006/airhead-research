@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.holograph;
 
+import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.StringUtils;
@@ -29,11 +30,12 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An implementation of the Beagle Semantic Space model.  This implementation is
@@ -59,16 +61,14 @@ public class Holograph implements SemanticSpace {
   public static final int LINES_TO_SKIP = 40;
   public static final int MAX_LINES = 500;
 
-  private final RandomIndexBuilder indexBuilder;
-  private final LinkedList<String> words;
-  private final HashMap<String, double[]> termHolographs;
+  private final IndexBuilder indexBuilder;
+  private final Map<String, double[]> termHolographs;
   private final int indexVectorSize;
 
-  public Holograph() {
+  public Holograph(IndexBuilder builder) {
     indexVectorSize = 512;
-    indexBuilder = new RandomIndexBuilder();
-    termHolographs = new HashMap<String, double[]>();
-    words = new LinkedList<String>();
+    indexBuilder = builder;
+    termHolographs = new ConcurrentHashMap<String, double[]>();
   }
 
   /**
@@ -89,18 +89,19 @@ public class Holograph implements SemanticSpace {
    * {@inheritDoc}
    */
   public void processDocument(BufferedReader document) throws IOException {
+    LinkedList<String> words = new LinkedList<String>();
     for (String line = null; (line = document.readLine()) != null;) {
       // split the line based on whitespace
       String[] text = line.split("\\s");
       for (String word : text) {
         // clean up each word before entering it into the matrix
-        String cleaned = StringUtils.cleanup(word);
+        String cleaned = StringUtils.cleanup(word).intern();
         // skip any mispelled or unknown words
         if (!StringUtils.isValid(cleaned))
           continue;
         words.add(cleaned);
         indexBuilder.addTermIfMissing(cleaned);
-        updateHolograph();
+        updateHolograph(words);
       }
     }
   }
@@ -111,43 +112,21 @@ public class Holograph implements SemanticSpace {
   public void processSpace(Properties properties) {
   }
 
-  private void updateHolograph() {
+  private void updateHolograph(LinkedList<String> words) {
     if (words.size() < CONTEXT_SIZE) {
       return;
     }
     String[] context = words.toArray(new String[0]);
     String mainWord = context[1];
     context[1] = "";
-    double[] meaning = termHolographs.get(mainWord);
-    if (meaning == null) {
-      meaning = new double[indexVectorSize];
-      termHolographs.put(mainWord, meaning);
-    }
-    indexBuilder.updateMeaningWithTerm(meaning, context);
-    words.removeFirst();
-  }
-
-  public void lutherTest() {
-    double[] lutherMeaning = termHolographs.get("luther");
-    double[] right = indexBuilder.decode(lutherMeaning, true);
-    double[] left = indexBuilder.decode(lutherMeaning, false);
-    double maxLeft = 0;
-    double maxright = 0;
-    String leftWord = "";
-    String rightWord = "";
-    for (Map.Entry<String, double[]> entry : termHolographs.entrySet()) {
-      double leftSim = Similarity.cosineSimilarity(entry.getValue(), left);
-      if (leftSim > maxLeft) {
-        maxLeft = leftSim;
-        leftWord = entry.getKey();
+    synchronized (mainWord) {
+      double[] meaning = termHolographs.get(mainWord);
+      if (meaning == null) {
+        meaning = new double[indexVectorSize];
+        termHolographs.put(mainWord, meaning);
       }
-      double rightSim = Similarity.cosineSimilarity(entry.getValue(), right);
-      if (rightSim > maxLeft) {
-        maxLeft = rightSim;
-        rightWord = entry.getKey();
-      }
+      indexBuilder.updateMeaningWithTerm(meaning, context);
+      words.removeFirst();
     }
-    System.out.println("for luther we get for left: " + leftWord +
-                       ", and right: " + rightWord);
   }
 }
