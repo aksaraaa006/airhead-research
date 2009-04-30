@@ -21,6 +21,15 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.CombinedIterator;
+import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceUtils;
+
+import edu.ucla.sspace.common.document.Document;
+import edu.ucla.sspace.common.document.FileListDocumentIterator;
+import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -34,12 +43,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import edu.ucla.sspace.common.SemanticSpace;
-
-import edu.ucla.sspace.common.document.Document;
-import edu.ucla.sspace.common.document.FileListDocumentIterator;
-import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
 
 
 /**
@@ -55,8 +58,173 @@ public abstract class GenericMain {
      */
     protected boolean verbose;
 
-    public GenericMain() {
-	verbose = false;
+    /**
+     * The processed argument options available to the main classes.
+     */
+    protected final ArgOptions argOptions;
+
+    /**
+     * The default file name used when replacing an existing semantic space
+     * output, ends in ".sspace".
+     */
+    private final String defaultFileName;
+
+    /**
+     * The temporary file name used when dumping a semantic space.
+     */
+    private final String tempFileName;
+
+    public GenericMain(String defaultName) {
+      argOptions = setupOptions();
+      verbose = false;
+      defaultFileName = defaultName + ".sspace";
+      tempFileName = defaultName;
+    }
+
+    /**
+     * Abstract method to return a {@link SemanticSpace} for use when running.
+     */
+    abstract public SemanticSpace getSpace();
+
+    /**
+     * Abstract method which should print out the usage text for the particular
+     * name.
+     */
+    abstract public void usage();
+
+    /**
+     * Allows sub-mains the ability to add extra command line options.
+     * @param options the ArgOptions object which more main specific options can
+     * be added to.
+     */
+    public void addExtraOptions(ArgOptions options) {
+    }
+
+    /**
+     * Parallel to {@link addExtraOptions}, allows the sub-main to process extra
+     * options.  Will be called before {@link getSpace}.
+     */
+    public void handleExtraArguments() {
+    }
+
+    /**
+     * Allows sub-mains to process arguments and build a Properties object for
+     * use when calling {@link processSpace}.  Will be called before
+     * {@link getSpace}.
+     */
+    public Properties setupProperties() {
+      Properties props = System.getProperties();
+      return props;
+    }
+
+    /**
+     * Setup default options which all mains will use.
+     */
+    public ArgOptions setupOptions() {
+      ArgOptions options = new ArgOptions();
+	options.addOption('f', "fileList", "a list of document files", 
+			     true, "FILE[,FILE...]", "Required (at least one of)");
+	options.addOption('d', "docFile", 
+			     "a file where each line is a document", true,
+			     "FILE[,FILE]", "Required (at least one of)");
+
+	options.addOption('t', "threads", "the number of threads to use",
+			     true, "INT", "Program Options");
+	options.addOption('w', "overwrite", "specifies whether to " +
+			     "overwrite the existing output", true, "BOOL",
+                 "Program Options");
+
+	options.addOption('v', "verbose", "prints verbose output",
+                      false, null, "Program Options");
+    addExtraOptions(options);
+    return options;
+    }
+
+    protected void run(String[] args) throws Exception {
+      if (args.length == 0) {
+        usage();
+        System.exit(1);
+      }
+    argOptions.parseOptions(args);
+
+	
+	if (argOptions.numPositionalArgs() == 0) {
+	    throw new IllegalArgumentException("must specify output directory");
+	}
+
+	File outputDir = new File(argOptions.getPositionalArg(0));
+	if (!outputDir.isDirectory()){
+	    throw new IllegalArgumentException(
+		"output directory is not a directory: " + outputDir);
+	}
+
+	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
+
+	// all the documents are listed in one file, with one document per line
+	Iterator<Document> docIter = null;
+	String fileList = (argOptions.hasOption("fileList"))
+	    ? argOptions.getStringOption("fileList")
+	    : null;
+
+	String docFile = (argOptions.hasOption("docFile"))
+	    ? argOptions.getStringOption("docFile")
+	    : null;
+	if (fileList == null && docFile == null) {
+	    throw new Error("must specify document sources");
+	}
+
+	// Second, determine where the document input sources will be coming
+	// from.
+	Collection<Iterator<Document>> docIters = 
+	    new LinkedList<Iterator<Document>>();
+
+	if (fileList != null) {
+	    String[] fileNames = fileList.split(",");
+	    // we have a file that contains the list of all document files we
+	    // are to process
+	    for (String s : fileNames) {
+		docIters.add(new FileListDocumentIterator(s));
+	    }
+	}
+	if (docFile != null) {
+	    String[] fileNames = docFile.split(",");
+	    // all the documents are listed in one file, with one document per
+	    // line
+	    for (String s : fileNames) {
+		docIters.add(new OneLinePerDocumentIterator(s));
+	    }
+	}
+
+	// combine all of the document iterators into one iterator.
+	docIter = new CombinedIterator<Document>(docIters);
+	
+	int numThreads = Runtime.getRuntime().availableProcessors();
+	if (argOptions.hasOption("threads")) {
+	    numThreads = argOptions.getIntOption("threads");
+	}
+
+	boolean overwrite = true;
+	if (argOptions.hasOption("overwrite")) {
+	    overwrite = argOptions.getBooleanOption("overwrite");
+	}
+	
+    handleExtraArguments();
+
+	Properties props = setupProperties();
+	// use the System properties in case the user specified them as
+	// -Dprop=<val> to the JVM directly.
+
+	SemanticSpace space = getSpace(); 
+
+	parseDocumentsMultiThreaded(space, docIter, props, numThreads);
+
+	space.processSpace(props);
+	
+	File output = (overwrite)
+	    ? new File(outputDir, defaultFileName)
+	    : File.createTempFile(tempFileName, "sspace", outputDir);
+
+	SemanticSpaceUtils.printSemanticSpace(space, output);
     }
 
     protected void parseDocumentsSingleThreaded(SemanticSpace sspace,
@@ -83,9 +251,6 @@ public abstract class GenericMain {
 		((System.currentTimeMillis() - processStart) / 1000d));	    
     }
 
-     /**
-      *
-      */
     protected void parseDocumentsMultiThreaded(final SemanticSpace sspace,
 					       final Iterator<Document> docIter,
 					       final Properties properties,
@@ -169,6 +334,4 @@ public abstract class GenericMain {
 	    System.out.printf(format, args);
 	}
     }
-
-
 }

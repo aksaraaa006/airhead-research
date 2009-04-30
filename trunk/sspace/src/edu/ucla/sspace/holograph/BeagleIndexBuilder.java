@@ -31,7 +31,7 @@ import java.util.Random;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RandomIndexBuilder implements IndexBuilder {
+public class BeagleIndexBuilder implements IndexBuilder {
   private static final int DEFAULT_INDEX_VECTOR_SIZE = 512;
 
   private ConcurrentHashMap<String, double[]> termToRandomIndex;
@@ -44,11 +44,11 @@ public class RandomIndexBuilder implements IndexBuilder {
   private int[] permute2;
   private double[] newestRandomVector;
 
-  public RandomIndexBuilder() {
+  public BeagleIndexBuilder() {
     init(DEFAULT_INDEX_VECTOR_SIZE);
   }
 
-  public RandomIndexBuilder(int s) {
+  public BeagleIndexBuilder(int s) {
     init(s);
   }
 

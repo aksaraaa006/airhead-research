@@ -22,21 +22,13 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-
-import edu.ucla.sspace.common.document.Document;
-import edu.ucla.sspace.common.document.FileListDocumentIterator;
-import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.holograph.Holograph;
-import edu.ucla.sspace.holograph.RandomIndexBuilder;
+import edu.ucla.sspace.holograph.BeagleIndexBuilder;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Properties;
 
 /**
@@ -93,51 +85,17 @@ import java.util.Properties;
 public class HolographMain extends GenericMain {
 
     public static final int DEFAULT_DIMENSION = 512;
+    private int dimension;
 
-    public static final String LSA_SEMANTIC_SPACE_FILE_NAME =
-	"lsa-semantic-space.sspace";
+    public static final String HOLOGRAPH_SEMANTIC_SPACE_FILE_NAME =
+      "holograph-semantic-space";
 
-    /**
-     * internal flag for printing verbose information to stdout.
-     */
-    private boolean verbose;
-
-    private final ArgOptions argOptions;
-    
     private HolographMain() {
-	argOptions = new ArgOptions();
-	addOptions();
-    }
-
-    /**
-     * Adds all of the options to the {@link ArgOptions}.
-     */
-    private void addOptions() {
-    argOptions.addOption('n', "dimension", "the length of each holographic vector",
-                 true, "int");
-	argOptions.addOption('l', "fileList", "a list of document files", 
-			     true, "file name", "Required (at least one of)");
-	argOptions.addOption('d', "docFile", 
-			     "a file where each line is a document", true,
-			     "file name", "Required (at least one of)");
-
-	argOptions.addOption('t', "threads", "the number of threads to use",
-			     true, "int");
-	argOptions.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output", true, "boolean");
-
-	argOptions.addOption('v', "verbose", "prints verbose output");
+      super(HOLOGRAPH_SEMANTIC_SPACE_FILE_NAME);
     }
 
     public static void main(String[] args) {
-		
 	HolographMain hMain = new HolographMain();
-
-	if (args.length == 0) {
-	    hMain.usage();
-	    return;
-	}
-
 	try {
 	    hMain.run(args);
 	}
@@ -146,83 +104,31 @@ public class HolographMain extends GenericMain {
 	}
     }
     
-    private void run(String[] args) throws Exception {
-	
-	// process command line args
-	argOptions.parseOptions(args);
+    /**
+     * Adds all of the options to the {@link ArgOptions}.
+     */
+    public void addExtraOptions(ArgOptions options) {
+      options.addOption('n', "dimension",
+                        "the length of each holographic vector",
+                        true, "INT");
+    }
 
-	if (argOptions.numPositionalArgs() == 0) {
-	    throw new IllegalArgumentException("must specify output directory");
-	}
+    public void handleExtraOptions() {
+      dimension = (argOptions.hasOption("dimension"))
+        ? argOptions.getIntOption("dimension")
+        : DEFAULT_DIMENSION;
+    }
 
-	File outputDir = new File(argOptions.getPositionalArg(0));
-	if (!outputDir.isDirectory()){
-	    throw new IllegalArgumentException(
-		"output directory is not a directory: " + outputDir);
-	}
-	
-	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
-
-	Iterator<Document> docIter = null;
-    int dimension = (argOptions.hasOption("dimension"))
-      ? argOptions.getIntOption("dimension")
-      : DEFAULT_DIMENSION;
-
-	Holograph h = new Holograph(new RandomIndexBuilder(dimension), dimension);
-
-	String fileList = (argOptions.hasOption("fileList"))
-	    ? argOptions.getStringOption("fileList")
-	    : null;
-
-	String docFile = (argOptions.hasOption("docFile"))
-	    ? argOptions.getStringOption("docFile")
-	    : null;
-	if (fileList == null && docFile == null) {
-	    throw new Error("must specify document sources");
-	}
-	else if (fileList != null && docFile != null) {
-	    throw new Error("cannot specify both docFile and fileList");
-	}
-	else if (fileList != null) {
-	    // we have a file that contains the list of all document files we
-	    // are to process
-	    docIter =  new FileListDocumentIterator(fileList);
-	}
-	else {
-	    // all the documents are listed in one file, with one document per
-	    // line
-	    docIter = new OneLinePerDocumentIterator(docFile);
-	}
-	
-	int numThreads = Runtime.getRuntime().availableProcessors();
-	if (argOptions.hasOption("threads")) {
-	    numThreads = argOptions.getIntOption("threads");
-	}
-
-	boolean overwrite = true;
-	if (argOptions.hasOption("overwrite")) {
-	    overwrite = argOptions.getBooleanOption("overwrite");
-	}
-	
-	Properties props = System.getProperties();
-
-	parseDocumentsMultiThreaded(h, docIter, props, numThreads);
-
-	h.processSpace(props);
-
-	File output = (overwrite)
-	    ? new File(outputDir, LSA_SEMANTIC_SPACE_FILE_NAME)
-	    : File.createTempFile("holograph-semantic-space", "sspace", outputDir);
-
-	SemanticSpaceUtils.printSemanticSpace(h, output);
+    public SemanticSpace getSpace() {
+      return new Holograph(new BeagleIndexBuilder(dimension), dimension);
     }
 
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
-    private void usage() {
+    public void usage() {
  	System.out.println(
- 	    "usage: java LSAMain [options] <output-dir>\n" + 
+ 	    "usage: java HolographMain [options] <output-dir>\n" + 
 	    argOptions.prettyPrint());
     }
 }

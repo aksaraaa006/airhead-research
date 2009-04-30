@@ -21,24 +21,14 @@
 
 package edu.ucla.sspace.mains;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Properties;
-
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.CombinedIterator;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-
-import edu.ucla.sspace.common.document.Document;
-import edu.ucla.sspace.common.document.FileListDocumentIterator;
-import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.ri.RandomIndexing;
+
+import java.io.IOException;
+
+import java.util.Properties;
 
 /**
  * An executable class for running {@link RandomIndexing} from the command line.
@@ -102,121 +92,43 @@ import edu.ucla.sspace.ri.RandomIndexing;
  */
 public class RandomIndexingMain extends GenericMain {
 
+    private Properties props;
 
     public static final String RANDOM_INDEXING_SPACE_FILE_NAME =
-	"random-indexing.sspace";
+	"random-indexing";
 
-    private final ArgOptions argOptions;
-    
     private RandomIndexingMain() {
-	argOptions = new ArgOptions();
-	addOptions();
+      super(RANDOM_INDEXING_SPACE_FILE_NAME);
     }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
-    private void addOptions() {
-
-	argOptions.addOption('p', "usePermutations", "whether to permute " +
+    public void addExtraOptions(ArgOptions options) {
+	options.addOption('p', "usePermutations", "whether to permute " +
 			     "index vectors based on word order", true,
 			     "BOOL", "Algorithm Options");
-	argOptions.addOption('l', "vectorLength", "length of semantic vectors",
+	options.addOption('l', "vectorLength", "length of semantic vectors",
 			     true, "INT", "Algorithm Options");
-	argOptions.addOption('s', "windowSize", "how many words to consider " +
+	options.addOption('s', "windowSize", "how many words to consider " +
 			     "in each direction", true,
 			     "INT", "Algorithm Options");
-	argOptions.addOption('n', "permutationFunction", "permutation function "
+	options.addOption('n', "permutationFunction", "permutation function "
 			     + "to use", true,
 			     "CLASSNAME", "Algorithm Options");
-
-
-	argOptions.addOption('f', "fileList", "a list of document files", 
-			     true, "FILE[,FILE...]", "Required (at least one of)");
-	argOptions.addOption('d', "docFile", 
-			     "a file where each line is a document", true,
-			     "FILE[,FILE]", "Required (at least one of)");
-
-	argOptions.addOption('t', "threads", "the number of threads to use",
-			     true, "INT", "Program Options");
-	argOptions.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output", true, "BOOL",
-			     "Program Options");
-	argOptions.addOption('v', "verbose", "prints verbose output", false, 
-			     null, "Program Options");
     }
-
-
 
     public static void main(String[] args) {
 	try {
 	    RandomIndexingMain main = new RandomIndexingMain();
-	    if (args.length == 0) {
-		main.usage();
-		return;
-	    }
-
 	    main.run(args);
-
 	} catch (Throwable t) {
 	    t.printStackTrace();
 	}
     }
 
-    public void run(String[] args) throws Exception {
-
-	// process command line args
-	argOptions.parseOptions(args);
-
-	if (argOptions.numPositionalArgs() == 0) {
-	    throw new IllegalArgumentException("must specify output directory");
-	}
-
-	File outputDir = new File(argOptions.getPositionalArg(0));
-	if (!outputDir.isDirectory()){
-	    throw new IllegalArgumentException(
-		"output directory is not a directory: " + outputDir);
-	}
-
-	// Second, determine where the document input sources will be coming
-	// from.
-	Iterator<Document> docIter = null;
-	String fileList = (argOptions.hasOption("fileList"))
-	    ? argOptions.getStringOption("fileList")
-	    : null;
-
-	String docFile = (argOptions.hasOption("docFile"))
-	    ? argOptions.getStringOption("docFile")
-	    : null;
-	if (fileList == null && docFile == null) {
-	    throw new Error("must specify document sources");
-	}
-	
-	Collection<Iterator<Document>> docIters = 
-	    new LinkedList<Iterator<Document>>();
-
-	if (fileList != null) {
-	    String[] fileNames = fileList.split(",");
-	    // we have a file that contains the list of all document files we
-	    // are to process
-	    for (String s : fileNames) {
-		docIters.add(new FileListDocumentIterator(s));
-	    }
-	}
-	if (docFile != null) {
-	    String[] fileNames = docFile.split(",");
-	    // all the documents are listed in one file, with one document per
-	    // line
-	    for (String s : fileNames) {
-		docIters.add(new OneLinePerDocumentIterator(s));
-	    }
-	}
-
-	// combine all of the document iterators into one iterator.
-	docIter = new CombinedIterator<Document>(docIters);
-
-	Properties props = System.getProperties();
-
+    public Properties setupProperties() {
+	props = System.getProperties();
 	// Use the command line options to set the desired properites in the
 	// constructor.  Use the system properties in case these properties were
 	// set using -Dprop=<value>
@@ -239,44 +151,21 @@ public class RandomIndexingMain extends GenericMain {
 	    props.setProperty(RandomIndexing.VECTOR_LENGTH_PROPERTY,
 			     argOptions.getStringOption("vectorLength"));
 	}
-
-
-	// Load the program-specific options next.
-	int numThreads = Runtime.getRuntime().availableProcessors();
-	if (argOptions.hasOption("threads")) {
-	    numThreads = argOptions.getIntOption("threads");
-	}
-
-	boolean overwrite = true;
-	if (argOptions.hasOption("overwrite")) {
-	    overwrite = argOptions.getBooleanOption("overwrite");
-	}
-
-	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
-	
-	// Once all the optional properties are known and set, create the
-	// RandomIndexing algorithm using them
-	RandomIndexing ri = new RandomIndexing(props);
-	
-	// process all of the documents
-	parseDocumentsMultiThreaded(ri, docIter, props, numThreads);
-
-	File output = (overwrite)
-	    ? new File(outputDir, RANDOM_INDEXING_SPACE_FILE_NAME)
-	    : File.createTempFile("random-indexing", "sspace",
-				  outputDir);
-
-	SemanticSpaceUtils.printSemanticSpace(ri, output);
-
+    return props;
     }
 
+    public SemanticSpace getSpace() {
+      // Once all the optional properties are known and set, create the
+      // RandomIndexing algorithm using them
+      return new RandomIndexing(props);
+    }
+	
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
-    private void usage() {
+    public void usage() {
  	System.out.println(
  	    "usage: java RandomIndexingMain [options] <output-dir>\n" + 
 	    argOptions.prettyPrint());
     }
-
 }
