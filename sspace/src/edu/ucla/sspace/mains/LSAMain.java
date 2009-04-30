@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.Properties;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.CombinedIterator;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
 
 import edu.ucla.sspace.common.document.Document;
@@ -182,18 +183,6 @@ public class LSAMain extends GenericMain {
 
 	// Second, determine where the document input sources will be coming
 	// from.
-	Iterator<Document> docIter = null;
-	String fileList = (argOptions.hasOption("fileList"))
-	    ? argOptions.getStringOption("fileList")
-	    : null;
-
-	String docFile = (argOptions.hasOption("docFile"))
-	    ? argOptions.getStringOption("docFile")
-	    : null;
-	if (fileList == null && docFile == null) {
-	    throw new Error("must specify document sources");
-	}
-	
 	Collection<Iterator<Document>> docIters = 
 	    new LinkedList<Iterator<Document>>();
 
