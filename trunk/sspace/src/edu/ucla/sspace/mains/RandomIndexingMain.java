@@ -80,11 +80,10 @@ import edu.ucla.sspace.ri.RandomIndexing;
  *
  * <p>
  *
- * An invocation will produce one file as output {@code
- * random-indexing-semantic-space.sspace}.  If {@code overwrite} was set to
- * {@code true}, this file will be replaced for each new semantic space.
- * Otherwise, a new output file of the format {@code
- * random-indexing-semantic-space<number>.sspace} will be created, where {@code
+ * An invocation will produce one file as output {@code random-indexing.sspace}.
+ * If {@code overwrite} was set to {@code true}, this file will be replaced for
+ * each new semantic space.  Otherwise, a new output file of the format {@code
+ * random-indexing<number>.sspace} will be created, where {@code
  * <number>} is a unique identifier for that program's invocation.  The output
  * file will be placed in the directory specified on the command line.
  *
@@ -101,7 +100,7 @@ public class RandomIndexingMain extends GenericMain {
 
 
     public static final String RANDOM_INDEXING_SPACE_FILE_NAME =
-	"random-indexing-space.sspace";
+	"random-indexing.sspace";
 
     private final ArgOptions argOptions;
     
@@ -250,7 +249,7 @@ public class RandomIndexingMain extends GenericMain {
 
 	File output = (overwrite)
 	    ? new File(outputDir, RANDOM_INDEXING_SPACE_FILE_NAME)
-	    : File.createTempFile("random-indexing-semantic-space", "sspace",
+	    : File.createTempFile("random-indexing", "sspace",
 				  outputDir);
 
 	SemanticSpaceUtils.printSemanticSpace(ri, output);

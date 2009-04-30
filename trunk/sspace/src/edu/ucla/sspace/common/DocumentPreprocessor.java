@@ -182,7 +182,6 @@ public class DocumentPreprocessor {
 	document = document.replaceAll("/", " / ");
 	document = document.replaceAll(":", " : ");
 	document = document.replaceAll("\"", " \" ");
-	
 
 	// Step 3: Removing words over 20 characters in length.
 	st = new StringTokenizer(document);

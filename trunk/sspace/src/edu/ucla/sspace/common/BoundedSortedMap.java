@@ -24,6 +24,10 @@ package edu.ucla.sspace.common;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * A {@code Map} implementation that grows to a fixed size and then retains only
+ * the largest elements.
+ */
 public class BoundedSortedMap<K,V> extends TreeMap<K,V> {
   private final int bound;
 
@@ -37,7 +41,7 @@ public class BoundedSortedMap<K,V> extends TreeMap<K,V> {
   public V put(K key, V value) {
     V old = super.put(key, value);
     if (size() > bound) {
-      remove(lastKey());
+      remove(firstKey());
     }
     return old;
   }
