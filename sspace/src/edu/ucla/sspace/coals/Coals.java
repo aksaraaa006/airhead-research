@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.coals;
 
-import edu.ucla.sspace.common.matrix.SparseMatrix;
 import edu.ucla.sspace.common.matrix.ArrayMatrix;
 
 import edu.ucla.sspace.common.Index;
@@ -298,6 +297,8 @@ public class Coals implements SemanticSpace {
     for (int i = 0; i < wordCount; ++i)
       wordToIndex.put(keys[i], i);
 
+    totalWordFreq.clear();
+    wordFreqFilter.clear();
     synchronized (rawOccuranceWriter) {
       rawOccuranceWriter.close();
     }
@@ -305,21 +306,17 @@ public class Coals implements SemanticSpace {
     try {
       BufferedReader br = new BufferedReader(new FileReader(rawOccurances));
       String line = null;
-      Matrix correl = new SparseMatrix(wordCount, wordCount);
+      Matrix correl = new ArrayMatrix(wordCount, wordCount);
       while ((line = br.readLine()) != null) {
         String[] splitLine = line.split("\\|");
-        System.out.println(splitLine[0]);
-        System.out.println(splitLine[1]);
         Integer r = wordToIndex.get(splitLine[0]);
         Integer c = wordToIndex.get(splitLine[1]);
         if (r == null || c == null)
           continue;
-        System.out.println("holy shit i'm updating things");
         double value = Double.parseDouble(splitLine[2]);
         correl.set(r.intValue(), c.intValue(),
                    value + correl.get(r.intValue(), c.intValue()));
       }
-      totalWordFreq.clear();
       return correl;
     } catch (IOException ioe) {
       ioe.printStackTrace();
