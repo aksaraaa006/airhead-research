@@ -129,8 +129,6 @@ public class SimilarityListGenerator {
 	    throw new IllegalArgumentException(
 		"output directory is not a directory: " + outputDir);
 	}
-
-	final SemanticSpace sspace = new FileBasedSemanticSpace(sspaceFile);
 	    	
 	// Load the program-specific options next.
 	int numThreads = Runtime.getRuntime().availableProcessors();
@@ -143,19 +141,9 @@ public class SimilarityListGenerator {
 	    overwrite = argOptions.getBooleanOption("overwrite");
 	}
 
-	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
+	verbose = argOptions.hasOption('v');
 
 	// load the behavior options
-	argOptions.addOption('p', "printSimilarity", "whether to print the " +
-			     "similarity score (default: false)", true, "int", 
-			     "Program Options");
-	argOptions.addOption('s', "similarityFunction", "name of a similarity " +
-			     "function (default: cosine)", true, "String", 
-			     "Program Options");
-	argOptions.addOption('n', "numSimilar", "the number of similar words " +
-			     "to print (default: 10)", true, "String", 
-			     "Program Options");
-
 	final boolean printSimilarity = (argOptions.hasOption('p'))
 	    ? argOptions.getBooleanOption('p') : false;
 
@@ -167,8 +155,15 @@ public class SimilarityListGenerator {
 	    Similarity.class.getMethod(similarityName, 
 	        new Class[] {double[].class, double[].class });
 
+	verbose("using similarity method: Similarity.%s%n",
+		similarityMethod.getName());
+
 	final int numSimilar = (argOptions.hasOption('n'))
 	    ? argOptions.getIntOption('n') : 10;
+
+
+	verbose("Loading semantic space: " + sspaceFile.getName());
+	final SemanticSpace sspace = new FileBasedSemanticSpace(sspaceFile);
 
 	File output = (overwrite)
 	    ? new File(outputDir, sspaceFile.getName() + ".similarityList")
