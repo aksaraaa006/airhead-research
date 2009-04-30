@@ -27,10 +27,12 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.matrix.SparseMatrix;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
@@ -58,17 +60,30 @@ public class FileBasedSemanticSpace implements SemanticSpace {
   private final HashMap<String, Integer> termToIndex ;
 
   /**
-   * Create the {@link FileBasedSemanticSpace} from the provided file, which
-   * must be in the format produced by
-   * {@link edu.ucla.sspace.common.SemanticSpaceUtils}.
+   * Creates the {@link FileBasedSemanticSpace} from the file with the provided
+   * name, which must be in the format produced by {@link
+   * edu.ucla.sspace.common.SemanticSpaceUtils}.
+   *
    * @param filename filename of the data intended be provided by this
    *   {@link edu.ucla.sspace.common.SemanticSpace}.
    */
   public FileBasedSemanticSpace(String filename) {
+      this(new File(filename));
+  }
+
+  /**
+   * Creates the {@link FileBasedSemanticSpace} from the provided file, which
+   * must be in the format produced by {@link
+   * edu.ucla.sspace.common.SemanticSpaceUtils}.
+   *
+   * @param file a file containing the data intended be provided by this {@link
+   *   edu.ucla.sspace.common.SemanticSpace}.
+   */
+  public FileBasedSemanticSpace(File file) {
     termToIndex = new HashMap<String, Integer>();
     Matrix builtMatrix = null;
     try {
-      BufferedReader br = new BufferedReader(new FileReader(filename));
+      BufferedReader br = new BufferedReader(new FileReader(file));
       String line = br.readLine();
       if (line == null)
         throw new IOError(new Throwable("An empty file has been passed in"));
@@ -103,7 +118,7 @@ public class FileBasedSemanticSpace implements SemanticSpace {
    * {@inheritDoc}
    */
   public Set<String> getWords() {
-    return termToIndex.keySet();
+    return Collections.unmodifiableSet(termToIndex.keySet());
   }
   
   /**

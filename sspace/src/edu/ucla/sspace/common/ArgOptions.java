@@ -340,6 +340,17 @@ public class ArgOptions {
 	return o;
     }
 
+    public int getIntOption(char shortName) {
+	Option o = getOption(shortName);
+	if (optionToValue.containsKey(o)) {
+	    return Integer.parseInt(optionToValue.get(o));
+	}
+	else {
+	    throw new IllegalArgumentException(
+		"Option -" + shortName + " does not have a value");
+	}
+    }
+
     public int getIntOption(String optionName) {
 	Option o = getOption(optionName);
 	if (optionToValue.containsKey(o)) {
@@ -351,6 +362,17 @@ public class ArgOptions {
 	}
     }
 
+    public boolean getBooleanOption(char shortName) {
+	Option o = getOption(shortName);
+	if (optionToValue.containsKey(o)) {
+	    return Boolean.parseBoolean(optionToValue.get(o));
+	}
+	else {
+	    throw new IllegalArgumentException(
+		"Option -" + shortName + " does not have a value");
+	}
+    }
+
     public boolean getBooleanOption(String optionName) {
 	Option o = getOption(optionName);
 	if (optionToValue.containsKey(o)) {
@@ -359,6 +381,17 @@ public class ArgOptions {
 	else {
 	    throw new IllegalArgumentException(
 		"Option " + optionName + " does not have a value");
+	}
+    }
+
+    public String getStringOption(char shortName) {
+	Option o = getOption(shortName);
+	if (optionToValue.containsKey(o)) {
+	    return optionToValue.get(o);
+	}
+	else {
+	    throw new IllegalArgumentException(
+		"Option -" + shortName + " does not have a value");
 	}
     }
 
@@ -375,6 +408,11 @@ public class ArgOptions {
 
     public boolean hasOption(String optionName) {
 	Option o = longNameToOption.get(optionName);
+	return (o == null) ? false : optionToValue.containsKey(o);
+    }
+
+    public boolean hasOption(char shortName) {
+	Option o = shortNameToOption.get(shortName);
 	return (o == null) ? false : optionToValue.containsKey(o);
     }
 
