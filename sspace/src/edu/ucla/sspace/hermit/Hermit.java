@@ -22,6 +22,7 @@
 package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.common.Cluster;
+import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
@@ -31,7 +32,6 @@ import edu.ucla.sspace.common.SVD;
 import edu.ucla.sspace.lsa.MatrixTransformer;
 import edu.ucla.sspace.lsa.LogEntropyTransformer;
 
-import edu.ucla.sspace.holograph.RandomIndexBuilder;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -79,7 +79,7 @@ public class Hermit implements SemanticSpace {
   /**
    * Beagle based builder for random index vectors.
    */
-  private final RandomIndexBuilder indexBuilder;
+  private final IndexBuilder indexBuilder;
   /**
    * Sparse matrix map which will contain the raw lsa counts in memory.
    */
@@ -125,16 +125,16 @@ public class Hermit implements SemanticSpace {
   /**
    * Construct the Hermit Semantic Space
    */
-  public Hermit() {
+  public Hermit(IndexBuilder builder, int vectorSize) {
 	termIndexCounter = new AtomicInteger(0);
 	docIndexCounter = new AtomicInteger(0);
 	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
 
-    indexBuilder = new RandomIndexBuilder();
 	termDocCount = new ConcurrentHashMap<Index,Integer>();
     termFileWriters = new ConcurrentHashMap<String, BufferedWriter>();
 	termToIndex = new ConcurrentHashMap<String,Integer>();
-    indexVectorSize = 2048;
+    indexBuilder = builder;
+    indexVectorSize = vectorSize;
   }
 
   /**
@@ -148,7 +148,10 @@ public class Hermit implements SemanticSpace {
    * {@inheritDoc}
    */
   public double[] getVectorFor(String word) {
-    return new double[0];
+    Integer index = termToIndex.get(word);
+    if (index == null)
+      return null;
+    return wordSpace.getRow(index.intValue());
   }
 
   /**
