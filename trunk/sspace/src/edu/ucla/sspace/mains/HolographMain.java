@@ -40,7 +40,7 @@ import java.util.Iterator;
 import java.util.Properties;
 
 /**
- * An executable class for running {@link Holograph} (LSA) from the
+ * An executable class for running {@link Holograph} from the
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
@@ -56,17 +56,12 @@ import java.util.Properties;
  *
  *   </ul>
  *
- * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA vectors.
- *      See {@link Holograph} for default value
+ * <li> {@code --dimensions=<int>} how many dimensions to use for the Holograph vectors.
+ *      512 is the default value.
  *
  * <li> {@code --threads=<int>} how many threads to use when processing the
  *      documents.  The default is one per core.
  * 
- * <li> {@code --preprocess=<class name>} specifies an instance of {@link
- *      MatrixTransformer} to use in preprocessing the word-document matrix
- *      compiled by LSA prior to computing the SVD.  See {@link
- *      Holograph} for default value
- *
  * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
  *      existing output files.  The default is {@code true}.  If set to {@code
  *      false}, a unique integer is inserted into the file name.
@@ -79,9 +74,9 @@ import java.util.Properties;
  * <p>
  *
  * An invocation will produce one file as output {@code
- * lsa-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * holograph-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
  * this file will be replaced for each new semantic space.  Otherwise, a new
- * output file of the format {@code lsa-semantic-space<number>.sspace} will be
+ * output file of the format {@code holograph-semantic-space<number>.sspace} will be
  * created, where {@code <number>} is a unique identifier for that program's
  * invocation.  The output file will be placed in the directory specified on the
  * command line.
@@ -92,11 +87,12 @@ import java.util.Properties;
  * thread per core, which is the default setting.
  *
  * @see Holograph
- * @see MatrixTransformer
  *
- * @author David Jurgens
+ * @author Keith Stevens 
  */
 public class HolographMain extends GenericMain {
+
+    public static final int DEFAULT_DIMENSION = 512;
 
     public static final String LSA_SEMANTIC_SPACE_FILE_NAME =
 	"lsa-semantic-space.sspace";
@@ -117,6 +113,8 @@ public class HolographMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     private void addOptions() {
+    argOptions.addOption('n', "dimension", "the length of each holographic vector",
+                 true, "int");
 	argOptions.addOption('l', "fileList", "a list of document files", 
 			     true, "file name", "Required (at least one of)");
 	argOptions.addOption('d', "docFile", 
@@ -162,12 +160,16 @@ public class HolographMain extends GenericMain {
 	    throw new IllegalArgumentException(
 		"output directory is not a directory: " + outputDir);
 	}
-
-	Holograph h = new Holograph(new RandomIndexBuilder());
 	
 	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
 
 	Iterator<Document> docIter = null;
+    int dimension = (argOptions.hasOption("dimension"))
+      ? argOptions.getIntOption("dimension")
+      : DEFAULT_DIMENSION;
+
+	Holograph h = new Holograph(new RandomIndexBuilder(dimension), dimension);
+
 	String fileList = (argOptions.hasOption("fileList"))
 	    ? argOptions.getStringOption("fileList")
 	    : null;
