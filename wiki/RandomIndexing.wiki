@@ -1,0 +1,51 @@
+#summary A description of Random Indexing and how to run the S-Space algorithm for it.
+#labels Featured,Phase-Deploy,Phase-Requirements,Phase-Implementation
+
+= Introduction =
+
+Random Indexing (RI) is a word co-occurrence based approach to statistical semantics.  RI uses statistical approximations of the full word co-occurrence data to achieve dimensionality reduction.  This results in a much quicker running time and fewer required dimensions.
+
+In most co-occurence models, a word-by-word matrix is constructed, where the values denote how many times the column's word occurred in the context of the row's word.  RI instead represents co-occurrence through index vectors. Each word is assigned a high-dimensional, random vector that is known as its index vector.  These index vectors are very sparse - typically 7 ± 2 non zero bits for a vector of length 2048, which ensures that the the chance of any two arbitrary index vectors having an overlapping meaning (i.e. a cosine similarity that is non-zero) is very low.  Word semantics are calculated for each word by keeping a running sum of all of the index vectors for the words that co-occur.
+
+Sahlgren et al. (2008) introduced another variation on RI, where the semantics also capture word order by using a permutation function. For each occurrence of a word, rather than summing the index vectors of the co-occurring words, the permutation function is used to transform the co-occurring words based on their position. For example, consider the sentece, "the quick brown fox jumps over the lazy dog." With a window-size of 2, the semantic vector for "fox" is added with the values Π<sup>-2</sup>(quick<sub>index</sub>) + Π<sup>-1</sup>(brown<sub>index</sub>) + Π<sup>1</sup>(jumps<sub>index</sub>) + Π<sup>2</sup>(over<sub>index</sub>), where Π<sup>`k`</sup> denotes the `k`<sup>th</sup> permutation of the specified index vector. 
+
+For more information on Random Indexing see the following papers for a review.
+
+ * M. Sahlgren, "Vector-based semantic analysis: Representing word meanings based on random labels," in Proceedings of the ESSLLI 2001 Workshop on Semantic Knowledge Acquisition and Categorisation, Helsinki, Finland, 2001.
+ * M. Sahlgren, "An introduction to random indexing," in Proceedings of the Methods and Applicatons of Semantic Indexing Workshop at the 7th International Conference on Terminology and Knowledge Engineering, 2005.
+ * M. Sahlgren, A. Holst, and P. Kanerva, "Permutations as a means to encode order in word space," in Proceedings of the 30th Annual Meeting of the Cognitive Science Society (CogSci’08), 2008.
+
+= S-Space Implementation =
+
+The core Random Indexing algorithm is implemented in one file [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/ri/RandomIndexing.java RandomIndexing.java].  We also support a command-line executable class, [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/mains/RandomIndexingMain.java RandomIndexingMain.java] that uses the `RandomIndexing` class to build a semantic space.
+
+The current software processes a corpus as a series of "documents," which provides a way for the user to segment the corpus based on paragraph or sentence boundaries.  Segmentation is not require but has the effect of remove co-occurrence counts for words that appear across boundaries, e.g. not counting words in other sentences for sentence-based documents.  No specific segmentation choice is regarded as the best and users are encouraged to try different ones.
+
+== Software Requirements ==
+
+Random Indexing requires Java 6.
+
+== Running `RandomIndexing` from the command line ==
+
+RI can be invoke either by using the `RandomIndexingMain` class or by using the `random-indexing.jar` file provided in the downloads.  Both methods are equivalent.  Both support the following options:
+
+  *  *Required* (at least one of):
+    * `-d`, `--docFile` a file where each line is a document
+    * `-f`, `--fileList` a list of document files 
+  * *Algorithm Options*:
+    * `-l`, `--vectorLength` length of semantic vectors
+    * `-n`, `--permutationFunction` permutation function to use
+    * `-p`, `--usePermutations` whether to permute index vectors based on word order
+    * `-s`, `--windowSize` how many words to consider in each direction 
+  * *Program Options*:
+    * `-t`, `--threads` the number of threads to use
+    * `-v`, `--verbose` prints verbose output
+    * `-w`, `--overwrite` specifies whether to overwrite the existing output 
+
+The result will produce a semantic space file `random-indexing.sspace` in the provided output directory.  If `overwrite` is set to `false`, a new file will be created and put in the output directory without overwriting any existing semantic space files.
+
+Example:
+{{{
+java -server -Xmx2g -jar random-indexing-jar --docFile=my_corpus.txt --threads=4 --verbose output-directory/
+}}}
+This runs the `RandomIndexingMain` class using the server JVM and a 2GB heap.  The corpus is specified as `my_corpus.txt` and is processed with each line being a different document.  The resulting `random-indexing.sspace` file will be placed in `output-directory/`.
