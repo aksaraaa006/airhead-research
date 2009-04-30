@@ -202,6 +202,9 @@ public class SimilarityListGenerator {
 				if (term.equals(other)) 
 					continue;
 				
+// 				verbose("comparing %s to %s%n", 
+// 					term, other);
+
 				Pair<String> pair = new Pair<String>(term, other);
 				
 				double[] otherVec = sspace.getVectorFor(other);
@@ -213,7 +216,7 @@ public class SimilarityListGenerator {
 				} 
 				else {
 				    similarity = (Double)(similarityMethod.
-					invoke(vector, otherVec));
+							  invoke(null, new Object[]{vector, otherVec}));
 				}
 				    
 				mostSimilar.put(similarity, other);
@@ -240,6 +243,7 @@ public class SimilarityListGenerator {
 			}
 			synchronized(outputWriter) {
 			    outputWriter.println(sb.toString());
+			    outputWriter.flush();
 			}
 		    }
 		});
