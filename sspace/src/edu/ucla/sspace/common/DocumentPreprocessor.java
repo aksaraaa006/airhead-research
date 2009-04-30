@@ -169,19 +169,19 @@ public class DocumentPreprocessor {
 	// Separate all punctionation from words that it might touch.  This
 	// effectively turns the punction into a separate token for 
 	// co-occurrence counting purposes.
-	document.replaceAll("'", " ' ");
-	document.replaceAll("!", " ! ");
-	document.replaceAll(".", " . ");
-	document.replaceAll("?", " ? ");
-	document.replaceAll(";", " ; ");
-	document.replaceAll(",", " , ");
-	document.replaceAll("(", " ( ");
-	document.replaceAll(")", " ) ");
-	document.replaceAll("[", " [ ");
-	document.replaceAll("]", " ] ");
-	document.replaceAll("/", " / ");
-	document.replaceAll(":", " : ");
-	document.replaceAll("\"", " \" ");
+	document = document.replaceAll("'", " ' ");
+	document = document.replaceAll("!", " ! ");
+	document = document.replaceAll("\\.", " . ");
+	document = document.replaceAll("\\?", " ? ");
+	document = document.replaceAll(";", " ; ");
+	document = document.replaceAll(",", " , ");
+	document = document.replaceAll("\\(", " ( ");
+	document = document.replaceAll("\\)", " ) ");
+	document = document.replaceAll("\\[", " [ ");
+	document = document.replaceAll("\\]", " ] ");
+	document = document.replaceAll("/", " / ");
+	document = document.replaceAll(":", " : ");
+	document = document.replaceAll("\"", " \" ");
 	
 
 	// Step 3: Removing words over 20 characters in length.
@@ -239,7 +239,7 @@ public class DocumentPreprocessor {
 	}
 	if (actualWords / (double)(totalTokens) < .8) {
 	    // discard the document
-	    return "";
+	    //return "";
 	}
 	
 	// Step 9: Discarding duplicate articles. This was done by computing a

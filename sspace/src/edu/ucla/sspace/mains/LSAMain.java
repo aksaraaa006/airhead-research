@@ -224,7 +224,7 @@ public class LSAMain extends GenericMain {
 	parseDocumentsMultiThreaded(lsa, docIter, props, numThreads);
 
 	lsa.processSpace(props);
-	
+
 	File output = (overwrite)
 	    ? new File(outputDir, LSA_SEMANTIC_SPACE_FILE_NAME)
 	    : File.createTempFile("lsa-semantic-space", "sspace", outputDir);
