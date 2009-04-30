@@ -53,20 +53,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * of several n-grams is added to the holographic meaning.  The main
  * functionality of this class can be found in the {@link RandomIndexBuilder}
  * class.
- *
- * Currently this class is not thread safe and does not accept Properties.
  */
 public class Holograph implements SemanticSpace {
   public static final int CONTEXT_SIZE = 6;
-  public static final int LINES_TO_SKIP = 40;
-  public static final int MAX_LINES = 500;
 
   private final IndexBuilder indexBuilder;
   private final Map<String, double[]> termHolographs;
   private final int indexVectorSize;
 
-  public Holograph(IndexBuilder builder) {
-    indexVectorSize = 512;
+  public Holograph(IndexBuilder builder, int vectorSize) {
+    indexVectorSize = vectorSize;
     indexBuilder = builder;
     termHolographs = new ConcurrentHashMap<String, double[]>();
   }
@@ -107,11 +103,15 @@ public class Holograph implements SemanticSpace {
   }
   
   /**
-   * {@inheritDoc}
+   * No processing is performed on the holographs.
    */
   public void processSpace(Properties properties) {
   }
 
+  /**
+   * Given a context of words, update the meaning of the second word in the
+   * sequence as defined in {@link RandomIndexBuilder}.
+   */
   private void updateHolograph(LinkedList<String> words) {
     if (words.size() < CONTEXT_SIZE) {
       return;

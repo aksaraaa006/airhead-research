@@ -32,7 +32,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RandomIndexBuilder implements IndexBuilder {
-  private static final int DEFAULT_INDEX_VECTOR_SIZE = 2048;
+  private static final int DEFAULT_INDEX_VECTOR_SIZE = 512;
 
   private ConcurrentHashMap<String, double[]> termToRandomIndex;
   private RealDoubleFFT_Radix2 fft;
@@ -53,13 +53,13 @@ public class RandomIndexBuilder implements IndexBuilder {
   }
 
   private void init(int s) {
+    randomGenerator = new Random();
     termToRandomIndex = new ConcurrentHashMap<String, double[]>();
     indexVectorSize = s;
     fft = new RealDoubleFFT_Radix2(indexVectorSize);
     newestRandomVector = generateRandomVector(); 
     // Enter the zero vector for the empty string.
     termToRandomIndex.put("", newVector(0));
-    randomGenerator = new Random();
     stdev = 1 / Math.sqrt(indexVectorSize);
     permute1 = new int[indexVectorSize];
     permute2 = new int[indexVectorSize];
