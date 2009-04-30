@@ -61,18 +61,6 @@ public class DocumentPreprocessorTest {
     assertEquals(expectedResult, testProcessor.process(testDocument));
   }
 
-  @Test public void ignoreJunkDocumentTest() {
-    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f"};
-    // Just at the limit.
-    String testDocument = "can a word be a b c d 1234 :]";
-    String expectedResult = "can a word be a b c d <num> <emote>";
-    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
-    assertEquals(expectedResult, testProcessor.process(testDocument));
-    // Just under the limit.
-    testDocument = "can a word be a b c abc@car.com 1234 :]";
-    assertEquals("", testProcessor.process(testDocument));
-  }
-
   @Test public void convertDollarTest() {
     String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word be a b c d e f g or a $5";
