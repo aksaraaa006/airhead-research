@@ -423,8 +423,14 @@ public class ArgOptions {
 	int maxDescLength = -1;
 	for (Option o : shortNameToOption.values()) {
 	    String longName = o.longName;
-	    if (longName != null && longName.length() > maxNameLength) {
-		maxNameLength = longName.length();
+	    String valDesc = o.valueName;
+	    if (longName != null) {
+		int length = (valDesc == null) 
+		    ? longName.length()
+		    : longName.length() + valDesc.length();
+		if (length > maxNameLength) {
+		    maxNameLength = length;
+		}
 	    }
 	    String desc = o.description;
 	    if (desc != null && maxDescLength < desc.length()) {
@@ -445,8 +451,17 @@ public class ArgOptions {
 		
 		int spacesToAppend = -1;
 		if (o.longName != null) {
+		    int length = o.longName.length();
 		    sb.append(", --").append(o.longName);
-		    spacesToAppend = (maxNameLength - o.longName.length()) + 4;
+		    if (o.valueName != null) {
+			sb.append("=").append(o.valueName);
+			length += o.valueName.length();
+		    }
+		    else {
+			// for the =
+			length -= 1;
+		    }
+		    spacesToAppend = (maxNameLength - length) + 4;
 		}
 		else {
 		    spacesToAppend = maxNameLength + 4;
@@ -479,8 +494,17 @@ public class ArgOptions {
 		
 		int spacesToAppend = -1;
 		if (o.longName != null) {
+		    int length = o.longName.length();
 		    sb.append(", --").append(o.longName);
-		    spacesToAppend = (maxNameLength - o.longName.length()) + 4;
+		    if (o.valueName != null) {
+			sb.append("=").append(o.valueName);
+			length += o.valueName.length();
+		    }
+		    else {
+			// for the =
+			length -= 1;
+		    }
+		    spacesToAppend = (maxNameLength - length) + 4;
 		}
 		else {
 		    spacesToAppend = maxNameLength + 4;
@@ -500,7 +524,7 @@ public class ArgOptions {
 
 	return sb.toString();
     }
-
+    
 
     /**
      * A helper class for containing all the information on an option.

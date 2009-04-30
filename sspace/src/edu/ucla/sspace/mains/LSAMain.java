@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Properties;
 
 import edu.ucla.sspace.common.ArgOptions;
@@ -101,11 +102,6 @@ public class LSAMain extends GenericMain {
     public static final String LSA_SEMANTIC_SPACE_FILE_NAME =
 	"lsa-semantic-space.sspace";
 
-    /**
-     * internal flag for printing verbose information to stdout.
-     */
-    private boolean verbose;
-
     private final ArgOptions argOptions;
     
     private LSAMain() {
@@ -118,20 +114,20 @@ public class LSAMain extends GenericMain {
      */
     private void addOptions() {
 	argOptions.addOption('l', "fileList", "a list of document files", 
-			     true, "file name", "Required (at least one of)");
+			     true, "FILE[,FILE...]", "Required (at least one of)");
 	argOptions.addOption('d', "docFile", 
 			     "a file where each line is a document", true,
-			     "file name", "Required (at least one of)");
+			     "FILE[,FILE...]", "Required (at least one of)");
 
 	argOptions.addOption('n', "dimensions", 
 			     "the number of dimensions in the semantic space",
-			     true, "int"); 
+			     true, "INT"); 
 	argOptions.addOption('t', "threads", "the number of threads to use",
-			     true, "int");
+			     true, "INT");
 	argOptions.addOption('p', "preprocess", "a MatrixTransform class to "
-			     + "use for preprocessing", true, "class name");
+			     + "use for preprocessing", true, "CLASSNAME");
 	argOptions.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output", true, "boolean");
+			     "overwrite the existing output", true, "BOOL");
 
 	argOptions.addOption('v', "verbose", "prints verbose output");
     }
@@ -183,19 +179,43 @@ public class LSAMain extends GenericMain {
 	if (fileList == null && docFile == null) {
 	    throw new Error("must specify document sources");
 	}
-	else if (fileList != null && docFile != null) {
-	    throw new Error("cannot specify both docFile and fileList");
+
+	// Second, determine where the document input sources will be coming
+	// from.
+	Iterator<Document> docIter = null;
+	String fileList = (argOptions.hasOption("fileList"))
+	    ? argOptions.getStringOption("fileList")
+	    : null;
+
+	String docFile = (argOptions.hasOption("docFile"))
+	    ? argOptions.getStringOption("docFile")
+	    : null;
+	if (fileList == null && docFile == null) {
+	    throw new Error("must specify document sources");
 	}
-	else if (fileList != null) {
+	
+	Collection<Iterator<Document>> docIters = 
+	    new LinkedList<Iterator<Document>>();
+
+	if (fileList != null) {
+	    String[] fileNames = fileList.split(",");
 	    // we have a file that contains the list of all document files we
 	    // are to process
-	    docIter =  new FileListDocumentIterator(fileList);
+	    for (String s : fileNames) {
+		docIters.add(new FileListDocumentIterator(s));
+	    }
 	}
-	else {
+	if (docFile != null) {
+	    String[] fileNames = docFile.split(",");
 	    // all the documents are listed in one file, with one document per
 	    // line
-	    docIter = new OneLinePerDocumentIterator(docFile);
+	    for (String s : fileNames) {
+		docIters.add(new OneLinePerDocumentIterator(s));
+	    }
 	}
+
+	// combine all of the document iterators into one iterator.
+	docIter = new CombinedIterator<Document>(docIters);
 	
 	int numThreads = Runtime.getRuntime().availableProcessors();
 	if (argOptions.hasOption("threads")) {

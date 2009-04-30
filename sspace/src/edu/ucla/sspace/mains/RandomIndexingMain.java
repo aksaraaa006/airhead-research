@@ -27,9 +27,11 @@ import java.io.IOException;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Properties;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.CombinedIterator;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
 
 import edu.ucla.sspace.common.document.Document;
@@ -47,33 +49,35 @@ import edu.ucla.sspace.ri.RandomIndexing;
  * <li><u>Required (at least one of)</u>:
  *   <ul>
  *
- *   <li> {@code -d}, {@code --docFile} a file where each line is a document
+ *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]} a file where each line is
+ *        a document
  *
- *   <li> {@code -f}, {@code --fileList} a list of document files
+ *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a list of document files
  *   </ul>
  *
  * <li><u>Algorithm Options</u>:
  *   <ul>
  *   
- *   <li>  {@code -l}, {@code --vectorLength}  length of semantic vectors
+ *   <li>  {@code -l}, {@code --vectorLength=INT}  length of semantic vectors
 
- *   <li> {@code -n}, {@code --permutationFunction} permutation function to use
+ *   <li> {@code -n}, {@code --permutationFunction=NAME} permutation function to
+ *        use
 
- *   <li> {@code -p}, {@code --usePermutations} whether to permute index vectors
- *        based on word order
+ *   <li> {@code -p}, {@code --usePermutations=BOOL} whether to permute index
+ *        vectors based on word order
 
- *   <li> {@code -s}, {@code --windowSize} how many words to consider in each
+ *   <li> {@code -s}, {@code --windowSize=INT} how many words to consider in each
  *        direction
  *   </ul> 
  *
  * <li><u>Program Options</u>:
  *   <ul>
- *   <li> {@code -t}, {@code --threads} the number of threads to use
+ *   <li> {@code -t}, {@code --threads=INT} the number of threads to use
  *
  *   <li> {@code -v}, {@code --verbose} prints verbose output
  *
- *   <li> {@code -w}, {@code --overwrite} specifies whether to overwrite the
- *        existing output
+ *   <li> {@code -w}, {@code --overwrite=BOOl} specifies whether to overwrite
+ *        the existing output
  *   </ul>
  *
  * </ul>
@@ -116,27 +120,27 @@ public class RandomIndexingMain extends GenericMain {
 
 	argOptions.addOption('p', "usePermutations", "whether to permute " +
 			     "index vectors based on word order", true,
-			     "boolean", "Algorithm Options");
+			     "BOOL", "Algorithm Options");
 	argOptions.addOption('l', "vectorLength", "length of semantic vectors",
-			     true, "int", "Algorithm Options");
+			     true, "INT", "Algorithm Options");
 	argOptions.addOption('s', "windowSize", "how many words to consider " +
 			     "in each direction", true,
-			     "int", "Algorithm Options");
+			     "INT", "Algorithm Options");
 	argOptions.addOption('n', "permutationFunction", "permutation function "
 			     + "to use", true,
-			     "PermutationFunction class", "Algorithm Options");
+			     "CLASSNAME", "Algorithm Options");
 
 
 	argOptions.addOption('f', "fileList", "a list of document files", 
-			     true, "file name", "Required (at least one of)");
+			     true, "FILE[,FILE...]", "Required (at least one of)");
 	argOptions.addOption('d', "docFile", 
 			     "a file where each line is a document", true,
-			     "file name", "Required (at least one of)");
+			     "FILE[,FILE]", "Required (at least one of)");
 
 	argOptions.addOption('t', "threads", "the number of threads to use",
-			     true, "int", "Program Options");
+			     true, "INT", "Program Options");
 	argOptions.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output", true, "boolean",
+			     "overwrite the existing output", true, "BOOL",
 			     "Program Options");
 	argOptions.addOption('v', "verbose", "prints verbose output", false, 
 			     null, "Program Options");
@@ -187,19 +191,29 @@ public class RandomIndexingMain extends GenericMain {
 	if (fileList == null && docFile == null) {
 	    throw new Error("must specify document sources");
 	}
-	else if (fileList != null && docFile != null) {
-	    throw new Error("cannot specify both docFile and fileList");
-	}
-	else if (fileList != null) {
+	
+	Collection<Iterator<Document>> docIters = 
+	    new LinkedList<Iterator<Document>>();
+
+	if (fileList != null) {
+	    String[] fileNames = fileList.split(",");
 	    // we have a file that contains the list of all document files we
 	    // are to process
-	    docIter =  new FileListDocumentIterator(fileList);
+	    for (String s : fileNames) {
+		docIters.add(new FileListDocumentIterator(s));
+	    }
 	}
-	else {
+	if (docFile != null) {
+	    String[] fileNames = docFile.split(",");
 	    // all the documents are listed in one file, with one document per
 	    // line
-	    docIter = new OneLinePerDocumentIterator(docFile);
+	    for (String s : fileNames) {
+		docIters.add(new OneLinePerDocumentIterator(s));
+	    }
 	}
+
+	// combine all of the document iterators into one iterator.
+	docIter = new CombinedIterator<Document>(docIters);
 
 	Properties props = System.getProperties();
 
