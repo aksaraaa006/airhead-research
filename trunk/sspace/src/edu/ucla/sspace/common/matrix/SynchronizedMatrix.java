@@ -82,6 +82,6 @@ public class SynchronizedMatrix implements Matrix {
      * {@inheritDoc}
      */
     public synchronized double[][] toDenseArray() {
-	m.toDenseArray();
+	return m.toDenseArray();
     }
 }
