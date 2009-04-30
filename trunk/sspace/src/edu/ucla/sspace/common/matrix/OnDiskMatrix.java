@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.common.matrix;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -69,26 +71,6 @@ public class OnDiskMatrix implements Matrix {
     }
     
     /**
-     * Create a matrix of the provided size using a file created with the
-     * specified name.
-     *
-     * @throws IOError if the backing file for this matrix cannot be created
-     */
-    public OnDiskMatrix(int rows, int cols, String filename) {
-	this(rows, cols, convertToRandomAccess(filename));
-    }
-
-    /**
-     * Create a matrix of the provided size using the provided file and the data
-     * contained by that file.
-     *
-     * @throws IOError if the backing file for this matrix cannot be created
-     */
-    public OnDiskMatrix(int rows, int cols, File f) {
-	this(rows, cols, convertToRandomAccess(f));
-    }
-
-    /**
      *
      *
      * @throws IOError if the backing file for this matrix cannot be created
@@ -111,36 +93,29 @@ public class OnDiskMatrix implements Matrix {
 
     private static RandomAccessFile createTempFile() {
 	try {
-	    return new RandomAccessFile(
-		File.createTempFile("OnDiskMatrix","matrix"), "rw");
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}
-    }
-
-    private static RandomAccessFile convertToRandomAccess(File f) {
-	try {
+	    File f = File.createTempFile("OnDiskMatrix","matrix");
+	    // Make sure the temp file goes away since it can get fairly large
+	    // for big matrices
+	    f.deleteOnExit();
 	    return new RandomAccessFile(f, "rw");
 	} catch (IOException ioe) {
 	    throw new IOError(ioe);
 	}
     }
 
-    private static RandomAccessFile convertToRandomAccess(String filename) {
-	try {
-	    return new RandomAccessFile(new File(filename), "rw");
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}
-    }
-
-
+    /**
+     * Checks that the indices are within the bounds of the matrix and throws an
+     * exception if they are not.
+     */
     private void checkIndices(int row, int col) {
 	if (row < 0 || col < 0 || row >= rows || col >= cols) {
 	    throw new ArrayIndexOutOfBoundsException();
 	}
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double get(int row, int col) {
 	try {
 	    seek(row, col);
@@ -151,14 +126,22 @@ public class OnDiskMatrix implements Matrix {
     }
 
     /**
-     * Returns a copy of the specified row.
+     * {@inheritDoc}
      */
     public double[] getRow(int row) {
 	try {
 	    double[] rowArr = new double[cols];
-	    seek(row, 0);
+	    byte[] rawBytes = new byte[cols * BYTES_PER_FLOAT];
+	    int offset = row * cols * BYTES_PER_FLOAT;
+	    // read the entire row in at once, as this will have better I/O
+	    // performance than multiple successive reads
+	    matrix.readFully(rawBytes, offset, cols);
+	    
+	    // convert the bytes into an input stream
+	    DataInputStream dis = 
+		new DataInputStream(new ByteArrayInputStream(rawBytes));
 	    for (int i = 0; i < cols; ++i) {
-		rowArr[i] = matrix.readFloat();
+		rowArr[i] = dis.readFloat();
 	    }
 	    return rowArr;
 	} catch (IOException ioe) {
@@ -167,12 +150,17 @@ public class OnDiskMatrix implements Matrix {
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public int columns() {
 	return cols;
     }
 
+    /**
+     * Moves the backing file pointer to the location specified by this row and
+     * column.  The next {@code readFloat} call will return this location's
+     * value.
+     */
     private void seek(long row, long col) {
 	try {
 	    matrix.seek((row * cols * BYTES_PER_FLOAT) + (col * BYTES_PER_FLOAT));
@@ -181,6 +169,9 @@ public class OnDiskMatrix implements Matrix {
 	}
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void set(int row, int col, double val) {
 	try {
 	    checkIndices(row, col);
@@ -192,7 +183,7 @@ public class OnDiskMatrix implements Matrix {
     }
     
     /**
-     *
+     * {@inheritDoc}
      */
     public double[][] toDenseArray() {
 	try {
@@ -210,7 +201,7 @@ public class OnDiskMatrix implements Matrix {
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public int rows() {
 	return rows;
