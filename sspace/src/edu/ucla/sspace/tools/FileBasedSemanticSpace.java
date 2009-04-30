@@ -25,6 +25,7 @@ import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.common.matrix.SparseMatrix;
+import edu.ucla.sspace.common.matrix.OnDiskMatrix;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -91,7 +92,7 @@ public class FileBasedSemanticSpace implements SemanticSpace {
       int rows = Integer.parseInt(dimensions[0]);
       int columns = Integer.parseInt(dimensions[1]);
       int index = 0;
-      builtMatrix = new SparseMatrix(rows, columns);
+      builtMatrix = new OnDiskMatrix(rows, columns);
       while ((line = br.readLine()) != null) {
         String[] termVectorPair = line.split("\\|");
         String[] values = termVectorPair[1].split("\\s");
