@@ -34,7 +34,8 @@ import java.io.IOError;
 import java.io.IOException;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -58,7 +59,7 @@ public class FileBasedSemanticSpace implements SemanticSpace {
    * retrieving the words known by this
    * {@link edu.ucla.sspace.common.SemanticSpace}.
    */
-  private final HashMap<String, Integer> termToIndex ;
+  private final Map<String, Integer> termToIndex ;
 
   /**
    * Creates the {@link FileBasedSemanticSpace} from the file with the provided
@@ -81,7 +82,11 @@ public class FileBasedSemanticSpace implements SemanticSpace {
    *   edu.ucla.sspace.common.SemanticSpace}.
    */
   public FileBasedSemanticSpace(File file) {
-    termToIndex = new HashMap<String, Integer>();
+    // NOTE: Use a LinkedHashMap here because this will ensure that the words
+    // are returned in the same row-order as the matrix.  This generates better
+    // disk I/O behavior for accessing the matrix since each word is directly
+    // after the previous on disk.
+    termToIndex = new LinkedHashMap<String, Integer>();
     Matrix builtMatrix = null;
     try {
       BufferedReader br = new BufferedReader(new FileReader(file));
