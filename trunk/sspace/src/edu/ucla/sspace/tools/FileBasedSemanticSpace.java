@@ -87,7 +87,7 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     // disk I/O behavior for accessing the matrix since each word is directly
     // after the previous on disk.
     termToIndex = new LinkedHashMap<String, Integer>();
-    Matrix builtMatrix = null;
+    OnDiskMatrix matrix = null;
     try {
       BufferedReader br = new BufferedReader(new FileReader(file));
       String line = br.readLine();
@@ -97,7 +97,11 @@ public class FileBasedSemanticSpace implements SemanticSpace {
       int rows = Integer.parseInt(dimensions[0]);
       int columns = Integer.parseInt(dimensions[1]);
       int index = 0;
-      builtMatrix = new SynchronizedMatrix(new OnDiskMatrix(rows, columns));
+      
+      // reusable array for writing rows into the matrix
+      double[] row = new double[columns];
+      
+      matrix = new OnDiskMatrix(rows, columns);
       while ((line = br.readLine()) != null) {
         String[] termVectorPair = line.split("\\|");
         String[] values = termVectorPair[1].split("\\s");
@@ -105,19 +109,20 @@ public class FileBasedSemanticSpace implements SemanticSpace {
         if (values.length != columns)
           throw new IOError(
               new Throwable("improperly formated semantic space file"));
+
         for (int c = 0; c < columns; ++c) {
           double d = Double.parseDouble(values[c]);
-          if (d == 0.0)
-            continue;
-          builtMatrix.set(index, c, d);
+	  row[c] = d;
+	  // matrix.set(index, c, d);
         }
+	matrix.setRow(index, row);
         index++;
       }
     } catch (IOException ioe) {
       ioe.printStackTrace();
       System.exit(1);
     }  
-    wordSpace = builtMatrix;
+    wordSpace = new SynchronizedMatrix(matrix);
   }
 
   /**
