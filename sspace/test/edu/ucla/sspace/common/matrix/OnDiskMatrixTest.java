@@ -101,4 +101,47 @@ public class OnDiskMatrixTest {
 	}
     }
 
+    @Test public void setRow2D() {
+	OnDiskMatrix m = new OnDiskMatrix(3,3);
+	
+	for (int i = 0; i < 3; ++i) {
+	    for (int j = 0; j < 3; ++j) {
+		m.set(i, j, (i+1) * (j+1));
+	    }
+	}
+	
+	double[] d = new double[] { 9, 9, 9 };
+	m.setRow(1, d);
+	double[] row = m.getRow(1);	
+	assertEquals(3, row.length);
+
+	for (int j = 0; j < 3; ++j) {
+	    assertEquals(9, row[j], 0);
+	}	
+    }
+
+    @Test public void setRow1D() {
+	int length = 16;
+
+	OnDiskMatrix m = new OnDiskMatrix(1,length);
+	
+	for (int i = 0; i < length; ++i) {
+	    m.set(0, i, i);
+	}
+
+	double[] d = new double[length];
+	for (int i = 0; i < length; ++i) {
+	    d[i] = 99;
+	}
+	m.setRow(0, d);
+
+	double[] row = m.getRow(0);
+	assertEquals(length, row.length);
+	
+	for (int j = 0; j < row.length; ++j) {
+	    assertEquals(99, row[j], 0);
+	}
+    }
+
+
 }

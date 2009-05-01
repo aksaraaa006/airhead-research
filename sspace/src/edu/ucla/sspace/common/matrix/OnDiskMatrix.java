@@ -22,7 +22,9 @@
 package edu.ucla.sspace.common.matrix;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -138,11 +140,10 @@ public class OnDiskMatrix implements Matrix {
 	try {
 	    double[] rowArr = new double[cols];
 	    byte[] rawBytes = new byte[cols * BYTES_PER_DOUBLE];
-	    //int offset = row * cols * BYTES_PER_DOUBLE;
 	    seek(row, 0);
 	    // read the entire row in at once, as this will have better I/O
 	    // performance than multiple successive reads
-	    matrix.readFully(rawBytes, 0, cols * BYTES_PER_DOUBLE);
+	    matrix.readFully(rawBytes, 0, rawBytes.length);
 	    
 	    // convert the bytes into an input stream
 	    DataInputStream dis = 
@@ -189,6 +190,28 @@ public class OnDiskMatrix implements Matrix {
 	    checkIndices(row, col);
 	    seek(row, col);	    
 	    matrix.writeDouble(val);
+	} catch (IOException ioe) {
+	    throw new IOError(ioe); // rethrow unchecked
+	}
+    }
+    
+    public void setRow(int row, double[] val) {
+	try {
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    DataOutputStream dos = new DataOutputStream(baos);
+	    for (int i = 0; i < val.length; ++i) {
+		dos.writeDouble(val[i]);
+	    }
+	    setRow(row, baos.toByteArray());
+	} catch (IOException ioe) {
+	    throw new IOError(ioe); // rethrow unchecked
+	}
+    }
+
+    public void setRow(int row, byte[] valuesAsBytes) {
+	try {
+	    seek(row, 0);
+	    matrix.write(valuesAsBytes, 0, valuesAsBytes.length);
 	} catch (IOException ioe) {
 	    throw new IOError(ioe); // rethrow unchecked
 	}

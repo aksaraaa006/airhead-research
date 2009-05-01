@@ -54,7 +54,9 @@ public class Similarity {
 	}
 	aMagnitude = Math.sqrt(aMagnitude);
 	bMagnitude = Math.sqrt(bMagnitude);
-	return dotProduct / (aMagnitude * bMagnitude);
+	return (aMagnitude == 0 || bMagnitude == 0)
+	    ? 0
+	    : dotProduct / (aMagnitude * bMagnitude);
     }
     
     public static double cosineSimilarity(int[] a, int[] b) {
@@ -74,7 +76,9 @@ public class Similarity {
 	
 	double aMagnitudeSqRt = Math.sqrt(aMagnitude);
 	double bMagnitudeSqRt = Math.sqrt(bMagnitude);
-	return dotProduct / (aMagnitudeSqRt * bMagnitudeSqRt);
+	return (aMagnitudeSqRt == 0 || bMagnitudeSqRt == 0)
+	    ? 0
+	    : dotProduct / (aMagnitude * bMagnitude);
     }
 
     // REMINDER: this could be made more effecient by not looping
