@@ -50,7 +50,7 @@ public class OnDiskMatrix implements Matrix {
      */
     private static final int HEADER_LENGTH = 8;
 
-    private static final int BYTES_PER_FLOAT = 4;
+    private static final int BYTES_PER_DOUBLE = 8;
 
     /**
      * The on-disk storage space for the matrix
@@ -76,13 +76,16 @@ public class OnDiskMatrix implements Matrix {
      * @throws IOError if the backing file for this matrix cannot be created
      */
     OnDiskMatrix(int rows, int cols, RandomAccessFile raf) {
+	if (rows <= 0 || cols <= 0) {
+	    throw new IllegalArgumentException("dimensions must be positive");
+	}
 	try {
 	    this.matrix = raf;
 	    this.rows = rows;
 	    this.cols = cols;
 	    
 	    // initialize the matrix in memory;
-	    matrix.setLength(HEADER_LENGTH + (rows * cols * BYTES_PER_FLOAT));
+	    matrix.setLength(HEADER_LENGTH + (rows * cols * BYTES_PER_DOUBLE));
 	    matrix.seek(0);
 	    matrix.writeInt(rows);
 	    matrix.writeInt(cols);
@@ -108,8 +111,11 @@ public class OnDiskMatrix implements Matrix {
      * exception if they are not.
      */
     private void checkIndices(int row, int col) {
-	if (row < 0 || col < 0 || row >= rows || col >= cols) {
-	    throw new ArrayIndexOutOfBoundsException();
+	if (row < 0 || row >= rows) {
+	    throw new ArrayIndexOutOfBoundsException("row: " + row);
+	}
+	else if (col < 0 || col >= cols) {
+	    throw new ArrayIndexOutOfBoundsException("column: " + col);
 	}
     }
 
@@ -119,7 +125,7 @@ public class OnDiskMatrix implements Matrix {
     public double get(int row, int col) {
 	try {
 	    seek(row, col);
-	    return matrix.readFloat();
+	    return matrix.readDouble();
 	} catch (IOException ioe) {
 	    throw new IOError(ioe); // rethrow unchecked
 	}
@@ -131,17 +137,18 @@ public class OnDiskMatrix implements Matrix {
     public double[] getRow(int row) {
 	try {
 	    double[] rowArr = new double[cols];
-	    byte[] rawBytes = new byte[cols * BYTES_PER_FLOAT];
-	    int offset = row * cols * BYTES_PER_FLOAT;
+	    byte[] rawBytes = new byte[cols * BYTES_PER_DOUBLE];
+	    //int offset = row * cols * BYTES_PER_DOUBLE;
+	    seek(row, 0);
 	    // read the entire row in at once, as this will have better I/O
 	    // performance than multiple successive reads
-	    matrix.readFully(rawBytes, offset, cols);
+	    matrix.readFully(rawBytes, 0, cols * BYTES_PER_DOUBLE);
 	    
 	    // convert the bytes into an input stream
 	    DataInputStream dis = 
 		new DataInputStream(new ByteArrayInputStream(rawBytes));
 	    for (int i = 0; i < cols; ++i) {
-		rowArr[i] = dis.readFloat();
+		rowArr[i] = dis.readDouble();
 	    }
 	    return rowArr;
 	} catch (IOException ioe) {
@@ -158,12 +165,18 @@ public class OnDiskMatrix implements Matrix {
 
     /**
      * Moves the backing file pointer to the location specified by this row and
-     * column.  The next {@code readFloat} call will return this location's
+     * column.  The next {@code readDouble} call will return this location's
      * value.
      */
     private void seek(long row, long col) {
 	try {
-	    matrix.seek((row * cols * BYTES_PER_FLOAT) + (col * BYTES_PER_FLOAT));
+	    long index = (row * cols * BYTES_PER_DOUBLE)
+		+ (col * BYTES_PER_DOUBLE) 
+		+ HEADER_LENGTH;
+	    System.out.println("seeking to: " + index);
+	    if (index != matrix.getFilePointer()) {
+		matrix.seek(index);
+	    }
 	} catch (IOException ioe) {
 	    throw new IOError(ioe); // rethrow unchecked
 	}
@@ -175,8 +188,9 @@ public class OnDiskMatrix implements Matrix {
     public void set(int row, int col, double val) {
 	try {
 	    checkIndices(row, col);
-	    seek(row, col);
-	    matrix.writeFloat((float)val);
+	    seek(row, col);	    
+	    System.out.println("writing: " + val);
+	    matrix.writeDouble(val);
 	} catch (IOException ioe) {
 	    throw new IOError(ioe); // rethrow unchecked
 	}
@@ -191,7 +205,7 @@ public class OnDiskMatrix implements Matrix {
 	    double[][] m = new double[rows][cols];
 	    for (int row = 0; row < rows; ++row) {
 		for (int col = 0; col < cols; ++col) {
-		    m[row][col] = matrix.readFloat();
+		    m[row][col] = matrix.readDouble();
 		}
 	    }
 	    return m;
