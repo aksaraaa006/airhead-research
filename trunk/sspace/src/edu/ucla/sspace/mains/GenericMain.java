@@ -75,77 +75,94 @@ public abstract class GenericMain {
     private final String tempFileName;
 
     public GenericMain(String defaultName) {
-      argOptions = setupOptions();
-      verbose = false;
-      defaultFileName = defaultName + ".sspace";
-      tempFileName = defaultName;
+	argOptions = setupOptions();
+	verbose = false;
+	defaultFileName = defaultName + ".sspace";
+	tempFileName = defaultName;
     }
 
     /**
-     * Abstract method to return a {@link SemanticSpace} for use when running.
+     * Returns the {@link SemanticSpace} that will be used for processing
      */
     abstract public SemanticSpace getSpace();
 
     /**
-     * Abstract method which should print out the usage text for the particular
-     * name.
+     * Prints out information on how to run the program to {@code stdout}.
      */
     abstract public void usage();
 
     /**
-     * Allows sub-mains the ability to add extra command line options.
+     * Adds options to the provided {@code ArgOptions} instance, which will be
+     * used to parse the command line.  This method allows subclasses the
+     * ability to add extra command line options.
+     *
      * @param options the ArgOptions object which more main specific options can
-     * be added to.
+     *        be added to.
+     *
+     * @see #handleExtraOptions()
      */
-    public void addExtraOptions(ArgOptions options) {
+    protected void addExtraOptions(ArgOptions options) { }
+
+    /**
+     * Once the command line has been parsed, allows the subclasses to perform
+     * additional steps based on class-specific options.  This method will be
+     * called before {@link getSpace}.
+     *
+     * @see #addExtraOptions(ArgOptions)
+     */
+    protected void handleExtraOptions() { }
+
+    /**
+     * Returns the {@code Properties} object that will be used when calling
+     * {@link SemanticSpace#processSpace(Properties)}.  Subclasses should
+     * override this method if they need to specify additional properties for
+     * the space.  This method will be called once before {@link #getSpace()}.
+     *
+     * @return the {@code Properties} used for processing the semantic space.
+     */
+    protected Properties setupProperties() {
+	Properties props = System.getProperties();
+	return props;
     }
 
     /**
-     * Parallel to {@link addExtraOptions}, allows the sub-main to process extra
-     * options.  Will be called before {@link getSpace}.
+     * Adds the default options for running semantic space algorithms from the
+     * command line.  Subclasses should override this method and return a
+     * different instance if the default options need to be different.
      */
-    public void handleExtraOptions() {
-    }
-
-    /**
-     * Allows sub-mains to process arguments and build a Properties object for
-     * use when calling {@link processSpace}.  Will be called before
-     * {@link getSpace}.
-     */
-    public Properties setupProperties() {
-      Properties props = System.getProperties();
-      return props;
-    }
-
-    /**
-     * Setup default options which all mains will use.
-     */
-    public ArgOptions setupOptions() {
-      ArgOptions options = new ArgOptions();
+    protected ArgOptions setupOptions() {
+	ArgOptions options = new ArgOptions();
 	options.addOption('f', "fileList", "a list of document files", 
-			     true, "FILE[,FILE...]", "Required (at least one of)");
+			  true, "FILE[,FILE...]", "Required (at least one of)");
 	options.addOption('d', "docFile", 
-			     "a file where each line is a document", true,
-			     "FILE[,FILE]", "Required (at least one of)");
+			  "a file where each line is a document", true,
+			  "FILE[,FILE]", "Required (at least one of)");
 
 	options.addOption('t', "threads", "the number of threads to use",
-			     true, "INT", "Program Options");
+			  true, "INT", "Program Options");
 	options.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output", false, null,
-                 "Program Options");
+			  "overwrite the existing output", true, "BOOL",
+			  "Program Options");
 
 	options.addOption('v', "verbose", "prints verbose output",
-                      false, null, "Program Options");
-    addExtraOptions(options);
-    return options;
+			  false, null, "Program Options");
+	addExtraOptions(options);
+	return options;
     }
 
-    protected void run(String[] args) throws Exception {
-      if (args.length == 0) {
-        usage();
-        System.exit(1);
-      }
-    argOptions.parseOptions(args);
+    /**
+     * Processes the arguments and begins processing the documents using the
+     * {@link SemanticSpace} returned by {@link #getSpace() getSpace}.
+     *
+     * @param args arguments used to configure this program and the {@code
+     *        SemanticSpace}
+     */
+    public void run(String[] args) throws Exception {
+	if (args.length == 0) {
+	    usage();
+	    System.exit(1);
+	}
+	argOptions.parseOptions(args);
 	
 	if (argOptions.numPositionalArgs() == 0) {
 	    throw new IllegalArgumentException("must specify output directory");
@@ -207,37 +224,44 @@ public abstract class GenericMain {
 	    overwrite = argOptions.getBooleanOption("overwrite");
 	}
 	
-    handleExtraOptions();
+	handleExtraOptions();
 
 	Properties props = setupProperties();
 	// use the System properties in case the user specified them as
 	// -Dprop=<val> to the JVM directly.
 
 	SemanticSpace space = getSpace(); 
+	
+	parseDocumentsMultiThreaded(space, docIter, numThreads);
 
-	parseDocumentsMultiThreaded(space, docIter, props, numThreads);
-
-    long startTime = System.currentTimeMillis();
+	long startTime = System.currentTimeMillis();
 	space.processSpace(props);
 	long endTime = System.currentTimeMillis();
-    verbose("processed space in %.3f seconds%n",
-            ((endTime - startTime) / 1000d));
+	verbose("processed space in %.3f seconds%n",
+		((endTime - startTime) / 1000d));
 	
 	File output = (overwrite)
 	    ? new File(outputDir, defaultFileName)
 	    : File.createTempFile(tempFileName, "sspace", outputDir);
 
-    startTime = System.currentTimeMillis();
+	startTime = System.currentTimeMillis();
 	SemanticSpaceUtils.printSemanticSpace(space, output);
 	endTime = System.currentTimeMillis();
-    verbose("printed space in %.3f seconds%n",
-            ((endTime - startTime) / 1000d));
+	verbose("printed space in %.3f seconds%n",
+		((endTime - startTime) / 1000d));
     }
 
+    /**
+     * Calls {@link SemanticSpace#processDocument(BufferedReader)
+     * processDocument} once for every document in {@code docIter} using a
+     * single thread to interact with the {@code SemanticSpace} instance.
+     *
+     * @param sspace the space to build
+     * @param docIter an iterator over all the documents to process
+     */
     protected void parseDocumentsSingleThreaded(SemanticSpace sspace,
-						Iterator<Document> docIter,
-						Properties properties) 
-	    throws IOException {
+						Iterator<Document> docIter)
+	throws IOException {
 
 	long processStart = System.currentTimeMillis();
 	int count = 0;
@@ -258,11 +282,20 @@ public abstract class GenericMain {
 		((System.currentTimeMillis() - processStart) / 1000d));	    
     }
 
+    /**
+     * Calls {@link SemanticSpace#processDocument(BufferedReader)
+     * processDocument} once for every document in {@code docIter} using a the
+     * specified number thread to call {@code processSpace} on the {@code
+     * SemanticSpace} instance.
+     *
+     * @param sspace the space to build
+     * @param docIter an iterator over all the documents to process
+     * @param numThreads the number of threads to use
+     */
     protected void parseDocumentsMultiThreaded(final SemanticSpace sspace,
 					       final Iterator<Document> docIter,
-					       final Properties properties,
 					       int numThreads)	
-	    throws IOException, InterruptedException {
+	throws IOException, InterruptedException {
 
 	Collection<Thread> threads = new LinkedList<Thread>();
 
@@ -315,11 +348,11 @@ public abstract class GenericMain {
      * word is expected to be on its own line.
      */
     protected static Set<String> loadValidTermSet(String validTermsFileName) 
-	    throws IOException {
+	throws IOException {
 
 	Set<String> validTerms = new HashSet<String>();
 	BufferedReader br = new BufferedReader(
-		new FileReader(validTermsFileName));
+	    new FileReader(validTermsFileName));
 	
 	for (String line = null; (line = br.readLine()) != null; ) {
 	    validTerms.add(line);
