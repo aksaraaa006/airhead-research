@@ -104,7 +104,7 @@ public abstract class GenericMain {
      * Parallel to {@link addExtraOptions}, allows the sub-main to process extra
      * options.  Will be called before {@link getSpace}.
      */
-    public void handleExtraArguments() {
+    public void handleExtraOptions() {
     }
 
     /**
@@ -131,7 +131,7 @@ public abstract class GenericMain {
 	options.addOption('t', "threads", "the number of threads to use",
 			     true, "INT", "Program Options");
 	options.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output", true, "BOOL",
+			     "overwrite the existing output", false, null,
                  "Program Options");
 
 	options.addOption('v', "verbose", "prints verbose output",
@@ -146,7 +146,6 @@ public abstract class GenericMain {
         System.exit(1);
       }
     argOptions.parseOptions(args);
-
 	
 	if (argOptions.numPositionalArgs() == 0) {
 	    throw new IllegalArgumentException("must specify output directory");
@@ -158,7 +157,7 @@ public abstract class GenericMain {
 		"output directory is not a directory: " + outputDir);
 	}
 
-	verbose = argOptions.hasOption("v") || argOptions.hasOption("verbose");
+	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
 
 	// all the documents are listed in one file, with one document per line
 	Iterator<Document> docIter = null;
@@ -208,7 +207,7 @@ public abstract class GenericMain {
 	    overwrite = argOptions.getBooleanOption("overwrite");
 	}
 	
-    handleExtraArguments();
+    handleExtraOptions();
 
 	Properties props = setupProperties();
 	// use the System properties in case the user specified them as

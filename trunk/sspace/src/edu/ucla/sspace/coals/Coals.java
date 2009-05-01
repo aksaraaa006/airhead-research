@@ -162,16 +162,6 @@ public class Coals implements SemanticSpace {
         rawOccuranceWriter.println(sb.toString());
       }
     }
-    /*
-      synchronized (entry.getKey().word) {
-        int newValue = entry.getValue().intValue();
-        Integer v = correlation.get(entry.getKey());
-        if (v != null)
-          newValue += v.intValue();
-        correlation.put(entry.getKey(), newValue);
-      }
-    }
-    */
     for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
       synchronized (entry.getKey()) {
         int newValue = entry.getValue().intValue();
