@@ -40,24 +40,22 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * A {@link edu.ucla.sspace.common.SemanticSpace} which performs no processing
- * of documents, but simply reads
- * in a text file produced by another semantic space and converts this into a
- * {@link edu.ucla.sspace.common.matrix.SparseMatrix}.  The input format of the
- * file should be that which is produced by
- * @link{edu.ucla.sspace.common.SemanticSpaceUtils}.
+ * A {@link SemanticSpace} which performs no processing of documents, but simply
+ * reads in a text file produced by another semantic space and converts this
+ * into a {@link OnDiskMatrix}.  The input format of the file should be that
+ * which is produced by {@link edu.ucla.sspace.common.SemanticSpaceUtils}.
  */
 public class FileBasedSemanticSpace implements SemanticSpace {
+
   /**
-   * The {@link edu.ucla.sspace.common.matrix.SparseMatrix} which contains the
-   * data read from a finished {@link edu.ucla.sspace.common.SemanticSpace}.
+   * The {@code Matrix} which contains the data read from a finished {@link
+   * SemanticSpace}.
    */
   private final Matrix wordSpace;
 
   /**
    * A mapping of terms to row indexes.  Also serves as a quick means of
-   * retrieving the words known by this
-   * {@link edu.ucla.sspace.common.SemanticSpace}.
+   * retrieving the words known by this {@link SemanticSpace}.
    */
   private final Map<String, Integer> termToIndex ;
 

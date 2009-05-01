@@ -202,15 +202,10 @@ public class SimilarityListGenerator {
 				if (term.equals(other)) 
 					continue;
 				
-// 				verbose("comparing %s to %s%n", 
-// 					term, other);
-
-				Pair<String> pair = new Pair<String>(term, other);
-				
 				double[] otherVec = sspace.getVectorFor(other);
 				
 				double similarity = -1;
-				if (false) {
+				if (true) {
 				    similarity = Similarity.
 					cosineSimilarity(vector, otherVec);
 				} 
