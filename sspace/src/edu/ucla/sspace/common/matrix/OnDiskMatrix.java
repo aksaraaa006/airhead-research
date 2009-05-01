@@ -173,7 +173,6 @@ public class OnDiskMatrix implements Matrix {
 	    long index = (row * cols * BYTES_PER_DOUBLE)
 		+ (col * BYTES_PER_DOUBLE) 
 		+ HEADER_LENGTH;
-	    System.out.println("seeking to: " + index);
 	    if (index != matrix.getFilePointer()) {
 		matrix.seek(index);
 	    }
@@ -189,7 +188,6 @@ public class OnDiskMatrix implements Matrix {
 	try {
 	    checkIndices(row, col);
 	    seek(row, col);	    
-	    System.out.println("writing: " + val);
 	    matrix.writeDouble(val);
 	} catch (IOException ioe) {
 	    throw new IOError(ioe); // rethrow unchecked
