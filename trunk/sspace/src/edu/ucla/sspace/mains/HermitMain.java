@@ -24,15 +24,17 @@ package edu.ucla.sspace.mains;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.holograph.Holograph;
+import edu.ucla.sspace.hermit.Hermit;
+
 import edu.ucla.sspace.holograph.BeagleIndexBuilder;
 
+import java.io.IOError;
 import java.io.IOException;
 
 import java.util.Properties;
 
 /**
- * An executable class for running {@link Holograph} from the
+ * An executable class for running {@link Hermit} from the
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
@@ -48,12 +50,17 @@ import java.util.Properties;
  *
  *   </ul>
  *
- * <li> {@code --dimensions=<int>} how many dimensions to use for the Holograph vectors.
- *      512 is the default value.
+ * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA vectors.
+ *      See {@link Hermit} for default value
  *
  * <li> {@code --threads=<int>} how many threads to use when processing the
  *      documents.  The default is one per core.
  * 
+ * <li> {@code --preprocess=<class name>} specifies an instance of {@link
+ *      MatrixTransformer} to use in preprocessing the word-document matrix
+ *      compiled by LSA prior to computing the SVD.  See {@link
+ *      Hermit} for default value
+ *
  * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
  *      existing output files.  The default is {@code true}.  If set to {@code
  *      false}, a unique integer is inserted into the file name.
@@ -66,9 +73,9 @@ import java.util.Properties;
  * <p>
  *
  * An invocation will produce one file as output {@code
- * holograph-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * hermit-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
  * this file will be replaced for each new semantic space.  Otherwise, a new
- * output file of the format {@code holograph-semantic-space<number>.sspace} will be
+ * output file of the format {@code hermit-semantic-space<number>.sspace} will be
  * created, where {@code <number>} is a unique identifier for that program's
  * invocation.  The output file will be placed in the directory specified on the
  * command line.
@@ -78,49 +85,71 @@ import java.util.Properties;
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.
  *
- * @see Holograph
+ * @see Hermit
+ * @see MatrixTransformer
  *
  * @author Keith Stevens 
  */
-public class HolographMain extends GenericMain {
+public class HermitMain extends GenericMain {
 
-    private static final int DEFAULT_DIMENSION = 512;
+    public static final String HERMIT_SEMANTIC_SPACE_FILE_NAME =
+	"hermit-semantic-space";
+
+    private HermitMain() {
+      super(HERMIT_SEMANTIC_SPACE_FILE_NAME);
+    }
+
+    private static final int DEFAULT_DIMENSION = 2048;
     private int dimension;
 
-    public static final String HOLOGRAPH_SEMANTIC_SPACE_FILE_NAME =
-      "holograph-semantic-space";
-
-    private HolographMain() {
-      super(HOLOGRAPH_SEMANTIC_SPACE_FILE_NAME);
+    /**
+     * Adds all of the options to the {@link ArgOptions}.
+     */
+    public void addExtraOptions(ArgOptions options) {
+	options.addOption('n', "dimensions", 
+			     "the number of dimensions in the semantic space",
+			     true, "INT"); 
+	options.addOption('p', "preprocess", "a MatrixTransform class to "
+			     + "use for preprocessing", true, "CLASSNAME");
+    options.addOption('h', "holographsize", "The size of the holograph vectors",
+                      true, "INT");
     }
 
     public static void main(String[] args) {
-	HolographMain hMain = new HolographMain();
+	HermitMain hermit = new HermitMain();
 	try {
-	    hMain.run(args);
+	    hermit.run(args);
 	}
 	catch (Throwable t) {
 	    t.printStackTrace();
 	}
     }
     
-    /**
-     * Adds all of the options to the {@link ArgOptions}.
-     */
-    public void addExtraOptions(ArgOptions options) {
-      options.addOption('n', "dimension",
-                        "the length of each holographic vector",
-                        true, "INT");
-    }
-
     public void handleExtraOptions() {
-      dimension = (argOptions.hasOption("dimension"))
-        ? argOptions.getIntOption("dimension")
+      dimension = (argOptions.hasOption("holographsize"))
+        ? argOptions.getIntOption("holographsize")
         : DEFAULT_DIMENSION;
     }
 
     public SemanticSpace getSpace() {
-      return new Holograph(new BeagleIndexBuilder(dimension), dimension);
+      return new Hermit(new BeagleIndexBuilder(dimension), dimension);
+    }
+
+    public Properties setupProperties() {
+	// use the System properties in case the user specified them as
+	// -Dprop=<val> to the JVM directly.
+	Properties props = System.getProperties();
+
+	if (argOptions.hasOption("dimensions")) {
+	    props.setProperty(Hermit.LSA_DIMENSIONS_PROPERTY,
+			      argOptions.getStringOption("dimensions"));
+	}
+
+	if (argOptions.hasOption("preprocess")) {
+	    props.setProperty(Hermit.MATRIX_TRANSFORM_PROPERTY,
+			      argOptions.getStringOption("preprocess"));
+	}
+    return props;
     }
 
     /**
@@ -128,7 +157,7 @@ public class HolographMain extends GenericMain {
      */
     public void usage() {
  	System.out.println(
- 	    "usage: java HolographMain [options] <output-dir>\n" + 
+ 	    "usage: java HermitMain [options] <output-dir>\n" + 
 	    argOptions.prettyPrint());
     }
 }
