@@ -217,13 +217,21 @@ public abstract class GenericMain {
 
 	parseDocumentsMultiThreaded(space, docIter, props, numThreads);
 
+    long startTime = System.currentTimeMillis();
 	space.processSpace(props);
+	long endTime = System.currentTimeMillis();
+    verbose("processed space in %.3f seconds%n",
+            ((endTime - startTime) / 1000d));
 	
 	File output = (overwrite)
 	    ? new File(outputDir, defaultFileName)
 	    : File.createTempFile(tempFileName, "sspace", outputDir);
 
+    startTime = System.currentTimeMillis();
 	SemanticSpaceUtils.printSemanticSpace(space, output);
+	endTime = System.currentTimeMillis();
+    verbose("printed space in %.3f seconds%n",
+            ((endTime - startTime) / 1000d));
     }
 
     protected void parseDocumentsSingleThreaded(SemanticSpace sspace,
