@@ -85,7 +85,6 @@ public class IndexVector {
 	Arrays.sort(negative);
     }
 	
-
     /**
      * Constructs the index vector with the provided positive and negative
      * indices.
