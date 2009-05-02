@@ -304,8 +304,6 @@ public class Hermit implements SemanticSpace {
           termVectors.add(new DocHolographPair(docId, holograph));
         }
         reader.close();
-        if (count == 0)
-          System.out.println(term + " : had no term vectors written");
       }
       return termVectors;
     } catch (IOException ioe) {
@@ -323,24 +321,11 @@ public class Hermit implements SemanticSpace {
    *        Hermit javadoc} for the full list of supported
    *        properties.
    */
-  private void testTerms() {
-    HashSet<Integer> testTerms = new HashSet<Integer>();
-    for (Index index : termDocCount.keySet())
-      testTerms.add(index.termId);
-    for (Map.Entry<String, Integer> entry: termToIndex.entrySet()) {
-      if (!testTerms.contains(entry.getValue()))
-        System.out.println("no lsa value for term: " + entry.getKey());
-    }
-  }
   public void processSpace(Properties properties) {
-    /*
-    testTerms();
     for (String key : termFiles.keySet()) {
       ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
       // If there are 0, or 1 term vectors then there is no way to split them
       // up.
-      if (termVectors.size() == 0) 
-        System.out.println("missing values for: " + key);
       if (termVectors.size() < 2)
         continue;
       ArrayList<double[]> termMeanings =
@@ -378,9 +363,6 @@ public class Hermit implements SemanticSpace {
         termDocCount.remove(oldIndex);
       }
     }
-    */
-    testTerms();
-    System.out.println("number of terms: " + termToIndex.size());
     try {
       File rawTermDocMatrix = dumpLSAMatrix();
       MatrixTransformer transform = new LogEntropyTransformer();
@@ -421,7 +403,6 @@ public class Hermit implements SemanticSpace {
       
       // Load the left factor matrix, which is the word semantic space
       wordSpace = usv[0];
-      System.out.println("wordspace size: " + wordSpace.rows() + ", " + wordSpace.columns());
 
     } catch (IOException ioe) {
       throw new IOError(ioe);
@@ -446,7 +427,6 @@ public class Hermit implements SemanticSpace {
           append(index.docId).append("\t").append(count);
       lsaWriter.println(sb.toString());
     }
-    System.out.println("temp set size: " + tempSet.size());
     termDocCount.clear();
     lsaWriter.flush();
     lsaWriter.close();
