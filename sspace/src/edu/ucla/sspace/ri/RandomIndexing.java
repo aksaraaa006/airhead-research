@@ -23,11 +23,11 @@ package edu.ucla.sspace.ri;
 
 import java.io.BufferedReader;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
@@ -279,7 +279,7 @@ public class RandomIndexing implements SemanticSpace {
     /**
      * Returns the index vector for the provided word.
      */
-    private IndexVector getIndexVector(String word) {
+    IndexVector getIndexVector(String word) {
 	
 	IndexVector v = wordToIndexVector.get(word);
 	if (v == null) {
@@ -362,8 +362,8 @@ public class RandomIndexing implements SemanticSpace {
      */
     public void processDocument(BufferedReader document) {
 
-	Queue<String> prevWords = new LinkedList<String>();
-	Queue<String> nextWords = new LinkedList<String>();
+	Queue<String> prevWords = new ArrayDeque<String>(windowSize);
+	Queue<String> nextWords = new ArrayDeque<String>(windowSize);
 
 	WordIterator it = new WordIterator(document);
 
