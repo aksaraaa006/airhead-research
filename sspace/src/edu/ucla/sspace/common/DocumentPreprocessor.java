@@ -164,7 +164,6 @@ public class DocumentPreprocessor {
 	//         removing other punctuation from within words.
 
 
-	//document = document.replaceAll("[^\\w$<>]","");
 
 	// Separate all punctionation from words that it might touch.  This
 	// effectively turns the punction into a separate token for 
@@ -263,6 +262,7 @@ public class DocumentPreprocessor {
 	
 	/* -- SKIP -- */
 
+	document = document.replaceAll("[^\\w\\s;'?\",\\.<>]","");
 	return document;
     }
 

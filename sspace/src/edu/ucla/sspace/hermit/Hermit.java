@@ -149,7 +149,7 @@ public class Hermit implements SemanticSpace {
     Integer index = termToIndex.get(word);
     if (index == null)
       return null;
-    return wordSpace.getRow(index.intValue());
+    return wordSpace.getRow(index.intValue() - 1);
   }
 
   /**
@@ -161,6 +161,7 @@ public class Hermit implements SemanticSpace {
     // split the line based on whitespace
     HashMap<String, double[]> termDocHolographs = new HashMap<String, double[]>();
     LinkedList<String> words = new LinkedList<String>();
+    words.add("");
 	Map<String,Integer> termCounts = 
         new LinkedHashMap<String,Integer>(1 << 10, 16f);	
     for (String line = null; (line = document.readLine()) != null;) {
@@ -186,6 +187,7 @@ public class Hermit implements SemanticSpace {
 			       : Integer.valueOf(1 + termCount.intValue()));
       }
     }
+    finishUpdate(words, termDocHolographs);
     document.close();
 	// check that we actually loaded in some terms before we increase the
 	// documentIndex.  This could possibly save some dimensions in the final
@@ -223,7 +225,7 @@ public class Hermit implements SemanticSpace {
    * Adds the term to the list of terms and gives it an index, or if the term
    * has already been added, does nothing.
    */
-  private void addTerm(String term) {
+  private Integer addTerm(String term) {
     // ensure that we are using the canonical version of this term so that
     // we can properly lock on it.
     term = term.intern();
@@ -243,6 +245,7 @@ public class Hermit implements SemanticSpace {
         }
       }
     }
+    return index;
   }
 
   /**
@@ -287,11 +290,11 @@ public class Hermit implements SemanticSpace {
       synchronized  (termFile) {
         BufferedReader reader = new BufferedReader(new FileReader(termFile));
         String newLine = null;
+        int count = 0;
         while ((newLine = reader.readLine()) != null) {
+          count++;
           String[] splitLine = newLine.split(" ");
           if (splitLine.length != (indexVectorSize + 1)) {
-            if (term.equals("scare"))
-              System.out.println("holy mother fucking ballshit");
             continue;
           }
           double[] holograph = new double[indexVectorSize];
@@ -300,6 +303,9 @@ public class Hermit implements SemanticSpace {
             holograph[i-1] = Double.valueOf(splitLine[i]);
           termVectors.add(new DocHolographPair(docId, holograph));
         }
+        reader.close();
+        if (count == 0)
+          System.out.println(term + " : had no term vectors written");
       }
       return termVectors;
     } catch (IOException ioe) {
@@ -317,11 +323,24 @@ public class Hermit implements SemanticSpace {
    *        Hermit javadoc} for the full list of supported
    *        properties.
    */
+  private void testTerms() {
+    HashSet<Integer> testTerms = new HashSet<Integer>();
+    for (Index index : termDocCount.keySet())
+      testTerms.add(index.termId);
+    for (Map.Entry<String, Integer> entry: termToIndex.entrySet()) {
+      if (!testTerms.contains(entry.getValue()))
+        System.out.println("no lsa value for term: " + entry.getKey());
+    }
+  }
   public void processSpace(Properties properties) {
+    /*
+    testTerms();
     for (String key : termFiles.keySet()) {
       ArrayList<DocHolographPair> termVectors = uploadTermMeaning(key);
       // If there are 0, or 1 term vectors then there is no way to split them
       // up.
+      if (termVectors.size() == 0) 
+        System.out.println("missing values for: " + key);
       if (termVectors.size() < 2)
         continue;
       ArrayList<double[]> termMeanings =
@@ -344,19 +363,23 @@ public class Hermit implements SemanticSpace {
       } while (potential > oldPotential);
       if (k == 1)
         continue;
-      for (int i = 1; i < k; ++i)
-        addTerm(key+ "|" + i);
       for (int i = 0; i < termVectors.size(); ++i) {
         if (assignments[i] == 0)
           continue;
         Index oldIndex =
           new Index(termToIndex.get(key), termVectors.get(i).docId);
-        Index newIndex = new Index(termToIndex.get(key + "|" + assignments[i]),
+        String newTerm = key + "^" + assignments[i];
+        Integer newTermIndex = termToIndex.get(newTerm);
+        if (newTermIndex == null)
+          newTermIndex = addTerm(newTerm);
+        Index newIndex = new Index(newTermIndex.intValue(),
                                    termVectors.get(i).docId);
         termDocCount.put(newIndex, termDocCount.get(oldIndex));
         termDocCount.remove(oldIndex);
       }
     }
+    */
+    testTerms();
     System.out.println("number of terms: " + termToIndex.size());
     try {
       File rawTermDocMatrix = dumpLSAMatrix();
@@ -398,6 +421,7 @@ public class Hermit implements SemanticSpace {
       
       // Load the left factor matrix, which is the word semantic space
       wordSpace = usv[0];
+      System.out.println("wordspace size: " + wordSpace.rows() + ", " + wordSpace.columns());
 
     } catch (IOException ioe) {
       throw new IOError(ioe);
@@ -410,9 +434,11 @@ public class Hermit implements SemanticSpace {
    * MATLAB_SPARSE} format.
    */
   private File dumpLSAMatrix() throws IOException {
-    File lsaFile = File.createTempFile("hermit-term-doc-matrix", ".tmp'");
+    HashSet<Integer> tempSet = new HashSet<Integer>();
+    File lsaFile = File.createTempFile("hermit-term-doc-matrix", ".tmp");
     PrintWriter lsaWriter = new PrintWriter(lsaFile);
     for (Map.Entry<Index,Integer> e : termDocCount.entrySet()) {
+      tempSet.add(e.getKey().termId);
       Index index = e.getKey();
       int count = e.getValue().intValue();
       StringBuffer sb = new StringBuffer(32);
@@ -420,8 +446,20 @@ public class Hermit implements SemanticSpace {
           append(index.docId).append("\t").append(count);
       lsaWriter.println(sb.toString());
     }
+    System.out.println("temp set size: " + tempSet.size());
+    termDocCount.clear();
     lsaWriter.flush();
+    lsaWriter.close();
     return lsaFile;
+  }
+
+  private void finishUpdate(LinkedList<String> words,
+                            HashMap<String, double[]> termDocHolographs) {
+    int size = words.size();
+    for (int i = 0; i < size; ++i) {
+      words.add("");
+      updateHolograph(words, termDocHolographs);
+    }
   }
 
   /**
