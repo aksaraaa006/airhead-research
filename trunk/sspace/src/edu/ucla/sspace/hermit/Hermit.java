@@ -33,10 +33,12 @@ import edu.ucla.sspace.lsa.MatrixTransformer;
 import edu.ucla.sspace.lsa.LogEntropyTransformer;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -265,15 +267,12 @@ public class Hermit implements SemanticSpace {
       for (Map.Entry<String, double[]> entry : termDocHolographs.entrySet()) {
         File termFile = termFiles.get(entry.getKey());
         synchronized (termFile) {
-          BufferedWriter writer =
-            new BufferedWriter(new FileWriter(termFile, true));
-          StringBuffer sb = new StringBuffer();
-          sb.append(document).append(" ");
+          DataOutputStream writer =
+            new DataOutputStream(new FileOutputStream(termFile, true));
+          writer.writeInt(document);
           double[] value = entry.getValue();
           for (int i = 0; i < indexVectorSize; ++i)
-            sb.append(value[i]).append(" ");
-          writer.write(sb.toString());
-          writer.newLine();
+            writer.writeDouble(value[i]);
           writer.close();
         }
       }
@@ -295,19 +294,14 @@ public class Hermit implements SemanticSpace {
       ArrayList<DocHolographPair> termVectors =
         new ArrayList<DocHolographPair>();
       synchronized  (termFile) {
-        BufferedReader reader = new BufferedReader(new FileReader(termFile));
-        String newLine = null;
-        int count = 0;
-        while ((newLine = reader.readLine()) != null) {
-          count++;
-          String[] splitLine = newLine.split(" ");
-          if (splitLine.length != (indexVectorSize + 1)) {
-            continue;
-          }
+        DataInputStream reader =
+          new DataInputStream(new FileInputStream(termFile));
+        long count = termFile.length() / (4 + 8 * indexVectorSize);
+        for (int i = 0; i < count; ++i) {
           double[] holograph = new double[indexVectorSize];
-          int docId = Integer.valueOf(splitLine[0]);
-          for (int i = 1; i < splitLine.length; ++i)
-            holograph[i-1] = Double.valueOf(splitLine[i]);
+          int docId = reader.readInt();
+          for (int j = 0; j < indexVectorSize; ++j)
+            holograph[j] = reader.readDouble();
           termVectors.add(new DocHolographPair(docId, holograph));
         }
         reader.close();
