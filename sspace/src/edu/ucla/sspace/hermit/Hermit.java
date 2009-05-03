@@ -198,11 +198,16 @@ public class Hermit implements SemanticSpace {
 
 	int documentIndex = docIndexCounter.incrementAndGet();
     for (String key : termCounts.keySet()) {
+      File writer = termFiles.get(key);
+      if (writer != null)
+        continue;
       synchronized(key) {
-        File writer = termFiles.get(key);
-        if (writer == null)
-          termFiles.put(
-              key, File.createTempFile("holograph-" + key, ".txt"));
+        writer = termFiles.get(key);
+        if (writer == null) {
+          File keyFile = File.createTempFile("holograph-" + key, ".txt");
+          keyFile.deleteOnExit();
+          termFiles.put(key, keyFile);
+        }
       }
     }
 
