@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import getopt
 import numpy
 import random
 import pylab
@@ -10,17 +11,18 @@ from learningAgent import learningAgent
 VECTOR_SIZE = 60
 
 class LearningGame():
-  def __init__(self, phoneme_file):
+  def __init__(self, phoneme_file, use_attention, use_context, out_dir):
     self.map = []
     self.objects = []
     self.word_list = []
     self.buildWordList(phoneme_file)
     self.createObjects(60)
-    self.createLearners(2)
+    self.createLearners(2, use_attention, use_context)
     self.t = 0
     self.last_pick = 0
     self.time_axis = []
     self.pick_count = []
+    self.out_dir = out_dir + "/"
 
   def buildWordList(self, phoneme_file):
     phonemes = open(phoneme_file)
@@ -33,9 +35,10 @@ class LearningGame():
         phoneme_rep[i] = float(phoneme_values[i])
       self.word_list.append((word, phoneme_rep))
         
-  def createLearners(self, num_players):
+  def createLearners(self, num_players, use_attention, use_context):
     phoneme_size = len(self.word_list[0][1])
-    self.learners = [learningAgent(VECTOR_SIZE, phoneme_size, self)
+    self.learners = [learningAgent(VECTOR_SIZE, phoneme_size, self,
+                                   use_attention, use_context)
                      for i in range(num_players)]
 
   def createObjects(self, num_objects):
@@ -62,11 +65,17 @@ class LearningGame():
       hearer.receiveUtterance(word, context)
       self.t += 1
 
+    pylab.clf()
+    pylab.xlabel("time")
+    pylab.ylabel("time since last word picked")
     pylab.plot(self.time_axis, self.pick_count, 'b')
-    pylab.show()
+    pylab.axis([0, self.t, 0, max(self.pick_count)])
+    pylab.savefig(self.out_dir + "word_pick.png")
 
+    count = 0
     for learner in self.learners:
-      learner.printMap()
+      learner.printMap(out_dir, count)
+      count += 1
 
     converge_count = 0
     syn_dict = {}
@@ -90,12 +99,38 @@ class LearningGame():
     syn_axis = [i for i in range(len(syn_dict))]
     print syn_dict
     print syn_counts
-    pylab.plot(syn_axis, syn_counts)
+    pylab.clf()
     locs, labels = pylab.xticks(syn_axis, syn_dict.keys())
     pylab.axis([0, max(syn_counts), 0, len(syn_counts)])
     pylab.setp(labels, 'rotation', 'vertical')
-    pylab.show()
+    pylab.xlabel("words used")
+    pylab.ylabel("homonymy count")
+    pylab.plot(syn_axis, syn_counts)
+    pylab.savefig(self.out_dir + "homonymy_count.png")
+
+def usage():
+  print "usage: ./learningGame.py [options] phoneme_file output_directory"
+  print "  options:"
+  print "   -c     : use context in learning games"
+  print "   -a     : use attention when learning"
+  print "   -n NUM : set the number of games to play"
 
 if __name__ == "__main__":
-  game = LearningGame(sys.argv[2])
-  game.playGame(int(sys.argv[1]))
+  opts, args = getopt.getopt(sys.argv[1:], 'can:')
+  use_context = False
+  use_attention = False
+  num_games = 1000
+  out_dir = "."
+  for option, value in opts:
+    if option == '-c':
+      use_context = True
+    if option == '-a':
+      use_attention = True
+    if option == '-n':
+      num_games = int(value)
+  if len(args) != 2:
+    usage()
+    sys.exit(1)
+  out_dir = args[1]
+  game = LearningGame(args[0], use_attention, use_context, out_dir)
+  game.playGame(num_games)
