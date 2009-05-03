@@ -19,7 +19,7 @@ def distance(v1, v2):
   return sqrt(numpy.power(v1 - v2, 2).sum())
 
 class learningAgent():
-  def __init__(self, vector_size, phoneme_size, game):
+  def __init__(self, vector_size, phoneme_size, game, use_attention, use_context):
     self.m_som = []
     self.p_som = []
     self.t = 0
@@ -34,6 +34,8 @@ class learningAgent():
     self.learning_rate = 1 
     self.n_range = 25
     self.word_list = [] 
+    self.use_attention = use_attention
+    self.use_context = use_context
 
   def generateUtterance(self):
     """Generate a context vector, which is the sum of some subject representation,
@@ -52,7 +54,9 @@ class learningAgent():
 
     self.learnPatterns(context, best_word[0])
     self.updateTimeValues()
-    #print "spoke: ", best_word
+    if self.use_context:
+      for obj in object_frace[1:]:
+        context + obj
     return context, best_word 
 
   def pickNewWord(self):
@@ -180,21 +184,26 @@ class learningAgent():
     self.t += 1
 
   def receiveUtterance(self, word, context):
-    #print "heard: ", word
     if word not in self.word_list:
       self.word_list.append(word)
     m_data = self.learnPatterns(context, word[0])
     m_data[0].value = word[0] 
-    # potentially remove the next line if things go badly.
-    m_data[0].updateAttention(context)
+    if self.use_attention:
+      m_data[0].updateAttention(context)
     self.updateTimeValues()
 
-  def printMap(self):
+  def printMap(self, out_dir, count):
+    return
+    pylab.cla()
+    pylab.clf()
+    pylab.axis([0, 60, 0, 60])
     for node in self.m_som:
       if node.value != None:
-        t = pylab.text(node.loc[0], node.loc[1], node.value)
-    pylab.axis([0, 60, 0, 60])
+        pylab.text(node.loc[0], node.loc[1], node.value)
+    #pylab.xlabel("node x position")
+    #pylab.ylabel("node y position")
     pylab.show()
+    pylab.savefig(out_dir + "learner_%d_mapping.png" %count)
 
 class SOMNode():
   def __init__(self, x_pos, y_pos, vector_size):
