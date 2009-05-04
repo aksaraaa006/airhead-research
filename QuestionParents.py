@@ -75,15 +75,14 @@ def attemptAnswer(question, answer, options, parent_list):
   several options qualifying as an answer."""
   ambigious = 0
   multi_options = []
+  print "Checking question %s:%s" %(question[0], question[1])
   for (l_parent, r_parent) in parent_list:
-    print "Checking question %s:%s with parents %s:%s" %(question[0],
-        question[1], l_parent, r_parent)
     if isParent(l_parent, question[0]) and isParent(r_parent, question[1]):
       chosen_options = chooseOptions(options, l_parent, r_parent)
       if len(chosen_options) == 1 and chosen_options[0] == answer:
         print "answer %s:%s chosen for question" %(answer[0], answer[1])
         return 2, [] 
-      elif len(chosen_options) > 0 and answer in chosen_options:
+      elif len(chosen_options) > 0:# and answer in chosen_options:
         print "several options chosen for parents %s:%s" %(l_parent, r_parent)
         ambigious = 1
         multi_options.append(chosen_options)
@@ -120,7 +119,6 @@ def similarityAnswer(sat_file, expanded_file):
     for generalized_list in good_expansions:
       best_score = 0
       best_option = None
-      print generalized_list
       for opt in options:
         sim = getSimilarity(generalized_list, opt)
         if sim > best_score:
@@ -169,11 +167,11 @@ def answerSAT(sat_file, expanded_file):
   multiple = 0
   ambig_dict = {}
   for (question, answer,options) in question_list:
-    answer, spares = attemptAnswer(question, answer, options, parent_list)
-    if answer == 1:
+    result, spares = attemptAnswer(question, answer, options, parent_list)
+    if result == 1:
       multiple += 1
       ambig_dict[question] = spares
-    elif answer == 2:
+    elif result == 2:
       score += 1
   print ambig_dict
   print score, multiple, len(question_list)
