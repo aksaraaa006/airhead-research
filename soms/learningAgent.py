@@ -5,37 +5,36 @@ import numpy
 import random
 import pylab
 
-from math import sqrt
-from numpy import linalg
-
 NUM_ROWS = 50 
 NUM_COLS = 60 
 
-def inRange(node1, node2, range):
-  return (sqrt(pow(node1[0]- node2[0],2) + pow(node1[1] - node2[1],2)) <
-          range)
-
 def distance(v1, v2):
-  return sqrt(numpy.power(v1 - v2, 2).sum())
+  return numpy.sqrt(numpy.power(v1 - v2, 2).sum(axis=1))
 
 class learningAgent():
   def __init__(self, vector_size, phoneme_size, game, use_attention, use_context):
-    self.m_som = []
-    self.p_som = []
+    # The nodes will each be an index in the following numpy arrays, holding the
+    # location, the meaning vector and the learned words.
+    num_nodes = NUM_ROWS*NUM_COLS
+    self.meaning_vectors = numpy.random.random((num_nodes, vector_size))
+    self.attention_vectors = numpy.ones_like(self.meaning_vectors)
+    # Locations still need to be set correctly
+    self.locations = numpy.zeros((num_nodes, 2))
+    locs = [(i,j) for i in range(NUM_ROWS) for j in range(NUM_COLS)]
+    random.shuffle(locs)
+    for i, location in enumerate(locs):
+      self.locations[i][0] = location[0]
+      self.locations[i][1] = location[1]
+    self.learned_words = [None for i in range(num_nodes)]
+
+    # Setting up some constants and time dependent variables.
     self.t = 0
-    for i  in range(NUM_ROWS):
-      for j in range(NUM_COLS):
-        self.m_som.append(SOMNode(i,j,vector_size))
-    for i  in range(NUM_ROWS):
-      for j in range(NUM_COLS):
-        self.p_som.append(SOMNode(i,j,phoneme_size))
-    self.game = game
-    self.heb_weights = numpy.zeros((NUM_ROWS*NUM_COLS, NUM_ROWS*NUM_COLS))
     self.learning_rate = 1 
     self.n_range = 25
     self.word_list = [] 
     self.use_attention = use_attention
     self.use_context = use_context
+    self.game = game
 
   def generateUtterance(self):
     """Generate a context vector, which is the sum of some subject representation,
@@ -47,10 +46,10 @@ class learningAgent():
     object_frame = random.sample(self.game.objects, 4)
     context = object_frame[0]
 
-    suc, m_data, best_word = self.produceWord(context)
-    if not suc:# or m_data[1] > 1.5:
+    m_data, best_word = self.produceWord(context)
+    if not best_word or m_data[1] > 1.5:
       best_word = self.game.pickNewWord()
-      m_data[0].value = best_word[0]
+      self.learned_words[m_data[0]] = best_word[0]
 
     self.learnPatterns(context, best_word[0])
     self.updateTimeValues()
@@ -66,15 +65,15 @@ class learningAgent():
     return self.word_list[-1]
 
   def produceWord(self, object_rep, learning=True):
-    m_data = self.getBestNode(self.m_som, object_rep)
-    m_som_best, m_min_dist, m_max_dist, m_near, m_rest = m_data
+    m_data = self.getBestNode(self.meaning_vectors, object_rep)
+    m_som_best, m_min_dist, m_max_dist, m_near = m_data
 
-    if m_som_best.value != None and m_min_dist < 1.5:
-      return True, m_data, (m_som_best.value, None)
-    return False, m_data, None
+    if self.learned_words[m_som_best] != None: # and m_min_dist < 1.5:
+      return m_data, (self.learned_words[m_som_best], None)
+    return m_data, None
 
     if learning:
-      self.updateMap(object_rep, self.m_som, m_data)
+      self.updateMap(object_rep, self.meaning_vectors, m_data)
 
     semantic_activations = numpy.zeros(NUM_COLS*NUM_ROWS)
     for i in range(NUM_COLS*NUM_ROWS):
@@ -107,18 +106,13 @@ class learningAgent():
     else:
       return True, None, best_word
 
-  def updateMap(self, meaning, map, data=None):
+  def updateMap(self, meaning, feature_vectors, data=None):
     if data == None:
-      data = self.getBestNode(map, meaning)
-    best, min_dist, max_dist, near, rest = data
+      data = self.getBestNode(feature_vectors, meaning)
+    best, min_dist, max_dist, near = data
 
-    for node in near:
-      node.updateMeaning(meaning, self.learning_rate)
-      #node.updateActivation(meaning, best, min_dist, max_dist)
-    for node in rest:
-      node.clearActivation()
-
-    #print min_dist
+    meaning_diff = (self.attention_vectors * meaning - feature_vectors)
+    feature_vectors += self.learning_rate * (near * meaning_diff.transpose()).transpose()
     return data
 
   def learnPatterns(self, object_rep, phoneme_rep,
@@ -130,7 +124,7 @@ class learningAgent():
     matching the phoneme vector, the nodes in that neighboorhood will have their
     activations will be updated, along with their meaning vectors.  After this,
     the associative weights will be updated and normalized."""
-    m_data = self.updateMap(object_rep, self.m_som, m_data)
+    m_data = self.updateMap(object_rep, self.meaning_vectors, m_data)
     return m_data
     #p_data = self.updateMap(phoneme_rep, self.p_som, p_data)
     #print "setting node with phoneme_rep", m_data[0].loc, phoneme_rep
@@ -153,29 +147,23 @@ class learningAgent():
     this node, find all the nodes within the neighboorhood of this node, along
     with the node within this range which also has the largest distance from the
     input vector.  This will be used learning stages, not during production."""
-    min_sim = map[0].similarity(input_vector)
-    best_node = map[0] 
-    distances = []
-    distances.append((map[0].loc, min_sim, map[0]))
-    neighborhood = []
-    remaining = []
-    for node in map[1:]:
-      sim = node.similarity(input_vector)
-      distances.append((node.loc, sim, node))
-      if min_sim > sim:
-        min_sim = sim
-        best_node = node
-    # Find the maximum distance for nodes within range of the best node.
-    max_sim = 0
-    for (loc, distance, node) in distances:
-      if inRange(loc, best_node.loc, self.n_range):
-        neighborhood.append(node)
-        if max_sim < distance:
-          max_sim = distance;
-      else:
-        remaining.append(node)
-
-    return best_node, min_sim, max_sim, neighborhood, remaining
+    meaning_distances = distance(map, input_vector)
+    best_node = 0
+    min_dist = meaning_distances[0]
+    for i, dist in enumerate(meaning_distances):
+      if min_dist > dist:
+        min_dist = dist
+        best_node = i
+    
+    loc_distances = distance(self.locations, self.locations[best_node])
+    max_dist = meaning_distances[0]
+    neighborhood = numpy.zeros_like(meaning_distances)
+    for i, dist in enumerate(loc_distances):
+      if dist < self.n_range:
+        neighborhood[i] = 1
+        if max_dist < meaning_distances[i]:
+          max_dist = meaning_distances[i]
+    return best_node, min_dist, max_dist, neighborhood
 
   def updateTimeValues(self):
     if self.learning_rate > .01:
@@ -188,9 +176,9 @@ class learningAgent():
     if word not in self.word_list:
       self.word_list.append(word)
     m_data = self.learnPatterns(context, word[0])
-    m_data[0].value = word[0] 
-    if self.use_attention:
-      m_data[0].updateAttention(context)
+    self.learned_words[m_data[0]] = word[0]
+    #if self.use_attention:
+      #m_data[0].updateAttention(context)
     self.updateTimeValues()
 
   def printMap(self, out_dir, count):
@@ -206,16 +194,6 @@ class learningAgent():
     pylab.show()
     pylab.savefig(out_dir + "learner_%d_mapping.png" %count)
 
-class SOMNode():
-  def __init__(self, x_pos, y_pos, vector_size):
-    self.loc = (x_pos, y_pos)
-    self.meaning = numpy.random.rand(vector_size)
-    self.attention = numpy.ones_like(self.meaning)
-    self.average = numpy.zeros_like(self.meaning)
-    self.mean = numpy.zeros_like(self.meaning)
-    self.value = None
-    self.value_count = 0
-
   def updateAttention(self, meaning_vector):
     self.value_count += 1
     delta = meaning_vector - self.average
@@ -223,21 +201,3 @@ class SOMNode():
     self.mean += delta * (meaning_vector - self.average)
     variance = self.mean / self.value_count
     self.attention = 1 / (1 + variance)
-
-  def similarity(self, meaning_vector):
-    """Compute the euclidian similarity of this nodes meaning with the given
-    meaning_vector."""
-    return distance(meaning_vector, self.meaning)
-
-  def clearActivation(self):
-    self.activation = 0
-
-  def updateActivation(self, meaning_vector, best_node, min_dist, max_dist):
-    meaning_dist = distance(self.attention * meaning_vector, self.meaning)
-    self.activation = 1 - ((meaning_dist - min_dist) / (max_dist - min_dist))
-
-  def updateMeaning(self, meaning_vector, learning_rate):
-    """Update the meaning of this node to incorporate the given meaning vector
-    if this node is in the neighborhood of other_node."""
-    self.meaning += (learning_rate *
-                     (self.attention * meaning_vector - self.meaning))
