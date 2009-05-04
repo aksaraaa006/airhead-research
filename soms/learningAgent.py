@@ -18,6 +18,8 @@ class learningAgent():
     num_nodes = NUM_ROWS*NUM_COLS
     self.meaning_vectors = numpy.random.random((num_nodes, vector_size))
     self.attention_vectors = numpy.ones_like(self.meaning_vectors)
+    self.mean = numpy.zeros_like(self.meaning_vectors)
+    self.average = numpy.zeros_like(self.meaning_vectors)
     # Locations still need to be set correctly
     self.locations = numpy.zeros((num_nodes, 2))
     locs = [(i,j) for i in range(NUM_ROWS) for j in range(NUM_COLS)]
@@ -68,43 +70,9 @@ class learningAgent():
     m_data = self.getBestNode(self.meaning_vectors, object_rep)
     m_som_best, m_min_dist, m_max_dist, m_near = m_data
 
-    if self.learned_words[m_som_best] != None: # and m_min_dist < 1.5:
+    if self.learned_words[m_som_best] != None:
       return m_data, (self.learned_words[m_som_best], None)
     return m_data, None
-
-    if learning:
-      self.updateMap(object_rep, self.meaning_vectors, m_data)
-
-    semantic_activations = numpy.zeros(NUM_COLS*NUM_ROWS)
-    for i in range(NUM_COLS*NUM_ROWS):
-      semantic_activations[i] = self.m_som[i].activation
-    phoneme_activations = numpy.dot(self.heb_weights,
-                                    semantic_activations)
-    max_activation = phoneme_activations.max()
-
-    # There is a NaN error in here somewhere, but how?
-    best_meaning = None 
-    #print self.heb_weights
-    #print semantic_activations
-    #print max_activation
-    for i in range(NUM_COLS*NUM_ROWS):
-      if phoneme_activations[i] == max_activation:
-        best_meaning = self.p_som[i].meaning
-
-    best_distance = 100000
-    best_word = None
-    dist_sum = 0
-    for (word, phoneme) in self.word_list:
-      #print phoneme, best_meaning
-      dist = distance(phoneme, best_meaning)
-      dist_sum += 0
-      if dist < best_distance:
-        best_word = word, phoneme
-        best_distance = dist
-    if dist_sum == 0 or best_distance / dist_sum < .50:
-      return False, m_data, None 
-    else:
-      return True, None, best_word
 
   def updateMap(self, meaning, feature_vectors, data=None):
     if data == None:
@@ -126,20 +94,6 @@ class learningAgent():
     the associative weights will be updated and normalized."""
     m_data = self.updateMap(object_rep, self.meaning_vectors, m_data)
     return m_data
-    #p_data = self.updateMap(phoneme_rep, self.p_som, p_data)
-    #print "setting node with phoneme_rep", m_data[0].loc, phoneme_rep
-    #for i in range(NUM_COLS*NUM_ROWS):
-    #  for j in range(NUM_COLS*NUM_ROWS):
-    #    self.heb_weights[i][j] = (self.learning_rate *
-    #                              self.m_som[i].activation *
-    #                              self.p_som[j].activation)
-    #row_lengths = numpy.zeros(NUM_COLS*NUM_ROWS)
-    #for i in range(NUM_COLS*NUM_ROWS):
-    #  row_lengths[i] = math.sqrt(numpy.dot(self.heb_weights[i],
-    #                                       self.heb_weights[i]))
-    #for i in range(NUM_COLS*NUM_ROWS):
-    #  for j in range(NUM_COLS*NUM_ROWS):
-    #    self.heb_weights[i][j] = self.heb_weights[i][j] / row_lengths[i]
 
   def getBestNode(self, map, input_vector):
     """Given some input and a map, go through each of the nodes and determine
@@ -177,8 +131,8 @@ class learningAgent():
       self.word_list.append(word)
     m_data = self.learnPatterns(context, word[0])
     self.learned_words[m_data[0]] = word[0]
-    #if self.use_attention:
-      #m_data[0].updateAttention(context)
+    if self.use_attention:
+      m_data[0].updateAttention(context)
     self.updateTimeValues()
 
   def printMap(self, out_dir, count):
@@ -194,10 +148,10 @@ class learningAgent():
     pylab.show()
     pylab.savefig(out_dir + "learner_%d_mapping.png" %count)
 
-  def updateAttention(self, meaning_vector):
+  def updateAttention(self):
     self.value_count += 1
-    delta = meaning_vector - self.average
+    delta = self.meaning_vectors - self.average
     self.average += (delta/self.value_count)
     self.mean += delta * (meaning_vector - self.average)
-    variance = self.mean / self.value_count
+    self.attention = 1 / (1 + (self.mean / self.value_count))
     self.attention = 1 / (1 + variance)
