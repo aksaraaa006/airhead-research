@@ -55,8 +55,8 @@ class learningAgent():
     self.learnPatterns(context, best_word[0])
     self.updateTimeValues()
     if self.use_context:
-      for obj in object_frace[1:]:
-        context + obj
+      for obj in object_frame[1:]:
+        context += obj
     return context, best_word 
 
   def pickNewWord(self):
@@ -153,12 +153,13 @@ class learningAgent():
     this node, find all the nodes within the neighboorhood of this node, along
     with the node within this range which also has the largest distance from the
     input vector.  This will be used learning stages, not during production."""
-    min_sim = 1000000
-    best_node = None
+    min_sim = map[0].similarity(input_vector)
+    best_node = map[0] 
     distances = []
+    distances.append((map[0].loc, min_sim, map[0]))
     neighborhood = []
     remaining = []
-    for node in map:
+    for node in map[1:]:
       sim = node.similarity(input_vector)
       distances.append((node.loc, sim, node))
       if min_sim > sim:
