@@ -82,8 +82,8 @@ class LearningGame():
     for obj in self.objects:
       meanings = set()
       for learner in self.learners:
-        suc, _, word = learner.produceWord(obj, False)
-        if suc:
+        _, word = learner.produceWord(obj, False)
+        if word:
           meanings.add(word[0])
           if word[0] in syn_dict:
             syn_dict[word[0]] += 1
