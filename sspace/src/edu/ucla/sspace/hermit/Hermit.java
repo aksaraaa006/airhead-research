@@ -116,6 +116,8 @@ public class Hermit implements SemanticSpace {
    */
   private final AtomicInteger docIndexCounter;
 
+  private final File tempDir;
+
   /**
    * The word space of the LSA model.  This matrix is only available after the
    * {@link #processSpace(Properties) processSpace} method has been called.
@@ -125,7 +127,7 @@ public class Hermit implements SemanticSpace {
   /**
    * Construct the Hermit Semantic Space
    */
-  public Hermit(IndexBuilder builder, int vectorSize) {
+  public Hermit(IndexBuilder builder, int vectorSize, File tempDirFile) {
 	termIndexCounter = new AtomicInteger(0);
 	docIndexCounter = new AtomicInteger(0);
 	termCountsForAllDocs = new AtomicIntegerArray(1 << 25);
@@ -135,6 +137,7 @@ public class Hermit implements SemanticSpace {
 	termToIndex = new ConcurrentHashMap<String,Integer>();
     indexBuilder = builder;
     indexVectorSize = vectorSize;
+    tempDir = tempDirFile;
   }
 
   /**
@@ -206,7 +209,7 @@ public class Hermit implements SemanticSpace {
       synchronized(key) {
         writer = termFiles.get(key);
         if (writer == null) {
-          File keyFile = File.createTempFile("holograph-" + key, ".txt");
+          File keyFile = File.createTempFile("holograph-" + key, ".txt", tempDir);
           keyFile.deleteOnExit();
           termFiles.put(key, keyFile);
         }

@@ -28,6 +28,7 @@ import edu.ucla.sspace.hermit.Hermit;
 
 import edu.ucla.sspace.holograph.BeagleIndexBuilder;
 
+import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 
@@ -101,6 +102,7 @@ public class HermitMain extends GenericMain {
 
     private static final int DEFAULT_DIMENSION = 2048;
     private int dimension;
+    private File tempDirLoc;
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
@@ -113,6 +115,8 @@ public class HermitMain extends GenericMain {
 			     + "use for preprocessing", true, "CLASSNAME");
     options.addOption('h', "holographsize", "The size of the holograph vectors",
                       true, "INT");
+    options.addOption('t', "tempdir", "location of the temp directory",
+                      true, "STRING", "Process Properties");
     }
 
     public static void main(String[] args) {
@@ -129,10 +133,13 @@ public class HermitMain extends GenericMain {
       dimension = (argOptions.hasOption("holographsize"))
         ? argOptions.getIntOption("holographsize")
         : DEFAULT_DIMENSION;
+      tempDirLoc = (argOptions.hasOption("tempdir"))
+        ? new File(argOptions.getStringOption("tempdir"))
+        : null;
     }
 
     public SemanticSpace getSpace() {
-      return new Hermit(new BeagleIndexBuilder(dimension), dimension);
+      return new Hermit(new BeagleIndexBuilder(dimension), dimension, tempDirLoc);
     }
 
     public Properties setupProperties() {
