@@ -2,6 +2,7 @@ package edu.ucla.sspace.tools;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.io.IOError;
@@ -14,23 +15,38 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class TwitterScraper extends TimerTask {
-  private final BufferedWriter twitterWriter;
+  private BufferedWriter twitterWriter;
   private int twitCount;
-  private final Timer twitTimer;
+  private String twitDir;
 
   private static final int MAX_TWITS = 1440;
   private static final String TWITTER_URL =
     "http://twitter.com/statuses/public_timeline.xml";
   private static final int TIME_DELAY = 60000;
 
-  private TwitterScraper(Timer timer) {
-    Date currentDate = new Date();
-    String filename = "twitter_harvest_" + currentDate.toString().replace(" ", "_").replace(":", "-");
+  private TwitterScraper(String fileDir) {
+    twitDir = fileDir;
+    startNewFile();
+  }
+
+  public void startNewFile() {
     try {
+      String currentDate =
+        new Date().toString().replace(" ","_").replace(":","-");
+      String filename = twitDir + "/twitter_harvest_" + currentDate + ".xml";
       twitterWriter = new BufferedWriter(new FileWriter(filename));
-      twitTimer = timer;
       twitterWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
       twitterWriter.write("<statuses type=\"array\">\n");
+      twitCount = 0;
+    } catch (IOException ioe) {
+      throw new IOError(ioe);
+    }
+  }
+
+  public void closeFile() {
+    try {
+      twitterWriter.write("</statuses>");
+      twitterWriter.close();
     } catch (IOException ioe) {
       throw new IOError(ioe);
     }
@@ -39,7 +55,8 @@ public class TwitterScraper extends TimerTask {
   public void run() {
     try {
       URL url = new URL(TWITTER_URL);
-      BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+      BufferedReader br =
+        new BufferedReader(new InputStreamReader(url.openStream()));
       String line = null;
       while ((line = br.readLine()) != null) {
         if (!line.equals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") &&
@@ -52,9 +69,8 @@ public class TwitterScraper extends TimerTask {
       br.close();
       twitCount++;
       if (twitCount == MAX_TWITS) {
-        twitTimer.cancel();
-        twitterWriter.write("</statuses>");
-        twitterWriter.close();
+        closeFile();
+        startNewFile();
       }
     } catch (IOException ioe) {
       throw new IOError(ioe);
@@ -62,8 +78,12 @@ public class TwitterScraper extends TimerTask {
   }
 
   public static void main(String[] args) {
+    if (args.length != 1) {
+      System.out.println("usage: java TwitterScraper <output-dir>");
+      throw new IllegalArgumentException("output directory required");
+    }
     Timer twitterTimer = new Timer();
-    TwitterScraper scrapper = new TwitterScraper(twitterTimer);
+    TwitterScraper scrapper = new TwitterScraper(args[0]);
     twitterTimer.schedule(scrapper, 0, TIME_DELAY);
   }
 }
