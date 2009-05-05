@@ -91,4 +91,9 @@ public interface Matrix {
      */
     void set(int row, int col, double val);
 
+    /**
+     * Sets the values for the row of this matrix using the provided array.
+     * Note that the array itself is not made internal to the instance itself.
+     */
+    void setRow(int row, double[] columns);
 }

@@ -77,13 +77,16 @@ public class ArrayMatrix implements Matrix {
 	}
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double get(int row, int col) {
 	int index = getIndex(row, col);
 	return matrix[index];
     }
 
     /**
-     * Returns a copy of the specified row.
+     * {@inheritDoc}
      */
     public double[] getRow(int row) {
 	if (row >= rows) {
@@ -98,7 +101,7 @@ public class ArrayMatrix implements Matrix {
     }
 
     /**
-     * Returns the number of columns in the matrix.
+     * {@inheritDoc}
      */
     public int columns() {
 	return cols;
@@ -111,13 +114,29 @@ public class ArrayMatrix implements Matrix {
 	return (row * cols) + col;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void set(int row, int col, double val) {
 	int index = getIndex(row, col);
 	matrix[index] = val;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setRow(int row, double[] columns) {
+	if (columns.length != cols) {
+	    throw new IllegalArgumentException(
+		"invalid number of columns: " + columns.length);
+	}
+	for (int col = 0; col < cols; ++col) {
+	    matrix[getIndex(row,col)] = columns[col];
+	}
+    }
     
     /**
-     *
+     * {@inheritDoc}
      */
     public double[][] toDenseArray() {
 	double[][] m = new double[rows][cols];
