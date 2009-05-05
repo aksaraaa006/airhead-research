@@ -48,10 +48,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * For every word, a unique random index vector is created, where the vector has
  * some large dimension (by default 512), with each entry in the vector being
  * from a random gaussian distribution.  The holographic meaning of a word is
- * updated by first adding the sum of index vectors for all the words in a sliding
- * window centered around the target term.  Additionally a sum of convolutions
- * of several n-grams is added to the holographic meaning.  The main
- * functionality of this class can be found in the {@link RandomIndexBuilder}
+ * updated by first adding the sum of index vectors for all the words in a
+ * sliding window centered around the target term.  Additionally a sum of
+ * convolutions of several n-grams is added to the holographic meaning.  The
+ * main functionality of this class can be found in the {@link IndexBuilder}
  * class.
  */
 public class Holograph implements SemanticSpace {

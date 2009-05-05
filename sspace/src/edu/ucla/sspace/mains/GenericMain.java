@@ -106,7 +106,7 @@ public abstract class GenericMain {
     /**
      * Once the command line has been parsed, allows the subclasses to perform
      * additional steps based on class-specific options.  This method will be
-     * called before {@link getSpace}.
+     * called before {@link #getSpace() getSpace}.
      *
      * @see #addExtraOptions(ArgOptions)
      */

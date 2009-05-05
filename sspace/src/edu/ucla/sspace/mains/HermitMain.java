@@ -58,9 +58,9 @@ import java.util.Properties;
  *      documents.  The default is one per core.
  * 
  * <li> {@code --preprocess=<class name>} specifies an instance of {@link
- *      MatrixTransformer} to use in preprocessing the word-document matrix
- *      compiled by LSA prior to computing the SVD.  See {@link
- *      Hermit} for default value
+ *      edu.ucla.sspace.lsa.MatrixTransformer} to use in preprocessing the
+ *      word-document matrix compiled by LSA prior to computing the SVD.  See
+ *      {@link Hermit} for default value
  *
  * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
  *      existing output files.  The default is {@code true}.  If set to {@code
@@ -87,7 +87,7 @@ import java.util.Properties;
  * thread per core, which is the default setting.
  *
  * @see Hermit
- * @see MatrixTransformer
+ * @see edu.ucla.sspace.lsa.MatrixTransformer MatrixTransformer
  *
  * @author Keith Stevens 
  */

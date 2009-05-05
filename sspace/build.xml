@@ -57,7 +57,7 @@
     <!-- Compile all of the classes and put the results in the classes
 	 directory -->
      <javac srcdir="./" destdir="classes" classpathref="classpath" 
-	    debug="true" debuglevel="lines,source" target="1.5">
+	    debug="true" debuglevel="lines,source">
        <compilerarg value="-Xlint"/>
        <compilerarg value="-g"/>
       <include name="src/**"/>
@@ -80,7 +80,7 @@
     <mkdir dir="classes"/>
     <!-- <ivy:cachepath conf="test" pathid="test.refid"/> -->
     <javac srcdir="test" destdir="classes" debug="true"
-      classpathref="classpath" target="1.5" debuglevel="lines,source">	   
+      classpathref="classpath" debuglevel="lines,source">	   
       <compilerarg value="-Xlint"/>
       <compilerarg value="-g"/>
     </javac>
