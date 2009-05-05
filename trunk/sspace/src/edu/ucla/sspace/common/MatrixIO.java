@@ -236,6 +236,10 @@ public class MatrixIO {
     private static void matlabToSVDLIBCsparse(File input, File output) 
 	    throws IOException {
 
+	MATRIX_IO_LOGGER.info("Converting from Matlab double values to " +
+			      "SVDLIBC float values; possible loss of " +
+			      "precision");
+
 	BufferedReader br = new BufferedReader(new FileReader(input));
 
 	Map<Integer,Integer> colToNonZero = new HashMap<Integer,Integer>();
@@ -271,20 +275,22 @@ public class MatrixIO {
 	// the value associated for that row
 	int[] colIndices = new int[cols];
 	Map<Integer,int[]> colToRowIndex = new TreeMap<Integer,int[]>();
-	Map<Integer,double[]> colToRowValues = new TreeMap<Integer,double[]>();
+	Map<Integer,float[]> colToRowValues = new TreeMap<Integer,float[]>();
 	for (String line = null; (line = br.readLine()) != null; ) {
 	    String[] rowColVal = line.split("\\s+");
 	    int row = Integer.parseInt(rowColVal[0]) - 1;
 	    int col = Integer.parseInt(rowColVal[1]) - 1;
-	    double val = Double.parseDouble(rowColVal[2]);
+	    // NOTE: SVDLIBC uses floats instead of doubles, which can cause a
+	    // loss of precision
+	    float val = Double.valueOf(rowColVal[2]).floatValue();
 
 	    // get the arrays used to store the non-zero row indices for this
 	    // column and the parallel array that stores the row-index's value
 	    int[] rowIndices = colToRowIndex.get(col);
-	    double[] rowValues = colToRowValues.get(col);
+	    float[] rowValues = colToRowValues.get(col);
 	    if (rowIndices == null) {
 		rowIndices = new int[colToNonZero.get(col)];
-		rowValues = new double[colToNonZero.get(col)];
+		rowValues = new float[colToNonZero.get(col)];
 		colToRowIndex.put(col,rowIndices);
 		colToRowValues.put(col,rowValues);
 	    }
@@ -310,7 +316,7 @@ public class MatrixIO {
 	for (Map.Entry<Integer,int[]> e : colToRowIndex.entrySet()) {
 	    int col = e.getKey().intValue();
 	    int[] nonZeroRows = e.getValue();
-	    double[] values = colToRowValues.get(col);
+	    float[] values = colToRowValues.get(col);
 	    
 	    if (col != lastCol) {
 		// print any missing columns in case not all the columns have
