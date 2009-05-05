@@ -14,6 +14,7 @@ class LearningGame():
   def __init__(self, phoneme_file, use_attention, use_context, out_dir):
     self.map = []
     self.objects = []
+    self.object_contexts = {}
     self.word_list = []
     self.buildWordList(phoneme_file)
     self.createObjects(60)
@@ -22,6 +23,7 @@ class LearningGame():
     self.last_pick = 0
     self.time_axis = []
     self.pick_count = []
+    self.time_first_seen = {}
     self.out_dir = out_dir + "/"
 
   def buildWordList(self, phoneme_file):
@@ -49,12 +51,34 @@ class LearningGame():
       new_object[2] = random.random()
       random.shuffle(new_object)
       self.objects.append(numpy.array(new_object))
+    object_indexes = [i for i in range(len(self.objects))]
+    for obj_index in range(len(self.objects)):
+      possible_contexts = []
+      for i in range(4):
+        context_indexes = random.sample(object_indexes, 4)
+        if obj_index in context_indexes:
+          context_indexes.remove(obj_index)
+        possible_contexts.append(context_indexes)
+      self.object_contexts[obj_index] = possible_contexts
   
-  def pickNewWord(self):
+  def getContext(self, context_size):
+    obj_index = random.randint(0, len(self.objects)-1)
+    possible_contexts = self.object_contexts[obj_index]
+    context_index = random.randint(0, len(possible_contexts)-1)
+    context = [self.objects[i] for i in possible_contexts[context_index]]
+    object = self.objects[obj_index]
+    return [object] + context
+
+  def addPickCount(self):
     self.time_axis.append(self.t)
     self.pick_count.append(self.t - self.last_pick)
     self.last_pick = self.t
+
+  def pickNewWord(self):
+    self.addPickCount()
     word_index = random.randint(0, len(self.word_list) - 1)
+    if self.word_list[word_index][0] not in self.time_first_seen:
+      self.time_first_seen[self.word_list[word_index][0]] = self.t
     return self.word_list[word_index]
 
   def playGame(self, num_times):
@@ -65,6 +89,7 @@ class LearningGame():
       hearer.receiveUtterance(word, context)
       self.t += 1
 
+    self.addPickCount()
     pylab.clf()
     pylab.xlabel("time")
     pylab.ylabel("time since last word picked")
@@ -97,6 +122,7 @@ class LearningGame():
                                                float(len(self.objects)))
     syn_counts = [syn_dict[key] for key in syn_dict]
     syn_axis = [i for i in range(len(syn_dict))]
+    intro_axis = [self.time_first_seen[key] for key in syn_dict]
     print syn_dict
     print syn_counts
     pylab.clf()
@@ -104,9 +130,18 @@ class LearningGame():
     pylab.axis([0, max(syn_counts), 0, len(syn_counts)])
     pylab.setp(labels, 'rotation', 'vertical')
     pylab.xlabel("words used")
-    pylab.ylabel("homonymy count")
+    pylab.ylabel("polysemy count")
     pylab.plot(syn_axis, syn_counts)
     pylab.savefig(self.out_dir + "homonymy_count.png")
+
+    pylab.clf()
+    locs, labels = pylab.xticks(syn_axis, syn_dict.keys())
+    pylab.axis([0, max(syn_counts), 0, len(intro_axis)])
+    pylab.setp(labels, 'rotation', 'vertical')
+    pylab.xlabel("words used")
+    pylab.ylabel("time first seen")
+    pylab.plot(syn_axis, intro_axis)
+    pylab.savefig(self.out_dir + "word_intro.png")
 
 def usage():
   print "usage: ./learningGame.py [options] phoneme_file output_directory"
