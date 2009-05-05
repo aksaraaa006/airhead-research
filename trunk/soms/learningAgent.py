@@ -15,7 +15,7 @@ class learningAgent():
   def __init__(self, vector_size, phoneme_size, game, use_attention, use_context):
     # The nodes will each be an index in the following numpy arrays, holding the
     # location, the meaning vector and the learned words.
-    num_nodes = NUM_ROWS*NUM_COLS
+    num_nodes = 300 #NUM_ROWS*NUM_COLS
     self.meaning_vectors = numpy.random.random((num_nodes, vector_size))
     self.attention_vectors = numpy.ones_like(self.meaning_vectors)
     self.mean = numpy.zeros_like(self.meaning_vectors)
@@ -24,13 +24,14 @@ class learningAgent():
     self.locations = numpy.zeros((num_nodes, 2))
     locs = [(i,j) for i in range(NUM_ROWS) for j in range(NUM_COLS)]
     random.shuffle(locs)
-    for i, location in enumerate(locs):
+    for i, location in enumerate(locs[:num_nodes]):
       self.locations[i][0] = location[0]
       self.locations[i][1] = location[1]
     self.learned_words = [None for i in range(num_nodes)]
 
     # Setting up some constants and time dependent variables.
     self.t = 0
+    self.value_count = 0
     self.learning_rate = 1 
     self.n_range = 25
     self.word_list = [] 
@@ -45,7 +46,7 @@ class learningAgent():
     this agent's personal knowledge."""
     # Select which object to talk about, and 3 other objects to be part of the
     # context, all at random.
-    object_frame = random.sample(self.game.objects, 4)
+    object_frame = self.game.getContext(4)
     context = object_frame[0]
 
     m_data, best_word = self.produceWord(context)
@@ -58,13 +59,8 @@ class learningAgent():
     if self.use_context:
       for obj in object_frame[1:]:
         context += obj
+    self.updateAttention(context, m_data[3])
     return context, best_word 
-
-  def pickNewWord(self):
-    word_index = random.randint(0, len(self.game.word_list) - 1)
-    self.word_list.append(self.game.word_list[word_index])
-    print "new word picked: ", self.word_list[-1]
-    return self.word_list[-1]
 
   def produceWord(self, object_rep, learning=True):
     m_data = self.getBestNode(self.meaning_vectors, object_rep)
@@ -101,7 +97,7 @@ class learningAgent():
     this node, find all the nodes within the neighboorhood of this node, along
     with the node within this range which also has the largest distance from the
     input vector.  This will be used learning stages, not during production."""
-    meaning_distances = distance(map, input_vector)
+    meaning_distances = distance(map, self.attention_vectors * input_vector)
     best_node = 0
     min_dist = meaning_distances[0]
     for i, dist in enumerate(meaning_distances):
@@ -131,8 +127,7 @@ class learningAgent():
       self.word_list.append(word)
     m_data = self.learnPatterns(context, word[0])
     self.learned_words[m_data[0]] = word[0]
-    if self.use_attention:
-      m_data[0].updateAttention(context)
+    self.updateAttention(context, m_data[3])
     self.updateTimeValues()
 
   def printMap(self, out_dir, count):
@@ -148,10 +143,12 @@ class learningAgent():
     pylab.show()
     pylab.savefig(out_dir + "learner_%d_mapping.png" %count)
 
-  def updateAttention(self):
+  def updateAttention(self, meaning_vector, near):
+    if not self.use_attention:
+      return
+    print "using attention"
     self.value_count += 1
-    delta = self.meaning_vectors - self.average
+    delta = (near * (self.meaning_vectors - self.average).transpose()).transpose()
     self.average += (delta/self.value_count)
     self.mean += delta * (meaning_vector - self.average)
-    self.attention = 1 / (1 + (self.mean / self.value_count))
-    self.attention = 1 / (1 + variance)
+    self.attention_vectors = 1 / (1 + (self.mean / self.value_count))
