@@ -304,7 +304,7 @@ public class SVD {
 				    Type.SPARSE_ON_DISK),
 		// V could be large, so just keep it on disk.  Furthermore, JAMA
 		// does not transpose V, so transpose it
-		MatrixIO.transpose(MatrixIO.readMatrix(usv[2],
+		Matrices.transpose(MatrixIO.readMatrix(usv[2],
 			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
 	    };
 	    
@@ -393,7 +393,7 @@ public class SVD {
 		    // load U in memory, since that is what most algorithms will
 		    // be using (i.e. it is the word space).  SVDLIBC returns
 		    // this as U transpose, so correct it.
-		    MatrixIO.transpose(MatrixIO.readMatrix(Ut,
+		    Matrices.transpose(MatrixIO.readMatrix(Ut,
 				Format.SVDLIBC_DENSE_TEXT, Type.DENSE_IN_MEMORY)),
 		    // Sigma only has n values for an n^2 matrix, so make it
 		    // sparse
@@ -511,7 +511,7 @@ public class SVD {
 				    Type.SPARSE_ON_DISK),
 		// V could be large, so just keep it on disk.  Furthermore,
 		// Matlab does not transpose V, so transpose it
-		MatrixIO.transpose(MatrixIO.readMatrix(vOutput,
+		Matrices.transpose(MatrixIO.readMatrix(vOutput,
 			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
 		};
 	    }
@@ -593,7 +593,7 @@ public class SVD {
 				    Type.SPARSE_ON_DISK),
 		// V could be large, so just keep it on disk.  Furthermore,
 		// Octave does not transpose V, so transpose it
-		MatrixIO.transpose(MatrixIO.readMatrix(vOutput,
+		Matrices.transpose(MatrixIO.readMatrix(vOutput,
 			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
 		};
 	    }

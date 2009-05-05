@@ -77,6 +77,13 @@ public class SynchronizedMatrix implements Matrix {
     public synchronized void set(int row, int col, double val) {
 	m.set(row, col, val);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void setRow(int row, double[] columns) {
+	m.setRow(row, columns);
+    }
      
     /**
      * {@inheritDoc}

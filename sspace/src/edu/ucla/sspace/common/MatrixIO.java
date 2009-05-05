@@ -171,31 +171,6 @@ public class MatrixIO {
     }
 
     /**
-     * Creates a new {@code Matrix} based on the provided type, with the
-     * provided dimensions
-     *
-     * @param matrixType the type of matrix to create
-     * @param rows the number of rows in the matrix
-     * @param cols the number of columns in the matrix
-     */
-    private static Matrix createMatrix(Type matrixType, int rows, int cols) {
-	switch (matrixType) {
-	case SPARSE_IN_MEMORY:
-	    return new SparseMatrix(rows, cols);
-	case DENSE_IN_MEMORY:
-	    return new ArrayMatrix(rows, cols);
-	case SPARSE_ON_DISK:
-	    //return new SparseOnDiskMatrix(rows, cols);
-	    // REMDINER: implement me
-	    return new OnDiskMatrix(rows, cols);
-	case DENSE_ON_DISK:
-	    return new OnDiskMatrix(rows, cols);
-	}
-	throw new IllegalArgumentException(
-	    "Unknown matrix type: " + matrixType);
-    }
-
-    /**
      *
      */
     public static File convertFormat(File matrix, Format current, 
@@ -482,7 +457,7 @@ public class MatrixIO {
 	}
 
 	// REMINDER: possibly use on disk if the matrix is too big
-	Matrix m = createMatrix(matrixType, rows, cols);
+	Matrix m = Matrices.create(rows, cols, matrixType);
 	
 	int row = 0;
 	for (String line = null; (line = br.readLine()) != null; row++) {
@@ -539,7 +514,7 @@ public class MatrixIO {
 
 		    // once both rows and cols have been assigned, create the
 		    // matrix
-		    m = createMatrix(matrixType, rows, cols);
+		    m = Matrices.create(rows, cols, matrixType);
 		    MATRIX_IO_LOGGER.log(Level.FINE, 
 			"created matrix of size {0} x {1}", 
 			new Object[] {Integer.valueOf(rows), 
@@ -562,39 +537,7 @@ public class MatrixIO {
 	}
 	
 	return m;
-    }
-    
-    /**
-     *
-     */
-    public static Matrix transpose(Matrix matrix) {
-
-	// REMINDER: this should be augmented to determine whether the tranpose
-	// can be computed in memory (e.g. using File.size() and
-	// Runtime.freeMemory()), or whether the operation needs to be completed
-	// on disk.
-	
-	int rows = matrix.rows();
-	int cols = matrix.columns();
-
-	// MAJOR HACK: need to use reflection or some other hint
-	Matrix transpose = null;
-	if (matrix instanceof SparseMatrix) 
-	    transpose = new SparseMatrix(cols, rows);
-	else if (matrix instanceof ArrayMatrix) 
-	    transpose = new ArrayMatrix(cols, rows);
-	else {
-	    transpose = new OnDiskMatrix(cols, rows);
-	}
-
-	for (int row = 0; row < rows; ++row) {
-	    for (int col = 0; col < cols; ++col) {
-		transpose.set(col, row, matrix.get(row, col));
-	    }
-	}
-
-	return transpose;
-    }
+    }    
 
     /**
      * A rudimentary writer for a generic Matrix in the file type accepted by

@@ -60,7 +60,7 @@ public class SparseMatrix implements Matrix {
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public double get(int row, int col) {
 	Double d = sparseMatrix.get(new Index(row, col));
@@ -68,7 +68,7 @@ public class SparseMatrix implements Matrix {
     }
 
     /**
-     * Returns a copy of the specified row.
+     * {@inheritDoc}
      */
     public double[] getRow(int row) {
 	double[] rowArr = new double[cols];
@@ -80,21 +80,34 @@ public class SparseMatrix implements Matrix {
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public int columns() {
 	return cols;
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
 	sparseMatrix.put(new Index(row, col), val);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setRow(int row, double[] columns) {
+	if (columns.length != cols) {
+	    throw new IllegalArgumentException(
+		"invalid number of columns: " + columns.length);
+	}
+	for (int col = 0; col < cols; ++col) {
+	    sparseMatrix.put(new Index(row, col), columns[col]);
+	}
+    }
     
     /**
-     *
+     * {@inheritDoc}
      */
     public double[][] toDenseArray() {
 	double[][] m = new double[rows][cols];
