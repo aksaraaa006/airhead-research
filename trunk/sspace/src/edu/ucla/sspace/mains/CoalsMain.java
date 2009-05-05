@@ -75,9 +75,8 @@ public class CoalsMain extends GenericMain {
       options.addOption('n', "dimensions", 
                         "the number of dimensions in the semantic space",
                         true, "INT"); 
-      options.addOption('r', "beduce", 
-                        "reduce the semantic space using SVD",
-                        false, "BOOL"); 
+      options.addOption('r', "reduce", 
+                        "reduce the semantic space using SVD");
     }
 
     public static void main(String[] args) {

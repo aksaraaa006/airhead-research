@@ -115,7 +115,7 @@ public class HermitMain extends GenericMain {
 			     + "use for preprocessing", true, "CLASSNAME");
     options.addOption('h', "holographsize", "The size of the holograph vectors",
                       true, "INT");
-    options.addOption('t', "tempdir", "location of the temp directory",
+    options.addOption('m', "tempdir", "location of the temp directory",
                       true, "STRING", "Process Properties");
     }
 
