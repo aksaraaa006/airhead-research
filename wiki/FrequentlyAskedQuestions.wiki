@@ -1,6 +1,13 @@
 #summary Frequently Asked Questions about the S-Space Package
 #labels Featured
 
+= Code =
+
+== How do I get the code? ==
+
+We will soon offer a versioned source release under the downloads section.  Until then, `svn checkout` is the only way to get the source.
+
+If you are looking for a pre-built binary, we currently offer a few command-line programs for running specific algorithms in the [http://code.google.com/p/airhead-research/downloads/list downloads] section.
 
 
 = Running Algorithms =
