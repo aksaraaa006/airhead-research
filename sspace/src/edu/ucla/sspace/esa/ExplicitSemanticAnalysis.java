@@ -60,6 +60,8 @@ import edu.ucla.sspace.common.StringUtils;
  * @author David Jurgens
  */
 public class ExplicitSemanticAnalysis implements SemanticSpace {
+    public static final String ESA_SSPACE_NAME =
+    "esa-semantic-space";
 
     /**
      * The logger for this class based on the fully qualified class name
@@ -479,6 +481,13 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      */
     public void processSpace(Properties properties) {
 
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getSpaceName() {
+      return ESA_SSPACE_NAME;
     }
 
     /**

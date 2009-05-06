@@ -51,6 +51,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author David Jurgens
  */
 public abstract class GenericMain {
+    /**
+     * Extension used for all saved semantic space files.
+     */
+    public static final String EXT = ".sspace";
 
     /**
      * Whether to emit messages to {@code stdout} when the {@code verbose}
@@ -63,22 +67,9 @@ public abstract class GenericMain {
      */
     protected final ArgOptions argOptions;
 
-    /**
-     * The default file name used when replacing an existing semantic space
-     * output, ends in ".sspace".
-     */
-    private final String defaultFileName;
-
-    /**
-     * The temporary file name used when dumping a semantic space.
-     */
-    private final String tempFileName;
-
     public GenericMain(String defaultName) {
 	argOptions = setupOptions();
 	verbose = false;
-	defaultFileName = defaultName + ".sspace";
-	tempFileName = defaultName;
     }
 
     /**
@@ -241,8 +232,8 @@ public abstract class GenericMain {
 		((endTime - startTime) / 1000d));
 	
 	File output = (overwrite)
-	    ? new File(outputDir, defaultFileName)
-	    : File.createTempFile(tempFileName, "sspace", outputDir);
+	    ? new File(outputDir, space.getSpaceName() + EXT)
+	    : File.createTempFile(space.getSpaceName(), EXT, outputDir);
 
 	startTime = System.currentTimeMillis();
 	SemanticSpaceUtils.printSemanticSpace(space, output);

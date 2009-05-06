@@ -149,6 +149,9 @@ import edu.ucla.sspace.common.WordIterator;
  */
 public class RandomIndexing implements SemanticSpace {
 
+    public static final String RI_SSPACE_NAME =
+    "random-indexing-semantic-space";
+
     /**
      * The prefix for naming public properties.
      */
@@ -346,6 +349,13 @@ public class RandomIndexing implements SemanticSpace {
 	    dVec[i] = vec[i];
 	}
 	return dVec;
+    }
+
+    /**
+     * {@inheritDoc}
+     */ 
+    public String getSpaceName() {
+      return RI_SSPACE_NAME;
     }
 
     /**

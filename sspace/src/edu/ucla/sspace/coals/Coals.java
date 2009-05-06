@@ -78,6 +78,8 @@ public class Coals implements SemanticSpace {
     "edu.ucla.sspace.coals.Coals.reduce";
   public static final String REDUCE_MATRIX_DIMENSION_PROPERTY =
     "edu.ucla.sspace.coals.Coals.dimension";
+  public static final String COALS_SSPACE_NAME = 
+    "coals-semantic-space";
 
   /**
    * A temporary file containing temprorary word co-occurance counts from each
@@ -131,6 +133,10 @@ public class Coals implements SemanticSpace {
     if (wordToIndex.containsKey(term))
       return finalCorrelation.getRow(wordToIndex.get(term).intValue());
     return null;
+  }
+
+  public String getSpaceName() {
+    return COALS_SSPACE_NAME;
   }
 
   /**

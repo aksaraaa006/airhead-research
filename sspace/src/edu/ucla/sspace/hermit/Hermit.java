@@ -75,6 +75,8 @@ public class Hermit implements SemanticSpace {
 
   public static final String LSA_DIMENSIONS_PROPERTY =
   "edu.ucla.sspace.lsa.LatentSemanticAnalysis.dimensions";
+  public static final String HERMIT_SSPACE_NAME =
+  "hermit-semantic-space";
 
   /**
    * Beagle based builder for random index vectors.
@@ -138,6 +140,13 @@ public class Hermit implements SemanticSpace {
     indexBuilder = builder;
     indexVectorSize = vectorSize;
     tempDir = tempDirFile;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public String getSpaceName() {
+    return HERMIT_SSPACE_NAME;
   }
 
   /**
