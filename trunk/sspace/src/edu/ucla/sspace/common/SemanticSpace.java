@@ -96,4 +96,5 @@ public interface SemanticSpace {
      */
     void processSpace(Properties properties);
 
+    String getSpaceName();
 }

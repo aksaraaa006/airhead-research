@@ -47,6 +47,8 @@ import java.util.Set;
  * which is produced by {@link edu.ucla.sspace.common.SemanticSpaceUtils}.
  */
 public class FileBasedSemanticSpace implements SemanticSpace {
+    public static final String FILE_SSPACE_NAME = 
+    "file-based-semantic-space";
 
     /**
      * The {@code Matrix} which contains the data read from a finished {@link
@@ -174,6 +176,13 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     public double[] getVectorFor(String term) {
 	Integer index = termToIndex.get(term);
 	return (index == null) ? null : wordSpace.getRow(index.intValue());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getSpaceName() {
+      return FILE_SSPACE_NAME;
     }
 
     /**

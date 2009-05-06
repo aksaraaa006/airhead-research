@@ -144,6 +144,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
     public static final String LSA_DIMENSIONS_PROPERTY =
 	"edu.ucla.sspace.lsa.LatentSemanticAnalysis.dimensions";
+    public static final String LSA_SSPACE_NAME =
+     "lsa-semantic-space";
     
     private static final Logger LSA_LOGGER = 
 	Logger.getLogger(LatentSemanticAnalysis.class.getName());
@@ -320,6 +322,13 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	return (index == null)
 	    ? null
 	    : wordSpace.getRow(index.intValue() - 1);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getSpaceName() {
+      return LSA_SSPACE_NAME;
     }
 
     /**

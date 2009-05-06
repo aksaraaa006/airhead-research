@@ -56,6 +56,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Holograph implements SemanticSpace {
   public static final int CONTEXT_SIZE = 6;
+  public static final String BEAGLE_SSPACE_NAME = 
+    "holograph-semantic-space";
 
   private final IndexBuilder indexBuilder;
   private final Map<String, double[]> termHolographs;
@@ -79,6 +81,13 @@ public class Holograph implements SemanticSpace {
    */
   public double[] getVectorFor(String term) {
     return termHolographs.get(term);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public String getSpaceName() {
+    return BEAGLE_SSPACE_NAME;
   }
 
   /**
