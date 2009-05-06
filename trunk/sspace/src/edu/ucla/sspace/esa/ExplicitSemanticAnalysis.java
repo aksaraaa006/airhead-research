@@ -27,65 +27,92 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Queue;
+import java.util.Properties;
 import java.util.Set;
-import java.util.TreeSet;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import edu.ucla.sspace.common.Matrices;
+import edu.ucla.sspace.common.Matrix;
+import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StringUtils;
 
 /**
  * An implementation of Explicit Semanic Analysis proposed by Evgeniy
  * Gabrilovich and Shaul Markovitch.  For full details see:
  *
- * <p> Evgeniy Gabrilovich and Shaul Markovitch. (2007). "Computing Semantic
- * Relatedness using Wikipedia-based Explicit Semantic Analysis," Proceedings of
- * The 20th International Joint Conference on Artificial Intelligence (IJCAI),
- * Hyderabad, India, January 2007. </p>
+ * <ul>
+ *
+ *   <li style="font-family:Garamond, Georgia, serif"> Evgeniy Gabrilovich and
+ *     Shaul Markovitch. (2007). "Computing Semantic Relatedness using
+ *     Wikipedia-based Explicit Semantic Analysis," Proceedings of The 20th
+ *     International Joint Conference on Artificial Intelligence (IJCAI),
+ *     Hyderabad, India, January 2007. </li>
+ *
+ * </ul>
  *
  * @author David Jurgens
  */
-public class ExplicitSemanticAnalysis {
+public class ExplicitSemanticAnalysis implements SemanticSpace {
 
     /**
      * The logger for this class based on the fully qualified class name
      */
     private static final Logger ESA_LOGGER = 
 	Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
-
-    private final Map<String,SemanticVector> wikipediaTermsToVector;
     
     private final Map<String,Integer> wikipediaTermsToIndex;
 
+    /**
+     * The article co-occurrence matrix.  This field is set in {@link
+     * processDocument(BufferedReader) processDocument} after the number of
+     * valid articles is known.
+     */
+    private Matrix articleMatrix;
+
     public ExplicitSemanticAnalysis() {
- 	wikipediaTermsToVector = new HashMap<String,SemanticVector>();
 	wikipediaTermsToIndex = new HashMap<String,Integer>();
+	articleMatrix = null;
     }
 
-    public void generateSpace(File wikipediaSnapshotFile) throws IOException {
+    /**
+     * Parses the provided Wikipedia snapshot.
+     *
+     * @param wikipediaSnapshot a reader to the file containing a Wikipedia
+     *        snapshot
+     */
+    public void processDocument(BufferedReader wikipediaSnapshot) 
+	    throws IOException {
 
 	// parse and clean the wiki snapshot, while recording the incoming and
 	// outgoing link counts for each article
 	WikiParseResult fileAndLinkCount = 
-	    parseWikipediaSnapshot(wikipediaSnapshotFile);	
-
+	    parseWikipediaSnapshot(wikipediaSnapshot);	
+	
 	// threshold off rarely linked articles and small articles
 	Set<String> validArticles = 
 	    thresholdArticles(fileAndLinkCount.parsedWikiSnapshot,
 			      fileAndLinkCount.incomingLinkCounts);
 	
+	// create the article co-occurrence matrix 
+	articleMatrix = Matrices.create(validArticles.size(), 
+					validArticles.size(), false);
+
+	// create the mapping from each article title its index in the matrix
+	int index = 0;
+	for (String articleTitle : validArticles) {
+	    wikipediaTermsToIndex.put(articleTitle, Integer.valueOf(index));
+	    ++index;
+	}
+	
 	// use the remaining articles for the ESA set
+	computeESA(fileAndLinkCount.parsedWikiSnapshot, validArticles);
     }
 
     /**
@@ -115,13 +142,12 @@ public class ExplicitSemanticAnalysis {
      *
      * @throws IOException on any error
      */
-    private WikiParseResult parseWikipediaSnapshot(File wikiSnapshot) 
+    private WikiParseResult parseWikipediaSnapshot(BufferedReader wikiSnapshot) 
 	throws IOException {
 	       
-	DocumentBufferedQueue docQueue = 
-	    new DocumentBufferedQueue(wikiSnapshot);
+	ArticleIterator articleIterator = new ArticleIterator(wikiSnapshot);
 	    
-	File parsedOutput = File.createTempFile("esa-parsed-snapshot", "tmp");
+	File parsedOutput = File.createTempFile("esa-parsed-snapshot", ".tmp");
 	PrintWriter parsedOutputWriter = new PrintWriter(parsedOutput);
 
 	// NOTE: we are able to use an IdentityHashMap only because we call
@@ -132,10 +158,10 @@ public class ExplicitSemanticAnalysis {
 	int fileNum = 0;
 	
 	// next go through the raw articles and look for link counts
-	while (docQueue.hasNext()) {
+	while (articleIterator.hasNext()) {
 	    fileNum++;
 	    
-	    WikiDoc doc = docQueue.next();
+	    WikiArticle doc = articleIterator.next();
 	    
 	    if (doc == null) {
 		// rare, but we guard against it.
@@ -143,7 +169,7 @@ public class ExplicitSemanticAnalysis {
 		break;
 	    }
 
-	    String rawArticleName = doc.name;
+	    String rawArticleName = doc.title;
 	    // sanity check in case we didn't get a valid document
 	    if (rawArticleName == null || doc.text == null) {
 		ESA_LOGGER.warning("race condition in the document caching...");
@@ -334,7 +360,6 @@ public class ExplicitSemanticAnalysis {
 	return new WikiParseResult(parsedOutput, articleToIncomingLinkCount);
     }
 
-
     /**
      * Removes Wikipedia articles from the ESA processes if they fail to meet a
      * minimum word count or incoming and outgoing link count.
@@ -400,148 +425,83 @@ public class ExplicitSemanticAnalysis {
 
     /**
      * 
+     *
+     * @param parsedWikiSnapshot
+     * @param validArticles
      */
     private void computeESA(File parsedWikiSnapshot, Set<String> validArticles)
 	throws IOException {
 	
-	// Iterate through the set of valid documents to find what is the
-	// largest n-gram that is a single article name.  We will use this for
-	// searching
-	int longestNgram = 1;
-	for (String s : validArticles) {
-	    
-	}
-
-	BufferedReader br =  
+	BufferedReader br =
 	    new BufferedReader(new FileReader(parsedWikiSnapshot));
-    }
 
+	for (String line = null; (line = br.readLine()) != null; ) {
+
+	    
+	    String[] arr = line.split("\\|");
+	    String articleTitle = arr[0].intern();
+	    // skip any articles that aren't a part of the valid set
+	    if (!validArticles.contains(articleTitle)) {
+		continue;
+	    }
+	    ESA_LOGGER.info("searching article " + articleTitle);
+	    int articleIndex = 
+		wikipediaTermsToIndex.get(articleTitle).intValue();
+	    String articleText = arr[2];
+
+	    // Search the text for the number of occurrences of each valid
+	    // article title.
+	    for (String valid : validArticles) {
+		int count = count(articleText, valid);
+		articleMatrix.set(wikipediaTermsToIndex.get(valid).intValue(),
+				  articleIndex, count);
+		ESA_LOGGER.log(Level.FINE, "{0} contained {1} {2} times",
+			       new Object[] { articleTitle, valid, 
+					      Integer.valueOf(count)});
+	    }
+	}
+	br.close();	
+    }
 
     /**
-     * A utility class for buffering Wikipedia articles for processing.  This
-     * allows concurrent reading of the Wikipedia snapshot file with ESA
-     * processing.
+     * Returns how many times {@code toCount} occurs in the provided {@code
+     * text} String.
      */
-    private static class DocumentBufferedQueue {
-	
-	private static final int DOCS_TO_CACHE = 100;
-
-	private static final int TITLE_HTML_LENGTH = "    <title>".length();
-
-	private final BufferedReader wikiReader;
-
-	private final BlockingQueue<WikiDoc> cachedDocs;
-
-	private final AtomicBoolean isReaderOpen;
-
-	public DocumentBufferedQueue(String wikipediaFile) throws IOException {
-	    this(new File(wikipediaFile));
-	}
-
-	public DocumentBufferedQueue(File wikipediaFile) throws IOException {
-
-	    wikiReader = new BufferedReader(new FileReader(wikipediaFile));
-	    cachedDocs = new LinkedBlockingQueue<WikiDoc>();
-	    isReaderOpen = new AtomicBoolean(true);
-
-	    for (int i = 0; i < DOCS_TO_CACHE; ++i) {
-		WikiDoc d = cacheDoc();
-		if (d != null)
-		    cachedDocs.offer(d);
-	    }
-	}
-	
-	private synchronized WikiDoc cacheDoc() throws IOException {
-	    StringBuilder sb = new StringBuilder();
-	    String articleTitle = null;
-	    article_grab:
-	    for (String line = null; (line = wikiReader.readLine()) != null;) {
-
-		if (line.startsWith("</mediawiki>")) {
-		    // end of input
-		    isReaderOpen.set(false);
-		}
-		if (line.startsWith("  <page>")) {
-		    try {
-			// title immediately follows page declaration
-			String titleLine = wikiReader.readLine();
-			// titles start with '    <title>'		    
-			String rem = titleLine.substring(TITLE_HTML_LENGTH);
-			int index = rem.indexOf("<");
-			if (index < 0)
-			    throw new Error("Malformed title: " + line);
-			articleTitle = rem.substring(0, index);
-			articleTitle = 
-			    articleTitle.replaceAll("/"," ").toLowerCase();
-			// System.out.println("cached: " + articleTitle);
-
-			// read in the rest of the page until we see the end tag
-			while ((line = wikiReader.readLine()) != null && 
-			       !line.startsWith("  </page>")) {
-			    sb.append(line);
-			}
-			break article_grab;
-		    }
-		    catch (Throwable t) {
-			t.printStackTrace();
-			break;
-		    }
-		}		
-	    }
-	    return (articleTitle == null) 
-		? null 
-		: new WikiDoc(articleTitle, sb.toString());
-	}
-
-	public boolean hasNext() {
-	    return cachedDocs.size() > 0 || isReaderOpen.get();
-	}
-
-	public WikiDoc next() throws IOException {
-	    new Thread() {
-		public void run() {
-		    try {
-			WikiDoc d = cacheDoc();
-			if (d != null)
-			    cachedDocs.offer(d);		    
-		    }
-		    catch (IOException ioe) {
-			ioe.printStackTrace();
-		    }
-		}
-	    }.start();
-	    // HORRIBLE HACK: Don't block.  Wait up to 10 minutes (in case of
-	    //                GC) to poll.  This should be fixed when time
-	    //                allows, but works in the present case.
-	    try {
-		return cachedDocs.poll(60 * 10 * 1000L, TimeUnit.MILLISECONDS);
-	    } catch (InterruptedException ie) {
-		// re-throw as IOE
-		throw new IOException(ie);
-	    }
-	}
+    private static int count(String text, String toCount) {
+	int count = 0;
+	for (int i = -1; (i = text.indexOf(toCount, i + 1)) >= 0; ++count)
+	    ;
+	return count;
     }
 
-    public static void main(String[] args) {
-	if (args.length < 3) {
-	    System.out.println("usage java <raw-wikipedia-snapshot> "
-			       + "<output-file> <valid-terms-file>");
-	    return;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public void processSpace(Properties properties) {
+
     }
 
-
-    private static class WikiDoc {
-	
-	public final String name;
-	public final String text;
-
-	public WikiDoc(String name, String text) {
-	    this.name = name;
-	    this.text = text;
-	}
+    /**
+     * {@inheritDoc}
+     */
+    public double[] getVectorFor(String word) {
+	Integer index = wikipediaTermsToIndex.get(word);
+	return (index == null) ? null : articleMatrix.getRow(index.intValue());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public Set<String> getWords() {
+	return Collections.unmodifiableSet(wikipediaTermsToIndex.keySet());
+    }    
+
+    /**
+     * A wrapper class for returning a file of the parsed Wikipedia snapshot as
+     * well as the number of incoming links for each article.
+     *
+     * @see #parseWikipediaSnapshot(BufferedReader)
+     */
     private static class WikiParseResult {
 
 	public final File parsedWikiSnapshot;
@@ -553,7 +513,10 @@ public class ExplicitSemanticAnalysis {
 	    this.incomingLinkCounts = incomingLinkCounts;
 	}
     }
- 
+
+    /**
+     *
+     */
     private final class SemanticVector {
 	private final Map<Integer,Integer> sparseVector;
 
