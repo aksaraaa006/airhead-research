@@ -1,0 +1,51 @@
+#summary Frequently Asked Questions about the S-Space Package
+#labels Featured
+
+
+
+= Running Algorithms =
+
+== How do I run one of the algorithms? ==
+
+There are several possibilities.  One way to is to use one of the pre-packaged jar files from the [http://code.google.com/p/airhead-research/downloads/list downloads] page.  These can be run with `java -jar <jar-name>`, and will print algorithm-specific instructions on how to use them.  
+
+The second way uses our `Main` classes, which are command-line executable programs for running the different algorithms.  All of the fully implemented algorithms should have an associated class in the `edu.ucla.sspace.mains` package.  The wiki page for a specific algorithm will also have further details.
+
+== Is it possible to run them through a graphical interface? ==
+
+This is not currently supported, but is still possible if you want to do it yourself.  Currently, our resources are focused on getting the various algorithms working, so we have not had time to build a nice-looking graphical front end to the algorithms.  However, if you want to do this yourself, you can simply instantiate one of the algorithm classes.  For example:
+{{{
+import edu.ucla.sspace.lsa.LatentSemanticAnalysis;
+
+public class MyGUI {
+  
+    // ....
+
+    public void myFunc() {
+        LatentSemanticAnalysis lsa = new LatentSemanticAnalysis();
+        lsa.processDocument(...);
+    }
+}
+}}}
+
+The algorithms are fully self-contained, and can easily be used as libraries.
+
+== I keep getting OutOfMemory errors! ==
+
+This could be due to several issues.
+
+First, consider manually setting the maximum memory for the JVM with `-Xmx<size>`.  See the JVM documentation for further details.
+
+Second, note that many of the algorithms scale based on the number of terms in the corpus.  If no pre-processing is done to the corpus, it make contain seemingly duplicate tokens such as:
+  * fox
+  * fox,
+  * "fox
+  * fox"
+  * 'fox
+  * fox.
+  * fox?
+  * FOX
+  * F.O.X.
+and so on.  The best way to assess whether this is the root issue is to count how many unique token types are in the input corpus.  
+
+If you think the algorithm should still scale to the number of unique words but is still throwing errors, please let us know.
