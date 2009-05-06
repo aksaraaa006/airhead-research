@@ -44,6 +44,7 @@ public class StringUtils {
 	= new HashMap<String,String>();
 
     static {
+	HTML_CODE_TO_STRING.put("&nbsp;"," ");
 	HTML_CODE_TO_STRING.put("&Agrave;","À");
 	HTML_CODE_TO_STRING.put("&Aacute;","Á");
 	HTML_CODE_TO_STRING.put("&Acirc;","Â");
@@ -134,11 +135,12 @@ public class StringUtils {
 	    if (decoded != null) {
 		// append the string containing all characters from the last escaped
 		// character to the current one
-		sb.append(source.substring(last, start)).append(decoded);
+		String s = source.substring(last, start);
+		sb.append(s).append(decoded);
 		last = end + 1;
 	    }
 	    
-	    start = source.indexOf("&", start);
+	    start = source.indexOf("&", end);
 	    end = source.indexOf(";", start);
 	}
 	// if there weren't any substitutions, don't both to create a new String
