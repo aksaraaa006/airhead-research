@@ -27,10 +27,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -39,6 +42,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import edu.ucla.sspace.common.GrowableArrayList;
 import edu.ucla.sspace.common.Matrices;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -71,7 +75,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     private static final Logger ESA_LOGGER = 
 	Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
     
-    private final Map<String,Integer> wikipediaTermsToIndex;
+    private final Map<CharSequence,Integer> articleNameToIndex;
 
     /**
      * The article co-occurrence matrix.  This field is set in {@link
@@ -80,12 +84,24 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      */
     private Matrix articleMatrix;
 
+    private int articleCounter;
+
     public ExplicitSemanticAnalysis() {
 	// Expect roughly 7.4 million articles, so set the size accordingly to
 	// no re-hashing occurs.  Set a high load factor to minimize the space
 	// at a small cost to performance.
-	wikipediaTermsToIndex = new HashMap<String,Integer>(8000000, 4f);
+	articleNameToIndex = new TrieMap<Integer>();
+	articleCounter = 0;
 	articleMatrix = null;
+    }
+
+    private int getArticleIndex(String articleName) {
+	Integer index = articleNameToIndex.get(articleName);
+	if (index == null) {
+	    index = Integer.valueOf(articleCounter++);
+	    articleNameToIndex.put(articleName, index);
+	}
+	return index.intValue();
     }
 
     /**
@@ -105,31 +121,45 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	ESA_LOGGER.info("thresholding articles");
 
 	// threshold off rarely linked articles and small articles
-	Set<String> validArticles = 
+	BitSet validArticles = 
 	    thresholdArticles(fileAndLinkCount.parsedWikiSnapshot,
 			      fileAndLinkCount.incomingLinkCounts);
 	
 	File parsedSnapshot = fileAndLinkCount.parsedWikiSnapshot;
 
 	// explictly set this result to null to free the incomingLinkCounts
-	// map, which can be huge.
+	// array, which can be huge.
 	fileAndLinkCount = null;
+	
+	// trim the articleToIndex map to just those articles that are valid
+	Iterator<Map.Entry<CharSequence,Integer>> it = 
+	    articleNameToIndex.entrySet().iterator();
+
+	while (it.hasNext()) {
+	    Map.Entry<CharSequence,Integer> e = it.next();
+	    if (!validArticles.get(e.getValue().intValue())) {
+		it.remove();
+	    }
+	}       
+
+	// The indices are all non-congruent at this point, so remap them to a
+	// standard set.  Note that we can reorder the indicies at this point
+	// because no futher accesses to the old indices (for the incoming link
+	// counts) are needed
+	int newIndex = 0;
+	for (CharSequence s : articleNameToIndex.keySet()) {
+	    articleNameToIndex.put(s, Integer.valueOf(newIndex++));
+	}
+	
 	
 	ESA_LOGGER.info("generating matrix");
 
 	// create the article co-occurrence matrix 
-	articleMatrix = Matrices.create(validArticles.size(), 
-					validArticles.size(), false);
-
-	// create the mapping from each article title its index in the matrix
-	int index = 0;
-	for (String articleTitle : validArticles) {
-	    wikipediaTermsToIndex.put(articleTitle, Integer.valueOf(index));
-	    ++index;
-	}
+	articleMatrix = Matrices.create(articleNameToIndex.size(), 
+					articleNameToIndex.size(), false);
 	
 	// use the remaining articles for the ESA set
-	computeESA(fileAndLinkCount.parsedWikiSnapshot, validArticles);
+	computeESA(fileAndLinkCount.parsedWikiSnapshot);
     }
 
     /**
@@ -162,6 +192,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      */
     private WikiParseResult parseWikipediaSnapshot(BufferedReader wikiSnapshot) 
 	throws IOException {
+
 	       
 	ArticleIterator articleIterator = new ArticleIterator(wikiSnapshot);
 	    
@@ -169,11 +200,11 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	parsedOutput.deleteOnExit();
 	PrintWriter parsedOutputWriter = new PrintWriter(parsedOutput);
 
-	// NOTE: we are able to use an IdentityHashMap only because we call
-	// .intern() on all the article name strings to be used as keys
-	Map<CharSequence,Integer> articleToIncomingLinkCount = 
-	    new TrieMap<Integer>();	    	    
-	    
+	GrowableArrayList<Integer> articleToIncomingLinkCount = 
+	    new GrowableArrayList<Integer>(50000000);
+
+	// this is different than the articleTitleIndex since it includes
+	// skipped documents
 	int fileNum = 0;
 	
 	// next go through the raw articles and look for link counts
@@ -217,7 +248,10 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    else {
 		// intern the article name since it will be around a for the
 		// lifetime of the program
-		articleName = articleName; //.intern();
+		//articleName = articleName.intern();
+		
+		// Add the article title to the index mapping
+		int index = getArticleIndex(articleName);
 	    }
 			
 	    ESA_LOGGER.info(String.format("parsing file %d: %s ", 
@@ -360,18 +394,11 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 		    phase4sb.append(linkedArticleTitle).append(" ");
 		    
 		    // increase the link counts accordingly
-		    //
-		    // NOTE: we have linkedArticleTitle is the canonical copy of
-		    // the string (via intern()), and so this put() call works
-		    // correctly, i.e. doesn't create duplicate keys
-		    Integer incomingLinks = articleToIncomingLinkCount.
-			get(linkedArticleTitle);
-		    
-		    articleToIncomingLinkCount.
-			put(linkedArticleTitle, (incomingLinks == null)
-			    ? Integer.valueOf(1)
-			    : Integer.valueOf(1 + incomingLinks));
-		    
+		    int linkedIndex = getArticleIndex(linkedArticleTitle);
+		    Integer val = articleToIncomingLinkCount.get(linkedIndex);
+		    articleToIncomingLinkCount.set(linkedIndex, (val == null)
+			    ? Integer.valueOf(1) 
+			    : Integer.valueOf(1 + val.intValue()));
 		    ++outgoingLinks;		    
 		}
 		
@@ -404,26 +431,36 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 					   + "|" + scrubbed);
 		parsedOutputWriter.flush();
 		
-		int newIncomingLinks = articleToIncomingLinkCount.size() -
-		    prevTotalIncomingLinks;
-		Integer curIncoming = 
-		    articleToIncomingLinkCount.get(articleName);
-		
-		ESA_LOGGER.fine("link summary: " + outgoingLinks + 
-				" outgoing, (" + newIncomingLinks + 
-				" new docs); "
-				+ ((curIncoming == null) ? "0" :
-				   curIncoming.toString())
-				+ " incoming");
+		if (ESA_LOGGER.isLoggable(Level.FINE)) {
+		    int newIncomingLinks = articleToIncomingLinkCount.size() -
+			prevTotalIncomingLinks;
+		    Integer curIncoming = articleToIncomingLinkCount.get(
+			getArticleIndex(articleName));
+		    
+		    ESA_LOGGER.fine("link summary: " + outgoingLinks + 
+				    " outgoing, (" + newIncomingLinks + 
+				    " new docs); "
+				    + ((curIncoming == null) ? "0" :
+				       curIncoming.toString())
+				    + " incoming");
+		}
 	    }
 	} // end file loop
 
 
 	// Once all the articles have been processed, write the incoming link
 	// count for each article
-
 	parsedOutputWriter.close();
-	return new WikiParseResult(parsedOutput, articleToIncomingLinkCount);
+
+	// convert the link counts to an array
+	int size = articleToIncomingLinkCount.size();
+	int[] incomingLinkCountArray = new int[size];
+	for (int i = 0; i < size; ++i) {
+	    Integer count = articleToIncomingLinkCount.get(i);
+	    incomingLinkCountArray[i] = (count == null) ? 0 : count.intValue();
+	}
+
+	return new WikiParseResult(parsedOutput, incomingLinkCountArray);
     }
 
     /**
@@ -436,13 +473,14 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      * @return the set of Wikipedia articles that meet the minimum
      *         qualifications
      */
-    private Set<String> thresholdArticles(File parsedWiki, 
-					  Map<CharSequence,Integer> incomingLinkCounts)
+    private BitSet thresholdArticles(File parsedWiki, 
+				     int[] incomingLinkCounts)
 	throws IOException {
 
 	ESA_LOGGER.info("Thresholding Articles");
 	
-	Set<String> validArticles = new LinkedHashSet<String>();
+	//Set<String> validArticles = new LinkedHashSet<String>();
+	BitSet validArticles = new BitSet(articleNameToIndex.size());
 	
 	// now read it back in and decide which of the term documents should
 	// actually get included in the output
@@ -458,17 +496,17 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 
 	    // If there weren't any incoming links, then the map will be
 	    // null for the article
-	    Integer incoming = incomingLinkCounts.get(articleName);
-	    if (incoming == null)
-		incoming = Integer.valueOf(0);			       
+	    // Integer incoming = incomingLinkCounts.get(articleName);
+	    int index = articleNameToIndex.get(articleName);
+	    int incoming = incomingLinkCounts[index];
+	    // if (incoming == null)
+	    //    incoming = Integer.valueOf(0);			       
 
 	    if ((incoming + outgoing) < 5) {
 		ESA_LOGGER.fine("excluding article " + articleName + " for " +
 				"too few incoming and outgoing links: " + 
 				(incoming + outgoing));
-
-		// Remove the word from the map to save space
-		incomingLinkCounts.remove(articleName);
+		++removed;
 		continue;
 	    }
 		
@@ -482,27 +520,31 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    if (wordCount < 100) {
 		ESA_LOGGER.fine("excluding article " + articleName + " for " +
 				"too few words: " +  wordCount);
-		
-		// Remove the word from the map to save space
-		incomingLinkCounts.remove(articleName);
+		++removed;
 		continue;		
 	    }
 	    
-	    validArticles.add(articleName);
+	    //validArticles.add(articleName);
+	    validArticles.set(getArticleIndex(articleName));
 	}
 	br.close();
+
+	ESA_LOGGER.info("retained " + validArticles.cardinality() + " articles;"
+			+ " removed " + removed + " articles");
 	
 	return validArticles;
     }
 
     /**
-     * 
+     * Calculates the Wikipedia title occurrences in each document.
+     *
+     * Note that at this step it is assumed that the key set of {@link
+     * #articleNameToIndex} has been trimmed of all invalid articles titles.
      *
      * @param parsedWikiSnapshot
      * @param validArticles
      */
-    private void computeESA(File parsedWikiSnapshot, Set<String> validArticles)
-	throws IOException {
+    private void computeESA(File parsedWikiSnapshot) throws IOException {
 	
 	BufferedReader br =
 	    new BufferedReader(new FileReader(parsedWikiSnapshot));
@@ -512,24 +554,32 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    
 	    String[] arr = line.split("\\|");
 	    String articleTitle = arr[0]; //.intern();
+
 	    // skip any articles that aren't a part of the valid set
-	    if (!validArticles.contains(articleTitle)) {
+	    if (!articleNameToIndex.containsKey(articleTitle)) {
 		continue;
 	    }
+
 	    ESA_LOGGER.info("searching article " + articleTitle);
-	    int articleIndex = 
-		wikipediaTermsToIndex.get(articleTitle).intValue();
+	    int articleIndex = getArticleIndex(articleTitle);	    
 	    String articleText = arr[2];
 
 	    // Search the text for the number of occurrences of each valid
-	    // article title.
-	    for (String valid : validArticles) {
-		int count = count(articleText, valid);
-		articleMatrix.set(wikipediaTermsToIndex.get(valid).intValue(),
-				  articleIndex, count);
-		ESA_LOGGER.log(Level.FINE, "{0} contained {1} {2} times",
-			       new Object[] { articleTitle, valid, 
-					      Integer.valueOf(count)});
+	    // article title.  
+	    //for (String valid : articleNameToIndex.keySet()) {
+	    for (Map.Entry<CharSequence,Integer> e : 
+		     articleNameToIndex.entrySet()) {
+		
+		// FIXME: change this cast after TrieMap gets fixed
+		String s = (String)(e.getKey());
+		int count = count(articleText, s);
+		if (count > 0) {
+		    articleMatrix.set(e.getValue().intValue(),
+				      articleIndex, count);
+		    ESA_LOGGER.log(Level.FINE, "{0} contained {1} {2} times",
+				   new Object[] { articleTitle, s, 
+						  Integer.valueOf(count)});
+		}
 	    }
 	}
 	br.close();	
@@ -564,7 +614,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      * {@inheritDoc}
      */
     public double[] getVectorFor(String word) {
-	Integer index = wikipediaTermsToIndex.get(word);
+	Integer index = articleNameToIndex.get(word);
 	return (index == null) ? null : articleMatrix.getRow(index.intValue());
     }
 
@@ -572,7 +622,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(wikipediaTermsToIndex.keySet());
+	return null; //Collections.unmodifiableSet(articleNameToIndex.keySet());
     }    
 
     /**
@@ -584,12 +634,12 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     private static class WikiParseResult {
 
 	public final File parsedWikiSnapshot;
-	public final Map<CharSequence,Integer> incomingLinkCounts;
+	public final int[] incomingLinkCounts;
 
 	public WikiParseResult(File parsedWikiSnapshot,
-			       Map<CharSequence,Integer> incomingLinkCounts) {
+			       int[] incomingLinkCounts) {
 	    this.parsedWikiSnapshot = parsedWikiSnapshot;
 	    this.incomingLinkCounts = incomingLinkCounts;
 	}
-    }
+    }    
 }
