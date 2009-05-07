@@ -26,8 +26,8 @@ import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
-import edu.ucla.sspace.common.StringUtils;
 import edu.ucla.sspace.common.SVD;
+import edu.ucla.sspace.common.WordIterator;
 
 import edu.ucla.sspace.lsa.MatrixTransformer;
 import edu.ucla.sspace.lsa.LogEntropyTransformer;
@@ -43,13 +43,14 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -126,6 +127,11 @@ public class Hermit implements SemanticSpace {
    */
   private Matrix wordSpace;
 
+  private int reducedDims;
+
+  private int prevSize;
+  private int nextSize;
+
   /**
    * Construct the Hermit Semantic Space
    */
@@ -140,13 +146,15 @@ public class Hermit implements SemanticSpace {
     indexBuilder = builder;
     indexVectorSize = vectorSize;
     tempDir = tempDirFile;
+    prevSize = builder.expectedSizeOfPrevWords();
+    nextSize = builder.expectedSizeOfNextWords();
   }
 
   /**
    * {@inheritDoc}
    */
   public String getSpaceName() {
-    return HERMIT_SSPACE_NAME;
+    return HERMIT_SSPACE_NAME + "-" + indexVectorSize + "-" +reducedDims;
   }
 
   /**
@@ -174,41 +182,43 @@ public class Hermit implements SemanticSpace {
   public void processDocument(BufferedReader document) throws IOException {
     // split the line based on whitespace
     HashMap<String, double[]> termDocHolographs = new HashMap<String, double[]>();
-    LinkedList<String> words = new LinkedList<String>();
-    words.add("");
+    Queue<String> prevWords = new ArrayDeque<String>();
+    Queue<String> nextWords = new ArrayDeque<String>();
+    prevWords.add("");
 	Map<String,Integer> termCounts = 
         new LinkedHashMap<String,Integer>(1 << 10, 16f);	
-    for (String line = null; (line = document.readLine()) != null;) {
-      String[] text = line.split("\\s");
-      for (String word : text) {
-        // clean up each word before entering it into the matrix
-        String cleaned = StringUtils.cleanup(word);
-        // skip any mispelled or unknown words
-        if (!StringUtils.isValid(cleaned))
-          continue;
-        words.add(cleaned);
-        // update the holographs, first adding new index vectors if needed.
-        indexBuilder.addTermIfMissing(cleaned);
-        updateHolograph(words, termDocHolographs);
+    WordIterator it = new WordIterator(document);
 
-        // Update the lsa based information.
-		addTerm(cleaned);
-		Integer termCount = termCounts.get(cleaned);
-
-		// update the term count
-		termCounts.put(cleaned, (termCount == null) 
-			       ? Integer.valueOf(1)
-			       : Integer.valueOf(1 + termCount.intValue()));
-      }
+    String focusWord = null;
+    for (int i = 0; i < nextSize && it.hasNext(); ++i) {
+      focusWord = it.next().intern();
+      nextWords.offer(focusWord);
+      addToLSA(termCounts, focusWord);
     }
-    finishUpdate(words, termDocHolographs);
+
+    while (!nextWords.isEmpty()) {
+      focusWord = nextWords.remove();
+      if (it.hasNext())
+        nextWords.offer(it.next().intern());
+
+      double[] meaning = termDocHolographs.get(focusWord);
+      if (meaning == null) {
+        meaning = new double[indexVectorSize];
+        termDocHolographs.put(focusWord, meaning);
+      }
+      indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
+      prevWords.offer(focusWord);
+      if (prevWords.size() > prevSize)
+        prevWords.remove();
+      addToLSA(termCounts, focusWord);
+    }
     document.close();
 	// check that we actually loaded in some terms before we increase the
 	// documentIndex.  This could possibly save some dimensions in the final
 	// array for documents that were essentially blank.  If we didn't see
 	// any terms, just return 0
 	if (termCounts.isEmpty())
-	    return;
+      return;
 
 	int documentIndex = docIndexCounter.incrementAndGet();
     for (String key : termCounts.keySet()) {
@@ -238,6 +248,16 @@ public class Hermit implements SemanticSpace {
           termToIndex.get(e.getKey()).intValue(),
           e.getValue().intValue());
     }
+  }
+
+  private void addToLSA(Map<String, Integer> termCounts, String cleaned) {
+    // Update the lsa based information.
+    addTerm(cleaned);
+    Integer termCount = termCounts.get(cleaned);
+    // update the term count
+    termCounts.put(cleaned, (termCount == null) 
+               ? Integer.valueOf(1)
+               : Integer.valueOf(1 + termCount.intValue()));
   }
 
   /**
@@ -399,12 +419,12 @@ public class Hermit implements SemanticSpace {
       File processedTermDocumentMatrix = 
       transform.transform(rawTermDocMatrix);
       
-      int dimensions = 300; // default
+      reducedDims = 300; // default
       String userSpecfiedDims = 
       properties.getProperty(LSA_DIMENSIONS_PROPERTY);
       if (userSpecfiedDims != null) {
         try {
-          dimensions = Integer.parseInt(userSpecfiedDims);
+          reducedDims = Integer.parseInt(userSpecfiedDims);
         } catch (NumberFormatException nfe) {
           throw new IllegalArgumentException(
             LSA_DIMENSIONS_PROPERTY + " is not an integer: " +
@@ -412,7 +432,7 @@ public class Hermit implements SemanticSpace {
         }
       }
       // Compute SVD on the pre-processed matrix.
-      Matrix[] usv = SVD.svd(processedTermDocumentMatrix, dimensions);
+      Matrix[] usv = SVD.svd(processedTermDocumentMatrix, reducedDims);
       
       // Load the left factor matrix, which is the word semantic space
       wordSpace = usv[0];
@@ -444,39 +464,6 @@ public class Hermit implements SemanticSpace {
     lsaWriter.flush();
     lsaWriter.close();
     return lsaFile;
-  }
-
-  private void finishUpdate(LinkedList<String> words,
-                            HashMap<String, double[]> termDocHolographs) {
-    int size = words.size();
-    for (int i = 0; i < size; ++i) {
-      words.add("");
-      updateHolograph(words, termDocHolographs);
-    }
-  }
-
-  /**
-   * Update the meaning of the main word using words as the context.
-   * @param words A LinkedList of Strings functioning as a sliding window of
-   * words.
-   * @param termDocHolographs a mapping of terms to holograph vectors which will
-   * get updated with the most recent meaning of the first word in words.
-   */
-  private void updateHolograph(LinkedList<String> words,
-                               HashMap<String, double[]> termDocHolographs) {
-    if (words.size() < CONTEXT_SIZE) {
-      return;
-    }
-    String[] context = words.toArray(new String[0]);
-    String mainWord = context[1];
-    context[1] = "";
-    double[] meaning = termDocHolographs.get(mainWord);
-    if (meaning == null) {
-      meaning = new double[indexVectorSize];
-      termDocHolographs.put(mainWord, meaning);
-    }
-    indexBuilder.updateMeaningWithTerm(meaning, context);
-    words.removeFirst();
   }
 
   /**

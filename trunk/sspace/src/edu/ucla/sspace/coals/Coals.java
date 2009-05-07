@@ -96,6 +96,8 @@ public class Coals implements SemanticSpace {
   private Map<String, Integer> totalWordFreq;
   Matrix finalCorrelation;
   private int maxWords;
+  private boolean reduceMatrix;
+  private int reducedDims;
 
   public Coals() {
     init(14000);
@@ -136,7 +138,10 @@ public class Coals implements SemanticSpace {
   }
 
   public String getSpaceName() {
-    return COALS_SSPACE_NAME;
+    String ret = COALS_SSPACE_NAME;
+    if (reduceMatrix)
+      ret += "-svd-" + reducedDims;
+    return ret;
   }
 
   /**
@@ -255,8 +260,8 @@ public class Coals implements SemanticSpace {
         finalCorrelation.set(i,j, newValue);
       }
     }
-    String reduceMatrix = properties.getProperty(REDUCE_MATRIX_PROPERTY);
-    if (reduceMatrix != null) {
+    reduceMatrix = properties.getProperty(REDUCE_MATRIX_PROPERTY) != null;
+    if (reduceMatrix) {
       try {
         File coalsMatrixFile =
           File.createTempFile("coals-term-doc-matrix", "txt");
@@ -264,10 +269,11 @@ public class Coals implements SemanticSpace {
                              coalsMatrixFile,
                              Format.SVDLIBC_DENSE_BINARY);
         String dims = properties.getProperty(REDUCE_MATRIX_DIMENSION_PROPERTY);
-        int dimensions = (300 > wordCount) ? wordCount : 300;
+        reducedDims = (300 > wordCount) ? wordCount : 300;
         if (dims != null)
-          dimensions = Integer.parseInt(dims);
-        Matrix[] usv = SVD.svd(coalsMatrixFile, SVD.Algorithm.ANY, Format.SVDLIBC_DENSE_BINARY, dimensions);
+          reducedDims = Integer.parseInt(dims);
+        Matrix[] usv = SVD.svd(coalsMatrixFile, SVD.Algorithm.ANY,
+                               Format.SVDLIBC_DENSE_BINARY, reducedDims);
         finalCorrelation = usv[0];
       } catch (IOException ioe) {
         throw new IOError(ioe);

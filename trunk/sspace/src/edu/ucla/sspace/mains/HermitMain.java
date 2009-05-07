@@ -22,11 +22,13 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.hermit.Hermit;
 
 import edu.ucla.sspace.holograph.BeagleIndexBuilder;
+import edu.ucla.sspace.holograph.RandomIndexBuilder;
 
 import java.io.File;
 import java.io.IOError;
@@ -92,17 +94,13 @@ import java.util.Properties;
  * @author Keith Stevens 
  */
 public class HermitMain extends GenericMain {
-
-    public static final String HERMIT_SEMANTIC_SPACE_FILE_NAME =
-	"hermit-semantic-space";
-
-    private HermitMain() {
-      super(HERMIT_SEMANTIC_SPACE_FILE_NAME);
-    }
-
     private static final int DEFAULT_DIMENSION = 2048;
     private int dimension;
     private File tempDirLoc;
+    private IndexBuilder builder;
+
+    private HermitMain() {
+    }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
@@ -117,6 +115,8 @@ public class HermitMain extends GenericMain {
                       true, "INT");
     options.addOption('m', "tempdir", "location of the temp directory",
                       true, "STRING", "Process Properties");
+    options.addOption('b', "builder", "Index builder to use for hermit",
+                      true, "CLASSNAME", "Process Properties");
     }
 
     public static void main(String[] args) {
@@ -136,10 +136,17 @@ public class HermitMain extends GenericMain {
       tempDirLoc = (argOptions.hasOption("tempdir"))
         ? new File(argOptions.getStringOption("tempdir"))
         : null;
+      String builderType = (argOptions.hasOption("builder"))
+        ? argOptions.getStringOption("builder")
+        : "BeagleIndexBuilder";
+      if (builderType.equals("BeagleIndexBuilder"))
+        builder = new BeagleIndexBuilder(dimension);
+      else if (builderType.equals("RandomIndexBuilder"))
+        builder = new RandomIndexBuilder(dimension);
     }
 
     public SemanticSpace getSpace() {
-      return new Hermit(new BeagleIndexBuilder(dimension), dimension, tempDirLoc);
+      return new Hermit(builder, dimension, tempDirLoc);
     }
 
     public Properties setupProperties() {

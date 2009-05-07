@@ -73,4 +73,8 @@ public class TestSemanticSpace implements SemanticSpace {
     }
     return null;
   }
+
+  public String getSpaceName() {
+    return "";
+  }
 }

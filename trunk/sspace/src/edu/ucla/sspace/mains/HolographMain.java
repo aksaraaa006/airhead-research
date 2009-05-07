@@ -87,11 +87,7 @@ public class HolographMain extends GenericMain {
     private static final int DEFAULT_DIMENSION = 512;
     private int dimension;
 
-    public static final String HOLOGRAPH_SEMANTIC_SPACE_FILE_NAME =
-      "holograph-semantic-space";
-
     private HolographMain() {
-      super(HOLOGRAPH_SEMANTIC_SPACE_FILE_NAME);
     }
 
     public static void main(String[] args) {

@@ -28,6 +28,7 @@ import jnt.FFT.RealDoubleFFT_Radix2;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Queue;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,6 +69,14 @@ public class BeagleIndexBuilder implements IndexBuilder {
     randomPermute(permute2);
   }
 
+  public int expectedSizeOfPrevWords() {
+    return 1;
+  }
+
+  public int expectedSizeOfNextWords() {
+    return 5;
+  }
+
   private void randomPermute(int[] permute) {
     for (int i = 0; i < indexVectorSize; i++)
       permute[i] = i;
@@ -92,57 +101,57 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return termVector;
   }
 
-  public void addTermIfMissing(String term) {
-    term = term.intern();
-    synchronized (newestRandomVector) {
-      if (termToRandomIndex.putIfAbsent(term, newestRandomVector) == null)
-        newestRandomVector = generateRandomVector();
+  private double[] getBeagleVector(String term) {
+    double[] v = termToRandomIndex.get(term);
+    if (v == null) {
+      synchronized (term) {
+        v = termToRandomIndex.get(term);
+        if (v == null) {
+          v = generateRandomVector();
+          termToRandomIndex.put(term, v);
+        }
+      }
     }
+    return v;
   }
 
   // Context must have one word before the term being considered, and 4 words
   // after it.  If nothing is available, simply add empty strings.
   // Additionally, they term itself should be replaced with the empty string.
-  public void updateMeaningWithTerm(double[] meaning, String[] context) {
+  public void updateMeaningWithTerm(double[] meaning,
+                                    Queue<String> prevWords,
+                                    Queue<String> nextWords) {
     double[] contextVector = newVector(0); 
-    for (String term: context)
-      plusEquals(contextVector, termToRandomIndex.get(term));
+    for (String term: prevWords)
+      plusEquals(contextVector, getBeagleVector(term));
+    for (String term: nextWords)
+      plusEquals(contextVector, getBeagleVector(term));
     plusEquals(meaning, contextVector);
     double[] orderVector = newVector(0);
-    plusEquals(orderVector, groupConvolution(context));
+    plusEquals(orderVector, groupConvolution(prevWords, nextWords));
     plusEquals(meaning, orderVector);
   }
 
-  private double[] groupConvolution(String[] context) {
+  private double[] groupConvolution(Queue<String> prevWords,
+                                    Queue<String> nextWords) {
     double[] result = newVector(0);
 
     // Do the convolutions starting at index 0.
-    double[] tempConvolution = convolute(termToRandomIndex.get(context[0]),
+    double[] tempConvolution = convolute(getBeagleVector(prevWords.peek()),
                                          placeHolder);
     plusEquals(result, tempConvolution);
-    tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[2]));
-    plusEquals(result, tempConvolution);
-    tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[3]));
-    plusEquals(result, tempConvolution);
-    tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[4]));
-    plusEquals(result, tempConvolution);
 
+    for (String term : nextWords) {
+      tempConvolution = convolute(tempConvolution,
+                                  getBeagleVector(term));
+      plusEquals(result, tempConvolution);
+    }
+    tempConvolution = placeHolder;
     // Do the convolutions starting at index 1.
-    tempConvolution = convolute(placeHolder, termToRandomIndex.get(context[2]));
-    plusEquals(result, tempConvolution);
-    tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[3]));
-    plusEquals(result, tempConvolution);
-    tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[4]));
-    plusEquals(result, tempConvolution);
-    tempConvolution = convolute(tempConvolution,
-                                termToRandomIndex.get(context[5]));
-    plusEquals(result, tempConvolution);
-
+    for (String term : nextWords) {
+      tempConvolution = convolute(tempConvolution, getBeagleVector(term));
+      plusEquals(result, tempConvolution);
+    }
     return result;
   }
 
