@@ -1,0 +1,32 @@
+#summary Details of the various releases
+#labels Featured
+
+= May 7, 2009 =
+
+[RandomIndexing Random Indexing] version 0.1.0
+
+*Changes:*
+`random-indexing.jar`
+
+*Details:*
+Initial release of Random Indexing.  Release supports permutatations, configurable dimensions, and index vectors distributions.  See Random Indexing wiki page for full details.
+
+= May 1, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.1
+
+*Changes:*
+`lsa.jar` 
+
+*Details:*
+Bug fix for an internal conversion between matrix types.  If the user used SVDLIBC, the program would incorrectly covert the format, which resulted in a malformatted S-Space.
+
+= April 27, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.0
+
+*Changes:*
+`lsa.jar` 
+
+*Details:*
+Initial release of the Latent Semantic Analysis command-line executable .jar file.  Release supports configurable word-document preprocessing and number of dimensions.  The implementation is also highly scalable and multi-threaded.
