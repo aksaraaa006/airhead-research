@@ -316,17 +316,6 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	return overlap;
     }
 
-
-//     /**
-//      *
-//      * @param m
-//      */
-//     public void putAll(Map<? extends CharSequence, ? extends V> m) {
-// 	for (Map.Entry<? extends CharSequence, ? extends V> e : m.entrySet()) {
-// 	    put(e.getKey(), e.getValue());
-// 	}
-//     }
-
     /**
      *
      * @param key
@@ -376,14 +365,36 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	return size;
     }
 
+    /**
+     * Creates a series of children under the provided node, moving the value
+     * that was mapped to this node to the appropriate terminal node in the
+     * series and finally creating a new node at the end to hold the new
+     * key-value mapping.
+     *
+     * @param node a node under which a new key-value mapping is being added
+     * @param nodesToCreate the number of characters that overlap between the
+     *        key that maps to {@code} and the new key.  This determines the
+     *        number of nodes that are needed to distinguish the two keys.
+     * @param newTail the remaining portion of the new key that is being added,
+     *        which will be appended to a new child node at the end of the
+     *        sequence.
+     * @param value the value for the new key-value mapping being added to the
+     *        map
+     */
     private void splitAndInsert(Node<V> node, int nodesToCreate,
 				CharSequence newTail, V value) {
+
+	// since a new mapping is being added, increment the size
 	size++;
+
+	// Cur keeps track of the last child that is created in the chain
 	Node<V> cur = node;
 
+	// Keep track of the characters that were originally the tail of the
+	// node that is being spit.
 	CharSequence oldTail = node.getTail();
 	
-	// create |nodesToCreate| new child nodes from the current node.  At
+	// Create |nodesToCreate| new child nodes from the current node.  At
 	// the end, create two new nodes to point to the remaining portion of
 	// the previous tail and the new tail from that point.
 	for (int i = 0; i < nodesToCreate; ++i) {
@@ -393,6 +404,8 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    cur = n;
 	}
 	
+	// Case: |newTail| > |oldTail| == nodesToCreate
+	// 
 	// If the split was for the entire length of the old tail, then the
 	// final node should actually contain the value.
 	if (nodesToCreate == oldTail.length()) {
@@ -402,7 +415,12 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    Node<V> newNode = new Node<V>(newChildChar, newTail, 1, value);
 	    cur.addChild(newChildChar, newNode);
 	}
-	// 
+
+	// Case: |oldTail| > |newTail| == nodesToCreate
+	//
+	// If the new key-value mapping points directly to ending child that was
+	// created, set the value based on the new key-value mapping and then
+	// add a child for the remaining portion of the old tail.
 	else if (newTail.length() == 0) {
 	    char old = oldTail.charAt(nodesToCreate);
 	    Node<V> remainingTail = 
@@ -411,7 +429,12 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    cur.addChild(old, remainingTail);
 	    cur.setTail("");
 	}
+
+	// Case: |oldTail| > nodesToCreate && |newTail| > nodesToCreate
 	//
+	// If both the oldTail and newTail had more characters than were
+	// required to distinguish them, create two new children at then end of
+	// the sequence, one for each child.
 	else {
 	    char old = oldTail.charAt(nodesToCreate);	   
 	    Node<V> remainingTail = 
@@ -420,47 +443,27 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    Node<V> newNode = new Node<V>(newChildChar, newTail, 1, value);
 	    
 	    cur.addChild(old, remainingTail);
-	    cur.addChild(newChildChar, newNode);	
-
+	    cur.addChild(newChildChar, newNode);
 	}
-	
+
+	// If the above procedure didn't add a value to the node that was being
+	// split, then remove the old value and mark the node as no longer being
+	// a terminal node
 	if (node != cur) {
-	    // Remove the old value and mark the node as no longer being a
-	    // terminal node
 	    node.setTail("");
 	    node.value = null;
 	}
     }
 
-//     public String toString() {
-// 	Iterator<Map.Entry<CharSequence,V>> it = entrySet().iterator();
-// 	if (!it.hasNext()) {
-// 	    return "{}";
-// 	}
-   
-// 	StringBuilder sb = new StringBuilder();
-// 	sb.append('{');
-// 	while (true) {
-// 	    Map.Entry<CharSequence,V> e = it.next();
-// 	    CharSequence key = e.getKey();
-// 	    V value = e.getValue();
-// 	    sb.append(key);
-// 	    sb.append('=');
-// 	    sb.append(value == this ? "(this Map)" : value);
-// 	    if (!it.hasNext())
-// 		return sb.append('}').toString();
-// 	    sb.append(", ");
-// 	}
-//     }
-
-
+    /**
+     * Returns a {@link Collection} view of the values contained in this map.
+     */
     public Collection<V> values() {
 	return new ValueView();
     }
 
     /**
-     *
-     *
+     * The internal node class for creating the trie.
      */
     private static class Node<V> implements Serializable {
 
@@ -569,6 +572,10 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	}
     }
 
+    /**
+     * A special-case subclass for the root node of the trie, whose key the
+     * empty string.
+     */
     private static class RootNode<V> extends Node<V> {
 	
 	private static final long serialVersionUID = 1;
@@ -591,6 +598,9 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	}
     }
 
+    /**
+     * An immutable {@code CharSequence} implementation backed by an array.
+     */
     private static class ArraySequence implements CharSequence {
 
 	private final char[] sequence;
@@ -752,7 +762,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	}
 	
 	/**
-	 *
+	 * Returns {@code true} if this iterator has more elements.
 	 */
 	public boolean hasNext() {
 	    return next != null;
