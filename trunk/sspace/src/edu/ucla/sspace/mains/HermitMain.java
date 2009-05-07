@@ -28,7 +28,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.hermit.Hermit;
 
 import edu.ucla.sspace.holograph.BeagleIndexBuilder;
-import edu.ucla.sspace.holograph.RandomIndexBuilder;
+//import edu.ucla.sspace.holograph.RandomIndexBuilder;
 
 import java.io.File;
 import java.io.IOError;
@@ -141,8 +141,8 @@ public class HermitMain extends GenericMain {
         : "BeagleIndexBuilder";
       if (builderType.equals("BeagleIndexBuilder"))
         builder = new BeagleIndexBuilder(dimension);
-      else if (builderType.equals("RandomIndexBuilder"))
-        builder = new RandomIndexBuilder(dimension);
+//       else if (builderType.equals("RandomIndexBuilder"))
+//         builder = new RandomIndexBuilder(dimension);
     }
 
     public SemanticSpace getSpace() {
