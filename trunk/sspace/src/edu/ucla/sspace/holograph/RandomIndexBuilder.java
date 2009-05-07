@@ -3,12 +3,15 @@ package edu.ucla.sspace.holograph;
 import edu.ucla.sspace.common.IndexBuilder;
 
 import edu.ucla.sspace.ri.IndexVector;
+import edu.ucla.sspace.ri.IndexVectorGenerator;
+import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
 
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 
 import java.util.concurrent.ConcurrentHashMap;
+
 public class RandomIndexBuilder implements IndexBuilder {
   /**
    * The default number of dimensions to be used by the index and semantic
@@ -36,6 +39,8 @@ public class RandomIndexBuilder implements IndexBuilder {
 
   private int windowSize;
 
+  private IndexVectorGenerator indexVectorGenerator;
+
   public RandomIndexBuilder() {
     init(DEFAULT_VECTOR_LENGTH, DEFAULT_WINDOW_SIZE);
   }
@@ -52,6 +57,7 @@ public class RandomIndexBuilder implements IndexBuilder {
 	wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
     indexVectorSize = vectorSize;
     this.windowSize = windowSize;
+    indexVectorGenerator = new RandomIndexVectorGenerator();
   }
 
   private IndexVector getIndexVector(String word) {
@@ -64,7 +70,7 @@ public class RandomIndexBuilder implements IndexBuilder {
         // for the lock
         v = wordToIndexVector.get(word);
         if (v == null) {
-          v = new IndexVector(indexVectorSize);
+          v = indexVectorGenerator.create(indexVectorSize);
           wordToIndexVector.put(word, v);
         }
       }

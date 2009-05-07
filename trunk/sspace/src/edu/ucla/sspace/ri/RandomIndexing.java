@@ -23,6 +23,8 @@ package edu.ucla.sspace.ri;
 
 import java.io.BufferedReader;
 
+import java.lang.reflect.Constructor;
+
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
@@ -123,12 +125,22 @@ import edu.ucla.sspace.common.WordIterator;
  *
  * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link DefaultPermutationFunction edu.ucla.sspace.ri.DefaultPermutationFunction} 
+ *      <i>Default:</i> {@link edu.ucla.sspace.ri.DefaultPermutationFunction DefaultPermutationFunction} 
  *
  * <dd style="padding-top: .5em">This property specifies the fully qualified
  *      class name of a {@link PermutationFunction} instance that will be used
  *      to permute index vectors.  If the {@value #USE_PERMUTATIONS_PROPERTY} is
  *      set to {@code false}, the value of this property has no effect.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #INDEX_VECTOR_GENERATOR_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link RandomIndexVectorGenerator} 
+ *
+ * <dd style="padding-top: .5em">This property specifies the source of {@link
+ *       IndexVector} instances.  Users who want to provide more fine-grain
+ *       control over the number of and distribution of values in the index
+ *       vectors can provide their own {@link IndexVectorGenerator} instance by
+ *       setting this value to the fully qualified class name.<p>
  *
  * </dl> <p>
  *
@@ -187,15 +199,22 @@ public class RandomIndexing implements SemanticSpace {
 	PROPERTY_PREFIX + ".permutationFunction";
 
     /**
+     * The property to specify the {@link IndexVectorGenerator} class to use for
+     * generating {@code IndexVector} instances.
+     */
+    public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
+	PROPERTY_PREFIX + ".indexVectorGenerator";
+
+    /**
      * The default number of words to view before and after each word in focus.
      */
-    public static final int DEFAULT_WINDOW_SIZE = 5; // +5/-5
+    public static final int DEFAULT_WINDOW_SIZE = 2; // +2/-2
 
     /**
      * The default number of dimensions to be used by the index and semantic
      * vectors.
      */
-    public static final int DEFAULT_VECTOR_LENGTH = 2048;
+    public static final int DEFAULT_VECTOR_LENGTH = 4000;
     
     /**
      * A private source of randomization used for creating the index vectors.
@@ -207,8 +226,14 @@ public class RandomIndexing implements SemanticSpace {
     // based their randomness on a this class's seed.
     static final Random RANDOM = new Random();
 
+    /**
+     * A mapping from each word to its associated index vector
+     */
     private final Map<String,IndexVector> wordToIndexVector;
 
+    /**
+     * A mapping from each word to the vector the represents its semantics
+     */
     private final Map<String,SemanticVector> wordToMeaning;
 
     /**
@@ -232,6 +257,11 @@ public class RandomIndexing implements SemanticSpace {
      * index vectors.
      */
     private final PermutationFunction permutationFunc;
+
+    /**
+     * The source of {@link IndexVector} instances.
+     */
+    private final IndexVectorGenerator indexVectorGenerator;
 
     public RandomIndexing(Properties properties) {
 
@@ -258,6 +288,12 @@ public class RandomIndexing implements SemanticSpace {
 	    ? loadPermutationFunction(permutationFuncProp)
 	    : null; //new DefaultPermutationFunction;
 
+	String ivgProp = 
+	    properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
+	indexVectorGenerator = (ivgProp != null) 
+	    ? loadIndexVectorGenerator(ivgProp, properties)
+	    : new RandomIndexVectorGenerator(properties);
+
 	wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
 	wordToMeaning = new ConcurrentHashMap<String,SemanticVector>();
     }
@@ -273,9 +309,23 @@ public class RandomIndexing implements SemanticSpace {
 	try {
 	    Class clazz = Class.forName(className);
 	    return (PermutationFunction)(clazz.newInstance());
-	} catch (Exception ex) {
+	} catch (Exception e) {
 	    // catch all of the exception and rethrow them as an error
-	    throw new Error(ex);
+	    throw new Error(e);
+	}
+    }
+
+    @SuppressWarnings("unchecked") private static IndexVectorGenerator 
+	    loadIndexVectorGenerator(String className, Properties properties) {
+	try {
+	    Class clazz = Class.forName(className);
+	    Constructor c = clazz.getConstructor(Properties.class);
+	    IndexVectorGenerator ivg = (IndexVectorGenerator)
+		c.newInstance(new Object[] {properties});
+	    return ivg;
+	} catch (Exception e) {
+	    // rethrow
+	    throw new Error(e);
 	}
     }
 
@@ -293,7 +343,7 @@ public class RandomIndexing implements SemanticSpace {
 		// for the lock
 		v = wordToIndexVector.get(word);
 		if (v == null) {
-		    v = new IndexVector(vectorLength);
+		    v = indexVectorGenerator.create(vectorLength);
 		    wordToIndexVector.put(word, v);
 		}
 	    }
@@ -392,24 +442,43 @@ public class RandomIndexing implements SemanticSpace {
 	    if (it.hasNext()) {
 		// NB: we call .intern() on the string to ensure that we are
 		// always dealing with the canonical copy of the word when
-		// processing.  This ensures that any locks acquired just on
-		// that word will be protected against duplicate copies.
+		// processing.  This ensures that any locks acquired for the
+		// word will be on a single instance.
 		String windowEdge = it.next().intern();
 		nextWords.offer(windowEdge);
 	    }    
 
-	    // Sum up the index vector for all the surrounding words.
-	    for (String word : prevWords) 
-		focusMeaning.add(getIndexVector(word));
+	    // Sum up the index vector for all the surrounding words.  If
+	    // permutations are enabled, permute the index vector based on its
+	    // relative position to the focus word.
+	    int permutations = -(prevWords.size());
+	    for (String word : prevWords) {
+		IndexVector iv = getIndexVector(word);
+		if (usePermutations) {
+		    iv = permutationFunc.permute(iv, permutations);
+		    ++permutations;
+		}
+		focusMeaning.add(iv);
+	    }
 
-	    for (String word : nextWords) 
-		focusMeaning.add(getIndexVector(word));
+	    // Repeat for the words in the forward window.
+	    permutations = 1;
+	    for (String word : nextWords) {
+		IndexVector iv = getIndexVector(word);
+		if (usePermutations) {
+		    iv = permutationFunc.permute(iv, permutations);
+		    ++permutations;
+		}
+		focusMeaning.add(iv);
+	    }
 
-	    // last put, this focus word in the prev words and shift off the
-	    // front if it is larger than the window
+	    // Last put this focus word in the prev words and shift off the
+	    // front of the previous word window if it now contains more words
+	    // than the maximum window size
 	    prevWords.offer(focusWord);
-	    if (prevWords.size() > windowSize)
+	    if (prevWords.size() > windowSize) {
 		prevWords.remove();
+	    }
 	}	
     }
     

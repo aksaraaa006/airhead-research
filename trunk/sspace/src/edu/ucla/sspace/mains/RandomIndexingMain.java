@@ -47,15 +47,20 @@ import java.util.Properties;
  *
  * <li><u>Algorithm Options</u>:
  *   <ul>
+ *
+ *   <li> {@code -i}, {@code --vectorGenerator=CLASSNAME} the {@link
+ *        edu.ucla.sspace.ri.IndexVectorGenerator IndexVectorGenerator} class to
+ *        use for generating the index functions.
  *   
- *   <li>  {@code -l}, {@code --vectorLength=INT}  length of semantic vectors
-
- *   <li> {@code -n}, {@code --permutationFunction=NAME} permutation function to
- *        use
-
+ *   <li> {@code -l}, {@code --vectorLength=INT} length of semantic vectors
+ *
+ *   <li> {@code -n}, {@code --permutationFunction=CLASSNAME} the {@link
+ *        edu.ucla.sspace.ri.PermutationFunction PermutationFunction} class to
+ *        use for permuting index vectors, if permutation is enabled.
+ *
  *   <li> {@code -p}, {@code --usePermutations=BOOL} whether to permute index
  *        vectors based on word order
-
+ *
  *   <li> {@code -s}, {@code --windowSize=INT} how many words to consider in each
  *        direction
  *   </ul> 
@@ -101,17 +106,20 @@ public class RandomIndexingMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     public void addExtraOptions(ArgOptions options) {
-	options.addOption('p', "usePermutations", "whether to permute " +
-			     "index vectors based on word order", true,
-			     "BOOL", "Algorithm Options");
+	options.addOption('i', "vectorGenerator", "IndexVectorGenerator "
+			  + "class to use", true,
+			  "CLASSNAME", "Algorithm Options");
 	options.addOption('l', "vectorLength", "length of semantic vectors",
-			     true, "INT", "Algorithm Options");
-	options.addOption('s', "windowSize", "how many words to consider " +
-			     "in each direction", true,
-			     "INT", "Algorithm Options");
+			  true, "INT", "Algorithm Options");
 	options.addOption('n', "permutationFunction", "permutation function "
-			     + "to use", true,
-			     "CLASSNAME", "Algorithm Options");
+			  + "to use", true,
+			  "CLASSNAME", "Algorithm Options");
+	options.addOption('p', "usePermutations", "whether to permute " +
+			  "index vectors based on word order", true,
+			  "BOOL", "Algorithm Options");
+	options.addOption('s', "windowSize", "how many words to consider " +
+			  "in each direction", true,
+			  "INT", "Algorithm Options");
     }
 
     public static void main(String[] args) {

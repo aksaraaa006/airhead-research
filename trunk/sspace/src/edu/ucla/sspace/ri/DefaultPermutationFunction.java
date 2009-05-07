@@ -158,7 +158,8 @@ public class DefaultPermutationFunction implements PermutationFunction {
 	    }
 	}
 
-	IndexVector permuted = new IndexVector(length, positive, negative);
+	IndexVector permuted = 
+	    new PresetIndexVector(length, positive, negative);
 
 	return permuted;
     }
