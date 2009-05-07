@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.common;
 
+import java.util.Queue;
+
 /**
  * An interface for classes which will maintain and utilize random indexes.
  * The main purpose of this of this class is to allow any algorithm which makes
@@ -29,11 +31,6 @@ package edu.ucla.sspace.common;
  * experimentation purposes.  Implementations should be thread safe.
  */
 public interface IndexBuilder {
-  /** 
-   * Add a new index vector for this term if one does not already exist.
-   */
-  public void addTermIfMissing(String term);
-
   /**
    * Given a current meaning vector, update it using index vectors from a given
    * window of words.
@@ -43,5 +40,10 @@ public interface IndexBuilder {
    * @param context An array of words, each of which will be combined with
    * meaning.
    */
-  public void updateMeaningWithTerm(double[] meaning, String[] context);
+  public void updateMeaningWithTerm(double[] meaning,
+                                    Queue<String> prevWords,
+                                    Queue<String> nextWords);
+
+  public int expectedSizeOfPrevWords();
+  public int expectedSizeOfNextWords();
 }

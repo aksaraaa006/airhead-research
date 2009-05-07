@@ -94,11 +94,7 @@ public class RandomIndexingMain extends GenericMain {
 
     private Properties props;
 
-    public static final String RANDOM_INDEXING_SPACE_FILE_NAME =
-	"random-indexing";
-
     private RandomIndexingMain() {
-      super(RANDOM_INDEXING_SPACE_FILE_NAME);
     }
 
     /**

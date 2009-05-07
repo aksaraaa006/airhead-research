@@ -58,12 +58,7 @@ import java.util.Properties;
  * @author David Jurgens
  */
 public class ESAMain extends GenericMain {
-
-    public static final String ESA_SEMANTIC_SPACE_FILE_NAME =
-	"esa-semantic-space";
-
     private ESAMain() {
-      super(ESA_SEMANTIC_SPACE_FILE_NAME);
     }
 
     /**
@@ -151,8 +146,8 @@ public class ESAMain extends GenericMain {
 
 	// determine where the space will go
 	File output = (overwrite)
-	    ? new File(outputDir, ESA_SEMANTIC_SPACE_FILE_NAME + ".sspace")
-	    : File.createTempFile(ESA_SEMANTIC_SPACE_FILE_NAME, 
+	    ? new File(outputDir, esa.getSpaceName()+ ".sspace")
+	    : File.createTempFile(esa.getSpaceName(), 
 				  ".sspace", outputDir);
 
 	// print the space

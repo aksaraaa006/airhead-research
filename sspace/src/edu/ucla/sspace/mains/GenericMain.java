@@ -67,7 +67,7 @@ public abstract class GenericMain {
      */
     protected final ArgOptions argOptions;
 
-    public GenericMain(String defaultName) {
+    public GenericMain() {
 	argOptions = setupOptions();
 	verbose = false;
     }

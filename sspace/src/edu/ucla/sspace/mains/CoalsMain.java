@@ -60,12 +60,7 @@ import edu.ucla.sspace.coals.Coals;
  * An invocation will produce one file as output
  */
 public class CoalsMain extends GenericMain {
-
-    public static final String COALS_SEMANTIC_SPACE_FILE_NAME =
-	"coals-semantic-space";
-
     private CoalsMain() {
-      super(COALS_SEMANTIC_SPACE_FILE_NAME);
     }
 
     /**

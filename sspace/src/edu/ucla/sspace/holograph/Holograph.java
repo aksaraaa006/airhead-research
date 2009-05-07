@@ -24,15 +24,16 @@ package edu.ucla.sspace.holograph;
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
-import edu.ucla.sspace.common.StringUtils;
+import edu.ucla.sspace.common.WordIterator;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,10 +63,14 @@ public class Holograph implements SemanticSpace {
   private final IndexBuilder indexBuilder;
   private final Map<String, double[]> termHolographs;
   private final int indexVectorSize;
+  private int prevSize;
+  private int nextSize;
 
   public Holograph(IndexBuilder builder, int vectorSize) {
     indexVectorSize = vectorSize;
     indexBuilder = builder;
+    prevSize = builder.expectedSizeOfPrevWords();
+    nextSize = builder.expectedSizeOfNextWords();
     termHolographs = new ConcurrentHashMap<String, double[]>();
   }
 
@@ -87,27 +92,38 @@ public class Holograph implements SemanticSpace {
    * {@inheritDoc}
    */
   public String getSpaceName() {
-    return BEAGLE_SSPACE_NAME;
+    return BEAGLE_SSPACE_NAME + "-" + indexVectorSize;
   }
 
   /**
    * {@inheritDoc}
    */
   public void processDocument(BufferedReader document) throws IOException {
-    LinkedList<String> words = new LinkedList<String>();
-    for (String line = null; (line = document.readLine()) != null;) {
-      // split the line based on whitespace
-      String[] text = line.split("\\s");
-      for (String word : text) {
-        // clean up each word before entering it into the matrix
-        String cleaned = StringUtils.cleanup(word).intern();
-        // skip any mispelled or unknown words
-        if (!StringUtils.isValid(cleaned))
-          continue;
-        words.add(cleaned);
-        indexBuilder.addTermIfMissing(cleaned);
-        updateHolograph(words);
+    Queue<String> prevWords = new ArrayDeque<String>();
+    Queue<String> nextWords = new ArrayDeque<String>();
+
+    WordIterator it = new WordIterator(document);
+
+    for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
+      nextWords.offer(it.next().intern());
+    prevWords.offer("");
+
+    String focusWord = null;
+    while (!nextWords.isEmpty()) {
+      focusWord = nextWords.remove();
+      if (it.hasNext())
+        nextWords.offer(it.next().intern());
+      synchronized (focusWord) {
+        double[] meaning = termHolographs.get(focusWord);
+        if (meaning == null) {
+          meaning = new double[indexVectorSize];
+          termHolographs.put(focusWord, meaning);
+        }
+        indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
+      prevWords.offer(focusWord);
+      if (prevWords.size() > prevSize)
+        prevWords.remove();
     }
   }
   
@@ -117,25 +133,4 @@ public class Holograph implements SemanticSpace {
   public void processSpace(Properties properties) {
   }
 
-  /**
-   * Given a context of words, update the meaning of the second word in the
-   * sequence as defined in {@link RandomIndexBuilder}.
-   */
-  private void updateHolograph(LinkedList<String> words) {
-    if (words.size() < CONTEXT_SIZE) {
-      return;
-    }
-    String[] context = words.toArray(new String[0]);
-    String mainWord = context[1];
-    context[1] = "";
-    synchronized (mainWord) {
-      double[] meaning = termHolographs.get(mainWord);
-      if (meaning == null) {
-        meaning = new double[indexVectorSize];
-        termHolographs.put(mainWord, meaning);
-      }
-      indexBuilder.updateMeaningWithTerm(meaning, context);
-      words.removeFirst();
-    }
-  }
 }

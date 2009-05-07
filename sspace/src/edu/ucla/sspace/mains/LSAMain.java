@@ -89,12 +89,7 @@ import java.util.Properties;
  * @author David Jurgens
  */
 public class LSAMain extends GenericMain {
-
-    public static final String LSA_SEMANTIC_SPACE_FILE_NAME =
-	"lsa-semantic-space";
-
     private LSAMain() {
-      super(LSA_SEMANTIC_SPACE_FILE_NAME);
     }
 
     /**
