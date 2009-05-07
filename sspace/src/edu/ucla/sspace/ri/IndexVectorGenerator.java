@@ -21,37 +21,32 @@
 
 package edu.ucla.sspace.ri;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.Set;
-
 /**
- * An interface for ternary (+1, 0, -1) valued index vectors.  
+ * An object that generates {@link IndexVector} instances on demand.
+ * Implementations should conform to two requirements:
  *
- * @see RandomIndexing
+ * <ol> 
+ *
+ *   <li> Provide a set of publicly accessible constant {@code String} values
+ *     that defined the configurable properties of the generator, as well as
+ *     provide the default value of those parameters.
+ *
+ *   <li> Provide a constructor that takes in a {@link java.util.Properties
+ *     Properties} object, which contains any of the user-defined values for the
+ *     configurable parameters.
+ *
+ * </ol> 
+ *
  */
-public interface IndexVector {
+public interface IndexVectorGenerator {
 
     /**
-     * Returns the value of this vector at the provided index.
+     * Creates an {@code IndexVector} with the provided length.
+     *
+     * @param length the length of the index vector
+     *
+     * @return an index vector
      */
-    int getValue(int index);
-
-    /**
-     * Returns the length of this index vector
-     */
-    int length();
-
-    /**
-     * Returns the indices at which this vector is valued {@code -1}.
-     */
-    int[] negativeDimensions();
-    
-    /**
-     * Returns the indices at which this vector is valued {@code +1}.
-     */
-    int[] positiveDimensions();
+    IndexVector create(int length);
 
 }

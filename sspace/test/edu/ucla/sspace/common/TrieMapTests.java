@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -236,6 +237,25 @@ public class TrieMapTests {
 	assertFalse(m.containsKey("catapul"));
     }
 
+    @Test public void testContainsValue() {
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("catapult", "1");
+	m.put("cat", "2");
+
+	assertTrue(m.containsValue("1"));
+	assertTrue(m.containsValue("2"));
+    }
+
+    @Test public void testContainsValueFalse() {
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("catapult", "1");
+	m.put("cat", "2");
+
+	assertFalse(m.containsValue("catapult"));
+	assertFalse(m.containsValue("c"));
+	assertFalse(m.containsValue("cat"));
+    }
+
     @Test public void testKeySet() {
 	TrieMap<String> m = new TrieMap<String>();
 
@@ -346,7 +366,7 @@ public class TrieMapTests {
 	assertTrue(control.containsAll(test));
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected=NoSuchElementException.class)
     public void testIteratorNextError() {
 	
 	TrieMap<String> m = new TrieMap<String>();
@@ -357,7 +377,7 @@ public class TrieMapTests {
 	it.next(); // error
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected=NoSuchElementException.class)
     public void testEmptyTrieIteratorNextError() {
 	
 	TrieMap<String> m = new TrieMap<String>();
@@ -376,6 +396,19 @@ public class TrieMapTests {
 	it.next();
 	it.remove();
 	assertFalse(m.containsKey("cat"));
+    }
+
+    @Test(expected=IllegalStateException.class) 
+    public void testIteratorRemoveTwice() {
+	
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("cat", "0");
+	assertTrue(m.containsKey("cat"));
+
+	Iterator<CharSequence> it = m.keySet().iterator();
+	it.next();
+	it.remove();
+	it.remove();
     }
 
     @Test public void testRemove() {
@@ -460,6 +493,35 @@ public class TrieMapTests {
 	assertEquals(2, m.size());
 	m.put("catamaran", "2");
 	assertEquals(3, m.size());
+    }
+
+    @Test public void testSizeLotsOfPrefixes() {
+	TrieMap<String> m = new TrieMap<String>();
+	assertEquals(0, m.size());
+	for (int i = 0; i < 10240; ++i) {
+	    String s = String.valueOf(i);
+	    m.put(s,s);
+	    assertEquals(i+1, m.size());
+	}
+    }
+
+    @Test public void testSizeLotsOfRandomPrefixes() {
+	TrieMap<String> m = new TrieMap<String>();
+	assertEquals(0, m.size());
+	int size = 10240;
+	//int[] a = new int[size];
+	Set<Integer> s = new HashSet<Integer>();
+	while (s.size() < size) {
+	    s.add((int)(Math.random() * Integer.MAX_VALUE));
+	}
+	
+	int c = 1;
+	for (Integer i : s) {
+	    String w = i.toString();
+	    m.put(w,w);
+	    assertEquals(c, m.size());
+	    c++;
+	}
     }
 
     @Test public void testIsEmpty() {

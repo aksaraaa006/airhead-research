@@ -65,6 +65,11 @@ public class SemanticSpaceUtils {
     public enum SSpaceFormat { TEXT, BINARY }
 
     /**
+     * Uninstantiable
+     */
+    private SemanticSpaceUtils() { }
+
+    /**
      * Writes the data contained in the {@link SemanticSpace} to the file with
      * the provided name using the {@link SSpaceFormat#TEXT} format.  See <a
      * href="#format">here</a> for file format specifications.
@@ -85,7 +90,6 @@ public class SemanticSpaceUtils {
 
 	printSemanticSpace(sspace, output, SSpaceFormat.TEXT);
     }
-
 
     /**
      * Writes the data contained in the {@link SemanticSpace} to the provided

@@ -34,6 +34,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -73,7 +74,8 @@ import java.util.TreeMap;
  *
  * @author David Jurgens
  */
-public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
+public class TrieMap<V> extends AbstractMap<CharSequence,V> 
+        implements Serializable {
 
     private static final long serialVersionUID = 1;
 
@@ -112,13 +114,16 @@ public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
 	}
     }
 
+    /**
+     * Removes all of the mappings from this map.
+     */
     public void clear() {
 	rootNode.clear();
 	size = 0;
     }
     
     /**
-     *
+     * Returns {@code true} if this map contains a mapping for the specified key.
      *
      * @throws NullPointerException if key is {@code null}
      * @throws ClassCastException if key is not an instance of {@link
@@ -138,16 +143,11 @@ public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
 	}
     }
 
-    public boolean containsValue(Object value) {
-	return false;
-    }
-
+    /**
+     * Returns a {@link Set} view of the mappings contained in this map.
+     */
     public Set<Map.Entry<CharSequence,V>> entrySet() {
 	return new EntryView();
-    }
-
-    public boolean equals(Object o) {
-	return false;
     }
 
     public V get(Object key) {
@@ -158,18 +158,14 @@ public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
 	return (n == null) ? null : n.value;
     }
 
-    public int hashCode() {
-	return -1;
-    }
-
-    public boolean isEmpty() {
-	return rootNode.getChildren().isEmpty();
-    }
-
     public Set<CharSequence> keySet() {
 	return new KeyView();
     }
 
+    /**
+     * Returns the trie node that maps to the provided key or {@code null} if
+     * the key is not currently mapped.
+     */
     private Node<V> lookup(CharSequence key) {
 	if (key == null) {
 	    throw new NullPointerException("key cannot be null");
@@ -321,15 +317,15 @@ public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
     }
 
 
-    /**
-     *
-     * @param m
-     */
-    public void putAll(Map<? extends CharSequence, ? extends V> m) {
-	for (Map.Entry<? extends CharSequence, ? extends V> e : m.entrySet()) {
-	    put(e.getKey(), e.getValue());
-	}
-    }
+//     /**
+//      *
+//      * @param m
+//      */
+//     public void putAll(Map<? extends CharSequence, ? extends V> m) {
+// 	for (Map.Entry<? extends CharSequence, ? extends V> e : m.entrySet()) {
+// 	    put(e.getKey(), e.getValue());
+// 	}
+//     }
 
     /**
      *
@@ -436,26 +432,26 @@ public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
 	}
     }
 
-    public String toString() {
-	Iterator<Map.Entry<CharSequence,V>> it = entrySet().iterator();
-	if (!it.hasNext()) {
-	    return "{}";
-	}
+//     public String toString() {
+// 	Iterator<Map.Entry<CharSequence,V>> it = entrySet().iterator();
+// 	if (!it.hasNext()) {
+// 	    return "{}";
+// 	}
    
-	StringBuilder sb = new StringBuilder();
-	sb.append('{');
-	while (true) {
-	    Map.Entry<CharSequence,V> e = it.next();
-	    CharSequence key = e.getKey();
-	    V value = e.getValue();
-	    sb.append(key);
-	    sb.append('=');
-	    sb.append(value == this ? "(this Map)" : value);
-	    if (!it.hasNext())
-		return sb.append('}').toString();
-	    sb.append(", ");
-	}
-    }
+// 	StringBuilder sb = new StringBuilder();
+// 	sb.append('{');
+// 	while (true) {
+// 	    Map.Entry<CharSequence,V> e = it.next();
+// 	    CharSequence key = e.getKey();
+// 	    V value = e.getValue();
+// 	    sb.append(key);
+// 	    sb.append('=');
+// 	    sb.append(value == this ? "(this Map)" : value);
+// 	    if (!it.hasNext())
+// 		return sb.append('}').toString();
+// 	    sb.append(", ");
+// 	}
+//     }
 
 
     public Collection<V> values() {
@@ -767,7 +763,7 @@ public class TrieMap<V> implements Map<CharSequence,V>, Serializable {
 	 */
 	public Map.Entry<CharSequence,V> nextEntry() {
 	    if (next == null) {
-		throw new IllegalStateException("no further elements");
+		throw new NoSuchElementException("no further elements");
 	    }
 	    prev = next;
 	    advance();

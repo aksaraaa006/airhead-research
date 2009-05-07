@@ -28,8 +28,10 @@ import static org.junit.Assert.*;
 
 public class TestPermutation {
 
+    RandomIndexVectorGenerator rivg = new RandomIndexVectorGenerator();
+
     @Test public void testPermutation() {
-	IndexVector v = new IndexVector(32);
+	IndexVector v = rivg.create(32);
 	System.out.println("original: " + v);
 	DefaultPermutationFunction func = new DefaultPermutationFunction();
 	IndexVector permuted = func.permute(v, 1);
@@ -38,14 +40,14 @@ public class TestPermutation {
     }
 
     @Test public void testNegativePermutation() {
-	IndexVector v = new IndexVector(32);
+	IndexVector v = rivg.create(32);
 	DefaultPermutationFunction func = new DefaultPermutationFunction();
 	IndexVector permuted = func.permute(v, -1);
 	assertNotEquals(v, permuted);
     }
 
     @Test public void testInversePermutation() {
-	IndexVector v = new IndexVector(32);
+	IndexVector v = rivg.create(32);
 	DefaultPermutationFunction func = new DefaultPermutationFunction();
 	IndexVector permuted = func.permute(v, 1);
 	IndexVector invPermuted = func.permute(permuted, -1);
@@ -55,7 +57,7 @@ public class TestPermutation {
     }
 
     @Test public void testInverseNegativePermutation() {
-	IndexVector v = new IndexVector(32);
+	IndexVector v = rivg.create(32);
 	DefaultPermutationFunction func = new DefaultPermutationFunction();
 	IndexVector permuted = func.permute(v, -1);
 	IndexVector invPermuted = func.permute(permuted, 1);
