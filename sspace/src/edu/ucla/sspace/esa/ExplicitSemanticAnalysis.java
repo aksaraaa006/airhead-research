@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -42,6 +43,7 @@ import edu.ucla.sspace.common.Matrices;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StringUtils;
+import edu.ucla.sspace.common.TrieMap;
 
 /**
  * An implementation of Explicit Semanic Analysis proposed by Evgeniy
@@ -79,7 +81,10 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     private Matrix articleMatrix;
 
     public ExplicitSemanticAnalysis() {
-	wikipediaTermsToIndex = new HashMap<String,Integer>();
+	// Expect roughly 7.4 million articles, so set the size accordingly to
+	// no re-hashing occurs.  Set a high load factor to minimize the space
+	// at a small cost to performance.
+	wikipediaTermsToIndex = new HashMap<String,Integer>(8000000, 4f);
 	articleMatrix = null;
     }
 
@@ -97,11 +102,21 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	WikiParseResult fileAndLinkCount = 
 	    parseWikipediaSnapshot(wikipediaSnapshot);	
 	
+	ESA_LOGGER.info("thresholding articles");
+
 	// threshold off rarely linked articles and small articles
 	Set<String> validArticles = 
 	    thresholdArticles(fileAndLinkCount.parsedWikiSnapshot,
 			      fileAndLinkCount.incomingLinkCounts);
 	
+	File parsedSnapshot = fileAndLinkCount.parsedWikiSnapshot;
+
+	// explictly set this result to null to free the incomingLinkCounts
+	// map, which can be huge.
+	fileAndLinkCount = null;
+	
+	ESA_LOGGER.info("generating matrix");
+
 	// create the article co-occurrence matrix 
 	articleMatrix = Matrices.create(validArticles.size(), 
 					validArticles.size(), false);
@@ -127,6 +142,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    articleName.startsWith("wikipedia:") ||
 	    articleName.startsWith("template:") ||
 	    articleName.startsWith("category:") ||
+	    articleName.startsWith("portal:") ||
 	    (articleName.length() >= 3 && 
 	     articleName.charAt(2) == ':') ||
 	    articleName.contains("(disambiguation)");
@@ -150,12 +166,13 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	ArticleIterator articleIterator = new ArticleIterator(wikiSnapshot);
 	    
 	File parsedOutput = File.createTempFile("esa-parsed-snapshot", ".tmp");
+	parsedOutput.deleteOnExit();
 	PrintWriter parsedOutputWriter = new PrintWriter(parsedOutput);
 
 	// NOTE: we are able to use an IdentityHashMap only because we call
 	// .intern() on all the article name strings to be used as keys
-	Map<String,Integer> articleToIncomingLinkCount = 
-	    new IdentityHashMap<String,Integer>(8000000);	    	    
+	Map<CharSequence,Integer> articleToIncomingLinkCount = 
+	    new TrieMap<Integer>();	    	    
 	    
 	int fileNum = 0;
 	
@@ -200,10 +217,10 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    else {
 		// intern the article name since it will be around a for the
 		// lifetime of the program
-		articleName = articleName.intern();
+		articleName = articleName; //.intern();
 	    }
 			
-	    ESA_LOGGER.fine(String.format("parsing file %d: %s ", 
+	    ESA_LOGGER.info(String.format("parsing file %d: %s ", 
 					  fileNum, articleName));
 		    
 		    
@@ -218,6 +235,10 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    int endOfStart  = article.indexOf(">", startOfTextTag);
 	    
 	    int closingTextTag = article.indexOf("</text");
+	    // protect against malformatted XML
+	    if (closingTextTag < endOfStart+1) {
+		continue;
+	    }
 	    String noHtmlStr = article.substring(endOfStart+1, closingTextTag);
 		    
 	    /*
@@ -228,18 +249,40 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 		    
 	    String phase2 = noHtmlStr;
 	    
-	    StringBuilder phase3sb = new StringBuilder(phase2.length());
+	    StringBuilder phase3sb = null; 
 	    lastGoodIndex = 0;
 		    
+	    String phase3 = null;
+	    
 	    if (phase2.indexOf("{{") >= 0) {
+
+		phase3sb = new StringBuilder(phase2.length());
+
 		// remove all html tags before we unescape the text itself and
 		// possibly introduce non-html < characters
-		for (int i = 0; (i = phase2.indexOf("{{", i)) >= 0; ) {
-		    String s = phase2.substring(lastGoodIndex,i);
+		for (int i = -1; (i = phase2.indexOf("{{", i + 1)) >= 0; ) {
 
+		    String s = phase2.substring(lastGoodIndex,i);
+		    // append all the text from the last }} up to this {{
 		    phase3sb.append(s);
-		    lastGoodIndex = phase2.indexOf("}}", i) + 2;
-		    i = lastGoodIndex;
+
+		    // move the closing }}
+		    int closeBraces = phase2.indexOf("}}", i);
+
+		    // protect against illegally formatted Wiki 
+		    if (closeBraces < 0) {
+			// if there weren't actually any closing braces, just
+			// append the string and end it
+			phase3sb.append(phase2.substring(i));
+			break;
+		    }
+
+		    // mark the next position after the }}
+		    lastGoodIndex = closeBraces + 2;
+
+		    // update i to start the search after the }}
+		    i = lastGoodIndex + 1;
+
 		    // REMINDER: this is doing extra work, this loop should be
 		    // rewritten
 		    if (phase2.indexOf("{{", i) == -1) {
@@ -248,10 +291,18 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 			break;
 		    }
 		} 
+
+		// once the wiki-markup has been removed, transfer the string
+		// contents to the next phase
+		phase3 = phase3sb.toString();
 	    }
+
 	    // in case there is no wiki mark-up
-	    else
-		phase3sb.append(phase2);
+	    else {
+		// don't bother making a copy with the string buffer and instead
+		// just change the references
+		phase3 = phase2;
+	    }
 		    
 		    
 	    /*
@@ -261,8 +312,8 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	     */
 	    ESA_LOGGER.finer("replacing [[link]] with link name");
 
-	    String phase3 = phase3sb.toString();
-	    StringBuilder phase4sb = new StringBuilder(phase2.length());
+	    
+	    StringBuilder phase4sb = new StringBuilder(phase3.length());
 	    lastGoodIndex = 0;
 	    int outgoingLinks = 0;
 	    int prevTotalIncomingLinks = 
@@ -270,7 +321,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    
 	    // remove all html tags before we unescape the text itself
 	    // and possibly introduce non-html < characters
-	    for (int i = 0; (i = phase3.indexOf("[[", i)) > 0; ) {
+	    for (int i = 0; (i = phase3.indexOf("[[", i + 1)) > 0; ) {
 		
 		phase4sb.append(phase3.substring(lastGoodIndex,i));
 		
@@ -279,6 +330,13 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 		// different name in the text, e.g.  [[article title|link text]]
 		int j = phase3.indexOf("]]", i);
 		int k = phase3.indexOf("|", i);
+
+		// Guard against illegally formatted wiki links
+		if (j < 0 && k < 0) {
+		    phase4sb.append(phase3.substring(i));
+		    break;
+		}
+
 		int linkEnd = (k > 0) ? (j < 0) ? k : Math.min(j,k) : j;
 		
 		// transform the file name to get rid of any special
@@ -295,7 +353,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 			    
 		    // if the artile is actually a reasonable (e.g. non-image)
 		    // article, then intern its string to save memory
-		    linkedArticleTitle = linkedArticleTitle.intern();
+		    linkedArticleTitle = linkedArticleTitle; //.intern();
 		    
 		    // print out the link name so that it gets included
 		    // in the term list
@@ -337,21 +395,27 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	     * END PARSING STEPS
 	     */
 
-	    parsedOutputWriter.println(articleName + "|" + outgoingLinks
-				       + "|" + scrubbed);
-	    parsedOutputWriter.flush();
-	    
-	    int newIncomingLinks = articleToIncomingLinkCount.size() -
-		prevTotalIncomingLinks;
-	    Integer curIncoming = 
-		articleToIncomingLinkCount.get(articleName);
-	    
-	    ESA_LOGGER.fine("link summary: " + outgoingLinks + 
-			    " outgoing, (" + newIncomingLinks + 
-			    " new docs); "
-			    + ((curIncoming == null) ? "0" :
-			       curIncoming.toString())
-			    + " incoming");
+	    // this is a very rough estimate
+	    int wordCount = scrubbed.split("\\s+").length;
+
+	    if (wordCount >  100) {
+		
+		parsedOutputWriter.println(articleName + "|" + outgoingLinks
+					   + "|" + scrubbed);
+		parsedOutputWriter.flush();
+		
+		int newIncomingLinks = articleToIncomingLinkCount.size() -
+		    prevTotalIncomingLinks;
+		Integer curIncoming = 
+		    articleToIncomingLinkCount.get(articleName);
+		
+		ESA_LOGGER.fine("link summary: " + outgoingLinks + 
+				" outgoing, (" + newIncomingLinks + 
+				" new docs); "
+				+ ((curIncoming == null) ? "0" :
+				   curIncoming.toString())
+				+ " incoming");
+	    }
 	} // end file loop
 
 
@@ -373,12 +437,12 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      *         qualifications
      */
     private Set<String> thresholdArticles(File parsedWiki, 
-					  Map<String,Integer> incomingLinkCounts)
+					  Map<CharSequence,Integer> incomingLinkCounts)
 	throws IOException {
 
 	ESA_LOGGER.info("Thresholding Articles");
 	
-	Set<String> validArticles = new HashSet<String>();
+	Set<String> validArticles = new LinkedHashSet<String>();
 	
 	// now read it back in and decide which of the term documents should
 	// actually get included in the output
@@ -389,7 +453,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	for (String line = null; (line = br.readLine()) != null; ) {
 	    
 	    String[] arr = line.split("\\|");
-	    String articleName = arr[0].intern();
+	    String articleName = arr[0]; //.intern();
 	    int outgoing = Integer.parseInt(arr[1]);
 
 	    // If there weren't any incoming links, then the map will be
@@ -402,6 +466,9 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 		ESA_LOGGER.fine("excluding article " + articleName + " for " +
 				"too few incoming and outgoing links: " + 
 				(incoming + outgoing));
+
+		// Remove the word from the map to save space
+		incomingLinkCounts.remove(articleName);
 		continue;
 	    }
 		
@@ -415,6 +482,9 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 	    if (wordCount < 100) {
 		ESA_LOGGER.fine("excluding article " + articleName + " for " +
 				"too few words: " +  wordCount);
+		
+		// Remove the word from the map to save space
+		incomingLinkCounts.remove(articleName);
 		continue;		
 	    }
 	    
@@ -441,7 +511,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 
 	    
 	    String[] arr = line.split("\\|");
-	    String articleTitle = arr[0].intern();
+	    String articleTitle = arr[0]; //.intern();
 	    // skip any articles that aren't a part of the valid set
 	    if (!validArticles.contains(articleTitle)) {
 		continue;
@@ -514,42 +584,12 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     private static class WikiParseResult {
 
 	public final File parsedWikiSnapshot;
-	public final Map<String,Integer> incomingLinkCounts;
+	public final Map<CharSequence,Integer> incomingLinkCounts;
 
 	public WikiParseResult(File parsedWikiSnapshot,
-			       Map<String,Integer> incomingLinkCounts) {
+			       Map<CharSequence,Integer> incomingLinkCounts) {
 	    this.parsedWikiSnapshot = parsedWikiSnapshot;
 	    this.incomingLinkCounts = incomingLinkCounts;
 	}
     }
-
-    /**
-     *
-     */
-    private final class SemanticVector {
-	private final Map<Integer,Integer> sparseVector;
-
-	public SemanticVector() {
-	    sparseVector = new HashMap<Integer,Integer>();
-	}
-
-	public void increment(String articleName) {
-	    Integer index = wikipediaTermsToIndex.get(articleName);
-	    Integer count = sparseVector.get(index);
-	    sparseVector.put(index, (count == null) ? 1 : count + 1);
-	}
-
-	public int[] toIntArray() {
-	    int size = wikipediaTermsToIndex.size();
-	    int[] full = new int[size];
-	    for (int i = 0; i < size; ++i) {
-		Integer count = sparseVector.get(Integer.valueOf(i));
-		if (count != null) {
-		    full[i] = count.intValue();
-		}
-	    }
-	    return full;
-	}
-    }
-   
 }
