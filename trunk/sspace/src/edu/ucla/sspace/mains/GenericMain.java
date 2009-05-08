@@ -46,7 +46,40 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * A base class for running {@link SemanticSpace} algorithms.
+ * A base class for running {@link SemanticSpace} algorithms.  All derived main
+ * classes must implement the abstract functions.  Derived classes have the
+ * option of adding more command line options, which can then be handled
+ * independently by the derived class to build the SemanticSpace correctly, or
+ * produce the Properties object required for processing the space.
+ *
+ * All mains which inherit from this class will automatically have the ability
+ * to process the documents in parallel, and from a variety of file sources.
+ * The provided command line arguments are as follows:
+ *
+ * <ul>
+ * <li> document sources (must provide one)
+ *   <ul>
+ *
+ *   <li> {@code --fileList=<filename>} a file containing a list of file names, each of
+ *        which is treated as a separate document.
+ *
+ *   <li> {@code --docFile=<filename>} a file where each line is treated as a separate
+ *        document.  This is the preferred option for LSA operations for large
+ *        numbers of documents due to reduced I/O demands.
+ *
+ *   </ul>
+ *
+ * <li> {@code --threads=<int>} how many threads to use when processing the
+ *      documents.  The default is one per core.
+ * 
+ * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
+ *      existing output files.  The default is {@code true}.  If set to {@code
+ *      false}, a unique integer is inserted into the file name.
+ *
+ * <li> {@code --verbose | -v} specifies whether to print runtime
+ *      information to standard out
+ *
+ * </ul>
  *
  * @author David Jurgens
  */
