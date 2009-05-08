@@ -16,14 +16,7 @@ The current S-Space implementation of Coals is captured in two files.  {{{Coals.
 
 == Software Requirements ==
 
-The S-Space implementation uses existing software implementations of the SVD.  At least one of the following packages should be installed:
-
-  # [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC]
-  # [http://www.mathworks.com/products/matlab Matlab]
-  # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
-  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.
-
-The S-Space implementation will work with any of these implementations.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.
+Coals requires use of the SingularValueDecompositon interface.
 
 == Running Coals from the command-line ==
 
