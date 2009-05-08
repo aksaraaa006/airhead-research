@@ -9,7 +9,7 @@
 `coals.jar`
 
 *Details:*
-Initial release of Coals.  Release supports configurable word dimensions, svd reduction, and size of svd reduction.  See Coals wiki page for full details.
+Initial release of Coals.  Release supports configurable word dimensions, svd reduction, and size of svd reduction.  See [Coals Coals] wiki page for full details.
 
 = May 7, 2009 =
 
@@ -19,7 +19,7 @@ Initial release of Coals.  Release supports configurable word dimensions, svd re
 `random-indexing.jar`
 
 *Details:*
-Initial release of Random Indexing.  Release supports permutatations, configurable dimensions, and index vectors distributions.  See Random Indexing wiki page for full details.
+Initial release of Random Indexing.  Release supports permutatations, configurable dimensions, and index vectors distributions.  See [RandomIndexing Random Indexing] wiki page for full details.
 
 = May 1, 2009 =
 
