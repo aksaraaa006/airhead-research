@@ -7,9 +7,9 @@ Latent Semantic Analysis (LSA) is an algorithm that uses a collection of documen
 
 For more information on LSA, see the Wikipedia [http://en.wikipedia.org/wiki/Latent_semantic_analysis  page] on LSA.  Also the following papers give a good introduction to the uses of LSA:
 
-  * T. K. Landauer and S. T. Dumais, "A solution to Plato’s problem: The Latent Semantic Analysis theory of the acquisition, induction, and representation of knowledge," _Psychological Review_, vol. 104, pp. 211–240, 1997.
+  * T. K. Landauer and S. T. Dumais, "A solution to Plato’s problem: The Latent Semantic Analysis theory of the acquisition, induction, and representation of knowledge," _Psychological Review_, vol. 104, pp. 211–240, 1997.  Available [http://lsa.colorado.edu/papers/plato/plato.annote.html here]
 
-  * T. K. Landauer, P. W. Foltz, and D. Laham, "Introduction to Latent Semantic Analysis," _Discourse Processes_, no. 25, pp. 259–284, 1998. 
+  * T. K. Landauer, P. W. Foltz, and D. Laham, "Introduction to Latent Semantic Analysis," _Discourse Processes_, no. 25, pp. 259–284, 1998.  Available [http://lsa.colorado.edu/papers/dp1.LSAintro.pdf here].
 
 = S-Space Implementation =
 
