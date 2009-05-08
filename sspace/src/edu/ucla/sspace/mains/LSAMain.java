@@ -36,35 +36,13 @@ import java.util.Properties;
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
- * <li> document sources (must provide one)
- *   <ul>
- *
- *   <li> {@code --fileList=<filename>} a file containing a list of file names, each of
- *        which is treated as a separate document.
-
- *   <li> {@code --docFile=<filename>} a file where each line is treated as a separate
- *        document.  This is the preferred option for LSA operations for large
- *        numbers of documents due to reduced I/O demands.
- *
- *   </ul>
- *
  * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA vectors.
  *      See {@link LatentSemanticAnalysis} for default value
  *
- * <li> {@code --threads=<int>} how many threads to use when processing the
- *      documents.  The default is one per core.
- * 
  * <li> {@code --preprocess=<class name>} specifies an instance of {@link
  *      edu.ucla.sspace.lsa.MatrixTransformer} to use in preprocessing the
  *      word-document matrix compiled by LSA prior to computing the SVD.  See
  *      {@link LatentSemanticAnalysis} for default value
- *
- * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
- *      existing output files.  The default is {@code true}.  If set to {@code
- *      false}, a unique integer is inserted into the file name.
- *
- * <li> {@code --verbose | -v} specifies whether to print runtime
- *      information to standard out
  *
  * </ul>
  *
