@@ -48,16 +48,16 @@ LSA can be invoked either using {{{java edu.ucla.sspace.mains.LSAMain}}} or thro
 We provide the following options for changing the behavior of LSA and how the program is run.
 
   * Input document sources (must provide at least one)
-    * {{{-l | --fileList <filename>}}} a file containing a list of file names, each of which is treated as a separate document.
-    * {{{-d | --docFile <filename>}}} a file where each line is treated as a separate document. This is the preferred option for LSA operations for large numbers of documents due to reduced I/O demands. 
+    * {{{-f | --fileList=FILE[,FILE...]}}} one or more files, each containing a list of file names, each of which is treated as a separate document.
+    * {{{-d | --docFile=FILE[,FILE...]}}} one or more files, in which each line is treated as a separate document. This is the preferred option for LSA operations for large numbers of documents due to reduced I/O demands. 
 
   * LSA Options
     * {{{-n | --dimensions <int>}}} how many dimensions to use for the LSA vectors. See LatentSemanticAnalysis for default value
-    * {{{-p | --preprocess <class name>}}} specifies an instance of MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
+    * {{{-p | --preprocess <class name>}}} specifies an instance of [MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
 
   * Program Options
     * {{{-t | --threads <int>}}} how many threads to use when processing the documents. The default is one per core.
-    * {{{-w | --overwrite <boolean>}}} specifies whether to overwrite the existing output files. The default is true. If set to false, a unique integer is inserted into the file name.
+    * {{{-w | --overwrite <boolean>}}} specifies whether to overwrite the existing output files. The default is `true`. If set to false, a unique integer is inserted into the file name.
     * {{{-v | --verbose}}} specifies whether to print runtime information to standard out
 
 
