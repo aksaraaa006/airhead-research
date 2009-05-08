@@ -181,6 +181,45 @@ public class TrieMapTests {
 	assertEquals(arr.length, m.size());
     }
 
+    @Test public void testPutLotsOfRandomPrefixes() {
+	TrieMap<String> m = new TrieMap<String>();
+	assertEquals(0, m.size());
+	int size = 10240;
+	//int[] a = new int[size];
+	Set<Integer> s = new HashSet<Integer>();
+	while (s.size() < size) {
+	    s.add((int)(Math.random() * Integer.MAX_VALUE));
+	}
+	
+	int c = 1;
+	for (Integer i : s) {
+	    String w = i.toString();
+	    m.put(w,w);
+	    assertEquals(c, m.size());
+	    c++;
+	}
+
+	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	    assertEquals(Integer.parseInt(e.getKey().toString()),
+			 Integer.parseInt(e.getValue()));
+	}
+    }
+
+    @Test public void testPutLotsOfOrderedPrefixes() {
+	TrieMap<String> m = new TrieMap<String>();
+	assertEquals(0, m.size());
+
+	for (int i = 0; i < 10240; ++i) {
+	    String s = String.valueOf(i);
+	    m.put(s,s);
+	    assertEquals(i+1, m.size());
+	}
+
+	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	    assertEquals(Integer.parseInt(e.getKey().toString()),
+			 Integer.parseInt(e.getValue()));
+	}
+    }
 
     @Test public void testPutNumberKeysRandomOrder() {
 	TrieMap<String> m = new TrieMap<String>();
@@ -482,7 +521,6 @@ public class TrieMapTests {
 	assertEquals(control.size(), m.size());
 	assertTrue(control.containsAll(m.keySet()));	
     }    
-
 
     @Test public void testSize() {
 	TrieMap<String> m = new TrieMap<String>();
