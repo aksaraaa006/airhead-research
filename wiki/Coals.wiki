@@ -3,7 +3,7 @@
 
 = Introduction =
 
-Coals is an algorithm that uses a collection of documents to construct a a semantic space.  The algorithm constructs a word-by-word matrix where each element in the matrix represents how frequently word_i occurs with word_j.  The matrix is then normalized by correlation, and any negative values are set to zero and all other values are replaced by it's square root.  Then, optionally, the [http://en.wikipedia.org/wiki/Singular_value_decomposition Singular Value Decomposition] (SVD) is calculated for the word-word matrix to produce three matrices, U - the wordspace, &Sigma; - the singular values, and V - the document space.  (See Wikipedia for more details on the SVD).  The columns of U are then truncated to a small number of dimensions (typically 300), which produces the final semantic vectors.
+Coals is an algorithm that uses a collection of documents to construct a a semantic space.  The algorithm constructs a word-by-word matrix where each element in the matrix represents how frequently word_i occurs with word_j.  The matrix is then normalized by correlation, and any negative values are set to zero and all other values are replaced by it's square root.  Then, optionally, the [http://en.wikipedia.org/wiki/Singular_value_decomposition Singular Value Decomposition] (SVD) is calculated for the word-word matrix to produce three matrices, U - the wordspace, &Sigma; - the singular values, and V - the document space.  (See Wikipedia for more details on the SVD).  The columns of U are then truncated to a small number of dimensions (typically 800), which produces the final semantic vectors.
 
 For more information on Coals, the following paper is the central resource:
 
