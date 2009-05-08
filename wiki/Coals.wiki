@@ -16,7 +16,7 @@ The current S-Space implementation of Coals is captured in two files.  {{{Coals.
 
 == Software Requirements ==
 
-Coals requires use of the SingularValueDecompositon interface.
+Coals requires use of the SingularValueDecomposition interface.
 
 == Running Coals from the command-line ==
 
