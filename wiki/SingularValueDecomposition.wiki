@@ -1,0 +1,35 @@
+#summary Installation and usage guide of the Singular Value Decomposition interface.
+
+= Introduction =
+
+The S-Space package provides a simple interface to using a variety of singular value decomposition tools so that various Semantic Spaces can be free of such work.  The options provided are:
+
+  # [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC]
+  # [http://www.mathworks.com/products/matlab Matlab]
+  # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
+  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.
+
+All S-Space implementations are permitted to use any of the tools above.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.  Additionally, any user of S-Space releases are only required to have at least one of the implementations install.
+
+= Using SVD in an S-Space =
+
+The Interface to the various SVD implementations is designed to be as worry free as possible for S-Space developers.  As long as the S-Space has saved it's matrix as in the form of {{{Matrix.java}}}, a utility {{{MatrixIO.java} is available which will readily transform the matrix into an appropriately formatted file for the SVD implementations.  There are several formats which we support, each of which have their own advantages and disadvantages:
+
+  # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_ST.html SVDLIBC_SPARSE_TEXT]
+  # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_DT.html SVDLIBC_DENSE_TEXT]
+  # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_SB.html SVDLIBC_SPARSE_BINARY]
+  # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_DB.html SVDLIBC_DENSE_BINARY]
+  # [http://bebop.cs.berkeley.edu/smc/formats/matlab.html MATLAB_SPARSE]
+  # DENSE_TEXT, Each row has it's own line, with all column values specified
+
+The S-Space implementation should make an informed decision based on the sparseness of it's data in order save disk space.  
+
+A sample usage of {{{MatrixIO.java}}} would be:
+
+{{{MatrixIO.writeMatrix(myMatrix, myResultFile, Format.SVDLIBC_SPARSE_TEXT)}}}
+
+The final step is to then to run the svd using {{{SVD.java}}} with a command such as:
+
+{{{SVD.svd(myResultFile, Algorithm.SVDLIBC, Format.MATLAB_SPARSE, 300)}}}
+
+which states that the {{{myResultFile}}} is in the MATLAB_SPARSE format, but the SVDLIBC implementation is desired, with a reduction down to 300 dimensions.  {{{SVD.java}}} will automagically reformat the input file into the most appropriate format for the desired svd implementation, and run the given algorithm.  Optionally, one can specify that any implementation can be used, in which case it will try each one until the svd is correctly computed.
