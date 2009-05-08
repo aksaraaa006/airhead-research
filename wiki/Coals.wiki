@@ -8,8 +8,7 @@ Coals is an algorithm that uses a collection of documents to construct a a seman
 For more information on Coals, the following paper is the central resource:
 
 
-  * D. L. T. Rohde, L. M. Gonnerman, D. C. Plaut, "An Improved Model of Semantic
- Similarity Based on Lexical Co-Occurrence." _Cognitive Science_
+  * D. L. T. Rohde, L. M. Gonnerman, D. C. Plaut, "An Improved Model of Semantic Similarity Based on Lexical Co-Occurrence." _Cognitive Science_
 
 = S-Space Implementation =
 
