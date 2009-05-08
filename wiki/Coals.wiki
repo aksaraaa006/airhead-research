@@ -29,7 +29,8 @@ We provide the following options for changing the behavior of Coals and how the 
     * {{{-d | --docFile <filename>}}} a file where each line is treated as a separate document. This is the preferred option for Coals operations for large numbers of documents due to reduced I/O demands. 
 
   * Coals Options
-    * {{{-n | --dimensions <int>}}} how many dimensions to use for the SVD vectors. See Coals for default value
+    * {{{-s | --svddimension <int>}}} how many dimensions to use for the SVD vectors. See Coals for default value
+    * {{{-s | --dimensions <int>}}} the number of most frequent words to retain for the word-word matrix. See Coals for default value.
     * {{{-r | --reduce}}} If passed, the word-word matrix will be reduced using SVD, otherwise no reduction will be done.
     
   * Program Options
