@@ -23,8 +23,10 @@ package edu.ucla.sspace.ri;
 
 import java.util.Properties;
 
+
 /**
- *
+ * An class that generates {@link RandomIndexVector} instances based on
+ * configurable properties.  This class supports two properties:
  *
  * <dl style="margin-left: 1em">
  *
@@ -43,6 +45,8 @@ import java.util.Properties;
  *
  * <dd style="padding-top: .5em">This variable sets the number of dimensions to
  *      be used for the index and semantic vectors. <p>
+ *
+ * </dl>
  *
  * @see RandomIndexVector
  * @see RandomIndexing
@@ -98,6 +102,9 @@ public class RandomIndexVectorGenerator implements IndexVectorGenerator {
 	this(System.getProperties());
     }
 
+    /**
+     * Constructs this instance using the provided properties.
+     */
     public RandomIndexVectorGenerator(Properties properties) {
 
 	String numVectorValuesProp = 

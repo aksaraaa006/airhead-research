@@ -21,12 +21,27 @@
 
 package edu.ucla.sspace.common;
 
+import java.util.AbstractCollection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A hash table based implementation of the {@code MultiMap} interface.  This
+ * implementation permits both {@code null} keys and values. 
+ *
+ * <p>
+ *
+ * This implementation provides constant time operations for the basic
+ * operations {@code put} and {@code get}, assuming a uniform distribution of
+ * hash keys.
+ *
+ * @see HashMap
+ */
 public class HashMultiMap<K,V> implements MultiMap<K,V> {
 
     /**
@@ -50,9 +65,7 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
      */
     public HashMultiMap(Map<? extends K,? extends V> m) {
 	this();
-	for (Map.Entry<? extends K,? extends V> e : m.entrySet()) {
-	    put(e.getKey(), e.getValue());
-	}
+	putAll(m);
     }
 
     /**
@@ -68,6 +81,18 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
      */
     public boolean containsKey(Object key) {
 	return map.containsKey(key);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean containsValue(Object value) {
+	for (Set<V> s : map.values()) {
+	    if (s.contains(value)) {
+		return true;
+	    }
+	}
+	return false;
     }
 
     /**
@@ -94,30 +119,41 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
     /**
      * {@inheritDoc}
      */
-    public Set<V> put(K key, V value) {
+    public boolean put(K key, V value) {
 	Set<V> values = map.get(key);
 	if (values == null) {
 	    values = new HashSet<V>();
 	    map.put(key, values);
 	}
-	if (values.add(value))
+	boolean added = values.add(value);
+	if (added) {
 	    range++;
-	return values;
+	}
+	return added;
     }
 
     /**
      * {@inheritDoc}
      */
-    public Set<V> putAll(K key, Collection<V> values) {
+    public boolean put(K key, Collection<V> values) {
 	Set<V> vals = map.get(key);
 	if (vals == null) {
 	    vals = new HashSet<V>();
 	    map.put(key, vals);
 	}
 	int oldSize = vals.size();
-	vals.addAll(values);
+	boolean added = vals.addAll(values);
 	range += (vals.size() - oldSize);
-	return vals;
+	return added;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void putAll(Map<? extends K,? extends V> m) {
+	for (Map.Entry<? extends K,? extends V> e : m.entrySet()) {
+	    put(e.getKey(), e.getValue());
+	}
     }
 
     /**
@@ -140,7 +176,7 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
     /**
      * {@inheritDoc}
      */
-    public boolean removeValue(K key, V value) {
+    public boolean remove(K key, V value) {
 	Set<V> values = map.get(key);
 	boolean removed = values.remove(value);
 	if (removed)
@@ -160,13 +196,59 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritDoc} The collection and its {@code Iterator} are backed by the
+     * map, so changes to the map are reflected in the collection, and
+     * vice-versa.
      */
-    public Set<V> values() {
-	Set<V> values = new HashSet<V>();
-	for (K key : map.keySet())
-	    values.addAll(map.get(key));
-	return values;
+    public Collection<V> values() {
+	return new ValuesView();
     }
-    
+
+    /**
+     * A {@link Collection} view of the values contained in a {@link MultiMap}.
+     *
+     * @see MultiMap#values()
+     */
+    class ValuesView extends AbstractCollection<V> {
+	
+	public ValuesView() { }
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public void clear() {
+	    map.clear();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public boolean contains(Object o) {
+	    return containsValue(o);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	public Iterator<V> iterator() {
+	    // combine all of the iterators for the entry sets
+	    Collection<Iterator<V>> iterators = 
+		new ArrayList<Iterator<V>>(size());
+	    for (Set<V> s : map.values()) {
+		iterators.add(s.iterator());
+	    }
+	    // NOTE: because the iterators are backed by the internal map and
+	    // because the CombinedIterator class supports remove() if the
+	    // backing class does, calls to remove from this iterator are also
+	    // supported.
+	    return new CombinedIterator<V>(iterators);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public int size() {
+	    return range();
+	}
+    }    
 }
