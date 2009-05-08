@@ -13,7 +13,7 @@ All S-Space implementations are permitted to use any of the tools above.  Howeve
 
 = Using SVD in an S-Space =
 
-The Interface to the various SVD implementations is designed to be as worry free as possible for S-Space developers.  As long as the S-Space has saved it's matrix as in the form of {{{Matrix.java}}}, a utility {{{MatrixIO.java} is available which will readily transform the matrix into an appropriately formatted file for the SVD implementations.  There are several formats which we support, each of which have their own advantages and disadvantages:
+The Interface to the various SVD implementations is designed to be as worry free as possible for S-Space developers.  As long as the S-Space has saved it's matrix in the form of {{{Matrix.java}}}, a utility {{{MatrixIO.java}}} is available which will readily transform the matrix into an appropriately formatted file for the SVD implementations.  There are several formats which we support, each of which have their own advantages and disadvantages:
 
   # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_ST.html SVDLIBC_SPARSE_TEXT]
   # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_DT.html SVDLIBC_DENSE_TEXT]
