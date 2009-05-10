@@ -1,6 +1,16 @@
 #summary Details of the various releases
 #labels Featured
 
+= May 9, 2009 =
+
+[Coals] version 0.1.1
+
+*Changes:*
+`coals.jar`
+
+*Details:*
+Revised release of Coals, where all rows are saved, and only the column lengths are shortened.
+
 = May 8, 2009 =
 
 [Coals] version 0.1.0
