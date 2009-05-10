@@ -35,12 +35,14 @@ import edu.ucla.sspace.coals.Coals;
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
- * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA vectors.
- *      See {@link Coals} for default value
+ * <li> {@code --dimensions=<int>} how many dimensions to use for the regular 
+ *      word vectors. See {@link Coals} for a default value
  *
  * <li> {@code --reduce} If present, the word-word matrix will be reduced using
  * Singular Valued Decomposition, otherwise no reduction will be performed.
  *
+ * <li> {code --svddimension=<int>} size of the reduced svd vectors. See {@link
+ *      Coals} for a default value.
  * </ul>
  *
  * <p>
@@ -52,6 +54,8 @@ import edu.ucla.sspace.coals.Coals;
  * @see Coals
  */
 public class CoalsMain extends GenericMain {
+
+  private int dimensions; 
     private CoalsMain() {
     }
 
@@ -61,6 +65,10 @@ public class CoalsMain extends GenericMain {
     public void addExtraOptions(ArgOptions options) {
       options.addOption('n', "dimensions", 
                         "the number of dimensions in the semantic space",
+                        true, "INT"); 
+      options.addOption('s', "svddimension", 
+                        "the number of dimensions in the reduced space, " +
+                        "only used if --reduce is also given",
                         true, "INT"); 
       options.addOption('r', "reduce", 
                         "reduce the semantic space using SVD");
@@ -77,14 +85,20 @@ public class CoalsMain extends GenericMain {
     }
     
     public SemanticSpace getSpace() {
-      return new Coals();
+      return (dimensions > 0) ? new Coals(dimensions) : new Coals();
+    }
+
+    public void handleExtraOptions() {
+      dimensions = argOptions.hasOption("dimensions")
+          ? argOptions.getIntOption("dimensions")
+          : 0;
     }
 
     public Properties setupProperties() {
       Properties props = System.getProperties();
-      if (argOptions.hasOption("dimensions")) {
+      if (argOptions.hasOption("svddimension")) {
         props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY,
-                          argOptions.getStringOption("dimensions"));
+                          argOptions.getStringOption("svddimension"));
       }
 
       if (argOptions.hasOption("reduce")) {

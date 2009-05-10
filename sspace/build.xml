@@ -106,6 +106,22 @@
     </jar>
   </target>
 
+  <target name="coals-jar" depends="compile">
+    <jar destfile="${bin.dir}/coals.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Coals"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.CoalsMain"/>
+      </manifest>
+    </jar>
+  </target>
+
   <target name="ri-jar" depends="compile">
     <jar destfile="${bin.dir}/random-indexing.jar" basedir="classes">
       <include name="edu/**/*.class"/>
