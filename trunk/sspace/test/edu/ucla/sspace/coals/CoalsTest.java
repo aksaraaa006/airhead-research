@@ -83,8 +83,14 @@ public class CoalsTest {
                                  0, 4, 6, 8,10, 9, 6, 3, 0,10, 2, 8, 5,
                                  10,1, 1,18, 3,11, 8, 0,10, 2, 8, 0, 8,
                                  5, 0, 0, 9, 2, 2, 0, 2, 3, 3, 5, 8, 0};
-    Matrix resultCorrel =
-      coals.compareToMatrix(new ArrayMatrix(13, 13, testCorrelations));
+    int[] mappings = {9, 12, 11, 2, 8, 3, 7, 10, 6, 5, 1, 0, 4};
+    Matrix testMatrix = new ArrayMatrix(13, 13);
+    for (int i = 0; i < 13; ++i) {
+      for (int j = 0; j < 13; ++j) {
+        testMatrix.set(mappings[i], mappings[j], testCorrelations[i*13 +j]);
+      }
+    }
+    Matrix resultCorrel = coals.compareToMatrix(testMatrix);
     assertEquals(13, resultCorrel.rows());
     for (int i = 0; i < resultCorrel.rows(); ++i)
       for (int j = 0; j < resultCorrel.columns(); ++j)
@@ -105,7 +111,12 @@ public class CoalsTest {
                              0,.333,.317,   0,.320,.177,.149,.265,   0,.358,   0,   0,.034,
                           .291,   0,   0,.310,   0,.220,.221,   0,.291,   0,   0,   0,.221,
                           .246,   0,   0,.262,   0,   0,   0,.263,.076,.136,.034,.221,   0};
-    resultCorrel = coals.compareToMatrix(new ArrayMatrix(13, 13, testFinal));
+    for (int i = 0; i < 13; ++i) {
+      for (int j = 0; j < 13; ++j) {
+        testMatrix.set(mappings[i], mappings[j], testFinal[i*13 +j]);
+      }
+    }
+    resultCorrel = coals.compareToMatrix(testMatrix);
     assertEquals(13, resultCorrel.rows());
     for (int i = 0; i < resultCorrel.rows(); ++i)
       for (int j = 0; j < resultCorrel.columns(); ++j)
@@ -115,11 +126,11 @@ public class CoalsTest {
   @Test public void testMaxSize() throws IOException {
     Coals coals = new Coals(2);
     String testDocument = "word word cat dog dog";
-    double[] testCorrelations = { 8, 8, 8, 8 };
+    double[] testCorrelations = { 8, 8, 8, 8, 7, 7 };
     StringDocument sDoc = new StringDocument(testDocument);
     coals.processDocument(sDoc.reader());
     Matrix resultCorrel =
-      coals.compareToMatrix(new ArrayMatrix(2, 2, testCorrelations));
+      coals.compareToMatrix(new ArrayMatrix(3, 2, testCorrelations));
     for (int i = 0; i < resultCorrel.rows(); ++i)
       for (int j = 0; j < resultCorrel.columns(); ++j)
         assertEquals(0, resultCorrel.get(i, j), .0001);

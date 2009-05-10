@@ -22,6 +22,7 @@
 package edu.ucla.sspace.coals;
 
 import edu.ucla.sspace.common.matrix.ArrayMatrix;
+import edu.ucla.sspace.common.WordIterator;
 
 import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.Matrix;
@@ -42,13 +43,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -148,22 +152,38 @@ public class Coals implements SemanticSpace {
    * {@inheritDoc}
    */
   public void processDocument(BufferedReader document) throws IOException {
-    ArrayList<String> wordWindow = new ArrayList<String>();
     HashMap<String, Integer> wordFreq = new HashMap<String, Integer>();
     HashMap<Index, Integer> documentCorrels = new HashMap<Index, Integer>();
-    boolean isFilling = true;
-    for (String line = null; (line = document.readLine()) != null;) {
-      String[] text = line.split("\\s");
-      for (String word : text) {
-        word = word.intern();
-        wordWindow.add(word);
-        int updatedFreq = 1;
-        if (wordFreq.containsKey(word))
-          updatedFreq = wordFreq.get(word).intValue() + 1;
-        wordFreq.put(word, updatedFreq);
-        isFilling = update(documentCorrels, wordWindow, isFilling);
+    Queue<String> prevWords = new ArrayDeque<String>();
+    Queue<String> nextWords = new ArrayDeque<String>();
+    WordIterator it = new WordIterator(document);
+    for (int i = 0; i < 4; ++i)
+      nextWords.offer(it.next().intern());
+
+    while (!nextWords.isEmpty()) {
+      String focusWord = nextWords.remove();
+
+      if (it.hasNext())
+        nextWords.offer(it.next().intern());
+      int updatedFreq = 1;
+      if (wordFreq.containsKey(focusWord))
+        updatedFreq += wordFreq.get(focusWord).intValue();
+      wordFreq.put(focusWord, updatedFreq);
+      Iterator<String> wordIter = prevWords.iterator();
+      int offset = 4 - prevWords.size() + 1;
+      for (int i = 0; wordIter.hasNext(); ++i) {
+        String word = wordIter.next();
+        addIfMissing(documentCorrels, new Index(focusWord, word), offset + i);
       }
-      finishUpdates(documentCorrels, wordWindow, isFilling);
+      wordIter = nextWords.iterator();
+      offset = 4;
+      for (int i = 0; wordIter.hasNext(); ++i) { 
+        String word = wordIter.next();
+        addIfMissing(documentCorrels, new Index(focusWord, word), offset - i);
+      }
+      prevWords.offer(focusWord);
+      if (prevWords.size() > 4)
+        prevWords.remove();
     }
     synchronized (rawOccuranceWriter) {
       for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
@@ -189,57 +209,6 @@ public class Coals implements SemanticSpace {
       map.put(i, value);
     else
       map.put(i, map.get(i).intValue() + value);
-  }
-
-  private void finishUpdates(HashMap<Index, Integer> map,
-                             ArrayList<String> wordWindow,
-                             boolean isFilling) {
-    if (isFilling) {
-      int size = wordWindow.size();
-      for (int i = 0; i < size; ++i) {
-        String mainWord = wordWindow.get(i).intern();
-        for (int j = 0; j < i; ++j)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), j-i+5);
-        for (int j = i+1; j < i+5 && j < size; j++)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), i+5-j);
-      }
-      return;
-    }
-
-    int size = wordWindow.size();
-    for (int i = 0; i < 4; ++i) {
-      String mainWord = wordWindow.get(4).intern();
-      for (int j = 0; j < 4; j++)
-        addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), j+1);
-      for (int j = 5; j < wordWindow.size(); j++)
-        addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), 9-j);
-      wordWindow.remove(0);
-    }
-  }
-
-  private boolean update(HashMap<Index, Integer> map,
-                         ArrayList<String> wordWindow,
-                         boolean isFilling) {
-    int size = wordWindow.size();
-    if (size < 9 && isFilling)
-      return true;
-    else if (size >= 9 && isFilling) {
-      for (int i = 0; i < 4; i++) {
-        String mainWord = wordWindow.get(i).intern();
-        for (int j = 0; j < i; j++)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), j-i+5);
-        for (int j = i+1; j < i+5; j++)
-          addIfMissing(map, new Index(mainWord, wordWindow.get(j).intern()), i+5-j);
-      }
-    }
-
-    String mainWord = wordWindow.get(4).intern();
-    for (int i = 0; i < 4; i++)
-      addIfMissing(map, new Index(mainWord, wordWindow.get(i).intern()), i+1);
-    for (int i = 5; i < size; i++)
-      addIfMissing(map, new Index(mainWord, wordWindow.get(i).intern()), 9-i);
-    wordWindow.remove(0);
-    return false;
   }
 
   /**
@@ -269,7 +238,7 @@ public class Coals implements SemanticSpace {
                              coalsMatrixFile,
                              Format.SVDLIBC_DENSE_BINARY);
         String dims = properties.getProperty(REDUCE_MATRIX_DIMENSION_PROPERTY);
-        reducedDims = (300 > wordCount) ? wordCount : 300;
+        reducedDims = (800> wordCount) ? wordCount : 800;
         if (dims != null)
           reducedDims = Integer.parseInt(dims);
         Matrix[] usv = SVD.svd(coalsMatrixFile, SVD.Algorithm.ANY,
@@ -285,39 +254,45 @@ public class Coals implements SemanticSpace {
   }
 
   private Matrix buildMatrix() {
+    ArrayList<Map.Entry<String, Integer>> wordCountList =
+      new ArrayList<Map.Entry<String, Integer>>(totalWordFreq.entrySet());
+    Collections.sort(wordCountList, new EntryComp());
+    /*
     PriorityQueue<Map.Entry<String, Integer>> wordFreqFilter =
       new PriorityQueue<Map.Entry<String, Integer>>(maxWords, new EntryComp());
     wordFreqFilter.addAll(totalWordFreq.entrySet());
 
-    int wordCount =
-      (wordFreqFilter.size() > maxWords) ? maxWords : wordFreqFilter.size();
+    int wordCount = wordFreqFilter.size();
     String[] keys = new String[wordCount];
     for (int i = 0; i < wordCount && wordFreqFilter.size() > 0; ++i)
       keys[i] = wordFreqFilter.poll().getKey();
 
     Arrays.sort(keys);
-    for (int i = 0; i < wordCount; ++i)
-      wordToIndex.put(keys[i], i);
+    */
+    for (int i = 0; i < wordCountList.size(); ++i) {
+      System.out.println(wordCountList.get(i).getKey() + ": " + i);
+      wordToIndex.put(wordCountList.get(i).getKey(), i);
+    }
 
     totalWordFreq.clear();
-    wordFreqFilter.clear();
     synchronized (rawOccuranceWriter) {
       rawOccuranceWriter.close();
     }
     
+    int wordCount =
+      (wordCountList.size() > maxWords) ? maxWords : wordCountList.size();
     try {
       BufferedReader br = new BufferedReader(new FileReader(rawOccurances));
       String line = null;
-      Matrix correl = new ArrayMatrix(wordCount, wordCount);
+      Matrix correl = new ArrayMatrix(wordCountList.size(), wordCount);
       while ((line = br.readLine()) != null) {
         String[] splitLine = line.split("\\|");
-        Integer r = wordToIndex.get(splitLine[0]);
-        Integer c = wordToIndex.get(splitLine[1]);
-        if (r == null || c == null)
+        int r = wordToIndex.get(splitLine[0]).intValue();
+        int c = wordToIndex.get(splitLine[1]).intValue();
+        if (c >= maxWords) 
           continue;
         double value = Double.parseDouble(splitLine[2]);
-        correl.set(r.intValue(), c.intValue(),
-                   value + correl.get(r.intValue(), c.intValue()));
+        correl.set(r, c, value + correl.get(r, c));
       }
       return correl;
     } catch (IOException ioe) {
@@ -347,7 +322,7 @@ public class Coals implements SemanticSpace {
   private class EntryComp implements Comparator<Map.Entry<String,Integer>> {
     public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
       int diff = o2.getValue().intValue() - o1.getValue().intValue();
-      return diff;
+      return (diff != 0) ? diff : o2.getKey().compareTo(o1.getKey());
     }
   }
 }
