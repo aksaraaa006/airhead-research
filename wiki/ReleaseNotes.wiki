@@ -1,6 +1,19 @@
 #summary Details of the various releases
 #labels Featured
 
+= May 11, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.2
+[RandomIndexing] version 0.1.1
+
+*Changes*:
+`lsa.jar`
+`random-indexing.jar`
+
+*Details*:
+  * Added a binary output option where the resulting .sspace file is much smaller.  See [FileFormats] for details
+  * LSA matrix operations now clean up the temporary files they generate.
+
 = May 9, 2009 =
 
 [Coals] version 0.1.1
