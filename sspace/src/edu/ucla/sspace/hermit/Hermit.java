@@ -228,9 +228,14 @@ public class Hermit implements SemanticSpace {
       synchronized(key) {
         writer = termFiles.get(key);
         if (writer == null) {
+          System.out.println("making file for: " + key);
+          try {
           File keyFile = File.createTempFile("holograph-" + key, ".txt", tempDir);
           keyFile.deleteOnExit();
           termFiles.put(key, keyFile);
+          } catch (IOException ioe) {
+            ioe.printStackTrace();
+          }
         }
       }
     }
