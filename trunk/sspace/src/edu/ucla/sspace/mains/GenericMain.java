@@ -160,7 +160,7 @@ public abstract class GenericMain {
 			  true, "FILE[,FILE...]", "Required (at least one of)");
 	options.addOption('d', "docFile", 
 			  "a file where each line is a document", true,
-			  "FILE[,FILE]", "Required (at least one of)");
+			  "FILE[,FILE...]", "Required (at least one of)");
 
 	options.addOption('t', "threads", "the number of threads to use",
 			  true, "INT", "Program Options");

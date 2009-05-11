@@ -27,7 +27,7 @@ public class TrieMapTests {
 
     
     @Test public void testConstructor() {
-	TrieMap<String> m = new TrieMap<String>();
+ 	TrieMap<String> m = new TrieMap<String>();
     }
 
     @Test public void testMapConstructor() {
@@ -127,11 +127,31 @@ public class TrieMapTests {
     @Test public void testPutKeysLongerByOne() {
 	TrieMap<String> m = new TrieMap<String>();
 	m.put("cat", "1");
+	assertEquals("1", m.get("cat"));
 	m.put("catx", "2");
+	assertEquals("2", m.get("catx"));
 	m.put("catxy", "3");
+	assertEquals("3", m.get("catxy"));
 	m.put("catxyz", "4");
 
 	assertEquals("1", m.get("cat"));
+	assertEquals("2", m.get("catx"));
+	assertEquals("3", m.get("catxy"));
+	assertEquals("4", m.get("catxyz"));
+    }
+
+
+    @Test public void testPutKeysShorterByOne() {
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("catxyz", "4");
+	assertEquals("4", m.get("catxyz"));
+	m.put("catxy", "3");
+	assertEquals("3", m.get("catxy"));
+	m.put("catx", "2");
+	assertEquals("2", m.get("catx"));
+	m.put("cat", "1");
+	assertEquals("1", m.get("cat"));
+	
 	assertEquals("2", m.get("catx"));
 	assertEquals("3", m.get("catxy"));
 	assertEquals("4", m.get("catxyz"));
@@ -156,6 +176,23 @@ public class TrieMapTests {
 	assertEquals("1", m.get("category"));
 	assertEquals("2", m.get("catamaran"));
     }
+
+
+    @Test public void testPutWithSubstringAndDiverge() {
+	TrieMap<String> m = new TrieMap<String>();
+	m.put("cat", "0");
+	m.put("category", "1");
+	m.put("catamaran", "2");
+
+	m.put("cat", "cat");
+	m.put("category", "category");
+	m.put("catamaran", "catamaran");
+	
+	assertEquals("cat", m.get("cat"));
+	assertEquals("category", m.get("category"));
+	assertEquals("catamaran", m.get("catamaran"));
+    }
+
 
     @Test public void testPutKeysReverseOrdering() {
 	TrieMap<String> m = new TrieMap<String>();
