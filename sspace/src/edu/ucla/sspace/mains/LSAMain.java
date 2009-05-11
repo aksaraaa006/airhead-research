@@ -41,7 +41,7 @@ import java.util.Properties;
  *   <ul>
  *
  *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]} a file where each line is
- *        a document.  This is the preferred input format.
+ *        a document.  This is the preferred input format for large corpora
  *
  *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a list of document files
  *        where each file is specified on its own line.
@@ -62,12 +62,21 @@ import java.util.Properties;
  *
  * <li><u>Program Options</u>:
  *   <ul>
- *   <li> {@code -t}, {@code --threads=INT} the number of threads to use
  *
- *   <li> {@code -v}, {@code --verbose} prints verbose output
+ *   <ul> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
+ *        output formatting to use when generating the semantic space ({@code
+ *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
  *
- *   <li> {@code -w}, {@code --overwrite=BOOl} specifies whether to overwrite
- *        the existing output
+ *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
+ *        documents.  The default is one per core.
+ * 
+ *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
+ *        the existing output files.  The default is {@code true}.  If set to
+ *        {@code false}, a unique integer is inserted into the file name.
+ *
+ *   <li> {@code -v}, {@code --verbose}  specifies whether to print runtime
+ *        information to standard out
+ *
  *   </ul>
  *
  * </ul>
