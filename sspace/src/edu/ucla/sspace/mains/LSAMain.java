@@ -36,13 +36,39 @@ import java.util.Properties;
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
- * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA vectors.
- *      See {@link LatentSemanticAnalysis} for default value
  *
- * <li> {@code --preprocess=<class name>} specifies an instance of {@link
- *      edu.ucla.sspace.lsa.MatrixTransformer} to use in preprocessing the
- *      word-document matrix compiled by LSA prior to computing the SVD.  See
- *      {@link LatentSemanticAnalysis} for default value
+ * <li><u>Required (at least one of)</u>:
+ *   <ul>
+ *
+ *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]} a file where each line is
+ *        a document.  This is the preferred input format.
+ *
+ *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a list of document files
+ *        where each file is specified on its own line.
+ *
+ *   </ul>
+ * 
+ * <li><u>Algorithm Options</u>:
+ *   <ul>
+ *
+ *   <li> {@code --dimensions=<int>} how many dimensions to use for the LSA
+ *        vectors.  See {@link LatentSemanticAnalysis} for default value
+ *
+ *   <li> {@code --preprocess=<class name>} specifies an instance of {@link
+ *        edu.ucla.sspace.lsa.MatrixTransformer} to use in preprocessing the
+ *        word-document matrix compiled by LSA prior to computing the SVD.  See
+ *        {@link LatentSemanticAnalysis} for default value
+ *   </ul>
+ *
+ * <li><u>Program Options</u>:
+ *   <ul>
+ *   <li> {@code -t}, {@code --threads=INT} the number of threads to use
+ *
+ *   <li> {@code -v}, {@code --verbose} prints verbose output
+ *
+ *   <li> {@code -w}, {@code --overwrite=BOOl} specifies whether to overwrite
+ *        the existing output
+ *   </ul>
  *
  * </ul>
  *
