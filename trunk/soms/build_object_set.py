@@ -23,14 +23,14 @@ def buildObjectSet(object_vectors):
       sim = -1 * distance(row, other_row)
       if len(heap) < 3:
         heappush(heap, (sim, j))
-      else if sim > heap[0][0]:
+      elif sim > heap[0][0]:
         heappushpop(heap, (sim, j))
-    chosen_set.push(i)
+    chosen_set.add(i)
     while heap:
       dist, index = heappop(heap)
       chosen_set.add(index)
     i += 1
-  return [object_vectors[index] for index in chosen_set[:60]]
+  return [object_vectors[index] for index in chosen_set]
 
 if __name__ == "__main__":
   if len(sys.argv) != 3:
