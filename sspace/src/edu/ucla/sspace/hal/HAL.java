@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package src.edu.ucla.sspace.hal;
+package edu.ucla.sspace.hal;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.WordIterator;
 
 
-public class HAL implements SemanticSpace
+public class HAL // implements SemanticSpace
 {
 	/**
 	 * Sets the default window size to 5
