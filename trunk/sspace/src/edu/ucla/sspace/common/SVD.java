@@ -288,6 +288,7 @@ public class SVD {
 		double[][] matrixArray = (double[][])(toArrayMethod.
 		    invoke(matrixObject, new Object[] {}));
 		File tmpFile = File.createTempFile(matrixNames[i],".txt");
+		tmpFile.deleteOnExit();
 		MatrixIO.writeMatrixArray(matrixArray, tmpFile);
 		usv[i] = tmpFile;
 	    }
@@ -360,8 +361,11 @@ public class SVD {
 		throw new UnsupportedOperationException(
 		    "Format type is not accepted");
 	    }
-	    String outputMatrixPrefix = 
-		File.createTempFile("svdlibc", "dat").getAbsolutePath();
+
+	    File outputMatrixFile = File.createTempFile("svdlibc", "dat");
+	    outputMatrixFile.deleteOnExit();
+	    String outputMatrixPrefix = outputMatrixFile.getAbsolutePath();
+
 	    SVD_LOGGER.severe("creating SVDLIBC factor matrices at: " + 
 			      outputMatrixPrefix);
 	    String commandLine = "svd -o " + outputMatrixPrefix + formatString +
@@ -460,7 +464,10 @@ public class SVD {
 	    File uOutput = File.createTempFile("matlab-svds-U",".dat");
 	    File sOutput = File.createTempFile("matlab-svds-S",".dat");
 	    File vOutput = File.createTempFile("matlab-svds-V",".dat");
-	    
+	    uOutput.deleteOnExit();
+	    sOutput.deleteOnExit();
+	    vOutput.deleteOnExit();
+
 	    String commandLine = "matlab -nodisplay -nosplash -nojvm";
 	    SVD_LOGGER.severe(commandLine);
 	    Process matlab = Runtime.getRuntime().exec(commandLine);
@@ -545,6 +552,10 @@ public class SVD {
 	    File uOutput = File.createTempFile("octave-svds-U",".dat");
 	    File sOutput = File.createTempFile("octave-svds-S",".dat");
 	    File vOutput = File.createTempFile("octave-svds-V",".dat");
+	    octaveFile.deleteOnExit();
+	    uOutput.deleteOnExit();
+	    sOutput.deleteOnExit();
+	    vOutput.deleteOnExit();
 
 	    // Print the customized Octave program to a file.
 	    PrintWriter pw = new PrintWriter(octaveFile);

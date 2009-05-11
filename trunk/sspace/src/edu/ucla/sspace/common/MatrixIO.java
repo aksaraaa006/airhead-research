@@ -187,6 +187,7 @@ public class MatrixIO {
 	    if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
 		File output = 
 		    File.createTempFile("matlab-to-SVDLIBC-sparse","dat");
+		output.deleteOnExit();
 		matlabToSVDLIBCsparse(matrix, output);
 		return output;
 	    }

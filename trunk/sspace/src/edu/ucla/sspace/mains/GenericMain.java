@@ -25,6 +25,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.CombinedIterator;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
+import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 
 import edu.ucla.sspace.common.document.Document;
 import edu.ucla.sspace.common.document.FileListDocumentIterator;
@@ -57,28 +58,36 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The provided command line arguments are as follows:
  *
  * <ul>
- * <li> document sources (must provide one)
+ * <li> <u>Document sources (must provide one)</u>
  *   <ul>
  *
- *   <li> {@code --fileList=<filename>} a file containing a list of file names, each of
- *        which is treated as a separate document.
+ *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]}  a file containing a list
+ *        of file names, each of which is treated as a separate document.
  *
- *   <li> {@code --docFile=<filename>} a file where each line is treated as a separate
- *        document.  This is the preferred option for LSA operations for large
- *        numbers of documents due to reduced I/O demands.
+ *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a file where each line
+ *        is treated as a separate document.  This is the preferred option when
+ *        working with large corpora due to reduced I/O demands for multiple
+ *        files.
  *
  *   </ul>
  *
- * <li> {@code --threads=<int>} how many threads to use when processing the
- *      documents.  The default is one per core.
+ * <li> <u>Program Options</u>
+ *
+ *   <ul> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
+ *        output formatting to use when generating the semantic space ({@code
+ *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
+ *
+ *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
+ *        documents.  The default is one per core.
  * 
- * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
- *      existing output files.  The default is {@code true}.  If set to {@code
- *      false}, a unique integer is inserted into the file name.
+ *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
+ *        the existing output files.  The default is {@code true}.  If set to
+ *        {@code false}, a unique integer is inserted into the file name.
  *
- * <li> {@code --verbose | -v} specifies whether to print runtime
- *      information to standard out
+ *   <li> {@code -v}, {@code --verbose}  specifies whether to print runtime
+ *        information to standard out
  *
+ *   </ul>
  * </ul>
  *
  * @author David Jurgens
@@ -162,12 +171,13 @@ public abstract class GenericMain {
 			  "a file where each line is a document", true,
 			  "FILE[,FILE...]", "Required (at least one of)");
 
+	options.addOption('o', "outputFormat", "the .sspace format to use",
+			  true, "{text|binary}", "Program Options");
 	options.addOption('t', "threads", "the number of threads to use",
 			  true, "INT", "Program Options");
 	options.addOption('w', "overwrite", "specifies whether to " +
 			  "overwrite the existing output", true, "BOOL",
 			  "Program Options");
-
 	options.addOption('v', "verbose", "prints verbose output",
 			  false, null, "Program Options");
 	addExtraOptions(options);
@@ -268,8 +278,13 @@ public abstract class GenericMain {
 	    ? new File(outputDir, space.getSpaceName() + EXT)
 	    : File.createTempFile(space.getSpaceName(), EXT, outputDir);
 
+	SSpaceFormat format = (argOptions.hasOption("outputFormat"))
+	    ? SSpaceFormat.valueOf(
+	        argOptions.getStringOption("outputFormat").toUpperCase())
+	    : SSpaceFormat.TEXT;
+
 	startTime = System.currentTimeMillis();
-	SemanticSpaceUtils.printSemanticSpace(space, output);
+	SemanticSpaceUtils.printSemanticSpace(space, output, format);
 	endTime = System.currentTimeMillis();
 	verbose("printed space in %.3f seconds%n",
 		((endTime - startTime) / 1000d));

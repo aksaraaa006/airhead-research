@@ -67,11 +67,16 @@ import java.util.Properties;
  *
  * <li><u>Program Options</u>:
  *   <ul>
+ *
+ *   <ul> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
+ *        output formatting to use when generating the semantic space ({@code
+ *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
+ *
  *   <li> {@code -t}, {@code --threads=INT} the number of threads to use
  *
  *   <li> {@code -v}, {@code --verbose} prints verbose output
  *
- *   <li> {@code -w}, {@code --overwrite=BOOl} specifies whether to overwrite
+ *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
  *        the existing output
  *   </ul>
  *
