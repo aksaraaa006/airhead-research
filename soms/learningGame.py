@@ -24,6 +24,7 @@ class LearningGame():
     self.time_axis = []
     self.pick_count = []
     self.time_first_seen = {}
+    self.object_first_seen = [0 for i in range(len(self.objects))]
     self.out_dir = out_dir + "/"
 
   def buildWordList(self, phoneme_file):
@@ -63,6 +64,8 @@ class LearningGame():
   
   def getContext(self, context_size):
     obj_index = random.randint(0, len(self.objects)-1)
+    if self.object_first_seen[obj_index] == 0:
+      self.object_first_seen[obj_index] = self.t 
     possible_contexts = self.object_contexts[obj_index]
     context_index = random.randint(0, len(possible_contexts)-1)
     context = [self.objects[i] for i in possible_contexts[context_index]]
@@ -88,7 +91,9 @@ class LearningGame():
       #print "speaker says: ", word, context
       hearer.receiveUtterance(word, context)
       self.t += 1
+    self.evaluateGame()
 
+  def evaluateGame(self):
     self.addPickCount()
     pylab.clf()
     pylab.xlabel("time")
@@ -104,11 +109,12 @@ class LearningGame():
 
     converge_count = 0
     syn_dict = {}
+    object_mappings = []
     for obj in self.objects:
       meanings = set()
       for learner in self.learners:
-        _, word = learner.produceWord(obj, False)
-        if word:
+        m_data, word = learner.produceWord(obj, False)
+        if word and m_data[1] <= 1.5:
           meanings.add(word[0])
           if word[0] in syn_dict:
             syn_dict[word[0]] += 1
@@ -116,10 +122,24 @@ class LearningGame():
             syn_dict[word[0]] = 1
         else:
           meanings.add("")
+
       if len(meanings) == 1 and "" not in meanings: 
         converge_count += 1
+      meanings.discard("")
+      object_mappings.append(meanings)
     print "number of converging mappings %f" %(converge_count /
                                                float(len(self.objects)))
+    object_axis = []
+    mapping_axis = []
+    words = [ word for (word, _) in self.word_list]
+    for i, meanings in enumerate(object_mappings):
+      for meaning in meanings:
+        object_axis.append(i)
+        mapping_axis.append(words.index(meaning))
+    pylab.clf()
+    pylab.plot(object_axis, mapping_axis, 'o')
+    pylab.savefig(self.out_dir + 'object_mapping.png')
+
     syn_counts = [syn_dict[key] for key in syn_dict]
     syn_axis = [i for i in range(len(syn_dict))]
     intro_axis = [self.time_first_seen[key] for key in syn_dict]
@@ -142,6 +162,11 @@ class LearningGame():
     pylab.ylabel("time first seen")
     pylab.plot(syn_axis, intro_axis)
     pylab.savefig(self.out_dir + "word_intro.png")
+
+    pylab.clf()
+    object_axis = [i for i in range(len(self.objects))]
+    pylab.plot(object_axis, self.object_first_seen, 'o')
+    pylab.savefig(self.out_dir + "object_intro.png")
 
 def usage():
   print "usage: ./learningGame.py [options] phoneme_file output_directory"

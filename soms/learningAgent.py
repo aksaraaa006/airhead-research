@@ -17,6 +17,8 @@ class learningAgent():
     # location, the meaning vector and the learned words.
     num_nodes = 300 #NUM_ROWS*NUM_COLS
     self.meaning_vectors = numpy.random.random((num_nodes, vector_size))
+    self.phoneme_vectors = numpy.random.random((num_nodes, phoneme_size))
+    self.phoneme_attentions = numpy.ones_like(self.phoneme_vectors)
     self.attention_vectors = numpy.ones_like(self.meaning_vectors)
     self.mean = numpy.zeros_like(self.meaning_vectors)
     self.average = numpy.zeros_like(self.meaning_vectors)
@@ -33,7 +35,7 @@ class learningAgent():
     self.t = 0
     self.value_count = 0
     self.learning_rate = 1 
-    self.n_range = 25
+    self.n_range = 40 
     self.word_list = [] 
     self.use_attention = use_attention
     self.use_context = use_context
@@ -50,11 +52,11 @@ class learningAgent():
     context = object_frame[0]
 
     m_data, best_word = self.produceWord(context)
-    if not best_word or m_data[1] > 1.5:
+    if not best_word: # or m_data[1] > 1.5:
       best_word = self.game.pickNewWord()
-      self.learned_words[m_data[0]] = best_word[0]
+      self.learned_words[m_data[0]] = best_word
 
-    self.learnPatterns(context, best_word[0])
+    self.learnPatterns(context, best_word[1])
     self.updateTimeValues()
     if self.use_context:
       for obj in object_frame[1:]:
@@ -63,19 +65,19 @@ class learningAgent():
     return context, best_word 
 
   def produceWord(self, object_rep, learning=True):
-    m_data = self.getBestNode(self.meaning_vectors, object_rep)
+    m_data = self.getBestNode(self.meaning_vectors, self.attention_vectors, object_rep)
     m_som_best, m_min_dist, m_max_dist, m_near = m_data
 
     if self.learned_words[m_som_best] != None:
-      return m_data, (self.learned_words[m_som_best], None)
+      return m_data, self.learned_words[m_som_best]
     return m_data, None
 
-  def updateMap(self, meaning, feature_vectors, data=None):
+  def updateMap(self, meaning, feature_vectors, attentions, data=None):
     if data == None:
-      data = self.getBestNode(feature_vectors, meaning)
+      data = self.getBestNode(feature_vectors, attentions, meaning)
     best, min_dist, max_dist, near = data
 
-    meaning_diff = (self.attention_vectors * meaning - feature_vectors)
+    meaning_diff = (attentions * meaning - feature_vectors)
     feature_vectors += self.learning_rate * (near * meaning_diff.transpose()).transpose()
     return data
 
@@ -88,16 +90,19 @@ class learningAgent():
     matching the phoneme vector, the nodes in that neighboorhood will have their
     activations will be updated, along with their meaning vectors.  After this,
     the associative weights will be updated and normalized."""
-    m_data = self.updateMap(object_rep, self.meaning_vectors, m_data)
-    return m_data
+    m_data = self.updateMap(object_rep, self.meaning_vectors,
+                            self.attention_vectors, m_data)
+    p_data = self.updateMap(phoneme_rep, self.phoneme_vectors,
+                            self.phoneme_attentions, p_data)
+    return m_data, p_data
 
-  def getBestNode(self, map, input_vector):
+  def getBestNode(self, map, attentions, input_vector):
     """Given some input and a map, go through each of the nodes and determine
     which one has a meaning vector closest to the input_vector.  Once finding
     this node, find all the nodes within the neighboorhood of this node, along
     with the node within this range which also has the largest distance from the
     input vector.  This will be used learning stages, not during production."""
-    meaning_distances = distance(map, self.attention_vectors * input_vector)
+    meaning_distances = distance(map, attentions * input_vector)
     best_node = 0
     min_dist = meaning_distances[0]
     for i, dist in enumerate(meaning_distances):
@@ -125,8 +130,8 @@ class learningAgent():
   def receiveUtterance(self, word, context):
     if word not in self.word_list:
       self.word_list.append(word)
-    m_data = self.learnPatterns(context, word[0])
-    self.learned_words[m_data[0]] = word[0]
+    m_data, p_data  = self.learnPatterns(context, word[1])
+    self.learned_words[m_data[0]] = word
     self.updateAttention(context, m_data[3])
     self.updateTimeValues()
 
@@ -146,7 +151,6 @@ class learningAgent():
   def updateAttention(self, meaning_vector, near):
     if not self.use_attention:
       return
-    print "using attention"
     self.value_count += 1
     delta = (near * (self.meaning_vectors - self.average).transpose()).transpose()
     self.average += (delta/self.value_count)
