@@ -38,6 +38,7 @@ RI can be invoke either by using the `RandomIndexingMain` class or by using the 
     * `-p`, `--usePermutations` whether to permute index vectors based on word order
     * `-s`, `--windowSize` how many words to consider in each direction 
   * *Program Options*:
+    * `-o`, `--outputFormat={text|binary}` Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details. 
     * `-t`, `--threads` the number of threads to use
     * `-v`, `--verbose` prints verbose output
     * `-w`, `--overwrite` specifies whether to overwrite the existing output 
@@ -48,4 +49,4 @@ Example:
 {{{
 java -server -Xmx2g -jar random-indexing-jar --docFile=my_corpus.txt --threads=4 --verbose output-directory/
 }}}
-This runs the `RandomIndexingMain` class using the server JVM and a 2GB heap.  The corpus is specified as `my_corpus.txt` and is processed with each line being a different document.  The resulting `random-indexing.sspace` file will be placed in `output-directory/`.
+This runs the `RandomIndexingMain` class using the server JVM and a 2GB heap.  The corpus is specified as `my_corpus.txt` and is processed with each line being a different document.  The resulting `random-indexing.sspace` file will be placed in `output-directory/`.  See [FileFormats] for exact details on the output file formatting. 
