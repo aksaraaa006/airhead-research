@@ -133,6 +133,10 @@ public class DocumentPreprocessor {
 		// assume it's an email address
 		urlized.append("<URL>");
 	    }
+        else if (tok.startsWith("http") ||
+                 tok.startsWith("ftp")) {
+          urlized.append("<URL>");
+        }
 	    else if (tok.matches("[0-9]+")) {
 		urlized.append("<NUM>");
 	    }
