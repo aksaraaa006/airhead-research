@@ -62,6 +62,7 @@
        <compilerarg value="-g"/>
       <include name="src/**"/>
       <include name="lib/**"/>
+      <exclude name="src/edu/ucla/sspace/hal/**"/>
       <exclude name="src/edu/ucla/sspace/lra/**"/>
     </javac>  
   </target>
@@ -156,6 +157,7 @@
       <test name="edu.ucla.sspace.common.TestWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.matrix.SparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>      
       <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>
