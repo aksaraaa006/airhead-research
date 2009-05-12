@@ -7,15 +7,12 @@ import java.io.IOException;
 import java.io.File;
 import java.io.PrintWriter;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
-import java.sql.Date;
+import java.sql.Timestamp;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -31,7 +28,7 @@ public class BlogPreProcessor {
   }
 
   public static void main(String[] args)
-      throws SAXException, ParserConfigurationException, IOException, ParseException {
+      throws ParserConfigurationException, IOException {
     ArgOptions options = setupOptions();
     options.parseOptions(args);
 
@@ -45,12 +42,18 @@ public class BlogPreProcessor {
 
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = dbf.newDocumentBuilder();
-    DateFormat df = DateFormat.getInstance();
 
     File blogDir = new File(options.getStringOption("blogdir"));
     for (String blogFileName : blogDir.list()) {
+      if (!blogFileName.endsWith(".xml"))
+        continue;
       File blog = new File(blogDir, blogFileName);
-      Document doc = db.parse(blog);
+      Document doc;
+      try {
+        doc = db.parse(blog);
+      } catch (SAXException saxe) {
+        continue;
+      }
       NodeList entries = doc.getElementsByTagName("entry");
       for (int i = 0; i < entries.getLength(); ++i) {
         Element entry = (Element) entries.item(i);
@@ -58,10 +61,10 @@ public class BlogPreProcessor {
         Node dateNode = entry.getElementsByTagName("updated").item(0);
         String date = dateNode.getChildNodes().item(0).getNodeValue();
         String content = contentNode.getChildNodes().item(0).getNodeValue();
-        long dateTime = Date.valueOf(date.split(" ")[0]).getTime();
+        long dateTime = Timestamp.valueOf(date).getTime();
         String cleanedContent = processor.process(content);
         if (!cleanedContent.equals(""))
-          pw.println(dateTime + " " + cleanedContent);
+          pw.format("%d %s\n", dateTime, cleanedContent);
       }
     }
     pw.close();
