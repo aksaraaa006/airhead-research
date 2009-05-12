@@ -47,8 +47,6 @@ import java.util.Set;
  * which is produced by {@link edu.ucla.sspace.common.SemanticSpaceUtils}.
  */
 public class FileBasedSemanticSpace implements SemanticSpace {
-    public static final String FILE_SSPACE_NAME = 
-    "file-based-semantic-space";
 
     /**
      * The {@code Matrix} which contains the data read from a finished {@link
@@ -63,8 +61,13 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     private final Map<String, Integer> termToIndex ;
 
     /**
+     * The name of this semantic space.
+     */
+    private final String spaceName;
+
+    /**
      * Creates the {@link FileBasedSemanticSpace} from the file using the {@link
-     * SSpace#TEXT TEXT} format.
+     * SSpaceFormat#TEXT text} format.
      *
      * @param filename filename of the data intended be provided by this
      *   {@link edu.ucla.sspace.common.SemanticSpace}.
@@ -74,8 +77,8 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * Creates the {@link FileBasedSemanticSpace} from the provided file using
-     * the {@link SSpace#TEXT TEXT} format.
+     * Creates the {@link FileBasedSemanticSpace} from the provided file in the
+     * {@link SSpaceFormat#TEXT text} format.
      *
      * @param file a file containing the data intended be provided by this {@link
      *   edu.ucla.sspace.common.SemanticSpace}.
@@ -84,9 +87,17 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	this(file, SSpaceFormat.TEXT);
     }
 
+    /**
+     * Creates the {@link FileBasedSemanticSpace} from the provided file in
+     * the specified format.
+     *
+     * @param file a file containing the data intended be provided by this {@link
+     *   edu.ucla.sspace.common.SemanticSpace}.
+     */
     public FileBasedSemanticSpace(File file, SSpaceFormat format) {
 
-    
+	spaceName = file.getName();
+
 	// NOTE: Use a LinkedHashMap here because this will ensure that the words
 	// are returned in the same row-order as the matrix.  This generates better
 	// disk I/O behavior for accessing the matrix since each word is directly
@@ -103,16 +114,22 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 		break;
 	    }
 	} catch (IOException ioe) {
-	    ioe.printStackTrace();
-	    System.exit(1);
+	    throw new IOError(ioe);
 	}  
 	wordSpace = m;
     }
 
-    private Matrix loadText(File file) throws IOException {
+    /**
+     * Loads the {@link SemanticSpace} from the text formatted file, adding its
+     * words to {@link #termToIndex} and returning the {@code Matrix} containing
+     * the space's vectors.
+     *
+     * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
+     */
+    private Matrix loadText(File sspaceFile) throws IOException {
 	Matrix matrix = null;
 
-	BufferedReader br = new BufferedReader(new FileReader(file));
+	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
 	String line = br.readLine();
 	if (line == null)
 	    throw new IOError(new Throwable("An empty file has been passed in"));
@@ -129,10 +146,10 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	    String[] termVectorPair = line.split("\\|");
 	    String[] values = termVectorPair[1].split("\\s");
 	    termToIndex.put(termVectorPair[0], index);
-	    if (values.length != columns)
+	    if (values.length != columns) {
 		throw new IOError(
-				  new Throwable("improperly formated semantic space file"));
-	    
+		    new Throwable("improperly formated semantic space file"));	    
+	    }
 	    for (int c = 0; c < columns; ++c) {
 		double d = Double.parseDouble(values[c]);
 		row[c] = d;
@@ -144,8 +161,16 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	return matrix;    
     }
 
-    private Matrix loadBinary(File f) throws IOException {
-	DataInputStream dis = new DataInputStream(new FileInputStream(f));
+    /**
+     * Loads the {@link SemanticSpace} from the binary formatted file, adding
+     * its words to {@link #termToIndex} and returning the {@code Matrix}
+     * containing the space's vectors.
+     *
+     * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
+     */
+    private Matrix loadBinary(File sspaceFile) throws IOException {
+	DataInputStream dis = 
+	    new DataInputStream(new FileInputStream(sspaceFile));
 	int rows = dis.readInt();
 	int cols = dis.readInt();
 	// create a dense matrix
@@ -182,18 +207,17 @@ public class FileBasedSemanticSpace implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-      return FILE_SSPACE_NAME;
+      return spaceName;
     }
 
     /**
      * A noop.
      */
-    public void processDocument(BufferedReader document) {
-    }
+    public void processDocument(BufferedReader document) { }
 
     /**
      * A noop.
      */
-    public void processSpace(Properties props) {
-    }
+    public void processSpace(Properties props) { }
+
 }
