@@ -108,7 +108,8 @@ public class SVD {
 	Logger.getLogger(SVD.class.getName());
 
     /**
-     *
+     * Which algorithm to use for computing the Singular Value Decomposition
+     * (SVD) of a matrix.
      */
     public enum Algorithm {
 	SVDLIBC,
@@ -124,15 +125,15 @@ public class SVD {
     private SVD() { }
 
     /**
-     * Returns files containing the U, S, V matrices for the SVD of the matrix
-     * for the provided number of dimensions and using the fastest SVD algorithm
-     * available
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
+     * {@link Format#MATLAB_SPARSE Matlab sparse} format using the specified SVD
+     * algorithm to generate the specified number of singular values.
      *
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
      *
      * @throws UnsupportedOperationException if no SVD algorithm is available
      */
@@ -142,13 +143,16 @@ public class SVD {
     }
 
     /**
-     *
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
+     * {@link Format#MATLAB_SPARSE Matlab sparse} format using the specified SVD
+     * algorithm to generate the specified number of singular values.
      *
      * @param matrix a file containing a matrix
+     * @param alg which algorithm to use for computing the SVD
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
      *
      * @throws UnsupportedOperationException if the provided SVD algorithm is
      *         unavailable
@@ -158,13 +162,16 @@ public class SVD {
     }
     
     /**
-     *
-     *
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
+     * specified format using the the fastst SVD algorithm available to generate
+     * the specified number of singular values.
+     * 
      * @param matrix a file containing a matrix
+     * @param format the format of the input matrix file
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
      *
      * @throws UnsupportedOperationException if no SVD algorithm is available
      */
@@ -173,25 +180,29 @@ public class SVD {
     }
 
     /**
-     *
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
+     * specified format using the the specified SVD algorithm available to
+     * generate the specified number of singular values.
      *
      * @param matrix a file containing a matrix
+     * @param alg which algorithm to use for computing the SVD
+     * @param format the format of the input matrix file
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
      *
      * @throws UnsupportedOperationException if the provided SVD algorithm is
      *         unavailable
      */
     public static Matrix[] svd(File matrix, Algorithm alg, 
-			     Format format, int dimensions) {
+			       Format format, int dimensions) {
 	try {
 	    switch (alg) {
 	    case SVDLIBC:
 		File converted = MatrixIO.convertFormat(
 		    matrix, format, Format.SVDLIBC_SPARSE_TEXT);
-		return svdlibc(converted, dimensions, Format.SVDLIBC_SPARSE_TEXT);		
+		return svdlibc(converted, dimensions, Format.SVDLIBC_SPARSE_TEXT);
 	    case JAMA:
 		return jamaSVD(matrix, dimensions);
 	    case MATLAB:
@@ -253,8 +264,8 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices
+     *         in that order
      *
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
      *         unavailable or if any error occurs during the process
@@ -333,7 +344,7 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices in
      *         that order
      *
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
@@ -366,11 +377,11 @@ public class SVD {
 	    outputMatrixFile.deleteOnExit();
 	    String outputMatrixPrefix = outputMatrixFile.getAbsolutePath();
 
-	    SVD_LOGGER.severe("creating SVDLIBC factor matrices at: " + 
+	    SVD_LOGGER.info("creating SVDLIBC factor matrices at: " + 
 			      outputMatrixPrefix);
 	    String commandLine = "svd -o " + outputMatrixPrefix + formatString +
 		" -d " + dimensions + " " + matrix.getAbsolutePath();
-	    SVD_LOGGER.severe(commandLine);
+	    SVD_LOGGER.info(commandLine);
 	    Process svdlibc = Runtime.getRuntime().exec(commandLine);
 
 	    BufferedReader br = new BufferedReader(
@@ -379,10 +390,10 @@ public class SVD {
 	    for (String line = null; (line = br.readLine()) != null; ) {
 		output.append(line).append("\n");
 	    }
-	    SVD_LOGGER.severe(output.toString());
+	    SVD_LOGGER.info(output.toString());
 	    
 	    int exitStatus = svdlibc.waitFor();
-	    SVD_LOGGER.severe("svdlibc exit status: " + exitStatus);
+	    SVD_LOGGER.info("svdlibc exit status: " + exitStatus);
 
 	    // If SVDLIBC was successful in generating the files, return them.
 	    if (exitStatus == 0) {
@@ -420,6 +431,10 @@ public class SVD {
 	    "SVDLIBC is not correctly installed on this system");
     }
 
+    /**
+     * Generates a diagonal {@link Matrix} from the special-case file format
+     * that SVDLIBC uses to output the &Sigma; matrix.
+     */
     private static Matrix readSVDLIBCsingularVector(File sigmaMatrixFile)
 	    throws IOException {
 
@@ -452,7 +467,7 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices in
      *         that order
      *
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
@@ -469,7 +484,7 @@ public class SVD {
 	    vOutput.deleteOnExit();
 
 	    String commandLine = "matlab -nodisplay -nosplash -nojvm";
-	    SVD_LOGGER.severe(commandLine);
+	    SVD_LOGGER.info(commandLine);
 	    Process matlab = Runtime.getRuntime().exec(commandLine);
 	    
 	    // capture the input so we know then Matlab is finished
@@ -498,10 +513,10 @@ public class SVD {
 		    matlab.destroy();
 		}
 	    }
-	    SVD_LOGGER.severe(output.toString());
+	    SVD_LOGGER.info(output.toString());
 	    
 	    int exitStatus = matlab.waitFor();
-	    SVD_LOGGER.severe("Matlab svds exit status: " + exitStatus);
+	    SVD_LOGGER.info("Matlab svds exit status: " + exitStatus);
 
 	    // If Matlab was successful in generating the files, return them.
 	    if (exitStatus == 0) {
@@ -539,7 +554,7 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code File} objects for the U, S, and V matrices in
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices in
      *         that order
      *
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
@@ -574,7 +589,7 @@ public class SVD {
 	    // build a command line where octave executes the previously
 	    // constructed file
 	    String commandLine = "octave " + octaveFile.getAbsolutePath();
-	    SVD_LOGGER.severe(commandLine);
+	    SVD_LOGGER.info(commandLine);
 	    Process octave = Runtime.getRuntime().exec(commandLine);
 
 	    BufferedReader br = new BufferedReader(
@@ -584,10 +599,10 @@ public class SVD {
 	    for (String line = null; (line = br.readLine()) != null; ) {
 		output.append(line).append("\n");
 	    }
-	    SVD_LOGGER.severe(output.toString());
+	    SVD_LOGGER.info(output.toString());
 	    
 	    int exitStatus = octave.waitFor();
-	    SVD_LOGGER.severe("Octave svds exit status: " + exitStatus);
+	    SVD_LOGGER.info("Octave svds exit status: " + exitStatus);
 
 	    // If Octave was successful in generating the files, return them.
 	    if (exitStatus == 0) {

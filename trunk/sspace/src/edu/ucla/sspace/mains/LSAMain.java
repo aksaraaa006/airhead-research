@@ -63,7 +63,7 @@ import java.util.Properties;
  * <li><u>Program Options</u>:
  *   <ul>
  *
- *   <ul> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
+ *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
  *        output formatting to use when generating the semantic space ({@code
  *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
  *
