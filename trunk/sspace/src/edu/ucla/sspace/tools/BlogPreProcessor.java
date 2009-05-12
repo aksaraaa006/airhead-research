@@ -59,8 +59,11 @@ public class BlogPreProcessor {
         Element entry = (Element) entries.item(i);
         Node contentNode = entry.getElementsByTagName("content").item(0);
         Node dateNode = entry.getElementsByTagName("updated").item(0);
-        String date = dateNode.getChildNodes().item(0).getNodeValue();
-        String content = contentNode.getChildNodes().item(0).getNodeValue();
+        if (dateNode.getFirstChild() == null ||                                                                                                
+            contentNode.getFirstChild() == null)                                                                                               
+          continue;                                                                                                                            
+        String date = dateNode.getFirstChild().getNodeValue();                                                                                 
+        String content = contentNode.getFirstChild().getNodeValue();
         long dateTime = Timestamp.valueOf(date).getTime();
         String cleanedContent = processor.process(content);
         if (!cleanedContent.equals(""))

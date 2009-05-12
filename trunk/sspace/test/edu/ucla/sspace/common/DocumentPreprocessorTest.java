@@ -37,9 +37,17 @@ public class DocumentPreprocessorTest {
     assertEquals(resultDocument, result);
   }
 
-  @Test public void convertUrlEmailNumTest() {
+  @Test public void convertEmailNumTest() {
     String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word :] be myusername@ucla.edu a b c d e f g or a 12345";
+    String expectedResult = "can a word <emote> be <url> a b c d e f g or a <num>";
+    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
+    assertEquals(expectedResult, testProcessor.process(testDocument));
+  }
+
+  @Test public void convertUrlTest() {
+    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
+    String testDocument = "can a word :] be http://cs.ucla.edu a b c d e f g or a 12345";
     String expectedResult = "can a word <emote> be <url> a b c d e f g or a <num>";
     DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
     assertEquals(expectedResult, testProcessor.process(testDocument));
