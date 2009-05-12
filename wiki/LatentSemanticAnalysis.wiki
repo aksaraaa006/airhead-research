@@ -56,13 +56,13 @@ We provide the following options for changing the behavior of LSA and how the pr
     * {{{-p | --preprocess <class name>}}} specifies an instance of [MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
 
   * Program Options
+    * {{{-o | --outputFormat={text|binary}}}} Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details. 
     * {{{-t | --threads <int>}}} how many threads to use when processing the documents. The default is one per core.
     * {{{-w | --overwrite <boolean>}}} specifies whether to overwrite the existing output files. The default is `true`. If set to false, a unique integer is inserted into the file name.
     * {{{-v | --verbose}}} specifies whether to print runtime information to standard out
 
 
-The program will then produce a file that contains the entire semantic space.  Each line in the file is formatted as follows:
-  {{{word name|value-1 value-2 ... value-N}}}, where N is the number of dimensions in the semantic space.
+The program will then produce a file that contains the entire semantic space.  See [FileFormats] for exact details on the output formatting.
 
 = Acknowledgments =
 
