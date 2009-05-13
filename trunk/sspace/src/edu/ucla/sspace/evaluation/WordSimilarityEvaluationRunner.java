@@ -58,6 +58,10 @@ public class WordSimilarityEvaluationRunner {
 	Collection<WordSimilarity> wordPairs = test.getPairs();
 	int unanswerable = 0;
 
+	// Use lists here to keep track of the judgements for each word pair
+	// that the SemanticSpace has vectors for.  This allows us to skip
+	// trying to correlate human judgements for pairs that the S-Space
+	// cannot handle.
 	List<Double> humanJudgements = new ArrayList<Double>(wordPairs.size());
 	List<Double> sspaceJudgements = new ArrayList<Double>(wordPairs.size());
 	
@@ -88,9 +92,15 @@ public class WordSimilarityEvaluationRunner {
 	    humanJudgements.add(pair.getSimilarity());
 	    sspaceJudgements.add(scaled);
 	}
-
+	
+	// create arrays to to calculate the correlation
 	double[] humanArr = new double[humanJudgements.size()];
 	double[] sspaceArr = new double[humanJudgements.size()];
+
+	for(int i = 0; i < humanArr.length; ++i) {
+	    humanArr[i] = humanJudgements.get(i);
+	    sspaceArr[i] = sspaceJudgements.get(i);
+	}
 
 	double correlation = Similarity.correlation(humanArr, sspaceArr);
 
