@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.tools;
+package edu.ucla.sspace.common;
 
 import java.io.BufferedReader;
 import java.io.PrintWriter;

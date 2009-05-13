@@ -56,4 +56,22 @@ public class SimilarityTest {
 	assertFalse(Similarity.cosineSimilarity(a, b) == 0d);
     }
 
+    @Test public void testSpearman() {
+	double[] a = 
+	    new double[] { 106, 86, 100, 101, 99, 103, 97, 113, 112, 110 };
+	double[] b =
+	    new double[] { 7,   0,  27,  50,  28, 29,  20, 12,  6,   17};
+	double spCorr = Similarity.spearmanRankCorrelationCoefficient(a,b);
+	assertEquals(-0.175758, spCorr, 0.01);
+    }
+
+    @Test public void testSpearmanInt() {
+	int[] a = 
+	    new int[] { 106, 86, 100, 101, 99, 103, 97, 113, 112, 110 };
+	int[] b =
+	    new int[] { 7,   0,  27,  50,  28, 29,  20, 12,  6,   17};
+	double spCorr = Similarity.spearmanRankCorrelationCoefficient(a,b);
+	assertEquals(-0.175758, spCorr, 0.01);
+    }
+
 }
