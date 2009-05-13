@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.common;
 
+import java.lang.reflect.Method;
+
 /**
  * A collection of static methods for computing the similarity between different
  * vectors.  Semantic space implementations should use this class.
@@ -37,6 +39,41 @@ public class Similarity {
      * Uninstantiable
      */
     private Similarity() { }
+
+    /**
+     * Returns the {@link Method} for getting the similarity of two {@code
+     * double[]} based on the specified similarity type.
+     *
+     * @throws Error if a {@link NoSuchMethodException} is thrown
+     */
+    public static Method getMethod(SimType similarityType) {
+
+	String methodName = null;
+
+	switch (similarityType) {
+	case COSINE:
+	    methodName = "cosineSimilarity";
+	    break;
+	case CORRELATION:
+	    methodName = "correlation";
+	    break;
+	case EUCLIDEAN:
+	    methodName = "euclideanSimilarity";
+	    break;
+	}
+	
+	Method m = null;
+
+	try { 
+	    m = Similarity.class.getMethod(methodName,
+		new Class[] {double[].class, double[].class});
+	} catch (NoSuchMethodException nsme) {
+	    // rethrow
+	    throw new Error(nsme);
+	}
+
+	return m;
+    }
 
     public static double cosineSimilarity(double[] a, double[] b) {
 	if (a.length != b.length) {
