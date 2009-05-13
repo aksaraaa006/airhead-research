@@ -23,6 +23,8 @@ package edu.ucla.sspace.common;
 
 import java.lang.reflect.Method;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -253,12 +255,23 @@ public class Similarity {
 	    ranking.put(a[i], b[i]);
 	}
 	
+	double[] sortedB = Arrays.copyOf(b, b.length);
+	Arrays.sort(sortedB);
+	Map<Double,Integer> otherRanking = new HashMap<Double,Integer>();
+	for (int i = 0; i < b.length; ++i) {
+	    otherRanking.put(sortedB[i], i);
+	}
+	
 	// keep track of the last value we saw in the key set so we can check
 	// for ties.  If there are ties then the Pearson's product-moment
 	// coefficient should be returned instead.
 	Double last = null;
 
+	// sum of the differences in rank
 	double diff = 0d;
+
+	// the current rank of the element in a that we are looking at
+	int curRank = 0;
 
 	for (Map.Entry<Double,Double> e : ranking.entrySet()) {
 	    Double x = e.getKey();
@@ -275,9 +288,13 @@ public class Similarity {
 		last = x;
 	    }
 
-	    double d = x.doubleValue() - y.doubleValue();
-	    diff += d * d;
+	    // determine the difference in the ranks for both values
+	    int rankDiff = curRank - otherRanking.get(y).intValue();
+	    diff += rankDiff * rankDiff;
+
+	    curRank++;
 	}
+
 	return 1 - ((6 * diff) / (a.length * (a.length * a.length - 1)));
     }
 
@@ -288,9 +305,17 @@ public class Similarity {
      */
     public static double spearmanRankCorrelationCoefficient(int[] a, int[] b) {
 	check(a,b);
+
 	SortedMap<Integer,Integer> ranking = new TreeMap<Integer,Integer>();
 	for (int i = 0; i < a.length; ++i) {
 	    ranking.put(a[i], b[i]);
+	}
+	
+	int[] sortedB = Arrays.copyOf(b, b.length);
+	Arrays.sort(sortedB);
+	Map<Integer,Integer> otherRanking = new HashMap<Integer,Integer>();
+	for (int i = 0; i < b.length; ++i) {
+	    otherRanking.put(sortedB[i], i);
 	}
 	
 	// keep track of the last value we saw in the key set so we can check
@@ -298,7 +323,11 @@ public class Similarity {
 	// coefficient should be returned instead.
 	Integer last = null;
 
-	long diff = 0l;
+	// sum of the differences in rank
+	double diff = 0d;
+
+	// the current rank of the element in a that we are looking at
+	int curRank = 0;
 
 	for (Map.Entry<Integer,Integer> e : ranking.entrySet()) {
 	    Integer x = e.getKey();
@@ -315,9 +344,13 @@ public class Similarity {
 		last = x;
 	    }
 
-	    long d = x.longValue() - y.longValue();
-	    diff += d * d;
+	    // determine the difference in the ranks for both values
+	    int rankDiff = curRank - otherRanking.get(y).intValue();
+	    diff += rankDiff * rankDiff;
+
+	    curRank++;
 	}
+
 	return 1 - ((6d * diff) / (a.length * (a.length * a.length - 1d)));
     }
 
