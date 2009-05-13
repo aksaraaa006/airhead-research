@@ -1,0 +1,49 @@
+#summary Introduction to the code base, and how it is laid out
+
+= Introduction =
+
+The S-Space package attempts to provide a clean and reusable interface for using and building various semantic memory models.  To facilitate this, we have developed a number of useful interfaces and classes which do the most common work for you.  This document will outline which interfaces and classes are already provided and some guidance as to how to use them, along with the overall structure of the package.
+
+= Organization =
+
+In agreement with most Java packages, all source files can be found in the {{{src}}} directory, in the {{{edu/ucla/sspace}}} sub folders.  Corresponding test cases are also provided for many classes, and are located under the {{{test}}} directory, with the same underlying sub folders.
+
+Each Semantic Space model is given it's own directory under {{{sspace}}}, so that they can each be relatively self contained and be free to use other public package classes freely.  New models should follow this pattern by choosing a short abbreviation of the s-space.
+
+Since many Semantic Space models should have a reasonable number of things in common, these things have been collected together and stored in the {{{common}}} directory.  These will by far the most re-used classes in the package for those implementing their own semantic space model.
+
+== More on Common ==
+
+Common provides a mixture of several interfaces which make designing models easier, along with some already implemented sub-classes which fit particular use cases. 
+
+The Utilites provided can broadly be split up into the following categories
+   * Semantic Space interface and utilities
+   * Matrix interface and implementations
+   * Similarity and Normalization implementations
+   * Common useful data stuctures
+   * the SingularValueDecomposition interface
+   * Document interface and implementations
+
+The SemanticSpace interface defines the basic functionality which all Semantic Space models should implement for uniformity of use.  Various utilities are then provided for any implemented SemanticSpace, such as storing the sspace as a binary or text file, and retrieving the sspace from a binary or text file for evaluation purposes.
+
+The Matrix interface defines a series of simple access and retrieval operations on all Matrix implementations, allowing models to the ability to easily switch between the various available Matrix implementations as needed.  The provided implementations are:
+   * SparseMatrix, using the Yale Sparse Matrix Format
+   * OnDiskMatrix, which stores all values on disk, suitable for extremely large matrices
+   * ArrayMatrix, a dense, in ram matrix for reasonably small matrices
+   * SynchronizedMatrix, a thread safe wrapper around any of the available Matrix implementations.
+Each of these have an intended use case, depending on the the amount of data produced, it's sparseness, and the desired run-time of operations.
+
+In conjunction with the Matrix implementations, various operations on a Matrix are provided.  Several normalization methods, such as row sum, correlation, column sum, and row length normalization are currently provided.  Additionally, several similarity measures are provided, such as cosine, correlation, and euclidean distance/similarity.  Since the matrices are intended for very large datasets, multiplication, division, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date.
+
+The SingularValueDecomposition interface works in conjunction with the Matrix interface by translating a matrix into a suitable file format for a variety of svd implementations, the SingularValueDecomposition page has more details on this particular interface.
+
+The Document interface, and it's iterators and implemented classes provides a uniform method of interacting with corpora so that methods calling processDocument have a uniform means of iterating through many document files.  The provided Document related classes are:
+   * FileDocument, for single file with a isngle document
+   * StringDocument, for documents represented as a single string
+   * FileListDocumentIterator, for single file which is a list of other files, each containing documents
+   * OneLinePerDocumentIterator, for a single file which one document contained on a single line
+In addition to these, a WordIterator is provided, such that it will automagically tokenize a BufferedReader and provided an iterator for each word read.
+
+Lastly there are several data structures which can be useful in several instances.  Several Map interfaces are provided, such as Triemap, MultiMap, HashMultiMap and BoundedSortedMap.  In conjunction with the Map interfaces, some common key classes are provided, such as a Pair of two objects.
+
+Additional utilities, data structures, and interface implementations are likely to be added, or split off into a related package if they grow to be significant enough to warrant a branching.
