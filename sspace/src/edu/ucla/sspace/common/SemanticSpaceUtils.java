@@ -70,6 +70,41 @@ public class SemanticSpaceUtils {
     private SemanticSpaceUtils() { }
 
     /**
+     * Loads and returns the {@link SemanticSpace} stored at the file name in
+     * {@link SSpaceFormat#TEXT text} format.
+     *
+     * @param sspaceFileName the name of a file containing a {@link
+     *        SemanticSpace} that has been written to disk
+     */
+    public static SemanticSpace loadSemanticSpace(String sspaceFileName) {
+	return loadSemanticSpace(new File(sspaceFileName), SSpaceFormat.TEXT);
+    }
+
+    /**
+     * Loads and returns the {@link SemanticSpace} stored at the file in {@link
+     * SSpaceFormat#TEXT text} format.
+     *
+     * @param sspaceFile a file containing a {@link SemanticSpace} that has
+     *        been written to disk
+     */
+    public static SemanticSpace loadSemanticSpace(File sspaceFile) {
+	return loadSemanticSpace(sspaceFile, SSpaceFormat.TEXT);
+    }
+    
+    /**
+     * Loads and returns the {@link SemanticSpace} stored at the file in the
+     * specified format.
+     *
+     * @param sspaceFile a file containing a {@link SemanticSpace} that has
+     *        been written to disk
+     * @param format the format of the {@link SemanticSpace} in the file
+     */
+    public static SemanticSpace loadSemanticSpace(File sspaceFile, 
+						  SSpaceFormat format) {
+	return new FileBasedSemanticSpace(sspaceFile, format);
+    }
+
+    /**
      * Writes the data contained in the {@link SemanticSpace} to the file with
      * the provided name using the {@link SSpaceFormat#TEXT} format.  See <a
      * href="#format">here</a> for file format specifications.

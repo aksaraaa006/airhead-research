@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.BoundedSortedMap;
+import edu.ucla.sspace.common.FileBasedSemanticSpace;
 import edu.ucla.sspace.common.Pair;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.SemanticSpace;

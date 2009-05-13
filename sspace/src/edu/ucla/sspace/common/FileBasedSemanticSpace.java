@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.tools;
+package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.common.Matrices;
 import edu.ucla.sspace.common.Matrix;

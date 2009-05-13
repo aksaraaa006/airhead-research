@@ -23,7 +23,9 @@ package edu.ucla.sspace.evaluation;
 
 import java.lang.reflect.Method;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
@@ -31,15 +33,15 @@ import edu.ucla.sspace.common.Similarity.SimType;
 
 /**
  * A test-runner for evaluating the performance of a {@link SemanticSpace} on a
- * {@link WordChoiceEvaluation} test.
+ * {@link WordSimilarityEvaluation} test.
  */ 
-public class WordChoiceEvaluationRunner {
+public class WordSimilarityEvaluationRunner {
 
     /**
      *
      */
     public static Report evaluate(SemanticSpace sspace,
-				  WordChoiceEvaluation test,
+				  WordSimilarityEvaluation test,
 				  Similarity.SimType vectorComparisonType) {
 
 	return evaluate(sspace, test, 
@@ -50,60 +52,49 @@ public class WordChoiceEvaluationRunner {
      *
      */
     public static Report evaluate(SemanticSpace sspace,
-				  WordChoiceEvaluation test,
+				  WordSimilarityEvaluation test,
 				  Method vectorComparisonMethod) {
 
-	Collection<MultipleChoiceQuestion> questions = test.getQuestions();
-	int correct = 0;
+	Collection<WordSimilarity> wordPairs = test.getPairs();
 	int unanswerable = 0;
-	
-	question_loop:
-	for (MultipleChoiceQuestion question : questions) {
 
-	    // get the vector for the prompt
-	    double[] promptVector = sspace.getVectorFor(question.getPrompt());
-	    
-	    // check that the s-space had the prompt word
-	    if (promptVector == null) {
+	List<Double> humanJudgements = new ArrayList<Double>(wordPairs.size());
+	List<Double> sspaceJudgements = new ArrayList<Double>(wordPairs.size());
+	
+	double testRange = test.getMostSimilarValue() - 
+	    test.getLeastSimilarValue();
+	
+
+	question_loop:
+	for (WordSimilarity pair : wordPairs) {
+
+	    // get the vector for each word
+	    double[] firstVector = sspace.getVectorFor(pair.getFirstWord());
+	    double[] secondVector = sspace.getVectorFor(pair.getSecondWord());
+
+	    // check that the s-space had both words
+	    if (firstVector == null || secondVector == null) {
 		unanswerable++;
 		continue;
 	    }
 
-	    // find the options whose vector has the highest similarity (or
-	    // equivalent comparison measure) to the prompt word.  The running
-	    // assumption hear is that for the value returned by the comparison
-	    // method, a high value implies more similar vectors.
-	    int answerIndex = 0;
-	    double closestOption = Double.MIN_VALUE;
-	    int optionIndex = 0;
-	    for (String option : question.getOptions()) {
+	    // use the similarity result and scale it based on the original
+	    // answers
+	    double similarity = invoke(vectorComparisonMethod, 
+				       firstVector, secondVector);
+	    double scaled = (similarity * testRange) 
+		+ test.getLeastSimilarValue();
 
-		double[] optionVector = sspace.getVectorFor(option);
-
-		// check that the s-space had the option word
-		if (optionVector == null) {
-		    unanswerable++;
-		    continue question_loop;
-		}
-		
-		double similarity = invoke(vectorComparisonMethod, 
-					   promptVector, optionVector);
-
-		if (similarity > closestOption) {
-		    answerIndex = optionIndex;
-		    closestOption = similarity;
-		}
-
-		optionIndex++;
-	    }
-	    
-	    // see whether our guess matched with the correct index
-	    if (answerIndex == question.getCorrectAnswer()) {
-		correct++;
-	    }
+	    humanJudgements.add(pair.getSimilarity());
+	    sspaceJudgements.add(scaled);
 	}
 
-	return new SimpleReport(questions.size(), correct, unanswerable);
+	double[] humanArr = new double[humanJudgements.size()];
+	double[] sspaceArr = new double[humanJudgements.size()];
+
+	double correlation = Similarity.correlation(humanArr, sspaceArr);
+
+	return new SimpleReport(wordPairs.size(), correlation, unanswerable);
     }
 
     /**
@@ -123,24 +114,24 @@ public class WordChoiceEvaluationRunner {
 
     /**
      * A report of the performance of a {@link SemanticSpace} on a particular
-     * {@link MultipleChoiceEvaluation} test.
+     * {@link WordSimilarityEvaluation} test.
      */
     public interface Report {
 
 	/**
-	 * Returns the total number of questions on the test.
+	 * Returns the total number of word pairs.
 	 */
-	int numberOfQuestions();
+	int numberOfWordPairs();
 
 	/**
-	 * Returns the number of questions that were answered correctly.
+	 * Returns the correlation between the {@link SemanticSpace} similarity
+	 * judgements and the provided human similarity judgements.
 	 */
-	int correctAnswers();
+	double correlation();
 
 	/**
 	 * Returns the number of questions for which the {@link SemanticSpace}
-	 * could not give an answer due to missing word vectors in either the
-	 * prompt or the options.
+	 * could not give an answer due to missing word vectors.
 	 */
 	int unanswerableQuestions();
 
@@ -148,30 +139,31 @@ public class WordChoiceEvaluationRunner {
 
     private static class SimpleReport implements Report {
 	
-	private final int numQuestions;
+	private final int numWordPairs;
 
-	private final int correct;
+	private final double correlation;
 
 	private final int unanswerable;
 
-	public SimpleReport(int numQuestions, int correct, int unanswerable) {
-	    this.numQuestions = numQuestions;
-	    this.correct = correct;
+	public SimpleReport(int numWordPairs, double correlation, 
+			    int unanswerable) {
+	    this.numWordPairs = numWordPairs;
+	    this.correlation = correlation;
 	    this.unanswerable = unanswerable;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public int numberOfQuestions() {
-	    return numQuestions;
+	public int numberOfWordPairs() {
+	    return numWordPairs;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public int correctAnswers() {
-	    return correct;
+	public double correlation() {
+	    return correlation;
 	}
 
 	/**
@@ -182,12 +174,8 @@ public class WordChoiceEvaluationRunner {
 	}
 
 	public String toString() {
-	    return String.format("%.2f correct; %d/%d unanswered",
-				 ((unanswerable == numQuestions) 
-				  ? 0d
-				  : ((((double)correct) / 
-				      (numQuestions - unanswerable)) * 100)),
-				 unanswerable, numQuestions);
+	    return String.format("%.4f correlation; %d/%d unanswered",
+				 correlation, unanswerable, numWordPairs);
 	}
     }
 }
