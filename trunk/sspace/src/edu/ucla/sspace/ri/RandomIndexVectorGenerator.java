@@ -30,21 +30,22 @@ import java.util.Properties;
  *
  * <dl style="margin-left: 1em">
  *
- * <dt> <i>Property:</i> <code><b>{@value #WINDOW_SIZE_PROPERTY}
+ * <dt> <i>Property:</i> <code><b>{@value #VALUES_TO_SET_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@value #DEFAULT_WINDOW_SIZE}
+ *      <i>Default:</i> {@value #DEFAULT_INDEX_VECTOR_VALUES}
  *
- * <dd style="padding-top: .5em">This variable sets the number of words before
- *      and after that are counted as co-occurring.  With the default value,
- *      {@code 5} words are counted before and {@code 5} words are counter
- *      after.  This class always uses a symmetric window. <p>
+ * <dd style="padding-top: .5em">This variable sets the number of bits to set in
+ *      an index vector. <p>
  *
- * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
+ * <dt> <i>Property:</i> <code><b>{@value #INDEX_VECTOR_VARIANCE_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@value #DEFAULT_VECTOR_LENGTH}
+ *      <i>Default:</i> {@value #DEFAULT_INDEX_VECTOR_VARIANCE}
  *
- * <dd style="padding-top: .5em">This variable sets the number of dimensions to
- *      be used for the index and semantic vectors. <p>
+ * <dd style="padding-top: .5em">This variable sets the variance in the number
+ *      of bits to set in an index vector.  For example, having {@value
+ *      #VALUES_TO_SET_PROPERTY}{@code =4} and setting this property to {@code
+ *      2} would mean that {@code 4 &plusmn; 2} value would be randomly set in
+ *      each index vector. <p>
  *
  * </dl>
  *
