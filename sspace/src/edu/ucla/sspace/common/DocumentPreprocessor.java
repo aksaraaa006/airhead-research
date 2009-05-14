@@ -46,6 +46,14 @@ public class DocumentPreprocessor {
     private final Set<String> validWords;
 
     /**
+     * Constructs a {@code DocumentPreprocessor} with an empty word list 
+     */
+    public DocumentPreprocessor() throws IOException {
+      processedDocs = new HashSet<DocHash>();
+      validWords = new HashSet<String>();
+    }
+
+    /**
      * Constructs a {@code DocumentPreprocessor} where the provided file 
      * contains the list all valid words for the output documents.
      *
@@ -122,23 +130,31 @@ public class DocumentPreprocessor {
 	StringBuilder urlized = new StringBuilder(document.length());
 	while (st.hasMoreTokens()) {
 	    String tok = st.nextToken();
-        if (tok.endsWith("?"))
+        if (tok.endsWith("?")) {
           urlized.append(tok.substring(0, tok.length() - 1)).append(" ?");
-        else if (tok.endsWith(","))
+        } else if (tok.endsWith(",")) {
           urlized.append(tok.substring(0, tok.length() - 1)).append(" ,");
-        else if (tok.endsWith("."))
+        } else if (tok.endsWith(".")) {
           urlized.append(tok.substring(0, tok.length() - 1)).append(" .");
-        else if (tok.contains("@") &&
-		tok.contains(".")) {
-		// assume it's an email address
-		urlized.append("<URL>");
-	    }
-        else if (tok.startsWith("http") ||
-                 tok.startsWith("ftp")) {
+        } else if (tok.equals("&amp;")) {
+          urlized.append("&");
+        } else if (tok.equals("&lt;")) {
+          urlized.append("<");
+        } else if (tok.equals("&gt;")) {
+          urlized.append(">");
+        } else if (tok.equals("&quot;")) {
+          urlized.append("\"");
+        } else if (tok.equals("&#39;")) {
+          urlized.append("'");
+        } else if (tok.contains("@") &&
+		           tok.contains(".")) {
+          // assume it's an email address
           urlized.append("<URL>");
-        }
-	    else if (tok.matches("[0-9]+")) {
-		urlized.append("<NUM>");
+	    } else if (tok.startsWith("http") ||
+                  tok.startsWith("ftp")) {
+          urlized.append("<URL>");
+        } else if (tok.matches("[0-9]+")) {
+          urlized.append("<NUM>");
 	    }
 	    // basic emotions
 	    else if ((tok.length() == 2 || tok.length() == 3) &&
@@ -229,19 +245,21 @@ public class DocumentPreprocessor {
 	//         a large English word list. This has the effect of ﬁltering
 	//         out foreign text and articles that primarily contain computer
 	//         code.
-	int totalTokens = 0;
-	int actualWords = 0;
-	st = new StringTokenizer(document);
-	StringBuilder wordCounter = new StringBuilder(document.length());
-	while (st.hasMoreTokens()) {
-	    String tok = st.nextToken();
-	    totalTokens++;
-	    if (validWords.contains(tok))
-		actualWords++;
-	}
-	if (actualWords / (double)(totalTokens) < .8) {
-	    // discard the document
-	    //return "";
+    if (validWords.size() > 0) {
+      int totalTokens = 0;
+      int actualWords = 0;
+      st = new StringTokenizer(document);
+      StringBuilder wordCounter = new StringBuilder(document.length());
+      while (st.hasMoreTokens()) {
+          String tok = st.nextToken();
+          totalTokens++;
+          if (validWords.contains(tok))
+          actualWords++;
+      }
+      if (actualWords / (double)(totalTokens) < .8) {
+          // discard the document
+          return "";
+      }
 	}
 	
 	// Step 9: Discarding duplicate articles. This was done by computing a

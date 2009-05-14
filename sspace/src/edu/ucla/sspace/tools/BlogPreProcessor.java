@@ -1,77 +1,161 @@
+/*
+ * Copyright 2009 Keith Stevens 
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.DocumentPreprocessor;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.PrintWriter;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import org.xml.sax.SAXException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.LinkedList;
 
 import java.sql.Timestamp;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
+/**
+ * An informal tool class which extracts the date and content of cleaned xml
+ * files.  No xml parsing is done, instead the open and closed tags are searched
+ * for in the string, and everything in between is extracted and saved to a
+ * file.
+ */
 public class BlogPreProcessor {
+  private DocumentPreprocessor processor;
+  private PrintWriter pw;
+
+  private BlogPreProcessor(File wordFile, File outFile) {
+    try {
+      pw = new PrintWriter(outFile);
+      processor = new DocumentPreprocessor(wordFile);
+    } catch (FileNotFoundException fnee) {
+      fnee.printStackTrace();
+      System.exit(1); 
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      System.exit(1); 
+    }
+  }
+
+  /**
+   * Given a blog file, read through each line and extract the content and
+   * updated date, printing these as one line to the result file.
+   */
+  public void processFile(File blogFile) throws IOException {
+    BufferedReader br = new BufferedReader(new FileReader(blogFile));
+    String line = null;
+    String date = null;
+    String content = null;
+    boolean needMoreContent = false;
+    while ((line = br.readLine()) != null) {
+      if (line.contains("<content>")) {
+        // Extract the start of a content node.  If the previous content,
+        // updated pair was incomplete, i.e. updated had no value, this will
+        // overwrite the previous content value.
+        int startIndex = line.indexOf(">")+1;
+        int endIndex = line.lastIndexOf("<");
+        if (endIndex > startIndex)
+          content = line.substring(startIndex, endIndex);
+        else {
+          content = line.substring(startIndex);
+          needMoreContent = true;
+        }
+      } else if (needMoreContent) {
+        // The content node might span several lines, so consider all lines read
+        // until the next close bracket to be part of the current content.
+        int endIndex = line.lastIndexOf("<");
+        if (endIndex > 0) {
+          content += line.substring(0, endIndex);
+          needMoreContent = false;
+        } else
+          content += line;
+      } else if (line.contains("<updated>")) {
+        // The updated timestamp only spans one line.
+        int startIndex = line.indexOf(">")+1;
+        int endIndex = line.lastIndexOf("<");
+        date = line.substring(startIndex, endIndex);
+        if (date.equals(""))
+          date = null;
+      } else if (content != null && date != null) {
+        // Cleand and print out the content and date.
+        long dateTime = Timestamp.valueOf(date).getTime();
+        String cleanedContent = processor.process(content);
+        if (!cleanedContent.equals("")) {
+          synchronized (pw) {
+            pw.format("%d %s\n", dateTime, cleanedContent);
+          }
+        }
+        content = null;
+        needMoreContent = false;
+        date = null;
+      }
+    }
+  }
+
   public static ArgOptions setupOptions() {
     ArgOptions opts = new ArgOptions();
     opts.addOption('d', "blogdir", "location of directory containing only blog files", 
-                      true, "STRING", "Required");
+                   true, "STRING", "Required");
+    opts.addOption('w', "wordlist", "Word List for cleaning documents",
+                   true, "STRING", "Required");
     return opts;
   }
 
   public static void main(String[] args)
-      throws ParserConfigurationException, IOException {
+      throws IOException, InterruptedException  {
     ArgOptions options = setupOptions();
     options.parseOptions(args);
 
-    if (!options.hasOption("blogdir") || options.numPositionalArgs() != 1) {
+    if (!options.hasOption("blogdir") || 
+        !options.hasOption("wordlist") ||
+        options.numPositionalArgs() != 1) {
       System.out.println("usage: java BlogPreProcessor [options] <out_file> \n" +
                          options.prettyPrint());
       System.exit(1);
     }
-    PrintWriter pw = new PrintWriter(new File(options.getPositionalArg(0)));
-    DocumentPreprocessor processor = new DocumentPreprocessor(new String[0]);
-
-    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-    DocumentBuilder db = dbf.newDocumentBuilder();
-
+    File outFile = new File(options.getPositionalArg(0));
+    File wordFile = new File(options.getStringOption("wordlist"));
+    final BlogPreProcessor blogCleaner = new BlogPreProcessor(wordFile, outFile);
     File blogDir = new File(options.getStringOption("blogdir"));
-    for (String blogFileName : blogDir.list()) {
-      if (!blogFileName.endsWith(".xml"))
-        continue;
-      File blog = new File(blogDir, blogFileName);
-      Document doc;
+
+    int numThreads = Runtime.getRuntime().availableProcessors();
+    List<File> blogFiles = Arrays.asList(blogDir.listFiles());
+
+    final Iterator<File> fileIter = blogFiles.iterator();
+
+    // repeatedly try to process documents while some still
+    // remain
+    while (fileIter.hasNext()) {
       try {
-        doc = db.parse(blog);
-      } catch (SAXException saxe) {
-        continue;
-      }
-      NodeList entries = doc.getElementsByTagName("entry");
-      for (int i = 0; i < entries.getLength(); ++i) {
-        Element entry = (Element) entries.item(i);
-        Node contentNode = entry.getElementsByTagName("content").item(0);
-        Node dateNode = entry.getElementsByTagName("updated").item(0);
-        if (dateNode.getFirstChild() == null ||                                                                                                
-            contentNode.getFirstChild() == null)                                                                                               
-          continue;                                                                                                                            
-        String date = dateNode.getFirstChild().getNodeValue();                                                                                 
-        String content = contentNode.getFirstChild().getNodeValue();
-        long dateTime = Timestamp.valueOf(date).getTime();
-        String cleanedContent = processor.process(content);
-        if (!cleanedContent.equals(""))
-          pw.format("%d %s\n", dateTime, cleanedContent);
+        blogCleaner.processFile(fileIter.next());
+      } catch (IOException ioe) {
+        ioe.printStackTrace();
       }
     }
-    pw.close();
   }
 }
-
-

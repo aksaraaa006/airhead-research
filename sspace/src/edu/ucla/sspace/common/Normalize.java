@@ -61,7 +61,7 @@ public class Normalize {
     }
   }
 
-  public static void byCorrelation(Matrix m) {
+  public static void byCorrelation(Matrix m, boolean saveNegatives) {
     double totalSum = 0;
     double[] rowSums = new double[m.rows()];
     double[] colSums = new double[m.columns()];
@@ -77,7 +77,10 @@ public class Normalize {
         double newVal = (totalSum * m.get(i,j) - rowSums[i] * colSums[j]) /
                         Math.sqrt(rowSums[i] * (totalSum - rowSums[i]) *
                                   colSums[j] * (totalSum - colSums[j]));
-        m.set(i,j, newVal);
+        if (saveNegatives)
+          m.set(i,j, newVal);
+        else
+          m.set(i,j, newVal > 0 ? newVal : 0);
       }
     }
   }

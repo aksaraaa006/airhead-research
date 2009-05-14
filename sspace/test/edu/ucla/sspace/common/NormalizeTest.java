@@ -58,7 +58,7 @@ public class NormalizeTest {
                                { .085,-.050,-.002,-.021,-.037, .138,-.071,-.106, .085, .060,-.077,-.037,-.053},
                                {-.055,-.037, .088, .069,-.018,-.037,-.034, .111,-.017,-.037,-.037,-.018,-.026},
                                {-.079, .133, .031, .023,-.026,-.053, .072, .100,-.051,-.053,-.053,-.026,-.037}};
-    Normalize.byCorrelation(testIn);
+    Normalize.byCorrelation(testIn, true);
     for (int i = 0; i < 13; ++i) {
       for (int j = 0; j < 13; ++j) {
         assertEquals(0.0, testResults[i][j] - testIn.get(i, j), .001);

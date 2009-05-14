@@ -22,6 +22,7 @@
 package edu.ucla.sspace.coals;
 
 import edu.ucla.sspace.common.matrix.ArrayMatrix;
+import edu.ucla.sspace.common.matrix.SparseMatrix;
 import edu.ucla.sspace.common.WordIterator;
 
 import edu.ucla.sspace.common.Index;
@@ -84,6 +85,7 @@ public class Coals implements SemanticSpace {
     "edu.ucla.sspace.coals.Coals.dimension";
   public static final String COALS_SSPACE_NAME = 
     "coals-semantic-space";
+  private static final int MAX_SAVED_WORDS = 150000;
 
   /**
    * A temporary file containing temprorary word co-occurance counts from each
@@ -157,14 +159,17 @@ public class Coals implements SemanticSpace {
     Queue<String> prevWords = new ArrayDeque<String>();
     Queue<String> nextWords = new ArrayDeque<String>();
     WordIterator it = new WordIterator(document);
-    for (int i = 0; i < 4; ++i)
-      nextWords.offer(it.next().intern());
+    for (int i = 0; i < 4 && it.hasNext(); ++i)
+      nextWords.offer(it.next());
+
+    if (nextWords.size() < 4)
+      return;
 
     while (!nextWords.isEmpty()) {
       String focusWord = nextWords.remove();
 
       if (it.hasNext())
-        nextWords.offer(it.next().intern());
+        nextWords.offer(it.next());
       int updatedFreq = 1;
       if (wordFreq.containsKey(focusWord))
         updatedFreq += wordFreq.get(focusWord).intValue();
@@ -193,8 +198,8 @@ public class Coals implements SemanticSpace {
         rawOccuranceWriter.println(sb.toString());
       }
     }
-    for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
-      synchronized (entry.getKey()) {
+    synchronized (this) {
+      for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
         int newValue = entry.getValue().intValue();
         Integer v = totalWordFreq.get(entry.getKey());
         if (v != null)
@@ -218,7 +223,7 @@ public class Coals implements SemanticSpace {
     if (finalCorrelation == null)
       finalCorrelation = buildMatrix();
     int wordCount = finalCorrelation.rows();
-    Normalize.byCorrelation(finalCorrelation);
+    Normalize.byCorrelation(finalCorrelation, false);
     for (int i = 0; i < wordCount; ++i) {
       for (int j = 0; j < wordCount; ++j) {
         double newValue;
@@ -257,22 +262,8 @@ public class Coals implements SemanticSpace {
     ArrayList<Map.Entry<String, Integer>> wordCountList =
       new ArrayList<Map.Entry<String, Integer>>(totalWordFreq.entrySet());
     Collections.sort(wordCountList, new EntryComp());
-    /*
-    PriorityQueue<Map.Entry<String, Integer>> wordFreqFilter =
-      new PriorityQueue<Map.Entry<String, Integer>>(maxWords, new EntryComp());
-    wordFreqFilter.addAll(totalWordFreq.entrySet());
-
-    int wordCount = wordFreqFilter.size();
-    String[] keys = new String[wordCount];
-    for (int i = 0; i < wordCount && wordFreqFilter.size() > 0; ++i)
-      keys[i] = wordFreqFilter.poll().getKey();
-
-    Arrays.sort(keys);
-    */
-    for (int i = 0; i < wordCountList.size(); ++i) {
-      System.out.println(wordCountList.get(i).getKey() + ": " + i);
+    for (int i = 0; i < wordCountList.size(); ++i)
       wordToIndex.put(wordCountList.get(i).getKey(), i);
-    }
 
     totalWordFreq.clear();
     synchronized (rawOccuranceWriter) {
@@ -284,14 +275,14 @@ public class Coals implements SemanticSpace {
     try {
       BufferedReader br = new BufferedReader(new FileReader(rawOccurances));
       String line = null;
-      Matrix correl = new ArrayMatrix(wordCountList.size(), wordCount);
+      Matrix correl = new SparseMatrix(wordCountList.size(), wordCount);
       while ((line = br.readLine()) != null) {
         String[] splitLine = line.split("\\|");
         int r = wordToIndex.get(splitLine[0]).intValue();
         int c = wordToIndex.get(splitLine[1]).intValue();
-        if (c >= maxWords) 
-          continue;
         double value = Double.parseDouble(splitLine[2]);
+        if (r >= MAX_SAVED_WORDS || c >= maxWords || value == 0.0) 
+          continue;
         correl.set(r, c, value + correl.get(r, c));
       }
       return correl;
