@@ -73,7 +73,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <li> <u>Program Options</u>
  *
- *   <ul> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
+ *   <ul> 
+ *
+ *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
  *        output formatting to use when generating the semantic space ({@code
  *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
  *

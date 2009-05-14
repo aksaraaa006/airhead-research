@@ -51,6 +51,12 @@ public interface MultiMap<K,V> {
     public boolean containsValue(Object key);
 
     /**
+     * Returns a {@link Set} view of all the key-value mappings contained in
+     * this multi-map.
+     */
+    public Set<Map.Entry<K,V>> entrySet();
+
+    /**
      * Returns {@code true} if this multi-map maps one or more keys to the specified
      * value.
      */
@@ -79,6 +85,11 @@ public interface MultiMap<K,V> {
     public boolean put(K key, V value);
 
     /**
+     * Copies all of the mappings from the specified map to this mutli-map
+     */
+    public void putAll(Map<? extends K,? extends V> m);
+
+    /**
      * Adds all of the specified values to the set of values associated with the
      * specified key in this map.
      *
@@ -89,12 +100,7 @@ public interface MultiMap<K,V> {
      * @return {@code true} if at least one of the provided value was not
      *         already in the set of value mapped to the specified key
      */
-    public boolean put(K key, Collection<V> values);
-
-    /**
-     * Copies all of the mappings from the specified map to this mutli-map
-     */
-    public void putAll(Map<? extends K,? extends V> m);
+    public boolean putMulti(K key, Collection<V> values);
 
     /**
      * Removes the mapping for a key from this multi-map if it is present
