@@ -40,74 +40,132 @@ public class StringUtils {
      * A mapping from HTML codes for escaped special characters to their unicode
      * character equivalents.
      */
-    private static final Map<String,String> HTML_CODE_TO_STRING
+    private static final Map<String,String> HTML_CODES
 	= new HashMap<String,String>();
 
+    private static final Map<String,String> LATIN1_CODES
+	= new HashMap<String,String>();
+
+
     static {
-	HTML_CODE_TO_STRING.put("&nbsp;"," ");
-	HTML_CODE_TO_STRING.put("&Agrave;","À");
-	HTML_CODE_TO_STRING.put("&Aacute;","Á");
-	HTML_CODE_TO_STRING.put("&Acirc;","Â");
-	HTML_CODE_TO_STRING.put("&Atilde;","Ã");
-	HTML_CODE_TO_STRING.put("&Auml;","Ä");
-	HTML_CODE_TO_STRING.put("&Aring;","Å");
-	HTML_CODE_TO_STRING.put("&AElig;","Æ");
-	HTML_CODE_TO_STRING.put("&Ccedil;","Ç");
-	HTML_CODE_TO_STRING.put("&Egrave;","È");
-	HTML_CODE_TO_STRING.put("&Eacute;","É");
-	HTML_CODE_TO_STRING.put("&Ecirc;","Ê");
-	HTML_CODE_TO_STRING.put("&Euml;","Ë");
-	HTML_CODE_TO_STRING.put("&Igrave;","Ì");
-	HTML_CODE_TO_STRING.put("&Iacute;","Í");
-	HTML_CODE_TO_STRING.put("&Icirc;","Î");
-	HTML_CODE_TO_STRING.put("&Iuml;","Ï");
-	HTML_CODE_TO_STRING.put("&ETH;","Ð");
-	HTML_CODE_TO_STRING.put("&Ntilde;","Ñ");
-	HTML_CODE_TO_STRING.put("&Ograve;","Ò");
-	HTML_CODE_TO_STRING.put("&Oacute;","Ó");
-	HTML_CODE_TO_STRING.put("&Ocirc;","Ô");
-	HTML_CODE_TO_STRING.put("&Otilde;","Õ");
-	HTML_CODE_TO_STRING.put("&Ouml;","Ö");
-	HTML_CODE_TO_STRING.put("&Oslash;","Ø");
-	HTML_CODE_TO_STRING.put("&Ugrave;","Ù");
-	HTML_CODE_TO_STRING.put("&Uacute;","Ú");
-	HTML_CODE_TO_STRING.put("&Ucirc;","Û");
-	HTML_CODE_TO_STRING.put("&Uuml;","Ü");
-	HTML_CODE_TO_STRING.put("&Yacute;","Ý");
-	HTML_CODE_TO_STRING.put("&THORN;","Þ");
-	HTML_CODE_TO_STRING.put("&szlig;","ß");
-	HTML_CODE_TO_STRING.put("&agrave;","à");
-	HTML_CODE_TO_STRING.put("&aacute;","á");
-	HTML_CODE_TO_STRING.put("&acirc;","â");
-	HTML_CODE_TO_STRING.put("&atilde;","ã");
-	HTML_CODE_TO_STRING.put("&auml;","ä");
-	HTML_CODE_TO_STRING.put("&aring;","å");
-	HTML_CODE_TO_STRING.put("&aelig;","æ");
-	HTML_CODE_TO_STRING.put("&ccedil;","ç");
-	HTML_CODE_TO_STRING.put("&egrave;","è");
-	HTML_CODE_TO_STRING.put("&eacute;","é");
-	HTML_CODE_TO_STRING.put("&ecirc;","ê");
-	HTML_CODE_TO_STRING.put("&euml;","ë");
-	HTML_CODE_TO_STRING.put("&igrave;","ì");
-	HTML_CODE_TO_STRING.put("&iacute;","í");
-	HTML_CODE_TO_STRING.put("&icirc;","î");
-	HTML_CODE_TO_STRING.put("&iuml;","ï");
-	HTML_CODE_TO_STRING.put("&eth;","ð");
-	HTML_CODE_TO_STRING.put("&ntilde;","ñ");
-	HTML_CODE_TO_STRING.put("&ograve;","ò");
-	HTML_CODE_TO_STRING.put("&oacute;","ó");
-	HTML_CODE_TO_STRING.put("&ocirc;","ô");
-	HTML_CODE_TO_STRING.put("&otilde;","õ");
-	HTML_CODE_TO_STRING.put("&ouml;","ö");
-	HTML_CODE_TO_STRING.put("&oslash;","ø");
-	HTML_CODE_TO_STRING.put("&ugrave;","ù");
-	HTML_CODE_TO_STRING.put("&uacute;","ú");
-	HTML_CODE_TO_STRING.put("&ucirc;","û");
-	HTML_CODE_TO_STRING.put("&uuml;","ü");
-	HTML_CODE_TO_STRING.put("&yacute;","ý");
-	HTML_CODE_TO_STRING.put("&thorn;","þ");
-	HTML_CODE_TO_STRING.put("&yuml;","ÿ");    
+	HTML_CODES.put("&nbsp;"," ");
+	HTML_CODES.put("&Agrave;","À");
+	HTML_CODES.put("&Aacute;","Á");
+	HTML_CODES.put("&Acirc;","Â");
+	HTML_CODES.put("&Atilde;","Ã");
+	HTML_CODES.put("&Auml;","Ä");
+	HTML_CODES.put("&Aring;","Å");
+	HTML_CODES.put("&AElig;","Æ");
+	HTML_CODES.put("&Ccedil;","Ç");
+	HTML_CODES.put("&Egrave;","È");
+	HTML_CODES.put("&Eacute;","É");
+	HTML_CODES.put("&Ecirc;","Ê");
+	HTML_CODES.put("&Euml;","Ë");
+	HTML_CODES.put("&Igrave;","Ì");
+	HTML_CODES.put("&Iacute;","Í");
+	HTML_CODES.put("&Icirc;","Î");
+	HTML_CODES.put("&Iuml;","Ï");
+	HTML_CODES.put("&ETH;","Ð");
+	HTML_CODES.put("&Ntilde;","Ñ");
+	HTML_CODES.put("&Ograve;","Ò");
+	HTML_CODES.put("&Oacute;","Ó");
+	HTML_CODES.put("&Ocirc;","Ô");
+	HTML_CODES.put("&Otilde;","Õ");
+	HTML_CODES.put("&Ouml;","Ö");
+	HTML_CODES.put("&Oslash;","Ø");
+	HTML_CODES.put("&Ugrave;","Ù");
+	HTML_CODES.put("&Uacute;","Ú");
+	HTML_CODES.put("&Ucirc;","Û");
+	HTML_CODES.put("&Uuml;","Ü");
+	HTML_CODES.put("&Yacute;","Ý");
+	HTML_CODES.put("&THORN;","Þ");
+	HTML_CODES.put("&szlig;","ß");
+	HTML_CODES.put("&agrave;","à");
+	HTML_CODES.put("&aacute;","á");
+	HTML_CODES.put("&acirc;","â");
+	HTML_CODES.put("&atilde;","ã");
+	HTML_CODES.put("&auml;","ä");
+	HTML_CODES.put("&aring;","å");
+	HTML_CODES.put("&aelig;","æ");
+	HTML_CODES.put("&ccedil;","ç");
+	HTML_CODES.put("&egrave;","è");
+	HTML_CODES.put("&eacute;","é");
+	HTML_CODES.put("&ecirc;","ê");
+	HTML_CODES.put("&euml;","ë");
+	HTML_CODES.put("&igrave;","ì");
+	HTML_CODES.put("&iacute;","í");
+	HTML_CODES.put("&icirc;","î");
+	HTML_CODES.put("&iuml;","ï");
+	HTML_CODES.put("&eth;","ð");
+	HTML_CODES.put("&ntilde;","ñ");
+	HTML_CODES.put("&ograve;","ò");
+	HTML_CODES.put("&oacute;","ó");
+	HTML_CODES.put("&ocirc;","ô");
+	HTML_CODES.put("&otilde;","õ");
+	HTML_CODES.put("&ouml;","ö");
+	HTML_CODES.put("&oslash;","ø");
+	HTML_CODES.put("&ugrave;","ù");
+	HTML_CODES.put("&uacute;","ú");
+	HTML_CODES.put("&ucirc;","û");
+	HTML_CODES.put("&uuml;","ü");
+	HTML_CODES.put("&yacute;","ý");
+	HTML_CODES.put("&thorn;","þ");
+	HTML_CODES.put("&yuml;","ÿ");    
+
+	LATIN1_CODES.put("&#160;", " ");
+	LATIN1_CODES.put("&#162;", "¢");
+	LATIN1_CODES.put("&#164;", "¤");
+	LATIN1_CODES.put("&#166;", "¦");
+	LATIN1_CODES.put("&#168;", "¨");
+	LATIN1_CODES.put("&#170;", "ª");
+	LATIN1_CODES.put("&#172;", "¬");
+	LATIN1_CODES.put("&#174;", "®");
+	LATIN1_CODES.put("&#176;", "°");
+	LATIN1_CODES.put("&#178;", "²");
+	LATIN1_CODES.put("&#180;", "´");
+	LATIN1_CODES.put("&#182;", "¶");
+	LATIN1_CODES.put("&#184;", "¸");
+	LATIN1_CODES.put("&#186;", "º");
+	LATIN1_CODES.put("&#188;", "¼");
+	LATIN1_CODES.put("&#190;", "¾");
+	LATIN1_CODES.put("&#192;", "À");
+	LATIN1_CODES.put("&#194;", "Â");
+	LATIN1_CODES.put("&#196;", "Ä");
+	LATIN1_CODES.put("&#198;", "Æ");
+	LATIN1_CODES.put("&#200;", "È");
+	LATIN1_CODES.put("&#202;", "Ê");
+	LATIN1_CODES.put("&#204;", "Ì");
+	LATIN1_CODES.put("&#206;", "Î");
+	LATIN1_CODES.put("&#208;", "Ð");
+	LATIN1_CODES.put("&#210;", "Ò");
+	LATIN1_CODES.put("&#212;", "Ô");
+	LATIN1_CODES.put("&#214;", "Ö");
+	LATIN1_CODES.put("&#216;", "Ø");
+	LATIN1_CODES.put("&#218;", "Ú");
+	LATIN1_CODES.put("&#220;", "Ü");
+	LATIN1_CODES.put("&#222;", "Þ");
+	LATIN1_CODES.put("&#224;", "à");
+	LATIN1_CODES.put("&#226;", "â");
+	LATIN1_CODES.put("&#228;", "ä");
+	LATIN1_CODES.put("&#230;", "æ");
+	LATIN1_CODES.put("&#232;", "è");
+	LATIN1_CODES.put("&#234;", "ê");
+	LATIN1_CODES.put("&#236;", "ì");
+	LATIN1_CODES.put("&#238;", "î");
+	LATIN1_CODES.put("&#240;", "ð");
+	LATIN1_CODES.put("&#242;", "ò");
+	LATIN1_CODES.put("&#244;", "ô");
+	LATIN1_CODES.put("&#246;", "ö");
+	LATIN1_CODES.put("&#248;", "ø");
+	LATIN1_CODES.put("&#250;", "ú");
+	LATIN1_CODES.put("&#252;", "ü");
+	LATIN1_CODES.put("&#254;", "þ");
+	LATIN1_CODES.put("&#34;", "\"");
+	LATIN1_CODES.put("&#38;", "&");
     }
+
+
+
     
     
     /**
@@ -131,7 +189,14 @@ public class StringUtils {
 	
 	while (start > -1 && end > start) {
 	    String encoded = source.substring(start, end + 1);
-	    String decoded = HTML_CODE_TO_STRING.get(encoded);
+	    String decoded = HTML_CODES.get(encoded);
+
+	    // if encoded form wasn't in the HTML codes, try checking to see if
+	    // it was a Latin-1 code
+	    if (decoded == null) {
+		decoded = LATIN1_CODES.get(encoded);
+	    }
+
 	    if (decoded != null) {
 		// append the string containing all characters from the last escaped
 		// character to the current one
@@ -153,14 +218,14 @@ public class StringUtils {
 	return sb.toString();
     }
 
-  public static boolean isValid(String word) {
-    return true;
-  }
+    public static boolean isValid(String word) {
+	return true;
+    }
 
-  public static String cleanup(String word) {
-    // remove all non-letter characters
-    word = word.replaceAll("\\W", "");
-    // make the string lower case
-    return word.toLowerCase();
-  }
+    public static String cleanup(String word) {
+	// remove all non-letter characters
+	word = word.replaceAll("\\W", "");
+	// make the string lower case
+	return word.toLowerCase();
+    }
 }
