@@ -380,18 +380,18 @@ public class Hermit implements SemanticSpace {
           Cluster.kMeansCluster(termMeanings, k, indexVectorSize);
         oldPotential = potential;
         bestAssignments = assignments;
-        potential = Cluster.kMeansPotential(termMeanings, kClusters) / k;
+        potential = Cluster.kMeansPotential(termMeanings, kClusters);
         assignments = Cluster.kMeansClusterAssignments(termMeanings, kClusters);
         k++;
       } while (potential > oldPotential);
       if (k == 1)
         continue;
       for (int i = 0; i < termVectors.size(); ++i) {
-        if (assignments[i] == 0)
+        if (bestAssignments[i] == 0)
           continue;
         Index oldIndex =
           new Index(termToIndex.get(key), termVectors.get(i).docId);
-        String newTerm = key + "^" + assignments[i];
+        String newTerm = key + "^" + bestAssignments[i];
         Integer newTermIndex = termToIndex.get(newTerm);
         if (newTermIndex == null)
           newTermIndex = addTerm(newTerm);
