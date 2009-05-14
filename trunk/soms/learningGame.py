@@ -12,14 +12,15 @@ from learningAgent import learningAgent
 DEFAULT_VECTOR_SIZE = 60
 
 class LearningGame():
-  def __init__(self, object_file, phoneme_file, use_attention, use_context, out_dir):
+  def __init__(self, object_file, phoneme_file, use_attention,
+               use_context, use_phonemes, out_dir):
     self.map = []
     self.objects = []
     self.object_contexts = {}
     self.word_list = []
     self.buildWordList(phoneme_file)
     self.createObjects(object_file)
-    self.createLearners(2, use_attention, use_context)
+    self.createLearners(2, use_attention, use_context, use_phonemes)
     self.t = 0
     self.last_pick = 0
     self.time_axis = []
@@ -39,10 +40,10 @@ class LearningGame():
         phoneme_rep[i] = float(phoneme_values[i])
       self.word_list.append((word, phoneme_rep))
         
-  def createLearners(self, num_players, use_attention, use_context):
+  def createLearners(self, num_players, use_attention, use_context, use_phonemes):
     phoneme_size = len(self.word_list[0][1])
     self.learners = [learningAgent(self.vector_size, phoneme_size, self,
-                                   use_attention, use_context)
+                                   use_attention, use_context, use_phonemes)
                      for i in range(num_players)]
 
   def createObjects(self, object_filename):
@@ -122,8 +123,8 @@ class LearningGame():
     for (wrd, obj) in self.objects:
       meanings = set()
       for learner in self.learners:
-        m_data, word = learner.produceWord(obj, False)
-        if word: # and m_data[1] <= 1.5:
+        _, word, _ = learner.produceWord(obj, False)
+        if word:
           meanings.add(word[0])
           if word[0] in syn_dict:
             syn_dict[word[0]] += 1
@@ -182,13 +183,15 @@ def usage():
   print "  options:"
   print "   -c     : use context in learning games"
   print "   -a     : use attention when learning"
+  print "   -p     : use phonemes when learning"
   print "   -n NUM : set the number of games to play"
   print "   -o file : an object pickle, as a list of the form ((word, category),  numpy.array)"
 
 if __name__ == "__main__":
-  opts, args = getopt.getopt(sys.argv[1:], 'can:o:')
+  opts, args = getopt.getopt(sys.argv[1:], 'can:o:p')
   use_context = False
   use_attention = False
+  use_phonemes = False
   num_games = 1000
   object_file = None
   for option, value in opts:
@@ -196,6 +199,8 @@ if __name__ == "__main__":
       use_context = True
     if option == '-a':
       use_attention = True
+    if option == '-p':
+      use_phonemes = True
     if option == '-n':
       num_games = int(value)
     if option == '-o':
@@ -203,5 +208,6 @@ if __name__ == "__main__":
   if len(args) != 2:
     usage()
     sys.exit(1)
-  game = LearningGame(object_file, args[0], use_attention, use_context, args[1])
+  game = LearningGame(object_file, args[0], use_attention,
+                      use_context, use_phonemes, args[1])
   game.playGame(num_games)

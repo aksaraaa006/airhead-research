@@ -15,7 +15,8 @@ def distance(v1, v2):
   return numpy.sqrt(numpy.power(v1 - v2, 2).sum(axis=1))
 
 class learningAgent():
-  def __init__(self, vector_size, phoneme_size, game, use_attention, use_context):
+  def __init__(self, vector_size, phoneme_size, game,
+               use_attention, use_context, use_phonemes):
     # The nodes will each be an index in the following numpy arrays, holding the
     # location, the meaning vector and the learned words.
     num_nodes = 300
@@ -45,6 +46,7 @@ class learningAgent():
     self.use_attention = use_attention
     self.use_context = use_context
     self.game = game
+    self.use_phonemes = use_phonemes
 
   def generateUtterance(self):
     """Generate a context vector, which is the sum of some subject representation,
@@ -57,26 +59,37 @@ class learningAgent():
     object_frame = self.game.getContext(4)
     context = object_frame[0]
 
-    m_data, best_word = self.produceWord(context)
+    best_index, best_word, near = self.produceWord(context)
     if not best_word: # or m_data[1] > 1.5:
       best_word = self.game.pickNewWord()
-      self.learned_words[m_data[0]] = best_word
+      self.learned_words[best_index] = best_word
 
     self.learnPatterns(context, best_word[1])
     self.updateTimeValues()
     if self.use_context:
       for obj in object_frame[1:]:
         context += obj
-    self.updateAttention(context, m_data[3])
+    self.updateAttention(context, near)
     return context, best_word 
 
   def produceWord(self, object_rep, learning=True):
     m_data = self.getBestNode(self.meaning_vectors, self.attention_vectors, object_rep)
-    m_som_best, m_min_dist, m_max_dist, m_near, m_dists = m_data
+    best_index, min_dist, max_dist, near, dists = m_data
 
-    if self.learned_words[m_som_best] != None:
-      return m_data, self.learned_words[m_som_best]
-    return m_data, None
+    if self.use_phonemes:
+      result = 1 - (dists - min_dist) / (max_dist - min_dist)
+      self.activations[M_MAP] = (near * result.transpose()).transpose()
+      p_activations = numpy.dot(self.heb_weights.transpose(),
+                                 self.activations[M_MAP])
+      best_index = 0
+      best_value = p_activations[0]
+      for i, value in enumerate(p_activations):
+        if best_value < value:
+          best_value = value
+          best_index = i
+    if self.learned_words[best_index] != None:
+      return best_index, self.learned_words[best_index], near
+    return best_index, None, near
 
   def updateMap(self, meaning, feature_vectors, attentions, map_type, data=None):
     if data == None:
@@ -100,18 +113,16 @@ class learningAgent():
     the associative weights will be updated and normalized."""
     m_data = self.updateMap(object_rep, self.meaning_vectors,
                             self.attention_vectors, M_MAP, m_data)
-    return m_data, p_data
-    p_data = self.updateMap(phoneme_rep, self.phoneme_vectors,
-                            self.phoneme_attentions, P_MAP, p_data)
-    return m_data, p_data
-    self.heb_weights += self.learning_rate * numpy.outer(self.activations[M_MAP],
-                                                         self.activations[P_MAP])
-    # Now just normalize the weights.
-    denoms = numpy.sqrt(numpy.power(self.heb_weights, 2).sum(axis=1))
-    # Set zero row sums to be one to prevent divide by zero errors.
-    denoms[denoms==0.0] = 1
-    self.heb_weights = (self.heb_weights.transpose() / denoms).transpose()
-
+    if self.use_phonemes:
+      p_data = self.updateMap(phoneme_rep, self.phoneme_vectors,
+                              self.phoneme_attentions, P_MAP, p_data)
+      self.heb_weights += self.learning_rate * numpy.outer(self.activations[M_MAP],
+                                                           self.activations[P_MAP])
+      # Now just normalize the weights.
+      denoms = numpy.sqrt(numpy.power(self.heb_weights, 2).sum(axis=1))
+      # Set zero row sums to be one to prevent divide by zero errors.
+      denoms[denoms==0.0] = 1
+      self.heb_weights = (self.heb_weights.transpose() / denoms).transpose()
     return m_data, p_data
 
   def getBestNode(self, map, attentions, input_vector):
