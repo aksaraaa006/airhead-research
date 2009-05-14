@@ -160,6 +160,10 @@ public class HAL // implements SemanticSpace
 		    	prevWords.remove();
 		}		
 	}	
+
+    public String getSpaceName() {
+      return "hal-semantic-space";
+    }
 }
 
 

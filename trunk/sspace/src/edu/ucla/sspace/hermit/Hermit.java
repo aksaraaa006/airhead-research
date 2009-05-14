@@ -225,16 +225,16 @@ public class Hermit implements SemanticSpace {
       File writer = termFiles.get(key);
       if (writer != null)
         continue;
-      synchronized(key) {
+      synchronized(this) {
         writer = termFiles.get(key);
         if (writer == null) {
           System.out.println("making file for: " + key);
           try {
-          File keyFile = File.createTempFile("holograph-" + key, ".txt", tempDir);
-          keyFile.deleteOnExit();
-          termFiles.put(key, keyFile);
+            File keyFile = File.createTempFile("holograph-" + key, ".txt", tempDir);
+            keyFile.deleteOnExit();
+            termFiles.put(key, keyFile);
           } catch (IOException ioe) {
-            ioe.printStackTrace();
+            System.out.println("io error on: " + key + " with error : " + ioe.toString());
           }
         }
       }
