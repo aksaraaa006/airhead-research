@@ -8,6 +8,9 @@ import pylab
 NUM_ROWS = 50 
 NUM_COLS = 60 
 
+M_MAP = 0
+P_MAP = 1
+
 def distance(v1, v2):
   return numpy.sqrt(numpy.power(v1 - v2, 2).sum(axis=1))
 
@@ -15,13 +18,15 @@ class learningAgent():
   def __init__(self, vector_size, phoneme_size, game, use_attention, use_context):
     # The nodes will each be an index in the following numpy arrays, holding the
     # location, the meaning vector and the learned words.
-    num_nodes = 300 #NUM_ROWS*NUM_COLS
+    num_nodes = 300
     self.meaning_vectors = numpy.random.random((num_nodes, vector_size))
     self.phoneme_vectors = numpy.random.random((num_nodes, phoneme_size))
     self.phoneme_attentions = numpy.ones_like(self.phoneme_vectors)
     self.attention_vectors = numpy.ones_like(self.meaning_vectors)
     self.mean = numpy.zeros_like(self.meaning_vectors)
     self.average = numpy.zeros_like(self.meaning_vectors)
+    self.activations = numpy.zeros((2, num_nodes))
+    self.heb_weights = numpy.zeros((num_nodes, num_nodes))
     # Locations still need to be set correctly
     self.locations = numpy.zeros((num_nodes, 2))
     locs = [(i,j) for i in range(NUM_ROWS) for j in range(NUM_COLS)]
@@ -48,6 +53,7 @@ class learningAgent():
     this agent's personal knowledge."""
     # Select which object to talk about, and 3 other objects to be part of the
     # context, all at random.
+    print "generating utterance"
     object_frame = self.game.getContext(4)
     context = object_frame[0]
 
@@ -66,19 +72,21 @@ class learningAgent():
 
   def produceWord(self, object_rep, learning=True):
     m_data = self.getBestNode(self.meaning_vectors, self.attention_vectors, object_rep)
-    m_som_best, m_min_dist, m_max_dist, m_near = m_data
+    m_som_best, m_min_dist, m_max_dist, m_near, m_dists = m_data
 
     if self.learned_words[m_som_best] != None:
       return m_data, self.learned_words[m_som_best]
     return m_data, None
 
-  def updateMap(self, meaning, feature_vectors, attentions, data=None):
+  def updateMap(self, meaning, feature_vectors, attentions, map_type, data=None):
     if data == None:
       data = self.getBestNode(feature_vectors, attentions, meaning)
-    best, min_dist, max_dist, near = data
+    best, min_dist, max_dist, near, dists = data
 
     meaning_diff = (attentions * meaning - feature_vectors)
     feature_vectors += self.learning_rate * (near * meaning_diff.transpose()).transpose()
+    result = 1 - (dists - min_dist) / (max_dist - min_dist)
+    self.activations[map_type] = (near * result.transpose()).transpose()
     return data
 
   def learnPatterns(self, object_rep, phoneme_rep,
@@ -91,9 +99,19 @@ class learningAgent():
     activations will be updated, along with their meaning vectors.  After this,
     the associative weights will be updated and normalized."""
     m_data = self.updateMap(object_rep, self.meaning_vectors,
-                            self.attention_vectors, m_data)
+                            self.attention_vectors, M_MAP, m_data)
+    return m_data, p_data
     p_data = self.updateMap(phoneme_rep, self.phoneme_vectors,
-                            self.phoneme_attentions, p_data)
+                            self.phoneme_attentions, P_MAP, p_data)
+    return m_data, p_data
+    self.heb_weights += self.learning_rate * numpy.outer(self.activations[M_MAP],
+                                                         self.activations[P_MAP])
+    # Now just normalize the weights.
+    denoms = numpy.sqrt(numpy.power(self.heb_weights, 2).sum(axis=1))
+    # Set zero row sums to be one to prevent divide by zero errors.
+    denoms[denoms==0.0] = 1
+    self.heb_weights = (self.heb_weights.transpose() / denoms).transpose()
+
     return m_data, p_data
 
   def getBestNode(self, map, attentions, input_vector):
@@ -105,29 +123,31 @@ class learningAgent():
     meaning_distances = distance(map, attentions * input_vector)
     best_node = 0
     min_dist = meaning_distances[0]
+    max_dist = meaning_distances[0]
     for i, dist in enumerate(meaning_distances):
       if min_dist > dist:
         min_dist = dist
         best_node = i
+      if max_dist < dist:
+        max_dist = dist 
+    print "best node: %d, min_dist: %d, max_dist: %d" %(best_node, min_dist,
+        max_dist)
     
     loc_distances = distance(self.locations, self.locations[best_node])
-    max_dist = meaning_distances[0]
     neighborhood = numpy.zeros_like(meaning_distances)
     for i, dist in enumerate(loc_distances):
       if dist < self.n_range:
         neighborhood[i] = 1
-        if max_dist < meaning_distances[i]:
-          max_dist = meaning_distances[i]
-    return best_node, min_dist, max_dist, neighborhood
+    return best_node, min_dist, max_dist, neighborhood, meaning_distances
 
   def updateTimeValues(self):
     if self.learning_rate > .01:
       self.learning_rate = .9*(1-self.t/1000)
-    if self.n_range > 0:
-      self.n_range -= math.floor(self.t/100)
+    self.n_range = 50 * math.exp(-1 * self.t / 177)
     self.t += 1
 
   def receiveUtterance(self, word, context):
+    print "receiving utterance"
     if word not in self.word_list:
       self.word_list.append(word)
     m_data, p_data  = self.learnPatterns(context, word[1])
