@@ -39,7 +39,7 @@ public interface WordSimilarity {
     String getSecondWord();
     
     /**
-     * Returns the similarity judgement for the two words.
+     * Returns the human similarity judgement for the two words.
      */
     double getSimilarity();
 

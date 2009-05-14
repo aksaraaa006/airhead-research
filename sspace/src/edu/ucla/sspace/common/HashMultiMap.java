@@ -21,13 +21,18 @@
 
 package edu.ucla.sspace.common;
 
+import java.io.Serializable;
+
 import java.util.AbstractCollection;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -42,7 +47,9 @@ import java.util.Set;
  *
  * @see HashMap
  */
-public class HashMultiMap<K,V> implements MultiMap<K,V> {
+public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
+
+    private static final long serialVersionUID = 1;
 
     /**
      * The backing map instance
@@ -98,6 +105,13 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
     /**
      * {@inheritDoc}
      */
+    public Set<Map.Entry<K,V>> entrySet() {
+	return new EntryView();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<V> get(Object key) {
 	return map.get(key);
     }
@@ -135,7 +149,16 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
     /**
      * {@inheritDoc}
      */
-    public boolean put(K key, Collection<V> values) {
+    public void putAll(Map<? extends K,? extends V> m) {
+	for (Map.Entry<? extends K,? extends V> e : m.entrySet()) {
+	    put(e.getKey(), e.getValue());
+	}
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean putMulti(K key, Collection<V> values) {
 	Set<V> vals = map.get(key);
 	if (vals == null) {
 	    vals = new HashSet<V>();
@@ -145,15 +168,6 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
 	boolean added = vals.addAll(values);
 	range += (vals.size() - oldSize);
 	return added;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void putAll(Map<? extends K,? extends V> m) {
-	for (Map.Entry<? extends K,? extends V> e : m.entrySet()) {
-	    put(e.getKey(), e.getValue());
-	}
     }
 
     /**
@@ -196,6 +210,39 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
     }
 
     /**
+     * Returns the string form of this multi-map
+     */
+    public String toString() {
+	Iterator<Map.Entry<K,Set<V>>> it = map.entrySet().iterator();
+	if (!it.hasNext()) {
+	    return "{}";
+	}
+   
+	StringBuilder sb = new StringBuilder();
+	sb.append('{');
+	while (true) {
+	    Map.Entry<K,Set<V>> e = it.next();
+	    K key = e.getKey();
+	    Set<V> values = e.getValue();
+	    sb.append(key   == this ? "(this Map)" : key);
+	    sb.append("=[");
+	    Iterator<V> it2 = values.iterator();
+	    while (it2.hasNext()) {
+		V value = it2.next();
+		sb.append(value == this ? "(this Map)" : value);
+		if (it2.hasNext()) {
+		    sb.append(",");
+		}
+	    }
+	    sb.append("]");
+	    if (!it.hasNext())
+		return sb.append('}').toString();
+	    sb.append(", ");
+	}
+    }
+
+
+    /**
      * {@inheritDoc} The collection and its {@code Iterator} are backed by the
      * map, so changes to the map are reflected in the collection, and
      * vice-versa.
@@ -209,7 +256,9 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
      *
      * @see MultiMap#values()
      */
-    class ValuesView extends AbstractCollection<V> {
+    class ValuesView extends AbstractCollection<V> implements Serializable {
+
+	private static final long serialVersionUID = 1;
 	
 	public ValuesView() { }
 
@@ -251,4 +300,135 @@ public class HashMultiMap<K,V> implements MultiMap<K,V> {
 	    return range();
 	}
     }    
+
+    /**
+     * A {@link Collection} view of the values contained in a {@link MultiMap}.
+     *
+     * @see MultiMap#values()
+     */
+    class EntryView extends AbstractSet<Map.Entry<K,V>> 
+	    implements Serializable {
+
+	private static final long serialVersionUID = 1;
+	
+	public EntryView() { }
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public void clear() {
+	    map.clear();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public boolean contains(Object o) {
+	    if (o instanceof Map.Entry) {
+		Map.Entry<?,?> e = (Map.Entry<?,?>)o;
+		Set<V> vals = HashMultiMap.this.get(e.getKey());
+		return vals.contains(e.getValue());
+	    }
+	    return false;
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	public Iterator<Map.Entry<K,V>> iterator() {
+	    return new EntryIterator();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public int size() {
+	    return range();
+	}
+    }
+
+    /**
+     * An iterator of all the key-value mappings in the multi-map.
+     */
+    class EntryIterator implements Iterator<Map.Entry<K,V>> {
+	
+	K curKey;
+	Iterator<V> curValues;
+	Iterator<Map.Entry<K,Set<V>>> multiMapIterator;
+	
+	Map.Entry<K,V> next;
+	Map.Entry<K,V> previous;
+	
+	public EntryIterator() {
+	    multiMapIterator = map.entrySet().iterator();
+	    if (multiMapIterator.hasNext()) {
+		Map.Entry<K,Set<V>> e = multiMapIterator.next();
+		curKey =  e.getKey();
+		curValues = e.getValue().iterator();
+	    }
+
+	    advance();
+	}
+	       
+	private void advance() {
+	    // Check whether the current key has any additional mappings that
+	    // have not been returned
+	    if (curValues.hasNext()) {
+		next = new MultiMapEntry(curKey, curValues.next());
+		//System.out.println("next = " + next);
+	    }
+	    else if (multiMapIterator.hasNext()) {
+		Map.Entry<K,Set<V>> e = multiMapIterator.next();
+		curKey =  e.getKey();
+		curValues = e.getValue().iterator();
+		// Assume that the map correct manages the keys and values such
+		// that no key is ever mapped to an empty set
+		next = new MultiMapEntry(curKey, curValues.next());
+		//System.out.println("next = " + next);
+	    } else {
+		next = null;		
+	    }
+	}
+
+	public boolean hasNext() {
+	    return next != null;
+	}
+
+	public Map.Entry<K,V> next() {
+	    Map.Entry<K,V> e = next;
+	    previous = e;
+	    advance();
+	    return e;
+	}
+
+	public void remove() {
+	    if (previous == null) {
+
+	    }
+	    HashMultiMap.this.remove(previous.getKey(), previous.getValue());
+	    previous = null;
+	}
+
+	/**
+	 * A {@link Map.Entry} implementation that handles {@link MultiMap}
+	 * semantics for {@code setValue}.
+	 */
+	private class MultiMapEntry extends AbstractMap.SimpleEntry<K,V> 
+	        implements Serializable {
+	    
+	    private static final long serialVersionUID = 1;
+	    
+	    public MultiMapEntry(K key, V value) {
+		super(key, value);
+	    }
+
+	    public V setValue(V value) {
+		Set<V> values = HashMultiMap.this.get(getKey());
+		values.remove(getValue());
+		values.add(value);
+		return super.setValue(value);
+	    }
+	}
+    }
+
 }

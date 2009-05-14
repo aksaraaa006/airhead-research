@@ -54,6 +54,11 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
     private final Collection<WordSimilarity> pairs;
 
     /**
+     * The name of the data file for this test
+     */
+    private final String dataFileName;
+
+    /**
      * Constructs this word similarity evaluation test using the WS353 data file
      * refered to by the provided name.
      */
@@ -67,6 +72,7 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
      */
     public RubensteinGoodenoughWordSimilarityEvaluation(File rbSimFile) {
 	pairs = parse(rbSimFile);
+	dataFileName = rbSimFile.getName();
     }
 
     /**
@@ -124,6 +130,10 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
 	return 0d;
     }
 
+    public String toString() {
+	return "Rubenstein & Goodenough Word Similarity Test [" 
+	    + dataFileName + "]";
+    }
 }
 
 

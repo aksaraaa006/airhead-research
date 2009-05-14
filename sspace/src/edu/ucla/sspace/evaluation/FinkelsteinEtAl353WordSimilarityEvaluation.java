@@ -59,6 +59,11 @@ public class FinkelsteinEtAl353WordSimilarityEvaluation
     private final Collection<WordSimilarity> pairs;
 
     /**
+     * The name of the data file for this test
+     */
+    private final String dataFileName;
+
+    /**
      * Constructs this word similarity evaluation test using the WS353 data file
      * refered to by the provided name.
      */
@@ -72,6 +77,7 @@ public class FinkelsteinEtAl353WordSimilarityEvaluation
      */
     public FinkelsteinEtAl353WordSimilarityEvaluation(File word353file) {
 	pairs = parse(word353file);
+	dataFileName = word353file.getName();
     }
 
     /**
@@ -127,6 +133,10 @@ public class FinkelsteinEtAl353WordSimilarityEvaluation
      */
     public double  getLeastSimilarValue() {
 	return 0d;
+    }
+
+    public String toString() {
+	return "Finkelstein et al. Word Similarity Test [" + dataFileName + "]";
     }
 
 }
