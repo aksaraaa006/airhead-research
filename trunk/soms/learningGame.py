@@ -3,21 +3,22 @@
 import getopt
 import numpy
 import random
+import pickle
 import pylab
 import sys
 
 from learningAgent import learningAgent
 
-VECTOR_SIZE = 60
+DEFAULT_VECTOR_SIZE = 60
 
 class LearningGame():
-  def __init__(self, phoneme_file, use_attention, use_context, out_dir):
+  def __init__(self, object_file, phoneme_file, use_attention, use_context, out_dir):
     self.map = []
     self.objects = []
     self.object_contexts = {}
     self.word_list = []
     self.buildWordList(phoneme_file)
-    self.createObjects(60)
+    self.createObjects(object_file)
     self.createLearners(2, use_attention, use_context)
     self.t = 0
     self.last_pick = 0
@@ -40,18 +41,26 @@ class LearningGame():
         
   def createLearners(self, num_players, use_attention, use_context):
     phoneme_size = len(self.word_list[0][1])
-    self.learners = [learningAgent(VECTOR_SIZE, phoneme_size, self,
+    self.learners = [learningAgent(self.vector_size, phoneme_size, self,
                                    use_attention, use_context)
                      for i in range(num_players)]
 
-  def createObjects(self, num_objects):
-    for i in range(num_objects):
-      new_object = [0 for i in range(VECTOR_SIZE)]
-      new_object[0] = random.random()
-      new_object[1] = random.random()
-      new_object[2] = random.random()
-      random.shuffle(new_object)
-      self.objects.append(numpy.array(new_object))
+  def createObjects(self, object_filename):
+    if object_filename == None:
+      self.vector_size = DEFAULT_VECTOR_SIZE
+      for i in range(60):
+        new_object = [0 for i in range(DEFAULT_VECTOR_SIZE)]
+        new_object[0] = random.random()
+        new_object[1] = random.random()
+        new_object[2] = random.random()
+        random.shuffle(new_object)
+        self.objects.append((('', ''), numpy.array(new_object)))
+    else:
+      objects = pickle.load(open(object_filename))
+      self.vector_size = len(objects[0][1]) 
+      self.objects = [(wrd, feature / feature.sum()) 
+                      for (wrd, feature) in objects]
+
     object_indexes = [i for i in range(len(self.objects))]
     for obj_index in range(len(self.objects)):
       possible_contexts = []
@@ -68,8 +77,8 @@ class LearningGame():
       self.object_first_seen[obj_index] = self.t 
     possible_contexts = self.object_contexts[obj_index]
     context_index = random.randint(0, len(possible_contexts)-1)
-    context = [self.objects[i] for i in possible_contexts[context_index]]
-    object = self.objects[obj_index]
+    context = [self.objects[i][1] for i in possible_contexts[context_index]]
+    object = self.objects[obj_index][1]
     return [object] + context
 
   def addPickCount(self):
@@ -104,17 +113,17 @@ class LearningGame():
 
     count = 0
     for learner in self.learners:
-      learner.printMap(out_dir, count)
+      learner.printMap(self.out_dir, count)
       count += 1
 
     converge_count = 0
     syn_dict = {}
     object_mappings = []
-    for obj in self.objects:
+    for (wrd, obj) in self.objects:
       meanings = set()
       for learner in self.learners:
         m_data, word = learner.produceWord(obj, False)
-        if word and m_data[1] <= 1.5:
+        if word: # and m_data[1] <= 1.5:
           meanings.add(word[0])
           if word[0] in syn_dict:
             syn_dict[word[0]] += 1
@@ -174,13 +183,14 @@ def usage():
   print "   -c     : use context in learning games"
   print "   -a     : use attention when learning"
   print "   -n NUM : set the number of games to play"
+  print "   -o file : an object pickle, as a list of the form ((word, category),  numpy.array)"
 
 if __name__ == "__main__":
-  opts, args = getopt.getopt(sys.argv[1:], 'can:')
+  opts, args = getopt.getopt(sys.argv[1:], 'can:o:')
   use_context = False
   use_attention = False
   num_games = 1000
-  out_dir = "."
+  object_file = None
   for option, value in opts:
     if option == '-c':
       use_context = True
@@ -188,9 +198,10 @@ if __name__ == "__main__":
       use_attention = True
     if option == '-n':
       num_games = int(value)
+    if option == '-o':
+      object_file = value
   if len(args) != 2:
     usage()
     sys.exit(1)
-  out_dir = args[1]
-  game = LearningGame(args[0], use_attention, use_context, out_dir)
+  game = LearningGame(object_file, args[0], use_attention, use_context, args[1])
   game.playGame(num_games)
