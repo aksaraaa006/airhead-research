@@ -24,8 +24,12 @@ package edu.ucla.sspace.common;
 import java.lang.reflect.Method;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -222,8 +226,7 @@ public class Similarity {
     }
 
     public static double euclideanDistance(int[] a, int[] b) {
-	if (a == null || b == null || a.length != b.length)
-	    throw new IllegalArgumentException("a: " + a + "; b: " + b);
+	check(a, b);
 	
 	long sum = 0;
 	for (int i = 0; i < a.length; ++i) {
@@ -243,13 +246,66 @@ public class Similarity {
     }
 
     /**
+     * Computes the Jaccard index comparing the similarity both arrays when
+     * viewed as sets of samples.
+     */
+    public static double jaccardIndex(double[] a, double[] b) {
+	check(a, b);
+	
+	Set<Double> intersection = new HashSet<Double>();
+	Set<Double> union = new HashSet<Double>();
+	for (double d : a) {
+	    intersection.add(d);
+	    union.add(d);
+	}
+	Set<Double> tmp = new HashSet<Double>();
+	for (double d : a) {
+	    tmp.add(d);
+	    union.add(d);
+	}
+
+	intersection.retainAll(tmp);
+	return ((double)(intersection.size())) / union.size();
+    }
+
+    /**
+     * Computes the Jaccard index comparing the similarity both arrays when
+     * viewed as sets of samples.
+     */
+    public static double jaccardIndex(int[] a, int[] b) {
+	check(a, b);
+
+	// The BitSets should be faster than a HashMap since it's back by an
+	// array and operations are just logical bit operations and require no
+	// auto-boxing.  However, if a or b contains large values, then the cost
+	// of creating the necessary size for the BitSet may outweigh its
+	// performance.  At some point, it would be useful to profile the two
+	// methods and their associated worst cases. -jurgens
+	BitSet c = new BitSet();
+	BitSet d = new BitSet();
+	BitSet union = new BitSet();
+	for (int i : a) {
+	    c.set(i);
+	    union.set(i);
+	}
+	for (int i : b) {
+	    d.set(i);
+	    union.set(i);
+	}
+	
+	// get the intersection
+	c.and(d); 
+	return ((double)(c.cardinality())) / union.cardinality();
+    }
+
+    /**
      * Computes the Spearman rank correlation coefficient for the two arrays.
      * If there is a tie in the ranking of {@code a}, then Pearson's
      * product-moment coefficient is returned instead.
      */
     public static double spearmanRankCorrelationCoefficient(double[] a, 
 							    double[] b) {
-	check(a,b);
+	check(a, b);
 	SortedMap<Double,Double> ranking = new TreeMap<Double,Double>();
 	for (int i = 0; i < a.length; ++i) {
 	    ranking.put(a[i], b[i]);
