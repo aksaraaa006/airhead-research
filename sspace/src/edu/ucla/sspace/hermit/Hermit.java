@@ -228,7 +228,6 @@ public class Hermit implements SemanticSpace {
       synchronized(this) {
         writer = termFiles.get(key);
         if (writer == null) {
-          System.out.println("making file for: " + key);
           try {
             File keyFile = File.createTempFile("holograph-" + key, ".txt", tempDir);
             keyFile.deleteOnExit();
@@ -384,7 +383,7 @@ public class Hermit implements SemanticSpace {
         assignments = Cluster.kMeansClusterAssignments(termMeanings, kClusters);
         k++;
       } while (potential > oldPotential);
-      if (k == 1)
+      if (k == 2)
         continue;
       for (int i = 0; i < termVectors.size(); ++i) {
         if (bestAssignments[i] == 0)
