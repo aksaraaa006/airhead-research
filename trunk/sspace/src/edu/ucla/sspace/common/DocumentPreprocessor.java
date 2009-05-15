@@ -155,7 +155,9 @@ public class DocumentPreprocessor {
           urlized.append("<URL>");
         } else if (tok.matches("[0-9]+")) {
           urlized.append("<NUM>");
-	    }
+        } else if (tok.equals("/")) {
+          urlized.append("<slash>");
+        }
 	    // basic emotions
 	    else if ((tok.length() == 2 || tok.length() == 3) &&
 		     (tok.equals(":)") ||
