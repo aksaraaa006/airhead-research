@@ -1,6 +1,8 @@
 #summary Introduction to the code base, the basic functionality, and how it is packaged
 #labels Featured
 
+<wiki:toc max_depth="1" />
+
 = Introduction =
 
 The S-Space package attempts to provide a clean and reusable interface for using and building various semantic memory models.  To facilitate this, we have developed a number of useful interfaces and classes which do the most common work for you.  This document will outline which interfaces and classes are already provided and some guidance as to how to use them, along with the overall structure of the package.
