@@ -143,7 +143,7 @@ In general, many semantic spaces require significant time or space resources.  U
 
 One of the most important aspects of generating a semantic space (besides the algorithm) is the corpus itself.  In general, the more words you can provide, the more contexts you will have for each word.  The additional context create a more representative picture of what words commonly co-occur.  Formally speak, the additional data better approximates the contextual distribution of a word.
 
-Many algorithms have certain constraints on how they process a corpus.  For example, [LatentSemanticAnalysis LSA] requires that the corpus be segmented into documents.  On the other hand, [RandomIndxing Random Indexing] and [Coals COALS] have no such restricting and could process the entire corpus at once as a giant stream of words.
+Many algorithms have certain constraints on how they process a corpus.  For example, [LatentSemanticAnalysis LSA] requires that the corpus be segmented into documents.  On the other hand, [RandomIndexing Random Indexing] and [Coals COALS] have no such restricting and could process the entire corpus at once as a giant stream of words.
 
 === Obtaining ===
 
