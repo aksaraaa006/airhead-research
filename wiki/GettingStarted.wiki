@@ -1,0 +1,203 @@
+#summary How to get started using and programming with the S-Space package
+#labels Featured
+
+<wiki:toc max_depth="2" />
+
+= Introduction =
+
+The S-Space package is a software library and suite of tools for building semantic spaces.  Semantics space algorithms capture the statistical regularities of words in a text corpora and map each word to a high-dimensional vector that represents the semantics.  For example, if we observe the sentences:
+  * He drank the foobar at the game.
+  * Foobar is the number three beverage.
+  * A case of foobar is cheap compared to other sodas.
+  * Foobar tastes better when cold.
+We notice that foobar occurs with words that give strong indications of what the word means, e.g. "drink," "beverage" or "sodas."  The surrounding words form a _context_ that a semantic space algorithm can use to determine the semantics.  As we see more contexts for "foobar," certain regularities will show up in the surrounding words.  The simplest algorithms simply build a matrix (often referred to as a co-occurrence matrix) that keeps track of what words show up in another word's context.  
+
+There are many types of semantic space algorithms that move beyond the simple co-occurrence model described above.  Popular variations include:
+  * limiting the context to a fixed-size window around a word
+  * syntactic relationships, e.g. adjective-noun, as co-occurence
+  * semantic relationships, e.g. subject-verb, as co-occurrence 
+  * performing dimensionality reduction on the co-occurrence matrix, e.g. [SingularValueDecomposition SVD]
+  * identifying patterns between _pairs_ of words
+
+The S-Space package provides a uniform framework in which to implement _all_ of these algorithms and their specific parameters, easily and correctly.  Furthermore, the package also provides facilities for evaluating a semantic space against commonly used benchmarks such as the [http://www.aclweb.org/aclwiki/index.php?title=ESL_Synonym_Questions_(State_of_the_art) ESL synonym questions] or comparing similarity with the human [http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/ word similarity] judgments gathered by Finkelstein et al. (2002).
+
+= Getting and Building the Code =
+
+The first step is downloading the code.  The preferred method at this time of this writing is to get the latest build from the [http://code.google.com/p/airhead-research/source/checkout SVN repository].
+{{{
+svn checkout http://airhead-research.googlecode.com/svn/trunk/sspace sspace-read-only  
+}}}
+If successfully checked out, you should see a directory layout as follows:
+{{{
+user@machine$ ls
+bin  build.xml	classes  data  javadoc	lib  reports  src  test
+}}}
+The directories contain the following information:
+  * `bin` - any stand-alone executables
+  * `classes` - the compiled `.class` files
+  * `data` - an empty directory for storing data
+  * `javadoc` - any locally built Javadoc pages
+  * `lib` - libraries and dependencies
+  * `reports` - the jUnit reports for any processed unit tests
+  * `src` - all of the source code for the S-Space package
+  * `test` - all of the unit-test code
+
+The S-Space package uses [http://ant.apache.org/ Apache Ant] to build the project.  All of the classes can be compiled with:
+{{{
+user@machine$ pwd
+/pathto/airhead-research/sspace/
+user@machine$ ant 
+Buildfile: build.xml
+
+compile:
+    [javac] Compiling 98 source files to /pathto/sspace/classes
+
+BUILD SUCCESSFUL
+Total time: 3 seconds
+}}}
+We also officially support the following targets:
+  * `ant clean` - removes all built code and libraries
+  * `ant dist` - builds any stand-alone command-line executable `.jar` files and places them in `bin`.
+  * `ant javadoc` - builds the complete set of [http://java.sun.com/j2se/javadoc/ Javadoc] for the source and places the root `index.html` in the `javadoc` directory.
+  * `ant test` - runs any unit tests available.
+
+
+= Building Your Own Semantic Space Algorithm =
+
+Each algorithm in the S-Space package implements the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/SemanticSpace.java  SemanticSpace] interface.   This allows a common API for interacting with the algorithm.  The interface defines 5 methods:
+
+  * `getSpaceName()` - Returns a unique string describing the name and configuration of this algorithm.  Any configurable parameters that would affect the resulting semantic space should be expressed as a part of this name.
+
+  * `getVectorFor(String word)` - Returns the semantic vector for the provided word.
+
+  * `getWords()` - Returns the set of words that are represented in this semantic space.
+
+  * `processDocument(BufferedReader document)` - Processes the contents of the provided file as a document.  The algorithm is free to interpret the contents of the reader as it sees fit.  For example, if the algorithm is specifically designed for [http://en.wikipedia.org/ Wikipedia], then it should be assumed that the reader will contain the expected Wikipedia contents.
+
+  * `processSpace(Properties properties)` - Once all the documents have been processed, performs any post-processing steps on the data.  For example, in [LatentSemanticAnalysis LSA], after all of the documents have been processed, this method is called to perform the matrix normalization and [SingularValueDecomposition SVD].
+
+The `getWords()` and `getVectorFor()` methods are designed with the intent that an algorithm can generate vectors for words on the fly.  Instead of keeping all of the vectors in memory at once (or on disk), the algorithm may instead generate a full vector from an internal possibly compressed or sparse representation.
+
+We follow the convention that an algorithm should be designed as a library, rather than as an executable.  For example, we would expect that any algorithm could be used as follows:
+{{{
+pubic void myFunction(Collection<BufferedReader> documents) {
+
+    // create the Algorithm, which should initialize any of its
+    // required resources
+    MySSpaceAlgorithm algo = new MySSpaceAlgorithm();
+
+    // Process each of the documents in the corpus.  The algorithm
+    // should incrementally build its semantic space
+    for (BufferedReader document : documents) {
+        algo.processDocument(document);
+    }
+
+    // The algorithm needs to do any post-processing once the
+    // entire corpus has been seen.  The Properties argument
+    // allows us to specify any optional configuration/processing
+    // parameters that the algorithm defines.
+    algo.processSpace(System.getProperties());
+
+    // This loop simply prints out the vectors, which isn't that
+    // informative, but still shows how the vectors are used.  A 
+    // better use of the algorithm would be call SemanticSpaceUtils
+    // and write the semantic space to disk.  Alternately, we could 
+    // use Similarity.java or a class from the evaluation package 
+    // to compare vectors at this point.
+    for (String word : algo.getWords()) {
+        System.out.printf("%s maps to %s%n", word, 
+             java.util.Arrays.toString(algo.getVectorFor(word)));
+    }
+}}}
+For this reason, we have two files for each algorithm: one that contains all of the algorithm's code for creating the semantic space, and a second file that contains code for running that algorithm as a stand-alone program.  For example, see [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/lsa/LatentSemanticAnalysis.java LatentSemanticAnalysis.java] and [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/mains/LSAMain.java LSAMain.java].
+
+For an introduction to the various libraries the S-Space package offers, see the [PackageStructure code overview] page.
+
+= Running an Algorithm = 
+
+== Selecting the Algorithm == 
+
+Several of the existing algorithms have stand alone executable programs in the `edu.ucla.sspace.mains` package.  Running the `ant dist` target will generate `.jar` executable files for these.  For example:
+{{{
+user@machine$ java -jar bin/lsa.jar 
+usage: java LSAMain [options] <output-dir>
+Options:
+  -n, --dimensions=INT                the number of dimensions in the semantic space
+  -p, --preprocess=CLASSNAME          a MatrixTransform class to use for preprocessing
+Required (at least one of):
+  -d, --docFile=FILE[,FILE...]        a file where each line is a document
+  -f, --fileList=FILE[,FILE...]       a list of document files
+Program Options:
+  -o, --outputFormat={text|binary}    the .sspace format to use
+  -t, --threads=INT                   the number of threads to use
+  -v, --verbose                       prints verbose output
+  -w, --overwrite=BOOL                specifies whether to overwrite the existing output
+}}}
+will execute the command-line version of LSA.
+
+The algorithm you use should be based on the semantics you are trying to capture.  For example, LSA is well-established at capturing synonymous relationships between words; in the LSA space, words with similar meanings have similar vectoral representations.
+
+In general, many semantic spaces require significant time or space resources.  Users should be aware of these when running with the Java virtual machine.  We recommend running with the `-server` option to use the [http://java.sun.com/products/hotspot/whitepaper.html Server JVM].  In addition, if you have the memory, we recommend running with the maximum available memory on the system.  For example, if you have 8 gigabytes, you would add `-Xmx8g` to the `java` command.  See your system's `java` documentation for more information on manually setting the heap size.
+
+== Working with the Corpus ==
+
+One of the most important aspects of generating a semantic space (besides the algorithm) is the corpus itself.  In general, the more words you can provide, the more contexts you will have for each word.  The additional context create a more representative picture of what words commonly co-occur.  Formally speak, the additional data better approximates the contextual distribution of a word.
+
+Many algorithms have certain constraints on how they process a corpus.  For example, [LatentSemanticAnalysis LSA] requires that the corpus be segmented into documents.  On the other hand, [RandomIndxing Random Indexing] and [Coals COALS] have no such restricting and could process the entire corpus at once as a giant stream of words.
+
+=== Obtaining ===
+
+There are many commonly used corpora, some free and other commercial.  If you don't have access to a corpus, we recommend the following for immediately getting started.
+
+*Free*
+  * [http://americannationalcorpus.org/ American National Corpus] - 15 million words of American English with part of speech tags
+  * [http://www.psych.ualberta.ca/~westburylab/downloads/usenetcorpus.download.html a USENET Corpus] - a corpus of 20 billion mostly English words from USENET posts, provided by Westbury Lab.  (22 gigabytes, compressed)
+  * [http://www.gutenberg.org/ Project Gutenberg] - A collection of public domain books and other written works.  (Note that you will have to compile the corpus yourself by downloading the books.)
+  * [http://en.wikipedia.org/wiki/Wikipedia_database Wikipedia snapshots] - text and Wiki markup for all Wikipedia pages.
+
+*Non-Free*
+  * [http://www.natcorp.ox.ac.uk/ British National Corpus] - This is an excellent quality corpus and has accompanying [http://en.wikipedia.org/wiki/Word_sense_disambiguation word-sense disambiguation] information.
+  * [http://ir.dcs.gla.ac.uk/test_collections/access_to_data.html GOV2] - One of the largest corpora (426 gigabytes)
+
+This list is in no way comprehensive, and is just meant as a starting point for your search.  We recommend searching for other corpora.  Many other topical corpora exist (e.g. medical abstracts, technical reports), which may be more suited to certain semantic space algorithms.  You can also build your own corpus by crawling the web (tools exist to do this for you as well.)  If you have other corpora you think we should include in this list, feel free to 
+[mailto:s-space-research-dev@googlegroups.com let us know]
+
+=== Preprocessing ===
+
+Many corpora will need some form of preprocessing before the text data is fit to be used with a semantic space.  Commonly used steps are:
+
+  * Removing punctuation
+  * Separating punctuation from words `Oh, I'm hungry.` becomes `Oh , I ' m hungry .`
+  * Removing HTML, email address, non-word text
+  * Converting all words to lower (or upper) case
+  * [http://en.wikipedia.org/wiki/Stemming Stemming] all words
+  * Breaking a corpus up into documents
+  * Removing misspelled words
+  * Removing words not in the target language (e.g. all non-English words)
+  * Spelling correction
+
+Not all of these steps will be used at once.  We encourage users to look at their corpus and see what processing will be necessary.  For example, it is a good idea to remove all of the Wiki markup in the Wikipedia snapshots.
+
+=== Inputting the Corpus ===
+
+Last, the corpus needs to be converted into a format that the S-Space package can read in.  We currently recommend one of two formats: 
+  * a single corpus file - the entire corpus is contained in a single file with one document per line
+  * one file per document - a list is then generated for each file (document) in the corpus
+See the [FileFormat file formats] wiki page for full details.  Briefly, the first option is preferred for improved I/O efficiency.  However, if your corpus is already in document format, the second input format is easy to generate, but may have worse performance for large corpora.
+
+== Creating a Reusable Semantic Space == 
+
+Once a algorithm has processed all of the documents, the semantic space can be serialized to a file using `SemanticSpaceUtils.printSemanticSpace()`.  This creates an `.sspace` file containing all the words and their associated vectors.   Creating a serialized form of the semantic space has several advantages:
+  * the semantic space only needs to be generated once
+  * different vector comparison methods (e.g. cosine similarity, correlation) can be tested on the vectors
+  * the serialized form can be used in evaluation benchmarks
+  * the same algorithm can be used to generate multiple serialized semantic spaces by adjusting the available parameters, or using different corpora.
+The last advantage is most notable, as it lets the user compare how the semantics change for a single algorithm as other factors are varied.
+
+Serialized semantic spaces can be read back in as `SemanticSpace` objects using the `FileBasedSemanticSpace` class or `SemanticSpaceUtils.loadSemanticSpace()` method.  The resulting spaces are _read-only_, and are intended only for testing purposes.
+
+The S-Space package supports both human readable and binary `.sspace` formats.  See the [FileFormats file formats] wiki page for full details.
+
+= Evaluating a Semantic Space =
+
+_to do_.
