@@ -24,6 +24,7 @@ package edu.ucla.sspace.common;
 import edu.ucla.sspace.common.Matrix.Type;
 
 import edu.ucla.sspace.common.matrix.ArrayMatrix;
+import edu.ucla.sspace.common.matrix.DiagonalMatrix;
 import edu.ucla.sspace.common.matrix.OnDiskMatrix;
 import edu.ucla.sspace.common.matrix.SynchronizedMatrix;
 import edu.ucla.sspace.common.matrix.SparseMatrix;
@@ -98,6 +99,8 @@ public class Matrices {
 	    return new SparseMatrix(rows, cols);
 	case DENSE_IN_MEMORY:
 	    return new ArrayMatrix(rows, cols);
+    case DIAGONAL_IN_MEMORY:
+        return new DiagonalMatrix(rows);
 	case SPARSE_ON_DISK:
 	    //return new SparseOnDiskMatrix(rows, cols);
 	    // REMDINER: implement me
@@ -122,11 +125,24 @@ public class Matrices {
 	return new SynchronizedMatrix(m);
     }
 
-    public static Matrix multiple(Matrix m1, Matrix m2) {
+    public static Matrix multiply(Matrix m1, Matrix m2) {
       if (m1.columns() != m2.rows()) 
         return null;
       int size = m1.columns();
       Matrix resultMatrix = create(m1.rows(), m2.columns(), true);
+      if (m2 instanceof DiagonalMatrix) {
+        for (int r = 0; r < m1.rows(); ++r) {
+          double[] row = m1.getRow(r);
+          for (int c = 0; c < m2.columns(); ++c) {
+            double value = m2.get(c, c);
+            double sum = 0;
+            for (int i = 0; i < row.length; ++i)
+              sum += value * row[i];
+            resultMatrix.set(r, c, sum);
+          }
+        }
+        return resultMatrix;
+      }
       for (int r = 0; r < m1.rows(); ++r) {
         double[] row = m1.getRow(r);
         for (int c = 0; c < m2.columns(); ++c) {

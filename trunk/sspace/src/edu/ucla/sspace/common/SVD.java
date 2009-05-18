@@ -311,9 +311,9 @@ public class SVD {
 		// using (i.e. it is the word space)
 		MatrixIO.readMatrix(usv[0], Format.DENSE_TEXT, 
 				    Type.DENSE_IN_MEMORY),
-		// Sigma only has n values for an n^2 matrix, so make it sparse
+		// Sigma is diagonal, so save some memory. 
 		MatrixIO.readMatrix(usv[1], Format.DENSE_TEXT, 
-				    Type.SPARSE_ON_DISK),
+				    Type.DIAGONAL_IN_MEMORY),
 		// V could be large, so just keep it on disk.  Furthermore, JAMA
 		// does not transpose V, so transpose it
 		Matrices.transpose(MatrixIO.readMatrix(usv[2],

@@ -23,6 +23,7 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.matrix.ArrayMatrix;
+import edu.ucla.sspace.common.matrix.DiagonalMatrix;
 
 import org.junit.*;
 
@@ -35,7 +36,7 @@ public class MatricesTest {
     double[] data2 = {1, 2, 1, 2, 1, 2, 1, 2};
     Matrix rightMatrix = new ArrayMatrix(4, 2, data2);
 
-    Matrix result = Matrices.multiple(leftMatrix, rightMatrix);
+    Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
     double[][] expectations = {{10, 20},
                                {4, 8},
                                {14, 28}};
@@ -43,7 +44,25 @@ public class MatricesTest {
     assertEquals(2, result.columns());
     for (int r = 0; r < 3; ++r) {
       for (int c = 0; c < 2; ++c) {
-        assertEquals(result.get(r,c), expectations[r][c], .00001);
+        assertEquals(expectations[r][c], result.get(r, c), .00001);
+      }
+    }
+  }
+
+  @Test public void multiplyDiagonalTest() {
+    double[] data1 = {1, 2, 3, 4, 1, 1, 1, 1, 5, 4, 3, 2};
+    Matrix leftMatrix = new ArrayMatrix(3, 4, data1);
+    double[] data2 = {1, 2, 3, 0};
+    Matrix rightMatrix = new DiagonalMatrix(4, data2);
+    Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
+    double[][] expectations = {{10, 20, 30, 0},
+                               {4, 8, 12, 0},
+                               {14, 28, 42, 0}};
+    assertEquals(3, result.rows());
+    assertEquals(4, result.columns());
+    for (int r = 0; r < 3; ++r) {
+      for (int c = 0; c < 4; ++c) {
+        assertEquals(expectations[r][c], result.get(r, c), .00001);
       }
     }
   }
