@@ -57,7 +57,12 @@ public interface Matrix {
 	 * A matrix with very few zero values and is sufficiently large enough
 	 * that it would not fit in memory.
 	 */
-	DENSE_ON_DISK	    
+	DENSE_ON_DISK,
+
+    /**
+     * A diagonal matrix, saving a little more meory than a sparse matrix.
+     */
+    DIAGONAL_IN_MEMORY,
     }
 
     /**
