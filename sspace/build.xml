@@ -152,6 +152,7 @@
       <test name="edu.ucla.sspace.common.DocumentPreprocessorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.FileBasedSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.HashMultiMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.MatricesTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.MatrixIOtests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
@@ -160,6 +161,7 @@
       <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.SparseMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>

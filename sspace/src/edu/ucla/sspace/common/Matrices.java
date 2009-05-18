@@ -122,6 +122,23 @@ public class Matrices {
 	return new SynchronizedMatrix(m);
     }
 
+    public static Matrix multiple(Matrix m1, Matrix m2) {
+      if (m1.columns() != m2.rows()) 
+        return null;
+      int size = m1.columns();
+      Matrix resultMatrix = create(m1.rows(), m2.columns(), true);
+      for (int r = 0; r < m1.rows(); ++r) {
+        double[] row = m1.getRow(r);
+        for (int c = 0; c < m2.columns(); ++c) {
+          double resultValue = 0;
+          for (int i = 0; i < row.length; ++i) {
+            resultValue += row[i] * m2.get(i, c);
+          }
+          resultMatrix.set(r, c, resultValue);
+        }
+      }
+      return resultMatrix;
+    }
     /**
      *
      */
