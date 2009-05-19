@@ -55,9 +55,9 @@ public class MatricesTest {
     double[] data2 = {1, 2, 3, 0};
     Matrix rightMatrix = new DiagonalMatrix(4, data2);
     Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
-    double[][] expectations = {{10, 20, 30, 0},
-                               {4, 8, 12, 0},
-                               {14, 28, 42, 0}};
+    double[][] expectations = {{1, 4, 9, 0},
+                               {1, 2, 3, 0},
+                               {5, 8, 9, 0}};
     assertEquals(3, result.rows());
     assertEquals(4, result.columns());
     for (int r = 0; r < 3; ++r) {

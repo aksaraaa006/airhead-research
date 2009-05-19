@@ -29,7 +29,6 @@ import edu.ucla.sspace.common.matrix.OnDiskMatrix;
 import edu.ucla.sspace.common.matrix.SynchronizedMatrix;
 import edu.ucla.sspace.common.matrix.SparseMatrix;
 
-
 /**
  * A class of static methods for manipulating {@code Matrix} instances.
  *
@@ -135,10 +134,7 @@ public class Matrices {
           double[] row = m1.getRow(r);
           for (int c = 0; c < m2.columns(); ++c) {
             double value = m2.get(c, c);
-            double sum = 0;
-            for (int i = 0; i < row.length; ++i)
-              sum += value * row[i];
-            resultMatrix.set(r, c, sum);
+            resultMatrix.set(r, c, value * row[c]);
           }
         }
         return resultMatrix;
