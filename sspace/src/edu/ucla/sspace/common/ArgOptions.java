@@ -213,6 +213,10 @@ public class ArgOptions {
 			throw new Error("no value specified for " + optionName);
 		    }
 		    Option o = longNameToOption.get(optionName);
+		    if (o == null) {
+			throw new IllegalArgumentException(
+			    "unrecognizedOption: " + s);
+		    }
 		    if (!o.hasValue()) {
 			throw new Error("Option " + optionName + " does not " +
 					"take a value");
@@ -225,6 +229,10 @@ public class ArgOptions {
 		else {
 		    String optionName = s.substring(2);
 		    Option o = longNameToOption.get(optionName);
+		    if (o == null) {
+			throw new IllegalArgumentException(
+			    "unrecognizedOption: " + s);
+		    }
 		    if (o.hasValue()) {
 			// because the value combined case was handled above,
 			// the value must be in the next command line argument
@@ -255,6 +263,10 @@ public class ArgOptions {
 		    
 		    char optionName = s.charAt(j);
 		    Option o = shortNameToOption.get(optionName);
+		    if (o == null) {
+			throw new IllegalArgumentException(
+			    "unrecognizedOption: " + s);
+		    }
 		    if (o.hasValue()) {
 			// see if there are remaining characters as a part of
 			// this string and if so, use them as the value,
