@@ -24,6 +24,7 @@ package edu.ucla.sspace.evaluation;
 import java.lang.reflect.Method;
 
 import java.util.Collection;
+import java.util.LinkedList;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
@@ -60,41 +61,57 @@ public class WordChoiceEvaluationRunner {
 	question_loop:
 	for (MultipleChoiceQuestion question : questions) {
 
-	    // get the vector for the prompt
-	    double[] promptVector = sspace.getVectorFor(question.getPrompt());
+	    String promptWord = question.getPrompt();
+	    Collection<String> promptSenses = 
+		getSenses(promptWord, sspace);
+
 	    
 	    // check that the s-space had the prompt word
-	    if (promptVector == null) {
+	    if (promptSenses.isEmpty()) {
 		unanswerable++;
 		continue;
 	    }
 
-	    // find the options whose vector has the highest similarity (or
-	    // equivalent comparison measure) to the prompt word.  The running
-	    // assumption hear is that for the value returned by the comparison
-	    // method, a high value implies more similar vectors.
 	    int answerIndex = 0;
 	    double closestOption = Double.MIN_VALUE;
-	    int optionIndex = 0;
-	    for (String option : question.getOptions()) {
 
-		double[] optionVector = sspace.getVectorFor(option);
+	    // get all the sense for the prompt
+	    for (String prompt : promptSenses) {
+	    
+		// get the vector for the prompt
+		double[] promptVector = sspace.getVectorFor(prompt);
 
-		// check that the s-space had the option word
-		if (optionVector == null) {
-		    unanswerable++;
-		    continue question_loop;
+		// find the options whose vector has the highest similarity (or
+		// equivalent comparison measure) to the prompt word.  The
+		// running assumption hear is that for the value returned by the
+		// comparison method, a high value implies more similar vectors.
+		int optionIndex = 0;
+		for (String optionWord : question.getOptions()) {
+		    
+		    Collection<String> optionSenses = 
+			getSenses(optionWord, sspace);
+
+		    for (String option : optionSenses) {
+
+			double[] optionVector = sspace.getVectorFor(option);
+			
+			// check that the s-space had the option word
+			if (optionVector == null) {
+			    unanswerable++;
+			    continue question_loop;
+			}
+			
+			double similarity = invoke(vectorComparisonMethod, 
+						   promptVector, optionVector);
+			
+			if (similarity > closestOption) {
+			    answerIndex = optionIndex;
+			    closestOption = similarity;
+			}
+		    }
+		    
+		    optionIndex++;
 		}
-		
-		double similarity = invoke(vectorComparisonMethod, 
-					   promptVector, optionVector);
-
-		if (similarity > closestOption) {
-		    answerIndex = optionIndex;
-		    closestOption = similarity;
-		}
-
-		optionIndex++;
 	    }
 	    
 	    // see whether our guess matched with the correct index
@@ -119,6 +136,20 @@ public class WordChoiceEvaluationRunner {
 	    // generic catch and rethrow
 	    throw new Error(e);
 	}
+    }
+
+    private static Collection<String> getSenses(String word, 
+						SemanticSpace sspace) {
+	Collection<String> senses = new LinkedList<String>();
+	for (int i = 0; i < Integer.MAX_VALUE; ++i) {
+	    
+	    String sense = (i == 0) ? word : word + "^" + i;
+	    if (sspace.getVectorFor(sense) == null) {
+		break;
+	    }
+	    senses.add(sense);
+	}
+	return senses;
     }
 
     /**

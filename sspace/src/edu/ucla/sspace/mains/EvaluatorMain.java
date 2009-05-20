@@ -81,7 +81,7 @@ public class EvaluatorMain {
 			  "WordSimilarityEvaluation class names", 
  			  true, "CLASS=FILE[,CLASS=FILE...]", 
 			  "Required (at least one of)");	
- 	argOptions.addOption('g', "testConfiguation", "a file containing a list " +
+ 	argOptions.addOption('g', "testConfiguration", "a file containing a list " +
 			  "of test configurations to run", 
  			  true, "FILE", "Required (at least one of)");
 
@@ -141,7 +141,7 @@ public class EvaluatorMain {
 		Class<?> clazz = Class.forName(testAndFile[0]);
 		Constructor<?> c = clazz.getConstructor(new Class[]{String.class});
 		WordChoiceEvaluation eval = (WordChoiceEvaluation)
-		    (c.newInstance(new Object[]{testAndFile[0]}));
+		    (c.newInstance(new Object[]{testAndFile[1]}));
 		verbose("Loaded word choice test %s%n", testAndFile[0]);
 		wordChoiceTests.add(eval);
 	    }
@@ -157,9 +157,10 @@ public class EvaluatorMain {
 			"unexpected token: " + wcTests);
 		}
 		Class<?> clazz = Class.forName(testAndFile[0]);
-		Constructor<?> c = clazz.getConstructor(new Class[]{String.class});
+		Constructor<?> c = 
+		    clazz.getConstructor(new Class[]{String.class});
 		WordSimilarityEvaluation eval = (WordSimilarityEvaluation)
-		    (c.newInstance(new Object[]{testAndFile[0]}));
+		    (c.newInstance(new Object[]{testAndFile[1]}));
 		verbose("Loaded word similarity test %s%n", testAndFile[0]);
 		wordSimilarityTests.add(eval);
 	    }
