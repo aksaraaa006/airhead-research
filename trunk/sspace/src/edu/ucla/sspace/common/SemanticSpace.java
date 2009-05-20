@@ -96,5 +96,10 @@ public interface SemanticSpace {
      */
     void processSpace(Properties properties);
 
+    /**
+     * Returns a unique string describing the name and configuration of this
+     * algorithm.  Any configurable parameters that would affect the resulting
+     * semantic space should be expressed as a part of this name.
+     */
     String getSpaceName();
 }
