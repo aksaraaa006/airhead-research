@@ -59,13 +59,19 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      */
     void processDocument(BufferedReader document, long timestamp) 
 	    throws IOException;
-
     
     /**
-     *Returns the sorted list of time steps for which this temporal space has
-     *semantics.
+     * Returns the time steps for which this temporal space has processed
+     * documents.
      */
     SortedSet<Long> getTimeSteps();
+
+    /**
+     * Returns the time steps in which the provided word occurs.
+     *
+     * @param word
+     */
+    SortedSet<Long> getTimeSteps(String word);
 
     /**
      * Returns the provided word's semantic vector based on all temporal
