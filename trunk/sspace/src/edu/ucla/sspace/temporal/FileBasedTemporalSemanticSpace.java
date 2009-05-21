@@ -201,7 +201,17 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public SortedSet<Long> getTimeSteps() {
+	return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public SortedSet<Long> getTimeSteps(String word) {
 	return null;
     }
 
