@@ -182,10 +182,12 @@ public class TemporalSemanticSpaceUtils {
 		LOGGER.info(String.format("serializing %d/%d: %s",
 					  wordCount++, size, word));
 	    }
-	    for (long i = start; i <= end; ++i) {
-		double[] timeSlice = sspace.getVectorBetween(word, i, i);
+	    for (long timestep : sspace.getTimeSteps(word)) {
+		double[] timeSlice = 
+		    sspace.getVectorBetween(word, timestep, timestep);
 		if (timeSlice != null) {
-		    pw.print(i + " " + VectorIO.toString(timeSlice) + "|");
+		    pw.print(timestep + " " + 
+			     VectorIO.toString(timeSlice) + "|");
 		}
 	    }
 	    pw.println("");
