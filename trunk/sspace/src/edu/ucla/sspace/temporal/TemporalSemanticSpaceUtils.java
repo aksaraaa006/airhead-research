@@ -65,7 +65,7 @@ public class TemporalSemanticSpaceUtils {
      * The type of formatting to use when writing a semantic space to a file.
      * See <a href="SemantSpaceUtils.html#format">here</a> for file format specifications.
      */
-    public enum SSpaceFormat { TEXT, BINARY }
+    public enum SSpaceFormat { TEXT, BINARY, SPARSE_TEXT, SPARSE_BINARY }
 
     /**
      * Uninstantiable
@@ -146,8 +146,14 @@ public class TemporalSemanticSpaceUtils {
 	case TEXT:
 	    printText(sspace, output);
 	    break;
+	case SPARSE_TEXT:
+	    printSparseText(sspace, output);
+	    break;
 	case BINARY:
 	    printBinary(sspace, output);
+	    break;
+	case SPARSE_BINARY:
+	    printSparseBinary(sspace, output);
 	    break;
 	default:
 	    throw new IllegalArgumentException("Unknown format type: "+ format);
@@ -184,7 +190,7 @@ public class TemporalSemanticSpaceUtils {
 	    }
 	    for (long timestep : sspace.getTimeSteps(word)) {
 		double[] timeSlice = 
-		    sspace.getVectorBetween(word, timestep, timestep);
+		    sspace.getVectorBetween(word, timestep, timestep + 1);
 		if (timeSlice != null) {
 		    pw.print(timestep + " " + 
 			     VectorIO.toString(timeSlice) + "|");
@@ -195,6 +201,73 @@ public class TemporalSemanticSpaceUtils {
 	pw.close();
     }
 
+    /**
+     *
+     */
+    private static void printSparseText(TemporalSemanticSpace sspace, 
+					File output) 
+	    throws IOException {
+
+	PrintWriter pw = new PrintWriter(output);
+	SortedSet<Long> timeStamps = sspace.getTimeSteps();
+	long start = timeStamps.first();
+	long end = timeStamps.last();
+
+	LOGGER.info("time range: [" + start + ", " + end + "]");
+
+	Set<String> words = sspace.getWords();
+	// determine how many dimensions are used by the vectors
+	int dimensions = 0;
+	if (words.size() > 0) {
+	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	}
+
+	int size = words.size();
+	// print out how many vectors there are and the number of dimensions
+	pw.println(size + " " + dimensions + " " + start + " " + end);
+
+	int wordCount = 0;
+	for (String word : words) {
+	    pw.print(word + "|");
+	    if (LOGGER.isLoggable(Level.INFO)) {
+		LOGGER.info(String.format("serializing %d/%d: %s",
+					  wordCount++, size, word));
+	    }
+	    for (long timestep : sspace.getTimeSteps(word)) {
+		double[] timeSlice = 
+		    sspace.getVectorBetween(word, timestep, timestep + 1);
+		if (timeSlice != null) {
+
+		    // count the non-zero
+		    int nonZero = 0;
+		    for (double d : timeSlice) {
+			if (d != 0d) {
+			    nonZero++;
+			}
+		    }
+		    
+		    pw.print(timestep + " " + nonZero + "%");
+		    StringBuilder sb = new StringBuilder(nonZero * 4);
+		    for (int i = 0; i < timeSlice.length; ++i) {
+			double d = timeSlice[i];
+			if (d != 0d) {
+			    sb.append(i).append(",").append(d);
+			}
+			if (i + 1 < timeSlice.length) {
+			    sb.append(",");
+			}
+		    }
+		    pw.print(sb.toString());
+		}
+	    }
+	    pw.println("");
+	}
+	pw.close();
+    }
+
+    /**
+     *
+     */
     private static void printBinary(TemporalSemanticSpace sspace, File output) 
 	    throws IOException {
 
@@ -227,12 +300,75 @@ public class TemporalSemanticSpaceUtils {
 		LOGGER.info(String.format("serializing binary %d/%d: %s",
 					  wordCount++, size, word));
 	    }
-	    for (long i = start; i <= end; ++i) {
-		double[] timeSlice = sspace.getVectorBetween(word, i, i);
+
+	    for (long timestep : sspace.getTimeSteps(word)) {
+		double[] timeSlice = 
+		    sspace.getVectorBetween(word, timestep, timestep + 1);
 		if (timeSlice != null) {
-		    dos.writeLong(i);
+		    dos.writeLong(timestep);
 		    for (double d : timeSlice) {
 			dos.writeDouble(d);
+		    }
+		}
+	    }
+	}
+	dos.close();
+    }
+
+    private static void printSparseBinary(TemporalSemanticSpace sspace, File output) 
+	    throws IOException {
+
+	DataOutputStream dos = 
+	    new DataOutputStream(new FileOutputStream(output));
+
+	SortedSet<Long> timeStamps = sspace.getTimeSteps();
+	long start = timeStamps.first();
+	long end = timeStamps.last();
+
+
+	Set<String> words = sspace.getWords();
+	// determine how many dimensions are used by the vectors
+	int dimensions = 0;
+	if (words.size() > 0) {
+	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	}
+
+	int size = words.size();
+	// print out how many vectors there are and the number of dimensions
+	dos.writeInt(size);
+	dos.writeInt(dimensions);
+	dos.writeLong(start);
+	dos.writeLong(end);
+
+	int wordCount = 0;
+	for (String word : words) {
+	    dos.writeUTF(word);
+	    if (LOGGER.isLoggable(Level.INFO)) {
+		LOGGER.info(String.format("serializing binary %d/%d: %s",
+					  wordCount++, size, word));
+	    }
+
+	    for (long timestep : sspace.getTimeSteps(word)) {
+		double[] timeSlice = 
+		    sspace.getVectorBetween(word, timestep, timestep + 1);
+		if (timeSlice != null) {
+
+		    // count the non-zero
+		    int nonZero = 0;
+		    for (double d : timeSlice) {
+			if (d != 0d) {
+			    nonZero++;
+			}
+		    }
+
+		    dos.writeLong(timestep);
+		    dos.writeInt(nonZero);
+		    for (int i = 0; i < timeSlice.length; ++i) {
+			double d = timeSlice[i];
+			if (d != 0d) {
+			    dos.writeInt(i);
+			    dos.writeDouble(d);
+			}
 		    }
 		}
 	    }
