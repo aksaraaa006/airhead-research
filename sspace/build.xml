@@ -152,6 +152,7 @@
       <test name="edu.ucla.sspace.common.DocumentPreprocessorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.FileBasedSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.HashMultiMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.IntegerMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.MatricesTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.MatrixIOtests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
