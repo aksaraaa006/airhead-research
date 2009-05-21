@@ -162,6 +162,8 @@ public class TemporalSemanticSpaceUtils {
 	long start = timeStamps.first();
 	long end = timeStamps.last();
 
+	LOGGER.info("time range: [" + start + ", " + end + "]");
+
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
