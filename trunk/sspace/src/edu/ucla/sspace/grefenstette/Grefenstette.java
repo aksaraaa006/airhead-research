@@ -46,15 +46,16 @@ public class Grefenstette {
 
     try {
       document = new BufferedReader(new FileReader(args[0]));
-      String line = document.readLine();
-
-      int test = 1;
+//      String line = document.readLine();
+      processDocument(document);
+/*      int test = 1;
       while( line != null ) {
 //          System.out.println("- line " + test++);
         processDocument(line);
 
         line = document.readLine();
       }
+      */
       wordRelationsWriter.close();
     }
 
@@ -67,13 +68,20 @@ public class Grefenstette {
     }
   }
 
-  public static void processDocument (String nounPhrase) {
+  public static void processDocument (BufferedReader document) {
     ArrayList<Pair<String>> wordsInPhrase = new ArrayList<Pair<String>>();
 
+    String nounPhrase = "";
     String lastNoun = "";
     String lastVerb = "";
     String secondPrevPhrase = "";
     String prevPhrase = "";
+
+    try {
+      nounPhrase = document.readLine();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
     for( String tag = getNextTag(nounPhrase); 
             tag != null; tag = getNextTag(nounPhrase) ) {
