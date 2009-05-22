@@ -110,7 +110,7 @@ public class RandomIndexingMain extends GenericMain {
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
-    public void addExtraOptions(ArgOptions options) {
+    protected void addExtraOptions(ArgOptions options) {
 	options.addOption('i', "vectorGenerator", "IndexVectorGenerator "
 			  + "class to use", true,
 			  "CLASSNAME", "Algorithm Options");

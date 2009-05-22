@@ -32,19 +32,55 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-@SuppressWarnings("unchecked")
+/**
+ * A space-optimized map for associating integer keys with values.  
+ * <p>
+ *
+ * This class makes a trade off for reduced space usage at the cost of decreased
+ * performace.  The {@code put}, {@code get}, {@code containsKey} and {@code
+ * get} operations are all logarithmic when the map is unmodified.  If a new
+ * mapping is added, or one is removed, the operation is linear in the number of
+ * mappings.  Both {@code size} and {@code isEmpty} are still constant time. <p>
+ *
+ * This map does not allow {@code null} keys, but does allow {@code null
+ * values}.
+ *
+ * <i>Implementation Note:</i> the {@code Iterator.remove()} method is currently
+ * unsupported and will throw an exception when called.  However, a future
+ * implementation will fix this.<p>
+ *
+ * @see TrieMap
+ * @see Map
+ * 
+ * @author David Jurgens
+ */
 public class IntegerMap<V> extends AbstractMap<Integer,V> {
     
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The keys stored in this map, in sorted order.  The index at which a key
+     * is found corresponds to the index at which its value is found.
+     */
     int[] keyIndices;
+
+    /**
+     * The values stored in this map.
+     */
     Object[] values;
 
+    /**
+     * Creates a new map.
+     */
     public IntegerMap() {
 	keyIndices = new int[0];
 	values = new Object[0];
     }
 
+    /**
+     * Checks that the key is non-{@code null} and is an {@code Integer} object,
+     * and then returns its {@code int} value.
+     */
     private int checkKey(Object key) {
 	if (key == null) {
 	    throw new NullPointerException("key cannot be null");
@@ -56,11 +92,17 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
 	}
     }
 
+    /**
+     * Removes all of the mappings from this map.
+     */
     public void clear() {
 	keyIndices = new int[0];
 	values = new Object[0];
     }
 
+    /**
+     * Returns {@code true} if this map contains a mapping for the specified key.
+     */
     public boolean containsKey(Object key) {
 	int k = checkKey(key);
 	int index = Arrays.binarySearch(keyIndices, k);
@@ -76,20 +118,42 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
 	return false;
     }
 
+    /**
+     * Returns a {@link Set} view of the mappings contained in this map.
+     */
     public Set<Entry<Integer,V>> entrySet() {
 	return new EntrySet();
     }
 
+    /**
+     * Returns the value to which the specified key is mapped, or {@code null}
+     * if this map contains no mapping for the key.
+     */
+    @SuppressWarnings("unchecked")
     public V get(Object key) {
 	int k = checkKey(key);
 	int index = Arrays.binarySearch(keyIndices, k);
 	return (index >= 0) ? (V)(values[index]) : null;
     }
 
+    /**
+     * Returns a {@link Set} view of the keys contained in this map.
+     */
     public Set<Integer> keySet() {
 	return new KeySet();
     }
 
+    /**
+     * Adds the mapping from the provided key to the value.
+     *
+     * @param key
+     * @param value
+     *
+     * @throws NullPointerException if the key is {@code null}
+     * @throws IllegalArgumentException if the key is not an instance of {@link
+     *         Integer}
+     */
+    @SuppressWarnings("unchecked")
     public V put(Integer key, V value) {
 
 	int k = checkKey(key);
@@ -122,7 +186,18 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
 	    return null;
 	}
     }
-    
+
+    /**
+     * Removes the mapping for a key from this map if it is present and returns
+     * the value to which this map previously associated the key, or {@code
+     * null} if the map contained no mapping for the key.
+     *
+     * @param key key whose mapping is to be removed from the map 
+     *
+     * @return the previous value associated with key, or {@code null} if there
+     * was no mapping for key.
+     */
+    @SuppressWarnings("unchecked")    
     public V remove(Object key) {
 	int k = checkKey(key);
 	int index = Arrays.binarySearch(keyIndices, k);
@@ -148,10 +223,16 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
 	return null;
     }
 
+    /**
+     * Returns the number of key-value mappings in this trie.
+     */
     public int size() {
 	return keyIndices.length;
     }
 
+    /**
+     * Returns a {@link Collection} view of the values contained in this map.
+     */
     public Collection<V> values() {
 	return new Values();
     }
@@ -197,6 +278,7 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
 	    return next < size();
 	}
 
+	@SuppressWarnings("unchecked")
 	public Entry<Integer,V> nextEntry() {
 	    if (next >= size()) {
 		throw new NoSuchElementException("no further elements");
