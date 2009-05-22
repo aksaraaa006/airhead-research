@@ -138,4 +138,14 @@ public class GrefenstetteMain extends GenericMain {
  	    "usage: java Grefenstette [options] <output-dir>\n" + 
 	    argOptions.prettyPrint());
     }
+
+    public static void main(String[] args) {
+	try {
+	    GrefenstetteMain main = new GrefenstetteMain();
+	    main.run(args);
+	} catch (Throwable t) {
+	    t.printStackTrace();
+	}
+    }
+
 }
