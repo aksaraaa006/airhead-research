@@ -23,11 +23,11 @@ package edu.ucla.sspace.hal;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 
@@ -35,14 +35,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.WordIterator;
+import edu.ucla.sspace.common.matrix.GrowingSparseMatrix;
 
 
-public class HAL // implements SemanticSpace
+public class HAL implements SemanticSpace
 {
 	/**
 	 * Sets the default window size to 5
 	 */
-	private static final int DEFAULT_WINDOW_SIZE = 5;
+	private static final int DEFAULT_WINDOW_SIZE = 10;
 	
 	/**
 	 * The set that contains all of the words from the document
@@ -56,21 +57,36 @@ public class HAL // implements SemanticSpace
 	
 	/**
 	 * The  Matrix that contains all of the Co-occurence values
+	 * for words following the focus
 	 */
-	private int values[][];
+	private GrowingSparseMatrix followVals;
+	
+	/**
+	 * The  Matrix that contains all of the Co-occurence values
+	 * for words preceding the focus
+	 */
+	private GrowingSparseMatrix precVals;
+	
+		
+	/**
+	 * The number that keeps track of the index values of words
+	 */
+	private int indexNumber;
 	
 	public HAL()
 	{
 		termList = new LinkedHashSet<String>();
-		values =  new int[1000][1000];	
+		
+		followVals = new GrowingSparseMatrix();
+		precVals = new GrowingSparseMatrix();
+		
 		termToIndex = new ConcurrentHashMap<String,Integer>();
+		
+		indexNumber = 0;
 	}
 	
 	public void  processDocument(BufferedReader document) throws IOException
 	{
-		//Integer to keep track of word indices.
-		int indexNumber = 1; 
-		
 		Queue<String> nextWords = new LinkedList<String>();
 		Queue<String> prevWords = new LinkedList<String>();
 		
@@ -122,21 +138,35 @@ public class HAL // implements SemanticSpace
 					termToIndex.put(nextIter.next(), indexNumber);
 					indexNumber++;
 					
-					//Add the co-occurance value into the values matrix
-					values[termToIndex.get(focus)][termToIndex.get(nextIter.next())] += value;					
+					//Get the current value corresponding to the focus and the word in the Iterator
+					double temp = followVals.get(termToIndex.get(focus), termToIndex.get(nextIter.next()));
+					
+					//add the value to it
+					temp += value;
+					
+					//Put the new value back in
+					followVals.set(termToIndex.get(focus), termToIndex.get(nextIter.next()), temp);
+										
 				}
 				
 				else
 				{
-					//Add the co-occurance value into the values matrix
-					values[termToIndex.get(focus)][termToIndex.get(nextIter.next())] += value;	
+					//Get the current value corresponding to the focus and the word in the Iterator
+					double temp = followVals.get(termToIndex.get(focus), termToIndex.get(nextIter.next()));
+					
+					//add the value to it
+					temp += value;
+					
+					//Put the new value back in
+					followVals.set(termToIndex.get(focus), termToIndex.get(nextIter.next()), temp);
+										
 				}				
 				
 				//decrease the co-occurance value
 				value--;
 			}
 				
-			
+					                  
 			
 			//Evaluate the words in prevIter queue
 			value=1;
@@ -146,8 +176,16 @@ public class HAL // implements SemanticSpace
 				//Since any word in the prevIter is already in the word set and the termToIndex Map
 				//There's no need to check for that, and we can just directly put in the co-occurance
 				//values into the co-occurance Matrix
-				values[termToIndex.get(focus)][termToIndex.get(prevIter.next())] +=value;
 				
+				//Get the current value corresponding to the focus and the word in the Iterator
+				double temp = precVals.get(termToIndex.get(focus), termToIndex.get(nextIter.next()));
+				
+				//add the value to it
+				temp += value;
+				
+				//Put the new value back in
+				precVals.set(termToIndex.get(focus), termToIndex.get(nextIter.next()), temp);
+											
 				//Since were counting up, increase the value
 				value++;
 			}
@@ -158,12 +196,49 @@ public class HAL // implements SemanticSpace
 		    prevWords.offer(focus);
 		    if (prevWords.size() > DEFAULT_WINDOW_SIZE)
 		    	prevWords.remove();
-		}		
+		}	
+		
 	}	
+	
+	
+	//Returns the Set of words taken from the documents
+	public Set<String> getWords()
+	{				//If no documents have been processed, it will be empty		
+		return termList;			
+	}		
+	
 
-    public String getSpaceName() {
-      return "hal-semantic-space";
-    }
+	//Returns the constructed vector for the given word
+	public double[] getVectorFor(String word)
+	{
+		//Clears the vector of any previous values
+		double[] semVector = new double[followVals.columns()*2];
+		double[] row1 = followVals.getRow(termToIndex.get(word));
+		double[] row2 = precVals.getRow(termToIndex.get(word));
+		
+		if(termToIndex.containsValue(word))
+		{
+			//Puts the semantic values of the following words for the focus into the array to be returned
+			System.arraycopy(row1, 0, semVector, 0, row1.length);
+			//Puts the semantic values of the words preceding the focus into the array to be returned
+			System.arraycopy(row2, 0, semVector, row1.length, row2.length);			
+		}
+			
+		
+		return semVector;
+		
+	}
+	
+	
+	//Doesn't do anything
+	public void processSpace(Properties properties)
+	{
+		
+	}
+	
+	//Doesn't do anything
+	public String getSpaceName()
+	{
+		return "hal-semantic-space";
+	}
 }
-
-
