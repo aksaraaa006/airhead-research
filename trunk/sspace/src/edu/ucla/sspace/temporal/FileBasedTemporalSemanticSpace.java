@@ -46,6 +46,8 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
+import java.util.logging.Logger;
+
 /**
  * A {@link TemporalSemanticSpace} created from the serialized output of another
  * {@code TemporalSemanticSpace} after it has finished processing.  The input
@@ -55,6 +57,9 @@ import java.util.TreeMap;
  * @see TemporalSemanticSpaceUtils
  */
 public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
+
+    private static final Logger LOGGER = 
+	Logger.getLogger(FileBasedTemporalSemanticSpace.class.getName());
 
     /**
      * A mapping of terms to row indexes.  Also serves as a quick means of
@@ -66,6 +71,10 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * The name of this semantic space.
      */
     private final String spaceName;
+
+    private long startTime;
+
+    private long endTime;
 
     /**
      * Creates the {@link FileBasedTemporalSemanticSpace} from the file using the {@link
@@ -109,6 +118,9 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      */
     public FileBasedTemporalSemanticSpace(File file, TSSpaceFormat format) {
 
+	startTime = Long.MAX_VALUE;
+	endTime = Long.MIN_VALUE;
+
 	Map<String,SemanticVector> m = null;
  	try {
  	    switch (format) {
@@ -142,8 +154,10 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      *
      * @param sspaceFile a file in {@link TSSpaceFormat#TEXT text} format
      */
-    private static Map<String,SemanticVector> loadText(File sspaceFile) 
+    private Map<String,SemanticVector> loadText(File sspaceFile) 
 	    throws IOException {
+
+	LOGGER.info("loading text TSS from " + sspaceFile);
 	
 	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
 	String[] header = br.readLine().split("\\s+");
@@ -160,10 +174,14 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	    String word = wordAndSemantics[0];
 	    SemanticVector semantics = new SemanticVector(dimensions);
 
+	    LOGGER.info("loading " + wordAndSemantics.length + 
+			" timesteps for word " + word); 
+
 	    for (int i = 1; i < wordAndSemantics.length; ++i) {
 
 		String[] timeStepAndValues = wordAndSemantics[i].split(" ");
 		long timeStep = Long.parseLong(timeStepAndValues[0]);
+		updateTimeRange(timeStep);
 
 		// Load that time step's vector.  Note that we make the assumption
 		// here that even though the T-Space is serialized in a dense
@@ -190,8 +208,10 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * @param sspaceFile a file in {@link TSSpaceFormat#SPARSE_TEXT sparse text}
      *        format
      */
-    private static Map<String,SemanticVector> loadSparseText(File sspaceFile) 
+    private Map<String,SemanticVector> loadSparseText(File sspaceFile) 
 	    throws IOException {
+
+	LOGGER.info("loading sparse text TSS from " + sspaceFile);
 
 	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
 	String[] header = br.readLine().split("\\s+");
@@ -208,11 +228,15 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	    SemanticVector semantics = new SemanticVector(dimensions);
 	    wordToSemantics.put(word, semantics);
 
+	    LOGGER.info("loading " + wordAndSemantics.length + 
+			" timesteps for word " + word); 
+
 	    // read in each of the timesteps
 	    for (int tsIndx = 1; tsIndx < wordAndSemantics.length; ++tsIndx) {
 		String[] tsAndVec = wordAndSemantics[tsIndx].split("%");
 		String[] tsAndNonZero = tsAndVec[0].split(" ");
 		long timeStep = Long.parseLong(tsAndNonZero[0]);
+		updateTimeRange(timeStep);
 		int nonZero = Integer.parseInt(tsAndNonZero[1]);
 		String[] vecElements = tsAndVec[1].split(",");
 		
@@ -235,8 +259,10 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      *
      * @param sspaceFile a file in {@link TSSpaceFormat#BINARY binary} format
      */
-    private static Map<String,SemanticVector> loadBinary(File sspaceFile) 
+    private Map<String,SemanticVector> loadBinary(File sspaceFile) 
 	    throws IOException {
+
+	LOGGER.info("loading binary TSS from " + sspaceFile);
 
  	DataInputStream dis = 
  	    new DataInputStream(new FileInputStream(sspaceFile));
@@ -255,6 +281,9 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	    SemanticVector vector = new SemanticVector(dimensions);
 	    wordToSemantics.put(word, vector);
 
+	    LOGGER.info("loading " + timeSteps + 
+			" timesteps for word " + word); 
+
 	    // Load that time step's vector.  Note that we make the assumption
 	    // here that even though the T-Space is serialized in a dense
 	    // format, that the vector data is actually sparse, and so it will
@@ -264,7 +293,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	    // read in each time step
  	    for (int tsIndex = 0; tsIndex < timeSteps; ++tsIndex) {
 		long timeStep = dis.readLong();
-
+		updateTimeRange(timeStep);
 		// load that time step's vector
 		for (int i = 0; i < dimensions; ++i) {
 		    int index = dis.readInt();
@@ -285,8 +314,10 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * @param sspaceFile a file in {@link TSSpaceFormat#SPARSE_BINARY sparse
      *        binary} format
      */
-    private static Map<String,SemanticVector> loadSparseBinary(File sspaceFile) 
+    private Map<String,SemanticVector> loadSparseBinary(File sspaceFile) 
 	    throws IOException {
+
+	LOGGER.info("loading text TSS from " + sspaceFile);
 	
  	DataInputStream dis = 
  	    new DataInputStream(new FileInputStream(sspaceFile));
@@ -304,10 +335,14 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	    int timeSteps = dis.readInt();
 	    SemanticVector vector = new SemanticVector(dimensions);
 	    wordToSemantics.put(word, vector);
+
+	    LOGGER.info("loading " + timeSteps + 
+			" timesteps for word " + word); 
 	    
 	    // read in each time step
  	    for (int tsIndex = 0; tsIndex < timeSteps; ++tsIndex) {
 		long timeStep = dis.readLong();
+		updateTimeRange(timeStep);
 		int nonZero = dis.readInt();
 
 		// load that time step's vector
@@ -324,6 +359,41 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	
 	return wordToSemantics;
     }
+
+    /**
+     * Updates the start and end times if this time stamp exceeds either.
+     */
+    private void updateTimeRange(long timestamp) {
+	// update the timestamp ranges
+	if (timestamp < startTime) {
+	    startTime = timestamp;
+	} 
+	if (timestamp > endTime) {
+	    endTime = timestamp;
+	}
+    }
+
+
+    //
+    //
+    // TemporalSemanticSpace implementation code
+    //
+    //
+
+    /**
+     * {@inheritDoc}
+     */
+    public Long startTime() {
+	return startTime;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Long endTime() {
+	return endTime;
+    }
+
 
     /**
      * {@inheritDoc}

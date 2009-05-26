@@ -61,10 +61,14 @@ public interface TemporalSemanticSpace extends SemanticSpace {
 	    throws IOException;
     
     /**
-     * Returns the time steps for which this temporal space has processed
-     * documents.
+     * Returns the time for the earliest semantics contained within this space.
      */
-    SortedSet<Long> getTimeSteps();
+    Long startTime();
+
+    /**
+     * Returns the time for the latest semantics contained within this space.
+     */
+    Long endTime();
 
     /**
      * Returns the time steps in which the provided word occurs.
