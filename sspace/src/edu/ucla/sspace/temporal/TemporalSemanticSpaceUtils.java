@@ -164,11 +164,6 @@ public class TemporalSemanticSpaceUtils {
 	    throws IOException {
 
 	PrintWriter pw = new PrintWriter(output);
-// 	SortedSet<Long> timeStamps = sspace.getTimeSteps();
-// 	long start = timeStamps.first();
-// 	long end = timeStamps.last();
-
-// 	LOGGER.info("time range: [" + start + ", " + end + "]");
 
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
@@ -179,13 +174,13 @@ public class TemporalSemanticSpaceUtils {
 
 	int size = words.size();
 	// print out how many vectors there are and the number of dimensions
-	pw.println(size + " " + dimensions); // + " " + start + " " + end);
+	pw.println(size + " " + dimensions);
 
 	int wordCount = 0;
 	for (String word : words) {
 	    pw.print(word + "|");
 	    if (LOGGER.isLoggable(Level.INFO)) {
-		LOGGER.info(String.format("serializing %d/%d: %s",
+		LOGGER.info(String.format("serializing text %d/%d: %s",
 					  wordCount++, size, word));
 	    }
 	    for (long timestep : sspace.getTimeSteps(word)) {
@@ -209,11 +204,6 @@ public class TemporalSemanticSpaceUtils {
 	    throws IOException {
 
 	PrintWriter pw = new PrintWriter(output);
-// 	SortedSet<Long> timeStamps = sspace.getTimeSteps();
-// 	long start = timeStamps.first();
-// 	long end = timeStamps.last();
-
-// 	LOGGER.info("time range: [" + start + ", " + end + "]");
 
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
@@ -224,16 +214,22 @@ public class TemporalSemanticSpaceUtils {
 
 	int size = words.size();
 	// print out how many vectors there are and the number of dimensions
-	pw.println(size + " " + dimensions);// + " " + start + " " + end);
+	pw.println(size + " " + dimensions);
 
 	int wordCount = 0;
 	for (String word : words) {
 	    pw.print(word + "|");
 	    if (LOGGER.isLoggable(Level.INFO)) {
-		LOGGER.info(String.format("serializing %d/%d: %s",
+		LOGGER.info(String.format("serializing sparse text %d/%d: %s",
 					  wordCount++, size, word));
 	    }
-	    for (long timestep : sspace.getTimeSteps(word)) {
+
+	    SortedSet<Long> timeSteps = sspace.getTimeSteps(word);
+
+	    // write out the number of time steps seen for this word
+	    pw.print(timeSteps.size() + "|");
+
+	    for (long timestep : timeSteps) {
 		double[] timeSlice = 
 		    sspace.getVectorBetween(word, timestep, timestep + 1);
 		if (timeSlice != null) {
@@ -274,11 +270,6 @@ public class TemporalSemanticSpaceUtils {
 	DataOutputStream dos = 
 	    new DataOutputStream(new FileOutputStream(output));
 
-// 	SortedSet<Long> timeStamps = sspace.getTimeSteps();
-// 	long start = timeStamps.first();
-// 	long end = timeStamps.last();
-
-
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
@@ -290,8 +281,6 @@ public class TemporalSemanticSpaceUtils {
 	// print out how many vectors there are and the number of dimensions
 	dos.writeInt(size);
 	dos.writeInt(dimensions);
-// 	dos.writeLong(start);
-// 	dos.writeLong(end);
 
 	int wordCount = 0;
 	for (String word : words) {
@@ -321,11 +310,6 @@ public class TemporalSemanticSpaceUtils {
 	DataOutputStream dos = 
 	    new DataOutputStream(new FileOutputStream(output));
 
-// 	SortedSet<Long> timeStamps = sspace.getTimeSteps();
-// 	long start = timeStamps.first();
-// 	long end = timeStamps.last();
-
-
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
@@ -337,18 +321,21 @@ public class TemporalSemanticSpaceUtils {
 	// print out how many vectors there are and the number of dimensions
 	dos.writeInt(size);
 	dos.writeInt(dimensions);
-// 	dos.writeLong(start);
-// 	dos.writeLong(end);
 
 	int wordCount = 0;
 	for (String word : words) {
 	    dos.writeUTF(word);
 	    if (LOGGER.isLoggable(Level.INFO)) {
-		LOGGER.info(String.format("serializing binary %d/%d: %s",
+		LOGGER.info(String.format("serializing sparse binary %d/%d: %s",
 					  wordCount++, size, word));
 	    }
 
-	    for (long timestep : sspace.getTimeSteps(word)) {
+	    SortedSet<Long> timeSteps = sspace.getTimeSteps(word);
+
+	    // write out the number of time steps seen for this word
+	    dos.writeInt(timeSteps.size());
+
+	    for (long timestep : timeSteps) {
 		double[] timeSlice = 
 		    sspace.getVectorBetween(word, timestep, timestep + 1);
 		if (timeSlice != null) {
