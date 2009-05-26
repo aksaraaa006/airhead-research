@@ -65,7 +65,7 @@ public class TemporalSemanticSpaceUtils {
      * The type of formatting to use when writing a semantic space to a file.
      * See <a href="SemantSpaceUtils.html#format">here</a> for file format specifications.
      */
-    public enum SSpaceFormat { TEXT, BINARY, SPARSE_TEXT, SPARSE_BINARY }
+    public enum TSSpaceFormat { TEXT, BINARY, SPARSE_TEXT, SPARSE_BINARY }
 
     /**
      * Uninstantiable
@@ -74,26 +74,26 @@ public class TemporalSemanticSpaceUtils {
 
     /**
      * Loads and returns the {@link TemporalSemanticSpace} stored at the file name in
-     * {@link SSpaceFormat#TEXT text} format.
+     * {@link TSSpaceFormat#TEXT text} format.
      *
      * @param sspaceFileName the name of a file containing a {@link
      *        TemporalSemanticSpace} that has been written to disk
      */
     public static TemporalSemanticSpace 
 	    loadTemporalSemanticSpace(String sspaceFileName) {
-	return loadTemporalSemanticSpace(new File(sspaceFileName), SSpaceFormat.TEXT);
+	return loadTemporalSemanticSpace(new File(sspaceFileName), TSSpaceFormat.TEXT);
     }
 
     /**
      * Loads and returns the {@link TemporalSemanticSpace} stored at the file in
-     * {@link SSpaceFormat#TEXT text} format.
+     * {@link TSSpaceFormat#TEXT text} format.
      *
      * @param sspaceFile a file containing a {@link TemporalSemanticSpace} that has
      *        been written to disk
      */
     public static TemporalSemanticSpace 
 	    loadTemporalSemanticSpace(File sspaceFile) {
-	return loadTemporalSemanticSpace(sspaceFile, SSpaceFormat.TEXT);
+	return loadTemporalSemanticSpace(sspaceFile, TSSpaceFormat.TEXT);
     }
     
     /**
@@ -105,31 +105,31 @@ public class TemporalSemanticSpaceUtils {
      * @param format the format of the {@link TemporalSemanticSpace} in the file
      */
     public static TemporalSemanticSpace
-	    loadTemporalSemanticSpace(File sspaceFile, SSpaceFormat format) {
+	    loadTemporalSemanticSpace(File sspaceFile, TSSpaceFormat format) {
 	return new FileBasedTemporalSemanticSpace(sspaceFile, format);
     }
 
     /**
      * Writes the data contained in the {@link TemporalSemanticSpace} to the
-     * file with the provided name using the {@link SSpaceFormat#TEXT} format.
+     * file with the provided name using the {@link TSSpaceFormat#TEXT} format.
      * See <a href="#format">here</a> for file format specifications.
      */
     public static void printTemporalSemanticSpace(TemporalSemanticSpace sspace, 
 						  String outputFileName) 
 	    throws IOException {
-	printTemporalSemanticSpace(sspace, new File(outputFileName), SSpaceFormat.TEXT);
+	printTemporalSemanticSpace(sspace, new File(outputFileName), TSSpaceFormat.TEXT);
     }
 
     /**
      * Writes the data contained in the {@link TemporalSemanticSpace} to the
-     * provided file using the {@link SSpaceFormat#TEXT} format.  See <a
+     * provided file using the {@link TSSpaceFormat#TEXT} format.  See <a
      * href="#format">here</a> for file format specifications.
      */
     public static void printTemporalSemanticSpace(TemporalSemanticSpace sspace,
 						  File output) 
 	    throws IOException {
 
-	printTemporalSemanticSpace(sspace, output, SSpaceFormat.TEXT);
+	printTemporalSemanticSpace(sspace, output, TSSpaceFormat.TEXT);
     }
 
     /**
@@ -139,7 +139,7 @@ public class TemporalSemanticSpaceUtils {
      */
     public static void printTemporalSemanticSpace(TemporalSemanticSpace sspace,
 						  File output, 
-						  SSpaceFormat format) 
+						  TSSpaceFormat format) 
 	    throws IOException {
 
 	switch (format) {
@@ -226,9 +226,6 @@ public class TemporalSemanticSpaceUtils {
 
 	    SortedSet<Long> timeSteps = sspace.getTimeSteps(word);
 
-	    // write out the number of time steps seen for this word
-	    pw.print(timeSteps.size() + "|");
-
 	    for (long timestep : timeSteps) {
 		double[] timeSlice = 
 		    sspace.getVectorBetween(word, timestep, timestep + 1);
@@ -253,7 +250,7 @@ public class TemporalSemanticSpaceUtils {
 			    sb.append(",");
 			}
 		    }
-		    pw.print(sb.toString());
+		    pw.print(sb.toString() + "|");
 		}
 	    }
 	    pw.println("");

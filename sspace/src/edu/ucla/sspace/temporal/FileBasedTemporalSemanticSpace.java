@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.IntegerMap;
 import edu.ucla.sspace.common.Matrices;
 import edu.ucla.sspace.common.Matrix;
 
-import edu.ucla.sspace.temporal.TemporalSemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.temporal.TemporalSemanticSpaceUtils.TSSpaceFormat;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -46,12 +46,13 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-
 /**
- * A {@link TemporalSemanticSpace} which performs no processing of documents, but simply
- * reads in a text file produced by another semantic space and converts this
- * into a {@link OnDiskMatrix}.  The input format of the file should be that
- * which is produced by {@link edu.ucla.sspace.common.TemporalSemanticSpaceUtils}.
+ * A {@link TemporalSemanticSpace} created from the serialized output of another
+ * {@code TemporalSemanticSpace} after it has finished processing.  The input
+ * format of the file should be one of the formats specified by {@link
+ * edu.ucla.sspace.common.TemporalSemanticSpaceUtils#TSSpaceFormat}.
+ *
+ * @see TemporalSemanticSpaceUtils
  */
 public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 
@@ -59,7 +60,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * A mapping of terms to row indexes.  Also serves as a quick means of
      * retrieving the words known by this {@link TemporalSemanticSpace}.
      */
-    private final Map<String,SemanticVector> termToSemantics;
+    private final Map<String,SemanticVector> wordToMeaning;
     
     /**
      * The name of this semantic space.
@@ -68,24 +69,35 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 
     /**
      * Creates the {@link FileBasedTemporalSemanticSpace} from the file using the {@link
-     * SSpaceFormat#TEXT text} format.
+     * TSSpaceFormat#TEXT text} format.
      *
      * @param filename filename of the data intended be provided by this
      *   {@link edu.ucla.sspace.common.TemporalSemanticSpace}.
      */
     public FileBasedTemporalSemanticSpace(String filename) {
-	this(new File(filename), SSpaceFormat.TEXT);
+	this(new File(filename), TSSpaceFormat.TEXT);
     }
 
     /**
      * Creates the {@link FileBasedTemporalSemanticSpace} from the provided file in the
-     * {@link SSpaceFormat#TEXT text} format.
+     * {@link TSSpaceFormat#TEXT text} format.
      *
      * @param file a file containing the data intended be provided by this {@link
      *   edu.ucla.sspace.common.TemporalSemanticSpace}.
      */
     public FileBasedTemporalSemanticSpace(File file) {
-	this(file, SSpaceFormat.TEXT);
+	this(file, TSSpaceFormat.TEXT);
+    }
+
+    /**
+     * Creates the {@link FileBasedTemporalSemanticSpace} from the file in the
+     * specified format.
+     *
+     * @param file a file containing the data intended be provided by this {@link
+     *   edu.ucla.sspace.common.TemporalSemanticSpace}.
+     */
+    public FileBasedTemporalSemanticSpace(String filename, TSSpaceFormat format) {
+	this(new File(filename), format);
     }
 
     /**
@@ -95,37 +107,40 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * @param file a file containing the data intended be provided by this {@link
      *   edu.ucla.sspace.common.TemporalSemanticSpace}.
      */
-    public FileBasedTemporalSemanticSpace(File file, SSpaceFormat format) {
+    public FileBasedTemporalSemanticSpace(File file, TSSpaceFormat format) {
 
-	// NOTE: Use a LinkedHashMap here because this will ensure that the words
-	// are returned in the same row-order as the matrix.  This generates better
-	// disk I/O behavior for accessing the matrix since each word is directly
-	// after the previous on disk.
-// 	termToIndex = new LinkedHashMap<String, Integer>();
-// 	Matrix m = null;
-// 	try {
-// 	    switch (format) {
-// 	    case TEXT:
-// 		m = Matrices.synchronizedMatrix(loadText(file));
-// 		break;
-// 	    case BINARY:
-// 		m = Matrices.synchronizedMatrix(loadBinary(file));
-// 		break;
-// 	    }
-// 	} catch (IOException ioe) {
-// 	    throw new IOError(ioe);
-// 	}  
-// 	wordSpace = m;
-	termToSemantics = null;
+	Map<String,SemanticVector> m = null;
+ 	try {
+ 	    switch (format) {
+ 	    case TEXT:
+ 		m = loadText(file);
+ 		break;
+	    case SPARSE_TEXT:
+		m = loadSparseText(file);
+		break;
+ 	    case BINARY:
+ 		m = loadBinary(file);
+ 		break;
+	    case SPARSE_BINARY:
+		m = loadSparseBinary(file);
+		break;
+	    default:
+		throw new IllegalArgumentException(
+		    "unhandled format type " + format);
+ 	    }
+ 	} catch (IOException ioe) {
+	    // rethrow
+	    throw new IOError(ioe);
+ 	}  
+
+	wordToMeaning = m;
 	spaceName = file.getName();
     }
 
     /**
      * Loads the {@link TemporalSemanticSpace} from the text formatted file,
-     * adding its words to {@link #termToIndex} and returning the {@code Matrix}
-     * containing the space's vectors.
      *
-     * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
+     * @param sspaceFile a file in {@link TSSpaceFormat#TEXT text} format
      */
     private static Map<String,SemanticVector> loadText(File sspaceFile) 
 	    throws IOException {
@@ -168,23 +183,61 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	return wordToSemantics;
     }
 
+    /**
+     * Loads the {@link TemporalSemanticSpace} from the sparse text formatted
+     * file.
+     *
+     * @param sspaceFile a file in {@link TSSpaceFormat#SPARSE_TEXT sparse text}
+     *        format
+     */
     private static Map<String,SemanticVector> loadSparseText(File sspaceFile) 
 	    throws IOException {
 
+	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
+	String[] header = br.readLine().split("\\s+");
+	int words = Integer.parseInt(header[0]);
+	int dimensions = Integer.parseInt(header[1]);
 	
-	return null;
+	Map<String,SemanticVector> wordToSemantics = 
+	    new HashMap<String,SemanticVector>(words, 2f);
+		
+	for (int wordIndex = 0; wordIndex < words; ++wordIndex) {
+	    
+	    String[] wordAndSemantics = br.readLine().split("\\|");
+	    String word = wordAndSemantics[0];
+	    SemanticVector semantics = new SemanticVector(dimensions);
+	    wordToSemantics.put(word, semantics);
+
+	    // read in each of the timesteps
+	    for (int tsIndx = 1; tsIndx < wordAndSemantics.length; ++tsIndx) {
+		String[] tsAndVec = wordAndSemantics[tsIndx].split("%");
+		String[] tsAndNonZero = tsAndVec[0].split(" ");
+		long timeStep = Long.parseLong(tsAndNonZero[0]);
+		int nonZero = Integer.parseInt(tsAndNonZero[1]);
+		String[] vecElements = tsAndVec[1].split(",");
+		
+		Map<Integer,Double> sparseArr = new IntegerMap<Double>();
+		// elements are ordered as pairs of index,value,index,value,...
+		for (int i = 0; i < vecElements.length; i += 2) {
+		    Integer index = Integer.valueOf(vecElements[i]);
+		    Double value = Double.valueOf(vecElements[i+1]);
+		}
+		semantics.setSemantics(timeStep, sparseArr);
+	    }
+	}
+
+	return wordToSemantics;
     }
 
 
     /**
      * Loads the {@link TemporalSemanticSpace} from the binary formatted file,
-     * adding its words to {@link #termToIndex} and returning the {@code Matrix}
-     * containing the space's vectors.
      *
-     * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
+     * @param sspaceFile a file in {@link TSSpaceFormat#BINARY binary} format
      */
     private static Map<String,SemanticVector> loadBinary(File sspaceFile) 
 	    throws IOException {
+
  	DataInputStream dis = 
  	    new DataInputStream(new FileInputStream(sspaceFile));
  	int words = dis.readInt();
@@ -225,6 +278,13 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	return wordToSemantics;
     }
     
+    /**
+     * Loads the {@link TemporalSemanticSpace} from the sparse binary formatted
+     * file,
+     *
+     * @param sspaceFile a file in {@link TSSpaceFormat#SPARSE_BINARY sparse
+     *        binary} format
+     */
     private static Map<String,SemanticVector> loadSparseBinary(File sspaceFile) 
 	    throws IOException {
 	
@@ -264,17 +324,37 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	
 	return wordToSemantics;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] getVectorFor(String word) {
+	SemanticVector v = wordToMeaning.get(word);
+	return (v == null) ? null : v.getVector();
+    }
     
+    /**
+     * {@inheritDoc}
+     */
     public double[] getVectorAfter(String word, long startTime) {
-	return null;
+	SemanticVector v = wordToMeaning.get(word);
+	return (v == null) ? null : v.getVectorAfter(startTime);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double[] getVectorBefore(String word, long endTime) {
-	return null;
+	SemanticVector v = wordToMeaning.get(word);
+	return (v == null) ? null : v.getVectorBefore(endTime);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double[] getVectorBetween(String word, long start, long endTime) {
-	return null;
+	SemanticVector v = wordToMeaning.get(word);
+	return (v == null) ? null : v.getVectorBetween(start, endTime);
     }
 
     /**
@@ -288,23 +368,17 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * {@inheritDoc}
      */
     public SortedSet<Long> getTimeSteps(String word) {
-	return null;
+	SemanticVector v = wordToMeaning.get(word);
+	return (v == null) ? null : v.getTimeSteps();       
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(termToSemantics.keySet());
+	return Collections.unmodifiableSet(wordToMeaning.keySet());
     }
   
-    /**
-     * {@inheritDoc}
-     */
-    public double[] getVectorFor(String term) {
-	return null;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -455,6 +529,4 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	    return computeSemantics(timespan);
 	}
     }
-
-
 }
