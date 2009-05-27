@@ -95,6 +95,8 @@ public class DocumentPreprocessor {
     public String process(String document) {
 	
 	// Step 1: Removing images, non-ascii codes, and HTML tags.
+    document = document.replaceAll("<.*?>", "");
+    /*
 	StringTokenizer st = new StringTokenizer(document);
 	StringBuilder htmlFree = new StringBuilder(document.length());
 	while (st.hasMoreTokens()) {
@@ -119,6 +121,7 @@ public class DocumentPreprocessor {
 	    }
 	}
 	document = htmlFree.toString();
+    */
 	
 	// Step 2: Removing all non-standard punctuation and separating other
 	//         punctuation from adjacent words.
@@ -126,7 +129,7 @@ public class DocumentPreprocessor {
 	// Step 7: Replacing URLs, email addresses, IP addresses, numbers
 	//         greater than 9, and emoticons with special word markers, such
 	//         as <URL>.
-	st = new StringTokenizer(document);
+	StringTokenizer st = new StringTokenizer(document);
 	StringBuilder urlized = new StringBuilder(document.length());
 	while (st.hasMoreTokens()) {
 	    String tok = st.nextToken();
