@@ -31,6 +31,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.PrintWriter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -48,11 +49,16 @@ import java.sql.Timestamp;
 public class BlogPreProcessor {
   private DocumentPreprocessor processor;
   private PrintWriter pw;
+  private boolean saveTS;
+  private String tsLength;
 
-  private BlogPreProcessor(File wordFile, File outFile) {
+  private BlogPreProcessor(File wordFile, File outFile,
+                           boolean saveTimestamp, String tsLength) {
     try {
       pw = new PrintWriter(outFile);
       processor = new DocumentPreprocessor(wordFile);
+      saveTS = saveTimestamp;
+      this.tsLength = tsLength;
     } catch (FileNotFoundException fnee) {
       fnee.printStackTrace();
       System.exit(1); 
@@ -94,14 +100,18 @@ public class BlogPreProcessor {
           needMoreContent = false;
         } else
           content += line;
-      } else if (line.contains("<updated>")) {
+      } else if (saveTS && line.contains("<updated>")) {
         // The updated timestamp only spans one line.
         int startIndex = line.indexOf(">")+1;
         int endIndex = line.lastIndexOf("<");
         date = line.substring(startIndex, endIndex);
         if (date.equals(""))
           date = null;
-      } else if (content != null && date != null) {
+        else if (tsLength.equals("day")) {
+          // Ignore the hours of the day portion of the time stamp.
+          date = date.split(" ")[0] + " 00:00:00";
+        }
+      } else if (content != null && (!saveTS || date != null)) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
         String cleanedContent = processor.process(content);
@@ -119,10 +129,13 @@ public class BlogPreProcessor {
 
   public static ArgOptions setupOptions() {
     ArgOptions opts = new ArgOptions();
-    opts.addOption('d', "blogdir", "location of directory containing only blog files", 
-                   true, "STRING", "Required");
+    opts.addOption('d', "docFiles", "location of directory containing only blog files", 
+                   true, "FILE[,FILE,...]", "Required");
     opts.addOption('w', "wordlist", "Word List for cleaning documents",
                    true, "STRING", "Required");
+    opts.addOption('t', "timestamp", "Include timestamps for each document");
+    opts.addOption('l', "lengthoftimestamp", "length of the time stamp's duration", 
+                   true, "STRING");
     return opts;
   }
 
@@ -131,20 +144,25 @@ public class BlogPreProcessor {
     ArgOptions options = setupOptions();
     options.parseOptions(args);
 
-    if (!options.hasOption("blogdir") || 
+    if (!options.hasOption("docFiles") || 
         !options.hasOption("wordlist") ||
         options.numPositionalArgs() != 1) {
       System.out.println("usage: java BlogPreProcessor [options] <out_file> \n" +
                          options.prettyPrint());
       System.exit(1);
     }
+    String tsLength =
+      options.hasOption('l') ? options.getStringOption('l') : "instant";
     File outFile = new File(options.getPositionalArg(0));
     File wordFile = new File(options.getStringOption("wordlist"));
-    final BlogPreProcessor blogCleaner = new BlogPreProcessor(wordFile, outFile);
-    File blogDir = new File(options.getStringOption("blogdir"));
-
-    int numThreads = Runtime.getRuntime().availableProcessors();
-    List<File> blogFiles = Arrays.asList(blogDir.listFiles());
+    final BlogPreProcessor blogCleaner =
+      new BlogPreProcessor(wordFile, outFile, options.hasOption('t'), tsLength);
+    String[] fileNames = options.getStringOption("docFiles").split(",");
+    
+    List<File> blogFiles = new ArrayList<File>() ;
+    for (String fileName : fileNames) {
+      blogFiles.add(new File(fileName));
+    }
 
     final Iterator<File> fileIter = blogFiles.iterator();
 
