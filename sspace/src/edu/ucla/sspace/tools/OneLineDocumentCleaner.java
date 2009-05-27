@@ -34,14 +34,13 @@ public class OneLineDocumentCleaner {
 
     public static void main(String[] args) {
 	try {
-	    if (args.length != 3) {
+	    if (args.length != 2) {
 		usage();
 		return;
 	    }
-	    File wordList = new File(args[0]);
-	    DocumentPreprocessor processor = new DocumentPreprocessor(wordList);
-	    BufferedReader br = new BufferedReader(new FileReader(args[1]));
-	    BufferedWriter bw = new BufferedWriter(new FileWriter(args[2]));
+	    DocumentPreprocessor processor = new DocumentPreprocessor();
+	    BufferedReader br = new BufferedReader(new FileReader(args[0]));
+	    BufferedWriter bw = new BufferedWriter(new FileWriter(args[1]));
 	    for (String line = null; (line = br.readLine()) != null;) {
 		String cleaned = processor.process(line);
 		if (!cleaned.equals("")){
