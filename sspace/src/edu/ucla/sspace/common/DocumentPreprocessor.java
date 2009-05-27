@@ -48,7 +48,7 @@ public class DocumentPreprocessor {
     /**
      * Constructs a {@code DocumentPreprocessor} with an empty word list 
      */
-    public DocumentPreprocessor() throws IOException {
+    public DocumentPreprocessor() {
       processedDocs = new HashSet<DocHash>();
       validWords = new HashSet<String>();
     }
@@ -96,32 +96,6 @@ public class DocumentPreprocessor {
 	
 	// Step 1: Removing images, non-ascii codes, and HTML tags.
     document = document.replaceAll("<.*?>", "");
-    /*
-	StringTokenizer st = new StringTokenizer(document);
-	StringBuilder htmlFree = new StringBuilder(document.length());
-	while (st.hasMoreTokens()) {
-	    String tok = st.nextToken();
-	    if (tok.length() > 2 && 
-		(tok.startsWith("<") || tok.startsWith("</"))) {
-		// check if there are actually two tags with a single word
-		// between, e.g. "<i>wow</i>"
-		int pos = tok.indexOf("<", 1);
-		if (pos > 0) {
-		    // get the middle text
-		    int start = tok.indexOf(">");
-		    // protect against malformed tags or other wierdness
-		    if (start < pos) {
-			String text = tok.substring(start+1, pos);
-			htmlFree.append(text).append(" ");
-		    }		
-		}
-	    } else {
-		// if it wasn't a tag, just append it
-		htmlFree.append(tok).append(" ");
-	    }
-	}
-	document = htmlFree.toString();
-    */
 	
 	// Step 2: Removing all non-standard punctuation and separating other
 	//         punctuation from adjacent words.
@@ -233,12 +207,8 @@ public class DocumentPreprocessor {
 		// 
 		// NOTE: I still haven't found a better way of checking whether
 		// a string is actually a number  --jurgens
-		try {
-		    int i = Integer.parseInt(s);
-		    dollarized.append(i).append(" dollars ");
-		} catch (NumberFormatException nfe) {
-		    // ignore, wasn't a number, so drop the token
-		}
+          if (s.matches("[0-9]+"))
+            dollarized.append("<num>").append(" dollars ");
 	    }
 	    else {
 		dollarized.append(tok).append(" ");

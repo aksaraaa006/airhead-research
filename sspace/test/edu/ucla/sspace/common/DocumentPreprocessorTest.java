@@ -62,38 +62,34 @@ public class DocumentPreprocessorTest {
   }
 
   @Test public void stripLongWords() {
-    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word be a b c d e f g or a superfragalisticexpaliadouciousmagicake";
     String expectedResult = "can a word be a b c d e f g or a";
-    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
+    DocumentPreprocessor testProcessor = new DocumentPreprocessor();
     assertEquals(expectedResult, testProcessor.process(testDocument));
   }
 
   @Test public void convertDollarTest() {
-    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word be a b c d e f g or a $5";
-    String expectedResult = "can a word be a b c d e f g or a 5 dollars";
-    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
+    String expectedResult = "can a word be a b c d e f g or a <num> dollars";
+    DocumentPreprocessor testProcessor = new DocumentPreprocessor();
     assertEquals(expectedResult, testProcessor.process(testDocument));
-    testDocument = "can a word be a b c d e f g or a $5notanumber";
-    expectedResult = "can a word be a b c d e f g or a";
+    testDocument = "can a word be  $5notanumber";
+    expectedResult = "can a word be";
     assertEquals(expectedResult, testProcessor.process(testDocument));
   }
 
   @Test public void duplicateDocTest() {
-    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word be a b c d e f g or a superfragalisticexpaliadouciousmagicake";
     String expectedResult = "can a word be a b c d e f g or a";
-    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
+    DocumentPreprocessor testProcessor = new DocumentPreprocessor();
     assertEquals(expectedResult, testProcessor.process(testDocument));
     assertEquals("", testProcessor.process(testDocument));
   }
 
   @Test public void noArgChange() {
-    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word be a b c d e f g or a superfragalisticexpaliadouciousmagicake";
     String resultDocument = new String(testDocument);
-    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
+    DocumentPreprocessor testProcessor = new DocumentPreprocessor();
     testProcessor.process(testDocument);
     assertEquals(resultDocument, testDocument);
   }

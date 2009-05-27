@@ -47,6 +47,8 @@ import java.sql.Timestamp;
  * file.
  */
 public class BlogPreProcessor {
+  private static final long SECONDS_PER_WEEK = 604800000;
+
   private DocumentPreprocessor processor;
   private PrintWriter pw;
   private boolean saveTS;
@@ -110,10 +112,15 @@ public class BlogPreProcessor {
         else if (tsLength.equals("day")) {
           // Ignore the hours of the day portion of the time stamp.
           date = date.split(" ")[0] + " 00:00:00";
+        } else if (tsLength.equals("month")) {
+          date = date.substring(0, 8) + "01 00:00:00";
+        } else if (tsLength.equals("year")) {
+          date = date.substring(0, 5) + "01-01 00:00:00";
         }
       } else if (content != null && (!saveTS || date != null)) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
+        dateTime = dateTime - (dateTime % SECONDS_PER_WEEK);
         String cleanedContent = processor.process(content);
         if (!cleanedContent.equals("")) {
           synchronized (pw) {
