@@ -25,7 +25,7 @@ class learningAgent():
     self.phoneme_attentions = numpy.ones_like(self.phoneme_vectors)
     self.attention_vectors = numpy.ones_like(self.meaning_vectors)
     self.mean = numpy.zeros_like(self.meaning_vectors)
-    self.average = numpy.zeros_like(self.meaning_vectors)
+    self.variance = numpy.zeros_like(self.meaning_vectors)
     self.activations = numpy.zeros((2, num_nodes))
     self.heb_weights = numpy.zeros((num_nodes, num_nodes))
     # Locations still need to be set correctly
@@ -47,6 +47,7 @@ class learningAgent():
     self.use_context = use_context
     self.game = game
     self.use_phonemes = use_phonemes
+    self.average_decay = .25
 
   def generateUtterance(self):
     """Generate a context vector, which is the sum of some subject representation,
@@ -79,7 +80,7 @@ class learningAgent():
     if self.use_phonemes:
       result = 1 - (dists - min_dist) / (max_dist - min_dist)
       self.activations[M_MAP] = (near * result.transpose()).transpose()
-      p_activations = numpy.dot(self.heb_weights.transpose(),
+      p_activations = numpy.dot(self.heb_weights,#.transpose(),
                                  self.activations[M_MAP])
       best_index = 0
       best_value = p_activations[0]
@@ -183,7 +184,10 @@ class learningAgent():
     if not self.use_attention:
       return
     self.value_count += 1
-    delta = (near * (self.meaning_vectors - self.average).transpose()).transpose()
-    self.average += (delta/self.value_count)
-    self.mean += delta * (meaning_vector - self.average)
-    self.attention_vectors = 1 / (1 + (self.mean / self.value_count))
+    N = self.value_count
+    old_N = self.value_count - 1
+    delta_sqr = numpy.power((meaning_vector - self.mean) / self.value_count, 2)
+    self.variance = (old_N / N) * self.variance + old_N * delta_sqr
+    self.mean = (self.average_decay * meaning_vector +
+                 (1-self.average_decay) * self.mean)
+    self.attention_vectors = 1 / (1 + self.variance)

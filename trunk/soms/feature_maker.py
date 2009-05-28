@@ -32,6 +32,9 @@ def buildFeatureSet(keys, features, word_file):
   print [(word, word_mappings[word[0]]) for word in word_list if word[0] in
          word_mappings]
   r = numpy.random.rand(vector_size, 100)
+  row_sums = r.sum(axis=1)
+  row_sums[row_sums == 0] = 1
+  r = (r.transpose() / row_sums).transpose()
   used_words = []
   for word in word_list:
     if word[0] in word_mappings:
