@@ -45,6 +45,8 @@ import edu.ucla.sspace.common.FileBasedSemanticSpace;
 import edu.ucla.sspace.common.Pair;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceUtils;
+import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 import edu.ucla.sspace.common.VectorIO;
 
 /**
@@ -78,6 +80,10 @@ public class SimilarityListGenerator {
 			     "Program Options");
 	argOptions.addOption('n', "numSimilar", "the number of similar words " +
 			     "to print (default: 10)", true, "String", 
+			     "Program Options");
+
+	argOptions.addOption('f', "sspaceFormat", ".sspace file format" +
+			     " (default: text)", true, "text|binary", 
 			     "Program Options");
 
 
@@ -164,7 +170,15 @@ public class SimilarityListGenerator {
 
 
 	verbose("Loading semantic space: " + sspaceFile.getName());
-	final SemanticSpace sspace = new FileBasedSemanticSpace(sspaceFile);
+	
+	SSpaceFormat format = SSpaceFormat.TEXT;
+	if (argOptions.hasOption("sspaceFormat")) {
+	    format = SSpaceFormat.valueOf(
+		argOptions.getStringOption("sspaceFormat"));
+	}
+
+	final SemanticSpace sspace = 
+	    SemanticSpaceUtils.loadSemanticSpace(sspaceFile, format);
 
 	File output = (overwrite)
 	    ? new File(outputDir, sspaceFile.getName() + ".similarityList")
