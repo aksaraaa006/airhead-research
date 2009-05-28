@@ -22,6 +22,7 @@
 package edu.ucla.sspace.ri;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 
 import java.lang.reflect.Constructor;
 
@@ -420,7 +421,7 @@ public class RandomIndexing implements SemanticSpace {
      *
      * @param document {@inheritDoc}
      */
-    public void processDocument(BufferedReader document) {
+    public void processDocument(BufferedReader document) throws IOException {
 
 	Queue<String> prevWords = new ArrayDeque<String>(windowSize);
 	Queue<String> nextWords = new ArrayDeque<String>(windowSize);
@@ -480,6 +481,8 @@ public class RandomIndexing implements SemanticSpace {
 		prevWords.remove();
 	    }
 	}	
+
+	document.close();
     }
     
     /**

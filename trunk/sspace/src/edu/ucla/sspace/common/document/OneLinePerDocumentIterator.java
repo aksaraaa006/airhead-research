@@ -77,6 +77,11 @@ public class OneLinePerDocumentIterator implements Iterator<Document> {
 	Document next = new StringDocument(nextLine);
 	try {
 	    nextLine = documentsReader.readLine();
+
+	    // close the stream if there were no more lines
+	    if (nextLine == null) {
+		documentsReader.close();
+	    }
 	} catch (Throwable t) {
 	    t.printStackTrace();
 	    nextLine = null;
