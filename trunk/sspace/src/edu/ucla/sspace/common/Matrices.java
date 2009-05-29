@@ -68,6 +68,7 @@ public class Matrices {
 	    ? rows * cols * (long)BYTES_PER_DOUBLE
 	    : (long)(rows * cols * BYTES_PER_DOUBLE * SPARSE_DENSITY);
 
+
 	Runtime r = Runtime.getRuntime();
 	// REMINDER: possibly GC here?
 	long available = r.freeMemory();
@@ -75,7 +76,8 @@ public class Matrices {
 	// See if it will fit into memory given how much is currently left.
 	if (size < available) {
 	    return (isDense) 
-		? new ArrayMatrix(rows, cols) 
+		? ((size > Integer.MAX_VALUE) ? new OnDiskMatrix(rows, cols) :
+                                        new ArrayMatrix(rows, cols))
 		: new SparseMatrix(rows, cols);
 	}
 	// won't fit into memory
