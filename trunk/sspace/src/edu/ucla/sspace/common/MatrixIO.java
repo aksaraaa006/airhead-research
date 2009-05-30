@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import java.util.logging.Logger;
@@ -239,79 +240,105 @@ public class MatrixIO {
 	}
 	br.close();
 
-	// Once the dimensions and number of non-zero values are known,
-	// reprocess the matrix, storing the rows and values for each column
-	br = new BufferedReader(new FileReader(input));
-
-	// REMDINER: this step should be done in chunk in case the matlab array
-	// is too big to fit into memory.
-
-	// for each column, keep track of which in the next index into the rows
-	// array that should be used to store the row index.  Also keep track of
-	// the value associated for that row
-	int[] colIndices = new int[cols];
-	Map<Integer,int[]> colToRowIndex = new TreeMap<Integer,int[]>();
-	Map<Integer,float[]> colToRowValues = new TreeMap<Integer,float[]>();
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] rowColVal = line.split("\\s+");
-	    int row = Integer.parseInt(rowColVal[0]) - 1;
-	    int col = Integer.parseInt(rowColVal[1]) - 1;
-	    // NOTE: SVDLIBC uses floats instead of doubles, which can cause a
-	    // loss of precision
-	    float val = Double.valueOf(rowColVal[2]).floatValue();
-
-	    // get the arrays used to store the non-zero row indices for this
-	    // column and the parallel array that stores the row-index's value
-	    int[] rowIndices = colToRowIndex.get(col);
-	    float[] rowValues = colToRowValues.get(col);
-	    if (rowIndices == null) {
-		rowIndices = new int[colToNonZero.get(col)];
-		rowValues = new float[colToNonZero.get(col)];
-		colToRowIndex.put(col,rowIndices);
-		colToRowValues.put(col,rowValues);
-	    }
-	    
-	    // determine what is the current index in the non-zero row array
-	    // that can be used to store this row.
-	    int curColIndex = colIndices[col];
-	    rowIndices[curColIndex] = row;
-	    rowValues[curColIndex] = val;
-	    colIndices[col] += 1;
-	}	
-	br.close();
-
+	// print out the header information 
 	PrintWriter pw = new PrintWriter(output);
-	br = new BufferedReader(new FileReader(input));
-
-	// loop through the stored column and row values, printing out for each
-	// column, the number of non zero rows, followed by each row index and
-	// the value.  This is the SVDLIBC sparse text format.
 	pw.println(rows + "\t" + cols + "\t" + nonZero);
+
+	// Process the entire array in chunks in case the matlab array is too
+	// big to fit into memory.
+
+	// REMINDER: this should probably be chosen based on the number of rows
+	// and their expected density
+	int chunkSize = 1000; 
+
+	// This keeps track of the last columns printed.  We need this outside
+	// the loop to ensure that blank columns at the end of a chunk are still
+	// printed by the next non-zero chunk
 	int lastCol = -1;
+	
+	// lower bound inclusive, upper bound exclusive
+	for (int lowerBound = 0, upperBound = chunkSize ; lowerBound < rows; 
+	         lowerBound = upperBound, upperBound += chunkSize) {
 
-	for (Map.Entry<Integer,int[]> e : colToRowIndex.entrySet()) {
-	    int col = e.getKey().intValue();
-	    int[] nonZeroRows = e.getValue();
-	    float[] values = colToRowValues.get(col);
+	    // Once the dimensions and number of non-zero values are known,
+	    // reprocess the matrix, storing the rows and values for each column
+	    // that are inside the bounds 
+	    br = new BufferedReader(new FileReader(input));
+
 	    
-	    if (col != lastCol) {
-		// print any missing columns in case not all the columns have
-		// data
-		for (int i = lastCol + 1; i < col; ++i) {
-		    pw.println(0);
-		}
-		// print the new header
-		int colCount = colToNonZero.get(col);
-		lastCol = col;
-		pw.println(colCount);		    
-	    }
+	    // for each column, keep track of which in the next index into the rows
+	    // array that should be used to store the row index.  Also keep track of
+	    // the value associated for that row
+	    int[] colIndices = new int[cols];
 
-	    for (int i = 0; i < nonZeroRows.length; ++i) {
-		pw.println(nonZeroRows[i] + " " + values[i]);
+	    // columns are kept in sorted order
+	    SortedMap<Integer,int[]> colToRowIndex = 
+		new TreeMap<Integer,int[]>();
+	    SortedMap<Integer,float[]> colToRowValues = 
+		new TreeMap<Integer,float[]>();
+
+	    for (String line = null; (line = br.readLine()) != null; ) {
+
+		String[] rowColVal = line.split("\\s+");
+		int row = Integer.parseInt(rowColVal[0]) - 1;
+		int col = Integer.parseInt(rowColVal[1]) - 1;
+		// NOTE: SVDLIBC uses floats instead of doubles, which can cause a
+		// loss of precision
+		float val = Double.valueOf(rowColVal[2]).floatValue();
+		
+		// check that the current column is within the current chunk
+		if (col < lowerBound || col >= upperBound) {
+		    continue;
+		}
+
+
+		// get the arrays used to store the non-zero row indices for this
+		// column and the parallel array that stores the row-index's value
+		int[] rowIndices = colToRowIndex.get(col);
+		float[] rowValues = colToRowValues.get(col);
+		if (rowIndices == null) {
+		    rowIndices = new int[colToNonZero.get(col)];
+		    rowValues = new float[colToNonZero.get(col)];
+		    colToRowIndex.put(col,rowIndices);
+		    colToRowValues.put(col,rowValues);
+		}
+	    
+		// determine what is the current index in the non-zero row array
+		// that can be used to store this row.
+		int curColIndex = colIndices[col];
+		rowIndices[curColIndex] = row;
+		rowValues[curColIndex] = val;
+		colIndices[col] += 1;
+	    }	
+	    br.close();
+
+	    // loop through the stored column and row values, printing out for each
+	    // column, the number of non zero rows, followed by each row index and
+	    // the value.  This is the SVDLIBC sparse text format.	    
+
+	    for (Map.Entry<Integer,int[]> e : colToRowIndex.entrySet()) {
+		int col = e.getKey().intValue();
+		int[] nonZeroRows = e.getValue();
+		float[] values = colToRowValues.get(col);
+		
+		if (col != lastCol) {
+		    // print any missing columns in case not all the columns have
+		    // data
+		    for (int i = lastCol + 1; i < col; ++i) {
+			pw.println(0);
+		    }
+		    // print the new header
+		    int colCount = colToNonZero.get(col);
+		    lastCol = col;
+		    pw.println(colCount);		    
+		}
+		
+		for (int i = 0; i < nonZeroRows.length; ++i) {
+		    pw.println(nonZeroRows[i] + " " + values[i]);
+		}
 	    }
 	}
 
-	br.close();
 	pw.flush();
 	pw.close();
     }

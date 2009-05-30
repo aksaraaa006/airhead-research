@@ -173,8 +173,10 @@ public class SimilarityListGenerator {
 	
 	SSpaceFormat format = SSpaceFormat.TEXT;
 	if (argOptions.hasOption("sspaceFormat")) {
-	    format = SSpaceFormat.valueOf(
-		argOptions.getStringOption("sspaceFormat"));
+	    // capitalize the name to be consistent with the enum
+	    String formatName = 
+		argOptions.getStringOption("sspaceFormat").toUpperCase();
+	    format = SSpaceFormat.valueOf(formatName);
 	}
 
 	final SemanticSpace sspace = 

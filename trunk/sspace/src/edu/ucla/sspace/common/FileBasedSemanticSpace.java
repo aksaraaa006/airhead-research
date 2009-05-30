@@ -112,6 +112,17 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	    case BINARY:
 		m = Matrices.synchronizedMatrix(loadBinary(file));
 		break;
+	      
+	    // REMINDER: we don't use synchronized here because the current
+	    // sparse matrix implementations are thread-safe.  We really should
+	    // be aware of this for when the file-based sparse matrix gets
+	    // implemented.  -jurgens 05/29/09
+	    case SPARSE_TEXT:
+		m = loadSparseText(file);
+		break;
+	    case SPARSE_BINARY:
+		m = loadSparseBinary(file);
+		break;
 	    }
 	} catch (IOException ioe) {
 	    throw new IOError(ioe);
@@ -162,6 +173,47 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     }
 
     /**
+     * Loads the {@link SemanticSpace} from the text formatted file, adding its
+     * words to {@link #termToIndex} and returning the {@code Matrix} containing
+     * the space's vectors.
+     *
+     * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
+     */
+    private Matrix loadSparseText(File sspaceFile) throws IOException {
+	Matrix matrix = null;
+
+	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
+	String line = br.readLine();
+	if (line == null)
+	    throw new IOError(new Throwable("An empty file has been passed in"));
+	String[] dimensions = line.split("\\s");
+	int rows = Integer.parseInt(dimensions[0]);
+	int columns = Integer.parseInt(dimensions[1]);
+
+	int row = 0;
+	
+	// create a sparse matrix
+	matrix = Matrices.create(rows, columns, false);
+	while ((line = br.readLine()) != null) {
+	    String[] termVectorPair = line.split("\\|");
+	    String[] values = termVectorPair[1].split(",");
+	    termToIndex.put(termVectorPair[0], row);
+	    if (values.length != columns) {
+		throw new IOError(
+		    new Throwable("improperly formated semantic space file"));	    
+	    }
+	    // even indicies are columns, odd are the values
+	    for (int i = 0; i < columns; i +=2 ) {
+		int col = Integer.parseInt(values[i]);
+		double val = Double.parseDouble(values[i+1]);
+		matrix.set(row, col, val);
+	    }
+	    row++;
+	}
+	return matrix;    
+    }
+
+    /**
      * Loads the {@link SemanticSpace} from the binary formatted file, adding
      * its words to {@link #termToIndex} and returning the {@code Matrix}
      * containing the space's vectors.
@@ -186,7 +238,35 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	}
 	return m;
     }
-    
+
+    /**
+     * Loads the {@link SemanticSpace} from the binary formatted file, adding
+     * its words to {@link #termToIndex} and returning the {@code Matrix}
+     * containing the space's vectors.
+     *
+     * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
+     */
+    private Matrix loadSparseBinary(File sspaceFile) throws IOException {
+	DataInputStream dis = 
+	    new DataInputStream(new FileInputStream(sspaceFile));
+	int rows = dis.readInt();
+	int cols = dis.readInt();
+	// create a sparse matrix
+	Matrix m = Matrices.create(rows, cols, false);
+
+	for (int row = 0; row < rows; ++row) {
+	    String word = dis.readUTF();
+	    termToIndex.put(word, row);
+	    
+	    int nonZero = dis.readInt();
+	    for (int i = 0; i < nonZero; ++i) {
+		int col = dis.readInt();
+		double val = dis.readDouble();
+		m.set(row, col, val);
+	    }
+	}
+	return m;
+    }
 
     /**
      * {@inheritDoc}

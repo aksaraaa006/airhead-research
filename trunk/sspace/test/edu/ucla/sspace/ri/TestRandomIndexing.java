@@ -35,6 +35,7 @@ public class TestRandomIndexing {
     private static final long SEED = 42L;
 
     @Test public void test() throws IOException {
+
 	
 	RandomIndexing ri = new RandomIndexing(new Properties());
 	ri.RANDOM.setSeed(SEED);
