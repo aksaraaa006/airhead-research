@@ -62,7 +62,7 @@ public class SemanticSpaceUtils {
      * The type of formatting to use when writing a semantic space to a file.
      * See <a href="SemantSpaceUtils.html#format">here</a> for file format specifications.
      */
-    public enum SSpaceFormat { TEXT, BINARY }
+    public enum SSpaceFormat { TEXT, BINARY, SPARSE_TEXT, SPARSE_BINARY }
 
     /**
      * Uninstantiable
@@ -142,6 +142,12 @@ public class SemanticSpaceUtils {
 	case BINARY:
 	    printBinary(sspace, output);
 	    break;
+	case SPARSE_TEXT:
+	    printSparseText(sspace, output);
+	    break;
+	case SPARSE_BINARY:
+	    printSparseBinary(sspace, output);
+	    break;
 	default:
 	    throw new IllegalArgumentException("Unknown format type: "+ format);
 	}
@@ -188,6 +194,81 @@ public class SemanticSpaceUtils {
 	    dos.writeUTF(word);
 	    for (double d : sspace.getVectorFor(word)) {
 		dos.writeDouble(d);
+	    }
+	}
+	dos.close();
+    }
+
+    private static void printSparseText(SemanticSpace sspace, File output) 
+	    throws IOException {
+
+	PrintWriter pw = new PrintWriter(output);
+	Set<String> words = sspace.getWords();
+	// determine how many dimensions are used by the vectors
+	int dimensions = 0;
+	if (words.size() > 0) {
+	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	}
+
+	// print out how many vectors there are and the number of dimensions
+	pw.println(words.size() + " " + dimensions);
+
+	for (String word : words) {
+	    pw.print(word + "|");
+	    // for each vector, print all the non-zero elements and their indices
+	    double[] vector = sspace.getVectorFor(word);
+	    boolean first = true;
+	    StringBuilder sb = new StringBuilder(dimensions * 4);
+	    for (int i = 0; i < vector.length; ++i) {
+		double d = vector[i];
+		if (d != 0d) {
+		    if (first) {
+			sb.append(i).append(",").append(d);
+			first = false;
+		    }
+		    else {
+			sb.append(",").append(i).append(",").append(d);
+		    }
+		}
+	    }
+	    pw.println(sb.toString());
+	}
+	pw.close();
+    }
+
+
+    private static void printSparseBinary(SemanticSpace sspace, File output) 
+	    throws IOException {
+
+	DataOutputStream dos = 
+	    new DataOutputStream(new FileOutputStream(output));
+	Set<String> words = sspace.getWords();
+	// determine how many dimensions are used by the vectors
+	int dimensions = 0;
+	if (words.size() > 0) {
+	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	}
+
+	// print out how many vectors there are and the number of dimensions
+	dos.writeInt(words.size());
+	dos.writeInt(dimensions);
+
+	for (String word : words) {
+	    dos.writeUTF(word);
+	    double[] vector = sspace.getVectorFor(word);
+	    // count how many are non-zero
+	    int nonZero = 0;
+	    for (double d : vector) {
+		if (d != 0d)
+		    nonZero++;
+	    }
+	    dos.writeInt(nonZero);
+	    for (int i = 0; i < vector.length; ++i) {
+		double d = vector[i];
+		if (d != 0d) {
+		    dos.writeInt(i);
+		    dos.writeDouble(d);
+		}
 	    }
 	}
 	dos.close();
