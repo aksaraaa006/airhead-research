@@ -1,0 +1,132 @@
+\documentclass[11pt]{article}
+
+\usepackage{acl-ijcnlp2009}
+
+\usepackage{epsfig}
+\usepackage{times}
+\usepackage{url}
+\usepackage{latexsym}
+
+\title{Self Organizing Maps in a Learning Game}
+
+\author{Keith Stevens \\
+  University of California, Los Angeles \\
+  kstevens@cs.ucla.edu}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+%hypothesis goes here, apprach, claims and goals also go here.
+Acquiring the first aspects of language in artificial agents is a problem that
+has been addressed by a variety of approaches.  There are symbolic approachs
+which use logical inferences to deduce which object a word refers too
+\cite{Siskind}, and approaches which use simple decision trees and predicate
+logic to ground the meaning of a word \cite{GoldNico}.  There are also
+statistical approaches which utilize bayesian statistics to compute the
+likelihood of a word grounding to a particular object based on it's usage
+\cite{FazlyProbRefUn,SmithCommSystem,VogtSocial}.  Each of these approachs have worked to tackle a central issue, the
+presence of referential uncertainty.  
+
+Referential uncertainty is a term describing the situation where a word can be
+heard, and several objects could be present to a young learning agent.  The
+agent would then have to decide which object the word most likely refers too.
+This is best described by Quine \cite{Quine} with his "gavagi" problem, where an
+anthropologist is traveling with a tribe of people speaking a foreign tongue,
+and suddenly one of them points to a rabbit and speaks "gavagi".  Knowing no
+words for this language so far, the antrhopologist must guess which object the
+word refers to, usually by observing multiple uses of the word, in different
+contexts.  Both symbolic and stastitical approachs have relied on the key
+assumption that words are eventually used in enough contexts to clarify their
+meaning.
+
+Recently, a connectionist model has been introduced which models early word
+acquisition by use of several connected self organizing maps
+\cite{LiDevLex,MiikDisLex}.
+This system has the appealing ability to model a growing lexicon, which can be
+challenging in connectionist systems due to catastrophic interference, by
+training connections between the two maps with pairs of semantic representations
+and phonological representations.  One issue mentioned by the authors earlier in
+\cite{FarkasWcd} is that connectionist systems tend to learn based of unrealistic
+data, and address this problem by taking incorporating word co-occurance
+information into the semantic representations based on the agents current
+lexicon.  The one key feature missing from this system is the incorporation of
+referential uncertainty when learning.
+
+This project introduces a combination of a simplified version of the DevLex
+architecture \cite{LiDevLex}, and a simple learning game frequently uesd for
+bootstraping lexical groundings in stastistical agents \cite{VogtLearningSim,VogtSocial}.  There
+are two key initial challenges in this project.  First, can agents using self organizing maps
+correctly agree on a language when no language currently exists when there is no
+referential uncertainty?  Second, can these agents, or an enhancement of these
+agents, handle referential uncertainty when learning?
+
+\section{Overview and the Learning Game}
+%describe the hypotheses in more detail.
+A simulation of how humans acquire their first words would present a situation where
+an agent which a well defined lexicon speaks about the world with a new agent,
+but this well estabilished agent would have to be designed by hand.  As such, 
+approximation of early word acquisition has been used which allows new agents to
+bootstrap their lexicons through simple learning games
+\cite{VogtLearningSim,VogtSocial}.  In some resepects, this
+approximation is similar to young children interacting in a world with objects they are
+not familiar with.  
+
+Each learning game have the following basic steps:
+\begin{enumerate}
+  \item A speaker is choosen.
+  \item A speaker choose a set of objects to speak about.  It then choose on of
+  the objects within the context to be the focus object of the learning game.
+  \item The speaker speaks some word which best describes the focus object.
+  \item The hearer learns to accociate the spoken word with the focus object.
+\end{enumerate}
+
+There are three basic versions of a simple learning game introduced in
+\cite{VogtLearningSim}, which are each progressively more difficult to handle.
+
+\begin{enumerate}
+  \item Observation Game: Speakers inform the hearer of the focus object before
+  speaking.
+  \item Guessing Game: The hearer is not informed of the focus object, but can
+  point to the object it gusses to be the focus object, and the speaker can
+  either confirm or correct the guess.
+  \item Selfish Game: The hearer is not informed of the focus object, and makes
+  no response during the learning game.
+\end{enumerate}
+
+The Observation Game is of little interest for this project since this is akin
+to telepathicly telling each agent what the mapping should be, and side steps the
+presence of referential uncertainty altogether.  The Guessing Game is of some
+interest, since this represents either correction or a reward after making a
+guess.  The last version of the learning game, the Selfish Game, is of the most
+interest, since if the speaker has a well defined lexicon, this would be a close
+simulation of a parent speaking about the world, with a child passively
+overhearing the conversation and attempting to map the words to present objects.
+In the current model of bootstraping lexicon, it still is of interest, as it
+could be considered to be a simulation of a child observing two other children
+speaking with each other.
+
+It is my main hypotheses is that a simple self organizing map should be sufficent for
+a small population of agents to agree on a small artificial language without
+referential uncertainty using on the Selfish Game.  Once referential
+uncertainty in introduced, the self organizing map alone will be insufficent,
+and would need some additional mechanism, yet should still be feasible with the
+Selfish Game.
+\section{Architecture}
+%archetecture goes here, along with description of software packages used, and
+%the current status of each module.
+\section{Input}
+%general io and specific examples goes here.
+\section{Experiment and result}
+%describe the results
+\section{Discussion and conclusion}
+%discuss the results, how they reflect on previous word, and what issues exist,
+%and conclude.
+some text here.
+\bibliographystyle{acl}
+\bibliography{report}
+
+\end{document}
