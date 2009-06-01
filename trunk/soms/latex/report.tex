@@ -237,9 +237,89 @@ this configuration, production is simply done by producing the word mapped to
 the winning node in the semantic map.
 
 \section{Input}
+
+\begin{center}
+  \begin{table*}
+    \begin{tabular}[t] { | l | c | c | }
+      \hline
+      Word & Category & Vector \\
+      \hline
+      ball & Toys & \includegraphics[width=.80\textwidth]{ball.ppm} \\
+      cheese & Food \& Drink & \includegraphics[width=.80\textwidth]{cheese.ppm} \\
+      juice & Food \& Drink &\includegraphics[width=.80\textwidth]{juice.ppm} \\ 
+      milk & Food \& Drink &\includegraphics[width=.80\textwidth]{milk.ppm} \\ 
+      pants & Clothing & \includegraphics[width=.80\textwidth]{pants.ppm} \\
+      sock & Clothing &\includegraphics[width=.80\textwidth]{sock.ppm} \\
+      \hline
+    \end{tabular}
+    \caption{Sample vectors for semantic representations}
+    \label{tb:semantics}
+  \end{table*}
+\end{center}
+
 %general io and specific examples goes here.
+Two forms of input need to be fed into the system, semantic representations and
+phonological representations.  Additionally there is a fixed lexicon of words
+which is accompanied by the phonological representations.  For phonetics,
+vectors produced from the PatPho system \cite{LiPatPho}.  These vectors have 15
+real valued features which are produced based on how each word fits into a
+syllable template.  PatPho vectors for 401 chinese words are used with the
+pinyin romanization for the string form of each word.  A sample of these vectors
+can be seen in Figure \ref{fig:phono}
+
+The semantic vectors correspond to the objects placed in the learning environment.
+For these semantic representations, initially 60 vectors, each with 60 real valued
+features, were randomly generated.  In each random vector, 3 randome features were
+randomly assigned a value between 0 and 1.  These random vectors had no underlying
+patterns within them.
+
+The other set of semantic vectors built using a feature generation system
+\cite{HarmWordNetFeature}.  This feature generatin system first builds binary
+features for the provided words based on information in the WordNet taxonomy.
+Since these binary feature vectors are of a high dimension, they are reduced
+using random mapping, the same process is used for the semantic vectors used in
+\cite{LiDevLex}.  The 60 words used for generating vectors were taken from the
+vocabulary from the MacArthur–Bates Communicative Development Inventories (CDI) \cite{DaleCDI}.
+This list is a collection of words learned by toddlers in early stages of word
+acquisition.  The 60 words selected were the first 60 in this list when sorted
+according to age the word is acquired, and thus the earliest words acquired by
+toddlers.  These words are approximately the first 60 words used in \cite{LiDevLex}.
+
+\begin{figure} \center \includegraphics[width=.49\textwidth]{phono-gray.eps}
+\caption{Gray scale vector of 6 sample phonological vectors.} \label{fig:phono} \end{figure}
+
 \section{Experiment and result}
 %describe the results
+For this project, the experiment is to run a series of learning games with a
+small number of learning agents to determine wether or not a population of simple connectionist
+agents can agree on a language.  Several configurations of agents are run:
+
+{\small
+\begin{enumerate}
+
+\item Agents use only a semantic map, with no attentional learning.
+
+\item Agents use only a semantic map with attentional learning.
+
+\item Agents ues both maps with no attentional learning.
+
+\item Agents use both maps with attentional learning.
+
+\end{enumerate}
+}
+
+In addition to these configurations for agents, the learning environment is
+also moddifed to either include contexts in learning games, or not include
+contexts (and thus reduce the difficulty in learning).
+
+To evaluate each configuration, two key metrics are used.  First is language
+convergens, monitoring how many objects all the agents are able to agree on a
+single term.  Second is the rate of homonymy, measuring how many objects are
+refered to by each word.  If both convergence and homonym are high, then the
+agents have developed a vague and unusable language.  The ideal language should
+have high convergence and low homonymy.  
+
+
 \section{Discussion and conclusion}
 %discuss the results, how they reflect on previous word, and what issues exist,
 %and conclude.

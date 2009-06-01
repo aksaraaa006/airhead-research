@@ -137,8 +137,7 @@ class LearningGame():
         converge_count += 1
       meanings.discard("")
       object_mappings.append(meanings)
-    print "number of converging mappings %f" %(converge_count /
-                                               float(len(self.objects)))
+
     object_axis = []
     mapping_axis = []
     words = [ word for (word, _) in self.word_list]
@@ -152,6 +151,13 @@ class LearningGame():
 
     syn_counts = [syn_dict[key] for key in syn_dict]
     syn_axis = [i for i in range(len(syn_dict))]
+
+    print "number of converging mappings %f" %(converge_count /
+                                               float(len(self.objects)))
+    total_homonymy = sum(syn_counts) 
+    print "Average homonomy in the language %f" %(total_homonymy /
+                                                  float(len(syn_dict)))
+
     intro_axis = [self.time_first_seen[key] for key in syn_dict]
     print syn_dict
     print syn_counts
