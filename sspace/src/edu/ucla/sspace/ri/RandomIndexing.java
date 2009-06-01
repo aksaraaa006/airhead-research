@@ -163,7 +163,7 @@ import edu.ucla.sspace.common.WordIterator;
 public class RandomIndexing implements SemanticSpace {
 
     public static final String RI_SSPACE_NAME =
-    "random-indexing-semantic-space";
+    "random-indexing";
 
     /**
      * The prefix for naming public properties.
@@ -406,7 +406,10 @@ public class RandomIndexing implements SemanticSpace {
      * {@inheritDoc}
      */ 
     public String getSpaceName() {
-      return RI_SSPACE_NAME;
+      return RI_SSPACE_NAME + "-" + vectorLength + "v-" + windowSize + "w-" 
+	  + ((usePermutations) 
+	     ? permutationFunc.toString() 
+	     : "noPermutations");
     }
 
     /**

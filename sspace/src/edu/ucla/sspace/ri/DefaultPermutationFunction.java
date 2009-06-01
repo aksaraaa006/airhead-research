@@ -165,6 +165,13 @@ public class DefaultPermutationFunction implements PermutationFunction {
     }
 
     /**
+     * Returns the name of this class
+     */
+    public String toString() {
+	return "DefaultPermutationFunction";
+    }
+
+    /**
      * A bijective, invertible mapping between indices.
      */
     private static class Function {

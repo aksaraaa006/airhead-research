@@ -148,7 +148,6 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
 			  + " before processing", true,
 			  "FILE", "Algorithm Options");
-
     }
 
     public static void main(String[] args) {

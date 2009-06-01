@@ -95,11 +95,17 @@ public class GrowingSparseMatrix implements Matrix {
    * assumed to be zero.
    */
   public void set(int row, int col, double val) {
-    if (row >= sparseMatrix.size())
-      while (sparseMatrix.size() <= row)
+    if (val == 0d) {
+	return;
+    }
+    if (row >= sparseMatrix.size()) {
+      while (sparseMatrix.size() <= row) {
         sparseMatrix.add(new RowEntry());
-    if (col > cols)
+      }
+    }
+    if (col > cols) {
       cols = col+1;
+    }
     sparseMatrix.get(row).setValue(col, val);
   }
 
@@ -121,7 +127,10 @@ public class GrowingSparseMatrix implements Matrix {
       while (sparseMatrix.size() <= row)
         sparseMatrix.add(new RowEntry());
     for (int col = 0; col < cols; ++col) {
-      sparseMatrix.get(row).setValue(col, columns[col]);
+      int val = columns[col];
+      if (val != 0) {
+	sparseMatrix.get(row).setValue(col, val);
+      }
     }
   }
   
@@ -182,9 +191,9 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public void setValue(int column, double value) {
       int valueIndex = Collections.binarySearch(columnIndexes, column);
-      if (valueIndex >= 0 && value > 0.0) {
+      if (valueIndex >= 0 && value != 0.0) {
         values.set(valueIndex, value);
-      } else if (value > 0.0) {
+      } else if (value != 0.0) {
         values.add((valueIndex + 1) * -1, value);
         columnIndexes.add((valueIndex+1) * -1, column);
       } else if (valueIndex >= 0) {
