@@ -127,7 +127,7 @@ public class GrowingSparseMatrix implements Matrix {
       while (sparseMatrix.size() <= row)
         sparseMatrix.add(new RowEntry());
     for (int col = 0; col < cols; ++col) {
-      int val = columns[col];
+      double val = columns[col];
       if (val != 0) {
 	sparseMatrix.get(row).setValue(col, val);
       }
