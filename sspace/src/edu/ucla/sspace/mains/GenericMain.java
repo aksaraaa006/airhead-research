@@ -95,6 +95,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author David Jurgens
  */
 public abstract class GenericMain {
+
     /**
      * Extension used for all saved semantic space files.
      */
@@ -117,9 +118,11 @@ public abstract class GenericMain {
     }
 
     /**
-     * Returns the {@link SemanticSpace} that will be used for processing
+     * Returns the {@link SemanticSpace} that will be used for processing.  This
+     * method is guaranteed to be called after the command line arguments have
+     * been parsed, so the contents of {@link #argOptions} are valid.
      */
-    abstract public SemanticSpace getSpace();
+    abstract protected SemanticSpace getSpace();
 
     /**
      * Prints out information on how to run the program to {@code stdout}.
@@ -146,6 +149,12 @@ public abstract class GenericMain {
      * @see #addExtraOptions(ArgOptions)
      */
     protected void handleExtraOptions() { }
+
+    /**
+     * Allows subclasses to interact with the {@code SemanticSpace} after the
+     * space has finished processing all of the text.
+     */
+    protected void postProcessing() { }
 
     /**
      * Returns the {@code Properties} object that will be used when calling
@@ -199,7 +208,7 @@ public abstract class GenericMain {
 	    System.exit(1);
 	}
 	argOptions.parseOptions(args);
-	
+
 	if (argOptions.numPositionalArgs() == 0) {
 	    throw new IllegalArgumentException("must specify output directory");
 	}
@@ -290,6 +299,8 @@ public abstract class GenericMain {
 	endTime = System.currentTimeMillis();
 	verbose("printed space in %.3f seconds%n",
 		((endTime - startTime) / 1000d));
+
+	postProcessing();
     }
 
     /**
