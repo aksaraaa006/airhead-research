@@ -24,11 +24,18 @@ package edu.ucla.sspace.mains;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.ri.IndexVector;
+import edu.ucla.sspace.ri.IndexVectorUtil;
 import edu.ucla.sspace.ri.RandomIndexing;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.IOError;
 
+import java.util.Map;
 import java.util.Properties;
+
+import java.util.logging.Logger;
 
 /**
  * An executable class for running {@link RandomIndexing} from the command line.
@@ -102,9 +109,19 @@ import java.util.Properties;
  */
 public class RandomIndexingMain extends GenericMain {
 
-    private Properties props;
+    private static final Logger LOGGER 
+	= Logger.getLogger(RandomIndexingMain.class.getName());
+
+    private Properties props;    
+
+    /**
+     * The {@link RandomIndexing} instance used by this runnable.  This variable
+     * is assigned after {@link #getSpace()} is called.
+     */
+    private RandomIndexing ri;
 
     private RandomIndexingMain() {
+	ri = null;
     }
 
     /**
@@ -125,6 +142,13 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('s', "windowSize", "how many words to consider " +
 			  "in each direction", true,
 			  "INT", "Algorithm Options");
+	options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
+			  + " after processing", true,
+			  "FILE", "Algorithm Options");
+	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
+			  + " before processing", true,
+			  "FILE", "Algorithm Options");
+
     }
 
     public static void main(String[] args) {
@@ -163,10 +187,46 @@ public class RandomIndexingMain extends GenericMain {
     return props;
     }
 
-    public SemanticSpace getSpace() {
-      // Once all the optional properties are known and set, create the
-      // RandomIndexing algorithm using them
-      return new RandomIndexing(props);
+    /**
+     * Returns an instance of {@link RandomIndexing}.  If {@code loadVectors} is
+     * specified in the command line options, this method will also initialize
+     * the word-to-{@link IndexVector} mapping.
+     */
+    protected SemanticSpace getSpace() {
+	// Once all the optional properties are known and set, create the
+	// RandomIndexing algorithm using them
+	ri = new RandomIndexing(props);
+
+	// note that getSpace() is called after the arg options have been
+	// parsed, so this call is safe.
+	if (argOptions.hasOption("loadVectors")) {
+	    String fileName = argOptions.getStringOption("loadVectors");
+	    LOGGER.info("loading index vectors from " + fileName);
+	    try {
+		Map<String,IndexVector> wordToIndexVector = 
+		    IndexVectorUtil.load(new File(fileName));
+		ri.setWordToIndexVector(wordToIndexVector);
+	    } catch (IOException ioe) {
+		// rethrow since this step 
+		throw new IOError(ioe);
+	    }
+	}
+
+	return ri;
+    }
+
+    protected void postProcessing() {
+	if (argOptions.hasOption("saveVectors")) {
+	    String fileName = argOptions.getStringOption("saveVectors");
+	    LOGGER.info("saving index vectors to " + fileName);
+	    try {
+		IndexVectorUtil.save(ri.getWordToIndexVector(), 
+				     new File(fileName));
+	    } catch (IOException ioe) {
+		ioe.printStackTrace();
+	    }
+	}
+	
     }
 	
     /**

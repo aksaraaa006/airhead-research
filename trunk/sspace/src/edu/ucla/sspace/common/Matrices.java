@@ -46,7 +46,7 @@ public class Matrices {
     /**
      * An estimate of the percentage of non-zero elements in a sparse matrix.
      */
-    private static final double SPARSE_DENSITY = .125;
+    private static final double SPARSE_DENSITY = 0.03125;
 
     /**
      * Uninstantiable
@@ -65,8 +65,8 @@ public class Matrices {
 	// Estimate the number of bytes that the matrix will take up based on
 	// its maximum dimensions and its sparsity.
 	long size = (isDense)
-	    ? rows * cols * (long)BYTES_PER_DOUBLE
-	    : (long)(rows * cols * BYTES_PER_DOUBLE * SPARSE_DENSITY);
+	    ? (long)rows * (long)cols * BYTES_PER_DOUBLE
+	    : (long)(rows * (long)cols * (BYTES_PER_DOUBLE * SPARSE_DENSITY));
 
 
 	Runtime r = Runtime.getRuntime();

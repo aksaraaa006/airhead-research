@@ -416,6 +416,15 @@ public class RandomIndexing implements SemanticSpace {
 	return Collections.unmodifiableSet(wordToIndexVector.keySet());
     }
 
+    public Map<String,IndexVector> getWordToIndexVector() {
+	return Collections.unmodifiableMap(wordToIndexVector);
+    }
+
+    public void setWordToIndexVector(Map<String,IndexVector> m) {
+	wordToIndexVector.clear();
+	wordToIndexVector.putAll(m);
+    }
+    
     /**
      * Updates the semantic vectors based on the words in the document.
      *
