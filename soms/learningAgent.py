@@ -56,7 +56,6 @@ class learningAgent():
     this agent's personal knowledge."""
     # Select which object to talk about, and 3 other objects to be part of the
     # context, all at random.
-    print "generating utterance"
     object_frame = self.game.getContext(4)
     context = object_frame[0]
 
@@ -142,8 +141,8 @@ class learningAgent():
         best_node = i
       if max_dist < dist:
         max_dist = dist 
-    print "best node: %d, min_dist: %d, max_dist: %d" %(best_node, min_dist,
-        max_dist)
+    #print "best node: %d, min_dist: %d, max_dist: %d" %(best_node, min_dist,
+    #    max_dist)
     
     loc_distances = distance(self.locations, self.locations[best_node])
     neighborhood = numpy.zeros_like(meaning_distances)
@@ -159,7 +158,6 @@ class learningAgent():
     self.t += 1
 
   def receiveUtterance(self, word, context):
-    print "receiving utterance"
     if word not in self.word_list:
       self.word_list.append(word)
     m_data, p_data  = self.learnPatterns(context, word[1])
