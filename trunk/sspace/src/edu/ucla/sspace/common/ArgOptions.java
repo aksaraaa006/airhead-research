@@ -579,6 +579,10 @@ public class ArgOptions {
 	public boolean hasValue() {
 	    return valueName != null;
 	}
+
+	public String toString() {
+	    return "-" + shortName + ", --" + longName;
+	}
     }
 
 }
