@@ -4,6 +4,8 @@
 
 \usepackage{epsfig} \usepackage{times} \usepackage{url} \usepackage{latexsym}
 
+\usepackage{multirow}
+
 \title{Self Organizing Maps in a Learning Game}
 
 \author{Keith Stevens \\ University of California, Los Angeles \\
@@ -134,7 +136,10 @@ sufficent for a small population of agents to agree on a small artificial
 language without referential uncertainty using on the Selfish Game.  Once
 referential uncertainty in introduced, the self organizing map alone will be
 insufficent, and would need some additional mechanism, yet should still be
-feasible with the Selfish Game.
+feasible with the Selfish Game.  Complicating the self organizing map, with
+additional maps should also be learnable without context, but could possibly be
+too complicated under the Selfish Game with the presence of referential
+uncertainty.
 
 \section{Architecture}
 
@@ -257,6 +262,25 @@ the winning node in the semantic map.
   \end{table*}
 \end{center}
 
+\begin{center}
+  \begin{table}
+    \begin{tabular}[t] { | l | c | }
+      \hline
+      Word & Vector \\
+      \hline
+      a &  \includegraphics[width=.40\textwidth]{a.ps} \\
+      ai &  \includegraphics[width=.40\textwidth]{ai.ps} \\
+      an & \includegraphics[width=.40\textwidth]{an.ps} \\ 
+      ang & \includegraphics[width=.40\textwidth]{ang.ps} \\ 
+      ao & \includegraphics[width=.40\textwidth]{ao.ps} \\
+      ba & \includegraphics[width=.40\textwidth]{ba.ps} \\
+      \hline
+    \end{tabular}
+    \caption{Sample vectors for phonetic representations}
+    \label{tb:phono}
+  \end{table}
+\end{center}
+
 %general io and specific examples goes here.
 Two forms of input need to be fed into the system, semantic representations and
 phonological representations.  Additionally there is a fixed lexicon of words
@@ -265,7 +289,7 @@ vectors produced from the PatPho system \cite{LiPatPho}.  These vectors have 15
 real valued features which are produced based on how each word fits into a
 syllable template.  PatPho vectors for 401 chinese words are used with the
 pinyin romanization for the string form of each word.  A sample of these vectors
-can be seen in Figure \ref{fig:phono}
+can be seen in Table \ref{tb:phono}
 
 The semantic vectors correspond to the objects placed in the learning environment.
 For these semantic representations, initially 60 vectors, each with 60 real valued
@@ -284,9 +308,6 @@ This list is a collection of words learned by toddlers in early stages of word
 acquisition.  The 60 words selected were the first 60 in this list when sorted
 according to age the word is acquired, and thus the earliest words acquired by
 toddlers.  These words are approximately the first 60 words used in \cite{LiDevLex}.
-
-\begin{figure} \center \includegraphics[width=.49\textwidth]{phono-gray.eps}
-\caption{Gray scale vector of 6 sample phonological vectors.} \label{fig:phono} \end{figure}
 
 \section{Experiment and result}
 %describe the results
@@ -310,14 +331,47 @@ agents can agree on a language.  Several configurations of agents are run:
 
 In addition to these configurations for agents, the learning environment is
 also moddifed to either include contexts in learning games, or not include
-contexts (and thus reduce the difficulty in learning).
+contexts (and thus reduce the difficulty in learning).  To address my 
+hypoheses, only Selfish Games are run, with 2 agents in the
+population.
 
 To evaluate each configuration, two key metrics are used.  First is language
-convergens, monitoring how many objects all the agents are able to agree on a
+convergence, monitoring how many objects all the agents are able to agree on a
 single term.  Second is the rate of homonymy, measuring how many objects are
 refered to by each word.  If both convergence and homonym are high, then the
 agents have developed a vague and unusable language.  The ideal language should
 have high convergence and low homonymy.  
+
+\begin{center}
+\begin{table}
+\begin{tabular}[ht]{ | c | c | c | c | c |}
+\hline
+ & \multicolumn{2}{|c|}{No Context} & \multicolumn{2}{|c|}{Wtih Context} \\
+ \hline
+ Configuration & Con & H& Con & H \\
+ \hline
+ 1 & 1.0 & 2.72 & .125 & 21.3 \\
+ 2 & .984 & 2.72 & 1.0 & 128.0 \\
+ 3 & .093 & 1.85 & 0.0 & 16.0 \\
+ 4 & .343 & 7.11 & 0.0 & 64.0 \\
+ \hline
+\end{tabular}
+\caption{Convergence and Average Homonymy rates using the Selfish Game  for the 4 learning
+configurations, with and without Context.}  
+\label{tb:game-result}
+\end{table}
+\end{center}
+
+Table \ref{tb:game-result} provides the results of running 1000 Selfish Games
+with only 2 agents.  These results give support for my first hypothesis that the
+Selfish Game is sufficient for a single SOM with out referential uncerainty.  At
+the same time, the results suggest that the current approach for handling
+referential unceratinty is not feasible.  Both configurations which utilized
+attentional learning in the presence of referential uncertainty failed to
+produce a langauge which satisfied both desired criteria.  As for the last
+hypothesis, the Selfish Game is clearly an insuficient learning environment,
+since in all configurations which included two SOMS, no suitable language was
+found.
 
 
 \section{Discussion and conclusion}
