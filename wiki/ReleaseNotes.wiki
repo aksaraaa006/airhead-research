@@ -1,6 +1,23 @@
 #summary Details of the various releases
 #labels Featured
 
+= June 1, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.3
+
+[RandomIndexing] version 0.1.2
+
+*Changes*:
+`lsa.jar`
+`random-indexing.jar`
+
+*Details*:
+
+  * Added sparse binary and sparse text output option where the resulting .sspace file is much smaller for Random Indexing.  See [FileFormats] for details.  
+
+  * Performance fix for LSA Matlab-to-SVDLIBC matrix conversion path.  Previously, large word-document matrices were loaded into memory for conversion, which resulted in unnecessary `OutOfMemory` exceptions.  The fix does the conversion iteratively, which eliminates the memory bottleneck.
+
+
 = May 11, 2009 =
 
 [LatentSemanticAnalysis LSA] version 0.1.2
