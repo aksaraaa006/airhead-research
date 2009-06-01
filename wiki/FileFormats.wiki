@@ -2,12 +2,15 @@
 
 = `.sspace` Formats =
 
-The command-line executable programs produce semantic spaces and save them as `.sspace` files.  We use two file formats: binary and text.  The default for all command line programs is to produce a text.  
+The command-line executable programs produce semantic spaces and save them as `.sspace` files.  We use four file formats: binary and text, and sparse equivalents.  The default for all command line programs is to produce a text.  
+
+The sparse versions should be used if the algorithm produces semantic vectors in which more than half of the values are 0 (e.g. RandomIndexing).  The sparse versions are much more compact for these types of semantic spaces and will be both faster to read and write as well as be much smaller on disk.
 
 === text format ===
 
 Each word and vector is represented on its own line.  A word is delineated from its vector by a `|` character.  The vector values are space delimited.  For example, a semantic space with 3 words and 4 dimensions would look like:
 {{{
+4 4
 red|0 1 0 0
 blue|1 0 0 1
 green|0 0 1 0
@@ -26,11 +29,37 @@ In the binary format, the entire semantic space is written in one continuous str
     # The word is encoded in a Modified UTF-8 (see [http://java.sun.com/javase/6/docs/api/java/io/DataInput.html#modified-utf-8 here]  for more information on the encoding format). 
     # Each of the values for the vector dimensions is appended as an eight-byte double (high byte first).
 
-This format is preferable for faster serializing and deserializing.  Furthermore, `.sspace` files in this format are much smaller, so this format is preferred if the semantic space is large, or if disk space is an issue. 
+This format is preferable for faster serializing and deserializing.  Furthermore, `.sspace` files in this format are smaller compared to the full text version, so this format is preferred if the semantic space is large, or if disk space is an issue. 
 
-We recommend that large semantic spaces uses this format.
+We recommend that large, dense semantic spaces uses this format.
 
- 
+=== sparse text ===
+
+Each word and vector is represented on its own line.  A word is delineated from its vector by a `|` character.  In the sparse format, only the non-zero vector values are printed.  The values are printed with their respective index first.  For example:
+{{{
+4 300
+red|40 1 60 4
+blue|1 3 299 1
+green|3 -1 10 90
+purple|200 1 201 1
+}}}
+`red` has two non-zero values at indexes 40 and 60.  Any white space in the original word, e.g. "white house", is preserved in the .sspace output.  The vectors values will be written as double-precision floating point numbers.
+
+
+=== sparse binary ===
+
+ In the binary format, the entire semantic space is written in one continuous stream.  The format is specified as:
+
+  # an eight byte header consisting of two ints (four bytes each; high byte first) for the number of words in the space, and the number of dimensions in the space. 
+  # Then each word in the space is appended in the following format.
+    # The word is encoded in a Modified UTF-8 (see [http://java.sun.com/javase/6/docs/api/java/io/DataInput.html#modified-utf-8 here]  for more information on the encoding format). 
+    # A four-byte integer indicating the number of non-zero values in the vector
+    # Each of the non-zero values for the vector dimensions is appended as a four-byte integer indicating the index of the value and an eight-byte double (high byte first).
+
+This format is preferable for sparse semantic spaces as it is faster for serializing and deserializing.  Furthermore, `.sspace` files in this format are much smaller, so this format is preferred if the semantic space is large, or if disk space is an issue. 
+
+We recommend that large, dense semantic spaces uses this format.
+
 
 In the future we may also support sparse formats, as demand or available time increases.
 
