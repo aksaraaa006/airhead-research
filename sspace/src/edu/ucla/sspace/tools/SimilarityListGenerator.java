@@ -222,6 +222,7 @@ public class SimilarityListGenerator {
 				double[] otherVec = sspace.getVectorFor(other);
 				
 				double similarity = -1;
+                // TODO: determine when we shouldn't use just cosineSimilarity.
 				if (true) {
 				    similarity = Similarity.
 					cosineSimilarity(vector, otherVec);
@@ -248,6 +249,10 @@ public class SimilarityListGenerator {
 				     mostSimilar.entrySet()) {
 			    String s = e.getValue();
 			    Double d = e.getKey();
+                // Skip similarities of 0, change this once cosineSimilarity is
+                // not the only sim type used.
+                if (d <= 0.0) 
+                  continue;
 			    sb.append(s);
 			    if (printSimilarity) {
 				sb.append(" ").append(d);
