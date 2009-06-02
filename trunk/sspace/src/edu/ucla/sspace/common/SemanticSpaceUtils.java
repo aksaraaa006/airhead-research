@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 
 import java.util.Set;
 
+import java.util.logging.Logger;
+
 /**
  * A collection of utility methods for interacting with {@link SemanticSpace
  * instances}.  
@@ -57,6 +59,9 @@ import java.util.Set;
  * @see SemanticSpace
  */
 public class SemanticSpaceUtils {
+
+    private static final Logger LOGGER =
+	Logger.getLogger(SemanticSpaceUtils.class.getName());
 
     /**
      * The type of formatting to use when writing a semantic space to a file.
@@ -166,6 +171,8 @@ public class SemanticSpaceUtils {
 
 	// print out how many vectors there are and the number of dimensions
 	pw.println(words.size() + " " + dimensions);
+	LOGGER.info("saving text S-Space with " + words.size() + 
+		    " words with " + dimensions + "-dimensional vectors");
 
 	for (String word : words) {
 	    pw.println(word + "|" + 
@@ -189,6 +196,8 @@ public class SemanticSpaceUtils {
 	// print out how many vectors there are and the number of dimensions
 	dos.writeInt(words.size());
 	dos.writeInt(dimensions);
+	LOGGER.info("saving binary S-Space with " + words.size() + 
+		    " words with " + dimensions + "-dimensional vectors");
 
 	for (String word : words) {
 	    dos.writeUTF(word);
@@ -212,6 +221,9 @@ public class SemanticSpaceUtils {
 
 	// print out how many vectors there are and the number of dimensions
 	pw.println(words.size() + " " + dimensions);
+
+	LOGGER.info("saving sparse-text S-Space with " + words.size() + 
+		    " words with " + dimensions + "-dimensional vectors");
 
 	for (String word : words) {
 	    pw.print(word + "|");
@@ -252,6 +264,9 @@ public class SemanticSpaceUtils {
 	// print out how many vectors there are and the number of dimensions
 	dos.writeInt(words.size());
 	dos.writeInt(dimensions);
+
+	LOGGER.info("saving sparse-binary S-Space with " + words.size() + 
+		    " words with " + dimensions + "-dimensional vectors");
 
 	for (String word : words) {
 	    dos.writeUTF(word);

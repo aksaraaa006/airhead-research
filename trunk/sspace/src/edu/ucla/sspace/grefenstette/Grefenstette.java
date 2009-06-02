@@ -147,7 +147,7 @@ public class Grefenstette implements SemanticSpace {
 		    // create the relations from pass two
 		    if( prevPhrase.equals("PP") && secondPrevPhrase.equals("NP") 
 			&& lastNoun.length() != 0 ) {
-			System.out.println(lastNoun + " " + headNoun);
+// 			System.out.println(lastNoun + " " + headNoun);
 			wordRelationsWriter.println(lastNoun + " " + headNoun);
 
 			addRelation(lastNoun, headNoun);
@@ -156,12 +156,12 @@ public class Grefenstette implements SemanticSpace {
 		    // create relations from pass four
 		    if( prevPhrase.equals("PP") && secondPrevPhrase.equals("VP")
 			&& lastVerb.length() != 0 ) {
-			System.out.println(headNoun + " " + lastVerb );
+// 			System.out.println(headNoun + " " + lastVerb );
 			wordRelationsWriter.println(lastVerb + " " + headNoun);
 
 			addRelation(lastVerb, headNoun);
 		    } else if( prevPhrase.equals("VP") ) {
-			System.out.println(headNoun + " " + lastVerb );
+// 			System.out.println(headNoun + " " + lastVerb );
 			wordRelationsWriter.println(lastVerb + " " + headNoun);
 
 			addRelation(lastVerb, headNoun);
@@ -197,7 +197,7 @@ public class Grefenstette implements SemanticSpace {
 
 		// relations from pass three
 		if( prevPhrase.equals("NP") && lastNoun.length() != 0 ) {
-		    System.out.println(lastNoun + " " + lastVerb);
+// 		    System.out.println(lastNoun + " " + lastVerb);
 		    wordRelationsWriter.println(lastNoun + " " + lastVerb);
 
 		    addRelation(lastNoun, lastVerb);
@@ -274,8 +274,8 @@ public class Grefenstette implements SemanticSpace {
 				println(wordsInPhrase.get(j).y + " "
 					+ wordsInPhrase.get(i).y);
 			    
-			    System.out.println(wordsInPhrase.get(j).y + " "
-					       + wordsInPhrase.get(i).y);
+// 			    System.out.println(wordsInPhrase.get(j).y + " "
+// 					       + wordsInPhrase.get(i).y);
 			    
 			    addRelation(wordsInPhrase.get(j).y, 
 					wordsInPhrase.get(i).y);

@@ -22,12 +22,19 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.CombinedIterator;
 import edu.ucla.sspace.common.SemanticSpace;
+
+import edu.ucla.sspace.common.document.Document;
+import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.grefenstette.Grefenstette;
 
 import java.io.IOException;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Properties;
 
 /**
@@ -110,6 +117,8 @@ public class GrefenstetteMain extends GenericMain {
 	options.addOption('w', "overwrite", "specifies whether to " +
 			  "overwrite the existing output", true, "BOOL",
 			  "Program Options");
+	options.addOption('t', "threads", "the number of threads to use",
+			  true, "INT", "Program Options");
 	options.addOption('v', "verbose", "prints verbose output",
 			  false, null, "Program Options");
 	addExtraOptions(options);
@@ -122,6 +131,36 @@ public class GrefenstetteMain extends GenericMain {
     protected void addExtraOptions(ArgOptions options) {
 
     }
+
+    protected Iterator<Document> getDocumentIterator() throws IOException {
+
+	Iterator<Document> docIter = null;
+
+	String sentenceList = (argOptions.hasOption("sentenceFile"))
+	    ? argOptions.getStringOption("sentenceFile")
+	    : null;
+
+	if (sentenceList == null) {
+	    throw new Error("must specify sentence file");
+	}
+
+	// Second, determine where the document input sources will be coming
+	// from.
+	Collection<Iterator<Document>> docIters = 
+	    new LinkedList<Iterator<Document>>();
+
+	String[] fileNames = sentenceList.split(",");
+	// we have a file that contains the list of all document sentences we
+	// are to process
+	for (String s : fileNames) {
+	    docIters.add(new OneLinePerDocumentIterator(s));	
+	}
+
+	// combine all of the document iterators into one iterator.
+	docIter = new CombinedIterator<Document>(docIters);
+	return docIter;
+    }
+
     
     /**
      * Returns an instance of the {@link Grefenstette} algorithm.
