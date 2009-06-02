@@ -38,6 +38,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import java.sql.Timestamp;
 
 /**
@@ -48,6 +51,9 @@ import java.sql.Timestamp;
  */
 public class BlogPreProcessor {
   private static final long SECONDS_PER_WEEK = 604800000;
+
+  private static final Logger LOGGER =
+    Logger.getLogger(BlogPreProcessor.class.getName());
 
   private DocumentPreprocessor processor;
   private PrintWriter pw;
@@ -78,30 +84,35 @@ public class BlogPreProcessor {
     BufferedReader br = new BufferedReader(new FileReader(blogFile));
     String line = null;
     String date = null;
-    String content = null;
+    String id = null;
+    StringBuffer content = new StringBuffer();
     boolean needMoreContent = false;
     while ((line = br.readLine()) != null) {
-      if (line.contains("<content>")) {
+      if (line.contains("<id>")) {
+        int startIndex = line.indexOf(">")+1;
+        int endIndex = line.lastIndexOf("<");
+        id = line.substring(startIndex, endIndex);
+      } else if (line.contains("<content>")) {
         // Extract the start of a content node.  If the previous content,
         // updated pair was incomplete, i.e. updated had no value, this will
         // overwrite the previous content value.
         int startIndex = line.indexOf(">")+1;
         int endIndex = line.lastIndexOf("<");
         if (endIndex > startIndex)
-          content = line.substring(startIndex, endIndex);
+          content.append(line.substring(startIndex, endIndex));
         else {
-          content = line.substring(startIndex);
+          content.append(line.substring(startIndex));
           needMoreContent = true;
         }
       } else if (needMoreContent) {
         // The content node might span several lines, so consider all lines read
         // until the next close bracket to be part of the current content.
-        int endIndex = line.lastIndexOf("<");
+        int endIndex = (line.contains("</content>")) ? line.lastIndexOf("<") : -1;
         if (endIndex > 0) {
-          content += line.substring(0, endIndex);
+          content.append(line.substring(0, endIndex));
           needMoreContent = false;
         } else
-          content += line;
+          content.append(line);
       } else if (saveTS && line.contains("<updated>")) {
         // The updated timestamp only spans one line.
         int startIndex = line.indexOf(">")+1;
@@ -120,14 +131,16 @@ public class BlogPreProcessor {
       } else if (content != null && (!saveTS || date != null)) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
-        dateTime = dateTime - (dateTime % SECONDS_PER_WEEK);
-        String cleanedContent = processor.process(content);
+        if (tsLength.equals("week"))
+          dateTime = dateTime - (dateTime % SECONDS_PER_WEEK);
+        String cleanedContent = processor.process(content.toString());
         if (!cleanedContent.equals("")) {
           synchronized (pw) {
             pw.format("%d %s\n", dateTime, cleanedContent);
           }
         }
-        content = null;
+        LOGGER.info(String.format("Processed blog %s", id));
+        content = new StringBuffer();
         needMoreContent = false;
         date = null;
       }
@@ -177,6 +190,8 @@ public class BlogPreProcessor {
     // remain
     while (fileIter.hasNext()) {
       try {
+        File currentFile = fileIter.next();
+        LOGGER.info("Processing blog file: " + currentFile.getPath());
         blogCleaner.processFile(fileIter.next());
       } catch (IOException ioe) {
         ioe.printStackTrace();

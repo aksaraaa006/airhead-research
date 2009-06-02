@@ -231,7 +231,7 @@ public class DocumentPreprocessor {
           if (validWords.contains(tok))
           actualWords++;
       }
-      if (actualWords / (double)(totalTokens) < .8) {
+      if (actualWords / (double)(totalTokens) < .4) {
           // discard the document
           return "";
       }
