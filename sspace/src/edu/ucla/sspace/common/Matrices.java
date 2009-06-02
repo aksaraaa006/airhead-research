@@ -29,6 +29,8 @@ import edu.ucla.sspace.common.matrix.OnDiskMatrix;
 import edu.ucla.sspace.common.matrix.SynchronizedMatrix;
 import edu.ucla.sspace.common.matrix.SparseMatrix;
 
+import java.util.logging.Logger;
+
 /**
  * A class of static methods for manipulating {@code Matrix} instances.
  *
@@ -38,6 +40,9 @@ import edu.ucla.sspace.common.matrix.SparseMatrix;
  */
 public class Matrices {
 
+    private static final Logger LOGGER = 
+	Logger.getLogger(Matrices.class.getName());
+
     /**
      * The number of bytes in a {@code double}
      */
@@ -46,7 +51,7 @@ public class Matrices {
     /**
      * An estimate of the percentage of non-zero elements in a sparse matrix.
      */
-    private static final double SPARSE_DENSITY = 0.03125;
+    private static final double SPARSE_DENSITY = .00001;
 
     /**
      * Uninstantiable
@@ -68,22 +73,33 @@ public class Matrices {
 	    ? (long)rows * (long)cols * BYTES_PER_DOUBLE
 	    : (long)(rows * (long)cols * (BYTES_PER_DOUBLE * SPARSE_DENSITY));
 
-
 	Runtime r = Runtime.getRuntime();
 	// REMINDER: possibly GC here?
 	long available = r.freeMemory();
 
 	// See if it will fit into memory given how much is currently left.
 	if (size < available) {
-	    return (isDense) 
-		? ((size > Integer.MAX_VALUE) ? new OnDiskMatrix(rows, cols) :
-                                        new ArrayMatrix(rows, cols))
-		: new SparseMatrix(rows, cols);
+	    if (isDense) {
+		if (size > Integer.MAX_VALUE) {
+		    LOGGER.info("too big for ArrayMatrix; creating new " + 
+				"OnDiskMatrix");
+		    return new OnDiskMatrix(rows, cols);
+		}
+		else {
+		    LOGGER.info("creating new (in memory) ArrayMatrix");
+		    return new ArrayMatrix(rows, cols);
+		}
+	    } else {
+		LOGGER.info("can fit sparse in memory; creating " + 
+			    "new SparseMatrix");
+		return new SparseMatrix(rows, cols);
+	    }
 	}
 	// won't fit into memory
-	else { 
-	    return new OnDiskMatrix(rows, cols);
-	}
+ 	else { 
+ 	    LOGGER.info("cannot fit in memory; creating new OnDiskMatrix");
+ 	    return new OnDiskMatrix(rows, cols);
+ 	}
     }
 
     /**

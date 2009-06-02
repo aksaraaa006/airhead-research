@@ -196,33 +196,17 @@ public abstract class GenericMain {
     }
 
     /**
-     * Processes the arguments and begins processing the documents using the
-     * {@link SemanticSpace} returned by {@link #getSpace() getSpace}.
+     * Returns the iterator for all of the documents specified on the command
+     * line or throws an {@code Error} if no documents are specified.
+     * Subclasses should override this method if they provide document input by
+     * some other manner than a file list or document list.
      *
-     * @param args arguments used to configure this program and the {@code
-     *        SemanticSpace}
+     * @throws Error if no document source is specified
      */
-    public void run(String[] args) throws Exception {
-	if (args.length == 0) {
-	    usage();
-	    System.exit(1);
-	}
-	argOptions.parseOptions(args);
 
-	if (argOptions.numPositionalArgs() == 0) {
-	    throw new IllegalArgumentException("must specify output directory");
-	}
-
-	File outputDir = new File(argOptions.getPositionalArg(0));
-	if (!outputDir.isDirectory()){
-	    throw new IllegalArgumentException(
-		"output directory is not a directory: " + outputDir);
-	}
-
-	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
-
-	// all the documents are listed in one file, with one document per line
+    protected Iterator<Document> getDocumentIterator() throws IOException {
 	Iterator<Document> docIter = null;
+
 	String fileList = (argOptions.hasOption("fileList"))
 	    ? argOptions.getStringOption("fileList")
 	    : null;
@@ -258,6 +242,37 @@ public abstract class GenericMain {
 
 	// combine all of the document iterators into one iterator.
 	docIter = new CombinedIterator<Document>(docIters);
+	return docIter;
+    }
+
+    /**
+     * Processes the arguments and begins processing the documents using the
+     * {@link SemanticSpace} returned by {@link #getSpace() getSpace}.
+     *
+     * @param args arguments used to configure this program and the {@code
+     *        SemanticSpace}
+     */
+    public void run(String[] args) throws Exception {
+	if (args.length == 0) {
+	    usage();
+	    System.exit(1);
+	}
+	argOptions.parseOptions(args);
+	
+	if (argOptions.numPositionalArgs() == 0) {
+	    throw new IllegalArgumentException("must specify output directory");
+	}
+
+	File outputDir = new File(argOptions.getPositionalArg(0));
+	if (!outputDir.isDirectory()){
+	    throw new IllegalArgumentException(
+		"output directory is not a directory: " + outputDir);
+	}
+
+	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+
+	// all the documents are listed in one file, with one document per line
+	Iterator<Document> docIter = getDocumentIterator();
 	
 	int numThreads = Runtime.getRuntime().availableProcessors();
 	if (argOptions.hasOption("threads")) {

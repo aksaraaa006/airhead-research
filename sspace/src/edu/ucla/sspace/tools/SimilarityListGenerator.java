@@ -228,7 +228,8 @@ public class SimilarityListGenerator {
 				} 
 				else {
 				    similarity = (Double)(similarityMethod.
-							  invoke(null, new Object[]{vector, otherVec}));
+					invoke(null, 
+					       new Object[]{vector, otherVec}));
 				}
 				    
 				mostSimilar.put(similarity, other);

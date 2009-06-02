@@ -87,7 +87,9 @@ public class OnDiskMatrix implements Matrix {
 	    this.cols = cols;
 	    
 	    // initialize the matrix in memory;
-	    matrix.setLength(HEADER_LENGTH + (rows * cols * (long) BYTES_PER_DOUBLE));
+	    long length = 
+		(HEADER_LENGTH + ((long)rows * (long)cols * BYTES_PER_DOUBLE));
+	    matrix.setLength(length);
 	    matrix.seek(0);
 	    matrix.writeInt(rows);
 	    matrix.writeInt(cols);
