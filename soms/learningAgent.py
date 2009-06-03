@@ -29,12 +29,22 @@ class learningAgent():
     self.activations = numpy.zeros((2, num_nodes))
     self.heb_weights = numpy.zeros((num_nodes, num_nodes))
     # Locations still need to be set correctly
-    self.locations = numpy.zeros((num_nodes, 2))
+    self.locations = numpy.zeros((2, num_nodes, 2))
+
+    # Set semantic locations.
     locs = [(i,j) for i in range(NUM_ROWS) for j in range(NUM_COLS)]
     random.shuffle(locs)
     for i, location in enumerate(locs[:num_nodes]):
-      self.locations[i][0] = location[0]
-      self.locations[i][1] = location[1]
+      self.locations[M_MAP][i][0] = location[0]
+      self.locations[M_MAP][i][1] = location[1]
+
+    # Set phonetic locations.
+    locs = [(i,j) for i in range(NUM_ROWS) for j in range(NUM_COLS)]
+    random.shuffle(locs)
+    for i, location in enumerate(locs[:num_nodes]):
+      self.locations[P_MAP][i][0] = location[0]
+      self.locations[P_MAP][i][1] = location[1]
+
     self.learned_words = [None for i in range(num_nodes)]
 
     # Setting up some constants and time dependent variables.
@@ -73,7 +83,8 @@ class learningAgent():
     return context, best_word 
 
   def produceWord(self, object_rep, learning=True):
-    m_data = self.getBestNode(self.meaning_vectors, self.attention_vectors, object_rep)
+    m_data = self.getBestNode(self.meaning_vectors, self.attention_vectors,
+                              self.locations[M_MAP], object_rep)
     best_index, min_dist, max_dist, near, dists = m_data
 
     if self.use_phonemes:
@@ -93,7 +104,8 @@ class learningAgent():
 
   def updateMap(self, meaning, feature_vectors, attentions, map_type, data=None):
     if data == None:
-      data = self.getBestNode(feature_vectors, attentions, meaning)
+      data = self.getBestNode(feature_vectors, attentions,
+          self.locations[map_type], meaning)
     best, min_dist, max_dist, near, dists = data
 
     meaning_diff = (attentions * meaning - feature_vectors)
@@ -125,7 +137,7 @@ class learningAgent():
       self.heb_weights = (self.heb_weights.transpose() / denoms).transpose()
     return m_data, p_data
 
-  def getBestNode(self, map, attentions, input_vector):
+  def getBestNode(self, map, attentions, locations, input_vector):
     """Given some input and a map, go through each of the nodes and determine
     which one has a meaning vector closest to the input_vector.  Once finding
     this node, find all the nodes within the neighboorhood of this node, along
@@ -144,7 +156,7 @@ class learningAgent():
     #print "best node: %d, min_dist: %d, max_dist: %d" %(best_node, min_dist,
     #    max_dist)
     
-    loc_distances = distance(self.locations, self.locations[best_node])
+    loc_distances = distance(locations, locations[best_node])
     neighborhood = numpy.zeros_like(meaning_distances)
     for i, dist in enumerate(loc_distances):
       if dist < self.n_range:
