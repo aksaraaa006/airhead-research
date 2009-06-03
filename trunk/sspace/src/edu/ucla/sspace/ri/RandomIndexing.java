@@ -39,6 +39,7 @@ import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import edu.ucla.sspace.common.IntegerMap;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.WordIterator;
 
@@ -330,6 +331,10 @@ public class RandomIndexing implements SemanticSpace {
 	}
     }
 
+    public void clearSemantics() {
+	wordToMeaning.clear();
+    }
+
     /**
      * Returns the index vector for the provided word.
      */
@@ -378,7 +383,7 @@ public class RandomIndexing implements SemanticSpace {
 		// for the lock
 		v = wordToMeaning.get(word);
 		if (v == null) {
-		    v = new SemanticVector(vectorLength);
+		    v = new SparseSemanticVector();
 		    wordToMeaning.put(word, v);
 		}
 	    }
@@ -416,7 +421,7 @@ public class RandomIndexing implements SemanticSpace {
      * {@inheritDoc}
      */ 
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(wordToIndexVector.keySet());
+	return Collections.unmodifiableSet(wordToMeaning.keySet());
     }
 
     public Map<String,IndexVector> getWordToIndexVector() {
@@ -509,25 +514,67 @@ public class RandomIndexing implements SemanticSpace {
     /**
      *
      */
-    class SemanticVector {
+    interface SemanticVector {
+	void add(IndexVector v);
+	int[] getVector();
+    }
+
+    /**
+     *
+     */
+    class DenseSemanticVector implements SemanticVector {
 
 	private final int[] vector;
 
-	public SemanticVector(int length) {
-	    vector = new int[length];
+	public DenseSemanticVector() {
+	    vector = new int[vectorLength];
 	}
 	
 	public synchronized void add(IndexVector v) {
 
-	    for (int p : v.positiveDimensions()) 
+	    for (int p : v.positiveDimensions())
 		vector[p]++;
-		
+			
 	    for (int n : v.negativeDimensions()) 
 		vector[n]--;
 	}
 
 	
 	public int[] getVector() {
+	    return vector;
+	}
+    }    
+
+    /**
+     *
+     */
+    class SparseSemanticVector implements SemanticVector {
+
+	private final Map<Integer,Integer> sparseArray;
+
+	public SparseSemanticVector() {
+	    sparseArray = new IntegerMap<Integer>();
+	}
+	
+	public synchronized void add(IndexVector v) {
+
+	    for (int p : v.positiveDimensions()) {
+		Integer count = sparseArray.get(p);
+		sparseArray.put(p, (count == null) ? 1 : count + 1);
+	    }
+		
+	    for (int n : v.negativeDimensions()) {
+		Integer count = sparseArray.get(n);
+		sparseArray.put(n, (count == null) ? 1 : count + 1);		
+	    }		
+	}
+
+	
+	public int[] getVector() {
+	    int[] vector = new int[vectorLength];
+	    for (Map.Entry<Integer,Integer> e : sparseArray.entrySet()) {
+		vector[e.getKey()] = e.getValue();
+	    }
 	    return vector;
 	}
     }    
