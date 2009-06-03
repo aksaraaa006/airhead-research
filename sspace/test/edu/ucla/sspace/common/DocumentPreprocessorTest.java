@@ -53,6 +53,14 @@ public class DocumentPreprocessorTest {
     assertEquals(expectedResult, testProcessor.process(testDocument));
   }
 
+  @Test public void removeNonWords() {
+    String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
+    String testDocument = "can a word <b>be</b> <script> / fqhegas a b c d e f g or a </html>";
+    String expectedResult = "can a word be <slash> a b c d e f g or a ";
+    DocumentPreprocessor testProcessor = new DocumentPreprocessor(wordList);
+    assertEquals(expectedResult, testProcessor.process(testDocument, true));
+  }
+
   @Test public void stripHtmlTest() {
     String[] wordList = {"word", "can", "a", "be", "a", "b", "c", "d", "e", "f", "g", "or"};
     String testDocument = "can a word <b>be</b> <script> / a b c d e f g or a </html>";
