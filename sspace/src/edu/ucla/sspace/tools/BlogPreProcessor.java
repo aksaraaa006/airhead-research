@@ -195,29 +195,35 @@ public class BlogPreProcessor {
 	if (options.hasOption("threads"))
       numThreads = options.getIntOption("threads");
     
-    List<File> blogFiles = new ArrayList<File>() ;
+    Collection<File> blogFiles = new LinkedList<File>() ;
     for (String fileName : fileNames) {
       blogFiles.add(new File(fileName));
     }
 
     final Iterator<File> fileIter = blogFiles.iterator();
 
-	ThreadPoolExecutor executor = 
-	    new ScheduledThreadPoolExecutor(numThreads);
-    // repeatedly try to process documents while some still
-    // remain
-    while (fileIter.hasNext()) {
-      final File currentFile = fileIter.next();
-      executor.submit(new Runnable() {
+    Collection<Thread> threads = new LinkedList<Thread>();
+
+	for (int i = 0; i < numThreads; ++i) {
+      Thread t = new Thread() {
           public void run() {
-            try {
-              LOGGER.info("processing: " + currentFile.getPath());
-              blogCleaner.processFile(currentFile);
-            } catch (IOException ioe) {
-              ioe.printStackTrace();
+            while (fileIter.hasNext()) {
+              final File currentFile = fileIter.next();
+              try {
+                LOGGER.info("processing: " + currentFile.getPath());
+                blogCleaner.processFile(currentFile);
+              } catch (IOException ioe) {
+                ioe.printStackTrace();
             }
           }
-        });
+        }
+      };
+      threads.add(t);
     }
+
+	for (Thread t : threads)
+	    t.start();
+	for (Thread t : threads)
+	    t.join();
   }
 }
