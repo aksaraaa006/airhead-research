@@ -69,6 +69,7 @@ public class DocumentPreprocessor {
 	while (it.hasNext()) {
 	    validWords.add(it.next());
 	}
+    addKeyTokens();
     }
 
     /**
@@ -82,6 +83,15 @@ public class DocumentPreprocessor {
 	for (String word : wordList) {
 	    validWords.add(word);
 	}
+    addKeyTokens();
+    }
+
+    private void addKeyTokens() {
+      String keyTokens[] = {"'", "!", ".", "?", ",", ";", "(", ")", "[", "]",
+                            "/", ":", "\"", "&", "<", ">", "<num", "<url>",
+                            "<emote>", "<slash>", "dollars"};
+      for (String keyToken : keyTokens)
+        validWords.add(keyToken);
     }
 
     /**
@@ -93,6 +103,21 @@ public class DocumentPreprocessor {
      * @return a cleaned version of the document
      */
     public String process(String document) {
+      return process(document, false);
+    }
+
+    /**
+     * Processes the provided document and returns the cleaned version of the
+     * document.
+     *
+     * @param document a document to process
+     *
+     * @param removeWords If true, any word which is not found in the provided
+     * word list is removed from the cleaned document.
+     *
+     * @return a cleaned version of the document
+     */
+    public String process(String document, boolean removeWords) {
 	
 	// Step 1: Removing images, non-ascii codes, and HTML tags.
     document = document.replaceAll("<.*?>", "");
@@ -216,6 +241,8 @@ public class DocumentPreprocessor {
 	}
 	document = dollarized.toString().trim();
 	
+	document = document.replaceAll("[^\\w\\s;:\\(\\)\\[\\]'!/&?\",\\.<>]","");
+
 	// Step 8: Discarding articles with fewer than 80% real words, based on
 	//         a large English word list. This has the effect of ﬁltering
 	//         out foreign text and articles that primarily contain computer
@@ -224,17 +251,22 @@ public class DocumentPreprocessor {
       int totalTokens = 0;
       int actualWords = 0;
       st = new StringTokenizer(document);
-      StringBuilder wordCounter = new StringBuilder(document.length());
+      StringBuilder cleanedDoc = new StringBuilder(document.length());
       while (st.hasMoreTokens()) {
           String tok = st.nextToken();
           totalTokens++;
-          if (validWords.contains(tok))
-          actualWords++;
+          if (validWords.contains(tok)) {
+            actualWords++;
+            if (removeWords)
+              cleanedDoc.append(tok).append(" ");
+          }
       }
       if (actualWords / (double)(totalTokens) < .4) {
           // discard the document
           return "";
       }
+      if (removeWords)
+        document = cleanedDoc.toString();
 	}
 	
 	// Step 9: Discarding duplicate articles. This was done by computing a
@@ -259,7 +291,6 @@ public class DocumentPreprocessor {
 	
 	/* -- SKIP -- */
 
-	document = document.replaceAll("[^\\w\\s;'?\",\\.<>]","");
 	return document;
     }
 

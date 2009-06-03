@@ -38,6 +38,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -137,6 +141,7 @@ public class BlogPreProcessor {
         if (!cleanedContent.equals("")) {
           synchronized (pw) {
             pw.format("%d %s\n", dateTime, cleanedContent);
+            pw.flush();
           }
         }
         LOGGER.info(String.format("Processed blog %s", id));
@@ -145,6 +150,7 @@ public class BlogPreProcessor {
         date = null;
       }
     }
+    br.close();
   }
 
   public static ArgOptions setupOptions() {
@@ -154,6 +160,7 @@ public class BlogPreProcessor {
     opts.addOption('w', "wordlist", "Word List for cleaning documents",
                    true, "STRING", "Required");
     opts.addOption('t', "timestamp", "Include timestamps for each document");
+    opts.addOption('h', "threads", "number of threads", true, "INT");
     opts.addOption('l', "lengthoftimestamp", "length of the time stamp's duration", 
                    true, "STRING");
     return opts;
@@ -173,11 +180,20 @@ public class BlogPreProcessor {
     }
     String tsLength =
       options.hasOption('l') ? options.getStringOption('l') : "instant";
+
+    // Load up the output file and the wordlist.
     File outFile = new File(options.getPositionalArg(0));
     File wordFile = new File(options.getStringOption("wordlist"));
+
+    // Create the cleaner.
     final BlogPreProcessor blogCleaner =
-      new BlogPreProcessor(wordFile, outFile, options.hasOption('t'), tsLength);
+      new BlogPreProcessor(wordFile, outFile, true, tsLength);
     String[] fileNames = options.getStringOption("docFiles").split(",");
+
+	// Load the program-specific options next.
+	int numThreads = Runtime.getRuntime().availableProcessors();
+	if (options.hasOption("threads"))
+      numThreads = options.getIntOption("threads");
     
     List<File> blogFiles = new ArrayList<File>() ;
     for (String fileName : fileNames) {
@@ -186,16 +202,22 @@ public class BlogPreProcessor {
 
     final Iterator<File> fileIter = blogFiles.iterator();
 
+	ThreadPoolExecutor executor = 
+	    new ScheduledThreadPoolExecutor(numThreads);
     // repeatedly try to process documents while some still
     // remain
     while (fileIter.hasNext()) {
-      try {
-        File currentFile = fileIter.next();
-        LOGGER.info("Processing blog file: " + currentFile.getPath());
-        blogCleaner.processFile(fileIter.next());
-      } catch (IOException ioe) {
-        ioe.printStackTrace();
-      }
+      final File currentFile = fileIter.next();
+      executor.submit(new Runnable() {
+          public void run() {
+            try {
+              LOGGER.info("processing: " + currentFile.getPath());
+              blogCleaner.processFile(currentFile);
+            } catch (IOException ioe) {
+              ioe.printStackTrace();
+            }
+          }
+        });
     }
   }
 }
