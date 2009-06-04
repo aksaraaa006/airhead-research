@@ -158,6 +158,7 @@
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StringUtilsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TestWordIterator" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.TreeMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>

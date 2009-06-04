@@ -28,51 +28,109 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
- * A hash table based implementation of the {@code MultiMap} interface.  This
- * implementation permits both {@code null} keys and values. 
+ * A Red-Black tree {@link SortedMultiMap} implementation.  Map elements are
+ * sorted according to the {@link Comparable natural ordering} of the keys, or
+ * by a {@link Comparator} provided to the constructor.<p>
  *
- * <p>
+ * This implementation provides guaranteed log(n) time cost for the {@code
+ * containsKey}, {@code get}, {@code put} and {@code remove} operations.  The
+ * remaining operations run in constant time.  The only exception is the {@code
+ * range} method, which runs in constant time except for the first time it is
+ * invoked on any sub-map returned by {@code headMap}, {@code tailMap}, or
+ * {@code subMap}, when it runs in linear time.<p>
  *
- * This implementation provides constant time operations for the basic
- * operations {@code put} and {@code get}, assuming a uniform distribution of
- * hash keys.
- *
- * @see HashMap
+ * This map is not thread-safe.
+ * 
+ * @see Map
+ * @see SortedMap
+ * @see HashMultiMap
+ * @see MultiMap
  */
-public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
+public class TreeMultiMap<K,V> 
+        implements SortedMultiMap<K,V>, Serializable {
 
     private static final long serialVersionUID = 1;
 
     /**
      * The backing map instance
      */
-    private final Map<K,Set<V>> map;
+    private final SortedMap<K,Set<V>> map;
 
     /**
      * The number of values mapped to keys
      */
     private int range;
-
-    public HashMultiMap() {
-	map = new HashMap<K,Set<V>>();
-	range = 0;
-    }
     
     /**
-     * Constructs this map and adds in all the mapping from the provided {@code
-     * Map}
+     * Whether the current range needs to be recalcuated before the next {@link
+     * #range()} call can return the correct result.  An invalid range is the
+     * result of a submap being created.
      */
-    public HashMultiMap(Map<? extends K,? extends V> m) {
+    private boolean recalculateRange;
+
+    /**
+     * The super-map of this instance if it is a sub map, or {@code null} if
+     * this is the original map.
+     */
+    private final TreeMultiMap<K,V> parent;
+
+    /**
+     * Constructs this map using the natural ordering of the keys.
+     */
+    public TreeMultiMap() {
+	map = new TreeMap<K,Set<V>>();
+	range = 0;
+	recalculateRange = false;
+	parent = null;
+    }
+
+    /**
+     * Constructs this map where keys will be sorted according to the provided
+     * comparator.
+     */
+    public TreeMultiMap(Comparator<? super K> c) {
+	map = new TreeMap<K,Set<V>>(c);
+	range = 0;
+	recalculateRange = false;
+	parent = null;
+    }
+
+    /**
+     * Constructs this map using the natural ordering of the keys, adding all of
+     * the provided mappings to this map.
+     */
+    public TreeMultiMap(Map<? extends K,? extends V> m) {
 	this();
 	putAll(m);
+    }
+
+    /**
+     * Constructs a subset of an existing map using the provided map as the
+     * backing map.
+     *
+     * @see #headMap(Object)
+     * @see #subMap(Object,Object)
+     * @see #tailMap(Object)
+     */
+    private TreeMultiMap(SortedMap<K,Set<V>> subMap, TreeMultiMap<K,V> parent) {
+	map = subMap;
+	// need to compute the range, but lazily compute this on demand.
+	// Calculuating it now turns the subMap operations into O(n) instead of
+	// the O(1) call it currently is.
+	range = -1;
+	recalculateRange = true;
+	this.parent = parent;
     }
 
     /**
@@ -80,7 +138,29 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
      */
     public void clear() {
 	map.clear();
+	if (parent != null) {
+	    int curRange = range();
+	    parent.updateParentRange(-curRange);
+	}
 	range = 0;
+    }
+
+    /**
+     * Recursively updates the range value for the the super-map of this sub-map
+     * if it exists.
+     */
+    private void updateParentRange(int valueDifference) {
+	range += valueDifference;
+	if (parent != null) {
+	    parent.updateParentRange(valueDifference);
+	}
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Comparator<? super K> comparator() {
+	return map.comparator();
     }
 
     /**
@@ -112,8 +192,22 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     /**
      * {@inheritDoc}
      */
+    public K firstKey() {
+	return map.firstKey();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<V> get(Object key) {
 	return map.get(key);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public SortedMultiMap<K,V> headMap(K toKey) {
+	return new TreeMultiMap<K,V>(map.headMap(toKey), this);
     }
 
     /**
@@ -133,6 +227,13 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     /**
      * {@inheritDoc}
      */
+    public K lastKey() {
+	return map.lastKey();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public boolean put(K key, V value) {
 	Set<V> values = map.get(key);
 	if (values == null) {
@@ -142,6 +243,9 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 	boolean added = values.add(value);
 	if (added) {
 	    range++;
+	    if (parent != null) {
+		parent.updateParentRange(1);
+	    }
 	}
 	return added;
     }
@@ -171,9 +275,18 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritDoc} This method runs in constant time, except for the first
+     * time called on a sub-map, when it runs in linear time to the number of
+     * values.
      */
     public int range() {
+	// the current range isn't accurate, loop through the values and count
+	if (recalculateRange) {
+	    recalculateRange = false;
+	    range = 0;
+	    for (V v : values()) 
+		range++;
+	}
 	return range;
     }
 
@@ -184,6 +297,10 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 	Set<V> v = map.remove(key);
 	if (v != null)
 	    range -= v.size();
+	if (parent != null) {
+	    parent.updateParentRange(-(v.size()));
+	}
+
 	return v;
     }
 
@@ -193,8 +310,12 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     public boolean remove(K key, V value) {
 	Set<V> values = map.get(key);
 	boolean removed = values.remove(value);
-	if (removed)
+	if (removed) {
 	    range--;
+	    if (parent != null) {
+		parent.updateParentRange(-1);
+	    }
+	}
 	// if this was the last value mapping for this key, remove the
 	// key altogether
 	if (values.size() == 0)
@@ -207,6 +328,20 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
      */
     public int size() {
 	return map.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public SortedMultiMap<K,V> subMap(K fromKey, K toKey) {
+	return new TreeMultiMap<K,V>(map.subMap(fromKey, toKey), this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public SortedMultiMap<K,V> tailMap(K fromKey) {
+	return new TreeMultiMap<K,V>(map.tailMap(fromKey), this);
     }
 
     /**
@@ -301,9 +436,9 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     }    
 
     /**
-     * A {@link Set} view of the entries contained in a {@link MultiMap}.
+     * A {@link Collection} view of the values contained in a {@link MultiMap}.
      *
-     * @see MultiMap#entrySet()
+     * @see MultiMap#values()
      */
     class EntryView extends AbstractSet<Map.Entry<K,V>> 
 	    implements Serializable {
@@ -325,7 +460,7 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 	public boolean contains(Object o) {
 	    if (o instanceof Map.Entry) {
 		Map.Entry<?,?> e = (Map.Entry<?,?>)o;
-		Set<V> vals = HashMultiMap.this.get(e.getKey());
+		Set<V> vals = TreeMultiMap.this.get(e.getKey());
 		return vals.contains(e.getValue());
 	    }
 	    return false;
@@ -383,7 +518,6 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 		// Assume that the map correct manages the keys and values such
 		// that no key is ever mapped to an empty set
 		next = new MultiMapEntry(curKey, curValues.next());
-		//System.out.println("next = " + next);
 	    } else {
 		next = null;		
 	    }
@@ -404,7 +538,7 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 	    if (previous == null) {
 
 	    }
-	    HashMultiMap.this.remove(previous.getKey(), previous.getValue());
+	    TreeMultiMap.this.remove(previous.getKey(), previous.getValue());
 	    previous = null;
 	}
 
@@ -422,12 +556,15 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 	    }
 
 	    public V setValue(V value) {
-		Set<V> values = HashMultiMap.this.get(getKey());
+		Set<V> values = TreeMultiMap.this.get(getKey());
 		values.remove(getValue());
 		values.add(value);
 		return super.setValue(value);
 	    }
 	}
     }
+
+
+
 
 }
