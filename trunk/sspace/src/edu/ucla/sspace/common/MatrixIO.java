@@ -388,7 +388,7 @@ public class MatrixIO {
 		array[i] = it.next();
 	    }
 	    
-	    MATRIX_IO_LOGGER.info("loaded a " + array.length + " x " + 
+	    MATRIX_IO_LOGGER.fine("loaded a " + array.length + " x " + 
 				  array[0].length + " dense text matrix from " +
 				  input);
 				  

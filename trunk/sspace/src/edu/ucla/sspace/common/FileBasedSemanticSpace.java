@@ -40,13 +40,28 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
- * A {@link SemanticSpace} which performs no processing of documents, but simply
- * reads in a text file produced by another semantic space and converts this
- * into a {@link OnDiskMatrix}.  The input format of the file should be that
- * which is produced by {@link edu.ucla.sspace.common.SemanticSpaceUtils}.
+ * An unmodifiable {@link SemanticSpace} whose data is loaded into memory from
+ * an {@code .sspace} file.  Instance of this class perform no document
+ * processing, and the {@code processDocument} and {@code processSpace} methods
+ * do nothing.  The input file format should be one of formats produced by
+ * {@link edu.ucla.sspace.common.SemanticSpaceUtils}.<p>
+ *
+ * In general, users should call {@link
+ * edu.ucla.sspace.common.SemanticSpaceUtils#loadSemanticSpace(File)
+ * SemanticSpaceUtils.loadSemanticSpace(File)} rather than create an instance of
+ * this class directly.
+ *
+ * @see SemanticSpaceUtils
+ * @see SemanticSpaceUtils.SSpaceFormat
  */
 public class FileBasedSemanticSpace implements SemanticSpace {
+
+    private static final Logger LOGGER = 
+	Logger.getLogger(FileBasedSemanticSpace.class.getName());
 
     /**
      * The {@code Matrix} which contains the data read from a finished {@link
@@ -104,6 +119,7 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	// after the previous on disk.
 	termToIndex = new LinkedHashMap<String, Integer>();
 	Matrix m = null;
+	long start = System.currentTimeMillis();
 	try {
 	    switch (format) {
 	    case TEXT:
@@ -127,6 +143,11 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	} catch (IOException ioe) {
 	    throw new IOError(ioe);
 	}  
+	if (LOGGER.isLoggable(Level.FINE)) {
+	    LOGGER.fine("loaded " + format + " .sspace file in " +
+			(System.currentTimeMillis() - start) + "ms");
+	}
+	
 	wordSpace = m;
     }
 

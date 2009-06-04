@@ -35,19 +35,21 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.BoundedSortedMap;
 import edu.ucla.sspace.common.FileBasedSemanticSpace;
 import edu.ucla.sspace.common.Pair;
 import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
 import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SortedMultiMap;
 import edu.ucla.sspace.common.VectorIO;
+import edu.ucla.sspace.common.WordComparator;
 
 /**
  * A utility tool for generating lists of most similar words for each word in a
@@ -57,13 +59,13 @@ public class SimilarityListGenerator {
 
     public static final int DEFAULT_SIMILAR_ITEMS = 10;
 
-    private boolean verbose;
+    private static final Logger LOGGER = 
+	Logger.getLogger(SimilarityListGenerator.class.getName());
 
     private final ArgOptions argOptions;
     
     public SimilarityListGenerator() { 
 	argOptions = new ArgOptions();
-	verbose = false;
 	addOptions();
     }
 
@@ -148,28 +150,27 @@ public class SimilarityListGenerator {
 	    overwrite = argOptions.getBooleanOption("overwrite");
 	}
 
-	verbose = argOptions.hasOption('v');
+	if (argOptions.hasOption('v')) {
+	    // update the loggers to print FINE messages as well as INFO
+	    // messages
+	    Logger.getLogger("edu.ucla.sspace").setLevel(Level.FINE);
+	}
 
 	// load the behavior options
 	final boolean printSimilarity = (argOptions.hasOption('p'))
 	    ? argOptions.getBooleanOption('p') : false;
 
-	String similarityName = (argOptions.hasOption('s'))
-	    ? argOptions.getStringOption('s') : "cosineSimilarity";
+	String similarityTypeName = (argOptions.hasOption('s'))
+	    ? argOptions.getStringOption('s').toUpperCase() : "COSINE";
 
-	// refecltively load whatever similarity measure was desired
-	final Method similarityMethod = 
-	    Similarity.class.getMethod(similarityName, 
-	        new Class[] {double[].class, double[].class });
-
-	verbose("using similarity method: Similarity.%s%n",
-		similarityMethod.getName());
-
+	SimType similarityType = SimType.valueOf(similarityTypeName);
+	
+	LOGGER.fine("using similarity measure: " + similarityType);
+	
 	final int numSimilar = (argOptions.hasOption('n'))
 	    ? argOptions.getIntOption('n') : 10;
 
-
-	verbose("Loading semantic space: " + sspaceFile.getName());
+	LOGGER.fine("loading .sspace file: " + sspaceFile.getName());
 	
 	SSpaceFormat format = SSpaceFormat.TEXT;
 	if (argOptions.hasOption("sspaceFormat")) {
@@ -188,102 +189,45 @@ public class SimilarityListGenerator {
 				  outputDir);
 
 	final PrintWriter outputWriter = new PrintWriter(output);
-
-
-	// Start the execution
-	ThreadPoolExecutor executor = 
-	    new ScheduledThreadPoolExecutor(numThreads);
 	    
 	final Set<String> words = sspace.getWords();
+	WordComparator comparator = new WordComparator(numThreads);
 
 	for (String word : words) {
+	    for (String other : words) {
 
-	    final String term = word;
-	    executor.submit(new Runnable() {
-		    public void run() {
-			verbose("processing: " + term);
-			
-			double[] vector = sspace.getVectorFor(term);
+		// skip comparing the same word to itself
+		if (word.equals(other)) 
+		    continue;
 
-			// the most-similar set will automatically retainy only
-			// a fixed number of elements
-			SortedMap<Double,String> mostSimilar =
-			    new BoundedSortedMap<Double,String>(numSimilar);
-			
-			// loop through all the other words computing their
-			// similarity
-			try {
-			    for (String other : words) {
-				
-				// skip if it is ourselves
-				if (term.equals(other)) 
-					continue;
-				
-				double[] otherVec = sspace.getVectorFor(other);
-				
-				double similarity = -1;
-                // TODO: determine when we shouldn't use just cosineSimilarity.
-				if (true) {
-				    similarity = Similarity.
-					cosineSimilarity(vector, otherVec);
-				} 
-				else {
-				    similarity = (Double)(similarityMethod.
-					invoke(null, 
-					       new Object[]{vector, otherVec}));
-				}
-				    
-				mostSimilar.put(similarity, other);
-			    }
-			}
-			catch (Throwable t) {
-			    t.printStackTrace();
-			}
+		// compute the k most-similar words to this word
+		SortedMultiMap<Double,String> mostSimilar =
+		    comparator.getMostSimilar(word, sspace, numSimilar,
+					      similarityType);
+		
 
-
-			// once processing has finished write the k most-similar
-			// elemnts to the output file.
-			StringBuilder sb = new StringBuilder(256);
-			sb.append(term).append("|");
-			for (Map.Entry<Double,String> e : 
-				     mostSimilar.entrySet()) {
-			    String s = e.getValue();
-			    Double d = e.getKey();
-                // Skip similarities of 0, change this once cosineSimilarity is
-                // not the only sim type used.
-                if (d <= 0.0) 
-                  continue;
-			    sb.append(s);
-			    if (printSimilarity) {
-				sb.append(" ").append(d);
-			    }
-			    sb.append("|");
-			}
-			synchronized(outputWriter) {
-			    outputWriter.println(sb.toString());
-			    outputWriter.flush();
-			}
+		// once processing has finished write the k most-similar
+		// words to the output file.
+		StringBuilder sb = new StringBuilder(256);
+		sb.append(word).append("|");
+		for (Map.Entry<Double,String> e : 
+			 mostSimilar.entrySet()) {
+		    String s = e.getValue();
+		    Double d = e.getKey();
+		
+		    sb.append(s);
+		    if (printSimilarity) {
+			sb.append(" ").append(d);
 		    }
-		});
+		    sb.append("|");
+		}
+		
+		synchronized(outputWriter) {
+		    outputWriter.println(sb.toString());
+		    outputWriter.flush();
+		}
 	    }
-    
-	    executor.shutdown();
-
-	    // wait until all the documents have been parsed
-	    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-
-	    verbose("Done.");
-    }
-
-    private void verbose(String msg) {
-	if (verbose) {
-	    System.out.println(msg);
 	}
     }
 
-    private void verbose(String format, Object... args) {
-	if (verbose) {
-	    System.out.printf(format, args);
-	}
-    }
 }

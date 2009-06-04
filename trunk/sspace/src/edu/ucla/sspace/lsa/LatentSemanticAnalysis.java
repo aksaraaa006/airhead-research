@@ -367,6 +367,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 		} 
 	    }
 
+	    LSA_LOGGER.info("performing " + transform + " transform");
+	    
 	    // Convert the raw term counts using the specified transform
 	    File processedTermDocumentMatrix = 
 		transform.transform(rawTermDocMatrix);
@@ -383,6 +385,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 			userSpecfiedDims);
 		}
 	    }
+
+	    LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
 
 	    // Compute SVD on the pre-processed matrix.
 	    Matrix[] usv = SVD.svd(processedTermDocumentMatrix, dimensions);
