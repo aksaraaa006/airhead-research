@@ -59,7 +59,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * @param bound the maximum number of key-value mappings to retain
      */
     public BoundedSortedMultiMap(int bound) {
-	this(bound, false, false);
+	this(bound, false, true);
     }
 
     /**
@@ -76,7 +76,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      *        key-value mappings in this map
      */
     public BoundedSortedMultiMap(int bound, boolean keyBound) {
-	this(bound, keyBound, false);
+	this(bound, keyBound, true);
     }
 
     /**
