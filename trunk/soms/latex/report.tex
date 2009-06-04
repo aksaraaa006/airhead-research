@@ -3,6 +3,7 @@
 \usepackage{acl-ijcnlp2009}
 
 \usepackage{epsfig} \usepackage{times} \usepackage{url} \usepackage{latexsym}
+\usepackage{listings}
 
 \usepackage{multirow}
 
@@ -47,13 +48,13 @@ acquisition by use of several connected self organizing maps
 \cite{LiDevLex,MiikDisLex}.  The DevLex system has the appealing ability to
 model a growing lexicon \cite{LiDevLex}, which can be challenging in
 connectionist systems due to catastrophic interference, by training connections
-between the two maps with pairs of semantic representations and phonological
-representations.  One issue mentioned by the authors earlier in \cite{FarkasWcd}
-is that connectionist systems tend to learn based on unrealistic data, and
-address this problem by taking incorporating word cooccurence information into
-the semantic representations based on the agents current lexicon.  The one key
-feature missing from this system is the incorporation of referential uncertainty
-when learning.
+between two growing maps with pairs of semantic representations and phonological
+representations.  One issue mentioned by the authors of DevLex in
+\cite{FarkasWcd} is that connectionist systems tend to learn based on
+unrealistic data, and address this problem by taking incorporating word
+cooccurence information into the semantic representations based on the agents
+current lexicon.  The one key feature missing from this system is the
+incorporation of referential uncertainty when learning.
 
 This project introduces a combination of a simplified version of the DevLex
 architecture \cite{LiDevLex}, and a simple learning game frequently used for
@@ -67,10 +68,10 @@ handle referential uncertainty when learning?
 \section{Overview and the Learning Game}
 %describe the hypotheses in more detail.
 A simulation of how humans acquire their first words would present a situation
-where an agent which has a well defined lexicon speaks about the world with a new
-agent, but this well established agent would have to be designed by hand.  As
-such, an approximation of early word acquisition has been used which allows new
-agents to bootstrap their lexicons through simple learning games
+where an agent which has a well defined lexicon speaks about the world with a
+new agent, but this well established agent would have to be designed by hand.
+As such, an approximation of early word acquisition has been used which allows
+new agents to bootstrap their lexicons through simple learning games
 \cite{VogtLearningSim,VogtSocial}.  In some respects, this approximation is
 similar to young children interacting with each other and naming unfamiliar
 objects. 
@@ -153,9 +154,9 @@ once referential uncertainty is introduced, the self organizing map alone will
 be insufficient, and would need some additional mechanism, yet should still be
 feasible with the Selfish Game.  Third, by complicating the self organizing map
 with additional maps, a langauge can be determined with the Selfish Game without
-referential uncertaintly.  Finally, agents using several connected maps not be
-capable of reaching a language with a series of Selfish Games with the presence
-of referential uncertainty.
+referential uncertaintly.  Finally, agents using several connected maps will be
+too complicated to be capable of reaching a language with a series of Selfish
+Games with the presence of referential uncertainty.
 
 \section{Architecture}
 
@@ -165,7 +166,8 @@ In order to accommodate multiple experiments, the connectionist architecture has
 a simple, modular design.  There are two standard Self Organizing Maps, one for
 semantic representations, and one for phonological representations, where all
 nodes in one map are connected to all nodes in the other map.  Each node in
-the two maps has a meaning vector, and an activation associated with it.  Each
+the two maps has a meaning vector, and an activation associated with it, and
+fixed location in a grid.  Each
 connection between nodes from the semantic and phonological map has a
 uni-directional weight.  Each map also monotonically decreases the size of the
 neighborhood over time.  Lastly, each node in the semantic map has a set
@@ -227,7 +229,6 @@ according to row length normalization.  When training, a string representation
 of the word is also presented to the system.  When the phonological map 
 is present, the word is mapped to the winning node in the phonological map.
 Otherwise, the word is mapped to the winning node in the semantic map.
-
 
 For production, a winning node is produced in the map which receives input by
 again selecting the node whose meaning vector has the smallest euclidian
@@ -306,26 +307,26 @@ the winning node in the semantic map.
 
 %general io and specific examples goes here.
 Two forms of input need to be fed into the system, semantic representations and
-phonological representations.  Additionally there is a fixed global lexicon of words
-which is accompanied by the phonological representations.  The phonological
-vectors are a low dimensional feature vector representing a single word.  The
-semantic vector represents the features in a single word.  When referential
-uncertainty is introduced to the learning games, the semantic vectors of each
-object in the selected context are summed together to produce a single feature
-vector which is used as input to the hearer.
+phonological representations.  Additionally there is a fixed global lexicon of
+words which is accompanied by the phonological representations.  The
+phonological vectors are a low dimensional feature vector representing a single
+word.  The semantic vector represents the features in a single word.  When
+referential uncertainty is introduced to the learning games, the semantic
+vectors of each object in the selected context are summed together to produce a
+single feature vector which is used as input to the hearer.
 
-For phonetics,
-vectors are produced from the PatPho system \cite{LiPatPho}.  These vectors have 15
-real valued features which are produced based on how each word fits into a
-syllable template.  PatPho vectors for 401 chinese words are used with the
-pinyin romanization for the string form of each word.  A sample of these vectors
-can be seen in Table \ref{tb:phono}
+For phonetics, vectors are produced from the PatPho system \cite{LiPatPho}.
+These vectors have 15 real valued features which are produced based on how each
+word fits into a syllable template.  PatPho vectors for 401 chinese words paired
+with the pinyin romanization as the string are used as the global lexicon
+available in the environment.  A sample of these vectors can be seen in Table
+\ref{tb:phono}
 
-The semantic vectors correspond to the objects placed in the learning environment.
-For these semantic representations, initially 60 vectors, each with 60 real valued
-features, were randomly generated.  In each random vector, 3 random features were
-randomly assigned a value between 0 and 1.  These random vectors had no underlying
-patterns within them.
+The semantic vectors correspond to the objects placed in the learning
+environment.  For these semantic representations, initially 60 vectors, each
+with 60 real valued features, were randomly generated.  In each random vector, 3
+random features were randomly assigned a value between 0 and 1.  These random
+vectors had no underlying patterns within them.
 
 The other set of semantic vectors are built using a feature generation system
 \cite{HarmWordNetFeature}.  This feature generation system first builds binary
@@ -343,8 +344,9 @@ first 60 words used in \cite{LiDevLex}.
 \section{Experiment and result}
 %describe the results
 For this project, the experiment is to run a series of learning games with a
-small number of learning agents to determine whether or not a population of simple connectionist
-agents can agree on a language.  Several configurations of agents are run:
+small number of learning agents to determine whether or not a population of
+simple connectionist agents can agree on a language.  Several configurations of
+agents are run:
 
 {\small
 \begin{enumerate}
@@ -367,11 +369,10 @@ hypoheses, only Selfish Games are run, with 2 agents in the population.
 
 To evaluate each configuration, two key metrics are used.  First is language
 convergence, which determines how many objects all the agents are capable of
-agreeing on a
-single term.  Second is the rate of homonymy, measuring how many objects are
-referred to by each word.  If both convergence and homonym are high, then the
-agents have developed a vague and unusable language.  The ideal language should
-have high convergence and low homonymy.  
+agreeing on a single term.  Second is the rate of homonymy, measuring how many
+objects are referred to by each word.  If both convergence and homonym are high,
+then the agents have developed a vague and unusable language.  The ideal
+language should have high convergence and low homonymy.  
 
 \begin{center}
 \begin{table}
@@ -394,25 +395,27 @@ configurations, with and without Context.}
 \end{center}
 
 Table \ref{tb:game-result} provides the results of running 1000 Selfish Games
-with only 2 agents.  These results give support for my first hypothesis that the
-Selfish Game is sufficient for a single SOM with out referential uncertainty.  At
-the same time, the results suggest that the current approach for handling
-referential uncertainty is not feasible.  Both configurations which utilized
-attentional learning in the presence of referential uncertainty failed to
-produce a langauge which satisfied both desired criteria.  As for the last
-hypothesis, the Selfish Game is clearly an insufficient learning environment,
-since in all configurations which included two SOMS, no suitable language was
-found.
+with only 2 agents.  These results give support for my first hypothesis; that
+the Selfish Game is sufficient for a single SOM with out referential
+uncertainty.  At the same time, the results suggest that the current approach
+for handling referential uncertainty is not feasible.  Both configurations which
+utilized attentional learning in the presence of referential uncertainty
+failed to produce a langauge which satisfied both desired criteria.  As for
+the last hypothesis, the Selfish Game is clearly an insufficient learning
+environment, since in all configurations which included two SOMS, no suitable
+language was found.  
 
 \section{Difficulties and conclusion}
 %discuss the results, how they reflect on previous word, and what issues exist,
 %and conclude.
+
 The results found after running each configuration of agents leads to some
 interesting questions.  The first question to ask is: why is a standard self
 organizing map insufficient when referential uncertainty is present.  The second
-major question is: why variance not correctly filter out irrelevant features,
-and what alternate architecture would accomplish this task?  And finally, why
-does the selfish game fail to train two connected self organizing maps?  
+major question is: why did variance not correctly filter out irrelevant
+features, and what alternate architecture would accomplish this task?  And
+finally, why does the selfish game fail to train two connected self organizing
+maps?  
 
 With referential uncertainty in the semantic vectors, a focus object will become
 mapped to several different nodes within the semantic SOM.  This mapping to
@@ -420,61 +423,198 @@ several nodes reduces the maps ability to correctly self organize since focus
 objects which have some underlying pattern are unlikely to exhibit that pattern
 when the input vector contains other random objects.
 
-%\begin{figure} \center
-%\includegraphics[width=.49\textwidth]{con_atten_word_pick.png}
-%\caption{Word selection times for attentional learners with referential
-%uncertainty} \label{fig:cont_atten_word_pick}
-%\end{figure}
+\begin{figure}
+\includegraphics[width=.49\textwidth]{con_atten_word_pick.eps}
+\caption{Word selection times for attentional learners with referential
+uncertainty} \label{fig:cont_atten_word_pick}
+\end{figure}
 
-%\begin{figure} \center \includegraphics[width=.49\textwidth]{word_pick.png}
-%\caption{Word selection times for single SOM learners without referential
-%uncertainty} \label{fig:word_pick}
-%\end{figure}
-%\end{comment}
+\begin{figure}
+\includegraphics[width=.49\textwidth]{word_pick.eps}
+\caption{Word selection times for single SOM learners without referential
+uncertainty} \label{fig:word_pick}
+\end{figure}
 
 The set of attentional weights were introduced for each node to address this
 issue of mapping a focus object to multiple nodes.  As an input vector is mapped
-to some node, the attentional weights should track how much change is present
-in each feature.  If two inputs which both contain the same focus object are
-mapped to the same node, this attentional weighting would then reduce the
-importance of the highly varying features.  Clearly this approach failed to
-produce a language with low homonymy.  To understand this problem it's necessary
-to explore when the system selected Figure \ref{fig:con_atten_word_pick} shows
-when words were selected from global lexicon.  In comparison to Figure
-\ref{fig:word_pick}, the attentional agents stop selecting words at an earlier
-game.  In addition to this reduced lexicon for each agent, in later games, both
-agents begin mapping all semantic input to a single node in the semantic SOM.
+to some node, the attentional weights should track how much change is present in
+each feature.  If two inputs which both contain the same focus object are mapped
+to the same node, this attentional weighting would then reduce the importance of
+the highly varying features.  Clearly this approach failed to produce a language
+with low homonymy.  To understand this problem it's necessary to explore when
+the system selected words from the global lexicon.  Figure
+\ref{fig:con_atten_word_pick} shows when words were selected from global
+lexicon.  In comparison to Figure \ref{fig:word_pick}, the attentional agents
+stop selecting words at an earlier game.  In addition to this reduced lexicon
+for each agent, in later games, both agents begin mapping all semantic input to
+a single node in the semantic SOM.
 
 If attentional learning for each node is insufficient for handling referential
-uncertainty, what kind of architecture would?  A possible solution is to have a
-simple recurrent network clean the input vectors before they are given to the
-semantic map.  In this architecture, an agent would learn to map a specific
-context to the focus object, either by being a speaker and knowing the focus
-object, or by utilize the Guessing Game and only learning after a guess has been
-made and the focus object becomes known.  While this approach is likely to avoid
-some of the problems present in attenuating each node, it can't handle all
-issues in referential uncertainty.  For instance, if the context is \{sock,
-milk, cat\}, the agent would be unable to distinguish between the case when
-``sock`` is the focus word in one game and when ``cat`` is the focus word in
-another game.
+uncertainty, what kind of architecture would be successful?  A possible solution
+is to have a simple recurrent network clean the input vectors before they are
+given to the semantic map.  In this architecture, an agent would learn to map a
+specific context to the focus object, either by being a speaker and knowing the
+focus object, or by utilizing the Guessing Game and only learning after a guess
+has been made and the focus object becomes known.  While this approach is likely
+to avoid some of the problems present in attenuating each node, it can't handle
+all issues in referential uncertainty.  For instance, if the context is $\{sock,
+milk, cat\}$, the agent would be unable to distinguish between the case when
+$sock$ the focus word in one game and when $cat$ is the focus word in another
+game.
 
 When training a connection between semantics and phonetics, the uncertainty in
 agents is a likely explanation behind the lack of converging on a suitable
-language.  Since in early games, speakers are likely to mix objects and phonetics
-at random due to the two maps, and the hebbian links, being unstable.  This
-further confuses the hearers to become confused when mapping an object to it's
-phonetics.  For instance, a speaker might first refer to a ``sock`` object as ``ang``,
-and a few games later, the same speaker might refer to the ``sock``object as
-``ba``, which is a complication the DevLex system was not designed to handle.
-It's possible some other method for updating the hebbian links could 
-accommodate this issue.
+language.  Since in early games, speakers are likely to mix objects and
+phonetics at random due to the two maps, and the hebbian links, being unstable.
+This further confuses the hearers when mapping an object to it's phonetics.  For
+instance, a speaker might first refer to a $sock$ object as $ang$, and a few
+games later, the same speaker might refer to the $sock$object as $ba$, which is
+a complication the DevLex system was not designed to handle.  It's possible some
+other method for updating the hebbian links could accommodate this issue.
 
 In this project, I have determined some limitations in a successful architecture
 designed to model early word acquisition when applied to a learning game.  The
-initial, successful, results of applying a single self organizing map to converge
-upon a language suggests that some alternate architecture could be designed
-which can successfully handle this learning game as well as statistical
+initial, successful, results of applying a single self organizing map to
+converge upon a language suggests that some alternate architecture could be
+designed which can successfully handle this learning game as well as statistical
 approaches 
 \bibliographystyle{acl} \bibliography{report}
+
+\section{Appendix: Relevent Code for Leaning Agents}
+For this project, the learning environment and learning agents were written
+using Python.  Matrices were used to represent each Self Organizing Map, which
+relies on the Numpy Python library for matrix objects and operations.  For the
+production of evaluation graphs, the MatPlotLib Python library was used.
+
+The source code for updating a single map is in Listing \ref{cd:updateMap},
+where the $feature\_vectors$ argument represents a $m \times n$ matrix which is
+the meaning vectors of a single SOM, where $m$ is the number of nodes in the
+map, and $n$ is the number of features per meaning vector.  $meaning$ represents
+a single feature vector which is the input, and $attentions$ is another $m
+\times n$ matrix which represents the attentional weights.
+
+The source code for learning patterns within the agent as whole is in Listing
+\ref{cd:learnPatterns}.  The arguements $object\_rep$ and $phoneme\_rep$ are the
+input feature vectors for the semantics and the phonetics, respectively.  If
+both maps are present, both semantic and phonetic maps are updated, followed by
+the hebbian weights between the two, with row normalization.
+
+The code used to retrieve the best node from a single map, along with the neighbors of the
+node, and the best and worse meaning distances within this neighborhood is in
+Listing \ref{cd:getBestNode}.  The argument $map$ represents the feature vectors
+for for a single map and is of size $m \times n$, $attentions$ is of the same
+size as $map$, and locations is a $m \times 2$ matrix representing the
+location of each node in the map.
+
+The code used to update the attentional weights is presented in Listing
+\ref{cd:updateAttention}.  Argument $meaning\_vector$ is again the $m \times n$
+matrix of a map's meaning vectors, and $near$ is single vector of length $m$
+where a 1 represents the node being within the neighborhood of the winning node,
+and 0 represents the node is not.
+
+\lstset{language=python}
+\lstset{commentstyle=\textit}
+\begin{center}
+  \begin{table*}
+\begin{lstlisting}[frame=tb, label=cd:updateMap, caption=Source code to update meaning vectors and activations
+for a single map]{}
+  def updateMap(self, meaning, feature_vectors, attentions,
+                map_type, data=None):
+    if data == None:
+      data = self.getBestNode(feature_vectors, attentions,
+          self.locations[map_type], meaning)
+    best, min_dist, max_dist, near, dists = data
+
+    meaning_diff = (attentions * meaning - feature_vectors)
+    feature_vectors += (self.learning_rate *
+                        near * meaning_diff.transpose()).transpose())
+    result = 1 - (dists - min_dist) / (max_dist - min_dist)
+    self.activations[map_type] = (near * result.transpose()).transpose()
+    return data
+\end{lstlisting}
+\end{table*}
+\end{center}
+
+\begin{center}
+\begin{table*}
+\begin{lstlisting}[frame=tb, label=cd:learnPatterns, caption=Source code to update a single map or update both
+maps and hebbian links]{}
+  def learnPatterns(self, object_rep, phoneme_rep,
+                    m_data=None, p_data=None):
+    m_data = self.updateMap(object_rep, self.meaning_vectors,
+                            self.attention_vectors, M_MAP, m_data)
+    if self.use_phonemes:
+      p_data = self.updateMap(phoneme_rep, self.phoneme_vectors,
+                              self.phoneme_attentions, P_MAP, p_data)
+      self.heb_weights += (self.learning_rate *
+                           numpy.outer(self.activations[M_MAP],
+                                       self.activations[P_MAP]))
+      # Now just normalize the weights.
+      denoms = numpy.sqrt(numpy.power(self.heb_weights, 2).sum(axis=1))
+      # Set zero row sums to be one to prevent divide by zero errors.
+      denoms[denoms==0.0] = 1
+      self.heb_weights = (self.heb_weights.transpose() / denoms).transpose()
+    return m_data, p_data
+\end{lstlisting}
+\end{table*}
+\end{center}
+
+\begin{center}
+\begin{table*}
+\begin{lstlisting}[frame=tb, label=cd:getBestNode, caption=Source code for retrieving the best node
+and it's neighborhood from a single map]{}
+  def getBestNode(self, map, attentions, locations, input_vector):
+    meaning_distances = distance(map, attentions * input_vector)
+    best_node = 0
+    min_dist = meaning_distances[0]
+    max_dist = meaning_distances[0]
+    for i, dist in enumerate(meaning_distances):
+      if min_dist > dist:
+        min_dist = dist
+        best_node = i
+      if max_dist < dist:
+        max_dist = dist 
+    
+    loc_distances = distance(locations, locations[best_node])
+    neighborhood = numpy.zeros_like(meaning_distances)
+    for i, dist in enumerate(loc_distances):
+      if dist < self.n_range:
+        neighborhood[i] = 1
+    return best_node, min_dist, max_dist, neighborhood, meaning_distances
+\end{lstlisting}
+\end{table*}
+\end{center}
+
+\begin{center}
+\begin{table*}
+\begin{lstlisting}[frame=tb, label=cd:updateTimeValues, caption=Source code for updating the learning rate
+and neighborhood radius]{}
+  def updateTimeValues(self):
+    if self.learning_rate > .01:
+      self.learning_rate = .9*(1-self.t/1000)
+    self.n_range = 50 * math.exp(-1 * self.t / 177)
+    self.t += 1
+\end{lstlisting}
+\end{table*}
+\end{center}
+
+\begin{center}
+\begin{table*}
+\begin{lstlisting}[frame=tb, label=cd:updateAttention, caption=Source code for updating attentional
+weights]{} 
+  def updateAttention(self, meaning_vector, near):
+    if not self.use_attention:
+      return
+    self.value_count += 1
+    N = self.value_count
+    old_N = self.value_count - 1
+    delta_sqr = numpy.power((meaning_vector - self.mean) / self.value_count, 2)
+    self.variance = (old_N / N) * self.variance + old_N * delta_sqr
+    self.mean = (self.average_decay * meaning_vector +
+                 (1-self.average_decay) * self.mean)
+    self.attention_vectors = 1 / (1 + self.variance)
+\end{lstlisting}
+\end{table*}
+\end{center}
 
 \end{document}
