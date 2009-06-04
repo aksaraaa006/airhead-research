@@ -377,11 +377,11 @@ public class SVD {
 	    outputMatrixFile.deleteOnExit();
 	    String outputMatrixPrefix = outputMatrixFile.getAbsolutePath();
 
-	    SVD_LOGGER.info("creating SVDLIBC factor matrices at: " + 
+	    SVD_LOGGER.fine("creating SVDLIBC factor matrices at: " + 
 			      outputMatrixPrefix);
 	    String commandLine = "svd -o " + outputMatrixPrefix + formatString +
 		" -d " + dimensions + " " + matrix.getAbsolutePath();
-	    SVD_LOGGER.info(commandLine);
+	    SVD_LOGGER.fine(commandLine);
 	    Process svdlibc = Runtime.getRuntime().exec(commandLine);
 
 	    BufferedReader br = new BufferedReader(
@@ -390,10 +390,10 @@ public class SVD {
 	    for (String line = null; (line = br.readLine()) != null; ) {
 		output.append(line).append("\n");
 	    }
-	    SVD_LOGGER.info(output.toString());
+	    SVD_LOGGER.fine(output.toString());
 	    
 	    int exitStatus = svdlibc.waitFor();
-	    SVD_LOGGER.info("svdlibc exit status: " + exitStatus);
+	    SVD_LOGGER.fine("svdlibc exit status: " + exitStatus);
 
 	    // If SVDLIBC was successful in generating the files, return them.
 	    if (exitStatus == 0) {
@@ -484,7 +484,7 @@ public class SVD {
 	    vOutput.deleteOnExit();
 
 	    String commandLine = "matlab -nodisplay -nosplash -nojvm";
-	    SVD_LOGGER.info(commandLine);
+	    SVD_LOGGER.fine(commandLine);
 	    Process matlab = Runtime.getRuntime().exec(commandLine);
 	    
 	    // capture the input so we know then Matlab is finished
@@ -513,10 +513,10 @@ public class SVD {
 		    matlab.destroy();
 		}
 	    }
-	    SVD_LOGGER.info(output.toString());
+	    SVD_LOGGER.fine(output.toString());
 	    
 	    int exitStatus = matlab.waitFor();
-	    SVD_LOGGER.info("Matlab svds exit status: " + exitStatus);
+	    SVD_LOGGER.fine("Matlab svds exit status: " + exitStatus);
 
 	    // If Matlab was successful in generating the files, return them.
 	    if (exitStatus == 0) {
@@ -589,7 +589,7 @@ public class SVD {
 	    // build a command line where octave executes the previously
 	    // constructed file
 	    String commandLine = "octave " + octaveFile.getAbsolutePath();
-	    SVD_LOGGER.info(commandLine);
+	    SVD_LOGGER.fine(commandLine);
 	    Process octave = Runtime.getRuntime().exec(commandLine);
 
 	    BufferedReader br = new BufferedReader(
@@ -599,10 +599,10 @@ public class SVD {
 	    for (String line = null; (line = br.readLine()) != null; ) {
 		output.append(line).append("\n");
 	    }
-	    SVD_LOGGER.info(output.toString());
+	    SVD_LOGGER.fine(output.toString());
 	    
 	    int exitStatus = octave.waitFor();
-	    SVD_LOGGER.info("Octave svds exit status: " + exitStatus);
+	    SVD_LOGGER.fine("Octave svds exit status: " + exitStatus);
 
 	    // If Octave was successful in generating the files, return them.
 	    if (exitStatus == 0) {
