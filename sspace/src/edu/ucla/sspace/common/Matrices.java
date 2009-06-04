@@ -81,23 +81,23 @@ public class Matrices {
 	if (size < available) {
 	    if (isDense) {
 		if (size > Integer.MAX_VALUE) {
-		    LOGGER.info("too big for ArrayMatrix; creating new " + 
+		    LOGGER.finer("too big for ArrayMatrix; creating new " + 
 				"OnDiskMatrix");
 		    return new OnDiskMatrix(rows, cols);
 		}
 		else {
-		    LOGGER.info("creating new (in memory) ArrayMatrix");
+		    LOGGER.finer("creating new (in memory) ArrayMatrix");
 		    return new ArrayMatrix(rows, cols);
 		}
 	    } else {
-		LOGGER.info("can fit sparse in memory; creating " + 
+		LOGGER.finer("can fit sparse in memory; creating " + 
 			    "new SparseMatrix");
 		return new SparseMatrix(rows, cols);
 	    }
 	}
 	// won't fit into memory
  	else { 
- 	    LOGGER.info("cannot fit in memory; creating new OnDiskMatrix");
+ 	    LOGGER.finer("cannot fit in memory; creating new OnDiskMatrix");
  	    return new OnDiskMatrix(rows, cols);
  	}
     }
