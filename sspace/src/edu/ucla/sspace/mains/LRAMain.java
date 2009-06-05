@@ -99,8 +99,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * </ul>
  *
- * Reads in the analogies to test from standard in.
- * Outputs the cosine similarities to standard out.
  *
  * @see LRA 
  *
