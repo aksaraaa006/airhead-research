@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * An implementation of a semantic space built from syntactic co-occurrence, as
@@ -61,21 +62,24 @@ public class Grefenstette implements SemanticSpace {
     private File wordRelations;
     private PrintWriter wordRelationsWriter;
     private BufferedReader document;
-    private Map<String,Integer> table;
+    private Map<String,Integer> objectTable;
+    private Map<String,Integer> attributeTable;
     private Matrix matrix;
-    // what is an atomic integer?
-    private int counter;
+    private final AtomicInteger objectCounter;
+    private final AtomicInteger attributeCounter;
 
     public Grefenstette() {
 	try {
 	    wordRelations = File.createTempFile("word-relation-list","txt");
 	    wordRelationsWriter = new PrintWriter(wordRelations);
 	  
-	    table = new HashMap<String,Integer>();
+	    objectTable = new HashMap<String,Integer>();
+	    attributeTable = new HashMap<String,Integer>();
 	  
 	    matrix = new GrowingSparseMatrix();
 	  
-	    counter = 0;
+	    objectCounter = new AtomicInteger(0);
+	    attributeCounter = new AtomicInteger(0);
 	} catch (IOException ioe) {
 	    throw new IOError(ioe);
 	}
@@ -231,27 +235,39 @@ public class Grefenstette implements SemanticSpace {
 	double val;
 	int row, col;
 
+        object = object.toLowerCase();
+        attribute = attribute.toLowerCase();
+
 	// get row in matrix
-	if( table.containsKey(object) ) {
-	    row = table.get(object);
+	if( objectTable.containsKey(object) ) {
+            // if the object already exists in matrix, find its index
+	    row = objectTable.get(object);
 	} else {
-	    row = counter++;
-	    table.put( object, row );
+            // otherwise give the object a new index number
+	    row = Integer.valueOf(objectCounter.getAndIncrement());
+            // insert new object/index pair into lookup table
+	    objectTable.put( object, row );
+            System.out.println(object + " " + row);
 	}
 
 	// get column in matrix
-	if( table.containsKey(attribute) ) {
-	    col = table.get(attribute);
+	if( attributeTable.containsKey(attribute) ) {
+	    col = attributeTable.get(attribute);
 	} else {
-	    col = counter++;
-	    table.put( attribute, col );
+	    col = Integer.valueOf(attributeCounter.getAndIncrement());
+	    attributeTable.put( attribute, col );
 	}
 
-	// update entry in matrix
+	// update entry in matrix which records how many times
+        // the object/attribute pair has been seen
 	if( row < matrix.rows() && col < matrix.columns() ) {
+            // if there's already an entry for the object and attribute,
+            // get the current value for the pair of words
 	    val = matrix.get(row, col);
+            // increment the current value by one and store in matrix
 	    matrix.set(row, col, val+1);
 	} else {
+            // otherwise set the row, col value to 1
 	    matrix.set(row, col, 1.0);
 	}
     }
@@ -386,7 +402,7 @@ public class Grefenstette implements SemanticSpace {
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(table.keySet());
+	return Collections.unmodifiableSet(objectTable.keySet());
     }
 
     /**
@@ -394,11 +410,24 @@ public class Grefenstette implements SemanticSpace {
      */
     public double[] getVectorFor(String word) {
 	int wordIndex;
-	if( table.containsKey(word) ) {
-	    wordIndex = table.get(word);
-	    return matrix.getRow(wordIndex);
+        double nullArray[] = {0.0};
+        word = word.toLowerCase();
+	if( objectTable.containsKey(word) ) {
+	    wordIndex = objectTable.get(word);
+            if( wordIndex < matrix.rows() ) {
+                try {
+	        return matrix.getRow(wordIndex);
+                } catch (NullPointerException npe) {
+                    return nullArray;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    return nullArray;
+                }
+            }
+            else {
+                return nullArray;
+            }
 	} else {
-	    return null;
+	    return nullArray;
 	}
     }
 
