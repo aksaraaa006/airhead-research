@@ -106,7 +106,47 @@ public class SemanticSpaceUtils {
      */
     public static SemanticSpace loadSemanticSpace(File sspaceFile, 
 						  SSpaceFormat format) {
-	return new FileBasedSemanticSpace(sspaceFile, format);
+	
+	long freeMemory = Runtime.getRuntime().freeMemory();
+	long fileSize = sspaceFile.length();
+	// Guess whether the file contents will fit into memory
+	//
+	// REMINDER: update these heuristics with some better empirically
+	// determined values
+	boolean inMemory = false;
+	switch (format) {
+	case TEXT:
+	    // assume the character versions are much bigger than the actual
+	    // space
+	    inMemory = fileSize < freeMemory;
+	    break;
+	case BINARY:
+	    // factor of 1.5 for additional data structures
+	    inMemory = fileSize * 1.5 < freeMemory;
+	    break;
+	case SPARSE_TEXT:
+	    // this may actually require slightly more memory for the sparse
+	    // data structures than the equivalent size TEXT version
+	    inMemory = fileSize < freeMemory;
+	    break;
+	case SPARSE_BINARY:
+	    // factor of 2 for additional data structures
+	    inMemory = fileSize * 2 < freeMemory;
+	    break;
+	default:
+	    throw new IllegalArgumentException("Unknown format type: "+ format);
+	}
+
+	if (inMemory) {
+	    LOGGER.fine(format + "-formatted .sspace file will fit into memory"
+			+ "; creating FileBasedSemanticSpace");
+	    return new FileBasedSemanticSpace(sspaceFile, format);
+	}
+	else {
+	    LOGGER.fine(format + "-formatted .sspace file will not fit into"
+			+ "memory; creating OnDiskSemanticSpace");
+	    return new OnDiskSemanticSpace(sspaceFile, format);
+	}
     }
 
     /**
