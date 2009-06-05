@@ -46,6 +46,10 @@ public interface SortedMultiMap<K,V> extends MultiMap<K,V> {
      */
     K firstKey();
 
+    /**
+     * Returns a view of the portion of this map whose keys are less than {@code
+     * toKey}.
+     */
     SortedMultiMap<K,V> headMap(K toKey);
 
     /**
