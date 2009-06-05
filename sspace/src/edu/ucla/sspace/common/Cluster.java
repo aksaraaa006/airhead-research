@@ -23,6 +23,7 @@ package edu.ucla.sspace.common;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
 /** A collection of basic clustering techniques used in Semantic Space models.
@@ -38,7 +39,7 @@ public class Cluster {
    * @return An array of the same size as dataPoints, where each index indicates
    * which cluster number the i'th dataPoint belongs to.
    */
-  public static double[][] kMeansCluster(ArrayList<double[]> dataPoints,
+  public static double[][] kMeansCluster(List<double[]> dataPoints,
                                          int k,
                                          int indexVectorSize) {
     double[][] kCenters = new double[k][indexVectorSize];
@@ -53,7 +54,7 @@ public class Cluster {
     }
 
     boolean converged = false;
-    ArrayList<ArrayList<Integer>> clusters = null;
+    List<List<Integer>> clusters = null;
     while (!converged) {
       double[][] distances = new double[dataPoints.size()][k];
       for (int i = 0; i < dataPoints.size(); ++i) {
@@ -62,7 +63,7 @@ public class Cluster {
                                                          dataPoints.get(i));
         }
       }
-      clusters = new ArrayList<ArrayList<Integer>>();
+      clusters = new ArrayList<List<Integer>>();
       for (int i = 0; i < k; ++i)
         clusters.add(new ArrayList<Integer>());
 
@@ -101,7 +102,7 @@ public class Cluster {
     return kCenters;
   }
 
-  public static int[] kMeansClusterAssignments(ArrayList<double[]> dataPoints,
+  public static int[] kMeansClusterAssignments(List<double[]> dataPoints,
                                                double[][] centers) {
     int[] resultClustering = new int[dataPoints.size()];
     for (int i = 0; i < dataPoints.size(); ++i) {
@@ -119,7 +120,7 @@ public class Cluster {
     return resultClustering;
   }
 
-  public static double kMeansPotential(ArrayList<double[]> dataPoints,
+  public static double kMeansPotential(List<double[]> dataPoints,
                                        double[][] centers) {
     double sum = 0;
     for (double[] dataPoint : dataPoints) {

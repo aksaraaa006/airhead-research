@@ -100,8 +100,10 @@ public class GrowingSparseMatrix implements Matrix {
         sparseMatrix.add(new RowEntry());
       }
     }
-    if (col > cols) {
-      cols = col+1;
+    if (col == cols) {
+      cols++;
+    } else if (col > cols) {
+      cols = col;
     }
     sparseMatrix.get(row).setValue(col, val);
   }
@@ -126,7 +128,7 @@ public class GrowingSparseMatrix implements Matrix {
     for (int col = 0; col < cols; ++col) {
       double val = columns[col];
       if (val != 0) {
-	sparseMatrix.get(row).setValue(col, val);
+        sparseMatrix.get(row).setValue(col, val);
       }
     }
   }
