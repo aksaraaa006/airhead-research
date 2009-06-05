@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * An iterator over all of the words present in a {@link BufferedReader} that
+ * An iterator over all of the tokens present in a {@link BufferedReader} that
  * are separated by any amount of white space.
  */
 public class WordIterator implements Iterator<String> {

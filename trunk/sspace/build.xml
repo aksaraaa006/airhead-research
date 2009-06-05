@@ -161,6 +161,7 @@
       <test name="edu.ucla.sspace.common.TestWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TreeMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TrieMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.WordFilterTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
