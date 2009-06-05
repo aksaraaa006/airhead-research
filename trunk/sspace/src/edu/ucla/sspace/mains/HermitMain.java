@@ -53,10 +53,6 @@ import java.util.Properties;
  * <li> {@code --holographsize} length of the holograph vectors used in
  *      conjuction with the lsa term-document matrix.  by default 2048.
  *
- * <li> {@code --tempdir} location to store temporary holograph files for each
- *      word.  This directory should be able to handle at least 10 gigabytes if
- *      running on the TASA corpus.
- *
  * <li> {@code --builder} class name of the
  *      {@link edu.ucla.sspace.common.IndexBuilder} used to compose the
  *      holograph vectors.  Currently only accepts "BeagleIndexBuilder" and
@@ -86,7 +82,6 @@ import java.util.Properties;
 public class HermitMain extends GenericMain {
     private static final int DEFAULT_DIMENSION = 2048;
     private int dimension;
-    private File tempDirLoc;
     private IndexBuilder builder;
 
     private HermitMain() {
@@ -103,8 +98,6 @@ public class HermitMain extends GenericMain {
 			     + "use for preprocessing", true, "CLASSNAME");
     options.addOption('h', "holographsize", "The size of the holograph vectors",
                       true, "INT");
-    options.addOption('m', "tempdir", "location of the temp directory",
-                      true, "STRING", "Process Properties");
     options.addOption('b', "builder", "Index builder to use for hermit",
                       true, "CLASSNAME", "Process Properties");
     }
@@ -123,9 +116,6 @@ public class HermitMain extends GenericMain {
       dimension = (argOptions.hasOption("holographsize"))
         ? argOptions.getIntOption("holographsize")
         : DEFAULT_DIMENSION;
-      tempDirLoc = (argOptions.hasOption("tempdir"))
-        ? new File(argOptions.getStringOption("tempdir"))
-        : null;
       String builderType = (argOptions.hasOption("builder"))
         ? argOptions.getStringOption("builder")
         : "BeagleIndexBuilder";
@@ -136,7 +126,11 @@ public class HermitMain extends GenericMain {
     }
 
     public SemanticSpace getSpace() {
-      return new Hermit(builder, dimension, tempDirLoc);
+      try {
+        return new Hermit(builder, dimension);
+      } catch (IOException ioe) {
+        throw new IOError(ioe);
+      }
     }
 
     public Properties setupProperties() {
