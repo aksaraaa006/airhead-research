@@ -53,8 +53,11 @@ import java.util.logging.Logger;
  * In general, users should call {@link
  * edu.ucla.sspace.common.SemanticSpaceUtils#loadSemanticSpace(File)
  * SemanticSpaceUtils.loadSemanticSpace(File)} rather than create an instance of
- * this class directly.
+ * this class directly.<p>
  *
+ * This class is thread-safe
+ *
+ * @see OnDiskSemanticSpace
  * @see SemanticSpaceUtils
  * @see SemanticSpaceUtils.SSpaceFormat
  */
@@ -219,12 +222,9 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	    String[] termVectorPair = line.split("\\|");
 	    String[] values = termVectorPair[1].split(",");
 	    termToIndex.put(termVectorPair[0], row);
-	    if (values.length != columns) {
-		throw new IOError(
-		    new Throwable("improperly formated semantic space file"));	    
-	    }
+
 	    // even indicies are columns, odd are the values
-	    for (int i = 0; i < columns; i +=2 ) {
+	    for (int i = 0; i < values.length; i +=2 ) {
 		int col = Integer.parseInt(values[i]);
 		double val = Double.parseDouble(values[i+1]);
 		matrix.set(row, col, val);

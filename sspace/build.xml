@@ -155,6 +155,7 @@
       <test name="edu.ucla.sspace.common.MatricesTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.MatrixIOtests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.NormalizeTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StringUtilsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.TestWordIterator" todir="${report.dir}"/>
