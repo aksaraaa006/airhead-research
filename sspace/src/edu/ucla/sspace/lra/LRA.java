@@ -110,8 +110,9 @@ import org.apache.lucene.store.FSDirectory;
  * the search engine to find patterns based on the input set as well as its
  * corresponding alternates (see {@link loadAnalogiesFromFile}). A sparse matrix is
  * then generated, where each value in the matrix is the number of times the row's
- * word pair occurs with the column's pattern between them.  After the matrix has
- * been built, the <a
+ * word pair occurs with the column's pattern between them.  
+ * <p>
+ * After the matrix has been built, the <a
  * href="http://en.wikipedia.org/wiki/Singular_value_decomposition">Singular
  * Value Decomposition</a> (SVD) is used to reduce the dimensionality of the
  * original word-document matrix, denoted as <span style="font-family:Garamond,
@@ -128,9 +129,9 @@ import org.apache.lucene.store.FSDirectory;
  * values and setting the rest to 0. The approximated matrix <span
  * style="font-family:Garamond, Georgia, serif"> &Acirc; = U<sub>k</sub>
  * &Sigma;<sub>k</sub> V<sub>k</sub><sup>T</sup></span> is the least squares
- * best-ﬁt rank-<span style="font-family:Garamond, Georgia, serif">k</span>
+ * best-fit rank-<span style="font-family:Garamond, Georgia, serif">k</span>
  * approximation of <span style="font-family:Garamond, Georgia, serif">A</span>.
- * LRA reduces the dimensions by keeping only the ﬁrst <span
+ * LRA reduces the dimensions by keeping only the first <span
  * style="font-family:Garamond, Georgia, serif">k</span> dimensions from the row
  * vectors of <span style="font-family:Garamond, Georgia, serif">U</span> and the
  * <span style="font-family:Garamond, Georgia, serif">k</span> dimensions from the
@@ -139,6 +140,7 @@ import org.apache.lucene.store.FSDirectory;
  * </span> is then used to calculate the relational similarities between pairs using
  * the row vectors corresponding to the word pairs.
  *
+ * <p>
  * This class uses the <a href="http://lucene.apache.org/java/docs/">Lucune Search Engine</a> 
  * for optimal indexing and filtering of word pairs using any given corpus.
  * This class also uses Wordnet through the <a href="http://lyle.smu.edu/~tspell/jaws/index.html">JAWS</a> interface
@@ -149,6 +151,16 @@ import org.apache.lucene.store.FSDirectory;
  **/
 public class LRA {
     //TODO: have a way to set these values
+    public static final String LRA_DIMENSIONS_PROPERTY =
+	"edu.ucla.sspace.lra.LRA.dimensions";
+    public static final String LRA_INDEX_DIR =
+	"edu.ucla.sspace.lra.LRA.index_dir";
+    public static final String LRA_SKIP_INDEX =
+	"edu.ucla.sspace.lra.LRA.skip_index";
+    public static final String LRA_READ_MATRIX_FILE =
+	"edu.ucla.sspace.lra.LRA.readMatrixFile";
+    public static final String LRA_WRITE_MATRIX_FILE =
+	"edu.ucla.sspace.lra.LRA.writeMatrixFile";
     private static final int NUM_SIM = 10; 
     private static final int MAX_PHRASE = 5; 
     private static final int NUM_FILTER = 3;
@@ -932,6 +944,32 @@ public class LRA {
     }
 
     /**
+     * Reads analogies from Standard In and outputs their cosine similarities to Standard Out.
+     *
+     * @param projection the projection {@code Matrix}
+     * @return void
+     *
+     * @see edu.ucla.sspace.lra.computeCosineSimilarity
+     **/
+    public void evaluateAnalogies(Matrix projection) {
+            try {
+                Scanner sc = new Scanner(System.in);
+                while (sc.hasNext()) {
+                    String analogy = sc.next();
+                    if (!isAnalogyFormat(analogy,true)) {
+                        System.err.println("\"" + analogy + "\" not in proper format.");
+                        continue;
+                    }
+                    double cosineVal = computeCosineSimilarity(analogy, projection); //does the actual cosine value calculations and comparisons
+                    System.out.println(analogy + " = " + cosineVal);
+                }
+                sc.close();
+            } catch (Exception e) {
+                System.err.println("Could not read file.");
+            }
+    }
+
+    /**
      * prints the {@code Matrix} to standard out.
      *
      * @param rows an {@code int} containing the number of rows in m
@@ -980,6 +1018,7 @@ public class LRA {
         }
     }
 
+    /*
     //sample main function
     public static void main(String[] args) {
 
@@ -1036,5 +1075,6 @@ public class LRA {
             System.err.println("FAILURE");
         } 
     }
+    */
 }
 
