@@ -61,7 +61,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li> {@code -c}, {@code --corpusDir=DIR} the top-level directory of the corpus.  
  *        Only .txt files will be used. 
  *   <li> {@code -a}, {@code --analogyFile=FILE} a text file containing a list of 
- *      analogies separated by newlines. 
+ *      word pairs separated by newlines. 
+ *   <li> {@code -t}, {@code --testAnalogies=FILE} a text file containing a list of 
+ *      analogies (two word pairs) separated by newlines. 
+ *   <li> {@code -o}, {@code --outputFile=FILE} a text file to store the results from
+ *      evaluating the --testAnalogies file.
  *
  *   </ul>
  * 
@@ -95,6 +99,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * </ul>
  *
+ * Reads in the analogies to test from standard in.
+ * Outputs the cosine similarities to standard out.
  *
  * @see LRA 
  *
@@ -123,7 +129,7 @@ public class LRAMain {
      */
     public void usage() {
  	System.out.println(
- 	    "usage: java LRAMain [options] <corpusDir> <analogyFile>\n" + 
+ 	    "usage: java LRAMain [options] <corpusDir> <analogyFile> <testAnalogies> <outputFile>\n" + 
 	    argOptions.prettyPrint());
     }
 
@@ -186,10 +192,12 @@ public class LRAMain {
 			  "overwrite the existing output", true, "BOOL",
 			  "Program Options");
         */
-	options.addOption('a', "analogyFile", "the file containing list of analogies", 
-			  true, "FILE", "Required");
 	options.addOption('c', "corpusDir", "the directory of the corpus", 
 			  true, "DIR", "Required");
+	options.addOption('a', "analogyFile", "the file containing list of word pairs", 
+			  true, "FILE", "Required");
+	options.addOption('t', "testAnalogies", "the file containing list of analogies", true, "FILE", "Required"); 
+	options.addOption('o', "outputFile", "the file containing the cosine similarity output for the analogies from testAnalogies", true, "FILE", "Required"); 
 	options.addOption('i', "indexDir", "a Directory for storing or loading "
 			     + "the Lucene index", true, "DIR");
 	options.addOption('n', "dimensions", 
@@ -198,7 +206,7 @@ public class LRAMain {
 	options.addOption('r', "readMatrixFile", "file containing projection matrix"
 			     , true, "FILE");
 	options.addOption('s', "skipIndex", "turn indexing off.  Must specify index directory"
-			     , true, "BOOL");
+			     , false , null);
 
 	options.addOption('v', "verbose", "prints verbose output",
 			  false, null, "Program Options");
@@ -223,14 +231,16 @@ public class LRAMain {
             }
             argOptions.parseOptions(args);
             
-            if (argOptions.numPositionalArgs() < 3) {
-                throw new IllegalArgumentException("must specify corpus");
+            if (argOptions.numPositionalArgs() < 4) {
+                throw new IllegalArgumentException("must include all Required args");
             }
 
             Properties props = setupProperties();
 
             String corpusDir = argOptions.getPositionalArg(0);
             String analogyFile = argOptions.getPositionalArg(1);
+            String testAnalogies = argOptions.getPositionalArg(2);
+            String outputFile = argOptions.getPositionalArg(3);
             String indexDir = corpusDir;
 	    String userSpecifiedDir = 
 		props.getProperty(LRA.LRA_INDEX_DIR);
@@ -301,7 +311,7 @@ public class LRAMain {
             }
 
             //Step 11. Get analogy input and Evaluate Alternatives
-            lra.evaluateAnalogies(projection);
+            lra.evaluateAnalogies(projection, testAnalogies, outputFile);
         } catch (Throwable t)  {
             t.printStackTrace();
         }
