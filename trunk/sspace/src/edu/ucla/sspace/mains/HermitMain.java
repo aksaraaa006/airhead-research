@@ -150,6 +150,9 @@ public class HermitMain extends GenericMain {
     if (argOptions.hasOption("threads")) {
       props.setProperty(Hermit.NUM_THREADS_PROPERTY,
           argOptions.getStringOption("threads"));
+    } else {
+      props.setProperty(Hermit.NUM_THREADS_PROPERTY,
+          Runtime.getRuntime().availableProcessors());
     }
     return props;
     }

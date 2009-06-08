@@ -502,7 +502,6 @@ public class Hermit implements SemanticSpace {
     // Create a semantic vector for each document.
     List<double[]> semanticVectors = new ArrayList<double[]>();
     int assignmentIndex = 0;
-    try {
     for (Map.Entry<Integer, List<int[]>> e :
         triplet.docToContextMap.entrySet()) {
       double[] meaning = new double[indexVectorSize];
@@ -510,24 +509,15 @@ public class Hermit implements SemanticSpace {
         // Create the queues needed to represent the current context.
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
-        for (int i = 0; i < prevSize; ++i) {
+        for (int i = 0; i < prevSize; ++i)
           prevWords.add(indexToTerm.get(context[i]));
-        }
-        for (int i = prevSize; i < context.length; ++i) {
-          try {
-            nextWords.add(indexToTerm.get(context[i]));
-          } catch (NullPointerException npe) {
-            System.exit(0);
-          }
-        }
+        for (int i = prevSize; i < context.length; ++i)
+          nextWords.add(indexToTerm.get(context[i]));
 
         // Update meaning with the context.
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
       semanticVectors.add(meaning);
-    }
-    } catch (java.util.ConcurrentModificationException cme) {
-      LOGGER.info("concurrent error on wordid: " + triplet.wordId);
     }
 
     // Clear the map again to clear out memory.
