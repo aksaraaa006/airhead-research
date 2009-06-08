@@ -31,7 +31,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.PrintWriter;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -60,14 +60,15 @@ public class BlogPreProcessor {
     Logger.getLogger(BlogPreProcessor.class.getName());
 
   private DocumentPreprocessor processor;
-  private PrintWriter pw;
+  private final PrintWriter pw;
   private boolean saveTS;
   private String tsLength;
 
   private BlogPreProcessor(File wordFile, File outFile,
                            boolean saveTimestamp, String tsLength) {
+    PrintWriter writer = null;
     try {
-      pw = new PrintWriter(outFile);
+      writer = new PrintWriter(outFile);
       processor = new DocumentPreprocessor(wordFile);
       saveTS = saveTimestamp;
       this.tsLength = tsLength;
@@ -78,6 +79,7 @@ public class BlogPreProcessor {
       ioe.printStackTrace();
       System.exit(1); 
     }
+    pw = writer;
   }
 
   /**
@@ -124,14 +126,6 @@ public class BlogPreProcessor {
         date = line.substring(startIndex, endIndex);
         if (date.equals(""))
           date = null;
-        else if (tsLength.equals("day")) {
-          // Ignore the hours of the day portion of the time stamp.
-          date = date.split(" ")[0] + " 00:00:00";
-        } else if (tsLength.equals("month")) {
-          date = date.substring(0, 8) + "01 00:00:00";
-        } else if (tsLength.equals("year")) {
-          date = date.substring(0, 5) + "01-01 00:00:00";
-        }
       } else if (content != null && (!saveTS || date != null)) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
@@ -195,7 +189,7 @@ public class BlogPreProcessor {
 	if (options.hasOption("threads"))
       numThreads = options.getIntOption("threads");
     
-    Collection<File> blogFiles = new LinkedList<File>() ;
+    Collection<File> blogFiles = new ArrayDeque<File>() ;
     for (String fileName : fileNames) {
       blogFiles.add(new File(fileName));
     }
@@ -208,15 +202,15 @@ public class BlogPreProcessor {
       Thread t = new Thread() {
           public void run() {
             while (fileIter.hasNext()) {
-              final File currentFile = fileIter.next();
+              File currentFile = fileIter.next();
               try {
                 LOGGER.info("processing: " + currentFile.getPath());
                 blogCleaner.processFile(currentFile);
               } catch (IOException ioe) {
                 ioe.printStackTrace();
+              }
             }
           }
-        }
       };
       threads.add(t);
     }
