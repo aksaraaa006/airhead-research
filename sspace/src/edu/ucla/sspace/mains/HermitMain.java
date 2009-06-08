@@ -139,14 +139,18 @@ public class HermitMain extends GenericMain {
 	Properties props = System.getProperties();
 
 	if (argOptions.hasOption("dimensions")) {
-	    props.setProperty(Hermit.LSA_DIMENSIONS_PROPERTY,
-			      argOptions.getStringOption("dimensions"));
+	  props.setProperty(Hermit.LSA_DIMENSIONS_PROPERTY,
+          argOptions.getStringOption("dimensions"));
 	}
 
 	if (argOptions.hasOption("preprocess")) {
-	    props.setProperty(Hermit.MATRIX_TRANSFORM_PROPERTY,
-			      argOptions.getStringOption("preprocess"));
+	  props.setProperty(Hermit.MATRIX_TRANSFORM_PROPERTY,
+          argOptions.getStringOption("preprocess"));
 	}
+    if (argOptions.hasOption("threads")) {
+      props.setProperty(Hermit.NUM_THREADS_PROPERTY,
+          argOptions.getStringOption("threads"));
+    }
     return props;
     }
 

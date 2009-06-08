@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,10 +86,13 @@ public class Hermit implements SemanticSpace {
   public static final String LSA_DIMENSIONS_PROPERTY =
   "edu.ucla.sspace.lsa.Hermit.dimensions";
 
+  public static final String NUM_THREADS_PROPERTY = 
+  "edu.ucla.sspace.hermit.Hermit.threads";
+
   public static final String HERMIT_SSPACE_NAME =
   "hermit-semantic-space";
 
-  private static final Logger LSA_LOGGER = 
+  private static final Logger LOGGER = 
   Logger.getLogger(Hermit.class.getName());
 
   /**
@@ -134,6 +138,7 @@ public class Hermit implements SemanticSpace {
 
   private int prevSize;
   private int nextSize;
+  private int contextSize;
 
   /**
    * Constructs the {@code Hermit}.
@@ -155,6 +160,7 @@ public class Hermit implements SemanticSpace {
     indexVectorSize = vectorSize;
     prevSize = builder.expectedSizeOfPrevWords();
     nextSize = builder.expectedSizeOfNextWords();
+    contextSize = prevSize + nextSize;
     indexToTerm.put(0, "");
     termToIndex.put("", new Triplet(0, ""));
     wordSpace = null;
@@ -263,7 +269,7 @@ public class Hermit implements SemanticSpace {
     
   private int[] makeCompactContext(Queue<String> prevWords,
                                    Queue<String> nextWords) {
-    int[] context = new int[prevSize + nextSize];
+    int[] context = new int[contextSize];
     int index = 0;
     for (String word : prevWords) {
       context[index] = termToIndex.get(word).wordId;
@@ -350,15 +356,49 @@ public class Hermit implements SemanticSpace {
         rawTermDocMatrixWriter.close();
       }
 
-      Matrix termDocMatrix = loadLSAMatrix();
+      // Next write all contexts to disk to free up memory.
+      for (Triplet e : termToIndex.values()) {
+        e.dumpContexts();
+      }
 
-      for (Map.Entry<String, Triplet> e : termToIndex.entrySet()) {
-        System.out.println(e.getKey());
-        if (e.getKey().equals(""))
-          continue;
-        int[] reassignments = clusterSemanticVectors(e.getValue());
-        int[] docIds = new int[reassignments.length];
-        splitMatrix(termDocMatrix, e.getKey(), e.getValue(), reassignments);
+      final Matrix termDocMatrix = loadLSAMatrix();
+
+      int numThreads =
+        Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
+      List<Thread> threads = new ArrayList<Thread>();
+
+      final Iterator<Map.Entry<String, Triplet>> tripletIter =
+        termToIndex.entrySet().iterator();
+
+      for (int i = 0; i < numThreads; ++i) {
+        Thread t = new Thread() {
+          public void run() {
+            while (tripletIter.hasNext()) {
+              Map.Entry<String, Triplet> entry = null;
+              synchronized (tripletIter) {
+                if (tripletIter.hasNext())
+                  entry = tripletIter.next();
+                if (entry.getKey().equals(""))
+                  continue;
+              }
+              System.out.println("clustering: " + entry.getKey() + " id: " + entry.getValue().wordId);
+              int[] reassignments = clusterSemanticVectors(entry.getValue());
+              int[] docIds = new int[reassignments.length];
+              splitMatrix(termDocMatrix, entry.getKey(),
+                          entry.getValue(), reassignments);
+            }
+          }
+        };
+        threads.add(t);
+      }
+
+      try {
+        for (Thread t : threads)
+          t.start();
+        for (Thread t : threads)
+          t.join();
+      } catch (InterruptedException ie) {
+        throw new IOError(ie);
       }
 
       termToIndex.remove("");
@@ -453,10 +493,16 @@ public class Hermit implements SemanticSpace {
   }
 
   private int[] clusterSemanticVectors(Triplet triplet) {
-    int assignmentIndex = 0;
-    List<double[]> semanticVectors = new ArrayList<double[]>();
+    // First read in all contexts for this triplet.
+    // Lock on file reading to keep the disk from thrashing to heavily.
+    synchronized (this) {
+      triplet.loadContexts();
+    }
 
     // Create a semantic vector for each document.
+    List<double[]> semanticVectors = new ArrayList<double[]>();
+    int assignmentIndex = 0;
+    try {
     for (Map.Entry<Integer, List<int[]>> e :
         triplet.docToContextMap.entrySet()) {
       double[] meaning = new double[indexVectorSize];
@@ -471,9 +517,6 @@ public class Hermit implements SemanticSpace {
           try {
             nextWords.add(indexToTerm.get(context[i]));
           } catch (NullPointerException npe) {
-            System.out.println(i);
-            System.out.println(context[i]);
-            System.out.println(indexToTerm.get(context[i]));
             System.exit(0);
           }
         }
@@ -483,6 +526,12 @@ public class Hermit implements SemanticSpace {
       }
       semanticVectors.add(meaning);
     }
+    } catch (java.util.ConcurrentModificationException cme) {
+      LOGGER.info("concurrent error on wordid: " + triplet.wordId);
+    }
+
+    // Clear the map again to clear out memory.
+    triplet.docToContextMap.clear();
 
     double oldPotential = 0;
     double potential = 0;
@@ -507,17 +556,15 @@ public class Hermit implements SemanticSpace {
     return (bestAssignments != null) ? bestAssignments : new int[semanticVectors.size()];
   }
 
-  private void splitMatrix(Matrix m, String word, Triplet triplet,
-                           int[] assignments) {
+  private synchronized void splitMatrix(Matrix m, String word, Triplet triplet,
+                                        int[] assignments) {
     int i = 0;
-    System.out.println("Splitting: " + word);
     for (Integer docId : triplet.docToContextMap.keySet()) {
       if (assignments[i] == 0)
         continue;
       String currentTerm = word + ":" + assignments[i];
       if (!termToIndex.containsKey(currentTerm))
         addTerm(currentTerm);
-      System.out.println("adding entry for: " + currentTerm);
       int newIndex = termToIndex.get(currentTerm).wordId;
 
       double splitValue = m.get(triplet.wordId, docId);
@@ -528,6 +575,8 @@ public class Hermit implements SemanticSpace {
   }
 
   private class Triplet {
+    public static final int CONTEXT_LIMIT = 100000;
+
     int wordId;
     AtomicInteger wordCount;
     public final ConcurrentNavigableMap<Integer, List<int[]>>
@@ -542,11 +591,73 @@ public class Hermit implements SemanticSpace {
       contextDump = null;
       docToContextMap =
         new ConcurrentSkipListMap<Integer, List<int[]>>();
+      try {
+        contextDump = File.createTempFile("hermit-dump-" + word, "cxt");
+      } catch (IOException ioe) {
+        throw new IOError(ioe);
+      }
     }
 
     public void addContext(int docId, List<int[]> context) {
       docToContextMap.put(docId, context);
       contextCount.addAndGet(context.size());
+
+      if (contextCount.get() >= CONTEXT_LIMIT) {
+        synchronized (this) {
+          dumpContexts();
+        }
+      }
+    }
+
+    public void dumpContexts() {
+      try {
+        DataOutputStream writer =
+          new DataOutputStream(new FileOutputStream(contextDump, true));
+        for (Map.Entry<Integer, List<int[]>> e : docToContextMap.entrySet()) {
+          for (int[] contextList : e.getValue()) {
+            writer.writeInt(e.getKey());
+            for (int value : contextList) {
+              writer.writeInt(value);
+            }
+          }
+        }
+        contextCount.set(0);
+        docToContextMap.clear();
+        writer.close();
+      } catch (IOException ioe) {
+        throw new IOError(ioe);
+      }
+    }
+
+    public void loadContexts() {
+      int i = 0;
+      int j = 0;
+      long numContexts = 0;
+      try {
+        DataInputStream reader = 
+          new DataInputStream(new FileInputStream(contextDump));
+        long fileSize = contextDump.length();
+        numContexts = fileSize / (4 * (1 + contextSize));
+        for (; i < numContexts; ++i) {
+          int docId = reader.readInt();
+          int context[] = new int[contextSize];
+          for (; j < contextSize; ++j) {
+            context[j] = reader.readInt();
+          }
+          List<int[]> docContexts = docToContextMap.get(docId);
+          if (docContexts == null) {
+            docContexts = new ArrayList<int[]>();
+            docToContextMap.put(docId, docContexts);
+          }
+          docContexts.add(context);
+        }
+        reader.close();
+      } catch (IOException ioe) {
+        System.out.println(contextDump.getPath());
+        System.out.println("line " + i + ", value " + j);
+        System.out.println("numContexts " + numContexts);
+        throw new IOError(ioe);
+      }
     }
 
     public void addToWordCount(int delta) {
