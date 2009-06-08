@@ -30,6 +30,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -49,7 +50,7 @@ public class DocumentPreprocessor {
      * Constructs a {@code DocumentPreprocessor} with an empty word list 
      */
     public DocumentPreprocessor() {
-      processedDocs = new HashSet<DocHash>();
+      processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
       validWords = new HashSet<String>();
     }
 
@@ -62,7 +63,7 @@ public class DocumentPreprocessor {
      */
     public DocumentPreprocessor(File wordList) throws IOException {
 
-	processedDocs = new HashSet<DocHash>();
+    processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
 	validWords = new HashSet<String>();
 	WordIterator it = new WordIterator(
 	    new BufferedReader(new FileReader(wordList)));
@@ -78,7 +79,7 @@ public class DocumentPreprocessor {
      *
      */
     public DocumentPreprocessor(String[] wordList) {
-	processedDocs = new HashSet<DocHash>();
+    processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
 	validWords = new HashSet<String>();
 	for (String word : wordList) {
 	    validWords.add(word);
@@ -272,6 +273,7 @@ public class DocumentPreprocessor {
 	// Step 9: Discarding duplicate articles. This was done by computing a
 	//         128-bit hash of the contents of each article. Articles with
 	//         identical hash values were assumed to be duplicates.
+    /*
 	DocHash hash = new DocHash(document);
 	if (processedDocs.contains(hash)) {
 	    // discard the document
@@ -280,6 +282,7 @@ public class DocumentPreprocessor {
 	else {
 	    processedDocs.add(hash);
 	}
+    */
 
 	// Step 10: Performing automatic spelling correction.
 	
