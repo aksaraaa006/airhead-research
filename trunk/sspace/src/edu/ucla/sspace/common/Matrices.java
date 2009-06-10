@@ -142,21 +142,50 @@ public class Matrices {
 	return new SynchronizedMatrix(m);
     }
 
+    private static Matrix multiplyRightDiag(Matrix m1, Matrix m2) {
+      Matrix resultMatrix = create(m1.rows(), m2.columns(), true);
+      for (int r = 0; r < m1.rows(); ++r) {
+        double[] row = m1.getRow(r);
+        for (int c = 0; c < m2.columns(); ++c) {
+          double value = m2.get(c, c);
+          resultMatrix.set(r, c, value * row[c]);
+        }
+      }
+      return resultMatrix;
+    }
+
+    private static Matrix multiplyBothDiag(Matrix m1, Matrix m2) {
+      Matrix resultMatrix = new DiagonalMatrix(m1.rows());
+      for (int i = 0; i < m1.rows(); ++i) {
+        resultMatrix.set(i, i, m1.get(i, i) * m2.get(i, i));
+      }
+      return resultMatrix;
+    }
+
+    private static Matrix multiplyLeftDiag(Matrix m1, Matrix m2) {
+      Matrix resultMatrix = create(m1.rows(), m2.columns(), true);
+      for (int r = 0; r < m1.rows(); ++r) {
+        double element = m1.get(r, r);
+        double[] m2Row = m2.getRow(r);
+        for (int c = 0; c < m2.columns(); ++c) {
+          resultMatrix.set(r, c, element * m2Row[c]);
+        }
+      }
+      return resultMatrix;
+    }
+
     public static Matrix multiply(Matrix m1, Matrix m2) {
       if (m1.columns() != m2.rows()) 
         return null;
+      if (m2 instanceof DiagonalMatrix) {
+        if (m1 instanceof DiagonalMatrix)
+          return multiplyBothDiag(m1, m2);
+        return multiplyRightDiag(m1, m2);
+      } else if (m1 instanceof DiagonalMatrix) {
+        return multiplyLeftDiag(m1, m2);
+      }
       int size = m1.columns();
       Matrix resultMatrix = create(m1.rows(), m2.columns(), true);
-      if (m2 instanceof DiagonalMatrix) {
-        for (int r = 0; r < m1.rows(); ++r) {
-          double[] row = m1.getRow(r);
-          for (int c = 0; c < m2.columns(); ++c) {
-            double value = m2.get(c, c);
-            resultMatrix.set(r, c, value * row[c]);
-          }
-        }
-        return resultMatrix;
-      }
       for (int r = 0; r < m1.rows(); ++r) {
         double[] row = m1.getRow(r);
         for (int c = 0; c < m2.columns(); ++c) {
