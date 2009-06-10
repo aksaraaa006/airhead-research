@@ -548,8 +548,9 @@ public class Hermit implements SemanticSpace {
 
   private synchronized void splitMatrix(Matrix m, String word, Triplet triplet,
                                         int[] assignments) {
-    int i = 0;
+    int i = -1;
     for (Integer docId : triplet.docToContextMap.keySet()) {
+      i++;
       if (assignments[i] == 0)
         continue;
       String currentTerm = word + ":" + assignments[i];
@@ -560,7 +561,6 @@ public class Hermit implements SemanticSpace {
       double splitValue = m.get(triplet.wordId, docId);
       m.set(newIndex, docId, splitValue);
       m.set(triplet.wordId, docId, 0);
-      i++;
     }
   }
 
