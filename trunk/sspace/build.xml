@@ -177,6 +177,18 @@
     <javadoc destdir="javadoc/" classpathref="classpath">
       <link href="http://java.sun.com/javase/6/docs/api/"/>
       <fileset dir="${src.dir}/" includes="**/*.java"/>
+      <bottom><![CDATA[
+<script type="text/javascript">
+  var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+  document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+  try{
+  var pageTracker = _gat._getTracker("UA-6063773-3");
+  pageTracker._trackPageview();
+  } catch(err) {}
+</script>]]>
+      </bottom>
     </javadoc>
   </target>
 </project>
