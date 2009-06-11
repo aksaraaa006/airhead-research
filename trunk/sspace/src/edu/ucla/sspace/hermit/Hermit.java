@@ -553,6 +553,7 @@ public class Hermit implements SemanticSpace {
       i++;
       if (assignments[i] == 0)
         continue;
+      System.out.println("Splitting word: " + word + " to have sense: " + assignments[i]);
       String currentTerm = word + ":" + assignments[i];
       if (!termToIndex.containsKey(currentTerm))
         addTerm(currentTerm);
@@ -583,6 +584,7 @@ public class Hermit implements SemanticSpace {
         new ConcurrentSkipListMap<Integer, List<int[]>>();
       try {
         contextDump = File.createTempFile("hermit-dump-" + word, "cxt");
+        contextDump.deleteOnExit();
       } catch (IOException ioe) {
         throw new IOError(ioe);
       }
