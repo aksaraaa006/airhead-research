@@ -363,8 +363,8 @@ public class Hermit implements SemanticSpace {
 
       final Matrix termDocMatrix = loadLSAMatrix();
 
-      int numThreads =
-        Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
+      int numThreads = 1;
+        //Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
       List<Thread> threads = new ArrayList<Thread>();
 
       final Iterator<Map.Entry<String, Triplet>> tripletIter =
@@ -517,14 +517,19 @@ public class Hermit implements SemanticSpace {
         // Update meaning with the context.
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
+      StringBuilder sb = new StringBuilder();
+      for (int i =0; i < indexVectorSize; ++i) {
+        sb.append(meaning[i]).append(", ");
+      }
+      System.out.println(sb.toString());
       semanticVectors.add(meaning);
     }
 
     // Clear the map again to clear out memory.
     triplet.docToContextMap.clear();
 
-    double oldPotential = 0;
-    double potential = 0;
+    double oldPotential = Double.MAX_VALUE;
+    double potential = Double.MAX_VALUE;
     int[] bestAssignments = null;
     int[] assignments = null;
     int k = 1;
@@ -533,16 +538,19 @@ public class Hermit implements SemanticSpace {
     // kMeansPotential reaches a relative maximum. This will determine the
     // number of senses produced for a word.
     do {
-      double[][] kClusters =
-        Cluster.kMeansCluster(semanticVectors, k, indexVectorSize);
       oldPotential = potential;
       bestAssignments = assignments;
-      potential = Cluster.kMeansPotential(semanticVectors, kClusters);
+      double[][] kClusters =
+        Cluster.kMeansCluster(semanticVectors, k, indexVectorSize);
       assignments = Cluster.kMeansClusterAssignments(semanticVectors,
                                                      kClusters);
+      potential = Cluster.kMeansPotential(semanticVectors, assignments,
+                                          kClusters);
+      System.out.println(potential);
       k++;
-    } while (potential > oldPotential && k < 7);
+    } while (potential < oldPotential && k < 7 && k <= semanticVectors.size());
 
+    System.out.println("Cluster size for word: " + triplet.wordId + " : " + k);
     return (bestAssignments != null) ? bestAssignments : new int[semanticVectors.size()];
   }
 

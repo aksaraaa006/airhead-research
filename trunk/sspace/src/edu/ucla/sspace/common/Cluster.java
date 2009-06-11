@@ -121,18 +121,15 @@ public class Cluster {
   }
 
   public static double kMeansPotential(List<double[]> dataPoints,
+                                       int[] assignments,
                                        double[][] centers) {
     double sum = 0;
+    int i = 0;
     for (double[] dataPoint : dataPoints) {
-      double minClusterDist =
-        Similarity.euclideanDistance(centers[0], dataPoint);
-      for (int i = 1; i < centers.length; ++i) {
-        double clusterDist = 
-          Similarity.euclideanDistance(centers[i], dataPoint);
-        if (clusterDist < minClusterDist)
-          minClusterDist = clusterDist;
-      }
-      sum += minClusterDist;
+      int assignment = assignments[i];
+      sum += Math.pow(
+          Similarity.euclideanDistance(centers[assignment], dataPoint), 2);
+      i++;
     }
     return sum;
   }
