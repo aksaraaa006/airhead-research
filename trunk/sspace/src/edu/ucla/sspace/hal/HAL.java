@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.hal;
 
+import java.util.BitSet;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Iterator;
@@ -45,8 +46,11 @@ public class HAL implements SemanticSpace
 	 */
 	private static final int DEFAULT_WINDOW_SIZE = 10;
 	
+	public static final String VECTOR_THRESHOLD_PROPERTY =
+	"edu.ucla.sspace.hal.HAL.threshold";
+	
 	/**
-	 * The set that contains all of the words from the document
+	 * The Set that contains all of the words from the document
 	 */
 	private final Set<String> termList;
 	
@@ -203,7 +207,8 @@ public class HAL implements SemanticSpace
 	
 	//Returns the Set of words taken from the documents
 	public Set<String> getWords()
-	{				//If no documents have been processed, it will be empty		
+	{				
+		//If no documents have been processed, it will be empty		
 		return termList;			
 	}		
 	
@@ -230,13 +235,143 @@ public class HAL implements SemanticSpace
 	}
 	
 	
-	//Doesn't do anything
 	public void processSpace(Properties properties)
 	{
+		//Default
+		int threshold = 50;
+		//Get threshold value defined by user
+		String userDefinedThresh = properties.getProperty(VECTOR_THRESHOLD_PROPERTY);
+		if(userDefinedThresh != null)
+		{
+			try 
+			{
+			    threshold = Integer.parseInt(userDefinedThresh);
+			} 
+			catch (NumberFormatException nfe) 
+			{				
+			    throw new IllegalArgumentException(
+			    VECTOR_THRESHOLD_PROPERTY + " is not an integer: " +
+			    userDefinedThresh);
+			}
+		}
+		
+		//Drop Rows with low entropy out of followVals		
+		BitSet colsToDrop = new BitSet(followVals.columns());
+		for(int col = 0; col < followVals.columns();col++)
+		{
+			//set column count to zero
+			int entropy = 0;
+			
+			//Calculate column entropy
+			for(int rows = 0;rows<followVals.rows();rows++)
+			{
+				entropy += followVals.get(rows,col);
+			}
+			
+			//If the entropy is not above the requested threshold
+			if( entropy < threshold )
+			{
+				colsToDrop.set(col);				
+			}	
+		}
+		
+
+		//Drop out any columns with low entropy from the precVals
+		for(int col = 0; col < precVals.columns();col++)
+		{
+			//set column count to zero
+			int entropy = 0;
+			
+			//Calculate column entropy
+			for(int rows = 0;rows<precVals.rows();rows++)
+			{
+				entropy += precVals.get(rows,col);
+			}
+			
+			//If the entropy is not above the requested threshold
+			if( entropy < threshold )
+			{
+				colsToDrop.set(col);
+				
+			}	
+		}
+		
+		
+		//Create a new double[] row to add into the new, smaller matrix
+		double[] newRows = new double[followVals.columns()-colsToDrop.cardinality()];
+		GrowingSparseMatrix smallerF = new GrowingSparseMatrix();
+		//For every row
+		for(int i = 0;i<followVals.rows();i++)
+		{
+			//And every column in that row
+			for(int j = 0;j<followVals.columns();j++)
+			{
+				//If the column is not to be dropped
+				if(!colsToDrop.get(j))
+				{
+					//Add it to the new row
+					newRows[i] = followVals.get(i,j);
+				}
+			}
+			//Put the new row into the matrix
+			smallerF.setRow(i, newRows);
+		}
+		
+		//Switch the original Matrices to the new, smaller Matrices
+		followVals = smallerF;
+		
+
+		GrowingSparseMatrix smallerP = new GrowingSparseMatrix();
+		//For every row
+		for(int i = 0;i<precVals.rows();i++)
+		{
+			//And every column in that row
+			for(int j = 0;j<precVals.columns();j++)
+			{
+				//If the column is not to be dropped
+				if(!colsToDrop.get(j))
+				{
+					//Add it to the new row
+					newRows[i] = precVals.get(i,j);
+				}
+			}
+			//Put the new row into the matrix
+			smallerP.setRow(i, newRows);
+		}
+			
+		//Switch the original Matrices to the new, smaller Matrices
+		precVals=smallerP;
+		
+		
+		//Change the values of the termToIndex to match the smaller matrices
+		Map<String,Integer> termToNewIndex = new ConcurrentHashMap<String,Integer>();
+		
+		//Set of keys to put into new index, put into an array for easier access
+		Set<String> keystemp = termToIndex.keySet();
+		String[] keys = new String[precVals.columns()];
+		keystemp.toArray(keys);
+		
+		int newIndexCount = 0;
+		for(int i=0;i<precVals.columns();i++)
+		{
+			//If not dropping the word
+			if(!colsToDrop.get(i))
+			{
+				//Add the word to the new termToIndex
+				termToNewIndex.put(keys[i], newIndexCount);
+						
+				//Increase the new Index Count
+				newIndexCount++;
+			}
+			
+		}
+		
+		termToIndex = termToNewIndex;
+		
 		
 	}
 	
-	//Doesn't do anything
+
 	public String getSpaceName()
 	{
 		return "hal-semantic-space";
