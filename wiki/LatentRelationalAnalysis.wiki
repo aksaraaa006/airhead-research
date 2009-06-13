@@ -1,0 +1,23 @@
+Description of Latent Relational Analysis and its implementation.
+
+= Introduction =
+
+Latent Relational Analysis is a semantic space algorithm that measures relational similarity.  When two word pairs have a high degree of relational similarity, we say they are "analogous".  LRA is an extension of the [http://en.wikipedia.org/wiki/Vector_space_model Vector Space Model](VSM), which constructs a matrix based on predefined patterns.  
+
+LRA improves VSM by: 
+  # deriving patterns automatically from a corpus
+  # using Singular Value Decomposition to smooth frequency data
+  # generating synonyms that are used to explore word pairs with similar meanings 
+
+The algorithm requires a search engine with a very large corpus of text, a broad coverage thesaurus of synonyms, and an efficient implementation of [http://en.wikipedia.org/wiki/Singular_value_decomposition Singular Value Decomposition](SVD).
+
+LRA takes as input a set of word pairs, and constructs a matrix that can be used to find the relational similarity between any two word pairs.
+
+For more information on Latent Relational Analysis and its implementation, see the following papers:
+  * Peter D. Turney (2004). Human-Level Performance on Word Analogy Questions by Latent Relational Analysis. Available [http://iit-iti.nrc-cnrc.gc.ca/iit-publications-iti/docs/NRC-47422.pdf here]
+  * Peter D. Turney (2005). Measuring Semantic Similarity by Latent Relational Analysis. Available [http://portal.acm.org/citation.cfm?id=1174523 here] 
+
+= LRA Implementation =
+
+The implementation of Latent Relational Analysis is located in one file, LRA.java.
+This implementation uses the [http://lucene.apache.org/java/docs/ Lucune Search Engine] for optimal indexing and filtering of word pairs using any given corpus. It also uses Wordnet through the [http://lyle.smu.edu/~tspell/jaws/index.html JAWS] interface in order to find alternate word pairs from given input pairs. 
