@@ -1,4 +1,4 @@
-Description of Latent Relational Analysis and its implementation.
+#summary Description of Latent Relational Analysis and its implementation.
 
 = Introduction =
 
