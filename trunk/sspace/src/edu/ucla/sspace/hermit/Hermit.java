@@ -362,6 +362,8 @@ public class Hermit implements SemanticSpace {
       }
 
       final Matrix termDocMatrix = loadLSAMatrix();
+      /*
+       * Remove the hermit specific processing, which should result in LSA.
 
       int numThreads = 1;
         //Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
@@ -400,6 +402,7 @@ public class Hermit implements SemanticSpace {
       } catch (InterruptedException ie) {
         throw new IOError(ie);
       }
+      */
 
       termToIndex.remove("");
       indexToTerm.remove(0);
