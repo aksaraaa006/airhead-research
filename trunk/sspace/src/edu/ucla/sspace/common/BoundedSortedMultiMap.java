@@ -32,7 +32,7 @@ import edu.ucla.sspace.common.BoundedSortedMap.ReverseComparator;
 /**
  * A {@code MultiMap} implementation that grows to a fixed size and then retains only
  * a fixed number of either keys or mappings.  All keys used in this class
- * must implements {@link Comarable}.
+ * must implements {@link Comparable}.
  * 
  * @see BoundedSortedMap
  */
@@ -72,7 +72,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * @param bound the number to retain
      * @param keyBound {@code true} if the bound should apply to the number of
      *        keys, regardless of the number of values to which those keys map,
-     *        or {@false} if the bound should apply to the total number of
+     *        or {@code false} if the bound should apply to the total number of
      *        key-value mappings in this map
      */
     public BoundedSortedMultiMap(int bound, boolean keyBound) {
@@ -90,7 +90,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * @param bound the number to retain
      * @param keyBound {@code true} if the bound should apply to the number of
      *        keys, regardless of the number of values to which those keys map,
-     *        or {@false} if the bound should apply to the total number of
+     *        or {@code false} if the bound should apply to the total number of
      *        key-value mappings in this map
      * @param retainHighest {@code true} if the higest keys should be kept,
      *        {@code false} if the lowest keys should be kept
@@ -106,7 +106,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * Adds the key-value mapping to this map, and if the total number of
      * mappings exceeds the bounds, removes either the currently lowest element,
      * or if reversed, the currently highest element.  If this map is bound by
-     * the number of keys, a {@code put} operation may result in the {@link
+     * the number of keys, a {@code put} operation may result in the {@code
      * range} decreasing, even though the number of keys stays constant.
      *
      * @param key {@inheritDoc}
@@ -134,7 +134,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * Adds all of the key-value mapping to this map, and if the total number of
      * mappings exceeds the bounds, removes either the currently lowest element,
      * or if reversed, the currently highest element.  If this map is bound by
-     * the number of keys, a {@code put} operation may result in the {@link
+     * the number of keys, a {@code put} operation may result in the {@code
      * range} decreasing, even though the number of keys stays constant.
      *
      * @param key {@inheritDoc}
@@ -153,7 +153,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * Adds all of the key-value mapping to this map, and if the total number of
      * mappings exceeds the bounds, removes either the currently lowest element,
      * or if reversed, the currently highest element.  If this map is bound by
-     * the number of keys, a {@code put} operation may result in the {@link
+     * the number of keys, a {@code put} operation may result in the {@code
      * range} decreasing, even though the number of keys stays constant.
      *
      * @param m {@inheritDoc}

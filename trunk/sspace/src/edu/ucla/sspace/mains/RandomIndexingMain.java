@@ -70,14 +70,40 @@ import java.util.logging.Logger;
  *
  *   <li> {@code -s}, {@code --windowSize=INT} how many words to consider in each
  *        direction
+ * 
+ *   <li> {@code -L}, {@code --loadVectors=FILE} specifies a file containing
+ *         word-to-index vector mappings that should be used by the {@code
+ *         RandomIndxing} instance.  This allows multiple invocations of this
+ *         program to reuse the same semantic space.
+ *
+ *   <li> {@code -S}, {@code --saveVectors=FILE} specifies a file in which the
+ *         word-to-index vector mappings will be saved after the {@code
+ *         RandomIndxing} instance has finished processing all the documents.
+ *         When used in conjunction with the {@code --loadVectors} option, this
+ *         allows later invocations of this program to reuse the this
+ *         invocation's semantic space.
+ *
  *   </ul> 
+ *
+ *   <ul>
+ *
+ *   <li> {@code -F}, {@code --filterFile=FILE[include|exclude][,FILE...]}
+ *        specifies a list of one or more files to use for {@link WordFilter
+ *        filtering} the documents.  An option flag may be added to each file to
+ *        specify how the words in the filter filter should be used: {@code
+ *        include} if only the words in the filter file should be retained in
+ *        the document; {@code exclude} if only the words <i>not</i> in the
+ *        filter file should be retained in the document.
+ *
+ *   </ul>
  *
  * <li><u>Program Options</u>:
  *   <ul>
  *
  *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
  *        output formatting to use when generating the semantic space ({@code
- *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
+ *        .sspace}) file.  See {@link edu.ucla.sspace.common.SemanticSpaceUtils
+ *        SemanticSpaceUtils} for format details.
  *
  *   <li> {@code -t}, {@code --threads=INT} the number of threads to use
  *
@@ -139,6 +165,9 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('p', "usePermutations", "whether to permute " +
 			  "index vectors based on word order", true,
 			  "BOOL", "Algorithm Options");
+	options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
+			  + "semantics to save memory", true,
+			  "BOOL", "Algorithm Options");
 	options.addOption('s', "windowSize", "how many words to consider " +
 			  "in each direction", true,
 			  "INT", "Algorithm Options");
@@ -148,6 +177,9 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
 			  + " before processing", true,
 			  "FILE", "Algorithm Options");
+	options.addOption('F', "filterList", "filters to apply to the input " +
+			  "token stream", true, "filter-file[=include (default)"
+			  + "|exclude][,filter-file...]", "Input Options");
     }
 
     public static void main(String[] args) {
@@ -159,7 +191,10 @@ public class RandomIndexingMain extends GenericMain {
 	}
     }
 
-    public Properties setupProperties() {
+    /**
+     * {@inheritDoc}
+     */
+    protected Properties setupProperties() {
 	props = System.getProperties();
 	// Use the command line options to set the desired properites in the
 	// constructor.  Use the system properties in case these properties were
@@ -183,7 +218,18 @@ public class RandomIndexingMain extends GenericMain {
 	    props.setProperty(RandomIndexing.VECTOR_LENGTH_PROPERTY,
 			     argOptions.getStringOption("vectorLength"));
 	}
-    return props;
+
+	if (argOptions.hasOption("useSparseSemantics")) {
+	    props.setProperty(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY,
+			      argOptions.getStringOption("useSparseSemantics"));
+	}
+
+	if (argOptions.hasOption("filterList")) {
+	    props.setProperty(RandomIndexing.WORD_FILTER_PROPERTY,
+			      argOptions.getStringOption("filterList"));
+	}
+
+	return props;
     }
 
     /**
@@ -214,6 +260,10 @@ public class RandomIndexingMain extends GenericMain {
 	return ri;
     }
 
+    /**
+     * If {@code --saveVectors} was specified, write the accumulated
+     * word-to-index vector mapping to file.
+     */
     protected void postProcessing() {
 	if (argOptions.hasOption("saveVectors")) {
 	    String fileName = argOptions.getStringOption("saveVectors");

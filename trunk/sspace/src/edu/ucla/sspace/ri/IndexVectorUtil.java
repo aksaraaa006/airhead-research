@@ -37,7 +37,7 @@ import java.util.Map;
  * 
  * @see RandomIndexing
  * @see IndexVector
- * @see IndeexVectorGenerator
+ * @see IndexVectorGenerator
  */
 public class IndexVectorUtil {
 

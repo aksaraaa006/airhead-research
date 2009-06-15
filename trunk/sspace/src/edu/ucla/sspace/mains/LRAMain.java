@@ -135,7 +135,7 @@ public class LRAMain {
      * Returns the {@code Properties} object that will be used when calling
      * {@link SemanticSpace#processSpace(Properties)}.  Subclasses should
      * override this method if they need to specify additional properties for
-     * the space.  This method will be called once before {@link #getSpace()}.
+     * the space.  
      *
      * @return the {@code Properties} used for processing the semantic space.
      */
@@ -214,11 +214,11 @@ public class LRAMain {
     }
 
     /**
-     * Processes the arguments and begins processing the documents using the
-     * {@link SemanticSpace} returned by {@link #getSpace() getSpace}.
+     * Runs {@link LRA Latent Relational Analysis} using the configuration
+     * properties found in the specified arguments.
      *
      * @param args arguments used to configure this program and the {@code
-     *        SemanticSpace}
+     *        LRA} instance
      */
     public void main(String[] args) {
         argOptions = setupOptions();

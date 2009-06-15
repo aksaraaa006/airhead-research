@@ -28,7 +28,7 @@ import java.util.TreeMap;
 /**
  * A {@code Map} implementation that grows to a fixed size and then retains only
  * a fixed number of the highest (largest) keys.  All keys used in this class
- * must implements {@link Comarable}.
+ * must implements {@link Comparable}.
  *
  * @see BoundedSortedMultiMap
  */
@@ -56,8 +56,8 @@ public class BoundedSortedMap<K,V> extends TreeMap<K,V> {
      * where the largest (highest) keys.
      *
      * @param bound the number of mappings to retain
-     * @param retainHighest {@true} if the highest elements are to be retained,
-     *        {@code false} if the lowest keys are to be retained
+     * @param retainHighest {@code true} if the highest elements are to be
+     *        retained, {@code false} if the lowest keys are to be retained
      */
     public BoundedSortedMap(int bound, boolean retainHighest) {
 	super(((retainHighest) ? null : new ReverseComparator<K>()));

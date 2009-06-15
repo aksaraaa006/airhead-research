@@ -103,6 +103,7 @@ import org.apache.lucene.store.FSDirectory;
  *    <a href="http://portal.acm.org/citation.cfm?id=1174523">here</a>
  *    </li>
  *
+ * </ul>
  * <p>
  *
  * LRA uses three main components to analyze a large corpus of text in order to

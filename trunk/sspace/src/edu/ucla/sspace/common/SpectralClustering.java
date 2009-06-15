@@ -147,6 +147,7 @@ public class SpectralClustering {
     return nodeCount;
   }
 
+  @SuppressWarnings("unchecked")
   private List<double[]> computeSortedVector(List<double[]> dataPoints,
                                              double[] p) {
     int size = dataPoints.size();
@@ -209,6 +210,7 @@ public class SpectralClustering {
       sortedV.add(new VectorPair(v.get(i, i), dataPoint));
       i++;
     }
+    
     Collections.sort(sortedV);
     List<double[]> sortedDataPoints = new ArrayList<double[]>();
     for (VectorPair pair : sortedV) {

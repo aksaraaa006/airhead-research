@@ -65,7 +65,8 @@ import java.util.Properties;
  *
  *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
  *        output formatting to use when generating the semantic space ({@code
- *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
+ *        .sspace}) file.  See {@link edu.ucla.sspace.common.SemanticSpaceUtils
+ *        SemanticSpaceUtils} for format details.
  *
  *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
  *        documents.  The default is one per core.

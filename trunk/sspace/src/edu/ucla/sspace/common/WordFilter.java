@@ -44,12 +44,12 @@ public class WordFilter implements Iterator<String> {
     /**
      * The set of tokens used to filter the output
      */
-    private final Set<String> filterSet;
+    private final Set<String> words;
 
     /**
      * {@code true} if the returned tokens must not be in the filter set
      */
-    private final boolean invertFilter;
+    private final boolean excludeWords;
 
     /**
      * The next word to return that has passed through the filter
@@ -58,54 +58,56 @@ public class WordFilter implements Iterator<String> {
 
     /**
      * Constructs an interator over the tokens in the reader that <i>are</i>
-     * present in {@code filterSet}
+     * present in {@code words}.
      */
-    public WordFilter(BufferedReader br, Set<String> filterSet) {
-	this(new WordIterator(br), filterSet, false);
+    public WordFilter(BufferedReader br, Set<String> words) {
+	this(new WordIterator(br), words, false);
     }
 
     /**
-     * Constructs an interator over the tokens in the reader that are in {@code
-     * filterSet} if {@code invertFilter} is {@code false} or are <i>not</i> in
-     * the {@code filterSet} if {@code invertFilter} is {@code true}.
+     * Constructs an interator over the tokens in the reader that are present in
+     * {@code words} if {@code excludeWords} is {@code false} or are <i>not</i>
+     * in the {@code words} if {@code excludeWords} is {@code true}.
      *
      * @param br the reader to tokenize 
-     * @param filterSet the set of tokens to use in filtering the output
-     * @param invertFilter {@code true} if words in {@code filterSet} should be
-     *        excluded, {@code false} if only words in {@code filterSet} should
+     * @param words the set of tokens to use in filtering the output
+     * @param excludeWords {@code true} if words in {@code words} should be
+     *        excluded, {@code false} if only words in {@code words} should
      *        be included
      */
-    public WordFilter(BufferedReader br, Set<String> filterSet, 
-		      boolean invertFilter) {
-	this(new WordIterator(br), filterSet, invertFilter);
+    public WordFilter(BufferedReader br, Set<String> words, 
+		      boolean excludeWords) {
+	this(new WordIterator(br), words, excludeWords);
     }
 
     /**
      * Constructs an interator over the tokens in the provided iterator that
-     * <i>are</i> present in {@code filterSet}
+     * <i>are</i> present in {@code words}
+     *
+     * @param iterator a sequence of tokens
+     * @param words the set of tokens to use in filtering the output
      */
-    public WordFilter(Iterator<String> iterator, Set<String> filterSet) {
-	this(iterator, filterSet, false);
+    public WordFilter(Iterator<String> iterator, Set<String> words) {
+	this(iterator, words, false);
     }
 
     /**
      * Constructs an interator over the tokens in the provided iterator that are
-     * in {@code filterSet} if {@code invertFilter} is {@code false} or are
-     * <i>not</i> in the {@code filterSet} if {@code invertFilter} is {@code
-     * true}.
+     * present in {@code words} if {@code excludeWords} is {@code false} or are
+     * <i>not</i> in the {@code words} if {@code excludeWords} is {@code true}.
      *
-     * @param br the reader to tokenize 
-     * @param filterSet the set of tokens to use in filtering the output
-     * @param invertFilter {@code true} if words in {@code filterSet} should be
-     *        excluded, {@code false} if only words in {@code filterSet} should
+     * @param iterator a sequence of tokens
+     * @param words the set of tokens to use in filtering the output
+     * @param excludeWords {@code true} if words in {@code words} should be
+     *        excluded, {@code false} if only words in {@code words} should
      *        be included
      */
-    public WordFilter(Iterator<String> iterator, Set<String> filterSet,
-		      boolean invertFilter) {
+    public WordFilter(Iterator<String> iterator, Set<String> words,
+		      boolean excludeWords) {
 
 	this.tokenizer = iterator;
-	this.filterSet = filterSet;
-	this.invertFilter = invertFilter;
+	this.words = words;
+	this.excludeWords = excludeWords;
 	advance();
     }
 
@@ -130,7 +132,7 @@ public class WordFilter implements Iterator<String> {
     }
 
     private boolean include(String word) {
-	return filterSet.contains(word) ^ invertFilter;
+	return words.contains(word) ^ excludeWords;
     }
 
     /**
