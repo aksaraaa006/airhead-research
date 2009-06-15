@@ -94,7 +94,7 @@ public interface MultiMap<K,V> {
      * specified key in this map.
      *
      * @param key key with which the specified value is to be associated
-     * @param value a collection of values to be associated with the specified
+     * @param values a collection of values to be associated with the specified
      *        key
      *
      * @return {@code true} if at least one of the provided value was not

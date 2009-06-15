@@ -31,14 +31,17 @@ import java.util.Queue;
  * experimentation purposes.  Implementations should be thread safe.
  */
 public interface IndexBuilder {
+
   /**
    * Given a current meaning vector, update it using index vectors from a given
    * window of words.
    *
    * @param meaning An existing meaning vector.  After calling this method, the
-   * values of meaning will be updated according to some scheme.
-   * @param context An array of words, each of which will be combined with
-   * meaning.
+   *        values of meaning will be updated according to some scheme.
+   * @param prevWords words appearing before the focus word whose meaning is
+   *        being updated
+   * @param nextWords words appearing after the focus word whose meaning is
+   *        being updated
    */
   public void updateMeaningWithTerm(double[] meaning,
                                     Queue<String> prevWords,

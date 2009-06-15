@@ -28,16 +28,16 @@ import java.util.Set;
 
 /**
  * A {@link MultiMap} that provides a total ordering for the keys.  All keys
- * intersted must implement the {@link Comarable} interface.  
+ * intersted must implement the {@link Comparable} interface.  
  *
  * @see MultiMap
- * @see SortedMap
+ * @see java.util.SortedMap
  */
 public interface SortedMultiMap<K,V> extends MultiMap<K,V> {
 
     /**
      * Returns the comparator used to order the keys in this map, or null if
-     * this map uses the {@link Comarable natural ordering} of its keys.
+     * this map uses the {@link Comparable natural ordering} of its keys.
      */
     Comparator<? super K> comparator();
 

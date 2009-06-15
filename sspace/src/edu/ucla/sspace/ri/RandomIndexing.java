@@ -22,15 +22,19 @@
 package edu.ucla.sspace.ri;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.IOError;
 
 import java.lang.reflect.Constructor;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
@@ -41,6 +45,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.ucla.sspace.common.IntegerMap;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.Tuple;
+import edu.ucla.sspace.common.WordFilter;
 import edu.ucla.sspace.common.WordIterator;
 
 /**
@@ -96,7 +102,9 @@ import edu.ucla.sspace.common.WordIterator;
  *
  * <p>
  *
- * This class provides four paramaters
+ * This class defines the following configurable properties that may be set
+ * using either the System properties or using the {@link
+ * RandomIndexing#RandomIndexing(Properties)} constructor.
  *
  * <dl style="margin-left: 1em">
  *
@@ -127,7 +135,8 @@ import edu.ucla.sspace.common.WordIterator;
  *
  * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link edu.ucla.sspace.ri.DefaultPermutationFunction DefaultPermutationFunction} 
+ *      <i>Default:</i> {@link edu.ucla.sspace.ri.DefaultPermutationFunction 
+ *      DefaultPermutationFunction} 
  *
  * <dd style="padding-top: .5em">This property specifies the fully qualified
  *      class name of a {@link PermutationFunction} instance that will be used
@@ -144,20 +153,45 @@ import edu.ucla.sspace.common.WordIterator;
  *       vectors can provide their own {@link IndexVectorGenerator} instance by
  *       setting this value to the fully qualified class name.<p>
  *
+ * <dt> <i>Property:</i> <code><b>{@value #USE_SPARSE_SEMANTICS_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code true} 
+ *
+ * <dd style="padding-top: .5em">This property specifies whether to use a sparse
+ *       encoding for each word's semantics.  Using a sparse encoding can result
+ *       in a large saving in memory, while requiring more time to process each
+ *       document.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #WORD_FILTER_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code null} 
+ *
+ * <dd style="padding-top: .5em">This property specifies the a list of files to
+ *      be used with {@link WordFilter} instances.  The value is specified as
+ *      <tt>filename[=<i>include</i> (default) |
+ *      <i>exclude</i>][,filname...]</tt>, where each <tt>filename</tt> has an
+ *      optional parameter to specify whether the words in the file should be
+ *      used to filter out words not in the file (include), or to remove those
+ *      words that are in the file (exlcude).  Multiple filter files may be
+ *      appended using a ',' to separate them.  Note that filters are applied to
+ *      the input token stream of {@link #processDocument(BufferedReader)
+ *      processDocument} in order they are declared.<p>
+ *
  * </dl> <p>
  *
  * This class is thread-safe for concurrent calls of {@link
- * #processDocument(BufferedReader) processDocument}.  Once {@link
- * #processSpace(Properties) processSpace} has been called, no further calls to
- * {@code processDocument} should be made.
- * 
- * <p>
+ * #processDocument(BufferedReader) processDocument}.  At any given point in
+ * processing, the {@link #getVectorFor(String) getVectorFor} method may be used
+ * to access the current semantics of a word.  This allows callers to track
+ * incremental changes to the semantics as the corpus is processed.  <p>
  *
- * This class <i>does</i> allow calls to {@link #getVectorFor(String)} prior to
- * the final call to {@link #processSpace(Properties) processSpace}
+ * The {@link #processSpace(Properties) processSpace} method does nothing for
+ * this class and calls to it will not affect the results of {@code
+ * getVectorFor}.
  *
  * @see PermutationFunction
  * @see IndexVector
+ * @see IndexVectorGenerator
  * 
  * @author David Jurgens
  */
@@ -206,6 +240,20 @@ public class RandomIndexing implements SemanticSpace {
      */
     public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
 	PROPERTY_PREFIX + ".indexVectorGenerator";
+
+    /**
+     * Specifies the {@link WordFilter} instances to apply to the tokenized
+     * input stream before {@code processDocument} runs.
+     */
+    public static final String WORD_FILTER_PROPERTY = 
+	PROPERTY_PREFIX + ".wordFilter";
+
+    /**
+     * Specifies whether to use a sparse encoding for each word's semantics,
+     * which saves space but requires more computation.
+     */
+    public static final String USE_SPARSE_SEMANTICS_PROPERTY = 
+	PROPERTY_PREFIX + ".sparseSemantics";
 
     /**
      * The default number of words to view before and after each word in focus.
@@ -265,7 +313,32 @@ public class RandomIndexing implements SemanticSpace {
      */
     private final IndexVectorGenerator indexVectorGenerator;
 
-    public RandomIndexing(Properties properties) {
+    /**
+     * A list of files for the {@link WordFilter} instances that will be used to
+     * tokenize the input documents.
+     */
+    private final List<Tuple<Set<String>,Boolean>> filterFiles;
+
+    /**
+     * A flag for whether this instance should use {@code SparseSemanticVector}
+     * instances for representic a word's semantics, which saves space but
+     * requires more computation.
+     */
+    private final boolean useSparseSemantics;
+
+    /**
+     * Creates a new {@code RandomIndexing} instance using the current {@code
+     * System} properties for configuration.
+     */
+    public RandomIndexing() {
+	this(System.getProperties());
+    }
+
+    /**
+     * Creates a new {@code RandomIndexing} instance using the provided
+     * properites for configuration.
+     */
+   public RandomIndexing(Properties properties) {
 
 	String vectorLengthProp = 
 	    properties.getProperty(VECTOR_LENGTH_PROPERTY);
@@ -295,6 +368,18 @@ public class RandomIndexing implements SemanticSpace {
 	indexVectorGenerator = (ivgProp != null) 
 	    ? loadIndexVectorGenerator(ivgProp, properties)
 	    : new RandomIndexVectorGenerator(properties);
+
+	String filterProp = 
+	    properties.getProperty(WORD_FILTER_PROPERTY);
+	filterFiles = (filterProp != null)
+	    ? loadFilterFiles(filterProp)
+	    : new ArrayList<Tuple<Set<String>,Boolean>>(0);
+
+	String useSparseProp = 
+	    properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
+	useSparseSemantics = (useSparseProp != null)
+	    ? Boolean.parseBoolean(useSparseProp)
+	    : true;
 
 	wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
 	wordToMeaning = new ConcurrentHashMap<String,SemanticVector>();
@@ -331,6 +416,69 @@ public class RandomIndexing implements SemanticSpace {
 	}
     }
 
+    /**
+     * Loads words lists from files based on the provide value of the {@value
+     * #WORD_FILTER_PROPERTY} property.
+     */
+    private static List<Tuple<Set<String>,Boolean>> 
+	    loadFilterFiles(String property) {
+
+	// multiple filter files are specified using a ',' to separate them
+	String[] fileAndOptionalFlag = property.split(",");
+	List<Tuple<Set<String>,Boolean>> filterFiles = 
+	        new ArrayList<Tuple<Set<String>,Boolean>>(
+	        fileAndOptionalFlag.length);
+	for (String s : fileAndOptionalFlag) {
+	    // If the words in the file are manually specified to be applied
+	    // in a specific way, then the string will contain a '='.  Look
+	    // for the last index of '=' in case the file name itself
+	    // contains that character
+	    int eqIndex = s.lastIndexOf('=');
+	    String filename = null;
+	    boolean exclude = false;
+	    if (eqIndex > 0) {
+		filename = s.substring(0, eqIndex);
+		String flag = s.substring(eqIndex + 1);
+		if (flag.equals("include"))
+		    exclude = false;
+		else if (flag.equals("exclude"))
+		    exclude = true;
+		else {
+		    throw new IllegalArgumentException(
+			"unknown filter parameter: " + s);
+		}
+	    }
+	    else {
+		filename = s;
+	    }
+	    
+	    // load the words in the file
+	    Set<String> words = new HashSet<String>();
+	    try {
+		BufferedReader br = 
+		    new BufferedReader(new FileReader(filename));
+		for (String line = null; (line = br.readLine()) != null; ) {
+		    for (String token : line.split("\\s+")) {
+			words.add(token);
+		    }
+		}
+		br.close();
+	    } catch (IOException ioe) {
+		// rethrow since filter error is fatal to correct execution
+		throw new IOError(ioe);
+	    }
+
+	    filterFiles.add(new Tuple<Set<String>,Boolean>(words, exclude));		
+	}
+	return filterFiles;
+    }
+
+    /**
+     * Removes all associations between word and semantics while still retaining
+     * the word to index vector mapping.  This method can be used to re-use the
+     * same instance of a {@code RandomIndexing} on multiple corpora while
+     * keeping the same semantic space.
+     */
     public void clearSemantics() {
 	wordToMeaning.clear();
     }
@@ -383,7 +531,9 @@ public class RandomIndexing implements SemanticSpace {
 		// for the lock
 		v = wordToMeaning.get(word);
 		if (v == null) {
-		    v = new SparseSemanticVector();
+		    v = (useSparseSemantics) 
+			? new SparseSemanticVector()
+			: new DenseSemanticVector();
 		    wordToMeaning.put(word, v);
 		}
 	    }
@@ -443,13 +593,14 @@ public class RandomIndexing implements SemanticSpace {
 	Queue<String> prevWords = new ArrayDeque<String>(windowSize);
 	Queue<String> nextWords = new ArrayDeque<String>(windowSize);
 
-	WordIterator it = new WordIterator(document);
+	Iterator<String> documentTokens = tokenize(document);
+	//WordIterator documentTokens = new WordIterator(document);
 
 	String focusWord = null;
 
 	// prefetch the first windowSize words 
-	for (int i = 0; i < windowSize && it.hasNext(); ++i)
-	    nextWords.offer(it.next());
+	for (int i = 0; i < windowSize && documentTokens.hasNext(); ++i)
+	    nextWords.offer(documentTokens.next());
 	
 	while (!nextWords.isEmpty()) {
 	    
@@ -457,12 +608,12 @@ public class RandomIndexing implements SemanticSpace {
 	    SemanticVector focusMeaning = getSemanticVector(focusWord);
 
 	    // shift over the window to the next word
-	    if (it.hasNext()) {
+	    if (documentTokens.hasNext()) {
 		// NB: we call .intern() on the string to ensure that we are
 		// always dealing with the canonical copy of the word when
 		// processing.  This ensures that any locks acquired for the
 		// word will be on a single instance.
-		String windowEdge = it.next().intern();
+		String windowEdge = documentTokens.next().intern();
 		nextWords.offer(windowEdge);
 	    }    
 
@@ -503,6 +654,20 @@ public class RandomIndexing implements SemanticSpace {
     }
     
     /**
+     * Returns an iterator over all the tokens in the document, applying any
+     * {@link WordFilter} instances as specified for the configuration of this
+     * instance.
+     */
+    private Iterator<String> tokenize(BufferedReader document) {
+	Iterator<String> tokens = new WordIterator(document);
+	// apply the word filters in the order they were originally specified
+	for (Tuple<Set<String>,Boolean> tuple : filterFiles) {
+	    tokens = new WordFilter(tokens, tuple.x, tuple.y);
+	}
+	return tokens;
+    }
+
+    /**
      * Does nothing.
      *
      * @param properties {@inheritDoc}
@@ -512,15 +677,26 @@ public class RandomIndexing implements SemanticSpace {
     }
 
     /**
-     *
+     * A vector for storing the semantics of a word.
      */
     interface SemanticVector {
+
+	/**
+	 * Adds the bits specified for the {@code IndexVector} to this
+	 * semantic representation.
+	 */
 	void add(IndexVector v);
+
+	/**
+	 * Returns the full vector representing these semantics.
+	 */
 	int[] getVector();
     }
 
     /**
+     * A {@code SemanticVector} where all values are held in memory. <p>
      *
+     * This class is thread-safe.
      */
     class DenseSemanticVector implements SemanticVector {
 
@@ -530,6 +706,9 @@ public class RandomIndexing implements SemanticSpace {
 	    vector = new int[vectorLength];
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	public synchronized void add(IndexVector v) {
 
 	    for (int p : v.positiveDimensions())
@@ -540,13 +719,19 @@ public class RandomIndexing implements SemanticSpace {
 	}
 
 	
-	public int[] getVector() {
+	/**
+	 * {@inheritDoc}
+	 */
+	public synchronized int[] getVector() {
 	    return vector;
 	}
     }    
 
     /**
+     * A {@code SemanticVector} instance that keeps only the non-zero values of
+     * the semantics in memory, thereby saving space at the expense of time. <p>
      *
+     * This class is thread-safe.
      */
     class SparseSemanticVector implements SemanticVector {
 
@@ -556,6 +741,9 @@ public class RandomIndexing implements SemanticSpace {
 	    sparseArray = new IntegerMap<Integer>();
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	public synchronized void add(IndexVector v) {
 
 	    for (int p : v.positiveDimensions()) {
@@ -568,9 +756,11 @@ public class RandomIndexing implements SemanticSpace {
 		sparseArray.put(n, (count == null) ? 1 : count + 1);		
 	    }		
 	}
-
 	
-	public int[] getVector() {
+	/**
+	 * {@inheritDoc}
+	 */
+	public synchronized int[] getVector() {
 	    int[] vector = new int[vectorLength];
 	    for (Map.Entry<Integer,Integer> e : sparseArray.entrySet()) {
 		vector[e.getKey()] = e.getValue();
