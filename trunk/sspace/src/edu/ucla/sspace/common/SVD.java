@@ -211,40 +211,70 @@ public class SVD {
 		return octaveSVDS(matrix, dimensions);
 	    case ANY:
 
+		// Keep copies of these around in case they are MATLAB and we
+		// end up convert for SVDLIBC which ends up failing.  This
+		// ensures that we don't do an unnecessary matrix conversion
+		Format originalFormat = format;
+		File originalMatrix = matrix;
+
 		// Try to peform the SVD with any installed algorithm.  Go in
 		// order of speed.  If any algorithm causes an error, go on to
 		// the next until all are exhausted.
-		try {
-		    switch (format) {
-		    case SVDLIBC_DENSE_BINARY:
-		    case SVDLIBC_DENSE_TEXT:
-		    case SVDLIBC_SPARSE_TEXT:
-		    case SVDLIBC_SPARSE_BINARY:
-			converted = matrix;
-			break;
-		    default:
+		if (isSVDLIBCavailable()) {
+		    try {
+			// check whether the input matrix is in an
+			// SVDLIBC-acceptable format already and if not convert
+			switch (format) {
+			case SVDLIBC_DENSE_BINARY:
+			case SVDLIBC_DENSE_TEXT:
+			case SVDLIBC_SPARSE_TEXT:
+			case SVDLIBC_SPARSE_BINARY:
+			    converted = matrix;
+			    break;
+			default:
+			    converted = MatrixIO.convertFormat(
+				matrix, format, Format.SVDLIBC_SPARSE_TEXT);
+			    format = Format.SVDLIBC_SPARSE_TEXT;
+			    break;
+			}
+			return svdlibc(converted, dimensions, format);		
+		    } catch (UnsupportedOperationException uoe) { }
+
+		    // If SVDLIBC didn't work reset the matrix and format back
+		    // to what it orignally was
+		    format = originalFormat;
+		    matrix = originalMatrix;
+		}
+
+
+		if (isMatlabAvailable()) {
+		    try {
 			converted = MatrixIO.convertFormat(
-			    matrix, format, Format.SVDLIBC_SPARSE_TEXT);
-			format = Format.SVDLIBC_SPARSE_TEXT;
-		    break;
-		    }
-		    return svdlibc(converted, dimensions, format);		
-		} catch (UnsupportedOperationException uoe) { }
-		try {
-		    converted = MatrixIO.convertFormat(
-			matrix, format, Format.MATLAB_SPARSE);		
-		    return matlabSVDS(converted, dimensions);
-		} catch (UnsupportedOperationException uoe) { }
-		try {
-		    converted = MatrixIO.convertFormat(
-			matrix, format, Format.MATLAB_SPARSE);
-		    return octaveSVDS(converted, dimensions);
-		} catch (UnsupportedOperationException uoe) { }
-		try {
-		    converted = MatrixIO.convertFormat(
-			matrix, format, Format.DENSE_TEXT);		
-		    return jamaSVD(converted, dimensions);
-		} catch (UnsupportedOperationException uoe) { }
+			    matrix, format, Format.MATLAB_SPARSE);
+		    
+			return matlabSVDS(converted, dimensions);
+		    } catch (UnsupportedOperationException uoe) { }
+		}
+
+		if (isOctaveAvailable()) {
+		    try {
+			converted = MatrixIO.convertFormat(
+			    matrix, format, Format.MATLAB_SPARSE);
+			return octaveSVDS(converted, dimensions);
+		    } catch (UnsupportedOperationException uoe) { }
+		}
+
+		if (isJAMAavailable()) {
+		    try {
+			converted = MatrixIO.convertFormat(
+			    matrix, format, Format.DENSE_TEXT);		
+			return jamaSVD(converted, dimensions);
+		    } catch (UnsupportedOperationException uoe) { }
+		}
+
+		// if none of the algoritms were available throw an exception to
+		// let the user know that the SVD cannot be done under any
+		// circumstances
 		throw new UnsupportedOperationException(
 		    "No SVD algorithms are available");
 	    }
@@ -257,7 +287,54 @@ public class SVD {
 	throw new UnsupportedOperationException("Unknown algorithm: " + alg);
     }
 
+    /**
+     * Returns {@code true} if the JAMA library is available
+     */
+    private static boolean isJAMAavailable() {
+	try {
+	    Class<?> clazz = Class.forName("Jama.Matrix");
+	} catch (ClassNotFoundException cnfe) {
+	    return false;
+	}
+	return true;
+    }
 
+    /**
+     * Returns {@code true} if the SVDLIBC library is available
+     */
+    private static boolean isSVDLIBCavailable() {
+	try {
+	    Process svdlibc = Runtime.getRuntime().exec("svd");	    
+	} catch (IOException ioe) {
+	    return false;
+	}
+	return true;
+    }
+
+    /**
+     * Returns {@code true} if Octave is available
+     */
+    private static boolean isOctaveAvailable() {
+	try {
+	    Process svdlibc = Runtime.getRuntime().exec("octave -v");
+	} catch (IOException ioe) {
+	    return false;
+	}
+	return true;	
+    }
+
+    /**
+     * Returns {@code true} if Matlab is available
+     */
+    private static boolean isMatlabAvailable() {
+	try {
+	    Process svdlibc = Runtime.getRuntime().exec("matlab -h");
+	} catch (IOException ioe) {
+	    return false;
+	}
+	return true;
+    }
+    
     /**
      *
      *
