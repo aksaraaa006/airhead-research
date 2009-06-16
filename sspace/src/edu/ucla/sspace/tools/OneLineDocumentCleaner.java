@@ -57,7 +57,6 @@ public class OneLineDocumentCleaner {
     private static void usage() {
 	System.out.println(
 	    "java OneLineDocumentCleaner word-file input-file output-file\n" +
-	    "  word-file: a file of valid words in the cleaned output\n" +
 	    "  input-file: a file with one document per line\n" +
 	    "  output-file: a file where the cleaned documents will be put");
     }
