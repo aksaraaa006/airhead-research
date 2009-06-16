@@ -757,7 +757,7 @@ public class RandomIndexing implements SemanticSpace {
 		Integer count = sparseArray.get(n);
 		sparseArray.put(n, (count == null) 
 				? Integer.valueOf(1) 
-				: Integer.valueOf(count.intValue + 1));		
+				: Integer.valueOf(count.intValue() + 1));		
 	    }		
 	}
 	
