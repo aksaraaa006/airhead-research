@@ -526,7 +526,7 @@ public class RandomIndexing implements SemanticSpace {
 	if (v == null) {
 	    // lock on the word in case multiple threads attempt to add it at
 	    // once
-	    synchronized(word) {
+	    synchronized(this) {
 		// recheck in case another thread added it while we were waiting
 		// for the lock
 		v = wordToMeaning.get(word);
@@ -613,7 +613,7 @@ public class RandomIndexing implements SemanticSpace {
 		// always dealing with the canonical copy of the word when
 		// processing.  This ensures that any locks acquired for the
 		// word will be on a single instance.
-		String windowEdge = documentTokens.next().intern();
+		String windowEdge = documentTokens.next(); //.intern();
 		nextWords.offer(windowEdge);
 	    }    
 
@@ -748,12 +748,16 @@ public class RandomIndexing implements SemanticSpace {
 
 	    for (int p : v.positiveDimensions()) {
 		Integer count = sparseArray.get(p);
-		sparseArray.put(p, (count == null) ? 1 : count + 1);
+		sparseArray.put(p, (count == null) 
+				? Integer.valueOf(1) 
+				: Integer.valueOf(count.intValue() + 1));
 	    }
 		
 	    for (int n : v.negativeDimensions()) {
 		Integer count = sparseArray.get(n);
-		sparseArray.put(n, (count == null) ? 1 : count + 1);		
+		sparseArray.put(n, (count == null) 
+				? Integer.valueOf(1) 
+				: Integer.valueOf(count.intValue + 1));		
 	    }		
 	}
 	
