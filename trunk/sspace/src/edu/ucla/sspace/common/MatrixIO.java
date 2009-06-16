@@ -22,8 +22,10 @@
 package edu.ucla.sspace.common;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOError;
@@ -44,6 +46,7 @@ import java.util.logging.Level;
 import edu.ucla.sspace.common.Matrix.Type;
 
 import edu.ucla.sspace.common.matrix.ArrayMatrix;
+import edu.ucla.sspace.common.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.common.matrix.OnDiskMatrix;
 import edu.ucla.sspace.common.matrix.SparseMatrix;
 
@@ -353,7 +356,7 @@ public class MatrixIO {
 	BufferedReader br = new BufferedReader(new FileReader(input));
 	
 	switch(format) {
-	case DENSE_TEXT:
+	case DENSE_TEXT: {
 	    // read in the all the lines
 	    List<double[]> matrix = new LinkedList<double[]>();
 	    int cols = -1;
@@ -394,19 +397,72 @@ public class MatrixIO {
 				  
 
 	    return array;
+    }
 	    
-	case MATLAB_SPARSE:
+	case MATLAB_SPARSE: {
+        Matrix matrix = new GrowingSparseMatrix();
+        String line = null;
+        while ((line = br.readLine()) != null) {
+          String[] rowColVal = line.split("\\s");
+          int row = Integer.parseInt(rowColVal[0]) - 1;
+          int col = Integer.parseInt(rowColVal[1]) - 1;
+          double value = Double.parseDouble(rowColVal[2]);
+          matrix.set(row, col, value);
+        }
+        double[][] array = new double[matrix.rows()][0];
+        for (int i = 0; i < matrix.rows(); ++i) {
+          array[i] = matrix.getRow(i);
+        }
+        return array;
+    }
 
-	case SVDLIBC_SPARSE_TEXT:
+	case SVDLIBC_SPARSE_TEXT: {
+        String line = br.readLine();
+        if (line == null) {
+		  throw new IOException("Empty input Matrix");
+        }
+        String[] numRowsColsNonZeros = line.split("\\s");
+        int numRows = Integer.parseInt(numRowsColsNonZeros[0]);
+        int numCols = Integer.parseInt(numRowsColsNonZeros[1]);
+
+        double[][] array = new double[numRows][numCols];
+        for (int j = 0; j < numCols && (line = br.readLine()) != null;
+             ++j) {
+          int numNonZeros = Integer.parseInt(line);
+          for (int i = 0; i < numNonZeros && (line = br.readLine()) != null;
+               ++i) {
+            String[] rowValue = line.split("\\s");
+            int row = Integer.parseInt(rowValue[0]);
+            double value = Double.parseDouble(rowValue[1]);
+            array[row][j] = value;
+          }
+        }
+        return array;
+    }
 
 	case SVDLIBC_DENSE_TEXT:
 
 	case SVDLIBC_SPARSE_BINARY:
 
-	case SVDLIBC_DENSE_BINARY:
-	
-	}
-	
+	case SVDLIBC_DENSE_BINARY: {
+        DataInputStream in = new DataInputStream(new FileInputStream(input));
+        int numRows = in.readInt();
+        int numCols = in.readInt();
+        int allNonZeros = in.readInt();
+
+        double[][] array = new double[numRows][numCols];
+        for (int j = 0; j < numCols; ++j) {
+          int numNonZeros = in.readInt();
+          for (int i = 0; i < numNonZeros; ++i) {
+            int row = in.readInt(); 
+            double value = in.readDouble();
+            array[row][j] = value;
+          }
+        }
+        return array;
+    }
+    }
+
 	throw new Error("implement me");
     }
 

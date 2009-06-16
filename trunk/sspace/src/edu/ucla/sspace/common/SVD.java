@@ -204,7 +204,7 @@ public class SVD {
 		    matrix, format, Format.SVDLIBC_SPARSE_TEXT);
 		return svdlibc(converted, dimensions, Format.SVDLIBC_SPARSE_TEXT);
 	    case JAMA:
-		return jamaSVD(matrix, dimensions);
+		return jamaSVD(matrix, format, dimensions);
 	    case MATLAB:
 		return matlabSVDS(matrix, dimensions);
 	    case OCTAVE:
@@ -266,9 +266,7 @@ public class SVD {
 
 		if (isJAMAavailable()) {
 		    try {
-			converted = MatrixIO.convertFormat(
-			    matrix, format, Format.DENSE_TEXT);		
-			return jamaSVD(converted, dimensions);
+			return jamaSVD(matrix, format, dimensions);
 		    } catch (UnsupportedOperationException uoe) { }
 		}
 
@@ -347,13 +345,13 @@ public class SVD {
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
-    static Matrix[] jamaSVD(File matrix, int dimensions) {
+    static Matrix[] jamaSVD(File matrix, Format format, int dimensions) {
 	// Use reflection to load the JAMA classes and perform all the
-	// operations in order to avoid any compile-time dependencies on the
+	// operation in order to avoid any compile-time dependencies on the
 	// package.
 	try {
 	    double[][] inputMatrix = MatrixIO.readMatrixArray(
-		matrix, MatrixIO.Format.DENSE_TEXT);
+		matrix, format);
 
 	    Class<?> clazz = Class.forName("Jama.Matrix");
 	    Constructor<?> c = clazz.getConstructor(double[][].class);
