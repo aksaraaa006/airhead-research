@@ -67,11 +67,11 @@ import edu.ucla.sspace.common.matrix.SparseMatrix;
  * <li> <a href="http://tedlab.mit.edu/~dr/svdlibc/">SVDLIBC</a> </li>
  *
  * <li> Matlab <a
- * href="http://www.mathworks.com/access/helpdesk/help/techdoc/index.html?/access/helpdesk/help/techdoc/ref/svds.html&http://www.google.com/search?q=svds&btnGNS=Search+mathworks.com&oi=navquery_searchbox&sa=X&as_sitesearch=mathworks.com&hl=en&safe=off&client=firefox-a&rls=org.mozilla%3Aen-US%3Aofficial&hs=TU0">svds</a>
+ * href="http://www.mathworks.com/access/helpdesk/help/techdoc/index.html?/access/helpdesk/help/techdoc/ref/svds.html">svds</a>
  * </li>
  *
  * <li> <a
- * href="http://www.google.com/url?sa=U&start=1&q=http://www.gnu.org/software/octave/&ei=n9zsSd_9Jp66tAOexJziAQ&sig2=RTBm9wb7htgOBlIb-qoThg&usg=AFQjCNGXki24gSer_49b4Q72GGERFfPG7w">GNU
+ * href="http://www.google.com/url?sa=U&start=1&q=http://www.gnu.org/software/octave">GNU
  * Octave</a> &nbsp; <a
  * href="http://octave.sourceforge.net/doc/f/svds.html">svds</a> - Note that
  * this is an optional package and requires that the <a
@@ -85,7 +85,10 @@ import edu.ucla.sspace.common.matrix.SparseMatrix;
  *
  * Support for these algorithms requires that they are invokable from the path
  * used to start the current JVM, or in the case of JAMA, are available in the
- * classpath.
+ * classpath.  <b>Note that if JAMA is used in conjunction with a {@code .jar}
+ * executable, it's location needs to be specified with the {@code jama.path}
+ * system property.</b>  This can be set on the command line using <tt>
+ * -Djama.path=<i>path/to/jama</i></tt>.
  *
  * <p>
  *
@@ -202,7 +205,8 @@ public class SVD {
 	    case SVDLIBC:
 		File converted = MatrixIO.convertFormat(
 		    matrix, format, Format.SVDLIBC_SPARSE_TEXT);
-		return svdlibc(converted, dimensions, Format.SVDLIBC_SPARSE_TEXT);
+		return svdlibc(converted, dimensions, 
+			       Format.SVDLIBC_SPARSE_TEXT);
 	    case JAMA:
 		return jamaSVD(matrix, format, dimensions);
 	    case MATLAB:
@@ -290,11 +294,53 @@ public class SVD {
      */
     private static boolean isJAMAavailable() {
 	try {
-	    Class<?> clazz = Class.forName("Jama.Matrix");
+	    Class<?> clazz = loadJamaMatrixClass();
 	} catch (ClassNotFoundException cnfe) {
 	    return false;
 	}
 	return true;
+    }
+
+    /**
+     * Reflectively loads the JAMA Matrix class.  If the class is not
+     * immediately loadable from the existing classpath, then this method will
+     * attempt to use the {@code jama.path} system environment variable to load
+     * it from an external resource.
+     */
+    private static Class<?> loadJamaMatrixClass() 
+	    throws ClassNotFoundException {
+
+	try {
+	    Class<?> clazz = Class.forName("Jama.Matrix");
+	    return clazz;
+	    
+	} catch (ClassNotFoundException cnfe) {
+
+	    // If we see a CNFE, don't immediately give up.  It's most likely
+	    // that this class is being invoked from inside a .jar, so see if
+	    // the user specified where JAMA is manually.
+	    String jamaProp = System.getProperty("jama.path");
+	    
+	    // if not, rethrow since the class does not exist
+	    if (jamaProp == null)
+		throw cnfe;
+
+	    File jamaJarFile = new File(jamaProp);	    
+	    try {
+		// Otherwise, try to load the class from the specified .jar file
+		java.net.URLClassLoader classLoader = 
+		    new java.net.URLClassLoader(
+		        new java.net.URL[] { jamaJarFile.toURI().toURL() });
+		
+		Class<?> clazz = Class.forName("Jama.Matrix", true,
+					       classLoader);
+		return clazz;
+	    } catch (Exception e) {
+		// fall through and rethrow original
+	    }
+	    
+	    throw cnfe;
+	}
     }
 
     /**
@@ -350,10 +396,12 @@ public class SVD {
 	// operation in order to avoid any compile-time dependencies on the
 	// package.
 	try {
+	    System.out.println("running JAMA");
+	    isJAMAavailable();
 	    double[][] inputMatrix = MatrixIO.readMatrixArray(
 		matrix, format);
 
-	    Class<?> clazz = Class.forName("Jama.Matrix");
+	    Class<?> clazz = loadJamaMatrixClass();
 	    Constructor<?> c = clazz.getConstructor(double[][].class);
 	    Object jamaMatrix = 
 		c.newInstance(new Object[] { inputMatrix } );
