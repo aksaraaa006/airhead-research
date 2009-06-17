@@ -143,7 +143,6 @@ public class SpectralClustering {
 
   private int recSpectralCluster(List<DataPoint> dataPoints) {
     int size = dataPoints.size();
-    System.out.println("Size to cluster: " + size);
     int nodeValue = nodeCount;
     ClusterNode currCluster = new ClusterNode();
     nodeClusters.add(currCluster);
@@ -219,11 +218,11 @@ public class SpectralClustering {
     // For now just let it be a random normalized vector.
     Matrix v = new ArrayMatrix(size, 1);
     double total = 0;
-    for (int i = 0; i < indexVectorSize; ++i) {
+    for (int i = 0; i < size; ++i) {
       v.set(i, 0, Math.random());
       total += v.get(i, 0);
     }
-    for (int i = 0; i < indexVectorSize; ++i) {
+    for (int i = 0; i < size; ++i) {
       v.set(i, 0, v.get(i, 0) / total);
     }
 
@@ -335,13 +334,11 @@ public class SpectralClustering {
         }
       }
       double conductance = u / Math.min(pS, pT);
-      System.out.println("conductance: " + conductance);
       if (conductance < bestValue) {
         bestValue = conductance;
         bestIndex = i;
       }
     }
-    System.out.println("Best Index: " + bestIndex + " , value: " + bestValue);
 
     i = 0;
     List<DataPoint> S = new ArrayList<DataPoint>();

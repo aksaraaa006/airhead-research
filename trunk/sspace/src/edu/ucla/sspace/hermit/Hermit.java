@@ -367,8 +367,8 @@ public class Hermit implements SemanticSpace {
        * Remove the hermit specific processing, which should result in LSA.
        */
 
-      int numThreads = 1;
-        //Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
+      int numThreads = 
+        Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
       List<Thread> threads = new ArrayList<Thread>();
 
       final Iterator<Map.Entry<String, Triplet>> tripletIter =
@@ -385,6 +385,7 @@ public class Hermit implements SemanticSpace {
                 if (entry.getKey().equals(""))
                   continue;
               }
+
               System.out.println("clustering: " + entry.getKey() + " id: " + entry.getValue().wordId);
               int[] reassignments = clusterSemanticVectors(entry.getValue());
               splitMatrix(termDocMatrix, entry.getKey(),
@@ -514,6 +515,7 @@ public class Hermit implements SemanticSpace {
         // Create the queues needed to represent the current context.
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
+
         for (int i = 0; i < prevSize; ++i)
           prevWords.add(indexToTerm.get(context[i]));
         for (int i = prevSize; i < context.length; ++i)
@@ -646,7 +648,7 @@ public class Hermit implements SemanticSpace {
         for (; i < numContexts; ++i) {
           int docId = reader.readInt();
           int context[] = new int[contextSize];
-          for (; j < contextSize; ++j) {
+          for (j = 0; j < contextSize; ++j) {
             context[j] = reader.readInt();
           }
           List<int[]> docContexts = docToContextMap.get(docId);
@@ -658,9 +660,6 @@ public class Hermit implements SemanticSpace {
         }
         reader.close();
       } catch (IOException ioe) {
-        System.out.println(contextDump.getPath());
-        System.out.println("line " + i + ", value " + j);
-        System.out.println("numContexts " + numContexts);
         throw new IOError(ioe);
       }
     }
