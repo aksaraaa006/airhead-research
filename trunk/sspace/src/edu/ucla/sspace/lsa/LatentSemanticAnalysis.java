@@ -389,7 +389,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	    LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
 
 	    // Compute SVD on the pre-processed matrix.
-	    Matrix[] usv = SVD.svd(processedTermDocumentMatrix, dimensions);
+	    Matrix[] usv = SVD.svd(processedTermDocumentMatrix, 
+				   dimensions);
 	    
 	    // Load the left factor matrix, which is the word semantic space
 	    wordSpace = usv[0];

@@ -158,6 +158,11 @@ public class LSAMain extends GenericMain {
     public void usage() {
  	System.out.println(
  	    "usage: java LSAMain [options] <output-dir>\n" + 
-	    argOptions.prettyPrint());
+	    argOptions.prettyPrint() + "\n" +
+	    "Note that if this class is being invoked from a .jar" +
+	    " (e.g. lsa.jar) and JAMA\nis to be used for computing the SVD," +
+	    " then the path to the JAMA .jar file must\nbe specified using the"+
+	    " system property \"jama.path\".  To set this on the\ncommand-line,"
+	    + " use -Djama.path=<.jar location>.");
     }
 }
