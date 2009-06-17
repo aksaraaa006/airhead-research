@@ -1,6 +1,18 @@
 #summary Details of the various releases
 #labels Featured
 
+= June 16, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.4
+
+*Changes*:
+`lsa.jar`
+
+*Details*
+
+  * Fixed [http://code.google.com/p/airhead-research/issues/detail?id=15 Issue 15] where JAMA wasn't supported for lsa.jar due to a classpath issue
+
+
 = June 1, 2009 =
 
 [LatentSemanticAnalysis LSA] version 0.1.3
