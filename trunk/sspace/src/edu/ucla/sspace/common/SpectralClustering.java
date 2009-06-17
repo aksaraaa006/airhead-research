@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import jnt.FFT.Factorize;
+
 /**
  * Implementation of Spectral Clustering using divide and merge methodology.
  * The implementation is based on two papers:
@@ -71,6 +73,7 @@ public class SpectralClustering {
    * @param data data points to cluster.
    * @param vectorSize length of each vector in data.
    */
+  @SuppressWarnings("unchecked")
   public SpectralClustering(List<double[]> data, int vectorSize) {
     assignments = new int[data.size()];
     indexVectorSize = vectorSize;
@@ -186,8 +189,9 @@ public class SpectralClustering {
 
   @SuppressWarnings("unchecked")
   private List<DataPoint> computeSortedVector(List<DataPoint> dataPoints,
-                                             double[] p) {
+                                              double[] p) {
     int size = dataPoints.size();
+    int log = Factorize.log2(dataPoints.size());
 
     // Create Diagonal matrices R and D where R(i, i) = p(i), and
     // D(i, i) = sqrt(p(i) / sum(p)).
@@ -212,37 +216,54 @@ public class SpectralClustering {
     Matrix DRInv = Matrices.multiply(D, RInv);
 
     // Set v to be orthogonal to piTrans * DInv;
+    // For now just let it be a random normalized vector.
     Matrix v = new ArrayMatrix(size, 1);
+    double total = 0;
+    for (int i = 0; i < indexVectorSize; ++i) {
+      v.set(i, 0, Math.random());
+      total += v.get(i, 0);
+    }
+    for (int i = 0; i < indexVectorSize; ++i) {
+      v.set(i, 0, v.get(i, 0) / total);
+    }
 
-    // For matrix multiplications:
+    for (int k = 0; k < log; ++k) {
+      // For matrix multiplications:
+      // v = DInv * v;
+      v = Matrices.multiply(DInv, v);
+
+      // v = ATrans * v;
+      Matrix newV = new ArrayMatrix(indexVectorSize, 1);
+      int i = 0;
+      for (DataPoint dataPoint : dataPoints) {
+        for (int j = 0; j < indexVectorSize; ++j) {
+          double value = newV.get(j, 0) + v.get(i, 0) * dataPoint.data[j];
+          newV.set(j, 0, value);
+        }
+        i++;
+      }
+
+      // v = A * v;
+      i = 0;
+      for (DataPoint dataPoint : dataPoints) {
+        double sum = 0;
+        for (int j = 0; j < indexVectorSize; ++j)
+          sum += dataPoint.data[j] * newV.get(j, 0);
+        v.set(i, 0, sum);
+        i++;
+      }
+
+      // v = D * RInv * v;
+      v = Matrices.multiply(DRInv, v);
+    }
+
     // v = DInv * v;
     v = Matrices.multiply(DInv, v);
 
-    // v = ATrans * v;
-    Matrix newV = new ArrayMatrix(indexVectorSize, 1);
-    int i = 0;
-    for (DataPoint dataPoint : dataPoints) {
-      for (int j = 0; j < indexVectorSize; ++j) {
-        double value = newV.get(j, 0) + v.get(i, 0) * dataPoint.data[j];
-        newV.set(j, 0, value);
-      }
-      i++;
-    }
-
-    // v = A * v;
-    i = 0;
-    for (DataPoint dataPoint : dataPoints) {
-      double sum = 0;
-      for (int j = 0; j < indexVectorSize; ++j)
-        sum += dataPoint.data[j] * newV.get(j, 0);
-      v.set(i, 0, sum);
-      i++;
-    }
-
-    // v = D * RInv * v;
-    v = Matrices.multiply(DRInv, v);
+    // Sort v such that v[i] < v[i+1], and sort the rows of A in the same
+    // order.
     List<VectorPair> sortedV = new ArrayList<VectorPair>();
-    i = 0;
+    int i = 0;
     for (DataPoint dataPoint : dataPoints) {
       sortedV.add(new VectorPair(v.get(i, 0), dataPoint));
       i++;
@@ -257,7 +278,7 @@ public class SpectralClustering {
   }
 
   private List<List<DataPoint>> computeCut(List<DataPoint> dataPoints,
-                                          double[] p) {
+                                           double[] p) {
 
     // Special case, when there are just two data points, the cut is trivial.
     if (dataPoints.size() == 2) {
@@ -314,6 +335,7 @@ public class SpectralClustering {
         }
       }
       double conductance = u / Math.min(pS, pT);
+      System.out.println("conductance: " + conductance);
       if (conductance < bestValue) {
         bestValue = conductance;
         bestIndex = i;
