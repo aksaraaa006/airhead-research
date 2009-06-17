@@ -110,6 +110,10 @@ public class SpectralClustering {
     }
   }
 
+  public int[] getAssignments() {
+    return assignments;
+  }
+
   private double dotProduct(double[] arr1, double[] arr2) {
     double product = 0;
     for (int i = 0; i < arr1.length; ++i) {
@@ -136,6 +140,7 @@ public class SpectralClustering {
 
   private int recSpectralCluster(List<DataPoint> dataPoints) {
     int size = dataPoints.size();
+    System.out.println("Size to cluster: " + size);
     int nodeValue = nodeCount;
     ClusterNode currCluster = new ClusterNode();
     nodeClusters.add(currCluster);
@@ -156,8 +161,6 @@ public class SpectralClustering {
     double[] p = computeP(dataPoints);
     List<DataPoint> sortedDataPoints = computeSortedVector(dataPoints, p);
     List<List<DataPoint>> splitVectors = computeCut(sortedDataPoints, p);
-    List<List<DataPoint>> singleCluster = new ArrayList<List<DataPoint>>();
-    singleCluster.add(sortedDataPoints);
 
     int leftNodeValue = recSpectralCluster(splitVectors.get(0));
     int rightNodeValue = recSpectralCluster(splitVectors.get(1));
@@ -165,6 +168,8 @@ public class SpectralClustering {
     ClusterNode rightNode = nodeClusters.get(rightNodeValue);
 
     // Do the merging.
+    List<List<DataPoint>> singleCluster = new ArrayList<List<DataPoint>>();
+    singleCluster.add(sortedDataPoints);
     currCluster.addCluster(singleCluster);
     for (int i = 2; i <= size; ++i) {
       for (int j = 1; j < i; ++j) {
@@ -176,7 +181,7 @@ public class SpectralClustering {
       }
     }
 
-    return nodeCount;
+    return nodeValue;
   }
 
   @SuppressWarnings("unchecked")
@@ -218,8 +223,8 @@ public class SpectralClustering {
     int i = 0;
     for (DataPoint dataPoint : dataPoints) {
       for (int j = 0; j < indexVectorSize; ++j) {
-        double value = newV.get(j, 1) + v.get(i, 1) * dataPoint.data[j];
-        newV.set(j, 1, value);
+        double value = newV.get(j, 0) + v.get(i, 0) * dataPoint.data[j];
+        newV.set(j, 0, value);
       }
       i++;
     }
@@ -229,8 +234,8 @@ public class SpectralClustering {
     for (DataPoint dataPoint : dataPoints) {
       double sum = 0;
       for (int j = 0; j < indexVectorSize; ++j)
-        sum += dataPoint.data[j] * newV.get(j, 1);
-      v.set(i, 1, sum);
+        sum += dataPoint.data[j] * newV.get(j, 0);
+      v.set(i, 0, sum);
       i++;
     }
 
@@ -239,7 +244,7 @@ public class SpectralClustering {
     List<VectorPair> sortedV = new ArrayList<VectorPair>();
     i = 0;
     for (DataPoint dataPoint : dataPoints) {
-      sortedV.add(new VectorPair(v.get(i, i), dataPoint));
+      sortedV.add(new VectorPair(v.get(i, 0), dataPoint));
       i++;
     }
     
@@ -286,6 +291,7 @@ public class SpectralClustering {
           y[j] += dataPoint.data[j];
         }
       }
+      i++;
     }
 
     double u = dotProduct(x, y);
@@ -293,6 +299,8 @@ public class SpectralClustering {
     i = 0;
     for (DataPoint dataPoint : dataPoints) {
       // Update u, pS, and pT for cuts beside the first.
+      if (i == dataPoints.size() - 1)
+        continue;
       if (i > 0) {
         pS += p[i];
         pT -= p[i];
@@ -311,12 +319,13 @@ public class SpectralClustering {
         bestIndex = i;
       }
     }
+    System.out.println("Best Index: " + bestIndex + " , value: " + bestValue);
 
     i = 0;
     List<DataPoint> S = new ArrayList<DataPoint>();
     List<DataPoint> T = new ArrayList<DataPoint>();
     for (DataPoint dataPoint : dataPoints) {
-      if (i < bestIndex)
+      if (i <= bestIndex)
         S.add(dataPoint);
       else
         T.add(dataPoint);
