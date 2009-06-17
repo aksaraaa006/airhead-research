@@ -26,6 +26,7 @@ import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.SpectralClustering;
 import edu.ucla.sspace.common.SVD;
 import edu.ucla.sspace.common.WordIterator;
 
@@ -352,7 +353,7 @@ public class Hermit implements SemanticSpace {
   public void processSpace(Properties properties) {
     try {
       // first ensure that we are no longer writing to the matrix
-      synchronized(rawTermDocMatrix) {
+      synchronized(rawTermDocMatrixWriter) {
         rawTermDocMatrixWriter.close();
       }
 
@@ -364,6 +365,7 @@ public class Hermit implements SemanticSpace {
       final Matrix termDocMatrix = loadLSAMatrix();
       /*
        * Remove the hermit specific processing, which should result in LSA.
+       */
 
       int numThreads = 1;
         //Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
@@ -385,7 +387,6 @@ public class Hermit implements SemanticSpace {
               }
               System.out.println("clustering: " + entry.getKey() + " id: " + entry.getValue().wordId);
               int[] reassignments = clusterSemanticVectors(entry.getValue());
-              int[] docIds = new int[reassignments.length];
               splitMatrix(termDocMatrix, entry.getKey(),
                           entry.getValue(), reassignments);
             }
@@ -402,6 +403,7 @@ public class Hermit implements SemanticSpace {
       } catch (InterruptedException ie) {
         throw new IOError(ie);
       }
+      /*
       */
 
       termToIndex.remove("");
@@ -520,17 +522,16 @@ public class Hermit implements SemanticSpace {
         // Update meaning with the context.
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
-      StringBuilder sb = new StringBuilder();
-      for (int i =0; i < indexVectorSize; ++i) {
-        sb.append(meaning[i]).append(", ");
-      }
-      System.out.println(sb.toString());
       semanticVectors.add(meaning);
     }
 
     // Clear the map again to clear out memory.
     triplet.docToContextMap.clear();
 
+    SpectralClustering clusterMan = new SpectralClustering(semanticVectors,
+                                                          indexVectorSize);
+    return clusterMan.getAssignments();
+    /*
     double oldPotential = Double.MAX_VALUE;
     double potential = Double.MAX_VALUE;
     int[] bestAssignments = null;
@@ -555,6 +556,7 @@ public class Hermit implements SemanticSpace {
 
     System.out.println("Cluster size for word: " + triplet.wordId + " : " + k);
     return (bestAssignments != null) ? bestAssignments : new int[semanticVectors.size()];
+    */
   }
 
   private synchronized void splitMatrix(Matrix m, String word, Triplet triplet,
