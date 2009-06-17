@@ -22,7 +22,8 @@ The S-Space implementation uses existing software implementations of the SVD.  A
   # [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC]
   # [http://www.mathworks.com/products/matlab Matlab]
   # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
-  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.
+  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.  If LSA is being invoked from a .jar (e.g. [http://airhead-research.googlecode.com/files/lsa.jar lsa.jar]) and JAMA is to be used for computing the SVD, then the path to the JAMA .jar file must be specified using the system property `jama.path`.  To set this on the command-line, use `-Djama.path=<.jar location>`.
+
 
 The S-Space implementation will work with any of these implementations.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.
 
