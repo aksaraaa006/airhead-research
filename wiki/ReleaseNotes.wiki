@@ -1,7 +1,26 @@
 #summary Details of the various releases
 #labels Featured
 
-= June 16, 2009 =
+= June 18, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.6
+
+
+[RandomIndexing] version 0.1.3
+
+*Changes*:
+`lsa.jar`
+`random-indexing.jar`
+
+*Details*
+
+  * Fixed [http://code.google.com/p/airhead-research/issues/detail?id=17 Issue 17] where the TF-IDF transform for LSA did not work properly.
+
+  * Reduced memory usage for Random Indexing when sparse semantics are used
+
+  * Fixed potential bug in sparse semantics where index vectors values were incorrectly updated.  This resulting in index vectors not being as orthogonal as they were initialized to be.
+
+= June 17, 2009 =
 
 [LatentSemanticAnalysis LSA] version 0.1.5
 
