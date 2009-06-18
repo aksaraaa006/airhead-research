@@ -632,6 +632,19 @@ public class MatrixIO {
 	if (matrix.rows() == 0 || matrix.columns() == 0)
 	    throw new IllegalArgumentException("invalid matrix dimensions");
 	switch (format) {
+	   
+	case DENSE_TEXT: {
+	    PrintWriter pw = new PrintWriter(output);
+	    for (int i = 0; i < matrix.rows(); ++i) {
+		StringBuffer sb = new StringBuffer(matrix.columns() *  5);
+		for (int j = 0; j < matrix.columns(); ++j) {
+		    sb.append(matrix.get(i,j)).append(" ");
+		}
+		pw.println(sb.toString());
+	    }
+	    pw.close();
+	    break;
+	}
 
         case SVDLIBC_DENSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);

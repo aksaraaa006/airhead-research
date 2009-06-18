@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 import edu.ucla.sspace.common.MatrixIO.Format;
 import edu.ucla.sspace.common.Matrix.Type;
 
-import edu.ucla.sspace.common.matrix.SparseMatrix;
+import edu.ucla.sspace.common.matrix.DiagonalMatrix;
 
 /**
  * A utililty class for invoking different implementations of the <a
@@ -401,6 +401,9 @@ public class SVD {
 	    double[][] inputMatrix = MatrixIO.readMatrixArray(
 		matrix, format);
 
+	    int rows = inputMatrix.length;
+	    int cols = inputMatrix[0].length; // assume at least one row
+
 	    Class<?> clazz = loadJamaMatrixClass();
 	    Constructor<?> c = clazz.getConstructor(double[][].class);
 	    Object jamaMatrix = 
@@ -411,7 +414,10 @@ public class SVD {
 	    // covert the JAMA u,s,v matrices to our matrices
  	    String[] matrixMethods = new String[] {"getU", "getS", "getV"};
 	    String[] matrixNames = new String[] {"JAMA-U", "JAMA-S", "JAMA-V"};
-	    File[] usv = new File[3];
+	    
+	    Matrix[] usv = new Matrix[3];
+	    
+	    // Loop to avoid repeating reflection code
 	    for (int i = 0; i < 3; ++i) {
 		Method matrixAccessMethod = svdObject.getClass().
 		    getMethod(matrixMethods[i], new Class[] {});
@@ -421,28 +427,55 @@ public class SVD {
 		    getMethod("getArray", new Class[] {});
 		double[][] matrixArray = (double[][])(toArrayMethod.
 		    invoke(matrixObject, new Object[] {}));
-		File tmpFile = File.createTempFile(matrixNames[i],".txt");
-		tmpFile.deleteOnExit();
-		MatrixIO.writeMatrixArray(matrixArray, tmpFile);
-		usv[i] = tmpFile;
+
+		// JAMA computes the full SVD, so the output matrices need to be
+		// truncated to the desired number of dimensions
+		resize:
+		switch (i) {
+		case 0: { // U array
+		    Matrix u = Matrices.create(rows, dimensions, 
+					       Type.DENSE_IN_MEMORY);
+		    // fill the U matrix by copying over the values
+		    for (int row = 0; row < rows; ++row) {
+			for (int col = 0; col < dimensions; ++col) {
+			    u.set(row, col, matrixArray[row][col]);
+			}
+		    }
+		    usv[i] = u;
+		    break resize;
+		}
+
+		case 1: { // S array
+		    // special case for the diagonal matrix
+		    Matrix s = new DiagonalMatrix(dimensions);
+		    for (int diag = 0; diag < dimensions; ++diag) {
+			s.set(diag, diag, matrixArray[diag][diag]);
+		    }
+		    usv[i] = s;
+		    break resize;
+		}
+
+		case 2: { // V array
+
+		    // create it on disk since it's not expected that people
+		    // will access this matrix
+		    Matrix v = Matrices.create(dimensions, cols,
+					       Type.DENSE_ON_DISK);
+
+		    // Fill the V matrix by copying over the values.  Note that
+		    // we manually transpose the matrix because JAMA returns the
+		    // result transposed from what we specify.
+		    for (int row = 0; row < dimensions; ++row) {
+			for (int col = 0; col < cols; ++col) {
+			    v.set(row, col, matrixArray[col][row]);
+			}
+		    }
+		    usv[i] = v;
+		}
+		}
 	    }
 
-	    // The JAMA SVD returns the matrices in U, S, V with none of them
-	    // transposed.  To ensure consistence, transpose the last matrix
-	    return new Matrix[] { 
-		// load U in memory, since that is what most algorithms will be
-		// using (i.e. it is the word space)
-		MatrixIO.readMatrix(usv[0], Format.DENSE_TEXT, 
-				    Type.DENSE_IN_MEMORY),
-		// Sigma is diagonal, so save some memory. 
-		MatrixIO.readMatrix(usv[1], Format.DENSE_TEXT, 
-				    Type.DIAGONAL_IN_MEMORY),
-		// V could be large, so just keep it on disk.  Furthermore, JAMA
-		// does not transpose V, so transpose it
-		Matrices.transpose(MatrixIO.readMatrix(usv[2],
-			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
-	    };
-	    
+	    return usv;
 	} catch (ClassNotFoundException cnfe) {
 	    SVD_LOGGER.log(Level.SEVERE, "JAMA", cnfe);
 	} catch (NoSuchMethodException nsme) {
@@ -573,7 +606,7 @@ public class SVD {
 		// the first value seen should be the number of singular values
 		if (dimension == -1) {
 		    dimension = Integer.parseInt(vals[i]);
-		    m = new SparseMatrix(dimension, dimension);
+		    m = new DiagonalMatrix(dimension);
 		}
 		else {
 		    m.set(valsSeen, valsSeen, Double.parseDouble(vals[i]));
