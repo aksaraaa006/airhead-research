@@ -57,24 +57,40 @@ import jnt.FFT.Factorize;
  *
  * Implementation currently still in progress.
  */
-public class SpectralClustering {
+public class SpectralClustering implements Clustering {
   private List<ClusterNode> nodeClusters;
   private int indexVectorSize;
   private int nodeCount = 0;
   private int[] assignments;
 
+  /** 
+   * A special constructor to facilitate testing.
+   *
+   * @param vectorSize define the vector size of each data point.
+   */
+  protected SpectralClustering(int vectorSize) {
+    indexVectorSize = vectorSize;
+  }
+
+  /**
+   * An empty default constructor.
+   */
+  public SpectralClustering() {
+  }
+
   private List<List<DataPoint>> optimalClustering = null;
   // TODO: Test the correctness of the clustering.
 
   /**
-   * Create a new SpectralClutering object which will find the best tree
-   * respecting clustering of the vectors in data.
+   * Cluster the given data points according to the Spectral Clustering
+   * algorithm.  The resulting cluster assignments for each data point will be
+   * saved in assignments.
    *
    * @param data data points to cluster.
    * @param vectorSize length of each vector in data.
    */
   @SuppressWarnings("unchecked")
-  public SpectralClustering(List<double[]> data, int vectorSize) {
+  public void cluster(List<double[]> data, int vectorSize) {
     assignments = new int[data.size()];
     indexVectorSize = vectorSize;
     nodeCount = 0;
@@ -117,7 +133,12 @@ public class SpectralClustering {
     return assignments;
   }
 
-  private double dotProduct(double[] arr1, double[] arr2) {
+  public void clusterK(List<double[]> data, int vectorSize, int k) {
+    // TODO: implement this.
+    assignments = new int[data.size()];
+  }
+
+  public double dotProduct(double[] arr1, double[] arr2) {
     double product = 0;
     for (int i = 0; i < arr1.length; ++i) {
       product += arr1[i] * arr2[i];
@@ -125,7 +146,7 @@ public class SpectralClustering {
     return product;
   }
 
-  private double[] computeP(List<DataPoint> dataPoints) {
+  public double[] computeP(List<DataPoint> dataPoints) {
     double[] u = new double[indexVectorSize];
     for (DataPoint dataPoint : dataPoints) {
       for (int i = 0; i < indexVectorSize; ++i) {
@@ -141,7 +162,7 @@ public class SpectralClustering {
     return p;
   }
 
-  private int recSpectralCluster(List<DataPoint> dataPoints) {
+  public int recSpectralCluster(List<DataPoint> dataPoints) {
     int size = dataPoints.size();
     int nodeValue = nodeCount;
     ClusterNode currCluster = new ClusterNode();
@@ -187,7 +208,7 @@ public class SpectralClustering {
   }
 
   @SuppressWarnings("unchecked")
-  private List<DataPoint> computeSortedVector(List<DataPoint> dataPoints,
+  public List<DataPoint> computeSortedVector(List<DataPoint> dataPoints,
                                               double[] p) {
     int size = dataPoints.size();
     int log = Factorize.log2(dataPoints.size());
@@ -276,7 +297,7 @@ public class SpectralClustering {
     return sortedDataPoints;
   }
 
-  private List<List<DataPoint>> computeCut(List<DataPoint> dataPoints,
+  public List<List<DataPoint>> computeCut(List<DataPoint> dataPoints,
                                            double[] p) {
 
     // Special case, when there are just two data points, the cut is trivial.
