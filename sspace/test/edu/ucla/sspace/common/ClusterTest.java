@@ -29,6 +29,8 @@ import java.util.ArrayList;
 
 public class ClusterTest {
   @Test public void kMeansTest() {
+    KMeansClustering cluster = new KMeansClustering();
+
     ArrayList<double[]> testVectors = new ArrayList<double[]>();
     double[][] testValues = {
     {1, 2, 3, 4, 5, 0, 0, 0, 0, 0},
@@ -39,8 +41,8 @@ public class ClusterTest {
     {0, 0, 0, 0, 0, 3, 3, 4, 6, 5}};
     for (int i = 0; i < 6; ++i)
       testVectors.add(testValues[i]);
-    double[][] centers = Cluster.kMeansCluster(testVectors, 2, 10);
-    int[] results = Cluster.kMeansClusterAssignments(testVectors, centers);
+    cluster.clusterK(testVectors, 10, 2);
+    int[] results = cluster.getAssignments();
     assertEquals(6, results.length);
     assertTrue((results[0] == 0 && results[1] == 0 && results[2] == 0) ||
                (results[0] == 1 && results[1] == 1 && results[2] == 1));

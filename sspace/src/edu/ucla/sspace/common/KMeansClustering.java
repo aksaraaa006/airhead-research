@@ -26,12 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-/** A collection of basic clustering techniques used in Semantic Space models.
- *  Each clustering method can take in some number of data points, and then
- *  return an array detailing how those data points were seperated into various
- *  categories.
- */
-public class Cluster {
+public class KMeansClustering implements Clustering {
+  private List<double[]> dataPoints;
+  private int indexVectorSize;
+  private int[] assignments;
+
   /** Simple implementation of the k-means clustering algorithm.
    * @param dataPoints An Array List of vectors which need to be clustered.
    * @param k          The number of desired clusters.
@@ -39,9 +38,46 @@ public class Cluster {
    * @return An array of the same size as dataPoints, where each index indicates
    * which cluster number the i'th dataPoint belongs to.
    */
-  public static double[][] kMeansCluster(List<double[]> dataPoints,
-                                         int k,
-                                         int indexVectorSize) {
+  public void cluster(List<double[]> data, int vectorSize) {
+    dataPoints = data;
+    indexVectorSize = vectorSize;
+
+    double oldPotential = Double.MAX_VALUE;
+    double potential = Double.MAX_VALUE;
+    int[] bestAssignments = null;
+    int[] currAssignments = null;
+    int k = 1;
+
+    // Cluster the semantic vectors with a larger number of clusters until the
+    // kMeansPotential reaches a relative maximum. This will determine the
+    // number of senses produced for a word.
+    do {
+      oldPotential = potential;
+      bestAssignments = currAssignments;
+      double[][] kClusters = clusterForK(k);
+      currAssignments = kMeansClusterAssignments(kClusters);
+      potential = kMeansPotential(currAssignments, kClusters);
+      System.out.println(potential);
+      k++;
+    } while (potential < oldPotential && k < 7 && k <= dataPoints.size());
+
+    assignments = (bestAssignments != null)
+      ? bestAssignments : new int[dataPoints.size()];
+  }
+
+  public int[] getAssignments() {
+    return assignments;
+  }
+
+  public void clusterK(List<double[]> data, int vectorSize, int k) {
+    dataPoints = data;
+    indexVectorSize = vectorSize;
+
+    double[][] clusters = clusterForK(k);
+    assignments = kMeansClusterAssignments(clusters);
+  }
+
+  private double[][] clusterForK(int k) {
     double[][] kCenters = new double[k][indexVectorSize];
     HashSet<Integer> randomCenters = new HashSet<Integer>(k);
     Random numGenerator = new Random();
@@ -50,7 +86,8 @@ public class Cluster {
     }
     int k_index = 0;
     for (Integer index : randomCenters) {
-      kCenters[k_index] = dataPoints.get(index.intValue()); k_index++;
+      kCenters[k_index] = dataPoints.get(index.intValue());
+      k_index++;
     }
 
     boolean converged = false;
@@ -102,8 +139,7 @@ public class Cluster {
     return kCenters;
   }
 
-  public static int[] kMeansClusterAssignments(List<double[]> dataPoints,
-                                               double[][] centers) {
+  private int[] kMeansClusterAssignments(double[][] centers) {
     int[] resultClustering = new int[dataPoints.size()];
     for (int i = 0; i < dataPoints.size(); ++i) {
       double[] dataPoint = dataPoints.get(i);
@@ -120,13 +156,12 @@ public class Cluster {
     return resultClustering;
   }
 
-  public static double kMeansPotential(List<double[]> dataPoints,
-                                       int[] assignments,
-                                       double[][] centers) {
+  private double kMeansPotential(int[] currAssignments,
+                                 double[][] centers) {
     double sum = 0;
     int i = 0;
     for (double[] dataPoint : dataPoints) {
-      int assignment = assignments[i];
+      int assignment = currAssignments[i];
       sum += Math.pow(
           Similarity.euclideanDistance(centers[assignment], dataPoint), 2);
       i++;

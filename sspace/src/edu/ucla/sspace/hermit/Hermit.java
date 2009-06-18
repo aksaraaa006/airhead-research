@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.common.Cluster;
+import edu.ucla.sspace.common.Clustering;
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -83,6 +83,9 @@ public class Hermit implements SemanticSpace {
   private static final int CONTEXT_SIZE = 7;
   public static final String MATRIX_TRANSFORM_PROPERTY =
   "edu.ucla.sspace.lsa.Hermit.transform";
+
+  public static final String CLUSTER_PROPERTY =
+  "edu.ucla.sspace.hermit.Hermit.cluster";
 
   public static final String LSA_DIMENSIONS_PROPERTY =
   "edu.ucla.sspace.lsa.Hermit.dimensions";
@@ -350,7 +353,7 @@ public class Hermit implements SemanticSpace {
    *        Hermit javadoc} for the full list of supported
    *        properties.
    */
-  public void processSpace(Properties properties) {
+  public void processSpace(final Properties properties) {
     try {
       // first ensure that we are no longer writing to the matrix
       synchronized(rawTermDocMatrixWriter) {
@@ -386,8 +389,8 @@ public class Hermit implements SemanticSpace {
                   continue;
               }
 
-              System.out.println("clustering: " + entry.getKey() + " id: " + entry.getValue().wordId);
-              int[] reassignments = clusterSemanticVectors(entry.getValue());
+              int[] reassignments =
+                clusterSemanticVectors(entry.getValue(), properties);
               splitMatrix(termDocMatrix, entry.getKey(),
                           entry.getValue(), reassignments);
             }
@@ -498,7 +501,8 @@ public class Hermit implements SemanticSpace {
     return lsaMatrix;
   }
 
-  private int[] clusterSemanticVectors(Triplet triplet) {
+  private int[] clusterSemanticVectors(Triplet triplet,
+                                       Properties properties) {
     // First read in all contexts for this triplet.
     // Lock on file reading to keep the disk from thrashing to heavily.
     synchronized (this) {
@@ -530,35 +534,24 @@ public class Hermit implements SemanticSpace {
     // Clear the map again to clear out memory.
     triplet.docToContextMap.clear();
 
-    SpectralClustering clusterMan = new SpectralClustering(semanticVectors,
-                                                          indexVectorSize);
+    // Load the desired clustering algorithm.
+    Clustering clusterMan = new SpectralClustering();
+    String transformClass = properties.getProperty(CLUSTER_PROPERTY);
+    if (transformClass != null) {
+      try {
+        Class clazz = Class.forName(transformClass);
+        clusterMan = (Clustering)(clazz.newInstance());
+      } 
+      // perform a general catch here due to the number of possible
+      // things that could go wrong.  Rethrow all exceptions as an
+      // error.
+      catch (Exception e) {
+        throw new Error(e);
+      } 
+    }
+
+    clusterMan.cluster(semanticVectors, indexVectorSize);
     return clusterMan.getAssignments();
-    /*
-    double oldPotential = Double.MAX_VALUE;
-    double potential = Double.MAX_VALUE;
-    int[] bestAssignments = null;
-    int[] assignments = null;
-    int k = 1;
-
-    // Cluster the semantic vectors with a larger number of clusters until the
-    // kMeansPotential reaches a relative maximum. This will determine the
-    // number of senses produced for a word.
-    do {
-      oldPotential = potential;
-      bestAssignments = assignments;
-      double[][] kClusters =
-        Cluster.kMeansCluster(semanticVectors, k, indexVectorSize);
-      assignments = Cluster.kMeansClusterAssignments(semanticVectors,
-                                                     kClusters);
-      potential = Cluster.kMeansPotential(semanticVectors, assignments,
-                                          kClusters);
-      System.out.println(potential);
-      k++;
-    } while (potential < oldPotential && k < 7 && k <= semanticVectors.size());
-
-    System.out.println("Cluster size for word: " + triplet.wordId + " : " + k);
-    return (bestAssignments != null) ? bestAssignments : new int[semanticVectors.size()];
-    */
   }
 
   private synchronized void splitMatrix(Matrix m, String word, Triplet triplet,
