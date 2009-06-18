@@ -3,6 +3,17 @@
 
 = June 16, 2009 =
 
+[LatentSemanticAnalysis LSA] version 0.1.5
+
+*Changes*:
+`lsa.jar`
+
+*Details*
+
+  * Fixed [http://code.google.com/p/airhead-research/issues/detail?id=16 Issue 16] where the resulting LSA vectors were not properly truncated when JAMA was used for the SVD.
+
+= June 16, 2009 =
+
 [LatentSemanticAnalysis LSA] version 0.1.4
 
 *Changes*:
