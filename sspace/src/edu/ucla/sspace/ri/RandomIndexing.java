@@ -748,16 +748,12 @@ public class RandomIndexing implements SemanticSpace {
 
 	    for (int p : v.positiveDimensions()) {
 		Integer count = sparseArray.get(p);
-		sparseArray.put(p, (count == null) 
-				? Integer.valueOf(1) 
-				: Integer.valueOf(count.intValue() + 1));
+		sparseArray.put(p, (count == null) ? 1 : count + 1);
 	    }
 		
 	    for (int n : v.negativeDimensions()) {
 		Integer count = sparseArray.get(n);
-		sparseArray.put(n, (count == null) 
-				? Integer.valueOf(1) 
-				: Integer.valueOf(count.intValue() + 1));		
+		sparseArray.put(n, (count == null) ? 1 : count + 1);		
 	    }		
 	}
 	

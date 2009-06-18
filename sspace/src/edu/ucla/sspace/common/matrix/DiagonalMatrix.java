@@ -84,10 +84,16 @@ public class DiagonalMatrix implements Matrix {
 
   /**
    * {@inheritDoc}
+   *
+   * @throws IllegalArgumentException if {@code row != col}
    */
   public void set(int row, int col, double val) {
-    if (row == col)
-      values[row] = val;
+    checkIndices(row, col);
+    if (row != col) {
+      throw new IllegalArgumentException(
+	"cannot set non-diagonal elements in a DiagonalMatrix");
+    }
+    values[row] = val;
   }
 
   /**
