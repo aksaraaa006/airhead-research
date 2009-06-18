@@ -71,7 +71,7 @@ public class TfIdfTransformer implements MatrixTransformer {
 	// calculate all the statistics on the original term-document matrix
 	BufferedReader br = new BufferedReader(new FileReader(input));
 	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] termDocCount = line.split("\t");
+	    String[] termDocCount = line.split("\\s+");
 	    
 	    Integer term  = Integer.valueOf(termDocCount[0]);
 	    Integer doc   = Integer.valueOf(termDocCount[1]);
