@@ -49,7 +49,6 @@ public class DiagonalMatrixTest {
     DiagonalMatrix matrix = new DiagonalMatrix(6, values);
     assertEquals(6, matrix.rows());
     assertEquals(6, matrix.columns());
-    matrix.set(1, 4, -12);
     for (int i = 0; i < 6; ++i) {
       for (int j = 0; j < 6; ++j) {
         if (j == i)
@@ -58,5 +57,12 @@ public class DiagonalMatrixTest {
           assertEquals(0, matrix.get(i, j), .0001);
       }
     }
+  }
+
+  @Test(expected=IllegalArgumentException.class) 
+        public void testInvalidSet() {
+
+    DiagonalMatrix matrix = new DiagonalMatrix(6);
+    matrix.set(1, 2, 3);
   }
 }
