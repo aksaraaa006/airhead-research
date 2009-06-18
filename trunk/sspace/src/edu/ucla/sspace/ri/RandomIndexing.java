@@ -794,8 +794,8 @@ public class RandomIndexing implements SemanticSpace {
 	 */
 	public synchronized int[] getVector() {
 	    int[] vector = new int[vectorLength];
-	    for (int i : indices)
-		vector[i] = values[i];
+	    for (int i = 0; i < indices.length; ++i)
+		vector[indices[i]] = values[i];
 	    return vector;
 	}
     }    
