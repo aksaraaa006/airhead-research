@@ -30,6 +30,7 @@ import java.lang.reflect.Constructor;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -735,10 +736,12 @@ public class RandomIndexing implements SemanticSpace {
      */
     class SparseSemanticVector implements SemanticVector {
 
-	private final Map<Integer,Integer> sparseArray;
+	private int[] indices;
+	private int[] values;
 
 	public SparseSemanticVector() {
-	    sparseArray = new IntegerMap<Integer>();
+	    indices = new int[0];
+	    values = new int[0];
 	}
 	
 	/**
@@ -747,14 +750,43 @@ public class RandomIndexing implements SemanticSpace {
 	public synchronized void add(IndexVector v) {
 
 	    for (int p : v.positiveDimensions()) {
-		Integer count = sparseArray.get(p);
-		sparseArray.put(p, (count == null) ? 1 : count + 1);
+		update(p, 1);
 	    }
 		
 	    for (int n : v.negativeDimensions()) {
-		Integer count = sparseArray.get(n);
-		sparseArray.put(n, (count == null) ? 1 : count + 1);		
+		update(n, -1);
 	    }		
+	}
+
+	/**
+	 * Updates the index vector at the index by adding the delta.  If the
+	 * sparse representation does not contain this index, the sparse arrays
+	 * are extended to make room for it.
+	 */
+	private void update(int index, int delta) {
+	    int pos = Arrays.binarySearch(indices, index);
+	    // need to make room in the indices array
+	    if (pos < 0) {
+		int newPos = 0 - (pos + 1);
+		int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
+		int[] newValues = Arrays.copyOf(values, values.length + 1);
+
+		// shift the elements down by one to make room
+		for (int i = newPos; i < values.length; ++i) {
+		    newValues[i+1] = values[i];
+		    newIndices[i+1] = indices[i];
+		}
+
+		// swap the arrays
+		indices = newIndices;
+		values = newValues;
+		pos = newPos;
+
+		// update the position of the index in the values array
+		indices[pos] = index;
+	    }
+	    
+	    values[pos] += delta;
 	}
 	
 	/**
@@ -762,9 +794,8 @@ public class RandomIndexing implements SemanticSpace {
 	 */
 	public synchronized int[] getVector() {
 	    int[] vector = new int[vectorLength];
-	    for (Map.Entry<Integer,Integer> e : sparseArray.entrySet()) {
-		vector[e.getKey()] = e.getValue();
-	    }
+	    for (int i : indices)
+		vector[i] = values[i];
 	    return vector;
 	}
     }    
