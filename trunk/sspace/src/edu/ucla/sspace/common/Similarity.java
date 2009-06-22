@@ -256,7 +256,7 @@ public class Similarity {
 	    union.add(d);
 	}
 	Set<Double> tmp = new HashSet<Double>();
-	for (double d : a) {
+	for (double d : b) {
 	    tmp.add(d);
 	    union.add(d);
 	}
