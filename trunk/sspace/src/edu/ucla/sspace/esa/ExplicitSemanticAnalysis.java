@@ -42,12 +42,15 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.common.GrowableArrayList;
-import edu.ucla.sspace.common.Matrices;
-import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.StringUtils;
-import edu.ucla.sspace.common.TrieMap;
+
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
+
+import edu.ucla.sspace.text.StringUtils;
+
+import edu.ucla.sspace.util.GrowableArrayList;
+import edu.ucla.sspace.util.TrieMap;
 
 /**
  * An implementation of Explicit Semanic Analysis proposed by Evgeniy

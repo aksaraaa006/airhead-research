@@ -22,18 +22,20 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.CombinedIterator;
-import edu.ucla.sspace.common.Matrices;
-import edu.ucla.sspace.common.Matrix;
-import edu.ucla.sspace.common.MatrixIO;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
 
-import edu.ucla.sspace.common.document.Document;
-import edu.ucla.sspace.common.document.FileListDocumentIterator;
-import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixIO;
 
-import edu.ucla.sspace.lra.LRA;
+import edu.ucla.sspace.util.CombinedIterator;
+
+import edu.ucla.sspace.text.Document;
+import edu.ucla.sspace.text.FileListDocumentIterator;
+import edu.ucla.sspace.text.OneLinePerDocumentIterator;
+
+import edu.ucla.sspace.lra.LatentRelationalAnalysis;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -50,7 +52,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * An executable class for running {@link LRA} from the
+ * An executable class for running {@link LatentRelationalAnalysis} from the
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
@@ -145,27 +147,27 @@ public class LRAMain {
 	Properties props = System.getProperties();
 
 	if (argOptions.hasOption("dimensions")) {
-	    props.setProperty(LRA.LRA_DIMENSIONS_PROPERTY,
+	    props.setProperty(LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY,
 			      argOptions.getStringOption("dimensions"));
 	}
 
 	if (argOptions.hasOption("indexDir")) {
-	    props.setProperty(LRA.LRA_INDEX_DIR,
+	    props.setProperty(LatentRelationalAnalysis.LRA_INDEX_DIR,
 			      argOptions.getStringOption("indexDir"));
 	}
 
 	if (argOptions.hasOption("skipIndex")) {
-	    props.setProperty(LRA.LRA_SKIP_INDEX,
+	    props.setProperty(LatentRelationalAnalysis.LRA_SKIP_INDEX,
 			      "true");
 	}
 
 	if (argOptions.hasOption("readMatrixFile")) {
-	    props.setProperty(LRA.LRA_READ_MATRIX_FILE,
+	    props.setProperty(LatentRelationalAnalysis.LRA_READ_MATRIX_FILE,
 			      argOptions.getStringOption("readMatrixFile"));
 	}
 
 	if (argOptions.hasOption("writeMatrixFile")) {
-	    props.setProperty(LRA.LRA_WRITE_MATRIX_FILE,
+	    props.setProperty(LatentRelationalAnalysis.LRA_WRITE_MATRIX_FILE,
 			      argOptions.getStringOption("writeMatrixFile"));
 	}
 
@@ -241,30 +243,35 @@ public class LRAMain {
             String outputFile = argOptions.getPositionalArg(3);
             String indexDir = corpusDir;
 	    String userSpecifiedDir = 
-		props.getProperty(LRA.LRA_INDEX_DIR);
+		props.getProperty(LatentRelationalAnalysis.LRA_INDEX_DIR);
 	    if (userSpecifiedDir != null) {
                 indexDir = userSpecifiedDir;
             } 
 
             boolean doIndex = true; //set as option later
-            if(props.getProperty(LRA.LRA_SKIP_INDEX).equals("true")) {
+            if(props.getProperty(LatentRelationalAnalysis.LRA_SKIP_INDEX).equals("true")) {
                 doIndex = false; //set as option later
             }
-            LRA lra = new LRA(corpusDir, indexDir, doIndex);
+            LatentRelationalAnalysis lra = new LatentRelationalAnalysis(corpusDir, indexDir, doIndex);
             //Steps 1-2. Load analogy input
             lra.loadAnalogiesFromFile(analogyFile);
 
             Matrix projection;
 
-            //if we load a projection matrix from file, we can skip all the preprocessing
+            // if we load a projection matrix from file, we can skip all the
+            // preprocessing
             String readProjectionFile =
-                props.getProperty(LRA.LRA_READ_MATRIX_FILE);
+                props.getProperty(LatentRelationalAnalysis.LRA_READ_MATRIX_FILE);
             if(readProjectionFile != null) {
                 File readFile = new File(readProjectionFile);
                 if (readFile.exists()) {
-                    projection = MatrixIO.readMatrix(new File(readProjectionFile), MatrixIO.Format.SVDLIBC_SPARSE_TEXT,Matrix.Type.SPARSE_IN_MEMORY);
+                    projection = 
+			MatrixIO.readMatrix(new File(readProjectionFile), 
+					    MatrixIO.Format.SVDLIBC_SPARSE_TEXT,
+					    Matrix.Type.SPARSE_IN_MEMORY);
                 } else {
-                    throw new IllegalArgumentException("specified projection file does not exist");
+                    throw new IllegalArgumentException(
+			"specified projection file does not exist");
                 }
             } else { //do normal LRA preprocessing...
 
@@ -286,13 +293,13 @@ public class LRAMain {
                 //Step 9. Compute SVD on the pre-processed matrix.
                 int dimensions = 300; //TODO: set as option
                 String userSpecfiedDims = 
-                    props.getProperty(LRA.LRA_DIMENSIONS_PROPERTY);
+                    props.getProperty(LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY);
                 if (userSpecfiedDims != null) {
                     try {
                         dimensions = Integer.parseInt(userSpecfiedDims);
                     } catch (NumberFormatException nfe) {
                         throw new IllegalArgumentException(
-                            LRA.LRA_DIMENSIONS_PROPERTY + " is not an integer: " +
+                            LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY + " is not an integer: " +
                             userSpecfiedDims);
                     }
                 }
@@ -303,7 +310,7 @@ public class LRAMain {
             }
 
             String writeProjectionFile =
-                props.getProperty(LRA.LRA_WRITE_MATRIX_FILE);
+                props.getProperty(LatentRelationalAnalysis.LRA_WRITE_MATRIX_FILE);
             if(writeProjectionFile != null) {
                 MatrixIO.writeMatrix(projection, new File(writeProjectionFile), MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
             }

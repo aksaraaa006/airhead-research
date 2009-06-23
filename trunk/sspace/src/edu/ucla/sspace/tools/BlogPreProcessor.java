@@ -22,7 +22,8 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.DocumentPreprocessor;
+
+import edu.ucla.sspace.text.DocumentPreprocessor;
 
 import java.io.BufferedReader;
 import java.io.IOException;

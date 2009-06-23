@@ -21,8 +21,12 @@
 
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.common.matrix.ArrayMatrix;
-import edu.ucla.sspace.common.matrix.DiagonalMatrix;
+import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.matrix.DiagonalMatrix;
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
+
+import edu.ucla.sspace.util.Duple;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -22,11 +22,12 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.CombinedIterator;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.common.document.Document;
-import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+import edu.ucla.sspace.text.Document;
+import edu.ucla.sspace.text.OneLinePerDocumentIterator;
+
+import edu.ucla.sspace.util.CombinedIterator;
 
 import edu.ucla.sspace.grefenstette.Grefenstette;
 
