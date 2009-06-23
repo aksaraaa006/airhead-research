@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2009 Keith Stevens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,23 +19,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common.matrix;
-
-import edu.ucla.sspace.common.Matrix;
+package edu.ucla.sspace.matrix;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class GrowingSparseMatrixTest {
+public class SparseMatrixTest {
   @Test public void testReplaceWithZero() {
     double[][] testData = {{0, 0, 0, 1},
                            {1, 0, 2, 0},
                            {0, 0, 0, 0},
                            {1, 2, 4, 5},
                            {0, 0, 1, 0}};
-    GrowingSparseMatrix testMatrix = new GrowingSparseMatrix();
+    SparseMatrix testMatrix = new SparseMatrix(5, 4);
     for (int i = 0; i < 5; ++i) {
       for (int j = 0; j < 4; ++j) {
         testMatrix.set(i, j, testData[i][j]);
@@ -58,7 +56,7 @@ public class GrowingSparseMatrixTest {
                            {0, 0, 0, 0},
                            {1, 2, 4, 5},
                            {0, 0, 1, 0}};
-    GrowingSparseMatrix testMatrix = new GrowingSparseMatrix();
+    SparseMatrix testMatrix = new SparseMatrix(5, 4);
     for (int i = 0; i < 5; ++i) {
       for (int j = 0; j < 4; ++j) {
         testMatrix.set(i, j, testData[i][j]);

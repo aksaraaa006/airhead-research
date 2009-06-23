@@ -19,36 +19,22 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.text;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-/**
- * Unit tests for the {@link WordFilter} class.
- */
-public class WordFilterTests {
-   
+public class TestWordIterator {
 
-    public WordFilterTests() { }
-
-    @Test public void testAllWordsInFilter() {
+    @Test public void testNext() {
 	BufferedReader br = 
 	    new BufferedReader(new StringReader("my cat is big"));
-	Set<String> filterSet = new HashSet<String>();
-	filterSet.add("my");
-	filterSet.add("cat");
-	filterSet.add("is");
-	filterSet.add("big");
-	WordFilter it = new WordFilter(br, filterSet);
+	WordIterator it = new WordIterator(br);
 	assertEquals("my", it.next());
 	assertEquals("cat", it.next());
 	assertEquals("is", it.next());
@@ -56,38 +42,46 @@ public class WordFilterTests {
 	assertFalse(it.hasNext());
     }
 
-    @Test public void testAllWordsInFilterInverted() {
+    @Test public void testNextWithNewlines() {
 	BufferedReader br = 
-	    new BufferedReader(new StringReader("my cat is big"));
-	Set<String> filterSet = new HashSet<String>();
-	filterSet.add("my");
-	filterSet.add("cat");
-	filterSet.add("is");
-	filterSet.add("big");
-	WordFilter it = new WordFilter(br, filterSet, true);
-	assertFalse(it.hasNext());
-    }
-
-    @Test public void testSomeWordsInFilter() {
-	BufferedReader br = 
-	    new BufferedReader(new StringReader("my cat is big"));
-	Set<String> filterSet = new HashSet<String>();
-	filterSet.add("my");
-	filterSet.add("is");
-	WordFilter it = new WordFilter(br, filterSet, false);
+	    new BufferedReader(new StringReader("my\ncat\nis\nbig"));
+	WordIterator it = new WordIterator(br);
 	assertEquals("my", it.next());
+	assertEquals("cat", it.next());
 	assertEquals("is", it.next());
+	assertEquals("big", it.next());
 	assertFalse(it.hasNext());
     }
 
-    @Test public void testSomeWordsInFilterInverted() {
+    @Test public void testNextWithEmptyLeadingNewlines() {
 	BufferedReader br = 
-	    new BufferedReader(new StringReader("my cat is big"));
-	Set<String> filterSet = new HashSet<String>();
-	filterSet.add("my");
-	filterSet.add("is");
-	WordFilter it = new WordFilter(br, filterSet, true);
+	    new BufferedReader(new StringReader("\n\n\n\nmy\ncat\nis\nbig"));
+	WordIterator it = new WordIterator(br);
+	assertEquals("my", it.next());
 	assertEquals("cat", it.next());
+	assertEquals("is", it.next());
+	assertEquals("big", it.next());
+	assertFalse(it.hasNext());
+    }
+
+    @Test public void testNextWithEmptyTrailingNewlines() {
+	BufferedReader br = 
+	    new BufferedReader(new StringReader("my\ncat\nis\nbig\n\n\n\n"));
+	WordIterator it = new WordIterator(br);
+	assertEquals("my", it.next());
+	assertEquals("cat", it.next());
+	assertEquals("is", it.next());
+	assertEquals("big", it.next());
+	assertFalse(it.hasNext());
+    }
+
+    @Test public void testNextWithEmptyMiddleNewlines() {
+	BufferedReader br = 
+	    new BufferedReader(new StringReader("my\ncat\n\n\n\n\nis\nbig"));
+	WordIterator it = new WordIterator(br);
+	assertEquals("my", it.next());
+	assertEquals("cat", it.next());
+	assertEquals("is", it.next());
 	assertEquals("big", it.next());
 	assertFalse(it.hasNext());
     }
