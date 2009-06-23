@@ -23,6 +23,10 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 
+import edu.ucla.sspace.matrix.*;
+import edu.ucla.sspace.text.*; 
+import edu.ucla.sspace.util.*;
+
 import java.io.*;
 
 import java.util.*;

@@ -21,9 +21,9 @@
 
 package edu.ucla.sspace.coals;
 
-import edu.ucla.sspace.common.Matrix;
-import edu.ucla.sspace.common.matrix.ArrayMatrix;
-import edu.ucla.sspace.common.document.StringDocument;
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.text.StringDocument;
 
 import org.junit.*;
 

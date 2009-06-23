@@ -19,13 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
-
-import edu.ucla.sspace.common.Matrix;
-import edu.ucla.sspace.common.matrix.ArrayMatrix;
-import edu.ucla.sspace.common.matrix.DiagonalMatrix;
-import edu.ucla.sspace.common.matrix.OnDiskMatrix;
-import edu.ucla.sspace.common.matrix.SparseMatrix;
+package edu.ucla.sspace.matrix;
 
 import org.junit.*;
 

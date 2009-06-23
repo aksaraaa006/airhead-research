@@ -19,7 +19,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.matrix;
+
+import edu.ucla.sspace.matrix.*;
+import edu.ucla.sspace.text.*; 
+import edu.ucla.sspace.util.*;
 
 import java.io.*;
 import java.util.*;

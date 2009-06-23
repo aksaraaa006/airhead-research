@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.text;
 
 import java.io.BufferedReader;
 import java.io.StringReader;

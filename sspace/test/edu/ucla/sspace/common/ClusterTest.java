@@ -21,6 +21,10 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.matrix.*;
+import edu.ucla.sspace.text.*; 
+import edu.ucla.sspace.util.*;
+
 import org.junit.*;
 
 import static org.junit.Assert.*;

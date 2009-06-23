@@ -1,4 +1,25 @@
-package edu.ucla.sspace.common;
+/*
+ * Copyright 2009 David Jurgens
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package edu.ucla.sspace.util;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -21,13 +42,13 @@ import static org.junit.Assert.*;
 
 
 /**
- * A collection of unit tests for {@link TrieMap} 
+ * A collection of unit tests for {@link HashMultiMap} 
  */
-public class TrieMapTests {
+public class HashMultiMapTests {
 
     
     @Test public void testConstructor() {
- 	TrieMap<String> m = new TrieMap<String>();
+ 	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
     }
 
     @Test public void testMapConstructor() {
@@ -39,7 +60,7 @@ public class TrieMapTests {
 	    control.put(s, s);
 	}
 
-	TrieMap<String> test = new TrieMap<String>(control);
+	HashMultiMap<String,String> test = new HashMultiMap<String,String>(control);
 
 	assertEquals(control.size(), test.size());
 	assertTrue(control.keySet().containsAll(test.keySet()));
@@ -48,181 +69,87 @@ public class TrieMapTests {
 
     @Test(expected=NullPointerException.class) 
     public void testMapConstructorNull() {
-	TrieMap<String> m = new TrieMap<String>(null);
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>(null);
     }
 
     @Test public void testPut() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("a", "1");
-	String s = m.get("a");
-	assertEquals("1", s);
-    }
-
-    @Test(expected=NullPointerException.class) 
-    public void testPutNullKey() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put(null, "value");
-    }
-
-    @Test(expected=NullPointerException.class) 
-    public void testPutNullValue() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("key", null);
+	Set<String> s = m.get("a");
+	assertTrue(s.contains("1"));
     }
 
     @Test public void testPutEmptyString() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("", "empty");
-	assertEquals("empty", m.get(""));
+	assertTrue(m.get("").contains("empty"));
     }
 
     @Test public void testPutDifferentFirstChars() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("a", "1");
 	m.put("ac", "2");
 	m.put("b", "3");
 	m.put("bd", "4");
 
-	assertEquals("1", m.get("a"));
-	assertEquals("2", m.get("ac"));
-	assertEquals("3", m.get("b"));
-	assertEquals("4", m.get("bd"));
+	assertTrue(m.get("a").contains("1"));
+	assertTrue(m.get("ac").contains("2"));
+	assertTrue(m.get("b").contains("3"));
+	assertTrue(m.get("bd").contains("4"));
     }
 
     @Test public void testPutConflict() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("a", "1");
 	m.put("a", "2");
-	String s = m.get("a");
-	assertEquals("2", s);
+	Set<String> s = m.get("a");
+	assertTrue(s.contains("2"));
     }
 
     @Test public void testPutSubstringOfKey() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("catapult", "1");
 	m.put("cat", "2");
 
-	assertEquals("1", m.get("catapult"));
-	assertEquals("2", m.get("cat"));
+	assertTrue(m.get("catapult").contains("1"));
+	assertTrue(m.get("cat").contains("2"));
     }
 
     @Test public void testPutKeyIsLonger() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "1");
 	m.put("catapult", "2");
 
-	assertEquals("1", m.get("cat"));
-	assertEquals("2", m.get("catapult"));
+	assertTrue(m.get("catapult").contains("2"));
+	assertTrue(m.get("cat").contains("1"));
     }
     
     @Test public void testPutKeyIsLongerByOne() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "1");
 	m.put("cats", "2");
 
-	assertEquals("1", m.get("cat"));
-	assertEquals("2", m.get("cats"));
+	assertTrue(m.get("cats").contains("2"));
+	assertTrue(m.get("cat").contains("1"));
     }
 
     @Test public void testPutKeysLongerByOne() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "1");
-	assertEquals("1", m.get("cat"));
+	assertTrue(m.get("cat").contains("1"));
 	m.put("catx", "2");
-	assertEquals("2", m.get("catx"));
+	assertTrue(m.get("catx").contains("2"));
 	m.put("catxy", "3");
-	assertEquals("3", m.get("catxy"));
+	assertTrue(m.get("catxy").contains("3"));
 	m.put("catxyz", "4");
-
-	assertEquals("1", m.get("cat"));
-	assertEquals("2", m.get("catx"));
-	assertEquals("3", m.get("catxy"));
-	assertEquals("4", m.get("catxyz"));
+	assertTrue(m.get("catxyz").contains("4"));
     }
 
-
-    @Test public void testPutKeysShorterByOne() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("catxyz", "4");
-	assertEquals("4", m.get("catxyz"));
-	m.put("catxy", "3");
-	assertEquals("3", m.get("catxy"));
-	m.put("catx", "2");
-	assertEquals("2", m.get("catx"));
-	m.put("cat", "1");
-	assertEquals("1", m.get("cat"));
-	
-	assertEquals("2", m.get("catx"));
-	assertEquals("3", m.get("catxy"));
-	assertEquals("4", m.get("catxyz"));
-    }
-
-    @Test public void testPutKeysDiverge() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("category", "1");
-	m.put("catamaran", "2");
-
-	assertEquals("1", m.get("category"));
-	assertEquals("2", m.get("catamaran"));
-    }
-
-    @Test public void testPutKeysConflictAndDiverge() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("cat", "0");
-	m.put("category", "1");
-	m.put("catamaran", "2");
-
-	assertEquals("0", m.get("cat"));
-	assertEquals("1", m.get("category"));
-	assertEquals("2", m.get("catamaran"));
-    }
-
-
-    @Test public void testPutWithSubstringAndDiverge() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("cat", "0");
-	m.put("category", "1");
-	m.put("catamaran", "2");
-
-	m.put("cat", "cat");
-	m.put("category", "category");
-	m.put("catamaran", "catamaran");
-	
-	assertEquals("cat", m.get("cat"));
-	assertEquals("category", m.get("category"));
-	assertEquals("catamaran", m.get("catamaran"));
-    }
-
-
-    @Test public void testPutKeysReverseOrdering() {
-	TrieMap<String> m = new TrieMap<String>();
-
-	m.put("coconut", "2");
-	m.put("banana", "1");
-	m.put("apple", "0");
-
-	assertEquals(3, m.size());
-    }
-
-    @Test public void testPutStringKeysRandomOrder() {
-	TrieMap<String> m = new TrieMap<String>();
-
-	String[] arr = new String[] {"apple", "banana", "coconut", "daffodol",
-				     "edamame", "fig", "hummus", "grapes" };
-	Collections.shuffle(Arrays.asList(arr));
-
-	for (String s : arr) {
-	    m.put(s, s);
-	}
-	    	
-	assertEquals(arr.length, m.size());
-    }
 
     @Test public void testPutLotsOfRandomPrefixes() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	assertEquals(0, m.size());
 	int size = 10240;
-	//int[] a = new int[size];
 	Set<Integer> s = new HashSet<Integer>();
 	while (s.size() < size) {
 	    s.add((int)(Math.random() * Integer.MAX_VALUE));
@@ -236,14 +163,14 @@ public class TrieMapTests {
 	    c++;
 	}
 
-	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	for (Map.Entry<String,String> e : m.entrySet()) {
 	    assertEquals(Integer.parseInt(e.getKey().toString()),
 			 Integer.parseInt(e.getValue()));
 	}
     }
 
     @Test public void testPutLotsOfOrderedPrefixes() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	assertEquals(0, m.size());
 
 	for (int i = 0; i < 10240; ++i) {
@@ -252,14 +179,14 @@ public class TrieMapTests {
 	    assertEquals(i+1, m.size());
 	}
 
-	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	for (Map.Entry<String,String> e : m.entrySet()) {
 	    assertEquals(Integer.parseInt(e.getKey().toString()),
 			 Integer.parseInt(e.getValue()));
 	}
     }
 
     @Test public void testPutNumberKeysRandomOrder() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	Set<String> control = new HashSet<String>();
 	
 	ArrayList<String> list = new ArrayList<String>();
@@ -277,23 +204,10 @@ public class TrieMapTests {
 	assertEquals(control.size(), m.size());
 	assertTrue(control.containsAll(m.keySet()));
     }    
-
-    @Test public void testUnknown() {
-	TrieMap<String> m = new TrieMap<String>();
-	String[] arr = new String[] { "1cd", "1c", "1" };	
-	Set<String> control = new HashSet<String>();
-	for (String s : arr) {
-	    m.put(s, s);
-	    control.add(s);
-	}
-
-	assertEquals(control.size(), m.size());
-	assertTrue(control.containsAll(m.keySet()));
-    }
     
 
     @Test public void testContainsKey() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("catapult", "1");
 	m.put("cat", "2");
 
@@ -302,7 +216,7 @@ public class TrieMapTests {
     }
 
     @Test public void testContainsKeyFalse() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("catapult", "1");
 	m.put("cat", "2");
 
@@ -314,7 +228,7 @@ public class TrieMapTests {
     }
 
     @Test public void testContainsValue() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("catapult", "1");
 	m.put("cat", "2");
 
@@ -323,7 +237,7 @@ public class TrieMapTests {
     }
 
     @Test public void testContainsValueFalse() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("catapult", "1");
 	m.put("cat", "2");
 
@@ -333,7 +247,7 @@ public class TrieMapTests {
     }
 
     @Test public void testKeySet() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 
 	m.put("cat", "0");
 	m.put("category", "1");
@@ -341,7 +255,7 @@ public class TrieMapTests {
 	m.put("apple", "3");
 	m.put("banana", "4");
 
-	Set<CharSequence> test = m.keySet();
+	Set<String> test = m.keySet();
 	
 	assertTrue(test.contains("apple"));
 	assertTrue(test.contains("banana"));
@@ -351,39 +265,43 @@ public class TrieMapTests {
     }
 
     @Test public void testEntrySetValue() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	m.put("category", "1");
 	m.put("catamaran", "2");
 	m.put("apple", "3");
 	m.put("banana", "4");
 
-	Set<Map.Entry<CharSequence,String>> test = m.entrySet();
+	Set<Map.Entry<String,String>> test = m.entrySet();
 
-	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
-	    e.setValue(e.getKey().toString());
+	System.out.println(m);
+	System.out.println(m.entrySet());
+	for (Map.Entry<String,String> e : m.entrySet()) {
+	    String key = e.getKey().toString();
+	    System.out.println(key);
+	    e.setValue(key);
 	}
 	
-	assertEquals("cat", m.get("cat"));
-	assertEquals("category", m.get("category"));
-	assertEquals("catamaran", m.get("catamaran"));
-	assertEquals("apple", m.get("apple"));
-	assertEquals("banana", m.get("banana"));
-    }
+	System.out.println(m);
 
-    @Test(expected=NullPointerException.class) 
-    public void testEntrySetNullValue() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("key", "value");
-	Set<Map.Entry<CharSequence,String>> test = m.entrySet();
-	for (Map.Entry<CharSequence,String> e : test) {
-	    e.setValue(null);
-	}
-	
+	assertTrue(m.get("cat").contains("cat"));
+	assertEquals(1, m.get("cat").size());
+
+	assertTrue(m.get("category").contains("category"));
+	assertEquals(1, m.get("category").size());
+
+	assertTrue(m.get("catamaran").contains("catamaran"));
+	assertEquals(1, m.get("catamaran").size());
+
+	assertTrue(m.get("apple").contains("apple"));
+	assertEquals(1, m.get("apple").size());
+
+	assertTrue(m.get("banana").contains("banana"));
+	assertEquals(1, m.get("banana").size());
     }
 
     @Test public void testKeyIterator() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	m.put("category", "1");
 	m.put("catamaran", "2");
@@ -393,14 +311,14 @@ public class TrieMapTests {
 	control.add("category");
 	control.add("catamaran");
 
-	Set<CharSequence> test = m.keySet();
+	Set<String> test = m.keySet();
 
 	assertTrue(test.containsAll(control));
 	assertTrue(control.containsAll(test));
     }
 
     @Test public void testValueIterator() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	m.put("category", "1");
 	m.put("catamaran", "2");
@@ -420,8 +338,8 @@ public class TrieMapTests {
 
     @Test public void testIteratorHasNext() {
 	
-	TrieMap<String> m = new TrieMap<String>();
-	Iterator<CharSequence> it = m.keySet().iterator();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
+	Iterator<String> it = m.keySet().iterator();
 	assertFalse(it.hasNext());
 
 	m.put("cat", "0");
@@ -430,13 +348,13 @@ public class TrieMapTests {
 
 	it = m.keySet().iterator();
 
-	Set<CharSequence> control = new HashSet<CharSequence>();
+	Set<String> control = new HashSet<String>();
 
 	while (it.hasNext()) {
 	    control.add(it.next());
 	}
 
-	Set<CharSequence> test = m.keySet();
+	Set<String> test = m.keySet();
 
 	assertTrue(test.containsAll(control));
 	assertTrue(control.containsAll(test));
@@ -445,30 +363,30 @@ public class TrieMapTests {
     @Test(expected=NoSuchElementException.class)
     public void testIteratorNextError() {
 	
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next();
 	it.next(); // error
     }
 
     @Test(expected=NoSuchElementException.class)
-    public void testEmptyTrieIteratorNextError() {
+    public void testEmptyIteratorNextError() {
 	
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next(); // error
     }
 
     @Test public void testIteratorRemove() {
 	
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	assertTrue(m.containsKey("cat"));
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next();
 	it.remove();
 	assertFalse(m.containsKey("cat"));
@@ -477,18 +395,18 @@ public class TrieMapTests {
     @Test(expected=IllegalStateException.class) 
     public void testIteratorRemoveTwice() {
 	
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	assertTrue(m.containsKey("cat"));
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next();
 	it.remove();
 	it.remove();
     }
 
     @Test public void testRemove() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	assertTrue(m.containsKey("cat"));
 
@@ -498,15 +416,15 @@ public class TrieMapTests {
     }
 
     @Test public void testRemoveEmptyString() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("", "empty");
-	assertEquals("empty", m.get(""));
+	assertTrue(m.get("").contains("empty"));
 	m.remove("");
 	assertFalse(m.containsKey(""));
     }
 
     @Test public void testRemoveIntermediate() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "cat");
 	m.put("cats", "cats");
 	assertTrue(m.containsKey("cat"));
@@ -518,7 +436,7 @@ public class TrieMapTests {
     }
 
     @Test public void testRemoveTerminal() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "cat");
 	m.put("cats", "cats");
 	assertTrue(m.containsKey("cats"));
@@ -530,7 +448,7 @@ public class TrieMapTests {
     }
 
     @Test public void testMultipleRemoves() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	Set<String> control = new HashSet<String>();
 	
 	LinkedList<String> list = new LinkedList<String>();
@@ -560,7 +478,7 @@ public class TrieMapTests {
     }    
 
     @Test public void testSize() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	assertEquals(0, m.size());
 	m.put("cat", "0");
 	assertEquals(1, m.size());
@@ -571,7 +489,7 @@ public class TrieMapTests {
     }
 
     @Test public void testSizeLotsOfPrefixes() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	assertEquals(0, m.size());
 	for (int i = 0; i < 10240; ++i) {
 	    String s = String.valueOf(i);
@@ -581,7 +499,7 @@ public class TrieMapTests {
     }
 
     @Test public void testSizeLotsOfRandomPrefixes() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	assertEquals(0, m.size());
 	int size = 10240;
 	//int[] a = new int[size];
@@ -599,8 +517,28 @@ public class TrieMapTests {
 	}
     }
 
+    @Test public void testRange() {
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
+	assertEquals(0, m.range());
+	m.put("1","1");
+	assertEquals(1, m.range());
+    }
+
+    @Test public void testRangeIncreasing() {
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
+
+	for (int i = 0; i < 10240; ++i) {
+	    String s = String.valueOf(i);
+	    m.put("1",s);
+ 	    assertEquals(i+1, m.range());
+	    assertEquals(1, m.size());
+	}
+    }
+
+    
+
     @Test public void testIsEmpty() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	assertTrue(m.isEmpty());
 
 	m.put("cat", "0");
@@ -611,42 +549,21 @@ public class TrieMapTests {
     }
 
     @Test public void testClear() {
-	TrieMap<String> m = new TrieMap<String>();
+	HashMultiMap<String,String> m = new HashMultiMap<String,String>();
 	m.put("cat", "0");
 	m.put("category", "1");
 	m.put("catamaran", "2");
 
 	m.clear();
 	assertEquals(0, m.size());
+	assertEquals(0, m.range());
 	assertFalse(m.containsKey("cat"));
 	assertFalse(m.containsKey("category"));
 	assertFalse(m.containsKey("catamaran"));
     }
 
-    @Test public void testOrder() {
-	TrieMap<String> m = new TrieMap<String>();
-	m.put("a", "0");
-	m.put("apple", "1");
-	m.put("be", "2");
-	m.put("bee", "3");
-	m.put("boy", "4");
-	m.put("cat", "5");
-	
-	SortedSet<CharSequence> control = 
-	    new TreeSet<CharSequence>(m.keySet());
-	
-	Iterator<CharSequence> it1 = m.keySet().iterator();
-	Iterator<CharSequence> it2 = control.iterator();
-
-	while (it1.hasNext() && it2.hasNext()) {
-	    assertEquals(it2.next(), it1.next());
-	}
-	
-	assertEquals(it2.hasNext(), it1.hasNext());
-    }
-
     public static void main(String args[]) {
-	org.junit.runner.JUnitCore.main(TrieMapTests.class.getName());
+	org.junit.runner.JUnitCore.main(HashMultiMapTests.class.getName());
     }
 
 }
