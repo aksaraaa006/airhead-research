@@ -25,6 +25,7 @@ import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.DiagonalMatrix;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.Normalize;
 
 import edu.ucla.sspace.util.Duple;
 
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -241,24 +243,29 @@ public class SpectralClustering implements Clustering {
 
     // Set v to be orthogonal to piTrans * DInv;
     // For now just let it be a random normalized vector.
-    Matrix v = new ArrayMatrix(size, 1);
-    double total = 0;
+    List<Double> permutedV = new LinkedList<Double>();
     for (int i = 0; i < size; ++i) {
-      v.set(i, 0, Math.random());
-      total += v.get(i, 0);
+      permutedV.add(pi[i] * DInv.get(i, i));
     }
-    for (int i = 0; i < size; ++i) {
-      v.set(i, 0, v.get(i, 0) / total);
+
+    Collections.shuffle(permutedV);
+    Matrix v = new ArrayMatrix(size, 1);
+    int i = 0;
+    for (Double value : permutedV) {
+      v.set(i, 0, value);
+      i++;
     }
 
     for (int k = 0; k < log; ++k) {
+      Normalize.byMagnitude(v);
+
       // For matrix multiplications:
       // v = DInv * v;
       v = Matrices.multiply(DInv, v);
 
       // v = ATrans * v;
       Matrix newV = new ArrayMatrix(indexVectorSize, 1);
-      int i = 0;
+      i = 0;
       for (DataPoint dataPoint : dataPoints) {
         for (int j = 0; j < indexVectorSize; ++j) {
           double value = newV.get(j, 0) + v.get(i, 0) * dataPoint.data[j];
@@ -287,7 +294,7 @@ public class SpectralClustering implements Clustering {
     // Sort v such that v[i] < v[i+1], and sort the rows of A in the same
     // order.
     List<VectorPair> sortedV = new ArrayList<VectorPair>();
-    int i = 0;
+    i = 0;
     for (DataPoint dataPoint : dataPoints) {
       sortedV.add(new VectorPair(v.get(i, 0), dataPoint));
       i++;

@@ -61,6 +61,23 @@ public class Normalize {
     }
   }
 
+  public static void byMagnitude(Matrix m) {
+    double totalMag = 0;
+    for (int i = 0; i < m.rows(); ++i) {
+      for (int j = 0; j < m.columns(); ++j) {
+        totalMag += Math.pow(m.get(i, j), 2);
+      }
+    }
+    totalMag = Math.sqrt(totalMag);
+    if (totalMag == 0d)
+      return;
+    for (int i = 0; i < m.rows(); ++i) {
+      for (int j = 0; j < m.columns(); ++j) {
+        m.set(i, j, m.get(i, j) / totalMag);
+      }
+    }
+  }
+
   public static void byCorrelation(Matrix m, boolean saveNegatives) {
     double totalSum = 0;
     double[] rowSums = new double[m.rows()];
