@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2009 Grace Park
  *
@@ -22,11 +21,12 @@
 
 package edu.ucla.sspace.grefenstette;
 
-import edu.ucla.sspace.common.Matrix;
-import edu.ucla.sspace.common.Pair;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.common.matrix.GrowingSparseMatrix;
+import edu.ucla.sspace.matrix.GrowingSparseMatrix;
+import edu.ucla.sspace.matrix.Matrix;
+
+import edu.ucla.sspace.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

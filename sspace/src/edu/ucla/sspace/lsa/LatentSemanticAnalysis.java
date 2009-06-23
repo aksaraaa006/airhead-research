@@ -42,9 +42,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.common.Matrix;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SVD;
+
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.SVD;
 
 /**
  * An implementation of Latent Semantic Analysis (LSA).  This implementation is

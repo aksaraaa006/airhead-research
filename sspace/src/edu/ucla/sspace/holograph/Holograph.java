@@ -24,7 +24,8 @@ package edu.ucla.sspace.holograph;
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
-import edu.ucla.sspace.common.WordIterator;
+
+import edu.ucla.sspace.text.WordIterator;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

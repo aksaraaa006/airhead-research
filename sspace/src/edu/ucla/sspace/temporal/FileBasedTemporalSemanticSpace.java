@@ -21,11 +21,12 @@
 
 package edu.ucla.sspace.temporal;
 
-import edu.ucla.sspace.common.IntegerMap;
-import edu.ucla.sspace.common.Matrices;
-import edu.ucla.sspace.common.Matrix;
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.temporal.TemporalSemanticSpaceUtils.TSSpaceFormat;
+
+import edu.ucla.sspace.util.IntegerMap;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;

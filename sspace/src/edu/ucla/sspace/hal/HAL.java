@@ -21,6 +21,13 @@
 
 package edu.ucla.sspace.hal;
 
+
+import edu.ucla.sspace.common.SemanticSpace;
+
+import edu.ucla.sspace.matrix.GrowingSparseMatrix;
+
+import edu.ucla.sspace.text.WordIterator;
+
 import java.util.BitSet;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,11 +40,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
-
-import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.WordIterator;
-import edu.ucla.sspace.common.matrix.GrowingSparseMatrix;
-
 
 public class HAL implements SemanticSpace
 {

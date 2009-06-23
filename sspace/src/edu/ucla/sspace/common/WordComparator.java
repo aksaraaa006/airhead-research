@@ -36,6 +36,9 @@ import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import edu.ucla.sspace.util.BoundedSortedMultiMap;
+import edu.ucla.sspace.util.MultiMap;
+import edu.ucla.sspace.util.SortedMultiMap;
 
 /**
  * A utility class for finding the {@code k} most-similar words to a provided

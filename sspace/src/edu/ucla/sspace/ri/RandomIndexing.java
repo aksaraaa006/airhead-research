@@ -44,11 +44,14 @@ import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import edu.ucla.sspace.common.IntegerMap;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.Tuple;
-import edu.ucla.sspace.common.WordFilter;
-import edu.ucla.sspace.common.WordIterator;
+
+import edu.ucla.sspace.text.WordFilter;
+import edu.ucla.sspace.text.WordIterator;
+
+import edu.ucla.sspace.util.IntegerMap;
+import edu.ucla.sspace.util.Duple;
+
 
 /**
  * A co-occurrence based approach to statistical semantics.  This implementation
@@ -318,7 +321,7 @@ public class RandomIndexing implements SemanticSpace {
      * A list of files for the {@link WordFilter} instances that will be used to
      * tokenize the input documents.
      */
-    private final List<Tuple<Set<String>,Boolean>> filterFiles;
+    private final List<Duple<Set<String>,Boolean>> filterFiles;
 
     /**
      * A flag for whether this instance should use {@code SparseSemanticVector}
@@ -326,6 +329,8 @@ public class RandomIndexing implements SemanticSpace {
      * requires more computation.
      */
     private final boolean useSparseSemantics;
+
+    private final Set<String> semanticFilter;
 
     /**
      * Creates a new {@code RandomIndexing} instance using the current {@code
@@ -374,7 +379,7 @@ public class RandomIndexing implements SemanticSpace {
 	    properties.getProperty(WORD_FILTER_PROPERTY);
 	filterFiles = (filterProp != null)
 	    ? loadFilterFiles(filterProp)
-	    : new ArrayList<Tuple<Set<String>,Boolean>>(0);
+	    : new ArrayList<Duple<Set<String>,Boolean>>(0);
 
 	String useSparseProp = 
 	    properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -384,6 +389,7 @@ public class RandomIndexing implements SemanticSpace {
 
 	wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
 	wordToMeaning = new ConcurrentHashMap<String,SemanticVector>();
+	semanticFilter = new HashSet<String>();
     }
 
     /**
@@ -421,13 +427,13 @@ public class RandomIndexing implements SemanticSpace {
      * Loads words lists from files based on the provide value of the {@value
      * #WORD_FILTER_PROPERTY} property.
      */
-    private static List<Tuple<Set<String>,Boolean>> 
+    private static List<Duple<Set<String>,Boolean>> 
 	    loadFilterFiles(String property) {
 
 	// multiple filter files are specified using a ',' to separate them
 	String[] fileAndOptionalFlag = property.split(",");
-	List<Tuple<Set<String>,Boolean>> filterFiles = 
-	        new ArrayList<Tuple<Set<String>,Boolean>>(
+	List<Duple<Set<String>,Boolean>> filterFiles = 
+	        new ArrayList<Duple<Set<String>,Boolean>>(
 	        fileAndOptionalFlag.length);
 	for (String s : fileAndOptionalFlag) {
 	    // If the words in the file are manually specified to be applied
@@ -469,7 +475,7 @@ public class RandomIndexing implements SemanticSpace {
 		throw new IOError(ioe);
 	    }
 
-	    filterFiles.add(new Tuple<Set<String>,Boolean>(words, exclude));		
+	    filterFiles.add(new Duple<Set<String>,Boolean>(words, exclude));		
 	}
 	return filterFiles;
     }
@@ -583,6 +589,11 @@ public class RandomIndexing implements SemanticSpace {
 	wordToIndexVector.clear();
 	wordToIndexVector.putAll(m);
     }
+
+    public void setSemanticFilter(Set<String> semanticsToCompute) {
+	semanticFilter.clear();
+	semanticFilter.addAll(semanticsToCompute);
+    }
     
     /**
      * Updates the semantic vectors based on the words in the document.
@@ -606,8 +617,15 @@ public class RandomIndexing implements SemanticSpace {
 	while (!nextWords.isEmpty()) {
 	    
 	    focusWord = nextWords.remove();
-	    SemanticVector focusMeaning = getSemanticVector(focusWord);
 
+	    // if we are filtering the semantic vectors, check whether this word
+	    // should have its semantics calculated
+	    boolean calculateSemantics =
+		semanticFilter.isEmpty() || semanticFilter.contains(focusWord);
+	    
+	    SemanticVector focusMeaning = (calculateSemantics)
+		? getSemanticVector(focusWord) : null;
+	    
 	    // shift over the window to the next word
 	    if (documentTokens.hasNext()) {
 		// NB: we call .intern() on the string to ensure that we are
@@ -617,8 +635,8 @@ public class RandomIndexing implements SemanticSpace {
 		String windowEdge = documentTokens.next(); //.intern();
 		nextWords.offer(windowEdge);
 	    }    
-
-	    // Sum up the index vector for all the surrounding words.  If
+		
+		// Sum up the index vector for all the surrounding words.  If
 	    // permutations are enabled, permute the index vector based on its
 	    // relative position to the focus word.
 	    int permutations = -(prevWords.size());
@@ -628,7 +646,8 @@ public class RandomIndexing implements SemanticSpace {
 		    iv = permutationFunc.permute(iv, permutations);
 		    ++permutations;
 		}
-		focusMeaning.add(iv);
+		if (calculateSemantics)
+		    focusMeaning.add(iv);
 	    }
 
 	    // Repeat for the words in the forward window.
@@ -639,7 +658,8 @@ public class RandomIndexing implements SemanticSpace {
 		    iv = permutationFunc.permute(iv, permutations);
 		    ++permutations;
 		}
-		focusMeaning.add(iv);
+		if (calculateSemantics)
+		    focusMeaning.add(iv);
 	    }
 
 	    // Last put this focus word in the prev words and shift off the
@@ -662,7 +682,7 @@ public class RandomIndexing implements SemanticSpace {
     private Iterator<String> tokenize(BufferedReader document) {
 	Iterator<String> tokens = new WordIterator(document);
 	// apply the word filters in the order they were originally specified
-	for (Tuple<Set<String>,Boolean> tuple : filterFiles) {
+	for (Duple<Set<String>,Boolean> tuple : filterFiles) {
 	    tokens = new WordFilter(tokens, tuple.x, tuple.y);
 	}
 	return tokens;

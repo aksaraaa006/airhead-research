@@ -21,18 +21,20 @@
 
 package edu.ucla.sspace.coals;
 
-import edu.ucla.sspace.common.matrix.ArrayMatrix;
-import edu.ucla.sspace.common.matrix.SparseMatrix;
-import edu.ucla.sspace.common.WordIterator;
-
 import edu.ucla.sspace.common.Index;
-import edu.ucla.sspace.common.Matrix;
-import edu.ucla.sspace.common.MatrixIO;
-import edu.ucla.sspace.common.MatrixIO.Format;
-import edu.ucla.sspace.common.Normalize;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.StringUtils;
-import edu.ucla.sspace.common.SVD;
+
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.Normalize;
+import edu.ucla.sspace.matrix.SVD;
+
+import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.matrix.SparseMatrix;
+
+import edu.ucla.sspace.text.StringUtils;
+import edu.ucla.sspace.text.WordIterator;
 
 import java.io.BufferedReader;
 import java.io.File;

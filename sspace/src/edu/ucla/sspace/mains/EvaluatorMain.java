@@ -22,15 +22,17 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.CombinedIterator;
-import edu.ucla.sspace.common.HashMultiMap;
-import edu.ucla.sspace.common.MultiMap;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
 import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
-import edu.ucla.sspace.common.WordIterator;
+
+import edu.ucla.sspace.text.WordIterator;
+
+import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.HashMultiMap;
+import edu.ucla.sspace.util.MultiMap;
 
 import edu.ucla.sspace.evaluation.WordChoiceEvaluation;
 import edu.ucla.sspace.evaluation.WordChoiceEvaluationRunner;

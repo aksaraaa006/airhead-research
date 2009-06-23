@@ -22,14 +22,16 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.CombinedIterator;
+
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceUtils;
 import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 
-import edu.ucla.sspace.common.document.Document;
-import edu.ucla.sspace.common.document.FileListDocumentIterator;
-import edu.ucla.sspace.common.document.OneLinePerDocumentIterator;
+import edu.ucla.sspace.text.Document;
+import edu.ucla.sspace.text.FileListDocumentIterator;
+import edu.ucla.sspace.text.OneLinePerDocumentIterator;
+
+import edu.ucla.sspace.util.CombinedIterator;
 
 import java.io.BufferedReader;
 import java.io.File;

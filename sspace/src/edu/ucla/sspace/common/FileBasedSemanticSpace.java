@@ -21,10 +21,12 @@
 
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.common.Matrices;
-import edu.ucla.sspace.common.Matrix;
-import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
+
+import edu.ucla.sspace.util.IntegerMap;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
