@@ -352,7 +352,10 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 		// Get the current number of times that the focus word has
 		// co-occurred with this word appearing after it.  Weightb the
 		// word appropriately baed on distance
-		double curCount = cooccurrenceMatrix.get(focusIndex, index);
+		double curCount = (cooccurrenceMatrix.rows() <= focusIndex ||
+				   cooccurrenceMatrix.columns() <= index)
+		    ? 0
+		    : cooccurrenceMatrix.get(focusIndex, index);
 		cooccurrenceMatrix.set(focusIndex, index, 
 				       curCount + weighting.
 				           weight(wordDistance, windowSize));
@@ -368,7 +371,10 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 		// Get the current number of times that the focus word has
 		// co-occurred with this word before after it.  Weight the
 		// word appropriately baed on distance
-		double curCount = cooccurrenceMatrix.get(index, focusIndex);
+		double curCount = (cooccurrenceMatrix.rows() <= index ||
+				   cooccurrenceMatrix.columns() <= focusIndex)
+		    ? 0
+		    : cooccurrenceMatrix.get(index, focusIndex);
 		cooccurrenceMatrix.set(index, focusIndex, 
 				       curCount + weighting.
 				           weight(wordDistance, windowSize));
