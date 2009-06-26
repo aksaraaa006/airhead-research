@@ -41,7 +41,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Properties;
+
 import java.util.concurrent.atomic.AtomicInteger;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An implementation of a semantic space built from syntactic co-occurrence, as
@@ -59,15 +63,60 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Grefenstette implements SemanticSpace {
 
-    private File wordRelations;
-    private PrintWriter wordRelationsWriter;
-    private BufferedReader document;
-    private Map<String,Integer> objectTable;
-    private Map<String,Integer> attributeTable;
-    private Matrix matrix;
+    /**
+     * The logger for reporting all debugging information
+     */
+    private static final Logger LOGGER = 
+	Logger.getLogger(Grefenstette.class.getName());
+
+    /**
+     * The temporary file used to record syntactic word relations while the
+     * documents are parsed.  Relations are written to a file to save memory.
+     */
+    private final File wordRelations;
+
+    /**
+     * The writer to the {@code wordRelations} file.
+     */
+    private final PrintWriter wordRelationsWriter;
+
+    /**
+     * A mapping from a string token to the integer that represents that token's
+     * row in the {@code syntacticCooccurrence} matrix.
+     */
+    private final Map<String,Integer> objectTable;
+
+    /**
+     * A mapping from a token in a specific syntactic position to the integer
+     * that represents that token configuration's column.
+     */
+    private final Map<String,Integer> attributeTable;
+
+    /**
+     * A matrix where rows correspond to tokens and columns correspond to the
+     * syntactic co-occurrence of a specific token in a specific syntactic
+     * position.
+     */
+    private final Matrix syntacticCooccurrence;
+
+    /**
+     * An incremental counter used for assigning tokens to matrix row indices
+     */
     private final AtomicInteger objectCounter;
+
+    /**
+     * An incremental counter used for assigning token syntax positions to
+     * matrix column indices
+     */
     private final AtomicInteger attributeCounter;
 
+    /**
+     * Constructs an instance using the system properties for any required
+     * configuration
+     *
+     * @throws IOError if unable to create the backing file to hold data while
+     *         processing
+     */
     public Grefenstette() {
 	try {
 	    wordRelations = File.createTempFile("word-relation-list","txt");
@@ -76,7 +125,7 @@ public class Grefenstette implements SemanticSpace {
 	    objectTable = new HashMap<String,Integer>();
 	    attributeTable = new HashMap<String,Integer>();
 	  
-	    matrix = new GrowingSparseMatrix();
+	    syntacticCooccurrence = new GrowingSparseMatrix();
 	  
 	    objectCounter = new AtomicInteger(0);
 	    attributeCounter = new AtomicInteger(0);
@@ -119,20 +168,23 @@ public class Grefenstette implements SemanticSpace {
 		    tag = getNextTag(nounPhrase); 
 
 		    if( isPhraseOrClause(tag) || isPreposition(tag) ) {
-			nounPhrase = nounPhrase.substring( nounPhrase.indexOf(tag)
-							   + tag.length() );
+			nounPhrase = nounPhrase.
+			    substring(nounPhrase.indexOf(tag) + tag.length());
 			// stop processing NP
 			break;
 		    } else if( inStartSet(tag) || inReceiveSet(tag) ) {
 			// note to self: find out why this broke
 			try {
-			    word = nounPhrase.substring( nounPhrase.indexOf(" ", 
-									    nounPhrase.indexOf(tag))+1, nounPhrase.indexOf(")"));
+			    word = nounPhrase.
+				substring(nounPhrase.indexOf(" ", 
+					      nounPhrase.indexOf(tag)) + 1, 
+					  nounPhrase.indexOf(")"));
 
-			    wordsInPhrase.add( new Pair<String>(tag,word) );
+			    wordsInPhrase.add(new Pair<String>(tag,word));
 
-			    nounPhrase = nounPhrase.substring(nounPhrase.indexOf(")",
-										 nounPhrase.indexOf(word))+1);
+			    nounPhrase = nounPhrase.
+				substring(nounPhrase.indexOf(")",
+					      nounPhrase.indexOf(word))+1);
 			} catch (StringIndexOutOfBoundsException e) {
 			    nounPhrase = nounPhrase.substring(nounPhrase.indexOf(")"));
 			}
@@ -151,7 +203,6 @@ public class Grefenstette implements SemanticSpace {
 		    // create the relations from pass two
 		    if( prevPhrase.equals("PP") && secondPrevPhrase.equals("NP") 
 			&& lastNoun.length() != 0 ) {
-// 			System.out.println(lastNoun + " " + headNoun);
 			wordRelationsWriter.println(lastNoun + " " + headNoun);
 
 			addRelation(lastNoun, headNoun);
@@ -160,12 +211,12 @@ public class Grefenstette implements SemanticSpace {
 		    // create relations from pass four
 		    if( prevPhrase.equals("PP") && secondPrevPhrase.equals("VP")
 			&& lastVerb.length() != 0 ) {
-// 			System.out.println(headNoun + " " + lastVerb );
+
 			wordRelationsWriter.println(lastVerb + " " + headNoun);
 
 			addRelation(lastVerb, headNoun);
 		    } else if( prevPhrase.equals("VP") ) {
-// 			System.out.println(headNoun + " " + lastVerb );
+
 			wordRelationsWriter.println(lastVerb + " " + headNoun);
 
 			addRelation(lastVerb, headNoun);
@@ -201,7 +252,7 @@ public class Grefenstette implements SemanticSpace {
 
 		// relations from pass three
 		if( prevPhrase.equals("NP") && lastNoun.length() != 0 ) {
-// 		    System.out.println(lastNoun + " " + lastVerb);
+
 		    wordRelationsWriter.println(lastNoun + " " + lastVerb);
 
 		    addRelation(lastNoun, lastVerb);
@@ -258,17 +309,18 @@ public class Grefenstette implements SemanticSpace {
 	    attributeTable.put( attribute, col );
 	}
 
-	// update entry in matrix which records how many times
-        // the object/attribute pair has been seen
-	if( row < matrix.rows() && col < matrix.columns() ) {
-            // if there's already an entry for the object and attribute,
-            // get the current value for the pair of words
-	    val = matrix.get(row, col);
+	// update entry in matrix which records how many times the
+        // object/attribute pair has been seen
+	if( row < syntacticCooccurrence.rows() && 
+	    col < syntacticCooccurrence.columns()) {
+            // if there's already an entry for the object and attribute, get the
+            // current value for the pair of words
+	    val = syntacticCooccurrence.get(row, col);
             // increment the current value by one and store in matrix
-	    matrix.set(row, col, val+1);
+	    syntacticCooccurrence.set(row, col, val+1);
 	} else {
             // otherwise set the row, col value to 1
-	    matrix.set(row, col, 1.0);
+	    syntacticCooccurrence.set(row, col, 1.0);
 	}
     }
 
@@ -410,27 +462,22 @@ public class Grefenstette implements SemanticSpace {
      */
     public double[] getVectorFor(String word) {
 	int wordIndex;
-        double nullArray[] = {0.0};
         word = word.toLowerCase();
 	if( objectTable.containsKey(word) ) {
 	    wordIndex = objectTable.get(word);
-            if( wordIndex < matrix.rows() ) {
+            if( wordIndex < syntacticCooccurrence.rows() ) {
                 try {
-	        return matrix.getRow(wordIndex);
+	        return syntacticCooccurrence.getRow(wordIndex);
                 } catch (NullPointerException npe) {
-                    return nullArray;
+                    
                 } catch (ArrayIndexOutOfBoundsException e) {
-                    return nullArray;
+                    
                 }
             }
-            else {
-                return nullArray;
-            }
-	} else {
-	    return nullArray;
 	}
+	return null;
     }
-
+    
     /**
      * Does nothing.
      */
