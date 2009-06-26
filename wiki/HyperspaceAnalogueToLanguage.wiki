@@ -41,8 +41,7 @@ We provide the following options for changing the behavior of HAL and how the pr
     * `-h`, `--threshold=DOUBLE` the minimum information theoretic entropy a word must have to be retained in the final word co-occurrence matrix. This option may not be used at the same time as --retain.
     * `-W`, `--weighting=CLASS` the fully qualified name of a `WeightingFunction` implementation.  HAL traditionally uses a ramped, linear weighting where those words occurring closets receive more weight, with a linear decrease based on distance. 
     * `-F`, `--tokenFilter=FILE[include|exclude][,FILE...]` specifies a list of one or more files to use for filtering the documents. An option flag may be added to each file to specify how the words in the filter filter should be used: include if only the words in the filter file should be retained in the document; exclude if only the words not in the filter file should be retained in the document.  The default value is include. An example configuration might look like:  `--tokenFilter=english-dictionary.txt=include,stop-list.txt=exclude`
-    * `-L`, `--loadVectors=FILE` loads word-to-IndexVector mapping before processing.  This enables multiple runs of RandomIndexing to share the same initial index vector mapping.  This feature is useful for comparing how different parameters affect the semantic vectors from a single corpus, or for comparing the semantics across multiple corpora while keeping the same index vector mapping.
-    * `-S`, 1--saveVectors=FILE` saves the final word-to-IndexVector mapping after processing.  This step is necessary for using the `--loadVectors` option.
+
 
   * Program Options:
     * `-o`, `--outputFormat=text|binary|sparse_text|sparse_binary` Specifies the output formatting to use when generating the semantic space (.sspace) file. See SemanticSpaceUtils for format details.
