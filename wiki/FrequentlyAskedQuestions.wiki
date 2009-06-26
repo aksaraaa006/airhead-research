@@ -5,10 +5,23 @@
 
 == How do I get the code? ==
 
-We will soon offer a versioned source release under the downloads section.  Until then, `svn checkout` is the only way to get the source.
+We will soon offer a versioned source release under the downloads section.  Until then, `svn checkout` is the only way to get the source.  We are currently working on an initial 1.0 target feature set and will then release an official versioned source archive.
 
 If you are looking for a pre-built binary, we currently offer a few command-line programs for running specific algorithms in the [http://code.google.com/p/airhead-research/downloads/list downloads] section.
 
+== How stable is the trunk? ==
+
+We are still actively developing the code base.  In general, the interfaces are generally safe to program against.  We internally test and review these and they are designed to be stable at commit time.  However, the utility classes are much more mutable and may be changed without notice based on our future plans or current needs.  
+
+We also have a general rule that the trunk will always compile even though it contain bugs.  When in doubt, check the commit logs to see if some code was committed in a partial state.  (We rarely do this, but it is often practical when teaming up on a specific piece of code.)
+
+== You changed some feature in the trunk that I was using!  Can I get it back? ==
+
+Working from the trunk is often exciting, but dangerous.  That said, if we have removed something you needed, [mailto:s-space-research-dev@googlegroups.com let us know].  Include a use-case and we will actively look into either replacing the code, or providing alternate functionality that meets your needs.
+
+== I found a bug! ==
+
+Please file it in our [http://code.google.com/p/airhead-research/issues/list issue tracker].  Any information you can provide will help us to fix it quicker.  We aim to have a quick turn-around time on publicly reported bugs.
 
 = Running Algorithms =
 
@@ -56,3 +69,21 @@ Second, note that many of the algorithms scale based on the number of terms in t
 and so on.  The best way to assess whether this is the root issue is to count how many unique token types are in the input corpus.  
 
 If you think the algorithm should still scale to the number of unique words but is still throwing errors, please let us know.
+
+= Corpus Questions =
+
+== I want to filter out certain words in my corpus (i.e. stop words) ==
+
+This is possible in any of the algorithms.  See the documentation for specifics.  The current code supports both excluding words, which is useful for stop lists, and also be strictly inclusive and keep only a recognized set of words.
+
+== How big should my corpus be? ==
+
+That largely depends on the algorithm.  If your corpus is too small, the words may not have sufficient co-occurrence statistics to form a semantic vector that is actually representative.  Furthermore, some algorithms such as [LatentRelationalAnalysis LRA] require significantly more documents to produce good semantics.  Also, note that even with a large corpus, some words may not occur frequently enough to generate accurate vectors.
+
+Having too large of a corpus is also an important issue. LSA is much more sensitive to the number of documents in the corpus.   However, other word co-occurrence algorithms such as HAL and Random Indexing are still dependent on the number of words.  Some algorithms provide additional options to only calculate semantics for a specific number of words, which saves a large amount of space.
+
+= Other Questions =
+
+== Who do I contact with questions about the project? ==
+
+If it is a general question, contact [mailto:s-space-research-dev@googlegroups.com s-space-research-dev@googlegroups.com].  If you need a private question answered, please email David Jurgens or Keith Stevens.
