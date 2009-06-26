@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -46,6 +47,10 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SVD;
+
+import edu.ucla.sspace.text.FilteredIterator;
+import edu.ucla.sspace.text.TokenFilter;
+import edu.ucla.sspace.text.WordIterator;
 
 /**
  * An implementation of Latent Semantic Analysis (LSA).  This implementation is
@@ -140,14 +145,42 @@ import edu.ucla.sspace.matrix.SVD;
  */
 public class LatentSemanticAnalysis implements SemanticSpace {
 
-    public static final String MATRIX_TRANSFORM_PROPERTY =
-	"edu.ucla.sspace.lsa.LatentSemanticAnalysis.transform";
+    /** 
+     * The prefix for naming publically accessible properties
+     */
+    private static final String PROPERTY_PREFIX =
+	"edu.ucla.sspace.lsa.LatentSemanticAnalysis";
 
+    /**
+     * The property to define the {@link MatrixTransformer} class to be used
+     * when processing the space after all the documents have been seen.
+     */
+    public static final String MATRIX_TRANSFORM_PROPERTY =
+	PROPERTY_PREFIX + ".transform";
+
+    /**
+     * The property to set the number of dimension to which the space should be
+     * reduced using the SVD
+     */
     public static final String LSA_DIMENSIONS_PROPERTY =
-	"edu.ucla.sspace.lsa.LatentSemanticAnalysis.dimensions";
-    public static final String LSA_SSPACE_NAME =
+	PROPERTY_PREFIX + ".dimensions";
+
+    /**
+     * Specifies the {@link TokenFilter} instances to apply to the tokenized
+     * input stream before {@code processDocument} runs.
+     */
+    public static final String TOKEN_FILTER_PROPERTY = 
+	PROPERTY_PREFIX + ".tokenFilter";
+
+    /**
+     * The name prefix used with {@link #getName()}
+     */
+    private static final String LSA_SSPACE_NAME =
      "lsa-semantic-space";
-    
+
+    /**
+     * The logger used to record all output
+     */
     private static final Logger LSA_LOGGER = 
 	Logger.getLogger(LatentSemanticAnalysis.class.getName());
 
@@ -187,12 +220,30 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     private Matrix wordSpace;
 
     /**
-     * Constructs the {@code LatentSemanticAnalysis}.
+     * An optional {@code TokenFilter} to use to remove tokens from document
+     */
+    private final TokenFilter filter;
+
+    
+    /**
+     * Constructs the {@code LatentSemanticAnalysis} using the system properties
+     * for configuration.
      *
      * @throws IOException if this instance encounters any errors when creatng
      *         the backing array files required for processing
      */
     public LatentSemanticAnalysis() throws IOException {
+	this(System.getProperties());
+    }
+
+    /**
+     * Constructs the {@code LatentSemanticAnalysis} using the specified
+     * properties for configuration.
+     *
+     * @throws IOException if this instance encounters any errors when creatng
+     *         the backing array files required for processing
+     */
+    public LatentSemanticAnalysis(Properties properties) throws IOException {
 
 	termToIndex = new ConcurrentHashMap<String,Integer>();
 	termIndexCounter = new AtomicInteger(0);
@@ -203,6 +254,12 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	rawTermDocMatrixWriter = new PrintWriter(rawTermDocMatrix);
 
 	wordSpace = null;
+
+	String filterProp = 
+	    properties.getProperty(TOKEN_FILTER_PROPERTY);
+	filter = (filterProp != null)
+	    ? TokenFilter.loadFromSpecification(filterProp)
+	    : null;
     }   
 
     /**
@@ -218,31 +275,23 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	int lineNum = 0;
 	for (String line = null; (line = document.readLine()) != null; ) {
 	    
-	    // replace all non-word characters with whitespace.  We also include
-	    // some uncommon characters (such as those with the eacute).  line =
-	    // line.replaceAll("[^A-Za-z0-9'\u00E0-\u00FF]", " ").
-	    line = line.replaceAll("\\W"," ").toLowerCase();
-
-	    // split the line based on whitespace
-	    String[] text = line.split("\\s+");
+	    Iterator<String> documentTokens = (filter == null)
+		? new WordIterator(document)
+		: new FilteredIterator(document, filter);
 
 	    // for each word in the text document, keep a count of how many
 	    // times it has occurred
-	    for (String word : text) {
-		if (word.length() == 0)
-		    continue;
-		
-		// clean up each word before entering it into the matrix
-		String cleaned = word;
+	    while (documentTokens.hasNext()) {
+		String word = documentTokens.next();
 				
 		// Add the term to the total list of terms to ensure it has a
 		// proper index.  If the term was already added, this method is
 		// a no-op
-		addTerm(cleaned);
-		Integer termCount = termCounts.get(cleaned);
+		addTerm(word);
+		Integer termCount = termCounts.get(word);
 
 		// update the term count
-		termCounts.put(cleaned, (termCount == null) 
+		termCounts.put(word, (termCount == null) 
 			       ? Integer.valueOf(1)
 			       : Integer.valueOf(1 + termCount.intValue()));
 	    }
@@ -282,14 +331,13 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * has already been added, does nothing.
      */
     private void addTerm(String term) {
-	// ensure that we are using the canonical version of this term so that
-	// we can properly lock on it.
-	term = term.intern();
+
 	Integer index = termToIndex.get(term);
+
 	if (index == null) {
-	    // lock on the term itself so that only two threads trying to add
-	    // the same term will block on each other
-	    synchronized(term) {
+
+	    synchronized(this) {
+
 		// recheck to see if the term was added while blocking
 		index = termToIndex.get(term);
 		// if some other thread has not already added this term while
@@ -329,7 +377,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-      return LSA_SSPACE_NAME;
+	return LSA_SSPACE_NAME;
     }
 
     /**
@@ -388,7 +436,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	    }
 
 	    LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
-
+ 
 	    // Compute SVD on the pre-processed matrix.
 	    Matrix[] usv = SVD.svd(processedTermDocumentMatrix, 
 				   dimensions);

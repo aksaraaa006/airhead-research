@@ -24,7 +24,7 @@ package edu.ucla.sspace.mains;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.lsa.LatentSemanticAnalysis;
+import edu.ucla.sspace.hal.HyperspaceAnalogueToLanguage;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -32,8 +32,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * An executable class for running {@link LatentSemanticAnalysis} (LSA) from the
- * command line.  This class takes in several command line arguments.
+ * An executable class for running {@link HyperspaceAnalogueToLanguage} (HAL)
+ * from the command line.  This class takes in several command line arguments.
  *
  * <ul>
  *
@@ -51,13 +51,25 @@ import java.util.Properties;
  * <li><u>Algorithm Options</u>:
  *   <ul>
  *
- *   <li> {@code --dimensions=<int>} how many dimensions to use for the LSA
- *        vectors.  See {@link LatentSemanticAnalysis} for default value
+ *   <li> {@code -s}, {@code --windowSize=INT} how many words to consider in each
+ *        direction
  *
- *   <li> {@code --preprocess=<class name>} specifies an instance of {@link
- *        edu.ucla.sspace.lsa.MatrixTransformer} to use in preprocessing the
- *        word-document matrix compiled by LSA prior to computing the SVD.  See
- *        {@link LatentSemanticAnalysis} for default value
+ *   <li> {@code -r}, {@code --retain=INT} how many column dimensions to retain
+ *        in the final word co-occurrence matrix.  The retained columns will be
+ *        those that provide the most information for distinguishing the
+ *        semantics of the words.  Unlike the {@code --threshold} option, this
+ *        specifies a hard limit for how many to retain.  This option may not
+ *        speciefied at the same time as {@code --threshold}
+ * 
+ *  <li> {@code -h}, {@code --threshold=DOUBLE} the minimum information
+ *        theoretic entropy a word must have to be retained in the final word
+ *        co-occurrence matrix.  This option may not be used at the same time as
+ *        {@code --retain}.
+ *
+ *  <li> {@code -W}, {@code --weighting=CLASS} the minimum information
+ *        theoretic entropy a word must have to be retained in the final word
+ *        co-occurrence matrix.  This option may not be used at the same time as
+ *        {@code --retain}.
  *
  *   <li> {@code -F}, {@code --tokenFilter=FILE[include|exclude][,FILE...]}
  *        specifies a list of one or more files to use for {@link
@@ -95,9 +107,9 @@ import java.util.Properties;
  * <p>
  *
  * An invocation will produce one file as output {@code
- * lsa-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * hal-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
  * this file will be replaced for each new semantic space.  Otherwise, a new
- * output file of the format {@code lsa-semantic-space<number>.sspace} will be
+ * output file of the format {@code hal-semantic-space<number>.sspace} will be
  * created, where {@code <number>} is a unique identifier for that program's
  * invocation.  The output file will be placed in the directory specified on the
  * command line.
@@ -107,34 +119,39 @@ import java.util.Properties;
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.
  *
- * @see LatentSemanticAnalysis
- * @see edu.ucla.sspace.lsa.MatrixTransformer MatrixTransformer
+ * @see HyperspaceAnalogueToLanguage
  *
  * @author David Jurgens
  */
-public class LSAMain extends GenericMain {
-    private LSAMain() {
-    }
+public class HALMain extends GenericMain {
+
+    private HALMain() { }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-	options.addOption('n', "dimensions", 
-			  "the number of dimensions in the semantic space",
-			  true, "INT", "Algorithm Options"); 
-	options.addOption('p', "preprocess", "a MatrixTransform class to "
-			  + "use for preprocessing", true, "CLASSNAME",
-			  "Algorithm Options");
 	options.addOption('F', "tokenFilter", "filters to apply to the input " +
 			  "token stream", true, "FILTER_SPEC", 
 			  "Algorithm Options");
+	options.addOption('h', "threshold", "minimum entropy for semantic " +
+			  "dimensions (default: disabled)", true,
+			  "DOUBLE", "Algorithm Options");
+	options.addOption('r', "retain", "maximum number of dimensions " +
+			  "(default: disabled)", true,
+			  "INT", "Algorithm Options");
+	options.addOption('s', "windowSize", "how many words to consider " +
+			  "in each direction (default: 5)", true,
+			  "INT", "Algorithm Options");
+	options.addOption('W', "weighting", "WeightingFunction class name"
+			  + "(default: LinearWeighting)", true,
+			  "CLASSNAME", "Algorithm Options");
     }
 
     public static void main(String[] args) {
-	LSAMain lsa = new LSAMain();
+	HALMain hal = new HALMain();
 	try {
-	    lsa.run(args);
+	    hal.run(args);
 	}
 	catch (Throwable t) {
 	    t.printStackTrace();
@@ -142,11 +159,7 @@ public class LSAMain extends GenericMain {
     }
     
     protected SemanticSpace getSpace() {
-      try {
-        return new LatentSemanticAnalysis();
-      } catch (IOException ioe) {
-        throw new IOError(ioe);
-      }
+	return new HyperspaceAnalogueToLanguage();
     }
 
     protected Properties setupProperties() {
@@ -154,18 +167,28 @@ public class LSAMain extends GenericMain {
 	// -Dprop=<val> to the JVM directly.
 	Properties props = System.getProperties();
 
-	if (argOptions.hasOption("dimensions")) {
-	    props.setProperty(LatentSemanticAnalysis.LSA_DIMENSIONS_PROPERTY,
-			      argOptions.getStringOption("dimensions"));
-	}
+ 	if (argOptions.hasOption("windowSize")) {
+ 	    props.setProperty(HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
+ 			      argOptions.getStringOption("windowSize"));
+ 	}
 
-	if (argOptions.hasOption("preprocess")) {
-	    props.setProperty(LatentSemanticAnalysis.MATRIX_TRANSFORM_PROPERTY,
-			      argOptions.getStringOption("preprocess"));
-	}
+ 	if (argOptions.hasOption("threshold")) {
+ 	    props.setProperty(HyperspaceAnalogueToLanguage.ENTROPY_THRESHOLD_PROPERTY,
+ 			      argOptions.getStringOption("threshold"));
+ 	}
+
+ 	if (argOptions.hasOption("retain")) {
+ 	    props.setProperty(HyperspaceAnalogueToLanguage.RETAIN_PROPERTY,
+ 			      argOptions.getStringOption("retain"));
+ 	}
+
+ 	if (argOptions.hasOption("weighting")) {
+ 	    props.setProperty(HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
+ 			      argOptions.getStringOption("weighting"));
+ 	}	
 
 	if (argOptions.hasOption("tokenFilter")) {
-	    props.setProperty(LatentSemanticAnalysis.TOKEN_FILTER_PROPERTY,
+	    props.setProperty(HyperspaceAnalogueToLanguage.TOKEN_FILTER_PROPERTY,
 			      argOptions.getStringOption("tokenFilter"));
 	}
 
@@ -177,13 +200,10 @@ public class LSAMain extends GenericMain {
      */
     public void usage() {
  	System.out.println(
- 	    "usage: java LSAMain [options] <output-dir>\n" + 
+ 	    "usage: java HALMain [options] <output-dir>\n" + 
 	    argOptions.prettyPrint() + "\n" +
-	    "Note that if this class is being invoked from a .jar" +
-	    " (e.g. lsa.jar) and JAMA\nis to be used for computing the SVD," +
-	    " then the path to the JAMA .jar file must\nbe specified using the"+
-	    " system property \"jama.path\".  To set this on the\ncommand-line,"
-	    + " use -Djama.path=<.jar location>.\n\n" +
+	    "Note that the --retain and --threshold properties are mutually " + 
+	    "exclusive;\nusing both will cause an exception\n\n" + 
 	    "Token filter configurations are specified as a comman-separated " +
 	    "list of file\nnames, where each file name has an optional string" +
 	    " with values:inclusive or\nexclusive, which species whether the" +

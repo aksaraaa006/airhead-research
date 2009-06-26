@@ -24,9 +24,13 @@ package edu.ucla.sspace.text;
 import java.io.BufferedReader;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.StringReader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * An iterator over all of the tokens present in a {@link BufferedReader} that
@@ -34,20 +38,45 @@ import java.util.NoSuchElementException;
  */
 public class WordIterator implements Iterator<String> {
 
-    private final BufferedReader br;
-    
-    private String next;
-
-    private int curIndex;
-
-    private String[] curLine;
+    /**
+     * A fixed pattern matching all non-whitespace characters.
+     */
+    private static final Pattern notWhiteSpace = Pattern.compile("\\S+");
 
     /**
-     * Constructs an iterator for all the words contained in text of the
+     * The stream from which to read tokens
+     */
+    private final BufferedReader br;
+    
+    /**
+     * The next token to return
+     */
+    private String next;
+
+    /**
+     * The matcher that is tokenizing the current line
+     */
+    private Matcher matcher;
+    
+    /**
+     * The current line being considered
+     */
+    private String curLine;
+
+    /**
+     * Constructs an iterator for all the tokens contained in the string
+     */
+    public WordIterator(String str) {
+	this(new BufferedReader(new StringReader(str)));
+    }
+
+    /**
+     * Constructs an iterator for all the tokens contained in text of the
      * provided reader.
      */
     public WordIterator(BufferedReader br) {
 	this.br = br;
+	curLine = null;
 	advance();
     }
 
@@ -61,7 +90,8 @@ public class WordIterator implements Iterator<String> {
 	    while (true) {
 		// if we haven't looked at any lines yet, or if the index into
 		// the current line is already at the end 
-		if (curLine == null || curIndex == curLine.length) {
+		if (curLine == null || !matcher.find()) {
+
 		    String line = br.readLine();
 		    
 		    // if there aren't any more lines in the reader, then mark
@@ -70,23 +100,17 @@ public class WordIterator implements Iterator<String> {
 			next = null;
 			return;
 		    }
-		    // skip empty lines
-		    else if (line.length() == 0) {
-			continue;
-		    }
-
-		    curLine = line.split("\\s+");
-		    curIndex = 0;
-
-		    // if the current line did not contain any words, move to
-		    // the next line
-		    if (curLine.length == 0) {
-			continue;
-		    }
+		    
+		    // create a new matcher to find all the tokens in this line
+		    matcher = notWhiteSpace.matcher(line);
+		    curLine = line;
+		    
+		    // skip lines with no matches
+		    if (!matcher.find())
+			continue;		    
 		}
 
-		// the index points to somewhere in the middle of the line
-		next = curLine[curIndex++];
+		next = curLine.substring(matcher.start(), matcher.end());
 		break;
 	    }
 	} catch (IOException ioe) {

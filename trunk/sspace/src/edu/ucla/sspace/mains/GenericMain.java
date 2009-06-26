@@ -185,7 +185,8 @@ public abstract class GenericMain {
 			  "FILE[,FILE...]", "Required (at least one of)");
 
 	options.addOption('o', "outputFormat", "the .sspace format to use",
-			  true, "{text|binary}", "Program Options");
+			  true, "text|binary|sparse_text|sparse_binary", 
+			  "Program Options");
 	options.addOption('t', "threads", "the number of threads to use",
 			  true, "INT", "Program Options");
 	options.addOption('w', "overwrite", "specifies whether to " +

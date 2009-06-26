@@ -53,7 +53,7 @@ import java.util.logging.Logger;
  * A {@link TemporalSemanticSpace} created from the serialized output of another
  * {@code TemporalSemanticSpace} after it has finished processing.  The input
  * format of the file should be one of the formats specified by {@link
- * edu.ucla.sspace.common.TemporalSemanticSpaceUtils#TSSpaceFormat}.
+ * edu.ucla.sspace.common.TemporalSemanticSpaceUtils.TSSpaceFormat}.
  *
  * @see TemporalSemanticSpaceUtils
  */
@@ -81,8 +81,8 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * Creates the {@link FileBasedTemporalSemanticSpace} from the file using the {@link
      * TSSpaceFormat#TEXT text} format.
      *
-     * @param filename filename of the data intended be provided by this
-     *   {@link edu.ucla.sspace.common.TemporalSemanticSpace}.
+     * @param filename filename of the data intended be provided by this {@link
+     *        TemporalSemanticSpace}.
      */
     public FileBasedTemporalSemanticSpace(String filename) {
 	this(new File(filename), TSSpaceFormat.TEXT);
@@ -92,8 +92,8 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * Creates the {@link FileBasedTemporalSemanticSpace} from the provided file in the
      * {@link TSSpaceFormat#TEXT text} format.
      *
-     * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.TemporalSemanticSpace}.
+     * @param file a file containing the data intended be provided by this
+     *        {@link TemporalSemanticSpace}.
      */
     public FileBasedTemporalSemanticSpace(File file) {
 	this(file, TSSpaceFormat.TEXT);
@@ -103,8 +103,8 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * Creates the {@link FileBasedTemporalSemanticSpace} from the file in the
      * specified format.
      *
-     * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.TemporalSemanticSpace}.
+     * @param filename the name of a file containing the data intended be
+     *        provided by this {@link TemporalSemanticSpace}.
      */
     public FileBasedTemporalSemanticSpace(String filename, TSSpaceFormat format) {
 	this(new File(filename), format);
@@ -115,7 +115,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      * the specified format.
      *
      * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.TemporalSemanticSpace}.
+     *        TemporalSemanticSpace}.
      */
     public FileBasedTemporalSemanticSpace(File file, TSSpaceFormat format) {
 
@@ -426,13 +426,6 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
     public double[] getVectorBetween(String word, long start, long endTime) {
 	SemanticVector v = wordToMeaning.get(word);
 	return (v == null) ? null : v.getVectorBetween(start, endTime);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public SortedSet<Long> getTimeSteps() {
-	return null;
     }
 
     /**

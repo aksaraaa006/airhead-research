@@ -101,7 +101,8 @@ import edu.ucla.sspace.matrix.Matrix.Type;
  * for the required algorithm.
  *
  * @author David Jurgens
- * @see edu.ucla.sspace.common.MatrixIO
+ *
+ * @see MatrixIO
  */
 public class SVD {
 

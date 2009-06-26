@@ -46,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.text.WordFilter;
+import edu.ucla.sspace.text.TokenFilter;
 import edu.ucla.sspace.text.WordIterator;
 
 import edu.ucla.sspace.util.IntegerMap;
@@ -54,9 +54,9 @@ import edu.ucla.sspace.util.Duple;
 
 
 /**
- * A co-occurrence based approach to statistical semantics.  This implementation
- * is based on three papers:
- * <ul>
+ * A co-occurrence based approach to statistical semantics that uses a
+ * randomized projection of a full co-occurrence matrix to perform
+ * dimensionality reduction.  This implementation is based on three papers: <ul>
  *
  *   <li style="font-family:Garamond, Georgia, serif">M. Sahlgren, "Vector-based
  *     semantic analysis: Representing word meanings based on random labels," in
@@ -166,20 +166,15 @@ import edu.ucla.sspace.util.Duple;
  *       in a large saving in memory, while requiring more time to process each
  *       document.<p>
  *
- * <dt> <i>Property:</i> <code><b>{@value #WORD_FILTER_PROPERTY}
+ * <dt> <i>Property:</i> <code><b>{@value #TOKEN_FILTER_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@code null} 
+ *      <i>Default:</i> unset
  *
- * <dd style="padding-top: .5em">This property specifies the a list of files to
- *      be used with {@link WordFilter} instances.  The value is specified as
- *      <tt>filename[=<i>include</i> (default) |
- *      <i>exclude</i>][,filname...]</tt>, where each <tt>filename</tt> has an
- *      optional parameter to specify whether the words in the file should be
- *      used to filter out words not in the file (include), or to remove those
- *      words that are in the file (exlcude).  Multiple filter files may be
- *      appended using a ',' to separate them.  Note that filters are applied to
- *      the input token stream of {@link #processDocument(BufferedReader)
- *      processDocument} in order they are declared.<p>
+ * <dd style="padding-top: .5em">This property specifies a {@link TokenFilter}
+ *      configuration to use when processsing documents.  A token filter allows
+ *      for the exclusion of prespecified types of tokens.  By default, all
+ *      tokens are allowed.  See {@link TokenFilter} for full details on how to
+ *      specify the property value
  *
  * </dl> <p>
  *
@@ -246,11 +241,11 @@ public class RandomIndexing implements SemanticSpace {
 	PROPERTY_PREFIX + ".indexVectorGenerator";
 
     /**
-     * Specifies the {@link WordFilter} instances to apply to the tokenized
+     * Specifies the {@link TokenFilter} instances to apply to the tokenized
      * input stream before {@code processDocument} runs.
      */
-    public static final String WORD_FILTER_PROPERTY = 
-	PROPERTY_PREFIX + ".wordFilter";
+    public static final String TOKEN_FILTER_PROPERTY = 
+	PROPERTY_PREFIX + ".tokenFilter";
 
     /**
      * Specifies whether to use a sparse encoding for each word's semantics,
@@ -318,10 +313,9 @@ public class RandomIndexing implements SemanticSpace {
     private final IndexVectorGenerator indexVectorGenerator;
 
     /**
-     * A list of files for the {@link WordFilter} instances that will be used to
-     * tokenize the input documents.
+     * An optional {@code TokenFilter} to use to remove tokens from document
      */
-    private final List<Duple<Set<String>,Boolean>> filterFiles;
+    private final TokenFilter filter;
 
     /**
      * A flag for whether this instance should use {@code SparseSemanticVector}
@@ -330,6 +324,10 @@ public class RandomIndexing implements SemanticSpace {
      */
     private final boolean useSparseSemantics;
 
+    /**
+     * An optional set of words that restricts the set of semantic vectors that
+     * this instance will retain.
+     */
     private final Set<String> semanticFilter;
 
     /**
@@ -376,10 +374,10 @@ public class RandomIndexing implements SemanticSpace {
 	    : new RandomIndexVectorGenerator(properties);
 
 	String filterProp = 
-	    properties.getProperty(WORD_FILTER_PROPERTY);
-	filterFiles = (filterProp != null)
-	    ? loadFilterFiles(filterProp)
-	    : new ArrayList<Duple<Set<String>,Boolean>>(0);
+	    properties.getProperty(TOKEN_FILTER_PROPERTY);
+	filter = (filterProp != null)
+	    ? TokenFilter.loadFromSpecification(filterProp)
+	    : null;
 
 	String useSparseProp = 
 	    properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -424,63 +422,6 @@ public class RandomIndexing implements SemanticSpace {
     }
 
     /**
-     * Loads words lists from files based on the provide value of the {@value
-     * #WORD_FILTER_PROPERTY} property.
-     */
-    private static List<Duple<Set<String>,Boolean>> 
-	    loadFilterFiles(String property) {
-
-	// multiple filter files are specified using a ',' to separate them
-	String[] fileAndOptionalFlag = property.split(",");
-	List<Duple<Set<String>,Boolean>> filterFiles = 
-	        new ArrayList<Duple<Set<String>,Boolean>>(
-	        fileAndOptionalFlag.length);
-	for (String s : fileAndOptionalFlag) {
-	    // If the words in the file are manually specified to be applied
-	    // in a specific way, then the string will contain a '='.  Look
-	    // for the last index of '=' in case the file name itself
-	    // contains that character
-	    int eqIndex = s.lastIndexOf('=');
-	    String filename = null;
-	    boolean exclude = false;
-	    if (eqIndex > 0) {
-		filename = s.substring(0, eqIndex);
-		String flag = s.substring(eqIndex + 1);
-		if (flag.equals("include"))
-		    exclude = false;
-		else if (flag.equals("exclude"))
-		    exclude = true;
-		else {
-		    throw new IllegalArgumentException(
-			"unknown filter parameter: " + s);
-		}
-	    }
-	    else {
-		filename = s;
-	    }
-	    
-	    // load the words in the file
-	    Set<String> words = new HashSet<String>();
-	    try {
-		BufferedReader br = 
-		    new BufferedReader(new FileReader(filename));
-		for (String line = null; (line = br.readLine()) != null; ) {
-		    for (String token : line.split("\\s+")) {
-			words.add(token);
-		    }
-		}
-		br.close();
-	    } catch (IOException ioe) {
-		// rethrow since filter error is fatal to correct execution
-		throw new IOError(ioe);
-	    }
-
-	    filterFiles.add(new Duple<Set<String>,Boolean>(words, exclude));		
-	}
-	return filterFiles;
-    }
-
-    /**
      * Removes all associations between word and semantics while still retaining
      * the word to index vector mapping.  This method can be used to re-use the
      * same instance of a {@code RandomIndexing} on multiple corpora while
@@ -522,12 +463,6 @@ public class RandomIndexing implements SemanticSpace {
      * @return the {@code SemanticVector} for the provide word.
      */
     private SemanticVector getSemanticVector(String word) {
-	// ensure we are using the canonical copy of the word by interning it
-	// 
-	// NOTE: currently disabled.  We have to ensure that only interned
-	// strings make it to this point.
-	// 
-	// word = word.intern();
 
 	SemanticVector v = wordToMeaning.get(word);
 	if (v == null) {
@@ -581,15 +516,24 @@ public class RandomIndexing implements SemanticSpace {
 	return Collections.unmodifiableSet(wordToMeaning.keySet());
     }
 
+    /**
+     *
+     */
     public Map<String,IndexVector> getWordToIndexVector() {
 	return Collections.unmodifiableMap(wordToIndexVector);
     }
 
+    /**
+     *
+     */
     public void setWordToIndexVector(Map<String,IndexVector> m) {
 	wordToIndexVector.clear();
 	wordToIndexVector.putAll(m);
     }
 
+    /**
+     *
+     */
     public void setSemanticFilter(Set<String> semanticsToCompute) {
 	semanticFilter.clear();
 	semanticFilter.addAll(semanticsToCompute);
@@ -605,8 +549,8 @@ public class RandomIndexing implements SemanticSpace {
 	Queue<String> prevWords = new ArrayDeque<String>(windowSize);
 	Queue<String> nextWords = new ArrayDeque<String>(windowSize);
 
-	Iterator<String> documentTokens = tokenize(document);
-	//WordIterator documentTokens = new WordIterator(document);
+	//Iterator<String> documentTokens = tokenize(document);
+	WordIterator documentTokens = new WordIterator(document);
 
 	String focusWord = null;
 
@@ -618,48 +562,70 @@ public class RandomIndexing implements SemanticSpace {
 	    
 	    focusWord = nextWords.remove();
 
-	    // if we are filtering the semantic vectors, check whether this word
-	    // should have its semantics calculated
-	    boolean calculateSemantics =
-		semanticFilter.isEmpty() || semanticFilter.contains(focusWord);
-	    
-	    SemanticVector focusMeaning = (calculateSemantics)
-		? getSemanticVector(focusWord) : null;
-	    
 	    // shift over the window to the next word
 	    if (documentTokens.hasNext()) {
-		// NB: we call .intern() on the string to ensure that we are
-		// always dealing with the canonical copy of the word when
-		// processing.  This ensures that any locks acquired for the
-		// word will be on a single instance.
-		String windowEdge = documentTokens.next(); //.intern();
+		String windowEdge = documentTokens.next(); 
 		nextWords.offer(windowEdge);
 	    }    
-		
-		// Sum up the index vector for all the surrounding words.  If
-	    // permutations are enabled, permute the index vector based on its
-	    // relative position to the focus word.
-	    int permutations = -(prevWords.size());
-	    for (String word : prevWords) {
-		IndexVector iv = getIndexVector(word);
-		if (usePermutations) {
-		    iv = permutationFunc.permute(iv, permutations);
-		    ++permutations;
-		}
-		if (calculateSemantics)
-		    focusMeaning.add(iv);
-	    }
 
-	    // Repeat for the words in the forward window.
-	    permutations = 1;
-	    for (String word : nextWords) {
-		IndexVector iv = getIndexVector(word);
-		if (usePermutations) {
-		    iv = permutationFunc.permute(iv, permutations);
-		    ++permutations;
-		}
-		if (calculateSemantics)
+	    // If we are filtering the semantic vectors, check whether this word
+	    // should have its semantics calculated.  In addition, check whether
+	    // the filter would not accept this word.
+	    boolean calculateSemantics =
+		semanticFilter.isEmpty() || semanticFilter.contains(focusWord)
+		|| filter == null        || !filter.accept(focusWord);
+	    
+	    if (calculateSemantics) {
+
+		SemanticVector focusMeaning = getSemanticVector(focusWord);
+
+		// Sum up the index vector for all the surrounding words.  If
+		// permutations are enabled, permute the index vector based on
+		// its relative position to the focus word.
+		int permutations = -(prevWords.size());		
+		for (String word : prevWords) {
+		    
+		    // Skip the addition of any words that are excluded from the
+		    // filter set.  Note that by doing the exclusion here, we
+		    // ensure that the token stream maintains its existing
+		    // ordering, which is necessary when permutations are taken
+		    // into account.
+		    if (filter != null && !filter.accept(word)) {
+			++permutations;
+			continue;
+		    }
+		    
+		    IndexVector iv = getIndexVector(word);
+		    if (usePermutations) {
+			iv = permutationFunc.permute(iv, permutations);
+			++permutations;
+		    }
+		    
 		    focusMeaning.add(iv);
+		}
+		
+		// Repeat for the words in the forward window.
+		permutations = 1;
+		for (String word : nextWords) {
+		    
+		    // Skip the addition of any words that are excluded from the
+		    // filter set.  Note that by doing the exclusion here, we
+		    // ensure that the token stream maintains its existing
+		    // ordering, which is necessary when permutations are taken
+		    // into account.
+		    if (filter != null && !filter.accept(word)) {
+			++permutations;
+			continue;
+		}
+		    
+		    IndexVector iv = getIndexVector(word);
+		    if (usePermutations) {
+			iv = permutationFunc.permute(iv, permutations);
+			++permutations;
+		    }
+		    
+		    focusMeaning.add(iv);
+		}		
 	    }
 
 	    // Last put this focus word in the prev words and shift off the
@@ -674,20 +640,6 @@ public class RandomIndexing implements SemanticSpace {
 	document.close();
     }
     
-    /**
-     * Returns an iterator over all the tokens in the document, applying any
-     * {@link WordFilter} instances as specified for the configuration of this
-     * instance.
-     */
-    private Iterator<String> tokenize(BufferedReader document) {
-	Iterator<String> tokens = new WordIterator(document);
-	// apply the word filters in the order they were originally specified
-	for (Duple<Set<String>,Boolean> tuple : filterFiles) {
-	    tokens = new WordFilter(tokens, tuple.x, tuple.y);
-	}
-	return tokens;
-    }
-
     /**
      * Does nothing.
      *

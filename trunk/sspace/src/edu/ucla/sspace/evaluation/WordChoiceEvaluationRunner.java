@@ -154,7 +154,7 @@ public class WordChoiceEvaluationRunner {
 
     /**
      * A report of the performance of a {@link SemanticSpace} on a particular
-     * {@link MultipleChoiceEvaluation} test.
+     * {@link WordChoiceEvaluation} test.
      */
     public interface Report {
 
