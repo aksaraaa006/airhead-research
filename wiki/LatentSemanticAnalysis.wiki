@@ -55,6 +55,7 @@ We provide the following options for changing the behavior of LSA and how the pr
   * LSA Options
     * {{{-n | --dimensions <int>}}} how many dimensions to use for the LSA vectors. See LatentSemanticAnalysis for default value
     * {{{-p | --preprocess <class name>}}} specifies an instance of [MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
+    * `-F` | `--tokenFilter=FILE[include|exclude][,FILE...]` specifies a list of one or more files to use for filtering the documents. An option flag may be added to each file to specify how the words in the filter filter should be used: include if only the words in the filter file should be retained in the document; exclude if only the words not in the filter file should be retained in the document.  The default value is include. An example configuration might look like:  `--tokenFilter=english-dictionary.txt=include,stop-list.txt=exclude`
 
   * Program Options
     * {{{-o | --outputFormat={text|binary}}}} Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details. 
