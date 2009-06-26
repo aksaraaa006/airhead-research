@@ -66,10 +66,10 @@ import java.util.Properties;
  *        co-occurrence matrix.  This option may not be used at the same time as
  *        {@code --retain}.
  *
- *  <li> {@code -W}, {@code --weighting=CLASS} the minimum information
- *        theoretic entropy a word must have to be retained in the final word
- *        co-occurrence matrix.  This option may not be used at the same time as
- *        {@code --retain}.
+ *  <li> {@code -W}, {@code --weighting=CLASS} the fully qualified name of a
+ *        {@link edu.ucla.sspace.hal.WeightingFunction} class to be used for
+ *        weighting co-occurrences.  HAL traditionally uses a linear weighting
+ *        where the closest neighboring words receive the highest weight.
  *
  *   <li> {@code -F}, {@code --tokenFilter=FILE[include|exclude][,FILE...]}
  *        specifies a list of one or more files to use for {@link
