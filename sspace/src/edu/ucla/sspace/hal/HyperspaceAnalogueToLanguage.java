@@ -333,7 +333,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
 	    // If the filter does not accept this word, skip the semantic
 	    // processing, continue with the next word
-	    if (!filter.accept(focus)) {
+	    if (filter != null && !filter.accept(focus)) {
 		// shift the window
 		prevWords.offer(focus);
 		if (prevWords.size() > windowSize)
