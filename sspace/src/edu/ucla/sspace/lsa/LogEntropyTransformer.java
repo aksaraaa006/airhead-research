@@ -32,6 +32,9 @@ import java.util.Map;
 
 import java.util.logging.Logger;
 
+import static edu.ucla.sspace.common.Statistics.log2;
+import static edu.ucla.sspace.common.Statistics.log2_1p;
+
 /**
  * Transforms a term-document matrix using log and entropy techniques.  See the
  * following papers for details and analysis:
@@ -70,20 +73,6 @@ public class LogEntropyTransformer implements MatrixTransformer {
      * 
      */
     public LogEntropyTransformer() { }
-
-//     public static void main(String[] args) {
-// 	try {
-// 	    if (args.length != 2) {
-// 		System.out.println("usage: java <input matrix file> "+
-// 				   "<output file>");
-// 		System.exit(0);
-// 	    }
-// 	    new LogEntropyTransformer().
-// 		transform(new File(args[0]), new File(args[1]));
-// 	} catch (IOException ioe) {
-// 	    ioe.printStackTrace();
-// 	}
-//     }
 
     public File transform(File input) throws IOException {
 	// create a temp file for the output
@@ -146,7 +135,7 @@ public class LogEntropyTransformer implements MatrixTransformer {
 	    double probability = count.doubleValue() / 
 		termToGlobalCount.get(term).doubleValue();
 	    
-	    double d = (probability * log(probability));
+	    double d = (probability * log2(probability));
 	    
 	    // NOTE: keep the entropy sum a positive value
 	    Double entropySum = termToEntropySum.get(term);
@@ -171,10 +160,10 @@ public class LogEntropyTransformer implements MatrixTransformer {
 	    Integer doc   = Integer.valueOf(termDocCount[1]);
 	    Integer count = Integer.valueOf(termDocCount[2]);
 	    
-	    double log = log1p(count);
+	    double log = log2_1p(count);
 	    
 	    double entropySum = termToEntropySum.get(term).doubleValue();
-	    double entropy = 1 + (entropySum / log(numDocs));
+	    double entropy = 1 + (entropySum / log2(numDocs));
 	    
 	    // now print out the noralized values
 	    pw.println(term + "\t" +
@@ -183,23 +172,7 @@ public class LogEntropyTransformer implements MatrixTransformer {
 	}
 	br.close();
 	pw.close();
-    }
-    
-
-    /**
-     * Returns the base-2 logarithm of {@code d}.
-     */
-    private static double log(double d) {
-	return Math.log(d) / Math.log(2);
-    }
-
-    /**
-     * Returns the base-2 logarithm of {@code d}.
-     */
-    private static double log1p(double d) {
-	return Math.log1p(d) / Math.log(2);
-    }
-    
+    }      
     
 }
 

@@ -23,6 +23,7 @@ package edu.ucla.sspace.util;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,7 +33,15 @@ import edu.ucla.sspace.util.BoundedSortedMap.ReverseComparator;
 /**
  * A {@code MultiMap} implementation that grows to a fixed size and then retains only
  * a fixed number of either keys or mappings.  All keys used in this class
- * must implements {@link Comparable}.
+ * must implements {@link Comparable}. <p>
+ *
+ * If an instance is bound by the total number of mappings, a user may configure
+ * whether the map arbitrarily removes tied mapping (those with the same key),
+ * or whether the tied mappings are removed fairly.  While both result in the
+ * same size, an arbitrary mapping have a bias in the order of removal based on
+ * the element hash distribution.  However, a fair removal policy incurs a
+ * slightly higher cost based on the number of elements sharing the same key.
+ *
  * 
  * @see BoundedSortedMap
  */
@@ -53,13 +62,21 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
     private final boolean isKeyBound;
 
     /**
+     * If the map is value bound, {@code true} if the map should pick a random
+     * mapping to remove, which ensures fairness, rather than an arbitrary
+     * mapping.
+     */
+    private final boolean isFair;
+
+    /**
      * Creates an instance that will retain the specified number of mappings
-     * that are associated with the highest keys.
+     * that are associated with the highest keys, using an arbitrary removal
+     * policy.
      *
      * @param bound the maximum number of key-value mappings to retain
      */
     public BoundedSortedMultiMap(int bound) {
-	this(bound, false, true);
+	this(bound, false, true, false);
     }
 
     /**
@@ -76,7 +93,7 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      *        key-value mappings in this map
      */
     public BoundedSortedMultiMap(int bound, boolean keyBound) {
-	this(bound, keyBound, true);
+	this(bound, keyBound, true, false);
     }
 
     /**
@@ -85,7 +102,8 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      * total number of mappings if {@code keyBound} is {@code false}.  If {@code
      * retainHighest} is {@code true}, the higest keys will be retained; else
      * the lowest keys will be be retained.  If {@code keyBound} is false, an
-     * arbitrary mapping for the appropriate key will be removed.
+     * the that will be removed will depend on the whether this map fairly
+     * removes tied mappings or arbitrarily removes mappings.
      *
      * @param bound the number to retain
      * @param keyBound {@code true} if the bound should apply to the number of
@@ -94,12 +112,16 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
      *        key-value mappings in this map
      * @param retainHighest {@code true} if the higest keys should be kept,
      *        {@code false} if the lowest keys should be kept
+     * @param isFair if the map is value bound, {@code true} if the map should
+     *        pick a random mapping to remove, which ensures fairness, rather
+     *        than an arbitrary mapping.
      */
     public BoundedSortedMultiMap(int bound, boolean keyBound, 
-				 boolean retainHighest) {
+				 boolean retainHighest, boolean isFair) {
 	super(((retainHighest) ? null : new ReverseComparator<K>()));
 	this.isKeyBound = keyBound;
 	this.bound = bound;
+	this.isFair = isFair;
     }
 
     /**
@@ -125,7 +147,19 @@ public class BoundedSortedMultiMap<K,V> extends TreeMultiMap<K,V> {
 	    // Arbitrarily remove the first key in the set.  Note that the set
 	    // is guaranteed to be non-empty, so the iterator call to next()
 	    // will always succeed.
-	    remove(first, values.iterator().next());
+	    int elementToRemove = 0;
+	    if (isFair) {
+		elementToRemove = (int)(Math.random() * values.size());
+		V toRemove = null;
+		Iterator<V> it = values.iterator();
+		for (int i = 0; i <= elementToRemove; ++i) {
+		    toRemove = it.next();
+		}
+		remove(first, toRemove);
+	    }
+	    else {
+		remove(first, values.iterator().next());
+	    }
 	}
 	return added;
     }

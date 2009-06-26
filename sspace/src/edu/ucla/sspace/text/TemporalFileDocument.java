@@ -61,8 +61,7 @@ public class TemporalFileDocument implements TemporalDocument {
      * file, using the {@link File#lastModified() lastModified} time as its
      * creation time.
      *
-     * @param fileName the name of a file whose contents will be used as a
-     *        document
+     * @param file a file whose contents will be used as a document
      *
      * @throws IOException if any error occurred while reading {@code fileName}.
      */

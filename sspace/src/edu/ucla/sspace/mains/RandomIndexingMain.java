@@ -83,17 +83,14 @@ import java.util.logging.Logger;
  *         allows later invocations of this program to reuse the this
  *         invocation's semantic space.
  *
- *   </ul> 
- *
- *   <ul>
- *
- *   <li> {@code -F}, {@code --filterFile=FILE[include|exclude][,FILE...]}
- *        specifies a list of one or more files to use for {@link WordFilter
- *        filtering} the documents.  An option flag may be added to each file to
- *        specify how the words in the filter filter should be used: {@code
- *        include} if only the words in the filter file should be retained in
- *        the document; {@code exclude} if only the words <i>not</i> in the
- *        filter file should be retained in the document.
+ *   <li> {@code -F}, {@code --tokenFilter=FILE[include|exclude][,FILE...]}
+ *        specifies a list of one or more files to use for {@link
+ *        edu.ucla.sspace.text.TokenFilter filtering} the documents.  An option
+ *        flag may be added to each file to specify how the words in the filter
+ *        filter should be used: {@code include} if only the words in the filter
+ *        file should be retained in the document; {@code exclude} if only the
+ *        words <i>not</i> in the filter file should be retained in the
+ *        document.
  *
  *   </ul>
  *
@@ -177,9 +174,8 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
 			  + " before processing", true,
 			  "FILE", "Algorithm Options");
-	options.addOption('F', "filterList", "filters to apply to the input " +
-			  "token stream", true, "filter-file[=include (default)"
-			  + "|exclude][,filter-file...]", "Input Options");
+	options.addOption('F', "tokenFilter", "filters to apply to the input " +
+			  "token stream", true, "FILTER_SPEC", "Input Options");
     }
 
     public static void main(String[] args) {
@@ -224,9 +220,9 @@ public class RandomIndexingMain extends GenericMain {
 			      argOptions.getStringOption("useSparseSemantics"));
 	}
 
-	if (argOptions.hasOption("filterList")) {
-	    props.setProperty(RandomIndexing.WORD_FILTER_PROPERTY,
-			      argOptions.getStringOption("filterList"));
+	if (argOptions.hasOption("tokenFilter")) {
+	    props.setProperty(RandomIndexing.TOKEN_FILTER_PROPERTY,
+			      argOptions.getStringOption("tokenFilter"));
 	}
 
 	return props;
@@ -284,6 +280,13 @@ public class RandomIndexingMain extends GenericMain {
     public void usage() {
  	System.out.println(
  	    "usage: java RandomIndexingMain [options] <output-dir>\n" + 
-	    argOptions.prettyPrint());
+	    argOptions.prettyPrint() + "\n" +
+	    "Token filter configurations are specified as a comman-separated " +
+	    "list of file\nnames, where each file name has an optional string" +
+	    " with values:inclusive or\nexclusive, which species whether the" +
+	    " token are to be used for an exclusive\nfilter. The default " +
+	    "value is include. An example configuration might look like:\n" +
+	    "  --tokenFilter=english-dictionary.txt=include," +
+	    "stop-list.txt=exclude");
     }
 }

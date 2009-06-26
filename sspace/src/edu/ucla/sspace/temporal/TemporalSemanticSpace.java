@@ -107,7 +107,7 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      *
      * @param word a word in the semantic space
      *
-     * @param startTime a UNIX timestamp that denotes the time before which all
+     * @param endTime a UNIX timestamp that denotes the time before which all
      *        occurrences of the provided would should be counted.
      * 
      * @return the semantic vector for the word after the provided time or
