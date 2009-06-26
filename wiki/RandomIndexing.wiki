@@ -32,13 +32,18 @@ RI can be invoke either by using the `RandomIndexingMain` class or by using the 
   *  *Required* (at least one of):
     * `-d`, `--docFile` a file where each line is a document
     * `-f`, `--fileList` a list of document files 
+
   * *Algorithm Options*:
     * `-l`, `--vectorLength` length of semantic vectors
     * `-n`, `--permutationFunction` permutation function to use
     * `-p`, `--usePermutations` whether to permute index vectors based on word order
     * `-s`, `--windowSize` how many words to consider in each direction 
+    * `-F`, `--tokenFilter=FILE[include|exclude][,FILE...]` specifies a list of one or more files to use for filtering the documents. An option flag may be added to each file to specify how the words in the filter filter should be used: include if only the words in the filter file should be retained in the document; exclude if only the words not in the filter file should be retained in the document.  The default value is include. An example configuration might look like:  `--tokenFilter=english-dictionary.txt=include,stop-list.txt=exclude`
+    * `-L`, `--loadVectors=FILE` loads word-to-IndexVector mapping before processing.  This enables multiple runs of RandomIndexing to share the same initial index vector mapping.  This feature is useful for comparing how different parameters affect the semantic vectors from a single corpus, or for comparing the semantics across multiple corpora while keeping the same index vector mapping.
+    * `-S`, 1--saveVectors=FILE` saves the final word-to-IndexVector mapping after processing.  This step is necessary for using the `--loadVectors` option.
+
   * *Program Options*:
-    * `-o`, `--outputFormat={text|binary}` Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details. 
+    * `-o`, `--outputFormat={text|binary|sparse_text|sparse_binary}` Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details. 
     * `-t`, `--threads` the number of threads to use
     * `-v`, `--verbose` prints verbose output
     * `-w`, `--overwrite` specifies whether to overwrite the existing output 
