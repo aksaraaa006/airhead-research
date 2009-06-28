@@ -314,6 +314,13 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return wordSpace.columns();
+    }
+
+    /**
      * A noop.
      */
     public void processDocument(BufferedReader document) { }

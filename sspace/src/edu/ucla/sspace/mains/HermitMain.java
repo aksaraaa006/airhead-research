@@ -100,6 +100,9 @@ public class HermitMain extends GenericMain {
                       true, "INT");
     options.addOption('b', "builder", "Index builder to use for hermit",
                       true, "CLASSNAME", "Process Properties");
+    options.addOption('c', "cluster",
+                       "Class type to use for clustering semantic vectors",
+                       true, "CLASSNAME", "Process Properties");
     }
 
     public static void main(String[] args) {
@@ -147,6 +150,10 @@ public class HermitMain extends GenericMain {
 	  props.setProperty(Hermit.MATRIX_TRANSFORM_PROPERTY,
           argOptions.getStringOption("preprocess"));
 	}
+    if (argOptions.hasOption("cluster")) {
+      props.setProperty(Hermit.CLUSTER_PROPERTY,
+          argOptions.getStringOption("cluster"));
+    }
     if (argOptions.hasOption("threads")) {
       props.setProperty(Hermit.NUM_THREADS_PROPERTY,
           argOptions.getStringOption("threads"));

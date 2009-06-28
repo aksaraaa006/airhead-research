@@ -23,6 +23,7 @@ package edu.ucla.sspace.matrix;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -154,19 +155,16 @@ public class GrowingSparseMatrix implements Matrix {
      * An arraylist of non zero values for this row, stored in the correct
      * column order.
      */
-    private ArrayList<Double> values;
-    /**
-     * An arraylist of which column indexes are stored for this row in sorted
-     * order.
-     */
-    private ArrayList<Integer> columnIndexes;
+    private ArrayList<CellItem> values;
+
+    private CellComparator comp;
 
     /**
      * Create the two lists, with zero values in them initially.
      */
     public RowEntry() {
-      values = new ArrayList<Double>();
-      columnIndexes = new ArrayList<Integer>();
+      values = new ArrayList<CellItem>();
+      comp = new CellComparator();
     }
 
     /**
@@ -175,8 +173,9 @@ public class GrowingSparseMatrix implements Matrix {
      * @return the value for the specified column, or 0 if no column is found.
      */
     public double getValue(int column) {
-      int valueIndex = Collections.binarySearch(columnIndexes, column);
-      return (valueIndex >= 0) ? values.get(valueIndex) : 0.0;
+      CellItem index = new CellItem(column, 0);
+      int valueIndex = Collections.binarySearch(values, index, comp);
+      return (valueIndex >= 0) ? values.get(valueIndex).value : 0.0;
     }
 
     /**
@@ -187,15 +186,18 @@ public class GrowingSparseMatrix implements Matrix {
      * @param value The value to store
      */
     public void setValue(int column, double value) {
-      int valueIndex = Collections.binarySearch(columnIndexes, column);
+      CellItem item = new CellItem(column, 0);
+      int valueIndex = Collections.binarySearch(values, item, comp);
       if (valueIndex >= 0 && value != 0d) {
-        values.set(valueIndex, value);
+        // Replace a currently existing item with a non zero value.
+        values.get(valueIndex).value = value;
       } else if (value != 0d) {
-        values.add((valueIndex + 1) * -1, value);
-        columnIndexes.add((valueIndex+1) * -1, column);
+        // Add a new cell item into this row.
+        item.value = value;
+        values.add((valueIndex + 1) * -1, item);
       } else if (valueIndex >= 0) {
+        // Remove the value since it's now zero.
         values.remove(valueIndex);
-        columnIndexes.remove(valueIndex);
       }
     }
 
@@ -204,10 +206,40 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public double[] getRow(int columnSize) {
       double[] dense = new double[columnSize];
-      for (int i = 0; i < columnIndexes.size(); ++i) {
-        dense[columnIndexes.get(i).intValue()] = values.get(i).doubleValue();
+      for (CellItem item : values) {
+        dense[item.index] = item.value;
       }
       return dense;
+    }
+
+    /**
+     * A small struct to hold the index and value of an entry.  This should
+     * offset the object creation costs from storing Integer and Double's in the
+     * array lists.
+     */
+    private class CellItem {
+      public int index;
+      public double value;
+
+      public CellItem(int index, double value) {
+        this.index = index;
+        this.value = value;
+      }
+    }
+
+    /**
+     * Comparator class for CellItems.  A CellItem is ordered based on it's
+     * index value.
+     */
+    private class CellComparator implements Comparator<CellItem> {
+
+      public int compare(CellItem item1, CellItem item2) {
+        return item1.index - item2.index;
+      }
+
+      public boolean equals(Object o) {
+        return this == o;
+      }
     }
   }
 }

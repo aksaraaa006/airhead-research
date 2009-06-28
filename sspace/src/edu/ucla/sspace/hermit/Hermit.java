@@ -344,6 +344,13 @@ public class Hermit implements SemanticSpace {
 
   /**
    * {@inheritDoc}
+   */
+  public int getVectorSize() {
+    return wordSpace.columns();
+  }
+
+  /**
+   * {@inheritDoc}
    *
    * <p>
    *
@@ -371,8 +378,8 @@ public class Hermit implements SemanticSpace {
        * Remove the hermit specific processing, which should result in LSA.
        */
 
-      int numThreads = 
-        Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
+      int numThreads = 1;
+        //Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
       List<Thread> threads = new ArrayList<Thread>();
 
       final Iterator<Map.Entry<String, Triplet>> tripletIter =

@@ -382,6 +382,13 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
     /**
      * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return wordSpace.columns();
+    }
+
+    /**
+     * {@inheritDoc}
      *
      * <p>
      *

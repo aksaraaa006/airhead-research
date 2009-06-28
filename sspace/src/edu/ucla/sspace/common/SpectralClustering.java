@@ -104,6 +104,7 @@ public class SpectralClustering implements Clustering {
     List<DataPoint> dataPoints = new ArrayList<DataPoint>();
     int i = 0;
     for (double[] dataPoint : data) {
+      normalize(dataPoint);
       dataPoints.add(new DataPoint(i, dataPoint));
       i++;
     }
@@ -132,6 +133,16 @@ public class SpectralClustering implements Clustering {
     for (DataPoint dataPoint : sortedDataPoints) {
       assignments[i] = dataPoint.clusterNumber;
       i++;
+    }
+  }
+
+  private void normalize(double[] vector) {
+    double sum = 0;
+    for (double d : vector) {
+      sum += d;
+    }
+    for (int i = 0; i < vector.length; ++i) {
+      vector[i] = vector[i] / sum;
     }
   }
 
@@ -309,7 +320,7 @@ public class SpectralClustering implements Clustering {
   }
 
   public List<List<DataPoint>> computeCut(List<DataPoint> dataPoints,
-                                           double[] p) {
+                                          double[] p) {
 
     // Special case, when there are just two data points, the cut is trivial.
     if (dataPoints.size() == 2) {
@@ -351,7 +362,7 @@ public class SpectralClustering implements Clustering {
     i = 0;
     for (DataPoint dataPoint : dataPoints) {
       // Update u, pS, and pT for cuts beside the first.
-      if (i == dataPoints.size() - 1)
+      if (i == (dataPoints.size() - 1))
         continue;
       if (i > 0) {
         pS += p[i];
@@ -370,6 +381,7 @@ public class SpectralClustering implements Clustering {
         bestValue = conductance;
         bestIndex = i;
       }
+      i++;
     }
 
     i = 0;

@@ -152,6 +152,10 @@ public class Coals implements SemanticSpace {
     return ret;
   }
 
+  public int getVectorSize() {
+    return reducedDims;
+  }
+
   /**
    * {@inheritDoc}
    */

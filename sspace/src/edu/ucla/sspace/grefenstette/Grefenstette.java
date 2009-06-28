@@ -490,4 +490,11 @@ public class Grefenstette implements SemanticSpace {
     public String getSpaceName() {
 	return "grefenstette-syntatic-analysis";
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return syntacticCooccurrence.columns();
+    }
 }

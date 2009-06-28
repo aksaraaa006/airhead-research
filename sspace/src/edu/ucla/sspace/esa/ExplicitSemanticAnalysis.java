@@ -616,6 +616,13 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
+    public int getVectorSize() {
+      return articleNameToIndex.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public double[] getVectorFor(String word) {
 	Integer index = articleNameToIndex.get(word);
 	return (index == null) ? null : articleMatrix.getRow(index.intValue());

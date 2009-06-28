@@ -511,6 +511,13 @@ public class RandomIndexing implements SemanticSpace {
 
     /**
      * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return vectorLength;
+    }
+
+    /**
+     * {@inheritDoc}
      */ 
     public Set<String> getWords() {
 	return Collections.unmodifiableSet(wordToMeaning.keySet());

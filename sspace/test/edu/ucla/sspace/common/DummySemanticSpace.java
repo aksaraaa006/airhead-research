@@ -15,6 +15,8 @@ import java.util.*;
 public class DummySemanticSpace implements SemanticSpace {
 
     private final Map<String,double[]> wordToVector;
+
+    private int dimensions;
     
     public DummySemanticSpace() {
 	wordToVector = new HashMap<String,double[]>();
@@ -43,7 +45,15 @@ public class DummySemanticSpace implements SemanticSpace {
      * Sets the vector for the word
      */
     public double[] setVectorFor(String word, double[] vector) {
+      dimensions = vector.length;
 	return wordToVector.put(word, vector);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return dimensions;
     }
 
     /**
