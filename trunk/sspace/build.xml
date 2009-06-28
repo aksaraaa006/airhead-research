@@ -167,6 +167,7 @@
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatricesTest" todir="${report.dir}"/>
@@ -190,6 +191,7 @@
 
       <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
+
     </junit>
   </target>
 
