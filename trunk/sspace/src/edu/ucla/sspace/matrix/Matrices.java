@@ -162,11 +162,12 @@ public class Matrices {
 	if (m1.columns() != m2.rows()) 
 	    return null;
 	if (m2 instanceof DiagonalMatrix) {
-	    if (m1 instanceof DiagonalMatrix)
-		return multiplyBothDiag(m1, m2);
-	    return multiplyRightDiag(m1, m2);
+      if (m1 instanceof DiagonalMatrix)
+        return multiplyBothDiag(m1, m2);
+      else
+        return multiplyRightDiag(m1, m2);
 	} else if (m1 instanceof DiagonalMatrix) {
-	    return multiplyLeftDiag(m1, m2);
+	  return multiplyLeftDiag(m1, m2);
 	}
 
 	int size = m1.columns();
@@ -181,7 +182,7 @@ public class Matrices {
 		resultMatrix.set(r, c, resultValue);
 	    }
 	}
-	return resultMatrix;
+      return resultMatrix;
     }
 
     /**

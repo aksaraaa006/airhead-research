@@ -112,12 +112,16 @@ public class SpectralClustering implements Clustering {
     ClusterNode rootNode = nodeClusters.get(rootIndex);
     optimalClustering = null;
     double optimalPotential = Double.MAX_VALUE;
-    for (Duple<List<List<DataPoint>>, Double> clustering : rootNode.clusters.values()) {
+    for (Duple<List<List<DataPoint>>, Double> clustering :
+         rootNode.clusters.values()) {
       if (clustering.y < optimalPotential) {
         optimalPotential = clustering.y;
         optimalClustering = clustering.x;
       }
     }
+    
+    if (optimalClustering == null)
+      return;
 
     List<DataPoint> sortedDataPoints = new ArrayList<DataPoint>();
     i = 0;
@@ -197,7 +201,9 @@ public class SpectralClustering implements Clustering {
       return nodeValue;
     }
 
-    // Create vector u, a summation of each data point.
+    // Compute p vector, which can then be used to compute pi, D, R, and v.
+    // Split the datapoints according to p, and find the cut with the lowest
+    // conductance.
     double[] p = computeP(dataPoints);
     List<DataPoint> sortedDataPoints = computeSortedVector(dataPoints, p);
     List<List<DataPoint>> splitVectors = computeCut(sortedDataPoints, p);
@@ -226,9 +232,9 @@ public class SpectralClustering implements Clustering {
 
   @SuppressWarnings("unchecked")
   public List<DataPoint> computeSortedVector(List<DataPoint> dataPoints,
-                                              double[] p) {
+                                             double[] p) {
     int size = dataPoints.size();
-    int log = Factorize.log2(dataPoints.size());
+    int log = (int) Statistics.log2(dataPoints.size());
 
     // Create Diagonal matrices R and D where R(i, i) = p(i), and
     // D(i, i) = sqrt(p(i) / sum(p)).
@@ -237,7 +243,8 @@ public class SpectralClustering implements Clustering {
     double pSum = 0;
     for (int i = 0; i < size; ++i) {
       R.set(i, i, p[i]);
-      RInv.set(i, i, 1 / p[i]);
+      if (p[i] != 0d)
+        RInv.set(i, i, 1 / p[i]);
       pSum += p[i];
     }
 
@@ -245,10 +252,11 @@ public class SpectralClustering implements Clustering {
     Matrix D = new DiagonalMatrix(size);
     Matrix DInv = new DiagonalMatrix(size);
     for (int i = 0; i < size; ++i) {
-      pi[i] = R.get(i, i) / pSum;
+      pi[i] = p[i] / pSum;
       double dI = Math.sqrt(pi[i]);
       D.set(i, i, dI);
-      DInv.set(i, i, 1 / dI);
+      if (dI != 0d)
+        DInv.set(i, i, 1 / dI);
     }
     Matrix DRInv = Matrices.multiply(D, RInv);
 

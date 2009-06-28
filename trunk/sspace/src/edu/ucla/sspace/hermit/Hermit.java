@@ -397,8 +397,10 @@ public class Hermit implements SemanticSpace {
                   continue;
               }
 
+              System.out.println("clustering: " + entry.getKey());
               int[] reassignments =
                 clusterSemanticVectors(entry.getValue(), properties);
+              System.out.println("splitting: " + entry.getKey());
               splitMatrix(termDocMatrix, entry.getKey(),
                           entry.getValue(), reassignments);
             }

@@ -60,7 +60,39 @@ public class MatricesTest {
     }
   }
 
-  @Test public void multiplyDiagonalTest() {
+  @Test public void multipleBothDiagonalTest() {
+    double[] data1 = {1, 2, 3, 4, 5};
+    Matrix leftMatrix = new DiagonalMatrix(data1.length, data1);
+    double[] data2 = {5, 4, 3, 2, 1};
+    Matrix rightMatrix = new DiagonalMatrix(data2.length, data2);
+    Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
+    assertEquals(data1.length, result.rows());
+    assertEquals(data1.length, result.columns());
+    assertTrue(result instanceof DiagonalMatrix);
+    for (int i = 0; i < data1.length; ++i) {
+      for (int j = 0; j < data1.length; ++j) {
+        if (i == j)
+          assertEquals(data1[i] * data2[i], result.get(i, j), .0001);
+        else 
+          assertEquals(0, result.get(i, j), .0001);
+      }
+    }
+  }
+
+  @Test public void multiplyLeftDiagonalTemultiplest() {
+    double[] data2 = {1, 2, 3, 0};
+    Matrix leftMatrix = new DiagonalMatrix(4, data2);
+    double[] data1 = {1, 2, 3, 4};
+    Matrix rightMatrix = new ArrayMatrix(4, 1, data1);
+    Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
+    assertEquals(4, result.rows());
+    assertEquals(1, result.columns());
+    for (int r = 0; r < 4; ++r) {
+      assertEquals(data2[r]* data1[r],  result.get(r, 0), .00001);
+    }
+  }
+
+  @Test public void multiplyRightDiagonalTemultiplest() {
     double[] data1 = {1, 2, 3, 4, 1, 1, 1, 1, 5, 4, 3, 2};
     Matrix leftMatrix = new ArrayMatrix(3, 4, data1);
     double[] data2 = {1, 2, 3, 0};
