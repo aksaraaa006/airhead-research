@@ -25,7 +25,8 @@ package edu.ucla.sspace.hal;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
-import edu.ucla.sspace.matrix.GrowingSparseMatrix;
+import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
+import edu.ucla.sspace.matrix.ConcurrentMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
@@ -247,7 +248,9 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The matrix used for storing weight co-occurrence statistics of those
      * words that occur both before and after.
      */
-    private Matrix cooccurrenceMatrix;
+    private ConcurrentMatrix cooccurrenceMatrix;
+
+    private Matrix reduced;
 
     /**
      * Constructs a new instance using the system properties for configuration.
@@ -262,10 +265,10 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      */
     public HyperspaceAnalogueToLanguage(Properties properties) {
 
-	cooccurrenceMatrix = new GrowingSparseMatrix();
-		
+	cooccurrenceMatrix = new AtomicGrowingMatrix();
+	reduced = null;
 	termToIndex = new ConcurrentHashMap<String,Integer>();
-		
+	
 	wordIndexCounter = 0;
 
 	String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
@@ -347,38 +350,37 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	    int wordDistance = 1;
 	    for (String after : nextWords) {
 
-		int index = getIndexFor(after);
-
-		// Get the current number of times that the focus word has
-		// co-occurred with this word appearing after it.  Weightb the
-		// word appropriately baed on distance
-		double curCount = (cooccurrenceMatrix.rows() <= focusIndex ||
-				   cooccurrenceMatrix.columns() <= index)
-		    ? 0
-		    : cooccurrenceMatrix.get(focusIndex, index);
-		cooccurrenceMatrix.set(focusIndex, index, 
-				       curCount + weighting.
-				           weight(wordDistance, windowSize));
-
-		wordDistance++;
+		// skip adding co-occurence values for words that are not
+		// accepted by the filter
+		if (filter == null || filter.accept(after)) {
+		    int index = getIndexFor(after);
+		    
+		    // Get the current number of times that the focus word has
+		    // co-occurred with this word appearing after it.  Weightb the
+		    // word appropriately baed on distance
+		    cooccurrenceMatrix.
+			addAndGet(focusIndex, index, weighting.
+				  weight(wordDistance, windowSize));
+		}
+		 
+		wordDistance++;		
 	    }
 
 	    wordDistance = -1; // in front of the focus word
 	    for (String before : prevWords) {
 
-		int index = getIndexFor(before);
+		// skip adding co-occurence values for words that are not
+		// accepted by the filter
+		if (filter == null || filter.accept(before)) {
+		    int index = getIndexFor(before);
 
-		// Get the current number of times that the focus word has
-		// co-occurred with this word before after it.  Weight the
-		// word appropriately baed on distance
-		double curCount = (cooccurrenceMatrix.rows() <= index ||
-				   cooccurrenceMatrix.columns() <= focusIndex)
-		    ? 0
-		    : cooccurrenceMatrix.get(index, focusIndex);
-		cooccurrenceMatrix.set(index, focusIndex, 
-				       curCount + weighting.
-				           weight(wordDistance, windowSize));
-
+		    // Get the current number of times that the focus word has
+		    // co-occurred with this word before after it.  Weight the
+		    // word appropriately baed on distance
+		    cooccurrenceMatrix.
+			addAndGet(index, focusIndex, weighting.
+				  weight(wordDistance, windowSize));
+		}
 		wordDistance--;
 	    }
 	    			
@@ -433,7 +435,8 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
 	// If the matrix hasn't had columns dropped then the returned vector
 	// will be the combination of the word's row and column
-	else if (cooccurrenceMatrix.rows() == cooccurrenceMatrix.columns()) {
+	else if (cooccurrenceMatrix != null &&
+		 cooccurrenceMatrix.rows() == cooccurrenceMatrix.columns()) {
 
 	    double[] semVector = new double[cooccurrenceMatrix.columns() * 2];
 			    
@@ -452,7 +455,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	// The co-occurrence matrix has had columns dropped so the vector is
 	// just the word's row
 	else {
-	    return cooccurrenceMatrix.getRow(index);
+	    return reduced.getRow(index);
 	}
     }
 
@@ -538,7 +541,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	LOGGER.info("reducing to " + columns + " columns");
 
 	// create the next matrix that will contain the fixed number of columns
-	Matrix reduced = new SparseMatrix(words, columns);
+	reduced = new SparseMatrix(words, columns);
 
 	Set<Integer> indicesToKeep = 
 	    new HashSet<Integer>(entropyToIndex.values());
@@ -563,7 +566,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	}
 	
 	// replace the co-occurrence matrix with the truncated version
-	cooccurrenceMatrix = reduced;
+	cooccurrenceMatrix = null;
     }
     
 
@@ -605,7 +608,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	
 	// create the next matrix that will contain only those columns with
 	// enough entropy to pass the threshold
-	Matrix reduced = 
+	reduced = 
 	    new SparseMatrix(words, (words*2)-colsToDrop.cardinality());
 
 	for (int word = 0; word < words; ++word) {
@@ -628,7 +631,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	}
 	
 	// replace the co-occurrence matrix with the truncated version
-	cooccurrenceMatrix = reduced;
+	cooccurrenceMatrix = null;
     }
 	
     /**
