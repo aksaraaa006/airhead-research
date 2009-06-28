@@ -73,12 +73,6 @@ public class OnDiskSemanticSpace implements SemanticSpace {
 	Logger.getLogger(OnDiskSemanticSpace.class.getName());
 
     /**
-     * The {@code Matrix} which contains the data read from a finished {@link
-     * SemanticSpace}.
-     */
-    private final Matrix wordSpace;
-
-    /**
      * A mapping of terms to offsets in the file where the word will be found.
      * If the {@code .sspace} is in binary, this will be a byte offset;
      * otherwise it is a line number in the text file.
@@ -153,7 +147,6 @@ public class OnDiskSemanticSpace implements SemanticSpace {
 	// disk I/O behavior for accessing the matrix since each word is directly
 	// after the previous on disk.
 	termToOffset = new LinkedHashMap<String,Long>();
-	Matrix m = null;
 	long start = System.currentTimeMillis();
 	int dims = -1;
 	RandomAccessFile raf = null;
@@ -188,7 +181,6 @@ public class OnDiskSemanticSpace implements SemanticSpace {
 	this.dimensions = dims;
 	this.binarySSpace = raf;
 	this.textSSpace = lnr;
-	wordSpace = m;
     }
 
     /**
@@ -411,6 +403,13 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      */
     public String getSpaceName() {
       return spaceName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return dimensions;
     }
 
     /**

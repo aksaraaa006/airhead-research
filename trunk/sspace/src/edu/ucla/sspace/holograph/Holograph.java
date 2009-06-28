@@ -99,6 +99,13 @@ public class Holograph implements SemanticSpace {
   /**
    * {@inheritDoc}
    */
+  public int getVectorSize() {
+    return indexVectorSize;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   public void processDocument(BufferedReader document) throws IOException {
     Queue<String> prevWords = new ArrayDeque<String>();
     Queue<String> nextWords = new ArrayDeque<String>();

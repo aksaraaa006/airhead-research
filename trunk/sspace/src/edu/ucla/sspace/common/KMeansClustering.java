@@ -57,7 +57,6 @@ public class KMeansClustering implements Clustering {
       double[][] kClusters = clusterForK(k);
       currAssignments = kMeansClusterAssignments(kClusters);
       potential = kMeansPotential(currAssignments, kClusters);
-      System.out.println(potential);
       k++;
     } while (potential < oldPotential && k < 7 && k <= dataPoints.size());
 

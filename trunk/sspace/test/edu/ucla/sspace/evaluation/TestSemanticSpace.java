@@ -36,6 +36,7 @@ import java.util.Set;
 public class TestSemanticSpace implements SemanticSpace {
   private ArrayList<double[]> testVectors;
   private int timesCalled;
+  private int dimensions;
 
   public TestSemanticSpace() {
     testVectors = new ArrayList<double[]>();
@@ -43,10 +44,15 @@ public class TestSemanticSpace implements SemanticSpace {
   }
 
   public void addVector(double[] a) {
+    dimensions = a.length;
     testVectors.add(a);
   }
 
   public void processDocument(BufferedReader reader) throws IOException {
+  }
+
+  public int getVectorSize() {
+    return dimensions;
   }
 
   public Set<String> getWords() {

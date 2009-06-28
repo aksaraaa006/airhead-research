@@ -459,6 +459,16 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	}
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return (cooccurrenceMatrix != null && 
+              cooccurrenceMatrix.rows() == cooccurrenceMatrix.columns()) ?
+        cooccurrenceMatrix.columns() :
+        reduced.columns();
+    }
+
     private double[] getColumn(int col) {
 	int rows = cooccurrenceMatrix.rows();
 	double[] column = new double[rows];

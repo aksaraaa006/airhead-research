@@ -102,4 +102,9 @@ public interface SemanticSpace {
      * semantic space should be expressed as a part of this name.
      */
     String getSpaceName();
+
+    /**
+     * Returns the length of vectors in this semantic space.
+     */
+    int getVectorSize();
 }

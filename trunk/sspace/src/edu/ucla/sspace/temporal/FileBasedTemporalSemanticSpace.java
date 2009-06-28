@@ -73,6 +73,8 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      */
     private final String spaceName;
 
+    private int dimensions;
+
     private long startTime;
 
     private long endTime;
@@ -163,7 +165,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
 	String[] header = br.readLine().split("\\s+");
 	int words = Integer.parseInt(header[0]);
-	int dimensions = Integer.parseInt(header[1]);
+	dimensions = Integer.parseInt(header[1]);
 	
 	Map<String,SemanticVector> wordToSemantics = 
 	    new HashMap<String,SemanticVector>(words, 2f);
@@ -217,7 +219,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
 	String[] header = br.readLine().split("\\s+");
 	int words = Integer.parseInt(header[0]);
-	int dimensions = Integer.parseInt(header[1]);
+	dimensions = Integer.parseInt(header[1]);
 	
 	Map<String,SemanticVector> wordToSemantics = 
 	    new HashMap<String,SemanticVector>(words, 2f);
@@ -268,7 +270,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
  	DataInputStream dis = 
  	    new DataInputStream(new FileInputStream(sspaceFile));
  	int words = dis.readInt();
- 	int dimensions = dis.readInt();
+ 	dimensions = dis.readInt();
 
 	// initialize to the number of words, but keep the loading factor high
 	// to reduce empty table space
@@ -323,7 +325,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
  	DataInputStream dis = 
  	    new DataInputStream(new FileInputStream(sspaceFile));
  	int words = dis.readInt();
- 	int dimensions = dis.readInt();
+ 	dimensions = dis.readInt();
 
 	// initialize to the number of words, but keep the loading factor high
 	// to reduce empty table space
@@ -448,6 +450,13 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
      */
     public String getSpaceName() {
       return spaceName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+      return dimensions;
     }
 
     /**
