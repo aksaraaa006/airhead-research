@@ -23,6 +23,9 @@ package edu.ucla.sspace.holograph;
 
 import edu.ucla.sspace.common.IndexBuilder;
 
+import edu.ucla.sspace.vector.DenseSemanticVector;
+import edu.ucla.sspace.vector.SemanticVector;
+
 import jnt.FFT.RealDoubleFFT_Radix2;
 
 import java.util.HashMap;
@@ -35,15 +38,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BeagleIndexBuilder implements IndexBuilder {
   private static final int DEFAULT_INDEX_VECTOR_SIZE = 512;
 
-  private ConcurrentHashMap<String, double[]> termToRandomIndex;
+  private ConcurrentHashMap<String, SemanticVector> termToRandomIndex;
   private RealDoubleFFT_Radix2 fft;
   private int indexVectorSize;
-  private double[] placeHolder;
+  private SemanticVector placeHolder;
   private double stdev;
   private Random randomGenerator;
   private int[] permute1;
   private int[] permute2;
-  private double[] newestRandomVector;
+  private SemanticVector newestRandomVector;
 
   public BeagleIndexBuilder() {
     init(DEFAULT_INDEX_VECTOR_SIZE);
@@ -55,12 +58,12 @@ public class BeagleIndexBuilder implements IndexBuilder {
 
   private void init(int s) {
     randomGenerator = new Random();
-    termToRandomIndex = new ConcurrentHashMap<String, double[]>();
+    termToRandomIndex = new ConcurrentHashMap<String, SemanticVector>();
     indexVectorSize = s;
     fft = new RealDoubleFFT_Radix2(indexVectorSize);
     newestRandomVector = generateRandomVector(); 
     // Enter the zero vector for the empty string.
-    termToRandomIndex.put("", newVector(0));
+    termToRandomIndex.put("", getSemanticVector());
     stdev = 1 / Math.sqrt(indexVectorSize);
     permute1 = new int[indexVectorSize];
     permute2 = new int[indexVectorSize];
@@ -77,6 +80,10 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return 5;
   }
 
+  public SemanticVector getSemanticVector() {
+    return new DenseSemanticVector(indexVectorSize);
+  }
+
   private void randomPermute(int[] permute) {
     for (int i = 0; i < indexVectorSize; i++)
       permute[i] = i;
@@ -89,20 +96,20 @@ public class BeagleIndexBuilder implements IndexBuilder {
   }
 
   public void printAll() {
-    for (Map.Entry<String, double[]> m : termToRandomIndex.entrySet()) {
+    for (Map.Entry<String, SemanticVector> m : termToRandomIndex.entrySet()) {
       System.out.println(m.getKey());
     }
   }
 
-  private double[] generateRandomVector() {
-    double[] termVector = new double[indexVectorSize];
+  private SemanticVector generateRandomVector() {
+    SemanticVector termVector = getSemanticVector();
     for (int i = 0; i < indexVectorSize; i++)
-      termVector[i] = randomGenerator.nextGaussian() * stdev;
+      termVector.set(i, randomGenerator.nextGaussian() * stdev);
     return termVector;
   }
 
-  private double[] getBeagleVector(String term) {
-    double[] v = termToRandomIndex.get(term);
+  private SemanticVector getBeagleVector(String term) {
+    SemanticVector v = termToRandomIndex.get(term);
     if (v == null) {
       synchronized (term) {
         v = termToRandomIndex.get(term);
@@ -118,27 +125,28 @@ public class BeagleIndexBuilder implements IndexBuilder {
   // Context must have one word before the term being considered, and 4 words
   // after it.  If nothing is available, simply add empty strings.
   // Additionally, they term itself should be replaced with the empty string.
-  public void updateMeaningWithTerm(double[] meaning,
+  public void updateMeaningWithTerm(SemanticVector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords) {
-    double[] contextVector = newVector(0); 
+    SemanticVector contextVector = getSemanticVector(); 
     for (String term: prevWords)
       plusEquals(contextVector, getBeagleVector(term));
     for (String term: nextWords)
       plusEquals(contextVector, getBeagleVector(term));
     plusEquals(meaning, contextVector);
-    double[] orderVector = newVector(0);
+    SemanticVector orderVector = getSemanticVector();
     plusEquals(orderVector, groupConvolution(prevWords, nextWords));
     plusEquals(meaning, orderVector);
   }
 
-  private double[] groupConvolution(Queue<String> prevWords,
-                                    Queue<String> nextWords) {
-    double[] result = newVector(0);
+  private SemanticVector groupConvolution(Queue<String> prevWords,
+                                          Queue<String> nextWords) {
+    SemanticVector result = getSemanticVector();
 
     // Do the convolutions starting at index 0.
-    double[] tempConvolution = convolute(getBeagleVector(prevWords.peek()),
-                                         placeHolder);
+    SemanticVector tempConvolution =
+      convolute(getBeagleVector(prevWords.peek()), placeHolder);
+
     plusEquals(result, tempConvolution);
 
     for (String term : nextWords) {
@@ -155,71 +163,33 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return result;
   }
 
-  public double[] decode(double[] meaning, boolean side) {
-    double[] environ;
-    if (side)
-      environ = changeVector(placeHolder, permute1);
-    else
-      environ = changeVector(placeHolder, permute2);
-    double[] result = circularCorrelation(environ, meaning);
-    if (side)
-      return demute(result, permute2);
-    else 
-      return demute(result, permute1);
-  }
-
-  private void plusEquals(double[] left, double[] right) {
+  private void plusEquals(SemanticVector left, SemanticVector right) {
     for (int i = 0; i < indexVectorSize; ++i)
-      left[i] += right[i];
+      left.add(i, right.get(i));
   }
 
-  private double[] circularCorrelation(double[] arr1, double[] arr2) {
-    double[] result = new double[arr1.length];
-    for (int i = 0; i < arr1.length; ++i) {
-      result[i] = 0;
-      for (int j = 0; j < arr1.length; ++j) {
-        result[i] += arr1[j] * arr2[(i+j) % arr1.length];
-      }
-    }
-    return result;
-  }
-
-  private double[] convolute(double[] left, double[] right) {
+  private SemanticVector convolute(SemanticVector left, SemanticVector right) {
     left = changeVector(left,permute1);
     right = changeVector(right,permute2);
-    fft.transform(left, 0, 1);
-    fft.transform(right, 0, 1);
-    double[] result = arrayTimes(left, right);
+    fft.transform(left.getVector(), 0, 1);
+    fft.transform(right.getVector(), 0, 1);
+    SemanticVector result = arrayTimes(left, right);
 
-    fft.backtransform(result, 0, 1);
+    fft.backtransform(result.getVector(), 0, 1);
     return result;
   }
 
-  private double[] arrayTimes(double[] left, double[] right) {
-    double[] result = newVector(0);
+  private SemanticVector arrayTimes(SemanticVector left, SemanticVector right) {
+    SemanticVector result = getSemanticVector();
     for (int i = 0; i < indexVectorSize; ++i)
-      result[i] = left[i] * right[i];
+      result.set(i, left.get(i) * right.get(i));
     return result;
   }
 
-  private double[] changeVector(double[] data, int[] orderVector) {
-    double[] result = new double[indexVectorSize];
+  private SemanticVector changeVector(SemanticVector data, int[] orderVector) {
+    SemanticVector result = getSemanticVector();
     for (int i = 0; i < indexVectorSize; i++)
-      result[i] = data[orderVector[i]];
+      result.set(i, data.get(orderVector[i]));
     return result;
-  }
-
-  private double[] demute(double[] data, int[] orderVector) {
-    double[] result = new double[indexVectorSize];
-    for (int i = 0; i < indexVectorSize; ++i)
-      result[orderVector[i]] = data[i];
-    return result;
-  }
-
-  private double[] newVector(double v) {
-    double[] r = new double[indexVectorSize];
-    for (int i = 0; i < indexVectorSize; ++i)
-      r[i] = v;
-    return r;
   }
 }

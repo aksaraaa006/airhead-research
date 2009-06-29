@@ -27,6 +27,8 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.text.WordIterator;
 
+import edu.ucla.sspace.vector.SemanticVector;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -62,7 +64,7 @@ public class Holograph implements SemanticSpace {
     "holograph-semantic-space";
 
   private final IndexBuilder indexBuilder;
-  private final Map<String, double[]> termHolographs;
+  private final Map<String, SemanticVector> termHolographs;
   private final int indexVectorSize;
   private int prevSize;
   private int nextSize;
@@ -72,7 +74,7 @@ public class Holograph implements SemanticSpace {
     indexBuilder = builder;
     prevSize = builder.expectedSizeOfPrevWords();
     nextSize = builder.expectedSizeOfNextWords();
-    termHolographs = new ConcurrentHashMap<String, double[]>();
+    termHolographs = new ConcurrentHashMap<String, SemanticVector>();
   }
 
   /**
@@ -86,7 +88,7 @@ public class Holograph implements SemanticSpace {
    * {@inheritDoc}
    */
   public double[] getVectorFor(String term) {
-    return termHolographs.get(term);
+    return termHolographs.get(term).getVector();
   }
 
   /**
@@ -122,9 +124,9 @@ public class Holograph implements SemanticSpace {
       if (it.hasNext())
         nextWords.offer(it.next().intern());
       synchronized (focusWord) {
-        double[] meaning = termHolographs.get(focusWord);
+        SemanticVector meaning = termHolographs.get(focusWord);
         if (meaning == null) {
-          meaning = new double[indexVectorSize];
+          meaning = indexBuilder.getSemanticVector();
           termHolographs.put(focusWord, meaning);
         }
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
