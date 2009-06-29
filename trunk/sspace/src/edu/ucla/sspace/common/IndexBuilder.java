@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.vector.SemanticVector;
+
 import java.util.Queue;
 
 /**
@@ -43,9 +45,11 @@ public interface IndexBuilder {
    * @param nextWords words appearing after the focus word whose meaning is
    *        being updated
    */
-  public void updateMeaningWithTerm(double[] meaning,
+  public void updateMeaningWithTerm(SemanticVector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords);
+
+  public SemanticVector getSemanticVector();
 
   public int expectedSizeOfPrevWords();
   public int expectedSizeOfNextWords();

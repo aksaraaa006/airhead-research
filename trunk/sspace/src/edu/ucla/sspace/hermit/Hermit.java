@@ -36,6 +36,8 @@ import edu.ucla.sspace.text.WordIterator;
 import edu.ucla.sspace.lsa.MatrixTransformer;
 import edu.ucla.sspace.lsa.LogEntropyTransformer;
 
+import edu.ucla.sspace.vector.SemanticVector;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -524,7 +526,7 @@ public class Hermit implements SemanticSpace {
     int assignmentIndex = 0;
     for (Map.Entry<Integer, List<int[]>> e :
         triplet.docToContextMap.entrySet()) {
-      double[] meaning = new double[indexVectorSize];
+      SemanticVector meaning = indexBuilder.getSemanticVector();
       for (int[] context : e.getValue()) {
         // Create the queues needed to represent the current context.
         Queue<String> prevWords = new ArrayDeque<String>();
@@ -538,7 +540,7 @@ public class Hermit implements SemanticSpace {
         // Update meaning with the context.
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
-      semanticVectors.add(meaning);
+      semanticVectors.add(meaning.getVector());
     }
 
     // Clear the map again to clear out memory.

@@ -6,6 +6,9 @@ import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorGenerator;
 import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
 
+import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.SparseSemanticVector;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
@@ -60,6 +63,10 @@ public class RandomIndexBuilder implements IndexBuilder {
     indexVectorGenerator = new RandomIndexVectorGenerator();
   }
 
+  public SemanticVector getSemanticVector() {
+    return new SparseSemanticVector(indexVectorSize);
+  }
+
   private IndexVector getIndexVector(String word) {
     IndexVector v = wordToIndexVector.get(word);
     if (v == null) {
@@ -86,14 +93,14 @@ public class RandomIndexBuilder implements IndexBuilder {
     return windowSize;
   }
 
-  private void addToMeaning(double[] meaning, IndexVector vector) {
+  private void addToMeaning(SemanticVector meaning, IndexVector vector) {
     for (int p : vector.positiveDimensions())
-      meaning[p] += 1;
+      meaning.add(p, 1);
     for (int p : vector.negativeDimensions())
-      meaning[p] -= 1;
+      meaning.add(p, -1);
   }
 
-  public void updateMeaningWithTerm(double[] meaning,
+  public void updateMeaningWithTerm(SemanticVector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords) {
     for (String word : prevWords)
