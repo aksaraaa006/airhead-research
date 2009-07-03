@@ -23,6 +23,10 @@ Working from the trunk is often exciting, but dangerous.  That said, if we have 
 
 Please file it in our [http://code.google.com/p/airhead-research/issues/list issue tracker].  Any information you can provide will help us to fix it quicker.  We aim to have a quick turn-around time on publicly reported bugs.
 
+== The code doesn't compile! ==
+
+Check that you're using Java 6.  (This is especially important for OS X, where the default Java version is currently Java 5.)  If you're building from the SVN trunk and using Java 6, [mailto:s-space-research-dev@googlegroups.com let us know].  We maintain that the trunk should always compile so if it doesn't for some reason, we will fix it right away
+
 = Running Algorithms =
 
 == How do I run one of the algorithms? ==
