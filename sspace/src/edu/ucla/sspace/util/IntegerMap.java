@@ -33,8 +33,18 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * A space-optimized map for associating integer keys with values.  
- * <p>
+ * A space-optimized map for associating integer keys with values, which also
+ * doubles as a sparse object array.<p>
+ *
+ * When used as a {@link SparseArray} this class allows negative valued indices,
+ * as well as the index of {@link Integer.MAX_VALUE}.  This affects the behavior
+ * of two methods.  First {@code size} will return {@code Integer.MAX_VALUE},
+ * but the true maximum size is 2<sup>32</sup>, which is larger than an {@code
+ * int} can represent.  Second, the {@code toArray} method will only return
+ * those elements that fall within the range of the provided array.  This
+ * limitation entails that the values at negative-valued indices will <i>not</i>
+ * be stored.  In this case it is best to use the {@link entrySet} method to
+ * access all of the indices and associated values in order.<p>
  *
  * This class makes a trade off for reduced space usage at the cost of decreased
  * performace.  The {@code put}, {@code get}, {@code containsKey} and {@code
@@ -42,8 +52,13 @@ import java.util.Set;
  * mapping is added, or one is removed, the operation is linear in the number of
  * mappings.  Both {@code size} and {@code isEmpty} are still constant time. <p>
  *
+ * The {@code get} operation runs in logarithmic time.  The {@code set}
+ * operation runs in consant time if setting an existing non-zero value to a
+ * non-zero value.  However, if the {@code set} invocation sets a zero value to
+ * non-zero, the operation is linear with the size of the array.<p>
+ *
  * This map does not allow {@code null} keys, but does allow {@code null
- * values}.
+ * values}.<p>
  *
  * <i>Implementation Note:</i> the {@code Iterator.remove()} method is currently
  * unsupported and will throw an exception when called.  However, a future
@@ -51,10 +66,12 @@ import java.util.Set;
  *
  * @see TrieMap
  * @see Map
+ * @see SparseArray
  * 
  * @author David Jurgens
  */
-public class IntegerMap<V> extends AbstractMap<Integer,V> {
+public class IntegerMap<V> extends AbstractMap<Integer,V> 
+        implements SparseArray<V> {
     
     private static final long serialVersionUID = 1L;
 
@@ -77,6 +94,61 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
 	values = new Object[0];
     }
 
+    /**
+     * Creates a new map with the mappings contained in {@code m}.
+     */
+    public IntegerMap(Map<Integer,? extends V> m) {
+	// Pre-allocate the arrays for all the mappings needed instead of just
+	// one at time
+	keyIndices = new int[m.size()];
+	values = new Object[m.size()];
+
+	// Get all of the integer keys and sort them to their correct position
+	// in the key array
+	Iterator<Integer> it = m.keySet().iterator();
+	for (int i = 0; i < m.size(); ++i) {
+	    keyIndices[i] = it.next().intValue();
+	}
+	Arrays.sort(keyIndices);
+
+	// Then map the values to their respective positions
+	for (int i = 0; i < keyIndices.length; ++i) {
+	    Integer key = keyIndices[i];
+	    values[i] = m.get(key);
+	}
+    }
+
+    /**
+     * Creates a sparse copy of the provided object array, retaining only those
+     * non-{@code null} values and their associated indices.
+     */
+    public IntegerMap(V[] array) {
+
+	// Find how many non-null elements there are
+	int nonNull = 0;
+	for (int i = 0; i < array.length; ++i) {
+	    if (array[i] != null)
+		nonNull++;
+	}
+
+	keyIndices = new int[nonNull];
+	values = new Object[nonNull];
+	int keyIndex = 0;
+	for (int i = 0; i < array.length; ++i) {
+	    if (array[i] != null) {
+		keyIndices[keyIndex] = i;
+		values[keyIndex++] = array[i];
+	    }
+	}	
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int cardinality() {
+	return keyIndices.length;
+    }
+    
     /**
      * Checks that the key is non-{@code null} and is an {@code Integer} object,
      * and then returns its {@code int} value.
@@ -128,12 +200,20 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
     /**
      * Returns the value to which the specified key is mapped, or {@code null}
      * if this map contains no mapping for the key.
-     */
-    @SuppressWarnings("unchecked")
+     */  
     public V get(Object key) {
 	int k = checkKey(key);
-	int index = Arrays.binarySearch(keyIndices, k);
-	return (index >= 0) ? (V)(values[index]) : null;
+	return get(k);
+    }
+
+    /**
+     * {@inheritDoc} Note that this implementation accepts negative valued
+     * indices.
+     */
+    @SuppressWarnings("unchecked")
+    public V get(int index) {
+	int pos = Arrays.binarySearch(keyIndices, index);
+	return (pos >= 0) ? (V)(values[pos]) : null;	
     }
 
     /**
@@ -141,6 +221,10 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
      */
     public Set<Integer> keySet() {
 	return new KeySet();
+    }
+
+    public int length() {
+	return Integer.MAX_VALUE;
     }
 
     /**
@@ -224,10 +308,33 @@ public class IntegerMap<V> extends AbstractMap<Integer,V> {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public void set(int index, V obj) {
+	put(Integer.valueOf(index), obj);
+    }
+
+    /**
      * Returns the number of key-value mappings in this trie.
      */
     public int size() {
 	return keyIndices.length;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings("unchecked")
+    public <E> E[] toArray(E[] array) {	
+	for (int i = 0; i < keyIndices.length; ++i) {
+	    int index = keyIndices[i];
+	    if (index < 0)
+		continue;
+	    else if (index >= array.length)
+		break;
+	    array[keyIndices[i]] = (E)(values[i]);
+	}
+	return array;
     }
 
     /**

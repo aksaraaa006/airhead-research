@@ -183,6 +183,8 @@
 
       <test name="edu.ucla.sspace.util.HashMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.IntegerMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.SparseIntArrayTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.SparseDoubleArrayTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TreeMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
 
