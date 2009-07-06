@@ -235,4 +235,23 @@ public class SparseIntArray implements SparseArray<Integer> {
 
 	return array;
     }
+
+    /**
+     * Sets the values of the provided array using the contents of this array.
+     * If the provided array is longer than this array, the additional values are
+     * left unchanged.
+     */
+    public int[] toPrimitiveArray(int[] array) {
+	for (int i = 0, j = 0; i < array.length; ++i) {
+	    int index = -1;
+	    if (j < indices.length && (index = indices[j]) == i) {
+		array[i] = values[j];
+		j++;
+	    }
+	    else
+		array[i] = 0;
+	}
+
+	return array;
+    }
 }

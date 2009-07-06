@@ -30,9 +30,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import edu.ucla.sspace.util.IntegerMap;
+import edu.ucla.sspace.util.SparseDoubleArray;
+
 
 /**
+ * A concurrent, thread-safe, growable {@code Matrix} class.  This class allows
+ * multiple threads to operate on the same matrix where all methods are
+ * concurrent to the fullest extent possible.
  *
+ * @author David Jurgens
  */
 public class AtomicGrowingMatrix implements ConcurrentMatrix {
     
@@ -204,15 +210,13 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
 	private final Lock readLock;
 	private final Lock writeLock;
 
-	private int[] indices;
-	private double[] values;
+	private final SparseDoubleArray doubleArray;
        
 	/**
 	 * Create the two lists, with zero values in them initially.
 	 */
 	public RowEntry() {
-	    indices = new int[0];
-	    values = new double[0];
+	    doubleArray = new SparseDoubleArray();
 	    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
 	    readLock = rwLock.readLock();
 	    writeLock = rwLock.writeLock();
@@ -220,17 +224,15 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
 
 	public double addAndGet(int col, double delta) {
 	    writeLock.lock();
- 	    int index = Arrays.binarySearch(indices, col);
- 	    double value = (index >= 0) ? values[index] : 0.0;
-	    set(col, value + delta);
-// 	    System.out.printf("value is %f, setting to %f%n", value, value + delta);
+	    double value = doubleArray.get(col);
+	    doubleArray.set(col, value + delta);
 	    writeLock.unlock();
 	    return value + delta;
 	}
 
 	public double getAndAdd(int col, double delta) {
 	    writeLock.lock();
-	    double value = get(col);
+	    double value = doubleArray.get(col);
 	    set(col, value + delta);
 	    writeLock.unlock();
 	    return value;
@@ -243,11 +245,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
 	 */
 	public double get(int column) {
 	    readLock.lock();
-	    int index = Arrays.binarySearch(indices, column);
-// 	    System.out.printf("get(%d), indices: %s, values %s%n", column,
-// 			      Arrays.toString(indices), Arrays.toString(values));
-	    double value = (index >= 0) ? values[index] : 0.0;
-	    //System.out.printf("get(%d) = %f%n", column, value);
+	    double value = doubleArray.get(column);
 	    readLock.unlock();
 	    return value;
 	}
@@ -261,76 +259,16 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
 	 */
 	public void set(int column, double value) {
 	    writeLock.lock();
-	    int index = Arrays.binarySearch(indices, column);
-
-	    if (value != 0) {
-		// need to make room in the indices array
-		if (index < 0) {
-		    int newIndex = 0 - (index + 1);
-		    int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
-		    double[] newValues = Arrays.copyOf(values, values.length + 1);
-		    
-		    // shift the elements down by one to make room
-		    for (int i = newIndex; i < values.length; ++i) {
-			newValues[i+1] = values[i];
-			newIndices[i+1] = indices[i];
-		    }
-		    
-		    // swap the arrays
-		    indices = newIndices;
-		    values = newValues;
-		    index = newIndex;
-		    
-		    // update the position of the index in the values array
-		    indices[index] = column;
-		}
-// 		System.out.printf("indices[%d] -> %f%n", index, value);
-		values[index] = value;
-	    }
-	    // The value is zero but previously held a spot in the matrix, so
-	    // remove its position and shift everything over
-	    else if (value == 0 && index >= 0) {
-		int newLength = indices.length - 1;
-		int[] newIndices = new int[newLength];
-		double[] newValues = new double[newLength];
-		for (int i = 0, j = 0; i < indices.length; ++i) {
-		    if (i != index) {
-			newIndices[j] = indices[i];
-			newValues[j] = values[i];			
-			j++;
-		    }
-		}
-		// swap the arrays
-		indices = newIndices;
-		values = newValues;
-	    }
-
-	    // note that in the even of a set with value 0 where the index was
-	    // not present, this method is a no-op
-
+	    doubleArray.set(column, value);
 	    writeLock.unlock();
 	}
 
 	public void set(double[] row) {
 	    writeLock.lock();
-	    // iterate throug once to find the number of non-zero indices
-	    int nonZero = 0;
-	    for (int i = 0; i < row.length; ++i) {
-		if (row[i] != 0)
-		    nonZero++;
-	    }
-	    // check to see whether we need to create new arrays or not
-	    if (nonZero != indices.length) {
-		indices = new int[nonZero];
-		values = new double[nonZero];
-	    }
-	    for (int i = 0, j = 0; i < row.length; ++i) {
-		if (row[i] != 0) {
-		    indices[j] = i;
-		    values[j] = row[i];
-		    j++;
-		}
-	    }
+	    // REMINDER: if a set(array[]) method is ever added to SparseArray,
+	    // this method should be updated to use it
+	    for (int i = 0; i < row.length; ++i) 
+		doubleArray.set(i, row[i]);
 	    writeLock.unlock();
 	}
 
@@ -340,9 +278,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
 	public double[] toArray(int columnSize) {
 	    readLock.lock();
 	    double[] dense = new double[columnSize];
-	    for (int i = 0; i < indices.length; ++i) {
-		dense[indices[i]] = values[i];
-	    }
+	    doubleArray.toPrimitiveArray(dense);
 	    readLock.unlock();
 	    return dense;
 	}

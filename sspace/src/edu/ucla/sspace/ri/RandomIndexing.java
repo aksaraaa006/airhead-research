@@ -49,8 +49,9 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.text.TokenFilter;
 import edu.ucla.sspace.text.WordIterator;
 
-import edu.ucla.sspace.util.IntegerMap;
 import edu.ucla.sspace.util.Duple;
+import edu.ucla.sspace.util.IntegerMap;
+import edu.ucla.sspace.util.SparseIntArray;
 
 
 /**
@@ -715,12 +716,10 @@ public class RandomIndexing implements SemanticSpace {
      */
     class SparseSemanticVector implements SemanticVector {
 
-	private int[] indices;
-	private int[] values;
+	private final SparseIntArray intArray;
 
 	public SparseSemanticVector() {
-	    indices = new int[0];
-	    values = new int[0];
+	    intArray = new SparseIntArray();
 	}
 	
 	/**
@@ -729,53 +728,19 @@ public class RandomIndexing implements SemanticSpace {
 	public synchronized void add(IndexVector v) {
 
 	    for (int p : v.positiveDimensions()) {
-		update(p, 1);
+		intArray.set(p, intArray.getPrimitive(p) + 1);
 	    }
 		
 	    for (int n : v.negativeDimensions()) {
-		update(n, -1);
+		intArray.set(n, intArray.getPrimitive(n) - 1);
 	    }		
-	}
-
-	/**
-	 * Updates the index vector at the index by adding the delta.  If the
-	 * sparse representation does not contain this index, the sparse arrays
-	 * are extended to make room for it.
-	 */
-	private void update(int index, int delta) {
-	    int pos = Arrays.binarySearch(indices, index);
-	    // need to make room in the indices array
-	    if (pos < 0) {
-		int newPos = 0 - (pos + 1);
-		int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
-		int[] newValues = Arrays.copyOf(values, values.length + 1);
-
-		// shift the elements down by one to make room
-		for (int i = newPos; i < values.length; ++i) {
-		    newValues[i+1] = values[i];
-		    newIndices[i+1] = indices[i];
-		}
-
-		// swap the arrays
-		indices = newIndices;
-		values = newValues;
-		pos = newPos;
-
-		// update the position of the index in the values array
-		indices[pos] = index;
-	    }
-	    
-	    values[pos] += delta;
 	}
 	
 	/**
 	 * {@inheritDoc}
 	 */
 	public synchronized int[] getVector() {
-	    int[] vector = new int[vectorLength];
-	    for (int i = 0; i < indices.length; ++i)
-		vector[indices[i]] = values[i];
-	    return vector;
+	    return intArray.toPrimitiveArray(new int[vectorLength]);
 	}
     }    
 }
