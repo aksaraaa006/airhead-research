@@ -272,9 +272,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	Map<String,Integer> termCounts = 
 	    new LinkedHashMap<String,Integer>(1 << 10, 16f);	
 
-	int lineNum = 0;
-	for (String line = null; (line = document.readLine()) != null; ) {
-	    
 	    Iterator<String> documentTokens = (filter == null)
 		? new WordIterator(document)
 		: new FilteredIterator(document, filter);
@@ -295,7 +292,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 			       ? Integer.valueOf(1)
 			       : Integer.valueOf(1 + termCount.intValue()));
 	    }
-	}
 
 	document.close();
 
