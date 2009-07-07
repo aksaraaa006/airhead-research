@@ -1,5 +1,19 @@
 #summary Details of the various releases
 #labels Featured
+= July 6, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.8
+
+
+
+
+*Changes*:
+`lsa.jar`
+
+
+*Details*
+
+  * Fixes a bug which prevented files from being processed.
 
 = June 18, 2009 =
 
