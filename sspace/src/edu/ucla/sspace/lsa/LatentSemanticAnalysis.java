@@ -45,6 +45,7 @@ import java.util.logging.Logger;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SVD;
 
@@ -214,10 +215,18 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     private final PrintWriter rawTermDocMatrixWriter;
 
     /**
-     * The word space of the LSA model.  This matrix is only available after the
+     * The word space of the LSA model, which is the left factor matrix of the
+     * SVD of the word-document matrix.  This matrix is only available after the
      * {@link #processSpace(Properties) processSpace} method has been called.
      */
     private Matrix wordSpace;
+
+    /**
+     * The document space of the LSA model, which is the right factor matrix of
+     * the SVD of the word-document matrix.  This matrix is only available after the
+     * {@link #processSpace(Properties) processSpace} method has been called.
+     */
+    private Matrix documentSpace;
 
     /**
      * An optional {@code TokenFilter} to use to remove tokens from document
@@ -254,6 +263,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	rawTermDocMatrixWriter = new PrintWriter(rawTermDocMatrix);
 
 	wordSpace = null;
+	documentSpace = null;
 
 	String filterProp = 
 	    properties.getProperty(TOKEN_FILTER_PROPERTY);
@@ -370,6 +380,37 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     }
 
     /**
+     * Returns the semantics of the document as represented by a numeric vector.
+     * Note that document semantics are represented in an entirely different
+     * space, so the corresponding semantic dimensions in the word space will be
+     * completely unrelated.  However, document vectors may be compared to find
+     * those document with similar content.<p>
+     *
+     * Similar to {@code getVectorFor}, this method is only to be used after
+     * {@code processSpace} has been called.<p>
+     *
+     * Implementation note: If a specific document ordering is needed, caution
+     * should be used when using this class in a multi-threaded environment.
+     * Beacuse the document number is based on what order it was
+     * <i>processed</i>, no guarantee is made that this will correspond with the
+     * original ordering.  However, in a single-threaded environment, the
+     * ordering will be maintained.
+     *
+     * @param documentNumber the number of the document according to when it was
+     *        processed
+     *
+     * @return the semantics of the document in the document space
+     */
+    public double[] getDocumentVector(int documentNumber) {
+	if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
+	    throw new IllegalArgumentException(
+		"Document number is not within the bounds of the number of "
+		+ "documents: " + documentNumber);
+	}
+	return documentSpace.getRow(documentNumber);
+    }
+
+    /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
@@ -446,6 +487,11 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	    
 	    // Load the left factor matrix, which is the word semantic space
 	    wordSpace = usv[0];
+	    // We transpose the document space to provide easier access to the
+	    // document vectors, which in the un-transposed version are the
+	    // columns.  NOTE: if the Matrix interface ever adds a getColumn()
+	    // method, it might be better to use that instead.
+	    documentSpace = Matrices.transpose(usv[2]);
 
 	} catch (IOException ioe) {
 	    //rethrow as Error
