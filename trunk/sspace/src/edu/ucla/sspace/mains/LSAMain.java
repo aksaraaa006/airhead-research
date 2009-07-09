@@ -68,6 +68,15 @@ import java.util.Properties;
  *        words <i>not</i> in the filter file should be retained in the
  *        document.
  *
+ *   <li> {@code -S}, {@code --svdAlgorithm}={@link
+ *        edu.ucla.sspace.matrix.SVD.Algorithm} species a specific {@code
+ *        SVD.Algorithm} method to use when reducing the dimensionality in LSA.
+ *        In general, users should not need to specify this option, as the
+ *        default setting will choose the fastest algorithm available on the
+ *        system.  This is only provided as an advanced option for users who
+ *        want to compare the algorithms' performance or any variations between
+ *        the SVD results.
+ *
  *   </ul>
  *
  * <li><u>Program Options</u>:
@@ -129,6 +138,9 @@ public class LSAMain extends GenericMain {
 	options.addOption('F', "tokenFilter", "filters to apply to the input " +
 			  "token stream", true, "FILTER_SPEC", 
 			  "Algorithm Options");
+	options.addOption('S', "svdAlgorithm", "a specific SVD algorithm to use"
+			  , true, "SVD.Algorithm", 
+			  "Algorithm Options");
     }
 
     public static void main(String[] args) {
@@ -169,6 +181,11 @@ public class LSAMain extends GenericMain {
 			      argOptions.getStringOption("tokenFilter"));
 	}
 
+	if (argOptions.hasOption("svdAlgorithm")) {
+	    props.setProperty(LatentSemanticAnalysis.LSA_SVD_ALGORITHM_PROPERTY,
+			      argOptions.getStringOption("svdAlgorithm"));
+	}
+
 	return props;
     }
 
@@ -184,6 +201,8 @@ public class LSAMain extends GenericMain {
 	    " then the path to the JAMA .jar file must\nbe specified using the"+
 	    " system property \"jama.path\".  To set this on the\ncommand-line,"
 	    + " use -Djama.path=<.jar location>.\n\n" +
+	    "Similarly, if COLT is to be used with this class being invoked" +
+	    " from a .jar,\n then the \"colt.path\" property must be set.\n\n" +
 	    "Token filter configurations are specified as a comman-separated " +
 	    "list of file\nnames, where each file name has an optional string" +
 	    " with values:inclusive or\nexclusive, which species whether the" +

@@ -141,6 +141,10 @@ public class TfIdfTransformer implements MatrixTransformer {
 	
     }
 
+    public String toString() {
+	return "TF-IDF";
+    }
+
 }
 
 
