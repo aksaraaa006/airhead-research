@@ -49,5 +49,9 @@ public class NoTransform implements MatrixTransformer {
         original.close();
         copy.close();
     }
+
+    public String toString() {
+	return "no";
+    }
     
 }

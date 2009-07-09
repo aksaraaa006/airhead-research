@@ -173,6 +173,10 @@ public class LogEntropyTransformer implements MatrixTransformer {
 	br.close();
 	pw.close();
     }      
+
+    public String toString() {
+	return "log-entropy";
+    }
     
 }
 

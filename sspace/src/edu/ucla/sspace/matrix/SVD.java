@@ -55,11 +55,12 @@ import edu.ucla.sspace.matrix.Matrix.Type;
  * <b>All SVD operations return an array of three {@link Matrix} instances that
  * correspond to <span style="font-family:Garamond, Georgia, serif">U &Sigma;
  * </span> and <span style="font-family:Garamond, Georgia, serif">
- * V<sup>T</sup></span></b>.
+ * V<sup>T</sup></span></b>.  Regardless of which algorithm is used, the
+ * matrices will be returned in this same orientation.
  *
  * <p>
  *
- * Four different SVD algorithms are possible:
+ * Five different SVD algorithms are possible:
  * <ol>
  *
  * <li> <a href="http://tedlab.mit.edu/~dr/svdlibc/">SVDLIBC</a> </li>
@@ -76,6 +77,8 @@ import edu.ucla.sspace.matrix.Matrix.Type;
  * href="http://octave.sourceforge.net/arpack/index.html">ARPACK</a> bindings
  * for Octave is installed. </li>
  *
+ * <li><a href="http://acs.lbl.gov/~hoschek/colt/">COLT</a> &nbsp; SVD</li>
+ *
  * <li><a href="http://math.nist.gov/javanumerics/jama/">JAMA</a> &nbsp;
  * SVD</li>
  *
@@ -85,8 +88,10 @@ import edu.ucla.sspace.matrix.Matrix.Type;
  * used to start the current JVM, or in the case of JAMA, are available in the
  * classpath.  <b>Note that if JAMA is used in conjunction with a {@code .jar}
  * executable, it's location needs to be specified with the {@code jama.path}
- * system property.</b>  This can be set on the command line using <tt>
- * -Djama.path=<i>path/to/jama</i></tt>.
+ * system property</b>.   This can be set on the command line using <tt>
+ * -Djama.path=<i>path/to/jama</i></tt>.  Similarly, if COLT is to be used in
+ * conjunction with a {@code .jar}, the location of the {@code colt.jar} file
+ * should be specified using the {@code colt.path} system property.
  *
  * <p>
  *
@@ -118,6 +123,7 @@ public class SVD {
 	MATLAB,
 	OCTAVE,
         JAMA,
+	COLT,
 	ANY
     }
 
@@ -212,6 +218,8 @@ public class SVD {
 		return matlabSVDS(matrix, dimensions);
 	    case OCTAVE:
 		return octaveSVDS(matrix, dimensions);
+	    case COLT:
+		return coltSVD(matrix, format, dimensions);
 	    case ANY:
 
 		// Keep copies of these around in case they are MATLAB and we
@@ -267,6 +275,12 @@ public class SVD {
 		    } catch (UnsupportedOperationException uoe) { }
 		}
 
+		if (isColtAvailable()) {
+		    try {
+			return coltSVD(matrix, format, dimensions);
+		    } catch (UnsupportedOperationException uoe) { }
+		}
+		
 		if (isJAMAavailable()) {
 		    try {
 			return jamaSVD(matrix, format, dimensions);
@@ -343,6 +357,110 @@ public class SVD {
     }
 
     /**
+     * Returns {@code true} if the COLT library is available
+     */
+    private static boolean isColtAvailable() {
+	try {
+	    // Try loading just the sparse matrix class, as if it is there, the
+	    // other matrix classes will be there as well
+	    Class<?> clazz = loadColtSparseMatrixClass();
+	} catch (ClassNotFoundException cnfe) {
+	    return false;
+	}
+	return true;
+    }
+
+    /**
+     * Reflectively loads the COLT {@code SparseDoubleMatrix2D} class.
+     */
+    private static Class<?> loadColtSparseMatrixClass() 
+	    throws ClassNotFoundException {
+
+	String coltMatrixClassName = 
+	    "cern.colt.matrix.impl.SparseDoubleMatrix2D";	
+	return loadColtClass(coltMatrixClassName);
+    }
+
+    /**
+     * Reflectively loads the COLT {@code DenseDoubleMatrix2D} class.
+     */
+    private static Class<?> loadColtDenseMatrixClass() 
+	    throws ClassNotFoundException {
+
+	String coltMatrixClassName = 
+	    "cern.colt.matrix.impl.DenseDoubleMatrix2D";	
+	return loadColtClass(coltMatrixClassName);
+    }
+
+    /**
+     * Reflectively loads the COLT {@code SingularValueDecompositoin} class.
+     */
+    private static Class<?> loadColtSVDClass() 
+	throws ClassNotFoundException {
+
+	String coltSVDClassName = 
+	    "cern.colt.matrix.linalg.SingularValueDecomposition";	
+	return loadColtClass(coltSVDClassName);
+    }	
+
+    /**
+     * Reflectively loads the COLT-related class.  If the class is not
+     * immediately loadable from the existing classpath, then this method will
+     * attempt to use the {@code colt.path} system environment variable to load
+     * it from an external resource.
+     */
+    private static Class<?> loadColtClass(String className) 
+	    throws ClassNotFoundException { 
+	try {
+	    Class<?> clazz = 
+		Class.forName(className);
+	    return clazz;
+	    
+	} catch (ClassNotFoundException cnfe) {
+
+	    // If we see a CNFE, don't immediately give up.  It's most likely
+	    // that this class is being invoked from inside a .jar, so see if
+	    // the user specified where COLT is manually.
+	    String coltProp = System.getProperty("colt.path");
+	    
+	    // if not, rethrow since the class does not exist
+	    if (coltProp == null)
+		throw cnfe;
+
+	    File coltJarFile = new File(coltProp);
+	    try {
+		// Otherwise, try to load the class from the specified .jar
+		// file.  If the ClassLoader for loading all COLT classes has
+		// not yet been initialized, do so now.  We need to maintain
+		// onlyone class loader for all COLT classes, otherwise the
+		// reflective invocation will fail; the constructor type system
+		// does not work correctly if the parameter objects have been
+		// loaded from a different class loader. --jurgens
+		if (coltClassLoader == null) {
+		    coltClassLoader = 
+			new java.net.URLClassLoader(
+		        new java.net.URL[] { coltJarFile.toURI().toURL() });
+		}
+
+		Class<?> clazz = Class.forName(className, true,
+					       coltClassLoader);
+		return clazz;
+	    } catch (Exception e) {
+		// fall through and rethrow original
+	    }
+	    
+	    throw cnfe;
+	}
+    }
+
+    // A private static field that is only initialized if COLT is used and the
+    // classes are not available using the default class loader.  Note that this
+    // field was intentionally put here to indicate where it was initialized in
+    // the method above, and to prevent developer confusion about why the SVD
+    // class would even need a custom class loader
+    private static java.net.URLClassLoader coltClassLoader = null;
+
+    /**
      * Returns {@code true} if the SVDLIBC library is available
      */
     private static boolean isSVDLIBCavailable() {
@@ -395,7 +513,7 @@ public class SVD {
 	// operation in order to avoid any compile-time dependencies on the
 	// package.
 	try {
-	    System.out.println("running JAMA");
+	    SVD_LOGGER.fine("attempting JAMA");
 	    isJAMAavailable();
 	    double[][] inputMatrix = MatrixIO.readMatrixArray(
 		matrix, format);
@@ -499,10 +617,175 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices
+     *         in that order
+     *
+     * @throws UnsupportedOperationException if the COLT SVD algorithm is
+     *         unavailable or if any error occurs during the process
+     */
+    static Matrix[] coltSVD(File matrix, Format format, int dimensions) {
+	// Use reflection to load the COLT classes and perform all the
+	// operation in order to avoid any compile-time dependencies on the
+	// package.
+	try {
+	    SVD_LOGGER.fine("attempting COLT");
+	    isColtAvailable();
+	    double[][] inputMatrix = MatrixIO.readMatrixArray(
+		matrix, format);
+
+	    int rows = inputMatrix.length;
+	    int cols = inputMatrix[0].length; // assume at least one row
+
+	    // COLT provides both a sparse and dense Matrix implementation.
+	    // Estimate which one would be more efficient based on the format
+	    // type.
+	    boolean isDense =  Matrices.isDense(format);
+	    Class<?> clazz = (isDense)
+		? loadColtDenseMatrixClass()
+		: loadColtSparseMatrixClass();
+	    Constructor<?> c = clazz.getConstructor(double[][].class);
+	    
+	    // create the COLT matrix using the java 2D array as values.  Note
+	    // that these values are automatically copied, which makes them
+	    // present in memory at the same time.  This could be particulary
+	    // inefficient if the values are also in memory elsewhere when they
+	    // were used to write to disk.  
+	    //
+	    // A possible option would be determine the matrix dimension but
+	    // still keep the values on disk, then read the values off the disk.
+	    // This would be slower, but may present a large memory savings -
+	    // especially for sparse matrices.  Keeping values on disk should be
+	    // considered if it is later discovered that this method presents a
+	    // performance bottleneck for COLT users.  --jurgens 7/7/09
+	    Object coltMatrix = 
+		c.newInstance(new Object[] { inputMatrix } );
+
+	    Class<?> svdClass = loadColtSVDClass();
+
+	    // Load the base class of both matrix classes for the constructor.
+	    // We need this class for looking up the correct type for the SVD
+	    // class constructor.
+	    Class<?> matrixBaseClass = loadColtClass(
+		"cern.colt.matrix.DoubleMatrix2D");
+
+	    // Load the constructor that takes in a DoubleMatrix2D
+  	    Constructor<?> svdConstructor = 
+  		svdClass.getConstructor(matrixBaseClass);
+
+	    // Compute the full SVD of the matrix
+	    Object svdObject = 
+		svdConstructor.newInstance(coltMatrix);
+
+	    Matrix[] usv = new Matrix[3];
+
+	    // covert the COLT u,s,v matrices to our matrices
+ 	    String[] matrixMethods = new String[] {"getU", "getS", "getV"};
+	    String[] matrixNames = new String[] {"COLT-U", "COLT-S", "COLT-V"};
+	    	    
+	    // Loop to avoid repeating reflection boilerplate code
+	    for (int i = 0; i < 3; ++i) {
+		Method matrixAccessMethod = svdObject.getClass().
+		    getMethod(matrixMethods[i], new Class[] {});
+		Object matrixObject = matrixAccessMethod.invoke(
+		    svdObject, new Object[] {});
+		Method toArrayMethod = matrixObject.getClass().
+		    getMethod("toArray", new Class[] {});
+
+		// COLT computes the full SVD, so the output matrices need to be
+		// truncated to the desired number of dimensions
+		resize:
+		switch (i) {
+		case 0: { // U array
+
+		    // get the full array
+		    double[][] matrixArray = (double[][])(toArrayMethod.
+		        invoke(matrixObject, new Object[] {}));
+
+		    Matrix u = Matrices.create(rows, dimensions, 
+					       Type.DENSE_IN_MEMORY);
+		    // fill the U matrix by copying over the values
+		    for (int row = 0; row < rows; ++row) {
+			for (int col = 0; col < dimensions; ++col) {
+			    u.set(row, col, matrixArray[row][col]);
+			}
+		    }
+		    usv[i] = u;
+		    break resize;
+		}
+
+		case 1: { // S array
+
+		    // Special case for the diagonal matrix.  Unlike U and V, it
+		    // would be a giant waste to load in the full 2D array for a
+		    // diagonal matrix.  Therefore just reflectively use the
+		    // matrix accessors to save memory.
+		    Matrix s = new DiagonalMatrix(dimensions);
+
+		    Method get = matrixObject.getClass().
+			getMethod("get", new Class[] {Integer.TYPE, 
+						      Integer.TYPE});
+
+		    for (int diag = 0; diag < dimensions; ++diag) {
+			double value = ((Double)(get.invoke(matrixObject,
+			    new Object[] {Integer.valueOf(diag),
+					  Integer.valueOf(diag) }))).doubleValue();
+			s.set(diag, diag, value);
+		    }
+		    usv[i] = s;
+		    break resize;
+		}
+
+		case 2: { // V array
+
+		    // get the full array
+		    double[][] matrixArray = (double[][])(toArrayMethod.
+		        invoke(matrixObject, new Object[] {}));
+
+		    // create it on disk since it's not expected that people
+		    // will access this matrix
+		    Matrix v = Matrices.create(dimensions, cols,
+					       Type.DENSE_ON_DISK);
+
+		    // Fill the V matrix by copying over the values.
+		    for (int row = 0; row < dimensions; ++row) {
+			for (int col = 0; col < cols; ++col) {
+			    v.set(row, col, matrixArray[row][col]);
+			}
+		    }
+		    usv[i] = v;
+		}
+		}
+	    }
+
+	    return usv;
+	} catch (ClassNotFoundException cnfe) {
+	    SVD_LOGGER.log(Level.SEVERE, "COLT", cnfe);
+	} catch (NoSuchMethodException nsme) {
+	    SVD_LOGGER.log(Level.SEVERE, "COLT", nsme);
+	} catch (InstantiationException ie) {
+	    SVD_LOGGER.log(Level.SEVERE, "COLT", ie);
+	} catch (IllegalAccessException iae) {
+	    SVD_LOGGER.log(Level.SEVERE, "COLT", iae);
+	} catch (InvocationTargetException ite) {
+	    SVD_LOGGER.log(Level.SEVERE, "COLT", ite);
+	} catch (IOException ioe) {
+	    SVD_LOGGER.log(Level.SEVERE, "COLT", ioe);
+	}
+	
+	throw new UnsupportedOperationException(
+	    "COLT-based SVD is not available on this system");
+    }
+
+    /**
+     *
+     *
+     * @param matrix a file containing a matrix
+     * @param dimensions the number of singular values to calculate
+     *
      * @return an array of {@code Matrix} objects for the U, S, and V matrices in
      *         that order
      *
-     * @throws UnsupportedOperationException if the JAMA SVD algorithm is
+     * @throws UnsupportedOperationException if the SVDLIBC SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] svdlibc(File matrix, int dimensions, Format format) {
@@ -625,7 +908,7 @@ public class SVD {
      * @return an array of {@code Matrix} objects for the U, S, and V matrices in
      *         that order
      *
-     * @throws UnsupportedOperationException if the JAMA SVD algorithm is
+     * @throws UnsupportedOperationException if the Matlab SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] matlabSVDS(File matrix, int dimensions) {
@@ -712,7 +995,7 @@ public class SVD {
      * @return an array of {@code Matrix} objects for the U, S, and V matrices in
      *         that order
      *
-     * @throws UnsupportedOperationException if the JAMA SVD algorithm is
+     * @throws UnsupportedOperationException if the Octave SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] octaveSVDS(File matrix, int dimensions) {

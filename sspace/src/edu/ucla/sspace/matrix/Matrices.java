@@ -22,6 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import java.util.logging.Logger;
 
@@ -121,6 +122,32 @@ public class Matrices {
 	}
 	throw new IllegalArgumentException(
 	    "Unknown matrix type: " + matrixType);
+    }
+
+    /**
+     * Returns {@code true} if the format is likely to produce a dense matrix.
+     * Due to the actual matrix contents being unknown, the return value is
+     * actual a best-effort guess.
+     *
+     * @param format the format of a matrix on disk
+     * @return {@code true} if the matrix is likely to be a dense matrix
+     */
+    static boolean isDense(Format format) {
+	switch (format) {
+	case DENSE_TEXT:
+	case SVDLIBC_DENSE_TEXT:
+	case SVDLIBC_DENSE_BINARY:
+	    return true;
+	case MATLAB_SPARSE:
+	case SVDLIBC_SPARSE_TEXT:
+	case SVDLIBC_SPARSE_BINARY:
+	    return false;
+	default:
+	    // We should never get here unless another format is added and this
+	    // method is never updated
+	    assert false;
+	    return true;
+	}
     }
 
     private static Matrix multiplyRightDiag(Matrix m1, Matrix m2) {

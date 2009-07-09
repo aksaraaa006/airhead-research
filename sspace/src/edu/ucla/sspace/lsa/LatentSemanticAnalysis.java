@@ -107,7 +107,7 @@ import edu.ucla.sspace.text.WordIterator;
  * <p>
  *
  * This class offers configurable preprocessing and dimensionality reduction.
- * through two parameters.
+ * through three parameters.
  *
  * <dl style="margin-left: 1em">
  *
@@ -127,6 +127,15 @@ import edu.ucla.sspace.text.WordIterator;
  *
  * <dd style="padding-top: .5em">The number of dimensions to use for the
  *       semantic space.  This value is used as input to the SVD.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value LSA_SVD_ALGORITHM_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link edu.ucla.sspace.matrix.SVD.Algorithm#ANY}
+ *
+ * <dd style="padding-top: .5em">This property sets the specific SVD algorithm
+ *       that LSA will use to reduce the dimensionality of the word-document
+ *       matrix.  In general, users should not need to set this property, as the
+ *       default behavior will choose the fastest available on the system.<p>
  *
  * </dl> <p>
  *
@@ -165,6 +174,16 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      */
     public static final String LSA_DIMENSIONS_PROPERTY =
 	PROPERTY_PREFIX + ".dimensions";
+
+    /**
+     * The property to set the specific SVD algorithm used by an instance during
+     * {@code processSpace}.  The value should be the name of a {@link
+     * edu.ucla.sspace.matrix.SVD.Algorithm}.  If this property is unset, any
+     * available algorithm will be used according to the ordering defined in
+     * {@link SVD}.
+     */
+    public static final String LSA_SVD_ALGORITHM_PROPERTY = 
+	PROPERTY_PREFIX + ".svd.algorithm";
 
     /**
      * Specifies the {@link TokenFilter} instances to apply to the tokenized
@@ -480,9 +499,15 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	    }
 
 	    LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
+
+	    String svdProp = properties.getProperty(LSA_SVD_ALGORITHM_PROPERTY);
+	    SVD.Algorithm alg = (svdProp == null)
+		? SVD.Algorithm.ANY
+		: SVD.Algorithm.valueOf(svdProp);
  
 	    // Compute SVD on the pre-processed matrix.
 	    Matrix[] usv = SVD.svd(processedTermDocumentMatrix, 
+				   alg,
 				   dimensions);
 	    
 	    // Load the left factor matrix, which is the word semantic space
