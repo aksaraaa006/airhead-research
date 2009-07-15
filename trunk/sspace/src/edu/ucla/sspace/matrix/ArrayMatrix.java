@@ -50,6 +50,29 @@ public class ArrayMatrix implements Matrix {
 	matrix = new double[rows*cols];
     }
 
+    public ArrayMatrix(double[][] matrix2d) {
+      if (matrix2d == null) {
+	    throw new IllegalArgumentException("invalid matrix dimensions");
+      }
+      rows = matrix2d.length;
+      if (rows < 1) {
+	    throw new IllegalArgumentException("invalid matrix dimensions");
+      }
+      cols = matrix2d[0].length;
+      if (cols < 1) {
+	    throw new IllegalArgumentException("invalid matrix dimensions");
+      }
+      matrix = new double[rows*cols];
+      for (int i = 0; i < rows; ++i) {
+        if (cols != matrix2d[i].length) {
+          throw new IllegalArgumentException("invalid matrix dimensions");
+        }
+        for (int j = 0; j < cols; ++j) {
+          set(i, j, matrix2d[i][j]);
+        }
+      }
+    }
+
     public ArrayMatrix(int rows, int cols, double[] matrix1D) {
 
 	this.rows = rows;
