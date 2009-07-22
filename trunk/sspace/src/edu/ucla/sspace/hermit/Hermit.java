@@ -376,12 +376,10 @@ public class Hermit implements SemanticSpace {
       }
 
       final Matrix termDocMatrix = loadLSAMatrix();
-      /*
-       * Remove the hermit specific processing, which should result in LSA.
-       */
 
-      int numThreads = 1;
-        //Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
+      int numThreads =
+        Integer.parseInt(properties.getProperty(NUM_THREADS_PROPERTY, "1"));
+
       List<Thread> threads = new ArrayList<Thread>();
 
       final Iterator<Map.Entry<String, Triplet>> tripletIter =
@@ -399,10 +397,10 @@ public class Hermit implements SemanticSpace {
                   continue;
               }
 
-              System.out.println("clustering: " + entry.getKey());
+              System.out.println("Custering values for: " + entry.getKey());
               int[] reassignments =
                 clusterSemanticVectors(entry.getValue(), properties);
-              System.out.println("splitting: " + entry.getKey());
+              System.out.println("Finished custering values for: " + entry.getKey());
               splitMatrix(termDocMatrix, entry.getKey(),
                           entry.getValue(), reassignments);
             }
@@ -444,7 +442,7 @@ public class Hermit implements SemanticSpace {
         } 
       }
 
-      File processedTermDocMatrix = dumpLSAMatrix(termDocMatrix);
+      File processedTermDocMatrix = rawTermDocMatrix; // dumpLSAMatrix(termDocMatrix);
 
       // Convert the split term counts using the specified transform
       File processedTermDocumentMatrix =
@@ -650,6 +648,7 @@ public class Hermit implements SemanticSpace {
           new DataInputStream(new FileInputStream(contextDump));
         long fileSize = contextDump.length();
         numContexts = fileSize / (4 * (1 + contextSize));
+        System.out.println("loaded context size: " + numContexts);
         for (; i < numContexts; ++i) {
           int docId = reader.readInt();
           int context[] = new int[contextSize];

@@ -185,6 +185,7 @@ public class SpectralClustering implements Clustering {
 
   public int recSpectralCluster(List<DataPoint> dataPoints) {
     int size = dataPoints.size();
+    System.out.println("data points to cluster: " + size);
     int nodeValue = nodeCount;
     ClusterNode currCluster = new ClusterNode();
     nodeClusters.add(currCluster);

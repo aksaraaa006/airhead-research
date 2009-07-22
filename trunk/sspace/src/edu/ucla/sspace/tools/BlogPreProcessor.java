@@ -63,16 +63,14 @@ public class BlogPreProcessor {
   private DocumentPreprocessor processor;
   private final PrintWriter pw;
   private boolean saveTS;
-  private String tsLength;
+  private long beginTime;
 
-  private BlogPreProcessor(File wordFile, File outFile,
-                           boolean saveTimestamp, String tsLength) {
+  private BlogPreProcessor(File wordFile, File outFile, long begin) {
     PrintWriter writer = null;
+    beginTime = begin;
     try {
       writer = new PrintWriter(outFile);
       processor = new DocumentPreprocessor(wordFile);
-      saveTS = saveTimestamp;
-      this.tsLength = tsLength;
     } catch (FileNotFoundException fnee) {
       fnee.printStackTrace();
       System.exit(1); 
@@ -120,18 +118,18 @@ public class BlogPreProcessor {
           needMoreContent = false;
         } else
           content.append(line);
-      } else if (saveTS && line.contains("<updated>")) {
+      } else if (line.contains("<updated>")) {
         // The updated timestamp only spans one line.
         int startIndex = line.indexOf(">")+1;
         int endIndex = line.lastIndexOf("<");
         date = line.substring(startIndex, endIndex);
         if (date.equals(""))
           date = null;
-      } else if (content != null && (!saveTS || date != null)) {
+      } else if (content != null && date != null) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
-        if (tsLength.equals("week"))
-          dateTime = dateTime - (dateTime % SECONDS_PER_WEEK);
+        if (dateTime < beginTime)
+          continue;
         String cleanedContent = processor.process(content.toString());
         if (!cleanedContent.equals("")) {
           synchronized (pw) {
@@ -155,9 +153,9 @@ public class BlogPreProcessor {
     opts.addOption('w', "wordlist", "Word List for cleaning documents",
                    true, "STRING", "Required");
     opts.addOption('t', "timestamp", "Include timestamps for each document");
+    opts.addOption('s', "beginTime", "Earliest timestamp for any document",
+                   true, "INTEGER", "Optional");
     opts.addOption('h', "threads", "number of threads", true, "INT");
-    opts.addOption('l', "lengthoftimestamp", "length of the time stamp's duration", 
-                   true, "STRING");
     return opts;
   }
 
@@ -173,16 +171,16 @@ public class BlogPreProcessor {
                          options.prettyPrint());
       System.exit(1);
     }
-    String tsLength =
-      options.hasOption('l') ? options.getStringOption('l') : "instant";
-
     // Load up the output file and the wordlist.
     File outFile = new File(options.getPositionalArg(0));
     File wordFile = new File(options.getStringOption("wordlist"));
 
     // Create the cleaner.
+    long startTime = (options.hasOption("beginTime")) ?
+      options.getLongOption("beginTime") : 0;
+
     final BlogPreProcessor blogCleaner =
-      new BlogPreProcessor(wordFile, outFile, true, tsLength);
+      new BlogPreProcessor(wordFile, outFile, startTime);
     String[] fileNames = options.getStringOption("docFiles").split(",");
 
 	// Load the program-specific options next.
