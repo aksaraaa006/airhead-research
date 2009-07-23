@@ -525,14 +525,17 @@ public class RandomIndexing implements SemanticSpace {
     }
 
     /**
-     *
+     * Returns an unmodifiable view on the word to {@link IndexVector} mapping
+     * used by this instance.
      */
     public Map<String,IndexVector> getWordToIndexVector() {
 	return Collections.unmodifiableMap(wordToIndexVector);
     }
 
     /**
-     *
+     * Assigns the word to {@link IndexVector} mapping to be used by this
+     * instance.  The map is copied internally, so any additional mappings added
+     * will not be reflected in the parameter set.
      */
     public void setWordToIndexVector(Map<String,IndexVector> m) {
 	wordToIndexVector.clear();
@@ -540,7 +543,13 @@ public class RandomIndexing implements SemanticSpace {
     }
 
     /**
+     * Sets a filter such that only words that are in the set have their
+     * semantics retained by this instance.  Note that all words will still have
+     * an index vector assigned to them, which is necessary to properly compute
+     * the semantics.
      *
+     * @param semanticsToCompute the set of words for which semantics should be
+     *        computed.
      */
     public void setSemanticFilter(Set<String> semanticsToCompute) {
 	semanticFilter.clear();
@@ -577,11 +586,12 @@ public class RandomIndexing implements SemanticSpace {
 	    }    
 
 	    // If we are filtering the semantic vectors, check whether this word
-	    // should have its semantics calculated.  In addition, check whether
-	    // the filter would not accept this word.
+	    // should have its semantics calculated.  In addition, if there is a
+	    // filter and it would have excluded the word, do not keep its
+	    // semantics around
 	    boolean calculateSemantics =
 		semanticFilter.isEmpty() || semanticFilter.contains(focusWord)
-		|| filter == null        || !filter.accept(focusWord);
+		&& (filter == null || filter.accept(focusWord));
 	    
 	    if (calculateSemantics) {
 
@@ -624,7 +634,7 @@ public class RandomIndexing implements SemanticSpace {
 		    if (filter != null && !filter.accept(word)) {
 			++permutations;
 			continue;
-		}
+		    }
 		    
 		    IndexVector iv = getIndexVector(word);
 		    if (usePermutations) {
