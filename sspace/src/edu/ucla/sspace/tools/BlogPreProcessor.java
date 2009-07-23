@@ -128,8 +128,11 @@ public class BlogPreProcessor {
       } else if (content != null && date != null) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
-        if (dateTime < beginTime)
+        if (dateTime < beginTime) {
+          needMoreContent = false;
+          date = null;
           continue;
+        }
         String cleanedContent = processor.process(content.toString());
         if (!cleanedContent.equals("")) {
           synchronized (pw) {

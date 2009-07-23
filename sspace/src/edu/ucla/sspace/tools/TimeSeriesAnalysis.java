@@ -28,6 +28,7 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.Statistics;
 import edu.ucla.sspace.matrix.Statistics.Dimension;
 
+import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.Pair;
 
 import java.io.BufferedReader;
@@ -40,13 +41,56 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TimeSeriesAnalysis {
+  private String timeSeriesPattern;
+  private String neighborPattern;
+  private OneLineDocumentSearcher searcher;
 
-  public static Matrix readInData(String[] dataFiles, int numIntervals) {
-    Matrix dataMatrix = new ArrayMatrix(dataFiles.length, numIntervals - 1);
-    int j = 0;
-    for (String dataFile : dataFiles) {
+  public TimeSeriesAnalysis(String timeSeries, String neighbors,
+                            OneLineDocumentSearcher searcher) {
+    timeSeriesPattern = timeSeries;
+    neighborPattern = neighbors;
+    this.searcher = searcher;
+  }
+
+  public List<Duple<String, List<String>>> findEvents(String[] words,
+                                                      int numIntervals) {
+    Matrix dataMatrix = readInData(words, numIntervals);
+    List<Pair<Integer>> events = detectEvents(dataMatrix);
+    List<Duple<String, List<String>>> eventDocs =
+      new ArrayList<Duple<String, List<String>>>();
+    for (Pair<Integer> event : events) {
+      String word = words[event.x];
+      String monthValue = (event.y < 10) ?
+        "0" + Integer.toString(event.y) :
+        Integer.toString(event.y);
+      String nnName =
+        neighborPattern.replace("%w", word).replace("%d", monthValue);
       try {
-        BufferedReader reader = new BufferedReader(new FileReader(dataFile));
+        BufferedReader reader = new BufferedReader(new FileReader(nnName));
+        List<String> neighbors = new ArrayList<String>();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+          if (line.length() == 0 || line.charAt(0) == '#')
+            continue;
+          neighbors.add(line);
+        }
+        Duple<String, List<String>> docs =
+          new Duple<String, List<String>>(word, neighbors);
+        eventDocs.add(docs);
+      } catch (IOException ioe) {
+        throw new IOError(ioe);
+      }
+    }
+    return eventDocs;
+  }
+
+  public Matrix readInData(String[] words, int numIntervals) {
+    Matrix dataMatrix = new ArrayMatrix(words.length, numIntervals - 1);
+    int j = 0;
+    for (String word: words) {
+      try {
+        BufferedReader reader = new BufferedReader(
+            new FileReader(timeSeriesPattern.replace("%w", word)));
         String line = null;
         double[] values = new double[numIntervals];
         int i = 0;
@@ -67,7 +111,7 @@ public class TimeSeriesAnalysis {
     return dataMatrix;
   }
 
-  public static List<Pair<Integer>> detectEvents(Matrix m) {
+  public List<Pair<Integer>> detectEvents(Matrix m) {
     Matrix averages = Statistics.average(m, Dimension.ROW);
     Matrix std = Statistics.std(m, averages, Dimension.ROW);
 
@@ -83,39 +127,45 @@ public class TimeSeriesAnalysis {
     return eventPairs;
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     ArgOptions opts = new ArgOptions();
-    opts.addOption('d', "docFiles",
-                   "List of comman seperated word similarity rating files",
-                   true, "FILE[,FILE,...]", "Required");
     opts.addOption('n', "numDataPoints",
                    "Number of data points for each word",
                    true, "INTEGER", "Required");
+    opts.addOption('i', "indexPath", "Directory with indexed blogs",
+                   true, "FILE", "Required");
+    opts.addOption('S', "simFilePattern", "Pattern for similarity files",
+                   true, "PATH/..%w..", "Required");
+    opts.addOption('N', "neighborFilePattern", "Pattern for neighbord files",
+                   true, "PATH/..%w..", "Required");
+    opts.addOption('w', "words", "Words to search through",
+                   true, "String[,String..]", "Required");
 
     opts.parseOptions(args);
     if (opts.numPositionalArgs() != 1 ||
-        !opts.hasOption("docFiles") ||
-        !opts.hasOption("numDataPoints")) {
+        !opts.hasOption("words") ||
+        !opts.hasOption("numDataPoints") ||
+        !opts.hasOption("indexPath") ||
+        !opts.hasOption("simFilePattern") ||
+        !opts.hasOption("neighborFilePattern")) {
       System.out.println("usage: java TimeSeriesAnalysis [OPTIONS] <out-file>" +
                          opts.prettyPrint());
       System.exit(1);
     }
 
-
-    String[] dataFiles = opts.getStringOption("docFiles").split(",");
+    String[] words = opts.getStringOption("words").split(",");
     int numIntervals = opts.getIntOption("numDataPoints");
-    Matrix dataMatrix = readInData(dataFiles, numIntervals);
-    List<Pair<Integer>> events = detectEvents(dataMatrix);
-
-    try {
-      PrintWriter writer = new PrintWriter(opts.getPositionalArg(0));
-      for (Pair<Integer> event : events) {
-        writer.printf("event detected in file %s for point %d\n", 
-                       dataFiles[event.x], event.y);
-      }
-      writer.close();
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
+    OneLineDocumentSearcher searcher = new OneLineDocumentSearcher(
+        opts.getStringOption("indexPath"));
+    String simPattern = opts.getStringOption("simFilePattern");
+    String neighPattern = opts.getStringOption("neighborFilePattern");
+    TimeSeriesAnalysis analyzer =
+      new TimeSeriesAnalysis(simPattern, neighPattern, searcher);
+    List<Duple<String, List<String>>> eventDocs = analyzer.findEvents(
+        words, numIntervals);
+    for (Duple<String, List<String>> docs : eventDocs) {
+      System.out.println(docs.y.size() +
+                         " events have been found for word: " + docs.x);
     }
   }
 }
