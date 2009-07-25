@@ -50,8 +50,8 @@ public class DocumentPreprocessor {
      * Constructs a {@code DocumentPreprocessor} with an empty word list 
      */
     public DocumentPreprocessor() {
-      processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
-      validWords = new HashSet<String>();
+	processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
+	validWords = new HashSet<String>();
     }
 
     /**
@@ -63,14 +63,14 @@ public class DocumentPreprocessor {
      */
     public DocumentPreprocessor(File wordList) throws IOException {
 
-    processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
+	processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
 	validWords = new HashSet<String>();
 	WordIterator it = new WordIterator(
 	    new BufferedReader(new FileReader(wordList)));
 	while (it.hasNext()) {
 	    validWords.add(it.next());
 	}
-    addKeyTokens();
+	addKeyTokens();
     }
 
     /**
@@ -79,20 +79,20 @@ public class DocumentPreprocessor {
      *
      */
     public DocumentPreprocessor(String[] wordList) {
-    processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
+	processedDocs = Collections.synchronizedSet(new HashSet<DocHash>());
 	validWords = new HashSet<String>();
 	for (String word : wordList) {
 	    validWords.add(word);
 	}
-    addKeyTokens();
+	addKeyTokens();
     }
 
     private void addKeyTokens() {
-      String keyTokens[] = {"'", "!", ".", "?", ",", ";", "(", ")", "[", "]",
-                            "/", ":", "\"", "&", "<", ">", "<num", "<url>",
-                            "<emote>", "<slash>", "dollars"};
-      for (String keyToken : keyTokens)
-        validWords.add(keyToken);
+	String keyTokens[] = {"'", "!", ".", "?", ",", ";", "(", ")", "[", "]",
+			      "/", ":", "\"", "&", "<", ">", "<num", "<url>",
+			      "<emote>", "<slash>", "dollars"};
+	for (String keyToken : keyTokens)
+	    validWords.add(keyToken);
     }
 
     /**
@@ -104,7 +104,7 @@ public class DocumentPreprocessor {
      * @return a cleaned version of the document
      */
     public String process(String document) {
-      return process(document, false);
+	return process(document, false);
     }
 
     /**
@@ -120,8 +120,12 @@ public class DocumentPreprocessor {
      */
     public String process(String document, boolean removeWords) {
 	
+	// Step 0: Replace any HTML-encoded entities, e.g. &nbsp; with their
+	// text equivalent
+	document = StringUtils.unescapeHTML(document);
+
 	// Step 1: Removing images, non-ascii codes, and HTML tags.
-    document = document.replaceAll("<.*?>", "");
+	document = document.replaceAll("<.*?>", "");
 	
 	// Step 2: Removing all non-standard punctuation and separating other
 	//         punctuation from adjacent words.
@@ -133,34 +137,34 @@ public class DocumentPreprocessor {
 	StringBuilder urlized = new StringBuilder(document.length());
 	while (st.hasMoreTokens()) {
 	    String tok = st.nextToken();
-        if (tok.endsWith("?")) {
-          urlized.append(tok.substring(0, tok.length() - 1)).append(" ?");
-        } else if (tok.endsWith(",")) {
-          urlized.append(tok.substring(0, tok.length() - 1)).append(" ,");
-        } else if (tok.endsWith(".")) {
-          urlized.append(tok.substring(0, tok.length() - 1)).append(" .");
-        } else if (tok.equals("&amp;")) {
-          urlized.append("&");
-        } else if (tok.equals("&lt;")) {
-          urlized.append("<");
-        } else if (tok.equals("&gt;")) {
-          urlized.append(">");
-        } else if (tok.equals("&quot;")) {
-          urlized.append("\"");
-        } else if (tok.equals("&#39;")) {
-          urlized.append("'");
-        } else if (tok.contains("@") &&
-		           tok.contains(".")) {
-          // assume it's an email address
-          urlized.append("<URL>");
+	    if (tok.endsWith("?")) {
+		urlized.append(tok.substring(0, tok.length() - 1)).append(" ?");
+	    } else if (tok.endsWith(",")) {
+		urlized.append(tok.substring(0, tok.length() - 1)).append(" ,");
+	    } else if (tok.endsWith(".")) {
+		urlized.append(tok.substring(0, tok.length() - 1)).append(" .");
+	    } else if (tok.equals("&amp;")) {
+		urlized.append("&");
+	    } else if (tok.equals("&lt;")) {
+		urlized.append("<");
+	    } else if (tok.equals("&gt;")) {
+		urlized.append(">");
+	    } else if (tok.equals("&quot;")) {
+		urlized.append("\"");
+	    } else if (tok.equals("&#39;")) {
+		urlized.append("'");
+	    } else if (tok.contains("@") &&
+		       tok.contains(".")) {
+		// assume it's an email address
+		urlized.append("<URL>");
 	    } else if (tok.startsWith("http") ||
-                  tok.startsWith("ftp")) {
-          urlized.append("<URL>");
-        } else if (tok.matches("[0-9]+")) {
-          urlized.append("<NUM>");
-        } else if (tok.equals("/")) {
-          urlized.append("<slash>");
-        }
+		       tok.startsWith("ftp")) {
+		urlized.append("<URL>");
+	    } else if (tok.matches("[0-9]+")) {
+		urlized.append("<NUM>");
+	    } else if (tok.equals("/")) {
+		urlized.append("<slash>");
+	    }
 	    // basic emotions
 	    else if ((tok.length() == 2 || tok.length() == 3) &&
 		     (tok.equals(":)") ||
@@ -181,7 +185,7 @@ public class DocumentPreprocessor {
 	    else {
 		urlized.append(tok);
 	    }
-        urlized.append(" ");
+	    urlized.append(" ");
 	}
 	document = urlized.toString().trim();
 	
@@ -233,8 +237,8 @@ public class DocumentPreprocessor {
 		// 
 		// NOTE: I still haven't found a better way of checking whether
 		// a string is actually a number  --jurgens
-          if (s.matches("[0-9]+"))
-            dollarized.append("<num>").append(" dollars ");
+		if (s.matches("[0-9]+"))
+		    dollarized.append("<num>").append(" dollars ");
 	    }
 	    else {
 		dollarized.append(tok).append(" ");
@@ -248,41 +252,41 @@ public class DocumentPreprocessor {
 	//         a large English word list. This has the effect of ﬁltering
 	//         out foreign text and articles that primarily contain computer
 	//         code.
-    if (validWords.size() > 0) {
-      int totalTokens = 0;
-      int actualWords = 0;
-      st = new StringTokenizer(document);
-      StringBuilder cleanedDoc = new StringBuilder(document.length());
-      while (st.hasMoreTokens()) {
-          String tok = st.nextToken();
-          totalTokens++;
-          if (validWords.contains(tok)) {
-            actualWords++;
-            if (removeWords)
-              cleanedDoc.append(tok).append(" ");
-          }
-      }
-      if (actualWords / (double)(totalTokens) < .4) {
-          // discard the document
-          return "";
-      }
-      if (removeWords)
-        document = cleanedDoc.toString();
+	if (validWords.size() > 0) {
+	    int totalTokens = 0;
+	    int actualWords = 0;
+	    st = new StringTokenizer(document);
+	    StringBuilder cleanedDoc = new StringBuilder(document.length());
+	    while (st.hasMoreTokens()) {
+		String tok = st.nextToken();
+		totalTokens++;
+		if (validWords.contains(tok)) {
+		    actualWords++;
+		    if (removeWords)
+			cleanedDoc.append(tok).append(" ");
+		}
+	    }
+	    if (actualWords / (double)(totalTokens) < .4) {
+		// discard the document
+		return "";
+	    }
+	    if (removeWords)
+		document = cleanedDoc.toString();
 	}
 	
 	// Step 9: Discarding duplicate articles. This was done by computing a
 	//         128-bit hash of the contents of each article. Articles with
 	//         identical hash values were assumed to be duplicates.
-    /*
-	DocHash hash = new DocHash(document);
-	if (processedDocs.contains(hash)) {
-	    // discard the document
-	    return "";
-	}
-	else {
-	    processedDocs.add(hash);
-	}
-    */
+	/*
+	  DocHash hash = new DocHash(document);
+	  if (processedDocs.contains(hash)) {
+	  // discard the document
+	  return "";
+	  }
+	  else {
+	  processedDocs.add(hash);
+	  }
+	*/
 
 	// Step 10: Performing automatic spelling correction.
 	
@@ -315,8 +319,8 @@ public class DocumentPreprocessor {
 
 	public boolean equals(Object o) {
 	    return o != null &&
-               o instanceof DocHash &&
-               Arrays.equals(hash, ((DocHash)o).hash);
+		o instanceof DocHash &&
+		Arrays.equals(hash, ((DocHash)o).hash);
 	}
 
 	private static byte[] hash(String article) {	    
