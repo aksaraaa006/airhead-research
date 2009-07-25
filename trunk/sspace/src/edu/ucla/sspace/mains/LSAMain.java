@@ -209,6 +209,11 @@ public class LSAMain extends GenericMain {
 	    " token are to be used for an exclusive\nfilter. The default " +
 	    "value is include. An example configuration might look like:\n" +
 	    "  --tokenFilter=english-dictionary.txt=include," +
-	    "stop-list.txt=exclude");
+	    "stop-list.txt=exclude\n\n" +
+	    "The --svdAlgorithm provides a way to manually specify which " + 
+	    "algorithm should\nbe used internally.  This option should not be" +
+	    " used normally, as LSA will\nselect the fastest algorithm " +
+	    "available.  However, in the event that it\nis needed, valid" +
+	    " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT");
     }
 }
