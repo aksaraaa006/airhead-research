@@ -110,8 +110,13 @@ public class StringUtils {
 	HTML_CODES.put("&uuml;","ü");
 	HTML_CODES.put("&yacute;","ý");
 	HTML_CODES.put("&thorn;","þ");
-	HTML_CODES.put("&yuml;","ÿ");    
+	HTML_CODES.put("&yuml;","ÿ");
+	HTML_CODES.put("&lt;","<");
+	HTML_CODES.put("&gt;",">");
+	HTML_CODES.put("&quot;","\"");
+	HTML_CODES.put("&amp;","&");
 
+	LATIN1_CODES.put("&#039;", "'");
 	LATIN1_CODES.put("&#160;", " ");
 	LATIN1_CODES.put("&#162;", "¢");
 	LATIN1_CODES.put("&#164;", "¤");
