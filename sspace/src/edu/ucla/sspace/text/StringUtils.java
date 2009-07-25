@@ -167,6 +167,7 @@ public class StringUtils {
 	LATIN1_CODES.put("&#254;", "þ");
 	LATIN1_CODES.put("&#34;", "\"");
 	LATIN1_CODES.put("&#38;", "&");
+	LATIN1_CODES.put("&#8217;", "'");
     }
 
 
