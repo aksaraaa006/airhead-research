@@ -22,7 +22,7 @@
 package edu.ucla.sspace.util;
 
 /**
- *
+ * A utility class for holding two of the same type of object.
  */
 public class Pair<T> {
 
