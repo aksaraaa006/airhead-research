@@ -1,11 +1,23 @@
 #summary Details of the various releases
 #labels Featured
+
+= July 24, 2009 =
+
+[LatentSemanticAnalysis LSA] version 0.1.9
+
+*Changes*:
+`lsa.jar`
+
+
+*Details*
+
+  * New support for [http://dsd.lbl.gov/~hoschek/colt/ COLT] SVD
+  * Support for manually selecting the SVD algorithm to use
+  * Minor performance increase in parsing
+
 = July 6, 2009 =
 
 [LatentSemanticAnalysis LSA] version 0.1.8
-
-
-
 
 *Changes*:
 `lsa.jar`
