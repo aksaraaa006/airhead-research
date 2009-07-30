@@ -64,10 +64,12 @@ public class BlogPreProcessor {
   private final PrintWriter pw;
   private boolean saveTS;
   private long beginTime;
+  private long endTime;
 
-  private BlogPreProcessor(File wordFile, File outFile, long begin) {
+  private BlogPreProcessor(File wordFile, File outFile, long begin, long end) {
     PrintWriter writer = null;
     beginTime = begin;
+    endTime = end;
     try {
       writer = new PrintWriter(outFile);
       processor = new DocumentPreprocessor(wordFile);
@@ -90,7 +92,7 @@ public class BlogPreProcessor {
     String line = null;
     String date = null;
     String id = null;
-    StringBuffer content = new StringBuffer();
+    StringBuilder content = new StringBuilder();
     boolean needMoreContent = false;
     while ((line = br.readLine()) != null) {
       if (line.contains("<id>")) {
@@ -103,6 +105,7 @@ public class BlogPreProcessor {
         // overwrite the previous content value.
         int startIndex = line.indexOf(">")+1;
         int endIndex = line.lastIndexOf("<");
+        content = new StringBuilder();
         if (endIndex > startIndex)
           content.append(line.substring(startIndex, endIndex));
         else {
@@ -128,7 +131,7 @@ public class BlogPreProcessor {
       } else if (content != null && date != null) {
         // Cleand and print out the content and date.
         long dateTime = Timestamp.valueOf(date).getTime();
-        if (dateTime < beginTime) {
+        if (dateTime < beginTime || dateTime > endTime) {
           needMoreContent = false;
           date = null;
           continue;
@@ -140,8 +143,8 @@ public class BlogPreProcessor {
             pw.flush();
           }
         }
-        LOGGER.info(String.format("Processed blog %s", id));
-        content = new StringBuffer();
+        LOGGER.info(String.format("Processed blog %s with timestamp %d",
+                                  id, dateTime));
         needMoreContent = false;
         date = null;
       }
@@ -155,8 +158,9 @@ public class BlogPreProcessor {
                    true, "FILE[,FILE,...]", "Required");
     opts.addOption('w', "wordlist", "Word List for cleaning documents",
                    true, "STRING", "Required");
-    opts.addOption('t', "timestamp", "Include timestamps for each document");
     opts.addOption('s', "beginTime", "Earliest timestamp for any document",
+                   true, "INTEGER", "Optional");
+    opts.addOption('e', "endTime", "Latest timestamp for any document",
                    true, "INTEGER", "Optional");
     opts.addOption('h', "threads", "number of threads", true, "INT");
     return opts;
@@ -181,9 +185,11 @@ public class BlogPreProcessor {
     // Create the cleaner.
     long startTime = (options.hasOption("beginTime")) ?
       options.getLongOption("beginTime") : 0;
+    long endTime = (options.hasOption("endTime")) ?
+      options.getLongOption("endTime") : Long.MAX_VALUE;
 
     final BlogPreProcessor blogCleaner =
-      new BlogPreProcessor(wordFile, outFile, startTime);
+      new BlogPreProcessor(wordFile, outFile, startTime, endTime);
     String[] fileNames = options.getStringOption("docFiles").split(",");
 
 	// Load the program-specific options next.
