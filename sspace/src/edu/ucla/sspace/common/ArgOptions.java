@@ -352,6 +352,28 @@ public class ArgOptions {
 	return o;
     }
 
+    public double getDoubleOption(char shortName) {
+	Option o = getOption(shortName);
+	if (optionToValue.containsKey(o)) {
+	    return Double.parseDouble(optionToValue.get(o));
+	}
+	else {
+	    throw new IllegalArgumentException(
+		"Option -" + shortName + " does not have a value");
+	}
+    }
+
+    public double getDoubleOption(String optionName) {
+	Option o = getOption(optionName);
+	if (optionToValue.containsKey(o)) {
+	    return Double.parseDouble(optionToValue.get(o));
+	}
+	else {
+	    throw new IllegalArgumentException(
+		"Option " + optionName + " does not have a value");
+	}
+    }
+
     public long getLongOption(char shortName) {
 	Option o = getOption(shortName);
 	if (optionToValue.containsKey(o)) {
