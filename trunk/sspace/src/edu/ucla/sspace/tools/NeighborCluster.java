@@ -18,11 +18,17 @@ public class NeighborCluster {
   public static List<List<String>> findNeighborClusters(
       File neighborFile,
       double threshold) throws IOException {
+    List<List<String>> clusters = new ArrayList<List<String>>();
     BufferedReader reader = new BufferedReader(new FileReader(neighborFile));
     String line = null;
     line = reader.readLine();
-    if (line == null)
-      return null;
+    if (line == null) {
+      List<String> empty = new ArrayList<String>();
+      empty.add("");
+      clusters.add(empty);
+      return clusters;
+    }
+
     String[] terms = line.split("\\s");
     Map<String, Integer> termMap = new HashMap<String, Integer>();
     int r = 0;
@@ -31,7 +37,6 @@ public class NeighborCluster {
       r++;
     }
     Matrix comparisons = new ArrayMatrix(terms.length, terms.length);
-    List<List<String>> clusters = new ArrayList<List<String>>();
     r = 0;
     while ((line = reader.readLine()) != null) {
       String[] termComps = line.split("\\s");
@@ -57,7 +62,6 @@ public class NeighborCluster {
       bestCluster.add(termComps[0]);
       r++;
     }
-
     return clusters;
   }
 
