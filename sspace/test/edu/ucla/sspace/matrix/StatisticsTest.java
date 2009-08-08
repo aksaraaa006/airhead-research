@@ -53,4 +53,32 @@ public class StatisticsTest {
       }
     }
   }
+
+  @Test public void testRowAverageIgnoreErrors() {
+    double[][] v = {{1, -2, 1, 1}, {1, -2, 3, 4}, {5, 5, -2, 5}};
+    Matrix m = new ArrayMatrix(v);
+    Matrix expected = new ArrayMatrix(new double[][] {{1}, {2.66666}, {5}});
+    Matrix actual = Statistics.average(m, Statistics.Dimension.ROW, -2);
+    assertEquals(expected.rows(), actual.rows()); 
+    assertEquals(expected.columns(), actual.columns());
+    for (int i = 0; i < actual.rows(); ++i) {
+      for (int j = 0; j < actual.columns(); ++j) {
+        assertEquals(expected.get(i, j), actual.get(i, j), .0001);
+      }
+    }
+  }
+
+  @Test public void testRowStdIgnoreErrors() {
+    double[][] v = {{1, 1, -2, 1}, {1, 2, 3, 4}, {5, 5, 5, -2}};
+    Matrix m = new ArrayMatrix(v);
+    Matrix expected = new ArrayMatrix(new double[][] {{0}, {1.11803399}, {0}});
+    Matrix actual = Statistics.std(m, null, Statistics.Dimension.ROW, -2);
+    assertEquals(expected.rows(), actual.rows()); 
+    assertEquals(expected.columns(), actual.columns());
+    for (int i = 0; i < actual.rows(); ++i) {
+      for (int j = 0; j < actual.columns(); ++j) {
+        assertEquals(expected.get(i, j), actual.get(i, j), .0001);
+      }
+    }
+  }
 }
