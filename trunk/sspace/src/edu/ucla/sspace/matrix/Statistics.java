@@ -165,7 +165,7 @@ public class Statistics {
                            int errorCode) {
     // Generate the average if not provided.
     if (average == null) {
-      average = average(m, dim);
+      average = average(m, dim, errorCode);
     }
     // Handle a few error cases.
     if ((dim == Dimension.ALL &&
