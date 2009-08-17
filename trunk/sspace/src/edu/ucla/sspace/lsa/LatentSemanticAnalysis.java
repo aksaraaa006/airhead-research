@@ -49,9 +49,7 @@ import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SVD;
 
-import edu.ucla.sspace.text.FilteredIterator;
-import edu.ucla.sspace.text.TokenFilter;
-import edu.ucla.sspace.text.WordIterator;
+import edu.ucla.sspace.text.IteratorFactory;
 
 /**
  * An implementation of Latent Semantic Analysis (LSA).  This implementation is
@@ -117,7 +115,7 @@ import edu.ucla.sspace.text.WordIterator;
  *
  * <dd style="padding-top: .5em">This variable sets the preprocessing algorithm
  *      to use on the term-document matrix prior to computing the SVD.  The
- *      property value should be teh fully qualified named of a class that
+ *      property value should be the fully qualified named of a class that
  *      implements {@link MatrixTransformer}.  The class should be public, not
  *      abstract, and should provide a public no-arg constructor.<p>
  *
@@ -186,13 +184,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	PROPERTY_PREFIX + ".svd.algorithm";
 
     /**
-     * Specifies the {@link TokenFilter} instances to apply to the tokenized
-     * input stream before {@code processDocument} runs.
-     */
-    public static final String TOKEN_FILTER_PROPERTY = 
-	PROPERTY_PREFIX + ".tokenFilter";
-
-    /**
      * The name prefix used with {@link #getName()}
      */
     private static final String LSA_SSPACE_NAME =
@@ -246,12 +237,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * {@link #processSpace(Properties) processSpace} method has been called.
      */
     private Matrix documentSpace;
-
-    /**
-     * An optional {@code TokenFilter} to use to remove tokens from document
-     */
-    private final TokenFilter filter;
-
     
     /**
      * Constructs the {@code LatentSemanticAnalysis} using the system properties
@@ -283,12 +268,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
 	wordSpace = null;
 	documentSpace = null;
-
-	String filterProp = 
-	    properties.getProperty(TOKEN_FILTER_PROPERTY);
-	filter = (filterProp != null)
-	    ? TokenFilter.loadFromSpecification(filterProp)
-	    : null;
     }   
 
     /**
@@ -301,9 +280,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 	Map<String,Integer> termCounts = 
 	    new LinkedHashMap<String,Integer>(1 << 10, 16f);	
 
-	    Iterator<String> documentTokens = (filter == null)
-		? new WordIterator(document)
-		: new FilteredIterator(document, filter);
+	    Iterator<String> documentTokens = 
+		IteratorFactory.tokenize(document);
 
 	    // for each word in the text document, keep a count of how many
 	    // times it has occurred

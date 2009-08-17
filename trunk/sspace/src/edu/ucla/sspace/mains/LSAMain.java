@@ -135,9 +135,6 @@ public class LSAMain extends GenericMain {
 	options.addOption('p', "preprocess", "a MatrixTransform class to "
 			  + "use for preprocessing", true, "CLASSNAME",
 			  "Algorithm Options");
-	options.addOption('F', "tokenFilter", "filters to apply to the input " +
-			  "token stream", true, "FILTER_SPEC", 
-			  "Algorithm Options");
 	options.addOption('S', "svdAlgorithm", "a specific SVD algorithm to use"
 			  , true, "SVD.Algorithm", 
 			  "Algorithm Options");
@@ -174,11 +171,6 @@ public class LSAMain extends GenericMain {
 	if (argOptions.hasOption("preprocess")) {
 	    props.setProperty(LatentSemanticAnalysis.MATRIX_TRANSFORM_PROPERTY,
 			      argOptions.getStringOption("preprocess"));
-	}
-
-	if (argOptions.hasOption("tokenFilter")) {
-	    props.setProperty(LatentSemanticAnalysis.TOKEN_FILTER_PROPERTY,
-			      argOptions.getStringOption("tokenFilter"));
 	}
 
 	if (argOptions.hasOption("svdAlgorithm")) {
