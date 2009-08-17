@@ -29,6 +29,7 @@ import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.FileListDocumentIterator;
+import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
@@ -194,6 +195,14 @@ public abstract class GenericMain {
 			  "Program Options");
 	options.addOption('v', "verbose", "prints verbose output",
 			  false, null, "Program Options");
+
+	options.addOption('F', "tokenFilter", "filters to apply to the input " +
+			  "token stream", true, "FILTER_SPEC", 
+			  "Tokenizing Options");
+	options.addOption('C', "compoundWords", "a file where each line is a " +
+			  "recognized compound word", true, "FILE", 
+			  "Tokenizing Options");
+
 	addExtraOptions(options);
 	return options;
     }
@@ -290,6 +299,20 @@ public abstract class GenericMain {
 	handleExtraOptions();
 
 	Properties props = setupProperties();
+
+	// Initialize the IteratorFactory to tokenize the documents according to
+	// the specified configuration (e.g. filtering, compound words)
+	if (argOptions.hasOption("tokenFilter")) {
+	    props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
+			      argOptions.getStringOption("tokenFilter"));	    
+	}
+
+	if (argOptions.hasOption("compoundTokens")) {
+	    props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
+			      argOptions.getStringOption("compoundTokens"));
+	}
+	IteratorFactory.setProperties(props);
+
 	// use the System properties in case the user specified them as
 	// -Dprop=<val> to the JVM directly.
 

@@ -22,7 +22,7 @@
 package edu.ucla.sspace.util;
 
 /**
- *
+ * A wrapper for containing two objects of different types.
  */
 public class Duple<T, U> {
 

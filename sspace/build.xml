@@ -178,8 +178,10 @@
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.text.DocumentPreprocessorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.IteratorFactoryTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.StringUtilsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestWordIterator" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.TestCompoundWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.WordFilterTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.util.HashMultiMapTests" todir="${report.dir}"/>

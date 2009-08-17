@@ -179,6 +179,8 @@ public class TokenFilter {
 
 	// multiple filter files are specified using a ',' to separate them
 	String[] fileAndOptionalFlag = configuration.split(",");
+	System.out.println("configuration: " + configuration);
+	System.out.println("arr.length: " + fileAndOptionalFlag.length);
 
 	for (String s : fileAndOptionalFlag) {
 	    // If the words in the file are manually specified to be applied in
@@ -210,9 +212,7 @@ public class TokenFilter {
 		BufferedReader br = 
 		    new BufferedReader(new FileReader(filename));
 		for (String line = null; (line = br.readLine()) != null; ) {
-		    for (String token : line.split("\\s+")) {
-			words.add(token);
-		    }
+		    words.add(line);
 		}
 		br.close();
 	    } catch (IOException ioe) {
