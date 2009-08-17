@@ -1,6 +1,8 @@
 #summary Frequently Asked Questions about the S-Space Package
 #labels Featured
 
+<wiki:toc max_depth="2" />
+
 = Code =
 
 == How do I get the code? ==
@@ -25,7 +27,22 @@ Please file it in our [http://code.google.com/p/airhead-research/issues/list iss
 
 == The code doesn't compile! ==
 
-Check that you're using Java 6.  (This is especially important for OS X, where the default Java version is currently Java 5.)  If you're building from the SVN trunk and using Java 6, [mailto:s-space-research-dev@googlegroups.com let us know].  We maintain that the trunk should always compile so if it doesn't for some reason, we will fix it right away
+Check that you're using Java 6.  (This is especially important for OS X, where the default Java version is currently Java 5.)  If you're building from the SVN trunk and using Java 6, [mailto:s-space-research-dev@googlegroups.com let us know].  We maintain that the trunk should always compile so if it doesn't for some reason, we will fix it right away.
+
+== Can I get feature X? == 
+
+Probably, but how soon is going to be the limiting factor.  We often have unfinished code in our private repository that may be what you're looking for.  Due to changes in focus, we never get around to properly testing and commenting this code, so it sits by not checked in.  
+
+If we haven't implemented it yet, and the idea make sense, then we'll move it to the top of our to-do list.  
+
+As always, the easiest way to get something implemented is to email us at [mailto:s-space-research-dev@googlegroups.com s-space-research-dev@googlegroups.com] and let us know what you want to see.
+
+== Why do you require external SVD programs when you have an SVD.java class? ==
+
+Our current code base doesn't have an actual SVD implementation.  While other all-Java SVD implementations exist (e.g. COLT and JAMA), they do not support a sparse SVD.  In almost all of the use cases, this results in a prohibitively large memory requirement.  SVDLIBC, Octave and Matlab all have sparse SVD implementations that are fast and reasonably efficient.  Our `SVD.java` class is merely a wrapper that calls the appropriate external SVD-engine to do the heavy lifting.
+
+However, if there were a fast, memory efficient all-Java sparse SVD, we would use it.  If you know of one, please let us know.  We have searched extensively for one, but were unable to find any.  We have debated about implementing one, but this would detract from the current focus of the package, so any tentative plans are currently on hold.
+
 
 = Running Algorithms =
 
@@ -74,6 +91,16 @@ and so on.  The best way to assess whether this is the root issue is to count ho
 
 If you think the algorithm should still scale to the number of unique words but is still throwing errors, please let us know.
 
+== I keep getting a `Exception in thread "main" java.lang.UnsupportedOperationException: No SVD algorithms are available` ==
+
+It looks like our SVD.java code can't find the backing SVD program that actually does the computation.  
+
+For SVDLIBC, Matlab and Octave, check if you can call that from the command line.  For example, if you have Matlab installed, you should be able to type `matlab` from the command-line and have the Matlab program start to run.  
+
+For JAMA and COLT, check that the .jar files are specified in the path.  If you are running an algorithm from a .jar, ensure that you specify the `-Djama.path` or `-Dcolt.path` properties as necessary.
+
+If you can't get any of these to work, let us know so we can help strategize.  The SVD is a particular pain point for us as well, so we want to make sure "it just works."
+
 = Corpus Questions =
 
 == I want to filter out certain words in my corpus (i.e. stop words) ==
@@ -91,3 +118,13 @@ Having too large of a corpus is also an important issue. LSA is much more sensit
 == Who do I contact with questions about the project? ==
 
 If it is a general question, contact [mailto:s-space-research-dev@googlegroups.com s-space-research-dev@googlegroups.com].  If you need a private question answered, please email David Jurgens or Keith Stevens.
+
+== Why does the project activity tend to drop off in the summer ==
+
+Two possible reasons.  One, we often work on much larger scale projects during the summer.  We intend to port these to S-Space package once they are finished, but we don't want to leave intermediate files in the repository until they're verified as working.
+
+Second during the summer, many of the graduate students and undergraduates working on the project leave on vacation or for work.  This puts a time constraint on how much work can be done.  However, work is still being done, even if it isn't committed.
+
+== Why _Airhead_ Research ==
+
+Airhead Research sands for AI-Head Research.  This is a throw-back from an older name for the lab, which we have taken as our own.  We're still working on a nice-sounding acronym for "head" to fill out the title.
