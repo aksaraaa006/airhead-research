@@ -187,11 +187,6 @@ public class HALMain extends GenericMain {
  			      argOptions.getStringOption("weighting"));
  	}	
 
-	if (argOptions.hasOption("tokenFilter")) {
-	    props.setProperty(HyperspaceAnalogueToLanguage.TOKEN_FILTER_PROPERTY,
-			      argOptions.getStringOption("tokenFilter"));
-	}
-
 	return props;
     }
 

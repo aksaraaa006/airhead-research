@@ -34,7 +34,7 @@ import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
 import edu.ucla.sspace.text.StringUtils;
-import edu.ucla.sspace.text.WordIterator;
+import edu.ucla.sspace.text.IteratorFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -164,7 +164,7 @@ public class Coals implements SemanticSpace {
     HashMap<Index, Integer> documentCorrels = new HashMap<Index, Integer>();
     Queue<String> prevWords = new ArrayDeque<String>();
     Queue<String> nextWords = new ArrayDeque<String>();
-    WordIterator it = new WordIterator(document);
+    Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
     for (int i = 0; i < 4 && it.hasNext(); ++i)
       nextWords.offer(it.next());
 

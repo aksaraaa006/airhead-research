@@ -28,6 +28,8 @@ import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorUtil;
 import edu.ucla.sspace.ri.RandomIndexing;
 
+import edu.ucla.sspace.text.IteratorFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.IOError;
@@ -174,8 +176,6 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
 			  + " before processing", true,
 			  "FILE", "Algorithm Options");
-	options.addOption('F', "tokenFilter", "filters to apply to the input " +
-			  "token stream", true, "FILTER_SPEC", "Input Options");
     }
 
     public static void main(String[] args) {
@@ -218,11 +218,6 @@ public class RandomIndexingMain extends GenericMain {
 	if (argOptions.hasOption("useSparseSemantics")) {
 	    props.setProperty(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY,
 			      argOptions.getStringOption("useSparseSemantics"));
-	}
-
-	if (argOptions.hasOption("tokenFilter")) {
-	    props.setProperty(RandomIndexing.TOKEN_FILTER_PROPERTY,
-			      argOptions.getStringOption("tokenFilter"));
 	}
 
 	return props;
