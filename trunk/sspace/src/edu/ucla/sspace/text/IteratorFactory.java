@@ -26,9 +26,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.StringReader;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -73,6 +76,18 @@ import java.util.Set;
  * Therefore if filtering is enabled, any compound token should also be
  * permitted by the word filter.<p>
  *
+ * Note that this class provides two distinct ways to access the token streams
+ * if filtering is enabled.  The {@link #tokenize(BufferedReader) tokenize}
+ * method will filter out any tokens without any indication.  This can
+ * significantly alter the original ordering of the token stream.  For
+ * applications where the original ordering needs to be preserved, the {@link
+ * #tokenizeOrdered(BufferedReader) tokenizeOrdered} method should be used
+ * instead.  This method will return the {@code IteratorFactor.EMTPY_TOKEN}
+ * value to indicate that a token has been removed.  This preserves the original
+ * token ordering without requiring applications to do the filtering themselves.
+ * Note that If filtering is disabled, the two methods will return the same
+ * tokens.<p>
+ *
  * This class is thread-safe.
  *
  * @see WordIterator
@@ -80,6 +95,15 @@ import java.util.Set;
  * @see CompoundWordIterator
  */
 public class IteratorFactory {
+
+    /**
+     * The signifier that stands in place of a token has been removed from an
+     * iterator's token stream by means of a {@link TokenFilter}.  Tokens
+     * returned by {@link #tokenizeOrdered(BufferedReader) tokenizeOrdered} may
+     * be checked against this value to determine whether a token at that
+     * position in the stream would have been returned but was removed.
+     */
+    public static final String EMPTY_TOKEN = "";
 
     /** 
      * The prefix for naming publically accessible properties
@@ -107,15 +131,16 @@ public class IteratorFactory {
     private static TokenFilter filter;
     
     /**
-     * A thread-local cache of the compound word iterator if one is currently
-     * being used to tokenize the streams.  Thread-local storage is used so that
-     * the {@link CompoundWordIterator#reset(BufferedReader)} method on the
-     * current thread's iterator can be used without destroying another thread's
-     * state.
+     * A mapping from a thread that is currently processing tokens to the {@link
+     * CompoundWordIterator} doing the tokenizing if compound word support is
+     * enabled.  This mapping is required for two reasons.  One to reduce the
+     * overhead of creating {@code CompoundWordIterators} by calling {@code
+     * reset} on them; and two, to provide a way for any updates to the list of
+     * compound words to propagate to the threads that process them.
      */
-    private static final ThreadLocal<CompoundWordIterator> compoundIterators
-	= new ThreadLocal<CompoundWordIterator>();
-   
+    private static final Map<Thread,CompoundWordIterator> compoundIterators
+	= new HashMap<Thread,CompoundWordIterator>();
+
     /**
      * The set of compound tokens recognized by the system or {@code null} if
      * none are recognized
@@ -157,6 +182,17 @@ public class IteratorFactory {
 		for (String line = null; (line = br.readLine()) != null; ) {
 		    compoundTokens.add(line);
 		}
+		// For any currently processing threads, update their mapped
+		// iterator with the new set of tokens
+		for (Map.Entry<Thread,CompoundWordIterator> e
+			 : compoundIterators.entrySet()) {
+		    // Create an empy dummy BufferedReader, which will be
+		    // discarded upon the next .reset() call to the iterator
+		    BufferedReader dummyBuffer = 
+			new BufferedReader(new StringReader(""));
+		    e.setValue(
+			new CompoundWordIterator(dummyBuffer, compoundTokens));
+		}
 	    } catch (IOException ioe) {
 		// rethrow
 		throw new IOError(ioe);
@@ -171,14 +207,55 @@ public class IteratorFactory {
 
     /**
      * Tokenizes the contents of the reader according to the system
-     * configuration and returns an iterator over all the tokens.
+     * configuration and returns an iterator over all the tokens, excluding
+     * those that were removed by any configured {@link TokenFilter}.
      *
      * @param reader a reader whose contents are to be tokenized
      *
-     * @return an iterator over all of the tokens in the reader
+     * @return an iterator over all of the optionally-filtered tokens in the
+     *         reader
      */
     public static Iterator<String> tokenize(BufferedReader reader) {
+	Iterator<String> baseIterator = getBaseIterator(reader);
 
+	// If a filter is enabled, wrap the base tokenizer
+	return (filter == null) 
+	    ? baseIterator : new FilteredIterator(baseIterator, filter);	
+    }
+    
+    /**
+     * Tokenizes the contents of the reader according to the system
+     * configuration and returns an iterator over all the tokens where any
+     * removed tokens have been replaced with the {@code
+     * IteratorFactory.EMPTY_TOKEN} value.  Tokens returned by this method may
+     * be checked against this value to determine whether a token at that
+     * position in the stream would have been returned but was removed.  In
+     * doing this, the original order and positioning is retained.
+     *
+     * @param reader a reader whose contents are to be tokenized
+     *
+     * @return an iterator over all of the tokens in the reader where any tokens
+     *         removed due to filtering have been replaced with the {@code
+     *         IteratorFactory.EMPTY_TOKEN} value
+     */
+    public static Iterator<String> tokenizeOrdered(BufferedReader reader) {
+	Iterator<String> baseIterator = getBaseIterator(reader);
+
+	// If a filter is enabled, wrap the base tokenizer
+	return (filter == null) 
+	    ? baseIterator
+	    : new OrderPreservingFilteredIterator(baseIterator, filter);
+    }
+
+    /**
+     * Returns an iterator for the basic tokenization of the stream before
+     * filtering has been applied to the tokens.
+     *
+     * @param reader a reader whose contents are to be tokenized
+     *
+     * @return an iterator over the tokens in the stream
+     */
+    private static Iterator<String> getBaseIterator(BufferedReader reader) {
 	// The base iterator is how the stream will be tokenized prior to any
 	// filtering
 	Iterator<String> baseIterator = null;
@@ -191,16 +268,18 @@ public class IteratorFactory {
 	    // the reset to keep the same tokens.  However, multiple threads may
 	    // be each using their own CWI, so keep Thread-local storage of what
 	    // CWI is being used to avoid resetting another thread's iterator.
-	    CompoundWordIterator cwi = compoundIterators.get();
+	    CompoundWordIterator cwi = 
+		compoundIterators.get(Thread.currentThread());
 	    if (cwi == null) {
 		cwi = new CompoundWordIterator(reader, compoundTokens);
-		compoundIterators.set(cwi);
+		compoundIterators.put(Thread.currentThread(), cwi);
 	    }
 	    else {
-		// REMINDER: if this clas is ever to supposed changing the set
-		// of compound tokens recognized, then it needs to have some
-		// sort of flag here to check whether the current
-		// CompoundWordIterator should be invalidated.
+		// NOTE: if the underlying set of valid compound words is ever
+		// changed, the iterator returned from the compoundIterators map
+		// will have been updated by the setProperties() call, so this
+		// method is guaranteed to pick up the latest set of compound
+		// words
 		cwi.reset(reader);
 	    }
 	    baseIterator = cwi;
@@ -210,9 +289,7 @@ public class IteratorFactory {
 	else 
 	    baseIterator = new WordIterator(reader);
 
-	// If a filter is enabled, wrap the base tokenizer
-	return (filter == null) 
-	    ? baseIterator : new FilteredIterator(baseIterator, filter);
+	return baseIterator;
     }
 
 }

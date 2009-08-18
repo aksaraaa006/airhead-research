@@ -46,8 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.text.TokenFilter;
-import edu.ucla.sspace.text.WordIterator;
+import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.IntegerMap;
@@ -167,16 +166,6 @@ import edu.ucla.sspace.util.SparseIntArray;
  *       in a large saving in memory, while requiring more time to process each
  *       document.<p>
  *
- * <dt> <i>Property:</i> <code><b>{@value #TOKEN_FILTER_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> unset
- *
- * <dd style="padding-top: .5em">This property specifies a {@link TokenFilter}
- *      configuration to use when processsing documents.  A token filter allows
- *      for the exclusion of prespecified types of tokens.  By default, all
- *      tokens are allowed.  See {@link TokenFilter} for full details on how to
- *      specify the property value
- *
  * </dl> <p>
  *
  * This class is thread-safe for concurrent calls of {@link
@@ -240,13 +229,6 @@ public class RandomIndexing implements SemanticSpace {
      */
     public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
 	PROPERTY_PREFIX + ".indexVectorGenerator";
-
-    /**
-     * Specifies the {@link TokenFilter} instances to apply to the tokenized
-     * input stream before {@code processDocument} runs.
-     */
-    public static final String TOKEN_FILTER_PROPERTY = 
-	PROPERTY_PREFIX + ".tokenFilter";
 
     /**
      * Specifies whether to use a sparse encoding for each word's semantics,
@@ -314,11 +296,6 @@ public class RandomIndexing implements SemanticSpace {
     private final IndexVectorGenerator indexVectorGenerator;
 
     /**
-     * An optional {@code TokenFilter} to use to remove tokens from document
-     */
-    private final TokenFilter filter;
-
-    /**
      * A flag for whether this instance should use {@code SparseSemanticVector}
      * instances for representic a word's semantics, which saves space but
      * requires more computation.
@@ -373,12 +350,6 @@ public class RandomIndexing implements SemanticSpace {
 	indexVectorGenerator = (ivgProp != null) 
 	    ? loadIndexVectorGenerator(ivgProp, properties)
 	    : new RandomIndexVectorGenerator(properties);
-
-	String filterProp = 
-	    properties.getProperty(TOKEN_FILTER_PROPERTY);
-	filter = (filterProp != null)
-	    ? TokenFilter.loadFromSpecification(filterProp)
-	    : null;
 
 	String useSparseProp = 
 	    properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -566,8 +537,8 @@ public class RandomIndexing implements SemanticSpace {
 	Queue<String> prevWords = new ArrayDeque<String>(windowSize);
 	Queue<String> nextWords = new ArrayDeque<String>(windowSize);
 
-	//Iterator<String> documentTokens = tokenize(document);
-	WordIterator documentTokens = new WordIterator(document);
+	Iterator<String> documentTokens = 
+	    IteratorFactory.tokenizeOrdered(document);
 
 	String focusWord = null;
 
@@ -591,7 +562,7 @@ public class RandomIndexing implements SemanticSpace {
 	    // semantics around
 	    boolean calculateSemantics =
 		semanticFilter.isEmpty() || semanticFilter.contains(focusWord)
-		&& (filter == null || filter.accept(focusWord));
+		&& !focusWord.equals(IteratorFactory.EMPTY_TOKEN);
 	    
 	    if (calculateSemantics) {
 
@@ -608,7 +579,7 @@ public class RandomIndexing implements SemanticSpace {
 		    // ensure that the token stream maintains its existing
 		    // ordering, which is necessary when permutations are taken
 		    // into account.
-		    if (filter != null && !filter.accept(word)) {
+		    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
 			++permutations;
 			continue;
 		    }
@@ -631,7 +602,7 @@ public class RandomIndexing implements SemanticSpace {
 		    // ensure that the token stream maintains its existing
 		    // ordering, which is necessary when permutations are taken
 		    // into account.
-		    if (filter != null && !filter.accept(word)) {
+		    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
 			++permutations;
 			continue;
 		    }

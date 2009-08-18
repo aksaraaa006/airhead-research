@@ -30,8 +30,7 @@ import edu.ucla.sspace.matrix.ConcurrentMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
-import edu.ucla.sspace.text.TokenFilter;
-import edu.ucla.sspace.text.WordIterator;
+import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.MultiMap;
@@ -124,16 +123,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *      property may not be set concurrently with {@value
  *      #ENTROPY_THRESHOLD_PROPERTY}, and will throw an exception if done so.
  *
- * <dt> <i>Property:</i> <code><b>{@value #TOKEN_FILTER_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> unset
- *
- * <dd style="padding-top: .5em">This property specifies a {@link TokenFilter}
- *      configuration to use when processsing documents.  A token filter allows
- *      for the exclusion of prespecified types of tokens.  By default, all
- *      tokens are allowed.  See {@link TokenFilter} for full details on how to
- *      specify the property value
- *
  * <dt> <i>Property:</i> <code><b>{@value #ENTROPY_THRESHOLD_PROPERTY}
  *      </b></code> <br>
  *      <i>Default:</i> unset
@@ -178,13 +167,6 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      */
     public static final String WINDOW_SIZE_PROPERTY =
 	PROPERTY_PREFIX + ".windowSize";
-
-    /**
-     * Specifies the {@link TokenFilter} instances to apply to the tokenized
-     * input stream before {@code processDocument} runs.
-     */
-    public static final String TOKEN_FILTER_PROPERTY = 
-	PROPERTY_PREFIX + ".tokenFilter";
 
     /**
      * The property to specify the number of words to view before and after each
@@ -235,11 +217,6 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
     private final WeightingFunction weighting;
 
     /**
-     * An optional {@code TokenFilter} to use to remove tokens from document
-     */
-    private final TokenFilter filter;
-
-    /**
      * The number that keeps track of the index values of words
      */
     private int wordIndexCounter;
@@ -281,12 +258,6 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	weighting = (weightFuncProp == null) 
 	    ? DEFAULT_WEIGHTING
 	    : loadWeightingFunction(weightFuncProp);
-
-	String filterProp = 
-	    properties.getProperty(TOKEN_FILTER_PROPERTY);
-	filter = (filterProp != null)
-	    ? TokenFilter.loadFromSpecification(filterProp)
-	    : null;
     }
 
     /**
@@ -314,7 +285,8 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	Queue<String> nextWords = new ArrayDeque<String>();
 	Queue<String> prevWords = new ArrayDeque<String>();
 		
-	Iterator<String> documentTokens = new WordIterator(document);
+	Iterator<String> documentTokens = 
+	    IteratorFactory.tokenizeOrdered(document);
 		
 	String focus = null;
 		
@@ -336,7 +308,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
 	    // If the filter does not accept this word, skip the semantic
 	    // processing, continue with the next word
-	    if (filter != null && !filter.accept(focus)) {
+	    if (focus.equals(IteratorFactory.EMPTY_TOKEN)) {
 		// shift the window
 		prevWords.offer(focus);
 		if (prevWords.size() > windowSize)
@@ -352,7 +324,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
 		// skip adding co-occurence values for words that are not
 		// accepted by the filter
-		if (filter == null || filter.accept(after)) {
+		if (!after.equals(IteratorFactory.EMPTY_TOKEN)) {
 		    int index = getIndexFor(after);
 		    
 		    // Get the current number of times that the focus word has
@@ -371,7 +343,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
 		// skip adding co-occurence values for words that are not
 		// accepted by the filter
-		if (filter == null || filter.accept(before)) {
+		if (!before.equals(IteratorFactory.EMPTY_TOKEN)) {
 		    int index = getIndexFor(before);
 
 		    // Get the current number of times that the focus word has
@@ -435,8 +407,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
 	// If the matrix hasn't had columns dropped then the returned vector
 	// will be the combination of the word's row and column
-	else if (cooccurrenceMatrix != null &&
-		 cooccurrenceMatrix.rows() == cooccurrenceMatrix.columns()) {
+	else if (reduced == null) {
 
 	    double[] semVector = new double[cooccurrenceMatrix.columns() * 2];
 			    
@@ -579,9 +550,10 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 	cooccurrenceMatrix = null;
     }
     
-
     /**
-     *
+     * Calculates the entropy of all the columns in the co-occurrence matrix and
+     * removes those columns that are below the threshold, setting {@link
+     * #reduced} to the remaining columns.
      *
      * @param threshold
      */
