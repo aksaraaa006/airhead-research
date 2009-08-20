@@ -115,7 +115,7 @@ public class Coals implements SemanticSpace {
     init(numWords);
   }
 
-  public void init(int numWords) {
+  private void init(int numWords) {
     maxWords = numWords;
     wordToIndex = new HashMap<String, Integer>();
     totalWordFreq = new ConcurrentHashMap<String, Integer>();
@@ -284,10 +284,13 @@ public class Coals implements SemanticSpace {
       Matrix correl = new SparseMatrix(wordCountList.size(), wordCount);
       while ((line = br.readLine()) != null) {
         String[] splitLine = line.split("\\|");
+        if (splitLine[0].equals(IteratorFactory.EMPTY_TOKEN) ||
+            splitLine[1].equals(IteratorFactory.EMPTY_TOKEN))
+          continue;
         int r = wordToIndex.get(splitLine[0]).intValue();
         int c = wordToIndex.get(splitLine[1]).intValue();
         double value = Double.parseDouble(splitLine[2]);
-        if (r >= MAX_SAVED_WORDS || c >= maxWords || value == 0.0) 
+        if (r >= MAX_SAVED_WORDS || c >= wordCount || value == 0.0) 
           continue;
         correl.set(r, c, value + correl.get(r, c));
       }

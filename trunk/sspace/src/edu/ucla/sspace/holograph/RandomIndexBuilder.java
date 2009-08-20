@@ -9,6 +9,8 @@ import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
 import edu.ucla.sspace.vector.SemanticVector;
 import edu.ucla.sspace.vector.SparseSemanticVector;
 
+import java.io.File;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
@@ -91,6 +93,12 @@ public class RandomIndexBuilder implements IndexBuilder {
 
   public int expectedSizeOfNextWords() {
     return windowSize;
+  }
+
+  public void loadIndexVectors(File file) {
+  }
+
+  public void saveIndexVectors(File file) {
   }
 
   private void addToMeaning(SemanticVector meaning, IndexVector vector) {
