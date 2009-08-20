@@ -56,12 +56,29 @@ public class KMeansClustering implements Clustering {
       bestAssignments = currAssignments;
       double[][] kClusters = clusterForK(k);
       currAssignments = kMeansClusterAssignments(kClusters);
-      potential = kMeansPotential(currAssignments, kClusters);
+      //potential = kMeansPotential(currAssignments, kClusters);
+      potential = altPotential(data, kClusters);
       k++;
     } while (potential < oldPotential && k < 7 && k <= dataPoints.size());
 
     assignments = (bestAssignments != null)
       ? bestAssignments : new int[dataPoints.size()];
+  }
+
+  private double altPotential(List<double[]> dataPoints, double[][] centers) {
+    double sum = 0;
+    for (double[] dataPoint : dataPoints) {
+      double minClusterDist =
+        Similarity.euclideanDistance(centers[0], dataPoint);
+      for (int i = 1; i < centers.length; ++i) {
+        double clusterDist =
+          Similarity.euclideanDistance(centers[i], dataPoint);
+        if (clusterDist < minClusterDist)
+          minClusterDist = clusterDist;
+      }
+      sum += minClusterDist;
+    }
+    return sum;
   }
 
   public int[] getAssignments() {

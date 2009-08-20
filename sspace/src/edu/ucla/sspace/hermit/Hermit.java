@@ -188,6 +188,8 @@ public class Hermit implements SemanticSpace {
 
     WordIterator it = new WordIterator(document);
 
+    int documentIndex = docIndexCounter.incrementAndGet();
+
     String focusWord = null;
     prevWords.add("");
     for (int i = 0; i < nextSize && it.hasNext(); ++i) {
@@ -245,7 +247,6 @@ public class Hermit implements SemanticSpace {
     if (termCounts.isEmpty())
         return;
 
-    int documentIndex = docIndexCounter.incrementAndGet();
 
     for (Map.Entry<String, List<int[]>> e : wordContexts.entrySet()) {
       Triplet index = termToIndex.get(e.getKey());
@@ -399,7 +400,7 @@ public class Hermit implements SemanticSpace {
 
               System.out.println("Custering values for: " + entry.getKey());
               int[] reassignments =
-                clusterSemanticVectors(entry.getValue(), properties);
+                clusterSemanticVectors(entry.getKey(), entry.getValue(), properties);
               System.out.println("Finished custering values for: " + entry.getKey());
               splitMatrix(termDocMatrix, entry.getKey(),
                           entry.getValue(), reassignments);
@@ -511,7 +512,7 @@ public class Hermit implements SemanticSpace {
     return lsaMatrix;
   }
 
-  private int[] clusterSemanticVectors(Triplet triplet,
+  private int[] clusterSemanticVectors(String word, Triplet triplet,
                                        Properties properties) {
     // First read in all contexts for this triplet.
     // Lock on file reading to keep the disk from thrashing to heavily.
@@ -532,13 +533,23 @@ public class Hermit implements SemanticSpace {
 
         for (int i = 0; i < prevSize; ++i)
           prevWords.add(indexToTerm.get(context[i]));
-        for (int i = prevSize; i < context.length; ++i)
+        for (int i = prevSize; i < context.length && context[i] != 0; ++i) 
           nextWords.add(indexToTerm.get(context[i]));
 
         // Update meaning with the context.
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
       semanticVectors.add(meaning.getVector());
+    }
+    if (word.equals("country")) {
+      for (double[] d : semanticVectors) {
+        StringBuilder b = new StringBuilder();
+        b.append("country:| ");
+        for (int i = 0; i < indexVectorSize; ++i) {
+          b.append(d[i]).append(" ");
+        }
+        System.out.println(b.toString());
+      }
     }
 
     // Clear the map again to clear out memory.

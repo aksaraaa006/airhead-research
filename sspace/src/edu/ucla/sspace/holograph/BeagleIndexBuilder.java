@@ -28,6 +28,14 @@ import edu.ucla.sspace.vector.SemanticVector;
 
 import jnt.FFT.RealDoubleFFT_Radix2;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOError;
+import java.io.IOException;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -80,6 +88,60 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return 5;
   }
 
+  public void loadIndexVectors(File file) {
+    try {
+      DataInputStream in = new DataInputStream(new FileInputStream(file));
+
+      // Read in the permutation vectors.
+      for (int i = 0; i < indexVectorSize; ++i)
+        permute1[i] = in.readInt();
+      for (int i = 0; i < indexVectorSize; ++i)
+        permute2[i] = in.readInt();
+
+      // Read in the mappings.  Each mapping starts off with the number of
+      // letters in the word, the word, and then the index vector.
+      int mappings = in.readInt();
+      for (int i = 0; i < mappings; ++i) {
+        int wordSize = in.readInt();
+        byte[] word = new byte[wordSize];
+        in.read(word);
+        double[] vector = new double[indexVectorSize];
+        for (int j = 0; j < indexVectorSize; ++j) {
+          vector[j] = in.readDouble();
+        }
+        termToRandomIndex.put(new String(word), new DenseSemanticVector(vector));
+      }
+    } catch (IOException ioe) {
+      throw new IOError(ioe);
+    }
+  }
+
+  public void saveIndexVectors(File file) {
+    try {
+      DataOutputStream out = new DataOutputStream(new FileOutputStream(file));
+      // Write out the permutation vectors.
+      for (int i = 0; i < indexVectorSize; ++i)
+        out.writeInt(permute1[i]);
+      for (int i = 0; i < indexVectorSize; ++i)
+        out.writeInt(permute2[i]);
+
+      out.writeInt(termToRandomIndex.size());
+      // Write out each mapping in the form of:
+      // word length, word as bytes, index vector.
+      for (Map.Entry<String, SemanticVector> entry : termToRandomIndex.entrySet()) {
+        String word = entry.getKey();
+        SemanticVector vector = entry.getValue();
+        out.writeInt(word.length());
+        out.write(word.getBytes(), 0, word.length());
+        for (int i = 0; i < indexVectorSize; ++i) {
+          out.writeDouble(vector.get(i));
+        }
+      }
+    } catch (IOException ioe) {
+      throw new IOError(ioe);
+    }
+  }
+
   public SemanticVector getSemanticVector() {
     return new DenseSemanticVector(indexVectorSize);
   }
@@ -112,6 +174,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
     SemanticVector v = termToRandomIndex.get(term);
     if (v == null) {
       synchronized (term) {
+        System.out.println("adding new vector for: " + term);
         v = termToRandomIndex.get(term);
         if (v == null) {
           v = generateRandomVector();

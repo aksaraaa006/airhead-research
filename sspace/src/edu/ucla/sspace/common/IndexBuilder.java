@@ -21,8 +21,10 @@
 
 package edu.ucla.sspace.common;
 
+
 import edu.ucla.sspace.vector.SemanticVector;
 
+import java.io.File;
 import java.util.Queue;
 
 /**
@@ -48,6 +50,10 @@ public interface IndexBuilder {
   public void updateMeaningWithTerm(SemanticVector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords);
+
+  public void loadIndexVectors(File vectorFile);
+
+  public void saveIndexVectors(File vectorFile);
 
   public SemanticVector getSemanticVector();
 

@@ -12,6 +12,10 @@ public class DenseSemanticVector implements SemanticVector {
   public DenseSemanticVector(int vectorLength) {
     vector = new double[vectorLength];
   }
+
+  public DenseSemanticVector(double[] vector) {
+    this.vector = vector;
+  }
 	
   /**
    * {@inheritDoc}

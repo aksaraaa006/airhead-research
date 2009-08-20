@@ -103,6 +103,12 @@ public class HermitMain extends GenericMain {
     options.addOption('c', "cluster",
                        "Class type to use for clustering semantic vectors",
                        true, "CLASSNAME", "Process Properties");
+    options.addOption('S', "saveVectors",
+                      "Save index vectors to a binary file",
+                      true, "FILE", "Process Properties");
+    options.addOption('L', "loadVectors",
+                      "Load index vectors from a binary file",
+                      true, "FILE", "Process Properties");
     }
 
     public static void main(String[] args) {
@@ -122,12 +128,22 @@ public class HermitMain extends GenericMain {
       String builderType = (argOptions.hasOption("builder"))
         ? argOptions.getStringOption("builder")
         : "BeagleIndexBuilder";
-      if (builderType.equals("BeagleIndexBuilder"))
+      if (builderType.equals("BeagleIndexBuilder")) {
         builder = new BeagleIndexBuilder(dimension);
-      else if (builderType.equals("RandomIndexBuilder"))
-         builder = new RandomIndexBuilder(dimension);
+        if (argOptions.hasOption("loadVectors")) {
+          builder.loadIndexVectors(new File(
+                argOptions.getStringOption("loadVectors")));
+        }
+      } else if (builderType.equals("RandomIndexBuilder"))
+        builder = new RandomIndexBuilder(dimension);
     }
 
+    protected void postProcessing() {
+      if (argOptions.hasOption("saveVectors")) {
+        String filename = argOptions.getStringOption("saveVectors");
+        builder.saveIndexVectors(new File(filename));
+      }
+    }
     public SemanticSpace getSpace() {
       try {
         return new Hermit(builder, dimension);
