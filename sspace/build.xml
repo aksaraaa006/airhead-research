@@ -202,21 +202,55 @@
   </target>
 
   <target name="javadoc" description="Create Javadocs" depends="compile">
-    <javadoc destdir="javadoc/" classpathref="classpath">
+    <javadoc destdir="javadoc/" classpathref="classpath" access="public">
       <link href="http://java.sun.com/javase/6/docs/api/"/>
       <fileset dir="${src.dir}/" includes="**/*.java"/>
       <bottom><![CDATA[
+   <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
+   <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shCore.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushJava.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushXml.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushSql.js"></script>  
+   <script language="javascript">  
+   dp.SyntaxHighlighter.ClipboardSwf = 'http://howard.ross.work.googlepages.com/clipboard.swf';  
+   dp.SyntaxHighlighter.HighlightAll('code');  
+   </script>  
+   ]]>
+	</bottom>
+      <footer><![CDATA[
 <script type="text/javascript">
-  var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-  document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
 </script>
 <script type="text/javascript">
-  try{
-  var pageTracker = _gat._getTracker("UA-6063773-3");
-  pageTracker._trackPageview();
-  } catch(err) {}
-</script>]]>
-      </bottom>
+try {
+var pageTracker = _gat._getTracker("UA-6063773-4");
+pageTracker._trackPageview();
+} catch(err) {}</script>]]>
+      </footer>
     </javadoc>
   </target>
+
+  <!-- The full javadoc for all methods and fields -->
+  <target name="javadoc-dev" description="Create Javadocs" depends="compile">
+    <javadoc destdir="javadoc/" classpathref="classpath" access="private">
+      <link href="http://java.sun.com/javase/6/docs/api/"/>
+      <fileset dir="${src.dir}/" includes="**/*.java"/>
+      <bottom><![CDATA[
+   <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
+   <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shCore.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushJava.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushXml.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushSql.js"></script>  
+   <script language="javascript">  
+   dp.SyntaxHighlighter.ClipboardSwf = 'http://howard.ross.work.googlepages.com/clipboard.swf';  
+   dp.SyntaxHighlighter.HighlightAll('code');  
+   </script>  
+   ]]>
+	</bottom>
+    </javadoc>
+  </target>
+
 </project>

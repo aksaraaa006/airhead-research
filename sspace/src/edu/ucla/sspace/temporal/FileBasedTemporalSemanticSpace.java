@@ -53,7 +53,8 @@ import java.util.logging.Logger;
  * A {@link TemporalSemanticSpace} created from the serialized output of another
  * {@code TemporalSemanticSpace} after it has finished processing.  The input
  * format of the file should be one of the formats specified by {@link
- * edu.ucla.sspace.common.TemporalSemanticSpaceUtils.TSSpaceFormat}.
+ * edu.ucla.sspace.temporal.TemporalSemanticSpaceUtils.TSSpaceFormat
+ * TSSpaceFormat}.
  *
  * @see TemporalSemanticSpaceUtils
  */

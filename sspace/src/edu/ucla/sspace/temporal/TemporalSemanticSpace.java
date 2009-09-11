@@ -71,25 +71,17 @@ public interface TemporalSemanticSpace extends SemanticSpace {
     Long endTime();
 
     /**
-     * Returns the time steps in which the provided word occurs.
+     * Returns the time steps in which the provided word occurs (optional
+     * operation).
      *
      * @param word
      */
     SortedSet<Long> getTimeSteps(String word);
-
-    /**
-     * Returns the provided word's semantic vector based on all temporal
-     * occurrences.
-     *
-     * @param word {@inheritDoc}
-     *
-     * @return {@inheritDoc}
-     */
-    double[] getVectorFor(String word);
     
     /**
      * Returns the provided word's semantic vector based on all temporal
-     * occurrences occurring on or after the provided timestamp.
+     * occurrences occurring on or after the provided timestamp (optional
+     * operation).
      *
      * @param word a word in the semantic space
      *
@@ -103,7 +95,7 @@ public interface TemporalSemanticSpace extends SemanticSpace {
 
     /**
      * Returns the provided word's semantic vector based on all temporal
-     * occurrences before the provided timestamp.
+     * occurrences before the provided timestamp (optional operation).
      *
      * @param word a word in the semantic space
      *
@@ -118,7 +110,7 @@ public interface TemporalSemanticSpace extends SemanticSpace {
     /**
      * Returns the provided word's semantic vector based on all temporal
      * occurrences that happened on or after the start timestamp but before the
-     * ending timestamp.
+     * ending timestamp (optional operation).
      *
      * @param word a word in the semantic space
      *
@@ -135,5 +127,15 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      *         endTime}
      */
     double[] getVectorBetween(String word, long startTime, long endTime);
+
+    /**
+     * Returns the provided word's semantic vector based on all temporal
+     * occurrences.
+     *
+     * @param word {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    double[] getVectorFor(String word);
 
 }

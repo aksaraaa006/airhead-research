@@ -109,12 +109,13 @@ import org.apache.lucene.store.FSDirectory;
  * <p>
  *
  * LRA uses three main components to analyze a large corpus of text in order to
- * measure relational similarity between pairs of words (i.e. analogies). LRA uses
- * the search engine to find patterns based on the input set as well as its
- * corresponding alternates (see {@link loadAnalogiesFromFile}). A sparse matrix is
- * then generated, where each value in the matrix is the number of times the row's
- * word pair occurs with the column's pattern between them.  
- * <p>
+ * measure relational similarity between pairs of words (i.e. analogies). LRA
+ * uses the search engine to find patterns based on the input set as well as its
+ * corresponding alternates (see {@link #loadAnalogiesFromFile(String)}). A
+ * sparse matrix is then generated, where each value in the matrix is the number
+ * of times the row's word pair occurs with the column's pattern between
+ * them.<p>
+ *
  * After the matrix has been built, the <a
  * href="http://en.wikipedia.org/wiki/Singular_value_decomposition">Singular
  * Value Decomposition</a> (SVD) is used to reduce the dimensionality of the
@@ -141,13 +142,13 @@ import org.apache.lucene.store.FSDirectory;
  * column vectors of <span style="font-family:Garamond, Georgia, serif">&Sigma;</span>.
  * The projection matrix <span style="font-family:Garamond, Georgia, serif">U&Sigma;
  * </span> is then used to calculate the relational similarities between pairs using
- * the row vectors corresponding to the word pairs.
+ * the row vectors corresponding to the word pairs.<p>
  *
- * <p>
- * This class uses the <a href="http://lucene.apache.org/java/docs/">Lucune Search Engine</a> 
- * for optimal indexing and filtering of word pairs using any given corpus.
- * This class also uses Wordnet through the <a href="http://lyle.smu.edu/~tspell/jaws/index.html">JAWS</a> interface
- * in order to find alternate word pairs from given input pairs.
+ * This class uses the <a href="http://lucene.apache.org/java/docs/">Apache
+ * Lucune Search Engine</a> for optimal indexing and filtering of word pairs
+ * using any given corpus.  This class also uses Wordnet through the <a
+ * href="http://lyle.smu.edu/~tspell/jaws/index.html">JAWS</a> interface in
+ * order to find alternate word pairs from given input pairs.
  *
  *
  * @author Sky Lin
@@ -180,10 +181,8 @@ public class LatentRelationalAnalysis {
     private Map<Integer,String> matrix_row_map; 
     private Map<Integer,InterveningWordsPattern> matrix_column_map; 
 
-    //private static final String INDEX_DIR = "/home/chippoc/index/"; 
     private String INDEX_DIR;
     private String DATA_DIR;
-    //private static final String DATA_DIR = "/bigdisk/corpora/usenet/maui.tapor.ualberta.ca:9000/newscorpus/";
 
     /**
      * Constructor for {@code LatentRelationalAnalysis}.
@@ -225,7 +224,6 @@ public class LatentRelationalAnalysis {
      * The file must contain word pairs in the form of A:B separated by newlines.
      *
      * @param analogy_file a {@code String} containing the absolute path to the analogy file. 
-     * @return void
      */
     public void loadAnalogiesFromFile(String analogy_file) {
 
@@ -257,13 +255,13 @@ public class LatentRelationalAnalysis {
     }
 
     /**
-     * Returns the synonyms for the specified term.
-     * The synonyms will be taken directly from the WordNet database.
-     * This is used by LRA to find alternative pairs. Given an input set of A:B.
-     * For each A' that is similar to A, make a new pair A':B.  Likewise for B.
+     * Returns the synonyms for the specified term.  The synonyms will be taken
+     * directly from the WordNet database.  This is used by LRA to find
+     * alternative pairs. Given an input set of A:B.  For each A' that is
+     * similar to A, make a new pair A':B.  Likewise for B.
      *
      * @param term a {@code String} containing a single word
-     * @return  an array of all the synonyms 
+     * @return an array of all the synonyms 
      */
     public static Synset[] findAlternatives(String term) {
         WordNetDatabase database = WordNetDatabase.getFileInstance();   
@@ -274,9 +272,10 @@ public class LatentRelationalAnalysis {
     /**
      * Initializes an index given the index directory and data directory.
      *
-     * @param indexDir a {@code String} containing the directory where the index will be stored
-     * @param dataDir a {@code String} containing the directory where the data is found
-     * @return void
+     * @param indexDir a {@code String} containing the directory where the index
+     *        will be stored
+     * @param dataDir a {@code String} containing the directory where the data
+     *        is found
      */
     public static void initializeIndex(String indexDir, String dataDir) {
         File indexDir_f = new File(indexDir);
@@ -495,7 +494,7 @@ public class LatentRelationalAnalysis {
      *
      * return them along with the original pairs.
      *
-     * NOTE: should be called before {@link findPatterns}.
+     * NOTE: should be called before {@link #findPatterns()}.
      *
      * @param A a {@code String} containing the first member in the original pair 
      * @param B a {@code String} containing the second member in the original pair 
@@ -656,7 +655,8 @@ public class LatentRelationalAnalysis {
     }
     
     /**
-     * Finds patterns using the filtered phrases.  Should be called after {@link filterPhrases}.
+     * Finds patterns using the filtered phrases.  Should be called after {@link
+     * #filterPhrases(String,String,Syntex[],Synset[]) filterPhrases}.
      **/
     public void findPatterns() 
         throws Exception {
@@ -694,11 +694,9 @@ public class LatentRelationalAnalysis {
     }
 
     /**
-     * Maps a list of patterns to the columns of the sparse matrix.
-     * Takes the results of findPattern() and maps it to the column indeces of a sparse matrix.
-     *
-     * @param patterns a BoundedSortedMap containing the top NUM_PATTERN patterns
-     * @return  void
+     * Maps a list of patterns to the columns of the sparse matrix.  Takes the
+     * results of {@link #findPattern()} and maps it to the column indeces of a sparse
+     * matrix.
      */
     public void mapColumns() {
             //System.err.print("Patterns found: ");
@@ -741,8 +739,9 @@ public class LatentRelationalAnalysis {
     }
 
     /**
-     * Creates the sparse matrix.  Should be called after {@link findPatterns}, {@link mapRows}, and {@link mapColumns}.  The returned Matrix should be used in the
-     * SVD process. 
+     * Creates the sparse matrix.  Should be called after {@link
+     * #findPatterns()}, {@link #mapRows()}, and {@link #mapColumns()}.  The
+     * returned {@code Matrix} should be used in the SVD process.
      *
      * @return the sparse Matrix.
      **/
@@ -930,7 +929,7 @@ public class LatentRelationalAnalysis {
      * @param outputFileName the output file where the results will be stored
      * @return void
      *
-     * @see edu.ucla.sspace.lra.computeCosineSimilarity
+     * @see #computeCosineSimilarity(String,Matrix)
      **/
     public void evaluateAnalogies(Matrix projection, String inputFileName, String outputFileName) {
             try {
@@ -956,9 +955,8 @@ public class LatentRelationalAnalysis {
      * Reads analogies from Standard In and outputs their cosine similarities to Standard Out.
      *
      * @param projection the projection {@code Matrix}
-     * @return void
      *
-     * @see edu.ucla.sspace.lra.computeCosineSimilarity
+     * @see #computeCosineSimilarity(String,Matrix)
      **/
     public void evaluateAnalogies(Matrix projection) {
             try {

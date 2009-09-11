@@ -39,11 +39,12 @@ import java.util.Set;
  * A factory class for generating {@code Iterator<String>} tokenizers for
  * streams of tokens such as {@link BufferedReader} instances.  This class
  * manages all of the internal configurations and properties for how to
- * tokenize.  {@link SemanticSpace} instances are encouraged to utilize this
- * class for creating iterators over the tokens in the documents rather than
- * creating the iterators themsevles, as this class may contain additional
- * settings to be applied to which the {@link SemanticSpace} instance would not
- * have access.
+ * tokenize.  {@link edu.ucla.sspace.common.SemanticSpace SemanticSpace}
+ * instances are encouraged to utilize this class for creating iterators over
+ * the tokens in the documents rather than creating the iterators themsevles, as
+ * this class may contain additional settings to be applied to which the {@link
+ * edu.ucla.sspace.common.SemanticSpace SemanticSpace} instance would not have
+ * access.
  *
  * <p>
  *

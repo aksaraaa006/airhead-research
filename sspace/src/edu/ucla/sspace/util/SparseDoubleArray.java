@@ -39,9 +39,9 @@ import java.util.Arrays;
  * Instance offer a space savings of retaining only the non-zero indices and
  * values.  For large array with only a few values set, this offers a huge
  * savings.  However, as the cardinality of the array grows in relation to its
- * size, a dense {@code double[]} array will offer better performance.  This is
- * especially true if the sparse array instance approaches a cardinality to size
- * ration of {@code .5}.
+ * size, a dense {@code double[]} array will offer better performance in both
+ * space and time.  This is especially true if the sparse array instance
+ * approaches a cardinality to size ratio of {@code .5}.
  *
  * @see SparseArray
  */
@@ -128,13 +128,15 @@ public class SparseDoubleArray implements SparseArray<Double> {
      * Retrieves the value at specified index or 0 if no value had been
      * specified.
      *
-     * @param {@inheritDoc}
-     * @return {@inheritDoc}
+     * @param index the position in the array
+     *
+     * @return the primitive value at that position
+     *
      * @throws ArrayIndexOutOfBoundException if the index is greater than
      *         the maximum length of the array.
      */
     public double getPrimitive(int index) {
-	if (index < 0 || index > maxLength) {
+	if (index < 0 || index >= maxLength) {
 	    throw new ArrayIndexOutOfBoundsException("invalid index: " + 
 						     index);
 	}
