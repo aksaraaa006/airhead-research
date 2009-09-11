@@ -44,6 +44,7 @@ import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.text.IteratorFactory;
@@ -168,6 +169,14 @@ import edu.ucla.sspace.util.SparseIntArray;
  *
  * </dl> <p>
  *
+ * This class implements {@link Filterable}, which allows for fine-grained
+ * control of which semantics are retained.  The {@link #setSemanticFilter(Set)}
+ * method can be used to speficy which words should have their semantics
+ * retained.  Note that the words that are filtered out will still be used in
+ * computing the semantics of <i>other</i> words.  This behavior is intended for
+ * use with a large corpora where retaining the semantics of all words in memory
+ * is infeasible.<p>
+ *
  * This class is thread-safe for concurrent calls of {@link
  * #processDocument(BufferedReader) processDocument}.  At any given point in
  * processing, the {@link #getVectorFor(String) getVectorFor} method may be used
@@ -184,7 +193,7 @@ import edu.ucla.sspace.util.SparseIntArray;
  * 
  * @author David Jurgens
  */
-public class RandomIndexing implements SemanticSpace {
+public class RandomIndexing implements SemanticSpace, Filterable {
 
     public static final String RI_SSPACE_NAME =
     "random-indexing";
@@ -514,17 +523,15 @@ public class RandomIndexing implements SemanticSpace {
     }
 
     /**
-     * Sets a filter such that only words that are in the set have their
-     * semantics retained by this instance.  Note that all words will still have
-     * an index vector assigned to them, which is necessary to properly compute
-     * the semantics.
+     * {@inheritDoc} Note that all words will still have an index vector
+     * assigned to them, which is necessary to properly compute the semantics.
      *
-     * @param semanticsToCompute the set of words for which semantics should be
+     * @param semanticsToRetain the set of words for which semantics should be
      *        computed.
      */
-    public void setSemanticFilter(Set<String> semanticsToCompute) {
+    public void setSemanticFilter(Set<String> semanticsToRetain) {
 	semanticFilter.clear();
-	semanticFilter.addAll(semanticsToCompute);
+	semanticFilter.addAll(semanticsToRetain);
     }
     
     /**

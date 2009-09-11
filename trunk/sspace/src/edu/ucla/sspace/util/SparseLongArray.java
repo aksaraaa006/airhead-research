@@ -24,12 +24,12 @@ package edu.ucla.sspace.util;
 import java.util.Arrays;
 
 /**
- * A sparse {@code int} array.  This class trades increased space efficiency at
+ * A sparse {@code long} array.  This class trades increased space efficiency at
  * the cost of decreased performance.<p>
  *
  * This class also provides additional primitive accessor methods.  This allows
  * users to invoke {@code get} and {@code set} without marshalling primitive
- * types to their {@link Integer} equivalents unnecessarily.<p>
+ * types to their {@link Long} equivalents unnecessarily.<p>
  *
  * The {@code get} operation runs in logarithmic time.  The {@code set}
  * operation runs in consant time if setting an existing non-zero value to a
@@ -39,13 +39,13 @@ import java.util.Arrays;
  * Instance offer a space savings of retaining only the non-zero indices and
  * values.  For large array with only a few values set, this offers a huge
  * savings.  However, as the cardinality of the array grows in relation to its
- * size, a dense {@code int[]} array will offer better performance in both space
- * and time.  This is especially true if the sparse array instance approaches a
- * cardinality to size ratio of {@code .5}.
+ * size, a dense {@code long[]} array will offer better performance in both
+ * space and time.  This is especially true if the sparse array instance
+ * approaches a cardinality to size ratio of {@code .5}.
  *
  * @see SparseArray
  */
-public class SparseIntArray implements SparseArray<Integer> {
+public class SparseLongArray implements SparseArray<Long> {
 
     /**
      * The maximum length of this array
@@ -61,26 +61,26 @@ public class SparseIntArray implements SparseArray<Integer> {
      * A list of all the values that correspond to the indices in the {@code
      * indices} array.
      */
-    private int[] values;
+    private long[] values;
      
     /**
-     * Creates a sparse {@code int} array that grows to the maximum size set by
-     * {@link Integer#MAX_VALUE}.
+     * Creates a sparse {@code long} array that grows to the maximum size set by
+     * {@link Long#MAX_VALUE}.
      */
-    public SparseIntArray() {
+    public SparseLongArray() {
 	this(Integer.MAX_VALUE);
     }
 
     /**
-     * Creates a sparse {@code int} array with a fixed length
+     * Creates a sparse {@code long} array with a fixed length
      */
-    public SparseIntArray(int length) {
+    public SparseLongArray(int length) {
 	if (length < 0)
 	    throw new IllegalArgumentException("length must be non-negative");
 	maxLength = length;
 	
 	indices = new int[0];
-	values = new int[0];
+	values = new long[0];
     }
 
     /**
@@ -88,7 +88,7 @@ public class SparseIntArray implements SparseArray<Integer> {
      * non-zero values.  The length of the provided array is used to set the
      * maximum size of this sparse array.
      */
-    public SparseIntArray(int[] array) {
+    public SparseLongArray(long[] array) {
 
 	maxLength = array.length;
 
@@ -100,7 +100,7 @@ public class SparseIntArray implements SparseArray<Integer> {
 	}
 
 	indices = new int[nonZero];
-	values = new int[nonZero];
+	values = new long[nonZero];
 	int index = 0;
 	for (int i = 0; i < array.length; ++i) {
 	    if (array[i] != 0) {
@@ -120,7 +120,7 @@ public class SparseIntArray implements SparseArray<Integer> {
     /**
      * {@inheritDoc}
      */ 
-    public Integer get(int index) {
+    public Long get(int index) {
 	return getPrimitive(index);
     }
     
@@ -135,13 +135,14 @@ public class SparseIntArray implements SparseArray<Integer> {
      * @throws ArrayIndexOutOfBoundException if the index is greater than
      *         the maximum length of the array.
      */
-    public int getPrimitive(int index) {
+    public long getPrimitive(int index) {
 	if (index < 0 || index >= maxLength) {
 	    throw new ArrayIndexOutOfBoundsException("invalid index: " + 
 						     index);
 	}
 	int pos = Arrays.binarySearch(indices, index);
-	int value = (pos >= 0) ? values[pos] : 0;
+
+	long value = (pos >= 0) ? values[pos] : 0;
 	return value;
     }
 
@@ -155,7 +156,7 @@ public class SparseIntArray implements SparseArray<Integer> {
     /**
      * {@inheritDoc}
      */
-    public void set(int index, Integer value) {
+    public void set(int index, Long value) {
 	setPrimitive(index, value.intValue());
     }
 
@@ -163,7 +164,7 @@ public class SparseIntArray implements SparseArray<Integer> {
      * Sets the value of the index to the value using the Java primitives
      * without auto-boxing.
      */
-    public void setPrimitive(int index, int value) {
+    public void setPrimitive(int index, long value) {
 
 	int pos = Arrays.binarySearch(indices, index);
 
@@ -172,7 +173,7 @@ public class SparseIntArray implements SparseArray<Integer> {
 	    if (pos < 0) {
 		int newPos = 0 - (pos + 1);
 		int[] newIndices = new int[indices.length + 1];
-		int[] newValues = new int[values.length + 1];
+		long[] newValues = new long[values.length + 1];
 		
 		// copy the existing array contents that are valid in their
 		// current positions
@@ -203,7 +204,7 @@ public class SparseIntArray implements SparseArray<Integer> {
 	else if (value == 0 && pos >= 0) {
 	    int newLength = indices.length - 1;
 	    int[] newIndices = new int[newLength];
-	    int[] newValues = new int[newLength];
+	    long[] newValues = new long[newLength];
 	    for (int i = 0, j = 0; i < indices.length; ++i) {
 		if (i != pos) {
 		    newIndices[j] = indices[i];
@@ -228,11 +229,11 @@ public class SparseIntArray implements SparseArray<Integer> {
 	for (int i = 0, j = 0; i < array.length; ++i) {
 	    int index = -1;
 	    if (j < indices.length && (index = indices[j]) == i) {
-		array[i] = (E)(Integer.valueOf(values[j]));
+		array[i] = (E)(Long.valueOf(values[j]));
 		j++;
 	    }
 	    else
-		array[i] = (E)(Integer.valueOf(0));
+		array[i] = (E)(Long.valueOf(0));
 	}
 
 	return array;
@@ -243,7 +244,7 @@ public class SparseIntArray implements SparseArray<Integer> {
      * If the provided array is longer than this array, the additional values are
      * left unchanged.
      */
-    public int[] toPrimitiveArray(int[] array) {
+    public long[] toPrimitiveArray(long[] array) {
 	for (int i = 0, j = 0; i < array.length; ++i) {
 	    int index = -1;
 	    if (j < indices.length && (index = indices[j]) == i) {

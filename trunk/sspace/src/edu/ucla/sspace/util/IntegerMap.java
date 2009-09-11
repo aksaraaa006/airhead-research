@@ -37,13 +37,13 @@ import java.util.Set;
  * doubles as a sparse object array.<p>
  *
  * When used as a {@link SparseArray} this class allows negative valued indices,
- * as well as the index of {@link Integer.MAX_VALUE}.  This affects the behavior
+ * as well as the index of {@link Integer#MAX_VALUE}.  This affects the behavior
  * of two methods.  First {@code size} will return {@code Integer.MAX_VALUE},
  * but the true maximum size is 2<sup>32</sup>, which is larger than an {@code
  * int} can represent.  Second, the {@code toArray} method will only return
  * those elements that fall within the range of the provided array.  This
  * limitation entails that the values at negative-valued indices will <i>not</i>
- * be stored.  In this case it is best to use the {@link entrySet} method to
+ * be stored.  In this case it is best to use the {@link #entrySet()} method to
  * access all of the indices and associated values in order.<p>
  *
  * This class makes a trade off for reduced space usage at the cost of decreased
