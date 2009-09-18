@@ -4,5 +4,6 @@
 
 _forthcoming_
 
+= Resources =
 
-[http://docs.google.com/present/edit?id=0ATmoQMUCn4AqZGdzdnozZzZfMTd2ZG1iOXZjaA&hl=en Slides] on using Temporal Random Indexing to discover events in blogs from our talk at the [http://clg.wlv.ac.uk/events/eETTs/index.php Events in Emerging Text Types Workshop] (eETTs) at [http://lml.bas.bg/ranlp2009/ RANLP '09]
+  * [http://docs.google.com/present/edit?id=0ATmoQMUCn4AqZGdzdnozZzZfMTd2ZG1iOXZjaA&hl=en Slides] on using Temporal Random Indexing to discover events in blogs from our talk at the [http://clg.wlv.ac.uk/events/eETTs/index.php Events in Emerging Text Types Workshop] (eETTs) at [http://lml.bas.bg/ranlp2009/ RANLP '09]
