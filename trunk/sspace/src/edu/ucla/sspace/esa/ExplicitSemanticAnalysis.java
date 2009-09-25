@@ -21,29 +21,29 @@
 
 package edu.ucla.sspace.esa;
 
+import edu.ucla.sspace.common.DocumentSpace;
 import edu.ucla.sspace.common.SemanticSpace;
-
-import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
+import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
-
-import edu.ucla.sspace.text.WordIterator;
+import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.SparseSemanticVector;
+import edu.ucla.sspace.text.IteratorFactory;
 
 import java.io.BufferedReader;
-
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 /**
  * An implementation of Explicit Semanic Analysis proposed by Evgeniy
@@ -61,136 +61,172 @@ import java.util.logging.Logger;
  *
  * @author David Jurgens
  */
-public class ExplicitSemanticAnalysis implements SemanticSpace {
-    public static final String ESA_SSPACE_NAME =
+public class ExplicitSemanticAnalysis implements DocumentSpace {
+  public static final String ESA_SSPACE_NAME =
     "esa-semantic-space";
 
-    /**
-     * The logger for this class based on the fully qualified class name
-     */
-    private static final Logger ESA_LOGGER = 
-	Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
+  /**
+   * The logger for this class based on the fully qualified class name
+   */
+  private static final Logger ESA_LOGGER = 
+    Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
     
-    private Map<Integer, String> indexToArticleName;
+  /**
+   * The term by wiki article occurrence matrix.  This field is set in {@link
+   * processDocument(BufferedReader) processDocument}.
+   */
+  private Matrix termWikiMatrix;
 
-    private Map<String, Integer> termToIndex;
+  private final ConcurrentMap<String, Integer> termToIndex;
 
-    private Map<String, Integer> termDocCount;
+  private final ArrayList<String> indexToArticle;
 
-    /**
-     * The article co-occurrence matrix.  This field is set in {@link
-     * processDocument(BufferedReader) processDocument} after the number of
-     * valid articles is known.
-     */
-    private Matrix termDocMatrix;
+  private AtomicInteger articleCount;
+  private AtomicInteger termCounter;
 
-    private AtomicInteger articleCounter;
-    private AtomicInteger termCounter;
+  public ExplicitSemanticAnalysis() {
+    indexToArticle = new ArrayList<String>();
+    termToIndex = new ConcurrentHashMap<String, Integer>();
+    termWikiMatrix = new GrowingSparseMatrix();
+    articleCount = new AtomicInteger(0);
+    termCounter = new AtomicInteger(0);
+  }
 
-    public ExplicitSemanticAnalysis() {
-      articleCounter = new AtomicInteger(0);
-      indexToArticleName = new ConcurrentHashMap<Integer, String>(7000000);
-      termToIndex = new ConcurrentHashMap<String, Integer>();
-      termDocCount = new ConcurrentHashMap<String, Integer>();
-      termDocMatrix = new AtomicGrowingMatrix();
+  /**
+   * Parses the provided Wikipedia article.
+   *
+   * @param article A wikipedia article.
+   */
+  public void processDocument(BufferedReader article) throws IOException {
+    Map<String, Integer> termCounts =
+      new LinkedHashMap<String, Integer>(1 << 10, 16f);  
+
+    Iterator<String> articleTokens = IteratorFactory.tokenize(article);
+
+    if (!articleTokens.hasNext())
+      return;
+
+    String articleName = articleTokens.next();
+    // for each word in the text article, keep a count of how many
+    // times it has occurred
+    while (articleTokens.hasNext()) {
+      String word = articleTokens.next();
+        
+      // Add the term to the total list of terms to ensure it has a
+      // proper index.  If the term was already added, this method is
+      // a no-op
+      addTerm(word);
+      Integer termCount = termCounts.get(word);
+
+      // update the term count
+      termCounts.put(word, (termCount == null) 
+          ? Integer.valueOf(1)
+          : Integer.valueOf(1 + termCount.intValue()));
     }
 
-    /**
-     */
-    public void processDocument(BufferedReader wikipediaSnapshot) {
-      Iterator<String> words = new WordIterator(wikipediaSnapshot);
-      String word = null;
+    article.close();
 
-      // Create the title from the document.
-      StringBuilder titleBuilder = new StringBuilder();
-      while (words.hasNext() && !(word = words.next()).equals("|"))
-        titleBuilder.append(word).append(" ");
-
-      if (!words.hasNext())
-        // If no title exists, or there is nothing existing after the title.
+    // check that we actually loaded in some terms before we increase the
+    // articleCount.  This could possibly save some dimensions in the final
+    // array for articles that were essentially blank.  If we didn't see
+    // any terms, just return 0
+    if (termCounts.isEmpty())
         return;
 
-      // Count the number of times each word occurs in the document.
-      Map<String, Integer> termCounts =
-        new LinkedHashMap<String, Integer>(1 << 10, 16f);
-      while (words.hasNext()) {
-        word = words.next();
-        addTerm(word);
-        Integer termCount = termCounts.get(word);
-        termCounts.put(word, (termCount == null) ?
-                       Integer.valueOf(1) :
-                       Integer.valueOf(1 + termCount.intValue()));
-      }
-
-      // Empty documents should be ignored.
-      if (termCounts.isEmpty())
-        return;
-
-      // Record the counts in the term doc matrix.
-      int docIndex = articleCounter.incrementAndGet();
-      indexToArticleName.put(docIndex, titleBuilder.toString());
-      for (Map.Entry<String, Integer> termCount : termCounts.entrySet()) {
-        int termIndex = termToIndex.get(termCount.getKey()).intValue();
-        termDocMatrix.set(termIndex, docIndex,
-                          termCount.getValue().intValue());
-        incrementTermCount(termCount.getKey());
-      }
+    int articleIndex = 0;
+    synchronized (this) {
+      articleIndex = articleCount.incrementAndGet();
+      indexToArticle.add(articleIndex, articleName);
     }
 
-    private void incrementTermCount(String term) {
-      Integer index = termDocCount.get(term);
-      if (index == null) {
-        synchronized(this) {
-          index = termToIndex.get(term);
-          termDocCount.put(term, (index == null) ?
-                           0 : 1 + index.intValue());
+    // Once the article has been fully parsed, output all of the sparse
+    // data points using the writer.  Synchronize on the writer to prevent
+    // any interleaving of output by other threads
+    synchronized(termWikiMatrix) {
+      for (Map.Entry<String, Integer> e : termCounts.entrySet()) {
+        String term = e.getKey();
+        int count = e.getValue().intValue();
+        int termIndex = termToIndex.get(term).intValue();
+        termWikiMatrix.set(termIndex, articleIndex, count);
+      }
+    }
+  }
+
+  /**
+   * Represent a document as the summation of term SemanticVectors.
+   * {@inheritDoc}
+   */
+  public SemanticVector representDocument(BufferedReader document)
+    throws IOException {
+    SemanticVector documentVector = new SparseSemanticVector(getVectorSize());
+    Iterator<String> articleTokens = IteratorFactory.tokenize(article);
+    while (articleTokens.hasNext()) {
+      SemanticVector termVector = getSemanticVectorFor(articleTokens.next());
+      // Add the term Vector to the document Vector.
+    }
+    return documentVector;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void processSpace(Properties properties) {
+  }
+
+  /**
+   * Adds the term to the list of terms and gives it an index, or if the term
+   * has already been added, does nothing.
+   */
+  private void addTerm(String term) {
+    Integer index = termToIndex.get(term);
+    if (index == null) {
+      synchronized(this) {
+        // recheck to see if the term was added while blocking
+        index = termToIndex.get(term);
+
+        // if some other thread has not already added this term while
+        // the current thread was blocking waiting on the lock, then add
+        // it.
+        if (index == null) {
+          index = Integer.valueOf(termCounter.incrementAndGet());
+          termToIndex.put(term, index);
         }
       }
     }
+  }
+    
+  /**
+   * {@inheritDoc}
+   */
+  public String getSpaceName() {
+    return ESA_SSPACE_NAME;
+  }
 
-    private void addTerm(String term) {
-      Integer index = termToIndex.get(term);
-      if (index == null) {
-        synchronized(this) {
-          index = termToIndex.get(term);
-          if (index == null)
-            termToIndex.put(term, termCounter.incrementAndGet());
-        }
-      }
-    }
+  /**
+   * {@inheritDoc}
+   */
+  public int getVectorSize() {
+    return articleCount.get();
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void processSpace(Properties properties) {
-    }
+  /**
+   * {@inheritDoc}
+   */
+  public double[] getVectorFor(String word) {
+    return null;
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    public String getSpaceName() {
-      return ESA_SSPACE_NAME;
-    }
+  /**
+   * {@inheritDoc}
+   */
+  public SemanticVector getSemanticVectorFor(String word) {
+    return null;
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    public int getVectorSize() {
-      return articleCounter.get() - 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double[] getVectorFor(String word) {
-      Integer index = termToIndex.get(word);
-      return (index == null) ? null : termDocMatrix.getRow(index.intValue());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Set<String> getWords() {
-      return Collections.unmodifiableSet(termToIndex.keySet());
-    }
+  /**
+   * {@inheritDoc}
+   */
+  public Set<String> getWords() {
+    return Collections.unmodifiableSet(termToIndex.keySet());
+  }    
 }
