@@ -27,8 +27,8 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.hermit.Hermit;
 
-import edu.ucla.sspace.holograph.BeagleIndexBuilder;
-import edu.ucla.sspace.holograph.RandomIndexBuilder;
+import edu.ucla.sspace.beagle.BeagleIndexBuilder;
+import edu.ucla.sspace.beagle.RandomIndexBuilder;
 
 import java.io.File;
 import java.io.IOError;
