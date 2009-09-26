@@ -19,10 +19,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.holograph;
+package edu.ucla.sspace.beagle;
 
 import edu.ucla.sspace.common.IndexBuilder;
-
 import edu.ucla.sspace.vector.DenseSemanticVector;
 import edu.ucla.sspace.vector.SemanticVector;
 
@@ -35,25 +34,69 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Queue;
-
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Generate index vectors for the Beagle Semantic Space, and incorporate index
+ * vectors of co-occuring words into the Semantic Vector for a focus word.
+ */
 public class BeagleIndexBuilder implements IndexBuilder {
+  /**
+   * The default index vector size, used when one is not specified.
+   */
   private static final int DEFAULT_INDEX_VECTOR_SIZE = 512;
 
+  /**
+   * A mapping from terms to their Index Vector, stored as a {@code
+   * SemanticVector}.
+   */
   private ConcurrentHashMap<String, SemanticVector> termToRandomIndex;
+
+  /**
+   * A utility class which performs the Fast Fourier Transform, used for
+   * computing the circular convolution of vectors.
+   */
   private RealDoubleFFT_Radix2 fft;
+
+  /**
+   * The current size of all index vectors, and semantic vectors.
+   */
   private int indexVectorSize;
+
+  /**
+   * An empty place holder vector to represent the focus word when computing the
+   * circular convolution.
+   */
   private SemanticVector placeHolder;
+
+  /**
+   * The standard deviation used for generating a new index vector for terms.
+   */
   private double stdev;
+
+  /**
+   * A random number generator which produces values for index vectors.
+   */
   private Random randomGenerator;
+
+  /**
+   * The first permutation ordering for vectors.
+   */
   private int[] permute1;
+
+  /**
+   * The second permutation ordering for vectors.
+   */
   private int[] permute2;
+
+  /**
+   * The most recent created index vector.  When a new term needs an index
+   * vector, this is the value saved.  Afterwords a new value must be generated.
+   */
   private SemanticVector newestRandomVector;
 
   public BeagleIndexBuilder() {
@@ -88,6 +131,12 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return 5;
   }
 
+  /**
+   * Load index vectors from a binary file.  This will first load in the
+   * ordering permutation vectors, and then the index vector for each term.
+   *
+   * @param file The file containing a saved BeagleIndexBuilder instance.
+   */
   public void loadIndexVectors(File file) {
     try {
       DataInputStream in = new DataInputStream(new FileInputStream(file));
@@ -109,13 +158,21 @@ public class BeagleIndexBuilder implements IndexBuilder {
         for (int j = 0; j < indexVectorSize; ++j) {
           vector[j] = in.readDouble();
         }
-        termToRandomIndex.put(new String(word), new DenseSemanticVector(vector));
+        termToRandomIndex.put(new String(word),
+                              new DenseSemanticVector(vector));
       }
     } catch (IOException ioe) {
       throw new IOError(ioe);
     }
   }
 
+  /**
+   * Save the index vectors for this instance into a binary file.  First the
+   * ordering permutation vectors are stored.  Afterwords, each word, and it's
+   * corresponding index vector is stored.
+   *
+   * @param file The file which will be used to store this instance.
+   */
   public void saveIndexVectors(File file) {
     try {
       DataOutputStream out = new DataOutputStream(new FileOutputStream(file));
@@ -128,7 +185,8 @@ public class BeagleIndexBuilder implements IndexBuilder {
       out.writeInt(termToRandomIndex.size());
       // Write out each mapping in the form of:
       // word length, word as bytes, index vector.
-      for (Map.Entry<String, SemanticVector> entry : termToRandomIndex.entrySet()) {
+      for (Map.Entry<String, SemanticVector> entry :
+           termToRandomIndex.entrySet()) {
         String word = entry.getKey();
         SemanticVector vector = entry.getValue();
         out.writeInt(word.length());
@@ -142,10 +200,17 @@ public class BeagleIndexBuilder implements IndexBuilder {
     }
   }
 
+  /**
+   * Return an empty dense semantic vector.
+   */
   public SemanticVector getSemanticVector() {
     return new DenseSemanticVector(indexVectorSize);
   }
 
+  /**
+   * Populate the given array with values 0 to {@code indexVectorSize}, and then
+   * shuffly the values randomly.
+   */
   private void randomPermute(int[] permute) {
     for (int i = 0; i < indexVectorSize; i++)
       permute[i] = i;
@@ -157,12 +222,18 @@ public class BeagleIndexBuilder implements IndexBuilder {
     }
   }
 
+  /**
+   * Print out the keys stored in this index builder.
+   */
   public void printAll() {
     for (Map.Entry<String, SemanticVector> m : termToRandomIndex.entrySet()) {
       System.out.println(m.getKey());
     }
   }
 
+  /**
+   * Generate a new random vector using a guassian distribution for each value.
+   */
   private SemanticVector generateRandomVector() {
     SemanticVector termVector = getSemanticVector();
     for (int i = 0; i < indexVectorSize; i++)
@@ -170,13 +241,23 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return termVector;
   }
 
+  /**
+   * Generate and store a new index vector for the given term.
+   *
+   * @param term The term to build an index vector for, if one does not exit.
+   *
+   * @return The generated index vector.
+   */
   private SemanticVector getBeagleVector(String term) {
+    // Check that an index vector does not already exist.
     SemanticVector v = termToRandomIndex.get(term);
     if (v == null) {
-      synchronized (term) {
-        System.out.println("adding new vector for: " + term);
+      synchronized (this) {
+        // Confirm that some other thread has not created an index vector for
+        // this term.
         v = termToRandomIndex.get(term);
         if (v == null) {
+          // Generate the index vector for this term and store it.
           v = generateRandomVector();
           termToRandomIndex.put(term, v);
         }
@@ -185,25 +266,48 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return v;
   }
 
-  // Context must have one word before the term being considered, and 4 words
-  // after it.  If nothing is available, simply add empty strings.
-  // Additionally, they term itself should be replaced with the empty string.
+  /**
+   * Add a holograph encoding the co-occurance information, and the ordering
+   * information of the given context.  First, the index vectors for each word
+   * in the given context will be added into {@code meaning}.  Then several
+   * n-grams will be generated, and composed together using the circular
+   * convolution.  These convolutions of n-grams will be added into {@code
+   * meaning}, providing a full holograph.  Other threads should not be
+   * modifying {@code meaning} while this function runs.
+   *
+   * @param meaning The {@code SemanticVector} representing the focus word.
+   * @param prevWords The words prior to the focus word in the context.
+   * @param nextWords The Words after the focus word in the context.
+   */
   public void updateMeaningWithTerm(SemanticVector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords) {
-    SemanticVector contextVector = getSemanticVector(); 
+    // Sum the index vectors for co-occuring words into {@code meaning}.
     for (String term: prevWords)
-      plusEquals(contextVector, getBeagleVector(term));
+      plusEquals(meaning, getBeagleVector(term));
     for (String term: nextWords)
-      plusEquals(contextVector, getBeagleVector(term));
-    plusEquals(meaning, contextVector);
+      plusEquals(meaning, getBeagleVector(term));
+
+    // Generate the semantics of the circular convolution of n-grams.
     SemanticVector orderVector = getSemanticVector();
     plusEquals(orderVector, groupConvolution(prevWords, nextWords));
+
+    // Add the final context vector into meaning.
     plusEquals(meaning, orderVector);
   }
 
+  /**
+   * Generate the circular convoltion of n-grams composed of words in the given
+   * context.  The result of this convolution is returned as a SemanticVector.
+   *
+   * @param prevWords The words prior to the focus word in the context.
+   * @param nextWords The Words after the focus word in the context.
+   * 
+   * @return The semantic vector generated from the circular convolution.
+   */
   private SemanticVector groupConvolution(Queue<String> prevWords,
                                           Queue<String> nextWords) {
+    // Generate an empty SemanticVector to hold the convolution.
     SemanticVector result = getSemanticVector();
 
     // Do the convolutions starting at index 0.
@@ -218,6 +322,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
       plusEquals(result, tempConvolution);
     }
     tempConvolution = placeHolder;
+
     // Do the convolutions starting at index 1.
     for (String term : nextWords) {
       tempConvolution = convolute(tempConvolution, getBeagleVector(term));
@@ -226,22 +331,51 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return result;
   }
 
+  /**
+   * Add the {@code right} vector to {@code left}.
+   *
+   * @param left The destination vector.
+   * @param right The source vector for addition.
+   */
   private void plusEquals(SemanticVector left, SemanticVector right) {
     for (int i = 0; i < indexVectorSize; ++i)
       left.add(i, right.get(i));
   }
 
+  /**
+   * Perform the circular convolution of two vectors.  The resulting vector is
+   * returned.
+   *
+   * @param left The left vector.
+   * @param right The right vector.
+   *
+   * @return The circular convolution of {@code left} and {@code right}.
+   */
   private SemanticVector convolute(SemanticVector left, SemanticVector right) {
-    left = changeVector(left,permute1);
-    right = changeVector(right,permute2);
+    // Permute both vectors.
+    left = changeVector(left, permute1);
+    right = changeVector(right, permute2);
+
+    // Use the Fast Fourier Transform on each vector.
     fft.transform(left.getVector(), 0, 1);
     fft.transform(right.getVector(), 0, 1);
+
+    // Multiply the two together.
     SemanticVector result = arrayTimes(left, right);
 
+    // The inverse transform completes the convolution.
     fft.backtransform(result.getVector(), 0, 1);
     return result;
   }
 
+  /**
+   * Multiply the entries in each vector together.
+   *
+   * @param left The left vector.
+   * @param right The right vector.
+   *
+   * @return The multiplication of {@code left} and {@code right}.
+   */
   private SemanticVector arrayTimes(SemanticVector left, SemanticVector right) {
     SemanticVector result = getSemanticVector();
     for (int i = 0; i < indexVectorSize; ++i)
@@ -249,6 +383,15 @@ public class BeagleIndexBuilder implements IndexBuilder {
     return result;
   }
 
+  /**
+   * Shuffle the given vector based on the ordering information given in {@code
+   * orderVector}.
+   *
+   * @param data The vector to be shuffled.
+   * @param orderVector The ordering of values to be used.
+   * 
+   * @return The shuffled version of {@code data}.
+   */
   private SemanticVector changeVector(SemanticVector data, int[] orderVector) {
     SemanticVector result = getSemanticVector();
     for (int i = 0; i < indexVectorSize; i++)

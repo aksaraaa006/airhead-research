@@ -19,27 +19,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.holograph;
+package edu.ucla.sspace.beagle;
 
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
-
-import edu.ucla.sspace.text.WordIterator;
-
+import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.vector.SemanticVector;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
-
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * An implementation of the Beagle Semantic Space model.  This implementation is
@@ -58,18 +56,47 @@ import java.util.concurrent.ConcurrentHashMap;
  * main functionality of this class can be found in the {@link IndexBuilder}
  * class.
  */
-public class Holograph implements SemanticSpace {
+public class Beagle implements SemanticSpace {
+  /**
+   * The full context size used when scanning the corpus.  This is the
+   * total number of words considered in the context.
+   */
   public static final int CONTEXT_SIZE = 6;
-  public static final String BEAGLE_SSPACE_NAME = 
-    "holograph-semantic-space";
 
+  /**
+   * The Semantic Space name for Beagle
+   */
+  public static final String BEAGLE_SSPACE_NAME = 
+    "beagle-semantic-space";
+
+  /**
+   * The class responsible for creating index vectors, and incorporating them
+   * into a semantic vector.
+   */
   private final IndexBuilder indexBuilder;
-  private final Map<String, SemanticVector> termHolographs;
+
+  /**
+   * A mapping for terms to their semantic vector representation.  A {@code
+   * SemanticVector} is used as these representations may be large.
+   */
+  private final ConcurrentMap<String, SemanticVector> termHolographs;
+
+  /**
+   * The size of each index vector, as set when the sspace is created.
+   */
   private final int indexVectorSize;
+
+  /**
+   * The number of words in the context to save prior to the focus word.
+   */
   private int prevSize;
+
+  /**
+   * The number of words in the context to save after the focus word.
+   */
   private int nextSize;
 
-  public Holograph(IndexBuilder builder, int vectorSize) {
+  public Beagle(IndexBuilder builder, int vectorSize) {
     indexVectorSize = vectorSize;
     indexBuilder = builder;
     prevSize = builder.expectedSizeOfPrevWords();
@@ -112,10 +139,15 @@ public class Holograph implements SemanticSpace {
     Queue<String> prevWords = new ArrayDeque<String>();
     Queue<String> nextWords = new ArrayDeque<String>();
 
-    WordIterator it = new WordIterator(document);
+    Iterator<String> it = IteratorFactory.tokenize(document);
 
+    // Fill up the words after the context so that when the real processing
+    // starts, the context is fully prepared.
     for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
       nextWords.offer(it.next().intern());
+    // Assume the previous words in the context are empty words.  Note that this
+    // is not specified in the original paper, but makes computation much
+    // easier.
     prevWords.offer("");
 
     String focusWord = null;
@@ -123,6 +155,10 @@ public class Holograph implements SemanticSpace {
       focusWord = nextWords.remove();
       if (it.hasNext())
         nextWords.offer(it.next().intern());
+
+      // Incorporate the context into the semantic vector for the focus word.
+      // If the focus word has no semantic vector yet, create a new one, as
+      // determined by the index builder.
       synchronized (focusWord) {
         SemanticVector meaning = termHolographs.get(focusWord);
         if (meaning == null) {
@@ -131,6 +167,8 @@ public class Holograph implements SemanticSpace {
         }
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
+
+      // Push the focus word into previous word set for the next focus word.
       prevWords.offer(focusWord);
       if (prevWords.size() > prevSize)
         prevWords.remove();
@@ -142,5 +180,4 @@ public class Holograph implements SemanticSpace {
    */
   public void processSpace(Properties properties) {
   }
-
 }

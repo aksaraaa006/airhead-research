@@ -1,22 +1,22 @@
-package edu.ucla.sspace.holograph;
+package edu.ucla.sspace.beagle;
 
 import edu.ucla.sspace.common.IndexBuilder;
-
 import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorGenerator;
 import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
-
 import edu.ucla.sspace.vector.SemanticVector;
 import edu.ucla.sspace.vector.SparseSemanticVector;
 
 import java.io.File;
-
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
-
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Generate index vectors for the Beagle Semantic Space, and incorporate index
+ * vectors of co-occuring words into the Semantic Vector for a focus word.
+ */
 public class RandomIndexBuilder implements IndexBuilder {
   /**
    * The default number of dimensions to be used by the index and semantic
@@ -25,7 +25,11 @@ public class RandomIndexBuilder implements IndexBuilder {
   public static final int DEFAULT_VECTOR_LENGTH = 2048;
   public static final int DEFAULT_WINDOW_SIZE = 5;
 
-  private Map<String,IndexVector> wordToIndexVector;
+  /**
+   * A mapping from terms to their Index Vector, stored as a {@code
+   * SemanticVector}.
+   */
+  private Map<String, IndexVector> wordToIndexVector;
 
   /**
    * A private source of randomization used for creating the index vectors.
@@ -59,12 +63,15 @@ public class RandomIndexBuilder implements IndexBuilder {
   }
 
   public void init(int vectorSize, int windowSize) {
-	wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
+	wordToIndexVector = new ConcurrentHashMap<String, IndexVector>();
     indexVectorSize = vectorSize;
     this.windowSize = windowSize;
     indexVectorGenerator = new RandomIndexVectorGenerator();
   }
 
+  /**
+   * Return an empty sparse semantic vector.
+   */
   public SemanticVector getSemanticVector() {
     return new SparseSemanticVector(indexVectorSize);
   }
@@ -95,12 +102,25 @@ public class RandomIndexBuilder implements IndexBuilder {
     return windowSize;
   }
 
+  /**
+   * Currently not implemented.
+   */
   public void loadIndexVectors(File file) {
   }
 
+  /**
+   * Currently not implemented.
+   */
   public void saveIndexVectors(File file) {
   }
 
+  /**
+   * Add the values in {@code vector} to {@code meaning} with a simple
+   * summation.
+   *
+   * @param meaning The semantic meaning.
+   * @param vector The index vector of a co-occuring word.
+   */
   private void addToMeaning(SemanticVector meaning, IndexVector vector) {
     for (int p : vector.positiveDimensions())
       meaning.add(p, 1);
@@ -108,6 +128,13 @@ public class RandomIndexBuilder implements IndexBuilder {
       meaning.add(p, -1);
   }
 
+  /**
+   * Sum the index vectors of words in the given context to {@code meaning}.
+   *
+   * @param meaning The {@code SemanticVector} of the focus word.
+   * @param prevWords The words prior to the focus word in the context.
+   * @param nextWords The Words after the focus word in the context.
+   */
   public void updateMeaningWithTerm(SemanticVector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords) {

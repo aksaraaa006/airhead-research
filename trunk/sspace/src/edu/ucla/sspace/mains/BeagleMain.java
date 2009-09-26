@@ -24,28 +24,28 @@ package edu.ucla.sspace.mains;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.holograph.Holograph;
-import edu.ucla.sspace.holograph.BeagleIndexBuilder;
+import edu.ucla.sspace.beagle.Beagle;
+import edu.ucla.sspace.beagle.BeagleIndexBuilder;
 
 import java.io.IOException;
 
 import java.util.Properties;
 
 /**
- * An executable class for running {@link Holograph} from the
+ * An executable class for running {@link Beagle} from the
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
- * <li> {@code --dimensions=<int>} how many dimensions to use for the Holograph vectors.
+ * <li> {@code --dimensions=<int>} how many dimensions to use for the Beagle vectors.
  *      512 is the default value.
  * </ul>
  *
  * <p>
  *
  * An invocation will produce one file as output {@code
- * holograph-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * beagle-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
  * this file will be replaced for each new semantic space.  Otherwise, a new
- * output file of the format {@code holograph-semantic-space<number>.sspace} will be
+ * output file of the format {@code beagle-semantic-space<number>.sspace} will be
  * created, where {@code <number>} is a unique identifier for that program's
  * invocation.  The output file will be placed in the directory specified on the
  * command line.
@@ -55,53 +55,53 @@ import java.util.Properties;
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.
  *
- * @see Holograph
+ * @see Beagle
  *
  * @author Keith Stevens 
  */
-public class HolographMain extends GenericMain {
+public class BeagleMain extends GenericMain {
 
     private static final int DEFAULT_DIMENSION = 512;
     private int dimension;
 
-    private HolographMain() {
+    private BeagleMain() {
     }
 
     public static void main(String[] args) {
-	HolographMain hMain = new HolographMain();
-	try {
-	    hMain.run(args);
-	}
-	catch (Throwable t) {
-	    t.printStackTrace();
-	}
+        BeagleMain hMain = new BeagleMain();
+        try {
+            hMain.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
     
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
     public void addExtraOptions(ArgOptions options) {
-      options.addOption('n', "dimension",
-                        "the length of each holographic vector",
-                        true, "INT");
+        options.addOption('n', "dimension",
+                          "the length of each beagle vector",
+                          true, "INT");
     }
 
     public void handleExtraOptions() {
-      dimension = (argOptions.hasOption("dimension"))
-        ? argOptions.getIntOption("dimension")
-        : DEFAULT_DIMENSION;
+        dimension = (argOptions.hasOption("dimension"))
+          ? argOptions.getIntOption("dimension")
+          : DEFAULT_DIMENSION;
     }
 
     public SemanticSpace getSpace() {
-      return new Holograph(new BeagleIndexBuilder(dimension), dimension);
+        return new Beagle(new BeagleIndexBuilder(dimension), dimension);
     }
 
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
     public void usage() {
- 	System.out.println(
- 	    "usage: java HolographMain [options] <output-dir>\n" + 
-	    argOptions.prettyPrint());
+        System.out.println(
+            "usage: java BeagleMain [options] <output-dir>\n" + 
+            argOptions.prettyPrint());
     }
 }

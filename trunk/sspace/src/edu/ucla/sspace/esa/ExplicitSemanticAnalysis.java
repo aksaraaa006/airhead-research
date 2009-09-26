@@ -159,7 +159,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
   public SemanticVector representDocument(BufferedReader document)
     throws IOException {
     SemanticVector documentVector = new SparseSemanticVector(getVectorSize());
-    Iterator<String> articleTokens = IteratorFactory.tokenize(article);
+    Iterator<String> articleTokens = IteratorFactory.tokenize(document);
     while (articleTokens.hasNext()) {
       SemanticVector termVector = getSemanticVectorFor(articleTokens.next());
       // Add the term Vector to the document Vector.
