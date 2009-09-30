@@ -221,8 +221,10 @@ public class FixedDurationTemporalRandomIndexing
      */
     public static final String SEMANTIC_SLICE_DURATION_PROPERTY = 
 	PROPERTY_PREFIX + ".sliceDuration";
-
-
+    
+    /**
+     * The duration of a semantic slice.
+     */
     private final TimeSpan sliceDuration;
 
     /**
@@ -256,6 +258,9 @@ public class FixedDurationTemporalRandomIndexing
 	    : new TimeSpan(timeSpanProp);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String getSpaceName() {
 	return PROPERTY_PREFIX + "-" + sliceDuration + "-" + getVectorSize();
     }

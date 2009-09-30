@@ -202,10 +202,18 @@ public class LSAMain extends GenericMain {
 	    "value is include. An example configuration might look like:\n" +
 	    "  --tokenFilter=english-dictionary.txt=include," +
 	    "stop-list.txt=exclude\n\n" +
+
 	    "The --svdAlgorithm provides a way to manually specify which " + 
 	    "algorithm should\nbe used internally.  This option should not be" +
 	    " used normally, as LSA will\nselect the fastest algorithm " +
 	    "available.  However, in the event that it\nis needed, valid" +
-	    " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT");
+	    " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT" +
+
+	    "\n\nThe -C, --compoundWords option specifies a file name of " +
+	    "multiple tokens that\nshould be counted as a single word, e.g." +
+	    " \"white house\".  Each compound\ntoken should be specified on " +
+	    "its own line." +
+
+	    "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
     }
 }
