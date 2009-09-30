@@ -205,6 +205,11 @@ public class HALMain extends GenericMain {
 	    " token are to be used for an exclusive\nfilter. The default " +
 	    "value is include. An example configuration might look like:\n" +
 	    "  --tokenFilter=english-dictionary.txt=include," +
-	    "stop-list.txt=exclude");
+	    "stop-list.txt=exclude" +
+	    "\n\nThe -C, --compoundWords option specifies a file name of " +
+	    "multiple tokens that\nshould be counted as a single word, e.g." +
+	    " \"white house\".  Each compound\ntoken should be specified on " +
+	    "its own line." +
+	    "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
     }
 }

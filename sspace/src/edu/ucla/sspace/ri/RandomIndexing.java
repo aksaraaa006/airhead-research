@@ -505,33 +505,15 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     /**
-     * Returns an unmodifiable view on the word to {@link IndexVector} mapping
-     * used by this instance.
+     * Returns an unmodifiable view on the token to {@link IndexVector} mapping
+     * used by this instance.  Any further changes made by this instance to its
+     * token to {@code IndexVector} mapping will be reflected in the return map.
+     *
+     * @return a mapping from the current set of tokens to the index vector used
+     *         to represent them
      */
     public Map<String,IndexVector> getWordToIndexVector() {
 	return Collections.unmodifiableMap(wordToIndexVector);
-    }
-
-    /**
-     * Assigns the word to {@link IndexVector} mapping to be used by this
-     * instance.  The map is copied internally, so any additional mappings added
-     * will not be reflected in the parameter set.
-     */
-    public void setWordToIndexVector(Map<String,IndexVector> m) {
-	wordToIndexVector.clear();
-	wordToIndexVector.putAll(m);
-    }
-
-    /**
-     * {@inheritDoc} Note that all words will still have an index vector
-     * assigned to them, which is necessary to properly compute the semantics.
-     *
-     * @param semanticsToRetain the set of words for which semantics should be
-     *        computed.
-     */
-    public void setSemanticFilter(Set<String> semanticsToRetain) {
-	semanticFilter.clear();
-	semanticFilter.addAll(semanticsToRetain);
     }
     
     /**
@@ -643,6 +625,32 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      */
     public void processSpace(Properties properties) {
 	
+    }
+
+    /**
+     * Assigns the token to {@link IndexVector} mapping to be used by this
+     * instance.  The contents of the map are copied, so any additions of new
+     * index words by this instance will not be reflected in the parameter's
+     * mapping.
+     *
+     * @param m a mapping from token to the {@code IndexVector} that should be
+     *        used represent it when calculating other word's semantics
+     */
+    public void setWordToIndexVector(Map<String,IndexVector> m) {
+	wordToIndexVector.clear();
+	wordToIndexVector.putAll(m);
+    }
+
+    /**
+     * {@inheritDoc} Note that all words will still have an index vector
+     * assigned to them, which is necessary to properly compute the semantics.
+     *
+     * @param semanticsToRetain the set of words for which semantics should be
+     *        computed.
+     */
+    public void setSemanticFilter(Set<String> semanticsToRetain) {
+	semanticFilter.clear();
+	semanticFilter.addAll(semanticsToRetain);
     }
 
     /**
