@@ -27,6 +27,7 @@ package edu.ucla.sspace.matrix;
  * @see MatrixIO
  * @see Matrix.Type
  */
+// TODO: Have a matrix return a sspace Vector of a matching type.
 public interface Matrix {
 
     /**
