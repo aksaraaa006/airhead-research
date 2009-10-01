@@ -27,35 +27,51 @@ package edu.ucla.sspace.vector;
  * output data types must be doubles.
  */
 public interface SemanticVector {
-  /**
-   * Change the value in the semantic vector by a specified amount.  If there is
-   * not a value set at index, delta should be set to the actual value.
-   *
-   * @param index index to change.
-   * @param delta the amount to change by.
-   */
-  public void add(int index, double delta);
+    /**
+     * Change the value in the semantic vector by a specified amount.  If there is
+     * not a value set at index, delta should be set to the actual value.
+     *
+     * @param index index to change.
+     * @param delta the amount to change by.
+     */
+    public void add(int index, double delta);
 
-  /**
-   * Set the value in the semantic vector.
-   *
-   * @param index index to set.
-   * @param value value to set in the vector.
-   */
-  public void set(int index, double value);
+    /**
+     * Add the contents of {@code vector} to the current {@code SemanticVector}.
+     * Underlying implemntations may have a more efficient method of adding
+     * vectors together based on what type of SemanticVector is passed in.
+     *
+     * @param vector A SemanticVector to be summed into the current vector.
+     */
+    public void addVector(SemanticVector vector);
 
-  /**
-   * Return the value of the semantic vector at the given index.
-   *
-   * @param index index to retrieve.
-   * @return value at index.
-   */
-  public double get(int index);
+    /**
+     * Set the value in the semantic vector.
+     *
+     * @param index index to set.
+     * @param value value to set in the vector.
+     */
+    public void set(int index, double value);
 
-  /**
-   * Return a double array representing this semantic vector.
-   *
-   * @return a double array of this vector.
-   */
-  public double[] getVector();
+    /**
+     * Return the value of the semantic vector at the given index.
+     *
+     * @param index index to retrieve.
+     * @return value at index.
+     */
+    public double get(int index);
+
+    /**
+     * Return a double array representing this semantic vector.
+     *
+     * @return a double array of this vector.
+     */
+    public double[] getVector();
+
+    /**
+     * Return the size of the {@code SemanticVector}.
+     *
+     * @return Size of the vector.
+     */
+    public double size();
 }

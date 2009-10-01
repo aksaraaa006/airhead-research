@@ -61,7 +61,15 @@ import java.util.Properties;
  */
 public class BeagleMain extends GenericMain {
 
+    /**
+     * If no dimension size is given, this will be the size of index vectors and
+     * semantic vectors.
+     */
     private static final int DEFAULT_DIMENSION = 512;
+
+    /**
+     * The dimensionality of each index and semantic vector.
+     */
     private int dimension;
 
     private BeagleMain() {
@@ -86,12 +94,18 @@ public class BeagleMain extends GenericMain {
                           true, "INT");
     }
 
+    /**
+     * Handle the dimension argument.
+     */
     public void handleExtraOptions() {
         dimension = (argOptions.hasOption("dimension"))
           ? argOptions.getIntOption("dimension")
           : DEFAULT_DIMENSION;
     }
 
+    /**
+     * Return a new Beagle instance with dimensionality of {@code dimension}.
+     */
     public SemanticSpace getSpace() {
         return new Beagle(new BeagleIndexBuilder(dimension), dimension);
     }
