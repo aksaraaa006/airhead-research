@@ -23,7 +23,7 @@ package edu.ucla.sspace.beagle;
 
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.vector.DenseSemanticVector;
-import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.Vector;
 
 import jnt.FFT.RealDoubleFFT_Radix2;
 
@@ -52,9 +52,9 @@ public class BeagleIndexBuilder implements IndexBuilder {
 
     /**
      * A mapping from terms to their Index Vector, stored as a {@code
-     * SemanticVector}.
+     * Vector}.
      */
-    private ConcurrentHashMap<String, SemanticVector> termToRandomIndex;
+    private ConcurrentHashMap<String, Vector> termToRandomIndex;
 
     /**
      * A utility class which performs the Fast Fourier Transform, used for
@@ -71,7 +71,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * An empty place holder vector to represent the focus word when computing
      * the circular convolution.
      */
-    private SemanticVector placeHolder;
+    private Vector placeHolder;
 
     /**
      * The standard deviation used for generating a new index vector for terms.
@@ -98,7 +98,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * vector, this is the value saved.  Afterwords a new value must be
      * generated.
      */
-    private SemanticVector newestRandomVector;
+    private Vector newestRandomVector;
 
     public BeagleIndexBuilder() {
         init(DEFAULT_INDEX_VECTOR_SIZE);
@@ -110,7 +110,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
 
     private void init(int s) {
         randomGenerator = new Random();
-        termToRandomIndex = new ConcurrentHashMap<String, SemanticVector>();
+        termToRandomIndex = new ConcurrentHashMap<String, Vector>();
         indexVectorSize = s;
         fft = new RealDoubleFFT_Radix2(indexVectorSize);
         newestRandomVector = generateRandomVector(); 
@@ -187,10 +187,10 @@ public class BeagleIndexBuilder implements IndexBuilder {
             out.writeInt(termToRandomIndex.size());
             // Write out each mapping in the form of:
             // word length, word as bytes, index vector.
-            for (Map.Entry<String, SemanticVector> entry :
+            for (Map.Entry<String, Vector> entry :
                      termToRandomIndex.entrySet()) {
                 String word = entry.getKey();
-                SemanticVector vector = entry.getValue();
+                Vector vector = entry.getValue();
                 out.writeInt(word.length());
                 out.write(word.getBytes(), 0, word.length());
                 for (int i = 0; i < indexVectorSize; ++i) {
@@ -205,7 +205,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
     /**
      * Return an empty dense semantic vector.
      */
-    public SemanticVector getSemanticVector() {
+    public Vector getSemanticVector() {
         return new DenseSemanticVector(indexVectorSize);
     }
 
@@ -228,7 +228,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * Print out the keys stored in this index builder.
      */
     public void printAll() {
-        for (Map.Entry<String, SemanticVector> m :
+        for (Map.Entry<String, Vector> m :
                 termToRandomIndex.entrySet()) {
             System.out.println(m.getKey());
         }
@@ -238,8 +238,8 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * Generate a new random vector using a guassian distribution for each
      * value.
      */
-    private SemanticVector generateRandomVector() {
-        SemanticVector termVector = getSemanticVector();
+    private Vector generateRandomVector() {
+        Vector termVector = getSemanticVector();
         for (int i = 0; i < indexVectorSize; i++)
             termVector.set(i, randomGenerator.nextGaussian() * stdev);
         return termVector;
@@ -252,9 +252,9 @@ public class BeagleIndexBuilder implements IndexBuilder {
      *
      * @return The generated index vector.
      */
-    private SemanticVector getBeagleVector(String term) {
+    private Vector getBeagleVector(String term) {
         // Check that an index vector does not already exist.
-        SemanticVector v = termToRandomIndex.get(term);
+        Vector v = termToRandomIndex.get(term);
         if (v == null) {
             synchronized (this) {
                 // Confirm that some other thread has not created an index
@@ -279,11 +279,11 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * meaning}, providing a full holograph. Other threads should not be
      * modifying {@code meaning} while this function runs.
      *
-     * @param meaning The {@code SemanticVector} representing the focus word.
+     * @param meaning The {@code Vector} representing the focus word.
      * @param prevWords The words prior to the focus word in the context.
      * @param nextWords The Words after the focus word in the context.
      */
-    public void updateMeaningWithTerm(SemanticVector meaning,
+    public void updateMeaningWithTerm(Vector meaning,
                                       Queue<String> prevWords,
                                       Queue<String> nextWords) {
         // Sum the index vectors for co-occuring words into {@code meaning}.
@@ -293,7 +293,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
             plusEquals(meaning, getBeagleVector(term));
 
         // Generate the semantics of the circular convolution of n-grams.
-        SemanticVector orderVector = getSemanticVector();
+        Vector orderVector = getSemanticVector();
         plusEquals(orderVector, groupConvolution(prevWords, nextWords));
 
         // Add the final context vector into meaning.
@@ -303,20 +303,20 @@ public class BeagleIndexBuilder implements IndexBuilder {
     /**
      * Generate the circular convoltion of n-grams composed of words in the
      * given context. The result of this convolution is returned as a
-     * SemanticVector.
+     * Vector.
      *
      * @param prevWords The words prior to the focus word in the context.
      * @param nextWords The Words after the focus word in the context.
      * 
      * @return The semantic vector generated from the circular convolution.
      */
-    private SemanticVector groupConvolution(Queue<String> prevWords,
-                                            Queue<String> nextWords) {
-        // Generate an empty SemanticVector to hold the convolution.
-        SemanticVector result = getSemanticVector();
+    private Vector groupConvolution(Queue<String> prevWords,
+                                    Queue<String> nextWords) {
+        // Generate an empty Vector to hold the convolution.
+        Vector result = getSemanticVector();
 
         // Do the convolutions starting at index 0.
-        SemanticVector tempConvolution =
+        Vector tempConvolution =
             convolute(getBeagleVector(prevWords.peek()), placeHolder);
 
         plusEquals(result, tempConvolution);
@@ -341,7 +341,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * @param left The destination vector.
      * @param right The source vector for addition.
      */
-    private void plusEquals(SemanticVector left, SemanticVector right) {
+    private void plusEquals(Vector left, Vector right) {
         for (int i = 0; i < indexVectorSize; ++i)
             left.add(i, right.get(i));
     }
@@ -355,21 +355,20 @@ public class BeagleIndexBuilder implements IndexBuilder {
      *
      * @return The circular convolution of {@code left} and {@code right}.
      */
-    private SemanticVector convolute(SemanticVector left,
-                                     SemanticVector right) {
+    private Vector convolute(Vector left, Vector right) {
         // Permute both vectors.
         left = changeVector(left, permute1);
         right = changeVector(right, permute2);
 
         // Use the Fast Fourier Transform on each vector.
-        fft.transform(left.getVector(), 0, 1);
-        fft.transform(right.getVector(), 0, 1);
+        fft.transform(left.toArray(), 0, 1);
+        fft.transform(right.toArray(), 0, 1);
 
         // Multiply the two together.
-        SemanticVector result = arrayTimes(left, right);
+        Vector result = arrayTimes(left, right);
 
             // The inverse transform completes the convolution.
-        fft.backtransform(result.getVector(), 0, 1);
+        fft.backtransform(result.toArray(), 0, 1);
         return result;
     }
 
@@ -381,9 +380,8 @@ public class BeagleIndexBuilder implements IndexBuilder {
      *
      * @return The multiplication of {@code left} and {@code right}.
      */
-    private SemanticVector arrayTimes(SemanticVector left,
-                                      SemanticVector right) {
-        SemanticVector result = getSemanticVector();
+    private Vector arrayTimes(Vector left, Vector right) {
+        Vector result = getSemanticVector();
         for (int i = 0; i < indexVectorSize; ++i)
             result.set(i, left.get(i) * right.get(i));
         return result;
@@ -398,9 +396,8 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * 
      * @return The shuffled version of {@code data}.
      */
-    private SemanticVector changeVector(SemanticVector data,
-                                        int[] orderVector) {
-        SemanticVector result = getSemanticVector();
+    private Vector changeVector(Vector data, int[] orderVector) {
+        Vector result = getSemanticVector();
         for (int i = 0; i < indexVectorSize; i++)
             result.set(i, data.get(orderVector[i]));
         return result;

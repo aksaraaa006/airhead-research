@@ -24,12 +24,12 @@ package edu.ucla.sspace.vector;
 import java.util.Arrays;
 
 /**
- * A {@code SemanticVector} instance that keeps only the non-zero values of
+ * A {@code Vector} instance that keeps only the non-zero values of
  * the semantics in memory, thereby saving space at the expense of time.
  *
  * This class is thread-safe.
  */
-public class SparseSemanticVector implements SemanticVector {
+public class SparseSemanticVector implements Vector {
     /**
      * The set of indicies which have non zero values in this vector.
      */
@@ -41,7 +41,7 @@ public class SparseSemanticVector implements SemanticVector {
     private double[] values;
 
     /**
-     * The maximum size of this {@code SemanticVector}.
+     * The maximum size of this {@code Vector}.
      */
     private int vectorLength;
 
@@ -60,9 +60,9 @@ public class SparseSemanticVector implements SemanticVector {
     /**
      * {@inheritDoc}
      */
-    public synchronized void addVector(SemanticVector vector) {
+    public synchronized void addVector(Vector vector) {
         // Skip vectors of different lengths.
-        if (vector.size() != size())
+        if (vector.length() != length())
             return;
 
         if (vector instanceof SparseSemanticVector) {
@@ -143,7 +143,7 @@ public class SparseSemanticVector implements SemanticVector {
     /**
      * {@inheritDoc}
      */
-    public synchronized double[] getVector() {
+    public synchronized double[] toArray() {
         double[] vector = new double[vectorLength];
         for (int i = 0; i < indices.length; ++i)
             vector[indices[i]] = values[i];
@@ -161,7 +161,7 @@ public class SparseSemanticVector implements SemanticVector {
     /**
      * {@inheritDoc}
      */
-    public double size() {
+    public double length() {
         return vectorLength;
     }
 }

@@ -45,7 +45,7 @@ public class Similarity {
 
     /**
      * Returns the {@link Method} for getting the similarity of two {@code
-     * SemanticVector} based on the specified similarity type.
+     * Vector} based on the specified similarity type.
      *
      * @throws Error if a {@link NoSuchMethodException} is thrown
      */
@@ -65,7 +65,7 @@ public class Similarity {
 
         try { 
             m = Similarity.class.getMethod(methodName,
-                    new Class[] {SemanticVector.class, SemanticVector.class});
+                    new Class[] {Vector.class, Vector.class});
         } catch (NoSuchMethodException nsme) {
             // rethrow
             throw new Error(nsme);
@@ -77,8 +77,8 @@ public class Similarity {
      * Throws an exception if either array is {@code null} or if the array
      * lengths do not match.
      */
-    private static void check(SemanticVector a, SemanticVector b) {
-        if (a == null || b == null | a.size() != b.size()) {
+    private static void check(Vector a, Vector b) {
+        if (a == null || b == null | a.length() != b.length()) {
             throw new IllegalArgumentException(
                     "input array lengths do not match");
         }
@@ -87,13 +87,13 @@ public class Similarity {
     /**
      * Returns the cosine similarity of the two arrays.
      */
-    public static double cosineSimilarity(SemanticVector a, SemanticVector b) {
+    public static double cosineSimilarity(Vector a, Vector b) {
         check(a,b);
 
         double dotProduct = 0.0;
         double aMagnitude = 0.0;
         double bMagnitude = 0.0;
-        for (int i = 0; i < b.size(); i++) {
+        for (int i = 0; i < b.length(); i++) {
             double aValue = a.get(i);
             double bValue = b.get(i);
             aMagnitude += aValue * aValue;
@@ -106,18 +106,17 @@ public class Similarity {
             ? 0 : dotProduct / (aMagnitude * bMagnitude);
     }
     
-    public static double euclideanDistance(SemanticVector a, SemanticVector b) {
+    public static double euclideanDistance(Vector a, Vector b) {
         check(a, b);
         
         double sum = 0;
-        for (int i = 0; i < a.size(); ++i) {
+        for (int i = 0; i < a.length(); ++i) {
             sum += Math.pow((a.get(i) - b.get(i)), 2) ;
         }
         return Math.sqrt(sum);
     }
 
-    public static double euclideanSimilarity(SemanticVector a,
-                                             SemanticVector b) {
+    public static double euclideanSimilarity(Vector a, Vector b) {
         return 1 / (1 + euclideanDistance(a,b));
     }
 }

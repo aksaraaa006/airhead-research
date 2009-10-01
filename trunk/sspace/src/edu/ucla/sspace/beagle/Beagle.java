@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.text.IteratorFactory;
-import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -77,9 +77,9 @@ public class Beagle implements SemanticSpace {
 
     /**
      * A mapping for terms to their semantic vector representation. A {@code
-     * SemanticVector} is used as these representations may be large.
+     * Vector} is used as these representations may be large.
      */
-    private final ConcurrentMap<String, SemanticVector> termHolographs;
+    private final ConcurrentMap<String, Vector> termHolographs;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -101,7 +101,7 @@ public class Beagle implements SemanticSpace {
         indexBuilder = builder;
         prevSize = builder.expectedSizeOfPrevWords();
         nextSize = builder.expectedSizeOfNextWords();
-        termHolographs = new ConcurrentHashMap<String, SemanticVector>();
+        termHolographs = new ConcurrentHashMap<String, Vector>();
     }
 
     /**
@@ -115,7 +115,7 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public double[] getVectorFor(String term) {
-        return termHolographs.get(term).getVector();
+        return termHolographs.get(term).toArray();
     }
 
     /**
@@ -160,7 +160,7 @@ public class Beagle implements SemanticSpace {
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
             synchronized (focusWord) {
-                SemanticVector meaning = termHolographs.get(focusWord);
+                Vector meaning = termHolographs.get(focusWord);
                 if (meaning == null) {
                     meaning = indexBuilder.getSemanticVector();
                     termHolographs.put(focusWord, meaning);

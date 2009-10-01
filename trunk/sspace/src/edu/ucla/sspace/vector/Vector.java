@@ -27,7 +27,7 @@ package edu.ucla.sspace.vector;
  * output data types must be doubles.
  */
 // TODO: Rename to Vector.
-public interface SemanticVector {
+public interface Vector {
     /**
      * Change the value in the semantic vector by a specified amount.  If there is
      * not a value set at index, delta should be set to the actual value.
@@ -38,13 +38,13 @@ public interface SemanticVector {
     public void add(int index, double delta);
 
     /**
-     * Add the contents of {@code vector} to the current {@code SemanticVector}.
+     * Add the contents of {@code vector} to the current {@code Vector}.
      * Underlying implemntations may have a more efficient method of adding
-     * vectors together based on what type of SemanticVector is passed in.
+     * vectors together based on what type of Vector is passed in.
      *
-     * @param vector A SemanticVector to be summed into the current vector.
+     * @param vector A Vector to be summed into the current vector.
      */
-    public void addVector(SemanticVector vector);
+    public void addVector(Vector vector);
 
     /**
      * Set the value in the semantic vector.
@@ -67,14 +67,12 @@ public interface SemanticVector {
      *
      * @return a double array of this vector.
      */
-    // TODO: Rename to toArray.
-    public double[] getVector();
+    public double[] toArray();
 
     /**
-     * Return the size of the {@code SemanticVector}.
+     * Return the size of the {@code Vector}.
      *
      * @return Size of the vector.
      */
-    // TODO: Rename to length.
-    public double size();
+    public double length();
 }

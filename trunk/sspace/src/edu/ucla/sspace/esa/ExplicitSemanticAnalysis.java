@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.DocumentSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
-import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.SparseSemanticVector;
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -153,15 +153,15 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
   }
 
   /**
-   * Represent a document as the summation of term SemanticVectors.
+   * Represent a document as the summation of term Vectors.
    * {@inheritDoc}
    */
-  public SemanticVector representDocument(BufferedReader document)
+  public Vector representDocument(BufferedReader document)
     throws IOException {
-    SemanticVector documentVector = new SparseSemanticVector(getVectorSize());
+    Vector documentVector = new SparseSemanticVector(getVectorSize());
     Iterator<String> articleTokens = IteratorFactory.tokenize(document);
     while (articleTokens.hasNext()) {
-      SemanticVector termVector = getSemanticVectorFor(articleTokens.next());
+      Vector termVector = getSemanticVectorFor(articleTokens.next());
       // Add the term Vector to the document Vector.
     }
     return documentVector;
@@ -219,7 +219,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
   /**
    * {@inheritDoc}
    */
-  public SemanticVector getSemanticVectorFor(String word) {
+  public Vector getSemanticVectorFor(String word) {
     return null;
   }
 
