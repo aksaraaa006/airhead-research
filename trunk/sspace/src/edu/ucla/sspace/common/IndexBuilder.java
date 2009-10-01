@@ -34,6 +34,8 @@ import java.util.Queue;
  * varients, can easily swap out the type of random indexing used for
  * experimentation purposes.  Implementations should be thread safe.
  */
+// TODO: Merge this with David's index building classes.  Make sure we can
+// incorporate or mix/match permutation abilities.
 public interface IndexBuilder {
 
   /**
