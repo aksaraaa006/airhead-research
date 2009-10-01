@@ -26,6 +26,7 @@ package edu.ucla.sspace.vector;
  * implement the vector with any kind of underlying data type, but the input and
  * output data types must be doubles.
  */
+// TODO: Rename to Vector.
 public interface SemanticVector {
     /**
      * Change the value in the semantic vector by a specified amount.  If there is
@@ -66,6 +67,7 @@ public interface SemanticVector {
      *
      * @return a double array of this vector.
      */
+    // TODO: Rename to toArray.
     public double[] getVector();
 
     /**
@@ -73,5 +75,6 @@ public interface SemanticVector {
      *
      * @return Size of the vector.
      */
+    // TODO: Rename to length.
     public double size();
 }
