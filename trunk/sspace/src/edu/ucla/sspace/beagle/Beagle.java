@@ -40,144 +40,146 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * An implementation of the Beagle Semantic Space model.  This implementation is
- * based on
- * <p style="font-family:Garamond, Georgia, serif">Jones, M. N., Mewhort, D.
- * J.L. (2007).  Representing Word Meaning and Order Information in a Composite
- * Holographic Lexicon.  <i>Psychological Review</i> <b>114</b>, 1-37.
- * Available <a href="www.indiana.edu/~clcl/BEAGLE/Jones_Mewhort_PR.pdf">here</a></p>
+ * An implementation of the Beagle Semantic Space model. This implementation is
+ * based on <p style="font-family:Garamond, Georgia, serif">Jones, M. N.,
+ * Mewhort, D.  J.L. (2007).    Representing Word Meaning and Order Information
+ * in a Composite Holographic Lexicon.    <i>Psychological Review</i>
+ * <b>114</b>, 1-37.  Available <a
+ * href="www.indiana.edu/~clcl/BEAGLE/Jones_Mewhort_PR.pdf">here</a></p>
  *
  * For every word, a unique random index vector is created, where the vector has
  * some large dimension (by default 512), with each entry in the vector being
- * from a random gaussian distribution.  The holographic meaning of a word is
+ * from a random gaussian distribution. The holographic meaning of a word is
  * updated by first adding the sum of index vectors for all the words in a
- * sliding window centered around the target term.  Additionally a sum of
- * convolutions of several n-grams is added to the holographic meaning.  The
+ * sliding window centered around the target term. Additionally a sum of
+ * convolutions of several n-grams is added to the holographic meaning. The
  * main functionality of this class can be found in the {@link IndexBuilder}
  * class.
  */
 public class Beagle implements SemanticSpace {
-  /**
-   * The full context size used when scanning the corpus.  This is the
-   * total number of words considered in the context.
-   */
-  public static final int CONTEXT_SIZE = 6;
+    /**
+     * The full context size used when scanning the corpus. This is the
+     * total number of words considered in the context.
+     */
+    public static final int CONTEXT_SIZE = 6;
 
-  /**
-   * The Semantic Space name for Beagle
-   */
-  public static final String BEAGLE_SSPACE_NAME = 
-    "beagle-semantic-space";
+    /**
+     * The Semantic Space name for Beagle
+     */
+    public static final String BEAGLE_SSPACE_NAME = 
+        "beagle-semantic-space";
 
-  /**
-   * The class responsible for creating index vectors, and incorporating them
-   * into a semantic vector.
-   */
-  private final IndexBuilder indexBuilder;
+    /**
+     * The class responsible for creating index vectors, and incorporating them
+     * into a semantic vector.
+     */
+    private final IndexBuilder indexBuilder;
 
-  /**
-   * A mapping for terms to their semantic vector representation.  A {@code
-   * SemanticVector} is used as these representations may be large.
-   */
-  private final ConcurrentMap<String, SemanticVector> termHolographs;
+    /**
+     * A mapping for terms to their semantic vector representation. A {@code
+     * SemanticVector} is used as these representations may be large.
+     */
+    private final ConcurrentMap<String, SemanticVector> termHolographs;
 
-  /**
-   * The size of each index vector, as set when the sspace is created.
-   */
-  private final int indexVectorSize;
+    /**
+     * The size of each index vector, as set when the sspace is created.
+     */
+    private final int indexVectorSize;
 
-  /**
-   * The number of words in the context to save prior to the focus word.
-   */
-  private int prevSize;
+    /**
+     * The number of words in the context to save prior to the focus word.
+     */
+    private int prevSize;
 
-  /**
-   * The number of words in the context to save after the focus word.
-   */
-  private int nextSize;
+    /**
+     * The number of words in the context to save after the focus word.
+     */
+    private int nextSize;
 
-  public Beagle(IndexBuilder builder, int vectorSize) {
-    indexVectorSize = vectorSize;
-    indexBuilder = builder;
-    prevSize = builder.expectedSizeOfPrevWords();
-    nextSize = builder.expectedSizeOfNextWords();
-    termHolographs = new ConcurrentHashMap<String, SemanticVector>();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public Set<String> getWords() {
-    return termHolographs.keySet();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public double[] getVectorFor(String term) {
-    return termHolographs.get(term).getVector();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public String getSpaceName() {
-    return BEAGLE_SSPACE_NAME + "-" + indexVectorSize;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public int getVectorSize() {
-    return indexVectorSize;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void processDocument(BufferedReader document) throws IOException {
-    Queue<String> prevWords = new ArrayDeque<String>();
-    Queue<String> nextWords = new ArrayDeque<String>();
-
-    Iterator<String> it = IteratorFactory.tokenize(document);
-
-    // Fill up the words after the context so that when the real processing
-    // starts, the context is fully prepared.
-    for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
-      nextWords.offer(it.next().intern());
-    // Assume the previous words in the context are empty words.  Note that this
-    // is not specified in the original paper, but makes computation much
-    // easier.
-    prevWords.offer("");
-
-    String focusWord = null;
-    while (!nextWords.isEmpty()) {
-      focusWord = nextWords.remove();
-      if (it.hasNext())
-        nextWords.offer(it.next().intern());
-
-      // Incorporate the context into the semantic vector for the focus word.
-      // If the focus word has no semantic vector yet, create a new one, as
-      // determined by the index builder.
-      synchronized (focusWord) {
-        SemanticVector meaning = termHolographs.get(focusWord);
-        if (meaning == null) {
-          meaning = indexBuilder.getSemanticVector();
-          termHolographs.put(focusWord, meaning);
-        }
-        indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
-      }
-
-      // Push the focus word into previous word set for the next focus word.
-      prevWords.offer(focusWord);
-      if (prevWords.size() > prevSize)
-        prevWords.remove();
+    public Beagle(IndexBuilder builder, int vectorSize) {
+        indexVectorSize = vectorSize;
+        indexBuilder = builder;
+        prevSize = builder.expectedSizeOfPrevWords();
+        nextSize = builder.expectedSizeOfNextWords();
+        termHolographs = new ConcurrentHashMap<String, SemanticVector>();
     }
-  }
-  
-  /**
-   * No processing is performed on the holographs.
-   */
-  public void processSpace(Properties properties) {
-  }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Set<String> getWords() {
+        return termHolographs.keySet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] getVectorFor(String term) {
+        return termHolographs.get(term).getVector();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getSpaceName() {
+        return BEAGLE_SSPACE_NAME + "-" + indexVectorSize;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorSize() {
+        return indexVectorSize;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void processDocument(BufferedReader document) throws IOException {
+        Queue<String> prevWords = new ArrayDeque<String>();
+        Queue<String> nextWords = new ArrayDeque<String>();
+
+        Iterator<String> it = IteratorFactory.tokenize(document);
+
+        // Fill up the words after the context so that when the real processing
+        // starts, the context is fully prepared.
+        for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
+            nextWords.offer(it.next().intern());
+        // Assume the previous words in the context are empty words. Note that
+        // this is not specified in the original paper, but makes computation
+        // much easier.
+        prevWords.offer("");
+
+        String focusWord = null;
+        while (!nextWords.isEmpty()) {
+            focusWord = nextWords.remove();
+            if (it.hasNext())
+                nextWords.offer(it.next().intern());
+
+            // Incorporate the context into the semantic vector for the focus
+            // word.  If the focus word has no semantic vector yet, create a new
+            // one, as determined by the index builder.
+            synchronized (focusWord) {
+                SemanticVector meaning = termHolographs.get(focusWord);
+                if (meaning == null) {
+                    meaning = indexBuilder.getSemanticVector();
+                    termHolographs.put(focusWord, meaning);
+                }
+                indexBuilder.updateMeaningWithTerm(
+                        meaning, prevWords, nextWords);
+            }
+
+            // Push the focus word into previous word set for the next focus
+            // word.
+            prevWords.offer(focusWord);
+            if (prevWords.size() > prevSize)
+                prevWords.remove();
+        }
+    }
+    
+    /**
+     * No processing is performed on the holographs.
+     */
+    public void processSpace(Properties properties) {
+    }
 }
