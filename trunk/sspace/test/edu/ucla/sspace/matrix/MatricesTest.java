@@ -26,21 +26,6 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 public class MatricesTest {
-  @Test public void createSparseMatrix() {
-    Matrix m = Matrices.create(79000, 79000, false);
-    assertTrue(m instanceof SparseMatrix);
-  }
-
-  @Test public void createArrayMatrix() {
-    Matrix m = Matrices.create(900, 1000, true);
-    assertTrue(m instanceof ArrayMatrix);
-  }
-
-  @Test public void createOnDiskTest() {
-    Matrix m = Matrices.create(79000, 79000, true);
-    assertTrue(m instanceof OnDiskMatrix);
-  }
-
   @Test public void multiplyTest() {
     double[] data1 = {1, 2, 3, 4, 1, 1, 1, 1, 5, 4, 3, 2};
     Matrix leftMatrix = new ArrayMatrix(3, 4, data1);
