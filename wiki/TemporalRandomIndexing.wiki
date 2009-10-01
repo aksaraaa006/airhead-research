@@ -2,7 +2,96 @@
 
 = Introduction =
 
-_forthcoming_
+Temporal Random Indexing (TRI) is a semantic space algorithm designed to analyze how the meanings of words change in time.  TRI is based on the same techniques as [RandomIndexing Random Indexing], with a notable difference.  Whereas most semantic space algorithms build a matrix for representing word meaning as vectors, TRI will build a [http://en.wikipedia.org/wiki/Tensor Tensor] that represents a single word's meaning as a _matrix_.  The vectors from this matrix indicate how the semantics of the word change through time.  The following figure illustrates this change.
+[http://airhead-research.googlecode.com/svn/wiki/images/time-tensor.png]
+
+The matrix representing each word's semantics is ordered according to time.  For example, if the first row vector represents the semantics at time _t_, then the next row would represent the semantics for a time after _t_.  Ordering the vectors allow us to examine the similarities as time progresses.
+
+= Algorithm Overview = 
+
+The core algorithm can be summarized as augmenting the standard co-occurrence model through annotating _when_ two words co-occurred.  The time dimension forms the third dimension in the semantic space tensor.  We use a random project method similar to Random Indexing, where each word is assigned an index vector use to track co-occurrence.  Instead of having a single semantic vector, each word is assigned a semantic matrix.  We refer to this matrix as the *semantic slice* of a word.  Formally, for each co-occurrence of word,,i,, with word,,j,, at time _t_, the index vector for word,,j,, is added to the semantics of word,,i,, using _t_ to select which row in the semantic slice is updated.
+
+Note that this method of updating has an important consequence.  Because the index vectors stay constant through time, we are able to _meaningfully_ compare the semantics between two vectors in the semantic slice for a word.  Moreover, we can sum contiguous row vectors to produce the semantics of a word for a time range.  We refer to these summations as *semantic partitions* of a slice.  For example, we could sum the vectors starting at the row _t,,June 1, 2009,,_ to _t,,June 30, 2009,,_ to create the semantics of the word for the entire month of June 2009.  Similarly, we could create semantic partitions for each month to track how the word's meaning changes on a monthly basis.  If we were to sum the vectors for all time period, this would produce the same vectors as other semantic space models that discard time.
+
+= Implementations =
+
+We offer two main implementations of TRI.  The need for two is driven primarily by memory constraints; representing co-occurrence as a tensor incurs a large memory overhead that is infeasible on most systems for long time durations.  We therefore have a full implementation of TRI that stores the entire tensor in memory, and a second implementation that operates under more restrictions but scales better for certain applications.
+
+== Full TRI Implementation ==
+
+_Full implementation description coming soon._
+
+== Fixed-Duration TRI Implementation ==
+
+The second implementation requires three things:
+
+  # The corpus is broken up into fixed-length semantic partitions, e.g. weekly partitions.  The partition length remains constant throughout the algorithm's execution.  Only a single semantic vector is use for the word; the partition is automatically summed.
+  # All documents are processed in order from least recent to most recent
+  # Once all the documents within a partition have been seen, the partition may be processed, but then discarded (i.e. not store in memory).  In this sense the algorithm operates in an on-line manner with respect to partitions.
+
+We refer to this implementation as Fixed-Duration TRI (FD-TRI).  The third requirement enables the original TRI algorithm to operate with a greatly reduced memory footprint, but at the expense of not being able to operate on multiple semantic partitions at once.  _However_, the algorithm exposes the ability to process each partition as the user sees fit, which enables the ability to save the partition for later use, or even to manually retain the semantic vectors for certain words across time.
+
+=== Running FD-TRI ===
+
+FD-TRI can be invoked either directly as a class or using the fd-tri.jar target:
+  * `java edu.ucla.sspace.tri.FixedDurationTemporalRandomIndexingMain [options] <output-dir>`
+  * `java -jar ft-tri.jar [options] <output-dir>`
+
+FD-TRI provides a large number of configurable options.
+
+  * At least one of the following options is required to specify where the input documents are located:
+    * `-d, --docFile=FILE[,FILE...]` one or more files where each line is a [TemporalDocument temporal document]
+    * `-f, --fileList=FILE[,FILE...]` one or more files, each containing a list of [TemporalDocument temporal document files
+
+  * The timespan string indicates the length of each semantic partition of the slice.
+    * `-T, --timespan=Date String` the Timespan for each semantic partition
+
+  * The following options adjust the program's execution but do not affect the contents of the output.
+    * `-o, --outputFormat=`[FileFormat] the .sspace format to use if saving the semantic partitions to disk
+    * `-t, --threads=INT` specifies the number of threads to use
+    * `-v, --verbose` prints verbose output through the logging stream
+    * `-w, --overwrite=BOOL` specifies whether to overwrite when saving any existing semantic partitions if they have the same name
+
+  * The following options tune the algorithm and affect the final representations
+    * `-l, --vectorLength=INT` the length of semantic vectors
+    * `-p, --usePermutations=BOOL` whether to permute index vector based on word order.  (See [RandomIndexing Random Indexing] for more details on this)
+    * `-r, --useSparseSemantics=BOOL` use a sparse encoding of semantics.  For corpora where the unique number of words that will co-occurr is low, this can potentially save memory.
+    * `-s, --windowSize=INT` how many words to consider in each direction
+
+  * These options allow the word-to-index vector mapping to be saved and restored between different executions of FD-TRI.  Note that these mappings are compatible and can be shared with those from [RandomIndexing Random Indexing].
+    * `-L, --loadVectors=FILE` load word-to-IndexVector mapping before processing.  This mapping should have been generated through the `--saveVectors` option.
+    * `-S, --saveVectors=FILE` save word-to-IndexVector mapping after processing to the specified file.  This can be use to generate a consistent set of index vectors that are the same across multiple invocations of FD-TRI, even on different corpora.
+
+
+  * The following two options are for advanced users who have provided custom implementations that affect how index vectors are treated 
+    * `-n, --permutationFunction=CLASSNAME`               permutation function to use
+    * `-i, --vectorGenerator=CLASSNAME` [IndexVectorGenerator] class to use when generating the index vectors for each word.  Most users will not need to specify this.
+
+  * These options affect how the document input is tokenized
+    * `-C, --compoundWords=FILE` a file where each line is a recognized compound word, e.g. "white house"
+    * `-F, --tokenFilter=FILTER_SPEC` specifies a series of filters to apply to the input token stream.  See [Tokenizing#Filtering Token Filtering] for more details.
+
+
+  * Semantic filters limit the set of tokens for which the semantics are kept.  This limits the potential memory overhead for calculating semantics for a large set of words.
+    * `-W, --semanticFilter=FILE` a file containing the list of words for which the semantics should be calculated.  All words not in this list will not have their semantics computed.
+
+
+  * Fixed-Duration TRI provides four main output options:
+
+    * `-R, --saveSlices`  Outputs each semantic slice as a separate .sspace file.  Each file is named using the `yyyy_MM_ww_dd_hh` format to indicate it start date.  This is the most expensive of the operations due to I/O overhead.
+
+   * The remaining options require the use of the `-I --interestingTokenList=FILE` option, which specifies a file containing a set of word that will be have their temporal changes tracked.
+      * `-P, --printInterestingWordShifts` or each of the interesting words, -P, --printInterestingTokenShifts will track the semantics of the interesting would list through time and report the semantic shift along with other distance statistics between partitions for the semantics.
+      * `-N, --printInterestingTokenNeighbors=INT` prints the nearest neighbors for each interesting word for each semantic partition.  The option specifies how many neighbors to print.
+      * `-Z, --printInterestingTokenNeighborComparison` For each of the interesting words, generate the list of similar neighbors using the `--printInterestingTokenNeighbors` and then compare those neighbors with each other using the `--printInterestingTokenNeighborComparison` option.  This creates a file with the pair-wise cosine similarities for all neighbors.  Note that this option requires _both_ flags to be specified.
+
+
+A typical usage might look like:
+{{{
+java -server -Xmx4g -jar fd-tri.jar --verbose --threads=4 --vectorLength=10000 --tokenFilter=stoplist.txt=exclude --interestTokenList=wordsToWatch.txt  --printInterestingTokenShifts --printInterestingTokenNeighbors
+}}}
+
+
 
 = Resources =
 
