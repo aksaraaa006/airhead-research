@@ -22,7 +22,7 @@
 package edu.ucla.sspace.common;
 
 
-import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.File;
 import java.util.Queue;
@@ -49,7 +49,7 @@ public interface IndexBuilder {
    * @param nextWords words appearing after the focus word whose meaning is
    *        being updated
    */
-  public void updateMeaningWithTerm(SemanticVector meaning,
+  public void updateMeaningWithTerm(Vector meaning,
                                     Queue<String> prevWords,
                                     Queue<String> nextWords);
 
@@ -57,7 +57,7 @@ public interface IndexBuilder {
 
   public void saveIndexVectors(File vectorFile);
 
-  public SemanticVector getSemanticVector();
+  public Vector getSemanticVector();
 
   public int expectedSizeOfPrevWords();
   public int expectedSizeOfNextWords();

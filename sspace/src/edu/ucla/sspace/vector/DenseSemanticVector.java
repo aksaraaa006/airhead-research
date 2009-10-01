@@ -1,12 +1,12 @@
 package edu.ucla.sspace.vector;
 
 /**
- * A {@code SemanticVector} where all values are held in memory. The underlying
+ * A {@code Vector} where all values are held in memory. The underlying
  * implementation is simply an array of doubles.  <p>
  *
  * This class is thread-safe.
 */
-public class DenseSemanticVector implements SemanticVector {
+public class DenseSemanticVector implements Vector {
 
     /**
      * The values of this {@code DenseSemanticVector}.
@@ -36,11 +36,11 @@ public class DenseSemanticVector implements SemanticVector {
     /**
      * {@inheritDoc}
      */
-    public synchronized void addVector(SemanticVector vector) {
+    public synchronized void addVector(Vector vector) {
         // Skip vectors of different lengths.
-        if (vector.size() != size())
+        if (vector.length() != length())
             return;
-        for (int i = 0; i < size(); ++i) {
+        for (int i = 0; i < length(); ++i) {
             double value = vector.get(i);
             add(i, value);
         }
@@ -70,14 +70,14 @@ public class DenseSemanticVector implements SemanticVector {
     /**
      * {@inheritDoc}
      */
-    public synchronized double[] getVector() {
+    public synchronized double[] toArray() {
         return vector;
     }
 
     /**
      * {@inheritDoc}
      */
-    public double size() {
+    public double length() {
         return vector.length;
     }
 }

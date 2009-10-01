@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.vector.SemanticVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,7 +49,7 @@ public interface DocumentSpace extends SemanticSpace {
    *
    * @throws IOException if any error occurs while reading the document
    */
-  SemanticVector representDocument(BufferedReader document) throws IOException;
+  Vector representDocument(BufferedReader document) throws IOException;
 
   /**
    * Return a semantic vector for a particular word.  This may be used in place
@@ -58,8 +58,8 @@ public interface DocumentSpace extends SemanticSpace {
    *
    * @param term The term to return a vector for.
    *
-   * @return A {@code SemanticVector} representing the term.
+   * @return A {@code Vector} representing the term.
    */
-  SemanticVector getSemanticVectorFor(String term);
+  Vector getSemanticVectorFor(String term);
 
 }
