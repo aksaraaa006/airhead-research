@@ -1,0 +1,15 @@
+#summary A description of how document tokenizing works and may be configured when processing documents
+
+= Introduction =
+
+_forthcoming_
+
+= Compound Tokens =
+
+_forthcoming_
+
+= Filtering =
+
+Often when processing documents, certain tokens may need to be excluded.  For example, a user may want to remove frequent [http://en.wikipedia.org/wiki/Closed_class closed classes] of words such as articles and prepositions, or possibly all punctuation.  The S-Space supports removing these tokens via the `TokenFilter` class and related `FilteredIterator` class.
+
+Token filter configurations are specified as a comma-separated list of file names, where each file name has an optional string with values:inclusive or exclusive, which species whether the token are to be used for an exclusive filter. The default value is include. An example configuration might look like:  `--tokenFilter=english-dictionary.txt=include,stop-list.txt=exclude`
