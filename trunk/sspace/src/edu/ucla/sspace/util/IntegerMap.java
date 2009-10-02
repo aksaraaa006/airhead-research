@@ -217,6 +217,13 @@ public class IntegerMap<V> extends AbstractMap<Integer,V>
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public int[] getElementIndices() {
+        return keyIndices;
+    }
+
+    /**
      * Returns a {@link Set} view of the keys contained in this map.
      */
     public Set<Integer> keySet() {

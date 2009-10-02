@@ -123,6 +123,15 @@ public class SparseDoubleArray implements SparseArray<Double> {
     public Double get(int index) {
 	return getPrimitive(index);
     }
+
+    /**
+     * Returns the indices of the array that contain non-{@code 0} values.
+     *
+     * @return the indices that contain values
+     */
+    public int[] getElementIndices() {
+        return indices;
+    }
     
     /**
      * Retrieves the value at specified index or 0 if no value had been

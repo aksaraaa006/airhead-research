@@ -53,6 +53,13 @@ public interface SparseArray<T> {
      * @return the object at the position
      */
     T get(int index);
+
+    /**
+     * Returns the indices of the array that contain non-{@code null} values.
+     *
+     * @return the indices that contain values
+     */
+    int[] getElementIndices();
     
     /**
      * Returns length of this array.  Note that implementations may define this
