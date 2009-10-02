@@ -29,6 +29,8 @@ import java.util.Arrays;
  *
  * This class is thread-safe.
  */
+// TODO: Retrofit this to use SparseDoubleArray internally.
+// TODO: Rename this to SparseVector.
 public class SparseDoubleVector implements Vector {
     /**
      * The set of indicies which have non zero values in this vector.
@@ -68,7 +70,7 @@ public class SparseDoubleVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public synchronized void addVector(Vector vector) {
+    public void addVector(Vector vector) {
         // Skip vectors of different lengths.
         if (vector.length() != length())
             return;
@@ -94,7 +96,7 @@ public class SparseDoubleVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public synchronized void add(int index, double delta) {
+    public void add(int index, double delta) {
         int pos = getIndex(index);
         values[pos] += delta;
     }
@@ -102,7 +104,7 @@ public class SparseDoubleVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public synchronized void set(int index, double value) {
+    public void set(int index, double value) {
         int pos = getIndex(index);
         values[pos] += value;
     }
@@ -152,7 +154,7 @@ public class SparseDoubleVector implements Vector {
      * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public synchronized double[] toArray(int size) {
+    public double[] toArray(int size) {
         double[] array = new double[size];
         for (int i = 0, j = 0; i < size; ++i) {
             int index = -1;
@@ -167,7 +169,7 @@ public class SparseDoubleVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public synchronized double get(int index) {
+    public double get(int index) {
         int pos = Arrays.binarySearch(indices, index);
         return (pos < 0) ? 0d : values[pos];
     }
