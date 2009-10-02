@@ -21,17 +21,15 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.util.IntegerMap;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.Vector;
+
 import java.util.Arrays;
 import java.util.Map;
-
 import java.util.concurrent.atomic.AtomicInteger;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import edu.ucla.sspace.util.IntegerMap;
-import edu.ucla.sspace.util.SparseDoubleArray;
-
 
 /**
  * A concurrent, thread-safe, growable {@code Matrix} class.  This class allows
@@ -59,53 +57,60 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     /**
      */
     public AtomicGrowingMatrix() {
-	this.rows = new AtomicInteger(0);
-	this.cols = new AtomicInteger(0);
-	sparseMatrix = new IntegerMap<RowEntry>();
-	
-	ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
-	rowReadLock = rwLock.readLock();
-	rowWriteLock = rwLock.writeLock();
+        this.rows = new AtomicInteger(0);
+        this.cols = new AtomicInteger(0);
+        sparseMatrix = new IntegerMap<RowEntry>();
+        
+        ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+        rowReadLock = rwLock.readLock();
+        rowWriteLock = rwLock.writeLock();
 
-	rwLock = new ReentrantReadWriteLock();
-	denseArrayReadLock = rwLock.readLock();
-	denseArrayWriteLock = rwLock.writeLock();
-
+        rwLock = new ReentrantReadWriteLock();
+        denseArrayReadLock = rwLock.readLock();
+        denseArrayWriteLock = rwLock.writeLock();
     }
     
     /**
      *
      */    
     private void checkIndices(int row, int col) {
-// 	if (row < 0 || col < 0 || row >= rows || col >= cols) {
-// 	    throw new ArrayIndexOutOfBoundsException();
-// 	}
+    //     if (row < 0 || col < 0 || row >= rows || col >= cols) {
+    //         throw new ArrayIndexOutOfBoundsException();
+    //     }
     }
 
     public double getAndAdd(int row, int col, double delta) {
-	RowEntry rowEntry = getRow(row, col, true);
-	return rowEntry.getAndAdd(col, delta);
+        RowEntry rowEntry = getRow(row, col, true);
+        return rowEntry.getAndAdd(col, delta);
     }
 
     public double addAndGet(int row, int col, double delta) {
-	RowEntry rowEntry = getRow(row, col, true);
-	return rowEntry.addAndGet(col, delta);	
+        RowEntry rowEntry = getRow(row, col, true);
+        return rowEntry.addAndGet(col, delta);    
     }
 
     /**
      * {@inheritDoc}
      */
     public double get(int row, int col) {
-	RowEntry rowEntry = getRow(row, col, false);
-	return (rowEntry == null) ? 0d : rowEntry.get(col);
+        RowEntry rowEntry = getRow(row, col, false);
+        return (rowEntry == null) ? 0d : rowEntry.get(col);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getVector(int row) {
+        RowEntry rowEntry = getRow(row, -1, false);
+        return rowEntry.vector();
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-	RowEntry rowEntry = getRow(row, -1, false);
-	return rowEntry.toArray(cols.get());
+        RowEntry rowEntry = getRow(row, -1, false);
+        return rowEntry.toArray(cols.get());
     }
 
     /**
@@ -124,163 +129,169 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
      *         and it was not to be created if absent
      */
     private RowEntry getRow(int row, int col, boolean createIfAbsent) {
-	rowReadLock.lock();
-// 	System.out.printf("(%d,%d) : %s%n", row, col, sparseMatrix);
-	RowEntry rowEntry = sparseMatrix.get(row);
-	rowReadLock.unlock();
-     
-	// If no row existed, create one
-	if (rowEntry == null && createIfAbsent) {
-	    rowWriteLock.lock();
-	    // ensure that another thread has not already added this row while
-	    // this thread was waiting on the lock
-	    rowEntry = sparseMatrix.get(row);
-	    if (rowEntry == null) {
-		rowEntry = new RowEntry();
-		// update the bounds as necessary
-		if (row >= rows.get()) {
-		    rows.set(row + 1);
-		}
-		if (col >= cols.get()) {
-		    cols.set(col + 1);
-		}
-		sparseMatrix.put(row, rowEntry);
-	    }
-	    rowWriteLock.unlock();
-	}
-	//System.out.printf("row %d -> %s%n", row, rowEntry);
-	return rowEntry;
+        rowReadLock.lock();
+        //     System.out.printf("(%d,%d) : %s%n", row, col, sparseMatrix);
+        RowEntry rowEntry = sparseMatrix.get(row);
+        rowReadLock.unlock();
+         
+        // If no row existed, create one
+        if (rowEntry == null && createIfAbsent) {
+            rowWriteLock.lock();
+            // ensure that another thread has not already added this row while
+            // this thread was waiting on the lock
+            rowEntry = sparseMatrix.get(row);
+            if (rowEntry == null) {
+                    rowEntry = new RowEntry();
+
+                // update the bounds as necessary
+                if (row >= rows.get()) {
+                    rows.set(row + 1);
+                }
+                if (col >= cols.get()) {
+                    cols.set(col + 1);
+                }
+                sparseMatrix.put(row, rowEntry);
+            }
+            rowWriteLock.unlock();
+        }
+        //System.out.printf("row %d -> %s%n", row, rowEntry);
+        return rowEntry;
     }
 
     /**
      * {@inheritDoc}
      */
     public int columns() {
-	return cols.get();
+        return cols.get();
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
-	RowEntry rowEntry = getRow(row, col, true);
-	denseArrayReadLock.lock();
-	rowEntry.set(col, val);
-	denseArrayReadLock.unlock();
+        RowEntry rowEntry = getRow(row, col, true);
+        denseArrayReadLock.lock();
+        rowEntry.set(col, val);
+        denseArrayReadLock.unlock();
     }
 
     /**
      *
      */
     public void setRow(int row, double[] columns) {
-	RowEntry rowEntry = getRow(row, columns.length - 1, true);
-	denseArrayReadLock.lock();
-	rowEntry.set(columns);
-	denseArrayReadLock.unlock();
+        RowEntry rowEntry = getRow(row, columns.length - 1, true);
+        denseArrayReadLock.lock();
+        rowEntry.set(columns);
+        denseArrayReadLock.unlock();
     }
   
     /**
      * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-	// Grab the write lock to prevent any new rows from being updated
-	rowWriteLock.lock();
-	// Then grab the whole matrix lock to prevent any values from being set
-	// while this method converts the rows into arrays.
-	denseArrayWriteLock.lock();
-	int c = cols.get();
-	double[][] m = new double[rows.get()][c];
-	for (Map.Entry<Integer,RowEntry> e : sparseMatrix.entrySet()) {
-	    m[e.getKey()] = e.getValue().toArray(c);
-	}
-	denseArrayWriteLock.unlock();
-	rowWriteLock.unlock();
-	return m;
+        // Grab the write lock to prevent any new rows from being updated
+        rowWriteLock.lock();
+        // Then grab the whole matrix lock to prevent any values from being set
+        // while this method converts the rows into arrays.
+        denseArrayWriteLock.lock();
+        int c = cols.get();
+        double[][] m = new double[rows.get()][c];
+        for (Map.Entry<Integer,RowEntry> e : sparseMatrix.entrySet()) {
+            m[e.getKey()] = e.getValue().toArray(c);
+        }
+        denseArrayWriteLock.unlock();
+        rowWriteLock.unlock();
+        return m;
     }
 
     /**
      * {@inheritDoc}
      */
     public int rows() {
-	return rows.get();
+        return rows.get();
     }
 
     public static final class RowEntry {
 
-	private final Lock readLock;
-	private final Lock writeLock;
+        private final Lock readLock;
+        private final Lock writeLock;
 
-	private final SparseDoubleArray doubleArray;
+        private final SparseDoubleVector doubleArray;
        
-	/**
-	 * Create the two lists, with zero values in them initially.
-	 */
-	public RowEntry() {
-	    doubleArray = new SparseDoubleArray();
-	    ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
-	    readLock = rwLock.readLock();
-	    writeLock = rwLock.writeLock();
-	}
+        /**
+         * Create the two lists, with zero values in them initially.
+         */
+        public RowEntry() {
+            doubleArray = new SparseDoubleVector();
+            ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+            readLock = rwLock.readLock();
+            writeLock = rwLock.writeLock();
+        }
 
-	public double addAndGet(int col, double delta) {
-	    writeLock.lock();
-	    double value = doubleArray.get(col);
-	    doubleArray.set(col, value + delta);
-	    writeLock.unlock();
-	    return value + delta;
-	}
+        public double addAndGet(int col, double delta) {
+            writeLock.lock();
+            double value = doubleArray.get(col);
+            doubleArray.set(col, value + delta);
+            writeLock.unlock();
+            return value + delta;
+        }
 
-	public double getAndAdd(int col, double delta) {
-	    writeLock.lock();
-	    double value = doubleArray.get(col);
-	    set(col, value + delta);
-	    writeLock.unlock();
-	    return value;
-	}
+        public double getAndAdd(int col, double delta) {
+            writeLock.lock();
+            double value = doubleArray.get(col);
+            set(col, value + delta);
+            writeLock.unlock();
+            return value;
+        }
 
-	/**
-	 * retrieve the value at specified column
-	 * @param column The column value to get
-	 * @return the value for the specified column, or 0 if no column is found.
-	 */
-	public double get(int column) {
-	    readLock.lock();
-	    double value = doubleArray.get(column);
-	    readLock.unlock();
-	    return value;
-	}
+        /**
+         * retrieve the value at specified column
+         * @param column The column value to get
+         * @return the value for the specified column, or 0 if no column is
+         * found.
+         */
+        public double get(int column) {
+            readLock.lock();
+            double value = doubleArray.get(column);
+            readLock.unlock();
+            return value;
+        }
 
-	/**
-	 * Update the RowEntry such that the index at column now stores value.  If
-	 * value is 0, this will remove the column from the row entry for efficency.
-	 *
-	 * @param column The column index this value should be stored as
-	 * @param value The value to store
-	 */
-	public void set(int column, double value) {
-	    writeLock.lock();
-	    doubleArray.set(column, value);
-	    writeLock.unlock();
-	}
+        /**
+         * Update the RowEntry such that the index at column now stores value.
+         * If value is 0, this will remove the column from the row entry for
+         * efficency.
+         *
+         * @param column The column index this value should be stored as
+         * @param value The value to store
+         */
+        public void set(int column, double value) {
+            writeLock.lock();
+            doubleArray.set(column, value);
+            writeLock.unlock();
+        }
 
-	public void set(double[] row) {
-	    writeLock.lock();
-	    // REMINDER: if a set(array[]) method is ever added to SparseArray,
-	    // this method should be updated to use it
-	    for (int i = 0; i < row.length; ++i) 
-		doubleArray.set(i, row[i]);
-	    writeLock.unlock();
-	}
+        public void set(double[] row) {
+            writeLock.lock();
+            // REMINDER: if a set(array[]) method is ever added to SparseArray,
+            // this method should be updated to use it
+            for (int i = 0; i < row.length; ++i) 
+                doubleArray.set(i, row[i]);
+            writeLock.unlock();
+        }
 
-	/**
-	 * A dense double array which this RowEntry represents.
-	 */
-	public double[] toArray(int columnSize) {
-	    readLock.lock();
-	    double[] dense = new double[columnSize];
-	    doubleArray.toPrimitiveArray(dense);
-	    readLock.unlock();
-	    return dense;
-	}
+        public Vector vector() {
+            return doubleArray;
+        }
+
+        /**
+         * A dense double array which this RowEntry represents.
+         */
+        public double[] toArray(int columnSize) {
+            readLock.lock();
+            double[] dense = doubleArray.toArray(columnSize);
+            readLock.unlock();
+            return dense;
+        }
     }
 }

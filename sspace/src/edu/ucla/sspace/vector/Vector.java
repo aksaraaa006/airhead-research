@@ -65,9 +65,10 @@ public interface Vector {
     /**
      * Return a double array representing this semantic vector.
      *
-     * @return a double array of this vector.
+     * @param size The maximum size of the array returned.
+     * @return A double array of this vector.
      */
-    public double[] toArray();
+    public double[] toArray(int size);
 
     /**
      * Return the size of the {@code Vector}.

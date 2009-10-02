@@ -26,7 +26,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.SparseSemanticVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import java.io.BufferedReader;
@@ -158,7 +158,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
    */
   public Vector representDocument(BufferedReader document)
     throws IOException {
-    Vector documentVector = new SparseSemanticVector(getVectorSize());
+    Vector documentVector = new SparseDoubleVector(getVectorSize());
     Iterator<String> articleTokens = IteratorFactory.tokenize(document);
     while (articleTokens.hasNext()) {
       Vector termVector = getSemanticVectorFor(articleTokens.next());
