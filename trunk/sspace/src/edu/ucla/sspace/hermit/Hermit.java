@@ -539,7 +539,7 @@ public class Hermit implements SemanticSpace {
         // Update meaning with the context.
         indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
       }
-      semanticVectors.add(meaning.toArray());
+      semanticVectors.add(meaning.toArray(indexVectorSize));
     }
     if (word.equals("country")) {
       for (double[] d : semanticVectors) {

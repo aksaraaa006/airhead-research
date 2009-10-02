@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -68,7 +71,7 @@ public class OnDiskMatrix implements Matrix {
      * @throws IOError if the backing file for this matrix cannot be created
      */
     public OnDiskMatrix(int rows, int cols) {
-	this(rows, cols, createTempFile());
+        this(rows, cols, createTempFile());
     }
     
     /**
@@ -77,36 +80,36 @@ public class OnDiskMatrix implements Matrix {
      * @throws IOError if the backing file for this matrix cannot be created
      */
     OnDiskMatrix(int rows, int cols, RandomAccessFile raf) {
-	if (rows <= 0 || cols <= 0) {
-	    throw new IllegalArgumentException("dimensions must be positive");
-	}
-	try {
-	    this.matrix = raf;
-	    this.rows = rows;
-	    this.cols = cols;
-	    
-	    // initialize the matrix in memory;
-	    long length = 
-		(HEADER_LENGTH + ((long)rows * (long)cols * BYTES_PER_DOUBLE));
-	    matrix.setLength(length);
-	    matrix.seek(0);
-	    matrix.writeInt(rows);
-	    matrix.writeInt(cols);
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}
+        if (rows <= 0 || cols <= 0) {
+            throw new IllegalArgumentException("dimensions must be positive");
+        }
+        try {
+            this.matrix = raf;
+            this.rows = rows;
+            this.cols = cols;
+            
+            // initialize the matrix in memory;
+            long length = 
+            (HEADER_LENGTH + ((long)rows * (long)cols * BYTES_PER_DOUBLE));
+            matrix.setLength(length);
+            matrix.seek(0);
+            matrix.writeInt(rows);
+            matrix.writeInt(cols);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     private static RandomAccessFile createTempFile() {
-	try {
-	    File f = File.createTempFile("OnDiskMatrix","matrix");
-	    // Make sure the temp file goes away since it can get fairly large
-	    // for big matrices
-	    f.deleteOnExit();
-	    return new RandomAccessFile(f, "rw");
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}
+        try {
+            File f = File.createTempFile("OnDiskMatrix","matrix");
+            // Make sure the temp file goes away since it can get fairly large
+            // for big matrices
+            f.deleteOnExit();
+            return new RandomAccessFile(f, "rw");
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
@@ -114,55 +117,62 @@ public class OnDiskMatrix implements Matrix {
      * exception if they are not.
      */
     private void checkIndices(int row, int col) {
-	if (row < 0 || row >= rows) {
-	    throw new ArrayIndexOutOfBoundsException("row: " + row);
-	}
-	else if (col < 0 || col >= cols) {
-	    throw new ArrayIndexOutOfBoundsException("column: " + col);
-	}
+        if (row < 0 || row >= rows) {
+            throw new ArrayIndexOutOfBoundsException("row: " + row);
+        }
+        else if (col < 0 || col >= cols) {
+            throw new ArrayIndexOutOfBoundsException("column: " + col);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public double get(int row, int col) {
-	try {
-	    seek(row, col);
-	    return matrix.readDouble();
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            seek(row, col);
+            return matrix.readDouble();
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getVector(int row) {
+        return new DenseVector(getRow(row));
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-	try {
-	    double[] rowArr = new double[cols];
-	    byte[] rawBytes = new byte[cols * BYTES_PER_DOUBLE];
-	    seek(row, 0);
-	    // read the entire row in at once, as this will have better I/O
-	    // performance than multiple successive reads
-	    matrix.readFully(rawBytes, 0, rawBytes.length);
-	    
-	    // convert the bytes into an input stream
-	    DataInputStream dis = 
-		new DataInputStream(new ByteArrayInputStream(rawBytes));
-	    for (int i = 0; i < cols; ++i) {
-		rowArr[i] = dis.readDouble();
-	    }
-	    return rowArr;
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            double[] rowArr = new double[cols];
+            byte[] rawBytes = new byte[cols * BYTES_PER_DOUBLE];
+            seek(row, 0);
+            // read the entire row in at once, as this will have better I/O
+            // performance than multiple successive reads
+            matrix.readFully(rawBytes, 0, rawBytes.length);
+            
+            // convert the bytes into an input stream
+            DataInputStream dis = 
+            new DataInputStream(new ByteArrayInputStream(rawBytes));
+            for (int i = 0; i < cols; ++i) {
+            rowArr[i] = dis.readDouble();
+        }
+            return rowArr;
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public int columns() {
-	return cols;
+        return cols;
     }
 
     /**
@@ -171,76 +181,76 @@ public class OnDiskMatrix implements Matrix {
      * value.
      */
     private void seek(long row, long col) {
-	try {
-	    long index = (row * cols * BYTES_PER_DOUBLE)
-		+ (col * BYTES_PER_DOUBLE) 
-		+ HEADER_LENGTH;
-	    if (index != matrix.getFilePointer()) {
-		matrix.seek(index);
-	    }
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            long index = (row * cols * BYTES_PER_DOUBLE)
+            + (col * BYTES_PER_DOUBLE) 
+            + HEADER_LENGTH;
+            if (index != matrix.getFilePointer()) {
+            matrix.seek(index);
+        }
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
-	try {
-	    checkIndices(row, col);
-	    seek(row, col);	    
-	    matrix.writeDouble(val);
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            checkIndices(row, col);
+            seek(row, col);        
+            matrix.writeDouble(val);
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
     }
     
     public void setRow(int row, double[] val) {
-	try {
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    DataOutputStream dos = new DataOutputStream(baos);
-	    for (int i = 0; i < val.length; ++i) {
-		dos.writeDouble(val[i]);
-	    }
-	    setRow(row, baos.toByteArray());
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+            for (int i = 0; i < val.length; ++i) {
+            dos.writeDouble(val[i]);
+            }
+            setRow(row, baos.toByteArray());
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
     }
 
     public void setRow(int row, byte[] valuesAsBytes) {
-	try {
-	    seek(row, 0);
-	    matrix.write(valuesAsBytes, 0, valuesAsBytes.length);
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            seek(row, 0);
+            matrix.write(valuesAsBytes, 0, valuesAsBytes.length);
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
     }
-    
+
     /**
      * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-	try {
-	    matrix.seek(0);
-	    double[][] m = new double[rows][cols];
-	    for (int row = 0; row < rows; ++row) {
-		for (int col = 0; col < cols; ++col) {
-		    m[row][col] = matrix.readDouble();
-		}
-	    }
-	    return m;
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+        try {
+            matrix.seek(0);
+            double[][] m = new double[rows][cols];
+            for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                m[row][col] = matrix.readDouble();
+            }
+            }
+            return m;
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public int rows() {
-	return rows;
+        return rows;
     }
 
 }

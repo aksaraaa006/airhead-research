@@ -6,30 +6,30 @@ package edu.ucla.sspace.vector;
  *
  * This class is thread-safe.
 */
-public class DenseSemanticVector implements Vector {
+public class DenseVector implements Vector {
 
     /**
-     * The values of this {@code DenseSemanticVector}.
+     * The values of this {@code DenseVector}.
      */
     private final double[] vector;
 
     /**
-     * Create an {@code DenseSemanticVector} with all values starting at 0 with
+     * Create an {@code DenseVector} with all values starting at 0 with
      * the given length.
      *
      * @param vectorLength The size of the vector to create.
      */
-    public DenseSemanticVector(int vectorLength) {
+    public DenseVector(int vectorLength) {
         vector = new double[vectorLength];
     }
 
     /**
-     * Create a {@code DenseSemanticVector} taking the values given by {@code
+     * Create a {@code DenseVector} taking the values given by {@code
      * vector}.
      *
      * @param vector The vector values to start with.
      */
-    public DenseSemanticVector(double[] vector) {
+    public DenseVector(double[] vector) {
         this.vector = vector;
     }
 	
@@ -70,8 +70,12 @@ public class DenseSemanticVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public synchronized double[] toArray() {
-        return vector;
+    @SuppressWarnings("unchecked")
+    public synchronized double[] toArray(int size) {
+        double[] array = new double[size];
+        for (int i = 0; i < size && i < vector.length; ++i)
+            array[i] = vector[i];
+        return array;
     }
 
     /**

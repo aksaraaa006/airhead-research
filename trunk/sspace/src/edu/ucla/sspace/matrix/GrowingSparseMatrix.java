@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.Vector;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -77,6 +80,13 @@ public class GrowingSparseMatrix implements Matrix {
    */
   public double[] getRow(int row) {
     return sparseMatrix.get(row).getRow(cols);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public Vector getVector(int row) {
+    return sparseMatrix.get(row).getVector(cols);
   }
 
   /**
@@ -199,6 +209,16 @@ public class GrowingSparseMatrix implements Matrix {
         // Remove the value since it's now zero.
         values.remove(valueIndex);
       }
+    }
+
+    /**
+     * Return a {@code SparseDoubleVector} which this RowEntry represents.
+     */
+    public Vector getVector(int columnSize) {
+        Vector vector = new SparseDoubleVector(columnSize);
+        for (CellItem item : values)
+            vector.set(item.index, item.value);
+        return vector;
     }
 
     /**

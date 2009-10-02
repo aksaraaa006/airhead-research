@@ -22,7 +22,7 @@
 package edu.ucla.sspace.beagle;
 
 import edu.ucla.sspace.common.IndexBuilder;
-import edu.ucla.sspace.vector.DenseSemanticVector;
+import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
 
 import jnt.FFT.RealDoubleFFT_Radix2;
@@ -160,7 +160,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
                     vector[j] = in.readDouble();
                 }
                 termToRandomIndex.put(new String(word),
-                                      new DenseSemanticVector(vector));
+                                      new DenseVector(vector));
             }
         } catch (IOException ioe) {
             throw new IOError(ioe);
@@ -206,7 +206,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * Return an empty dense semantic vector.
      */
     public Vector getSemanticVector() {
-        return new DenseSemanticVector(indexVectorSize);
+        return new DenseVector(indexVectorSize);
     }
 
     /**
@@ -361,14 +361,14 @@ public class BeagleIndexBuilder implements IndexBuilder {
         right = changeVector(right, permute2);
 
         // Use the Fast Fourier Transform on each vector.
-        fft.transform(left.toArray(), 0, 1);
-        fft.transform(right.toArray(), 0, 1);
+        fft.transform(left.toArray(indexVectorSize), 0, 1);
+        fft.transform(right.toArray(indexVectorSize), 0, 1);
 
         // Multiply the two together.
         Vector result = arrayTimes(left, right);
 
             // The inverse transform completes the convolution.
-        fft.backtransform(result.toArray(), 0, 1);
+        fft.backtransform(result.toArray(indexVectorSize), 0, 1);
         return result;
     }
 

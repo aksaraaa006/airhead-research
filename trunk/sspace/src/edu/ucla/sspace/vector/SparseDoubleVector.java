@@ -29,7 +29,7 @@ import java.util.Arrays;
  *
  * This class is thread-safe.
  */
-public class SparseSemanticVector implements Vector {
+public class SparseDoubleVector implements Vector {
     /**
      * The set of indicies which have non zero values in this vector.
      */
@@ -45,13 +45,21 @@ public class SparseSemanticVector implements Vector {
      */
     private int vectorLength;
 
+    /**
+     * Creates a sparse {@code double} vector that grows to the maximum size set
+     * by {@link Double#MAX_VALUE}.
+     */
+    public SparseDoubleVector() {
+        this(Integer.MAX_VALUE);
+    }
+
     /** 
-     * Create a {@code SparseSemanticVector with the given size, having no
+     * Create a {@code SparseDoubleVector with the given size, having no
      * non-zero values.
      *
-     * @param length The length of this {@code SparseSemanticVector}.
+     * @param length The length of this {@code SparseDoubleVector}.
      */
-    public SparseSemanticVector(int length) {
+    public SparseDoubleVector(int length) {
         indices = new int[0];
         values = new double[0];
         vectorLength = length;
@@ -65,8 +73,8 @@ public class SparseSemanticVector implements Vector {
         if (vector.length() != length())
             return;
 
-        if (vector instanceof SparseSemanticVector) {
-            SparseSemanticVector v = (SparseSemanticVector) vector;
+        if (vector instanceof SparseDoubleVector) {
+            SparseDoubleVector v = (SparseDoubleVector) vector;
             // If vector is a sparse vector, simply get the non zero values and
             // add them to this instance.
             int[] otherIndicies = v.getNonZeroIndicies();
@@ -134,7 +142,7 @@ public class SparseSemanticVector implements Vector {
 
     /** 
      * Return the set of non-zero indicies.  This is primarily for the purpose
-     * of summing two {@code SparseSemanticVector}s efficiently.
+     * of summing two {@code SparseDoubleVector}s efficiently.
      */
     public int[] getNonZeroIndicies() {
         return indices;
@@ -143,11 +151,17 @@ public class SparseSemanticVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public synchronized double[] toArray() {
-        double[] vector = new double[vectorLength];
-        for (int i = 0; i < indices.length; ++i)
-            vector[indices[i]] = values[i];
-        return vector;
+    @SuppressWarnings("unchecked")
+    public synchronized double[] toArray(int size) {
+        double[] array = new double[size];
+        for (int i = 0, j = 0; i < size; ++i) {
+            int index = -1;
+            if (j < indices.length && (index = indices[j]) == i) {
+                array[i] = values[j];
+                j++;
+            }
+        }
+        return array;
     }
 
     /**
