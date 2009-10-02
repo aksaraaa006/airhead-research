@@ -29,6 +29,7 @@ import edu.ucla.sspace.vector.Vector;
  * @see Matrix.Type
  */
 // TODO: Have a matrix return a sspace Vector of a matching type.
+// TODO: Retrofit each sparse matrix to use a SparseVector internally.
 public interface Matrix {
 
     /**
