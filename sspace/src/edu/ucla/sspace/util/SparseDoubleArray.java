@@ -24,12 +24,12 @@ package edu.ucla.sspace.util;
 import java.util.Arrays;
 
 /**
- * A sparse {@code double} array.  This class trades increased space efficiency at
- * the cost of decreased performance.<p>
+ * A sparse {@code double} array.  This class trades increased space efficiency
+ * at the cost of decreased performance.<p>
  *
  * This class also provides additional primitive accessor methods.  This allows
  * users to invoke {@code get} and {@code set} without marshalling primitive
- * types to their {@link Integer} equivalents unnecessarily.<p>
+ * types to their {@link Double} equivalents unnecessarily.<p>
  *
  * The {@code get} operation runs in logarithmic time.  The {@code set}
  * operation runs in consant time if setting an existing non-zero value to a
@@ -68,19 +68,19 @@ public class SparseDoubleArray implements SparseArray<Double> {
      * {@link Double#MAX_VALUE}.
      */
     public SparseDoubleArray() {
-	this(Integer.MAX_VALUE);
+        this(Integer.MAX_VALUE);
     }
 
     /**
      * Creates a sparse {@code double} array with a fixed length
      */
     public SparseDoubleArray(int length) {
-	if (length < 0)
-	    throw new IllegalArgumentException("length must be non-negative");
-	maxLength = length;
-	
-	indices = new int[0];
-	values = new double[0];
+        if (length < 0)
+            throw new IllegalArgumentException("length must be non-negative");
+        maxLength = length;
+        
+        indices = new int[0];
+        values = new double[0];
     }
 
     /**
@@ -89,39 +89,38 @@ public class SparseDoubleArray implements SparseArray<Double> {
      * maximum size of this sparse array.
      */
     public SparseDoubleArray(double[] array) {
+        maxLength = array.length;
 
-	maxLength = array.length;
+        // Find how many non-zero elements there are
+        int nonZero = 0;
+        for (int i = 0; i < array.length; ++i) {
+            if (array[i] != 0)
+            nonZero++;
+        }
 
-	// Find how many non-zero elements there are
-	int nonZero = 0;
-	for (int i = 0; i < array.length; ++i) {
-	    if (array[i] != 0)
-		nonZero++;
-	}
-
-	indices = new int[nonZero];
-	values = new double[nonZero];
-	int index = 0;
-	for (int i = 0; i < array.length; ++i) {
-	    if (array[i] != 0) {
-		indices[index] = i;
-		values[index++] = array[i];
-	    }
-	}	
+        indices = new int[nonZero];
+        values = new double[nonZero];
+        int index = 0;
+        for (int i = 0; i < array.length; ++i) {
+            if (array[i] != 0) {
+                indices[index] = i;
+                values[index++] = array[i];
+            }
+        }    
     }
 
     /**
      * {@inheritDoc}
      */
     public int cardinality() {
-	return indices.length;
+        return indices.length;
     }
 
     /**
      * {@inheritDoc}
      */ 
     public Double get(int index) {
-	return getPrimitive(index);
+        return getPrimitive(index);
     }
 
     /**
@@ -145,27 +144,27 @@ public class SparseDoubleArray implements SparseArray<Double> {
      *         the maximum length of the array.
      */
     public double getPrimitive(int index) {
-	if (index < 0 || index >= maxLength) {
-	    throw new ArrayIndexOutOfBoundsException("invalid index: " + 
-						     index);
-	}
-	int pos = Arrays.binarySearch(indices, index);
-	double value = (pos >= 0) ? values[pos] : 0;
-	return value;
+        if (index < 0 || index >= maxLength) {
+            throw new ArrayIndexOutOfBoundsException(
+                    "invalid index: " + index);
+        }
+        int pos = Arrays.binarySearch(indices, index);
+        double value = (pos >= 0) ? values[pos] : 0;
+        return value;
     }
 
     /**
      * Returns the maximum length of this array.
      */
     public int length() {
-	return maxLength;
+        return maxLength;
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int index, Double value) {
-	setPrimitive(index, value.doubleValue());
+        setPrimitive(index, value.doubleValue());
     }
 
     /**
@@ -173,88 +172,84 @@ public class SparseDoubleArray implements SparseArray<Double> {
      * without auto-boxing.
      */
     public void setPrimitive(int index, double value) {
+        int pos = Arrays.binarySearch(indices, index);
 
-	int pos = Arrays.binarySearch(indices, index);
+        if (value != 0) {
+            // need to make room in the indices array
+            if (pos < 0) {
+                int newPos = 0 - (pos + 1);
+                int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
+                double[] newValues = Arrays.copyOf(values, values.length + 1);
+                
+                // shift the elements down by one to make room
+                for (int i = newPos; i < values.length; ++i) {
+                    newValues[i+1] = values[i];
+                    newIndices[i+1] = indices[i];
+                }
+            
+                // swap the arrays
+                indices = newIndices;
+                values = newValues;
+                pos = newPos;
+                    
+                // update the position of the pos in the values array
+                indices[pos] = index;
+            }
+            values[pos] = value;
+        }
+        // The value is zero but previously held a spot in the matrix, so
+        // remove its position and shift everything over
+        else if (value == 0 && pos >= 0) {
+            int newLength = indices.length - 1;
+            int[] newIndices = new int[newLength];
+            double[] newValues = new double[newLength];
+            for (int i = 0, j = 0; i < indices.length; ++i) {
+                if (i != pos) {
+                    newIndices[j] = indices[i];
+                    newValues[j] = values[i];            
+                    j++;
+                }
+            }
+            // swap the arrays
+            indices = newIndices;
+            values = newValues;
+        }
 
-	if (value != 0) {
-	    // need to make room in the indices array
-	    if (pos < 0) {
-		int newPos = 0 - (pos + 1);
-		int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
-		double[] newValues = Arrays.copyOf(values, values.length + 1);
-		    
-		// shift the elements down by one to make room
-		for (int i = newPos; i < values.length; ++i) {
-		    newValues[i+1] = values[i];
-		    newIndices[i+1] = indices[i];
-		}
-		    
-		// swap the arrays
-		indices = newIndices;
-		values = newValues;
-		pos = newPos;
-		    
-		// update the position of the pos in the values array
-		indices[pos] = index;
-	    }
-	    values[pos] = value;
-	}
-
-	// The value is zero but previously held a spot in the matrix, so
-	// remove its position and shift everything over
-	else if (value == 0 && pos >= 0) {
-	    int newLength = indices.length - 1;
-	    int[] newIndices = new int[newLength];
-	    double[] newValues = new double[newLength];
-	    for (int i = 0, j = 0; i < indices.length; ++i) {
-		if (i != pos) {
-		    newIndices[j] = indices[i];
-		    newValues[j] = values[i];			
-		    j++;
-		}
-	    }
-	    // swap the arrays
-	    indices = newIndices;
-	    values = newValues;
-	}
-
-	// note that in the even of a set with value 0 where the pos was
-	// not present, this method is a no-op
+        // note that in the even of a set with value 0 where the pos was
+        // not present, this method is a no-op
     }
 
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public <E> E[] toArray(E[] array) {	
-	for (int i = 0, j = 0; i < array.length; ++i) {
-	    int index = -1;
-	    if (j < indices.length && (index = indices[j]) == i) {
-		array[i] = (E)(Double.valueOf(values[j]));
-		j++;
-	    }
-	    else 
-		array[i] = (E)(Double.valueOf(0));
-	}
-	return array;
+    public <E> E[] toArray(E[] array) {    
+        for (int i = 0, j = 0; i < array.length; ++i) {
+            int index = -1;
+            if (j < indices.length && (index = indices[j]) == i) {
+                array[i] = (E)(Double.valueOf(values[j]));
+                j++;
+            }
+        else 
+            array[i] = (E)(Double.valueOf(0));
+        }
+        return array;
     }
 
     /**
      * Sets the values of the provided array using the contents of this array.
-     * If the provided array is longer than this array, the additional values are
-     * left unchanged.
+     * If the provided array is longer than this array, the additional values
+     * are left unchanged.
      */
     public double[] toPrimitiveArray(double[] array) {
-	for (int i = 0, j = 0; i < array.length; ++i) {
-	    int index = -1;
-	    if (j < indices.length && (index = indices[j]) == i) {
-		array[i] = values[j];
-		j++;
-	    }
-	    else
-		array[i] = 0;
-	}
-
-	return array;
+        for (int i = 0, j = 0; i < array.length; ++i) {
+            int index = -1;
+            if (j < indices.length && (index = indices[j]) == i) {
+                array[i] = values[j];
+                j++;
+            } else
+                array[i] = 0;
+        }
+        return array;
     }
 }

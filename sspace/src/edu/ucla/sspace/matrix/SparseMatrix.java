@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.util.ArrayList;
@@ -192,7 +192,7 @@ public class SparseMatrix implements Matrix {
          * A dense double array which this RowEntry represents.
          */
         public Vector getVector(int columnSize) {
-            Vector vector = new SparseDoubleVector(columnSize);
+            Vector vector = new SparseVector(columnSize);
             for (int i = 0; i < columnIndexes.size(); ++i) {
                 vector.set(columnIndexes.get(i).intValue(),
                            values.get(i).doubleValue());

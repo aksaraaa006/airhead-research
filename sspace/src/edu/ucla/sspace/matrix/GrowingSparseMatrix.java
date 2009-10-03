@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.util.ArrayList;
@@ -212,10 +212,10 @@ public class GrowingSparseMatrix implements Matrix {
     }
 
     /**
-     * Return a {@code SparseDoubleVector} which this RowEntry represents.
+     * Return a {@code SparseVector} which this RowEntry represents.
      */
     public Vector getVector(int columnSize) {
-        Vector vector = new SparseDoubleVector(columnSize);
+        Vector vector = new SparseVector(columnSize);
         for (CellItem item : values)
             vector.set(item.index, item.value);
         return vector;

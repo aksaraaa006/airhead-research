@@ -22,7 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.util.IntegerMap;
-import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.util.Arrays;
@@ -216,13 +216,13 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
         private final Lock readLock;
         private final Lock writeLock;
 
-        private final SparseDoubleVector doubleArray;
+        private final SparseVector doubleArray;
        
         /**
          * Create the two lists, with zero values in them initially.
          */
         public RowEntry() {
-            doubleArray = new SparseDoubleVector();
+            doubleArray = new SparseVector();
             ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
             readLock = rwLock.readLock();
             writeLock = rwLock.writeLock();
