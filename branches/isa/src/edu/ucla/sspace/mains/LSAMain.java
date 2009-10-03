@@ -137,7 +137,7 @@ public class LSAMain extends GenericMain {
 			  "Algorithm Options");
 	options.addOption('S', "svdAlgorithm", "a specific SVD algorithm to use"
 			  , true, "SVD.Algorithm", 
-			  "Algorithm Options");
+			  "Advanced Algorithm Options");
     }
 
     public static void main(String[] args) {
@@ -188,6 +188,8 @@ public class LSAMain extends GenericMain {
  	System.out.println(
  	    "usage: java LSAMain [options] <output-dir>\n" + 
 	    argOptions.prettyPrint() + "\n" +
+
+            // LSA Specifics
 	    "Note that if this class is being invoked from a .jar" +
 	    " (e.g. lsa.jar) and JAMA\nis to be used for computing the SVD," +
 	    " then the path to the JAMA .jar file must\nbe specified using the"+
@@ -195,25 +197,35 @@ public class LSAMain extends GenericMain {
 	    + " use -Djama.path=<.jar location>.\n\n" +
 	    "Similarly, if COLT is to be used with this class being invoked" +
 	    " from a .jar,\n then the \"colt.path\" property must be set.\n\n" +
-	    "Token filter configurations are specified as a comman-separated " +
-	    "list of file\nnames, where each file name has an optional string" +
-	    " with values:inclusive or\nexclusive, which species whether the" +
-	    " token are to be used for an exclusive\nfilter. The default " +
-	    "value is include. An example configuration might look like:\n" +
-	    "  --tokenFilter=english-dictionary.txt=include," +
-	    "stop-list.txt=exclude\n\n" +
 
 	    "The --svdAlgorithm provides a way to manually specify which " + 
 	    "algorithm should\nbe used internally.  This option should not be" +
 	    " used normally, as LSA will\nselect the fastest algorithm " +
 	    "available.  However, in the event that it\nis needed, valid" +
-	    " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT" +
+	    " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT\n\n" +
 
+            // Token Filter Description
+            "Token filter configurations are specified as a comman-separated " +
+	    "list of file\nnames, where each file name has an optional string" +
+	    " with values:inclusive or\nexclusive, which species whether the" +
+	    " token are to be used for an exclusive\nfilter. The default " +
+	    "value is include. An example configuration might look like:\n" +
+	    "  --tokenFilter=english-dictionary.txt=include," +
+	    "stop-list.txt=exclude" +
+
+            
+            // Compound Tokens Description
 	    "\n\nThe -C, --compoundWords option specifies a file name of " +
 	    "multiple tokens that\nshould be counted as a single word, e.g." +
 	    " \"white house\".  Each compound\ntoken should be specified on " +
 	    "its own line." +
 
+            // S-Space Format
+            "\n\nThe output of the program is a semantic space stored in the " +
+            "specified format.\nValid options are text, sparse_text, binary, " +
+            "and sparse_binary." +
+
+            // Tag
 	    "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
     }
 }

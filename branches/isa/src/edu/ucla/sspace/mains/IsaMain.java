@@ -24,9 +24,10 @@ package edu.ucla.sspace.mains;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.isa.IncrementalSemanticAnalysis;
+
 import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorUtil;
-import edu.ucla.sspace.ri.RandomIndexing;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,8 +39,8 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * An executable class for running {@link RandomIndexing} from the command line.
- * This class provides several options:
+ * An executable class for running {@link HyperspaceAnalogueToLanguage} (HAL)
+ * from the command line.  This class takes in several command line arguments.
  *
  * <ul>
  *
@@ -47,11 +48,13 @@ import java.util.logging.Logger;
  *   <ul>
  *
  *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]} a file where each line is
- *        a document
+ *        a document.  This is the preferred input format for large corpora
  *
  *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a list of document files
- *   </ul>
+ *        where each file is specified on its own line.
  *
+ *   </ul>
+ * 
  * <li><u>Algorithm Options</u>:
  *   <ul>
  *
@@ -102,65 +105,80 @@ import java.util.logging.Logger;
  * <li><u>Program Options</u>:
  *   <ul>
  *
- *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
- *        output formatting to use when generating the semantic space ({@code
- *        .sspace}) file.  See {@link edu.ucla.sspace.common.SemanticSpaceUtils
- *        SemanticSpaceUtils} for format details.
- *
- *   <li> {@code -t}, {@code --threads=INT} the number of threads to use
- *
- *   <li> {@code -v}, {@code --verbose} prints verbose output
- *
+ *   <li> {@code -o}, {@code --outputFormat=}<tt>text, binary, sparse_text,
+ *        sparse_binary</tt> Specifies the output formatting to use when
+ *        generating the semantic space ({@code .sspace}) file.  See {@link
+ *        edu.ucla.sspace.common.SemanticSpaceUtils SemanticSpaceUtils} for
+ *        format details.
+ * 
  *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
- *        the existing output
+ *        the existing output files.  The default is {@code true}.  If set to
+ *        {@code false}, a unique integer is inserted into the file name.
+ *
+ *   <li> {@code -v}, {@code --verbose}  specifies whether to print runtime
+ *        information to standard out
+ *
  *   </ul>
  *
  * </ul>
  *
  * <p>
  *
- * An invocation will produce one file as output {@code random-indexing.sspace}.
- * If {@code overwrite} was set to {@code true}, this file will be replaced for
- * each new semantic space.  Otherwise, a new output file of the format {@code
- * random-indexing<number>.sspace} will be created, where {@code
- * <number>} is a unique identifier for that program's invocation.  The output
- * file will be placed in the directory specified on the command line.
+ * An invocation will produce one file as output {@code
+ * hal-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
+ * this file will be replaced for each new semantic space.  Otherwise, a new
+ * output file of the format {@code isa-semantic-space<number>.sspace} will be
+ * created, where {@code <number>} is a unique identifier for that program's
+ * invocation.  The output file will be placed in the directory specified on the
+ * command line.
  *
- * <p>
  *
- * This class is desgined to run multi-threaded and performs well with one
- * thread per core, which is the default setting.
+ * @see IncrementalSemanticAnalysis
  *
- * @see RandomIndexing
- * 
  * @author David Jurgens
  */
-public class RandomIndexingMain extends GenericMain {
+public class IsaMain extends GenericMain {
 
     private static final Logger LOGGER 
-	= Logger.getLogger(RandomIndexingMain.class.getName());
-
+	= Logger.getLogger(IsaMain.class.getName());
+    
+    /**
+     * The properties that were used to configure the {@link
+     * IncrementalSemanticAnalysis} instance
+     */
     private Properties props;    
 
     /**
-     * The {@link RandomIndexing} instance used by this runnable.  This variable
-     * is assigned after {@link #getSpace()} is called.
+     * The {@link IncrementalSemanticAnalysis} instance used by this runnable.
+     * This variable is assigned after {@link #getSpace()} is called.
      */
-    private RandomIndexing ri;
+    private IncrementalSemanticAnalysis isa;
 
-    private RandomIndexingMain() {
-	ri = null;
+
+    private IsaMain() {
+        super(false);
+        props = null;
+        isa = null;
     }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-	options.addOption('i', "vectorGenerator", "IndexVectorGenerator "
+	options.addOption('g', "vectorGenerator", "IndexVectorGenerator "
 			  + "class to use", true,
 			  "CLASSNAME", "Advanced Algorithm Options");
+        options.addOption('h', "historyDecayRate", "the decay rate for history "
+                          + "effects of co-occurring words", true,
+                          "DOUBLE", "Algorithm Options");
+        options.addOption('i', "impactRate", "the rate at which co-occurrence" +
+                          " affects semantics", true, "DOUBLE", 
+                          "Algorithm Options");
 	options.addOption('l', "vectorLength", "length of semantic vectors",
 			  true, "INT", "Algorithm Options");
+	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
+			  + " before processing", true,
+			  "FILE", "Algorithm Options");
 	options.addOption('n', "permutationFunction", "permutation function "
 			  + "to use", true,
 			  "CLASSNAME", "Advanced Algorithm Options");
@@ -176,65 +194,20 @@ public class RandomIndexingMain extends GenericMain {
 	options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
 			  + " after processing", true,
 			  "FILE", "Algorithm Options");
-	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
-			  + " before processing", true,
-			  "FILE", "Algorithm Options");
     }
 
     public static void main(String[] args) {
+        IsaMain isa = new IsaMain();
 	try {
-	    RandomIndexingMain main = new RandomIndexingMain();
-	    main.run(args);
-	} catch (Throwable t) {
+	    isa.run(args);
+	}
+	catch (Throwable t) {
 	    t.printStackTrace();
 	}
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected Properties setupProperties() {
-	props = System.getProperties();
-	// Use the command line options to set the desired properites in the
-	// constructor.  Use the system properties in case these properties were
-	// set using -Dprop=<value>
-	if (argOptions.hasOption("usePermutations")) {
-	    props.setProperty(RandomIndexing.USE_PERMUTATIONS_PROPERTY,
-			      argOptions.getStringOption("usePermutations"));
-	}
-
-	if (argOptions.hasOption("permutationFunction")) {
-	    props.setProperty(RandomIndexing.PERMUTATION_FUNCTION_PROPERTY,
-			     argOptions.getStringOption("permutationFunction"));
-	}
-
-	if (argOptions.hasOption("windowSize")) {
-	    props.setProperty(RandomIndexing.WINDOW_SIZE_PROPERTY,
-			     argOptions.getStringOption("windowSize"));
-	}
-
-	if (argOptions.hasOption("vectorLength")) {
-	    props.setProperty(RandomIndexing.VECTOR_LENGTH_PROPERTY,
-			     argOptions.getStringOption("vectorLength"));
-	}
-
-	if (argOptions.hasOption("useSparseSemantics")) {
-	    props.setProperty(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY,
-			      argOptions.getStringOption("useSparseSemantics"));
-	}
-
-	return props;
-    }
-
-    /**
-     * Returns an instance of {@link RandomIndexing}.  If {@code loadVectors} is
-     * specified in the command line options, this method will also initialize
-     * the word-to-{@link IndexVector} mapping.
-     */
+    
     protected SemanticSpace getSpace() {
-	// Once all the optional properties are known and set, create the
-	// RandomIndexing algorithm using them
-	ri = new RandomIndexing(props);
+	isa = new IncrementalSemanticAnalysis();
 
 	// note that getSpace() is called after the arg options have been
 	// parsed, so this call is safe.
@@ -244,15 +217,61 @@ public class RandomIndexingMain extends GenericMain {
 	    try {
 		Map<String,IndexVector> wordToIndexVector = 
 		    IndexVectorUtil.load(new File(fileName));
-		ri.setWordToIndexVector(wordToIndexVector);
+		isa.setWordToIndexVector(wordToIndexVector);
 	    } catch (IOException ioe) {
 		// rethrow since this step 
 		throw new IOError(ioe);
 	    }
 	}
-
-	return ri;
+        return isa;
     }
+
+    protected Properties setupProperties() {
+	// use the System properties in case the user specified them as
+	// -Dprop=<val> to the JVM directly.
+	props = System.getProperties();
+
+	// Use the command line options to set the desired properites in the
+	// constructor.  Use the system properties in case these properties were
+	// set using -Dprop=<value>
+	if (argOptions.hasOption("usePermutations")) {
+	    props.setProperty(IncrementalSemanticAnalysis.USE_PERMUTATIONS_PROPERTY,
+			      argOptions.getStringOption("usePermutations"));
+	}
+
+	if (argOptions.hasOption("permutationFunction")) {
+	    props.setProperty(IncrementalSemanticAnalysis.PERMUTATION_FUNCTION_PROPERTY,
+			     argOptions.getStringOption("permutationFunction"));
+	}
+
+	if (argOptions.hasOption("windowSize")) {
+	    props.setProperty(IncrementalSemanticAnalysis.WINDOW_SIZE_PROPERTY,
+			     argOptions.getStringOption("windowSize"));
+	}
+
+	if (argOptions.hasOption("vectorLength")) {
+	    props.setProperty(IncrementalSemanticAnalysis.VECTOR_LENGTH_PROPERTY,
+			     argOptions.getStringOption("vectorLength"));
+	}
+
+	if (argOptions.hasOption("useSparseSemantics")) {
+	    props.setProperty(IncrementalSemanticAnalysis.USE_SPARSE_SEMANTICS_PROPERTY,
+			      argOptions.getStringOption("useSparseSemantics"));
+	}
+
+	if (argOptions.hasOption("impactRate")) {
+	    props.setProperty(IncrementalSemanticAnalysis.IMPACT_RATE_PROPERTY,
+			      argOptions.getStringOption("impactRate"));
+	}
+
+	if (argOptions.hasOption("historyDecayRate")) {
+	    props.setProperty(IncrementalSemanticAnalysis.HISTORY_DECAY_RATE_PROPERTY,
+			      argOptions.getStringOption("historyDecayRate"));
+	}
+
+	return props;
+    }
+
 
     /**
      * If {@code --saveVectors} was specified, write the accumulated
@@ -263,28 +282,41 @@ public class RandomIndexingMain extends GenericMain {
 	    String fileName = argOptions.getStringOption("saveVectors");
 	    LOGGER.info("saving index vectors to " + fileName);
 	    try {
-		IndexVectorUtil.save(ri.getWordToIndexVector(), 
+		IndexVectorUtil.save(isa.getWordToIndexVector(), 
 				     new File(fileName));
 	    } catch (IOException ioe) {
 		ioe.printStackTrace();
 	    }
-	}
-	
+	}	
     }
-	
+
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
     public void usage() {
  	System.out.println(
- 	    "usage: java RandomIndexingMain [options] <output-dir>\n\n" + 
-	    argOptions.prettyPrint() + 
+ 	    "usage: java IsaMain [options] <output-dir>\n\n" + 
+	    argOptions.prettyPrint() + "\n" +
 
-            // Compound Token Descritpion
-	    "\n\nThe -C, --compoundWords option specifies a file name of " +
-	    "multiple tokens that\nshould be counted as a single word, e.g." +
-	    " \"white house\".  Each compound\ntoken should be specified on " +
-	    "its own line." +
+
+            // description of ISA Options
+            "ISA is an incremental algorithm where the semantics is based " +
+            "on co-occurrence\nof words.  Semantics accumulate as a function " +
+            "both the index vectors and\nthe semantics of the co-occurring "+
+            "words.  Documents are processed in the\norder they are specified," +
+            "with documents in --fileList processed before\ndocuments " +
+            "specified by the --docFile option.\n\n" +
+
+            "The impact rate specifies the degree to which the co-occurrence " +
+            "of a word\nimpacts the semantics of another word.  This value " +
+            "affects both of the\nimpact of index vectors and semantics.  The" +
+            "default rate is 0.003.\n\n" +
+            
+            "The history decay rate specifies how quickly to reduce the " +
+            "impact of the\nsemantics of a co-occurring word as the total " +
+            "number of occurrences for that\nword increases.  High decay " +
+            "rates cause the semantics to be discounted more\n" +
+            "quickly.  The default rate is 100.\n\n" +
 
             // Token Filter Description
 	    "Token filter configurations are specified as a comman-separated " +
@@ -293,10 +325,16 @@ public class RandomIndexingMain extends GenericMain {
 	    " token are to be used for an exclusive\nfilter. The default " +
 	    "value is include. An example configuration might look like:\n" +
 	    "  --tokenFilter=english-dictionary.txt=include," +
-	    "stop-list.txt=exclude" + 
+	    "stop-list.txt=exclude" +
+            
+            // Compound Token Description
+	    "\n\nThe -C, --compoundWords option specifies a file name of " +
+	    "multiple tokens that\nshould be counted as a single word, e.g." +
+	    " \"white house\".  Each compound\ntoken should be specified on " +
+	    "its own line.\n\n" +
 
             // S-Space Format
-            "\n\nThe output of the program is a semantic space stored in the " +
+            "The output of the program is a semantic space stored in the " +
             "specified format.\nValid options are text, sparse_text, binary, " +
             "and sparse_binary." +
 
