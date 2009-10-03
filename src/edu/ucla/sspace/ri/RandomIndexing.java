@@ -21,21 +21,22 @@
 
 package edu.ucla.sspace.ri;
 
+import edu.ucla.sspace.common.Filterable;
+import edu.ucla.sspace.common.SemanticSpace;
+
+import edu.ucla.sspace.text.IteratorFactory;
+
+import edu.ucla.sspace.util.SparseIntArray;
+
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.IOError;
 
 import java.lang.reflect.Constructor;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
@@ -43,16 +44,6 @@ import java.util.Random;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
-
-import edu.ucla.sspace.common.Filterable;
-import edu.ucla.sspace.common.SemanticSpace;
-
-import edu.ucla.sspace.text.IteratorFactory;
-
-import edu.ucla.sspace.util.Duple;
-import edu.ucla.sspace.util.IntegerMap;
-import edu.ucla.sspace.util.SparseIntArray;
-
 
 /**
  * A co-occurrence based approach to statistical semantics that uses a
