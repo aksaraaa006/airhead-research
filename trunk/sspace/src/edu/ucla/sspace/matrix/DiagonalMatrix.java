@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 /**
@@ -74,7 +74,7 @@ public class DiagonalMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getVector(int row) {
-        Vector vector = new SparseDoubleVector(diags);
+        Vector vector = new SparseVector(diags);
         vector.set(row, values[row]);
         return vector;
     }
