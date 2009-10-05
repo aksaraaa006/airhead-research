@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens 
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
