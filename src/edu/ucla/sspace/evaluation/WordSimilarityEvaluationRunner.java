@@ -44,17 +44,6 @@ public class WordSimilarityEvaluationRunner {
 				  WordSimilarityEvaluation test,
 				  Similarity.SimType vectorComparisonType) {
 
-	return evaluate(sspace, test, 
-			Similarity.getMethod(vectorComparisonType));
-    }
-
-    /**
-     *
-     */
-    public static Report evaluate(SemanticSpace sspace,
-				  WordSimilarityEvaluation test,
-				  Method vectorComparisonMethod) {
-
 	Collection<WordSimilarity> wordPairs = test.getPairs();
 	int unanswerable = 0;
 
@@ -84,8 +73,9 @@ public class WordSimilarityEvaluationRunner {
 
 	    // use the similarity result and scale it based on the original
 	    // answers
-	    double similarity = invoke(vectorComparisonMethod, 
-				       firstVector, secondVector);
+	    double similarity = 
+                Similarity.getSimilarity(vectorComparisonType, 
+                                         firstVector, secondVector);
 	    double scaled = (similarity * testRange) 
 		+ test.getLeastSimilarValue();
 
