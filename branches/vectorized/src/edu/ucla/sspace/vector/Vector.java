@@ -26,11 +26,11 @@ package edu.ucla.sspace.vector;
  * implement the vector with any kind of underlying data type, but the input and
  * output data types must be doubles.
  */
-// TODO: Rename to Vector.
 public interface Vector {
     /**
      * Change the value in the semantic vector by a specified amount.  If there is
      * not a value set at index, delta should be set to the actual value.
+     * NOTE: Not all implementations must provide this functionality.
      *
      * @param index index to change.
      * @param delta the amount to change by.
@@ -38,16 +38,8 @@ public interface Vector {
     public double add(int index, double delta);
 
     /**
-     * Add the contents of {@code vector} to the current {@code Vector}.
-     * Underlying implemntations may have a more efficient method of adding
-     * vectors together based on what type of Vector is passed in.
-     *
-     * @param vector A Vector to be summed into the current vector.
-     */
-    public void addVector(Vector vector);
-
-    /**
      * Set the value in the semantic vector.
+     * NOTE: Not all implementations must provide this functionality.
      *
      * @param index index to set.
      * @param value value to set in the vector.
@@ -56,6 +48,7 @@ public interface Vector {
 
     /**
      * Set all the values in the vector.
+     * NOTE: Not all implementations must provide this functionality.
      *
      * @param values Values to set for this vector.
      */

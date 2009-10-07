@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.ImmutableVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
@@ -77,7 +78,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getVector(int row) {
-        return sparseMatrix[row];
+        return new ImmutableVector(sparseMatrix[row]);
     }
 
     /**

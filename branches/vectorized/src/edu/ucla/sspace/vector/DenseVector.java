@@ -59,19 +59,6 @@ public class DenseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public void addVector(Vector vector) {
-        // Skip vectors of different lengths.
-        if (vector.length() != length())
-            return;
-        for (int i = 0; i < length(); ++i) {
-            double value = vector.get(i);
-            add(i, value);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public double add(int index, double delta) {
         vector[index] += delta;
         return vector[index];

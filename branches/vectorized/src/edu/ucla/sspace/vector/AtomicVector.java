@@ -38,12 +38,6 @@ public class AtomicVector implements Vector {
         writeLock = rwLock.writeLock();
     }
     
-    public void addVector(Vector other) {
-        writeLock.lock();
-        vector.addVector(other);
-        writeLock.unlock();
-    }
-
     public double addAndGet(int index, double delta) {
         writeLock.lock();
         double value = vector.add(index, delta);

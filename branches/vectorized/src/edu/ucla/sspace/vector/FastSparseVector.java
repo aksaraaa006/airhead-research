@@ -51,9 +51,6 @@ public class FastSparseVector implements Vector {
         comp = new CellComparator();
     }
 
-    public void addVector(Vector vector) {
-    }
-
     public double add(int index, double delta) {
         double value = get(index) + delta;
         set(index, value);

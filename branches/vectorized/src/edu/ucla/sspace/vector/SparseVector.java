@@ -52,32 +52,6 @@ public class SparseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public void addVector(Vector vector) {
-        // Skip vectors of different lengths.
-        if (vector.length() != length())
-            return;
-
-        if (vector instanceof SparseVector) {
-            SparseVector v = (SparseVector) vector;
-            // If vector is a sparse vector, simply get the non zero values and
-            // add them to this instance.
-            int[] otherIndicies = v.getNonZeroIndicies();
-            for (int index : otherIndicies)
-                add(index, vector.get(index));
-        } else {
-            // Otherwise, inspect all values of vector, and only add the non
-            // zero values.
-            for (int i = 0; i < length(); ++i) {
-                double value = vector.get(i);
-                if (value != 0d)
-                    add(i, value);
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public double add(int index, double delta) {
         set(index, get(index) + delta);
         return get(index) + delta;

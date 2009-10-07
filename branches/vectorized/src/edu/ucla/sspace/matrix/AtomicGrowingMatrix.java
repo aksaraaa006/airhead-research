@@ -23,6 +23,7 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.util.IntegerMap;
 import edu.ucla.sspace.vector.AtomicVector;
+import edu.ucla.sspace.vector.ImmutableVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
@@ -102,7 +103,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
      * {@inheritDoc}
      */
     public Vector getVector(int row) {
-        return getRow(row, -1, false);
+        return new ImmutableVector(getRow(row, -1, false));
     }
 
     /**
