@@ -31,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -140,6 +141,7 @@ public class Beagle implements SemanticSpace {
         Queue<String> nextWords = new ArrayDeque<String>();
 
         Iterator<String> it = IteratorFactory.tokenize(document);
+        Map<String, Vector> documentVectors = new HashMap<String, Vector>();
 
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
@@ -159,21 +161,29 @@ public class Beagle implements SemanticSpace {
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
-            synchronized (focusWord) {
-                Vector meaning = termHolographs.get(focusWord);
-                if (meaning == null) {
-                    meaning = indexBuilder.getSemanticVector();
-                    termHolographs.put(focusWord, meaning);
-                }
-                indexBuilder.updateMeaningWithTerm(
-                        meaning, prevWords, nextWords);
+            Vector meaning = termHolographs.get(focusWord);
+            if (meaning == null) {
+                meaning = indexBuilder.getSemanticVector();
+                documentVectors.put(focusWord, meaning);
             }
+            indexBuilder.updateMeaningWithTerm(
+                    meaning, prevWords, nextWords);
 
             // Push the focus word into previous word set for the next focus
             // word.
             prevWords.offer(focusWord);
             if (prevWords.size() > prevSize)
                 prevWords.remove();
+        }
+
+        for (Map.Entry<String, Vector> entry : documentVectors.entrySet()) {
+            synchronized (entry.getKey()) {
+                Vector existingVector = termHolographs.get(entry.getKey());
+                if (existingVector == null)
+                    termHolographs.put(entry.getKey(), entry.getValue());
+                else
+                    existingVector.addVector(entry.getValue());
+            }
         }
     }
     
