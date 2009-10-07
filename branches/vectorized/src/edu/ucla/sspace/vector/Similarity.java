@@ -23,7 +23,6 @@ package edu.ucla.sspace.vector;
 
 import java.lang.reflect.Method;
 
-
 /**
  * A collection of static methods for computing the similarity between different
  * vectors.  {@link SemanticSpace} implementations should use this class.
