@@ -96,8 +96,6 @@ public class WordComparator {
 	}
 	
 	Set<String> words = sspace.getWords();
-
-	final Method comparison = Similarity.getMethod(similarityType);
 	
 	// the most-similar set will automatically retain only a fixed number
 	// of elements
@@ -124,7 +122,7 @@ public class WordComparator {
 		continue;
 
  	    workQueue.offer(new Comparison(comparisons, sspace, vector,
- 					   other, comparison, mostSimilar));
+ 					   other, similarityType, mostSimilar));
 	}
 	
 	try {
@@ -154,29 +152,28 @@ public class WordComparator {
 	SemanticSpace sspace;
 	double[] vector;
 	String other;
-	Method comparison;
+	Similarity.SimType similarityMeasure;
 	MultiMap<Double,String> mostSimilar;
 
 	public Comparison(Semaphore semaphore,
 			  SemanticSpace sspace,
 			  double[] vector,
 			  String other,
-			  Method comparison,
+			  Similarity.SimType similarityMeasure,
 			  MultiMap<Double,String> mostSimilar) {
 	    this.semaphore = semaphore;
 	    this.sspace = sspace;
 	    this.vector = vector;
 	    this.other = other;
-	    this.comparison = comparison;
+            this.similarityMeasure = similarityMeasure;
 	    this.mostSimilar = mostSimilar;
 	}
 
 	public void run() {
 	    try {	    
 		double[] otherVec = sspace.getVectorFor(other);
-		
-		Double similarity = (Double)(comparison.
-		    invoke(null, new Object[]{vector, otherVec}));
+		Double similarity = Similarity.getSimilarity(
+                    similarityMeasure, vector, otherVec);
 		
 		// lock on the Map, as it is not thread-safe
 		synchronized(mostSimilar) {

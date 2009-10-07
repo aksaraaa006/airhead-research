@@ -43,17 +43,6 @@ public class WordChoiceEvaluationRunner {
 				  WordChoiceEvaluation test,
 				  Similarity.SimType vectorComparisonType) {
 
-	return evaluate(sspace, test, 
-			Similarity.getMethod(vectorComparisonType));
-    }
-
-    /**
-     *
-     */
-    public static Report evaluate(SemanticSpace sspace,
-				  WordChoiceEvaluation test,
-				  Method vectorComparisonMethod) {
-
 	Collection<MultipleChoiceQuestion> questions = test.getQuestions();
 	int correct = 0;
 	int unanswerable = 0;
@@ -101,8 +90,9 @@ public class WordChoiceEvaluationRunner {
 			    continue question_loop;
 			}
 			
-			double similarity = invoke(vectorComparisonMethod, 
-						   promptVector, optionVector);
+			double similarity = 
+                            Similarity.getSimilarity(vectorComparisonType, 
+                                                     promptVector, optionVector);
 			
 			if (similarity > closestOption) {
 			    answerIndex = optionIndex;

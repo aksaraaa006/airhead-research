@@ -442,7 +442,7 @@ public abstract class GenericMain {
 	for (Thread t : threads)
 	    t.start();
 
-	verbose("Beginning processing using %d threads", numThreads);
+	verbose("Beginning processing using %d threads%n", numThreads);
 
 	// wait until all the documents have been parsed
 	for (Thread t : threads)
