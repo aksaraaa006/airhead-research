@@ -1,5 +1,8 @@
 package edu.ucla.sspace.vector;
 
+/**
+ * A collection of algebraic methods on {@code Vector}s.
+ */
 public class VectorAlgebra {
     /**
      * Return the summation of {@code vector2} to {@code vector1}.  The values
@@ -14,10 +17,10 @@ public class VectorAlgebra {
         if (vector2.length() != vector1.length())
             return null;
 
+        // If vector is a sparse vector, simply get the non zero values and
+        // add them to this instance.
         if (vector2 instanceof SparseVector) {
             SparseVector v = (SparseVector) vector2;
-            // If vector is a sparse vector, simply get the non zero values and
-            // add them to this instance.
             int[] otherIndicies = v.getNonZeroIndicies();
             for (int index : otherIndicies)
                 vector1.add(index, vector2.get(index));

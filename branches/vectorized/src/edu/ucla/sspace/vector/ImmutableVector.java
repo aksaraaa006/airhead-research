@@ -60,29 +60,21 @@ public class ImmutableVector implements Vector {
     }
 
     /**
-     * Return the value of the semantic vector at the given index.
-     *
-     * @param index index to retrieve.
-     * @return value at index.
+     * {@inheritDoc}
      */
     public double get(int index) {
         return vector.get(index);
     }
 
     /**
-     * Return a double array representing this semantic vector.
-     *
-     * @param size The maximum size of the array returned.
-     * @return A double array of this vector.
+     * {@inheritDoc}
      */
     public double[] toArray(int size) {
         return vector.toArray(size);
     }
 
     /**
-     * Return the size of the {@code Vector}.
-     *
-     * @return Size of the vector.
+     * {@inheritDoc}
      */
     public int length() {
         return vector.length();

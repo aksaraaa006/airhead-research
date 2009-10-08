@@ -26,8 +26,6 @@ import java.util.Arrays;
 /**
  * A {@code Vector} where all values are held in memory. The underlying
  * implementation is simply an array of doubles.  <p>
- *
- * This class is thread-safe.
 */
 public class DenseVector implements Vector {
 

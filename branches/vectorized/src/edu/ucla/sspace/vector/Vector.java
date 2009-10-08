@@ -28,8 +28,8 @@ package edu.ucla.sspace.vector;
  */
 public interface Vector {
     /**
-     * Change the value in the semantic vector by a specified amount.  If there is
-     * not a value set at index, delta should be set to the actual value.
+     * Change the value in the semantic vector by a specified amount.  If there
+     * is not a value set at index, delta should be set to the actual value.
      * NOTE: Not all implementations must provide this functionality.
      *
      * @param index index to change.

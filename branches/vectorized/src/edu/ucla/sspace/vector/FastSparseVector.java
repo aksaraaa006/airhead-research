@@ -27,6 +27,15 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * An implementation of a sparse vector based on the Yale Sparse matrix format.
+ * This trades access and modification effiency over memory efficiency.  Only
+ * non-zero values in the vector are stored in an {@code ArrayList}, which
+ * tracks both the index of the value, and the value itself. Lookups for all
+ * indices are O(log n).  Writes to already existing indices are O(log n).
+ * Writes to non-existing indices are dependent on the insertion time of a
+ * {@code ArrayList}, but are at a minimum O(log n).
+ */
 public class FastSparseVector implements Vector {
     /**
      * An arraylist of non zero values for this row, stored in the correct
@@ -34,32 +43,44 @@ public class FastSparseVector implements Vector {
      */
     private ArrayList<CellItem> values;
 
+    /**
+     * The comparator for a {@code CellItem}.
+     */
     private CellComparator comp;
 
+    /**
+     * The maximum length this vector can take on.
+     */
     private int maxLength;
 
     /**
-     * Create the two lists, with zero values in them initially.
+     * An {@code FastSparseVector} with the maximum number of posible
+     * dimensions.
      */
     public FastSparseVector() {
         this(Integer.MAX_VALUE);
     }
 
+    /**
+     * Create {@code FastSparseVector}, which initially has all dimensions set
+     * to 0.
+     */
     public FastSparseVector(int length) {
         maxLength = length;
         values = new ArrayList<CellItem>();
         comp = new CellComparator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double add(int index, double delta) {
         double value = get(index) + delta;
         set(index, value);
         return value;
     }
     /**
-     * retrieve the value at specified delta
-     * @param delta The delta value to get
-     * @return the value for the specified delta, or 0 if no delta is found.
+     * {@inheritDoc}
      */
     public double get(int index) {
           CellItem item = new CellItem(index, 0);
@@ -68,12 +89,10 @@ public class FastSparseVector implements Vector {
     }
 
     /**
-     * Update the FastSparseVector such that the index at delta now stores
-     * value.  If value is 0, this will remove the delta from the row entry for
-     * efficency.
+     * {@inheritDoc}
      *
-     * @param delta The delta index this value should be stored as
-     * @param value The value to store
+     * If value is 0, then this index will be removed from the {@code
+     * ArrayList}.
      */
     public void set(int delta, double value) {
         CellItem item = new CellItem(delta, 0);
@@ -91,6 +110,11 @@ public class FastSparseVector implements Vector {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * Note that any values which are 0 are left out of the vector.
+     */
     public void set(double[] value) {
         for (int i = 0; i < value.length; ++i) {
             if (value[i] != 0d)
@@ -99,7 +123,7 @@ public class FastSparseVector implements Vector {
     }
 
     /**
-     * A dense double array which this FastSparseVector represents.
+     * {@inheritDoc}
      */
     public double[] toArray(int size) {
         double[] dense = new double[size];
@@ -109,6 +133,9 @@ public class FastSparseVector implements Vector {
         return dense;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int length() {
         return maxLength;
     }

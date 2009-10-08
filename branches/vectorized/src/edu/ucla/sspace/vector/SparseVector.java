@@ -30,7 +30,12 @@ import edu.ucla.sspace.util.SparseDoubleArray;
  * the sparse array functionaltiy to work as a {@code Vector}.
  */
 public class SparseVector implements Vector {
+    /**
+     * The {@code SparseDoubleArray} which provides most of the functionality in
+     * this class.
+     */
     SparseDoubleArray vector;
+
     /**
      * Creates a {@code SparseVector} that grows to the maximum size set
      * by {@link Double#MAX_VALUE}.
@@ -57,6 +62,9 @@ public class SparseVector implements Vector {
         return get(index) + delta;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void set(double[] values) {
         vector = new SparseDoubleArray(values);
     }

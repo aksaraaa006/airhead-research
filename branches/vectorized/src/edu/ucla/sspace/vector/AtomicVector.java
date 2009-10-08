@@ -24,12 +24,30 @@ package edu.ucla.sspace.vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * An implementation of a {@code Vector} which provides atomic concurrent access
+ * to another {@code Vector}.  This allows reads and writes to be done
+ * concurrently.  This is implemented as a decorated around a {@code Vector},
+ * and thus does not provide a specific implementation of a {@code Vector}.
+ */
 public class AtomicVector implements Vector {
+    /**
+     * The original {@code Vector} that this {@code AtomicVector} decorates.
+     */
     Vector vector;
 
+    /**
+     * Read and write locks guarding access to {@code vector}.
+     */
     private final Lock readLock;
     private final Lock writeLock;
 
+    /**
+     * Create a new {@code AtomicVector} decorating an already existing {@code
+     * Vector}.
+     *
+     * @param v The vector to decorate.
+     */
     public AtomicVector(Vector v) {
         vector = v;
 
@@ -38,13 +56,16 @@ public class AtomicVector implements Vector {
         writeLock = rwLock.writeLock();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public double addAndGet(int index, double delta) {
-        writeLock.lock();
-        double value = vector.add(index, delta);
-        writeLock.unlock();
-        return value;
+        return add(index, delta);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double getAndAdd(int index, double delta) {
         writeLock.lock();
         double value = vector.get(index);
@@ -53,6 +74,9 @@ public class AtomicVector implements Vector {
         return value;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double add(int index, double delta) {
         writeLock.lock();
         double value = vector.add(index, delta);
@@ -60,6 +84,9 @@ public class AtomicVector implements Vector {
         return value;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double get(int index) {
         readLock.lock();
         double value = vector.get(index);
@@ -67,18 +94,27 @@ public class AtomicVector implements Vector {
         return value;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void set(double[] values) {
         writeLock.lock();
         vector.set(values);
         writeLock.unlock();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void set(int index, double value) {
         writeLock.lock();
         vector.set(index, value);
         writeLock.unlock();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double[] toArray(int size) {
         readLock.lock();
         double[] array = vector.toArray(size);
@@ -86,6 +122,9 @@ public class AtomicVector implements Vector {
         return array;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int length() {
         readLock.lock();
         int length = vector.length();
