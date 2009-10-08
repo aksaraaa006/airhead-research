@@ -308,7 +308,7 @@ public class SemanticSpaceExplorer {
 
             // Print each of the neighbors and their similarity score 
             for (Map.Entry<Double,String> e : mostSimilar.entrySet()) {
-                out.println(e.getKey() + "\n" + e.getValue());
+                out.println(e.getKey() + "\t" + e.getValue());
             }
             break;
         }

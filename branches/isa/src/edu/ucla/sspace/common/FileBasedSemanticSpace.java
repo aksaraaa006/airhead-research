@@ -46,11 +46,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * An unmodifiable {@link SemanticSpace} whose data is loaded into memory from
- * an {@code .sspace} file.  Instance of this class perform no document
- * processing, and the {@code processDocument} and {@code processSpace} methods
- * do nothing.  The input file format should be one of formats produced by
- * {@link edu.ucla.sspace.common.SemanticSpaceUtils}.<p>
+ * An unmodifiable {@link SemanticSpace} whose data is loaded into memory from a
+ * {@code .sspace} file.  Instance of this class perform no document processing,
+ * and the {@code processDocument} and {@code processSpace} methods do nothing.
+ * The input file format should be one of formats produced by {@link
+ * edu.ucla.sspace.common.SemanticSpaceUtils}.<p>
  *
  * In general, users should call {@link
  * edu.ucla.sspace.common.SemanticSpaceUtils#loadSemanticSpace(File)
@@ -78,7 +78,7 @@ public class FileBasedSemanticSpace implements SemanticSpace {
      * A mapping of terms to row indexes.  Also serves as a quick means of
      * retrieving the words known by this {@link SemanticSpace}.
      */
-    private final Map<String, Integer> termToIndex ;
+    private final Map<String,Integer> termToIndex;
 
     /**
      * The name of this semantic space.

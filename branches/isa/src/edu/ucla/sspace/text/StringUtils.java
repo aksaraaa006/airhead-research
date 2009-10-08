@@ -176,7 +176,7 @@ public class StringUtils {
     
     /**
      * Returns the provided string where all HTML special characters
-     * (e.g. <pre>&nbsp;</pre>) have been replaced with their utf8 equivalents.
+     * (e.g. &amp;nbsp;) have been replaced with their utf8 equivalents.
      *
      * @param source a String possibly containing escaped HTML characters
      */

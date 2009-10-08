@@ -160,7 +160,7 @@ public class IteratorFactory {
     public static synchronized void setProperties(Properties props) {
 	String filterProp = 
 	    props.getProperty(TOKEN_FILTER_PROPERTY);
-	System.out.println("filterProp = " + filterProp);
+
 	filter = (filterProp != null)
 	    ? TokenFilter.loadFromSpecification(filterProp)
 	    : null;
