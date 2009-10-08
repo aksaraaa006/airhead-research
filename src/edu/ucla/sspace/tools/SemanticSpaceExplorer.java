@@ -306,9 +306,15 @@ public class SemanticSpaceExplorer {
                 wordComparator.getMostSimilar(focusWord, current, neighbors,
                                               simType);
 
-            // Print each of the neighbors and their similarity score 
-            for (Map.Entry<Double,String> e : mostSimilar.entrySet()) {
-                out.println(e.getKey() + "\t" + e.getValue());
+            if (mostSimilar == null) {
+                out.println(focusWord + 
+                            " is not in the current semantic space");
+            }
+            else {
+                // Print each of the neighbors and their similarity score 
+                for (Map.Entry<Double,String> e : mostSimilar.entrySet()) {
+                    out.println(e.getValue() + "\t" + e.getKey());
+                }
             }
             break;
         }
