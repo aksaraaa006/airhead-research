@@ -39,7 +39,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * An executable class for running {@link HyperspaceAnalogueToLanguage} (HAL)
+ * An executable class for running {@link IncrementalSemanticAnalysis} (ISA)
  * from the command line.  This class takes in several command line arguments.
  *
  * <ul>
