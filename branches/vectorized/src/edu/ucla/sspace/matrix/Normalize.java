@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
+
 public class Normalize {
   private Normalize() {}
 

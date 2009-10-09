@@ -24,9 +24,9 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.util.IntegerMap;
 
 import edu.ucla.sspace.vector.AtomicVector;
-import edu.ucla.sspace.vector.ImmutableVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 /**
  * A concurrent, thread-safe, growable {@code Matrix} class.  This class allows
@@ -191,7 +192,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
      * {@inheritDoc}
      */
     public Vector getVector(int row) {
-        return new ImmutableVector(getRow(row, -1, false));
+        return Vectors.immutableVector(getRow(row, -1, false));
     }
 
     /**

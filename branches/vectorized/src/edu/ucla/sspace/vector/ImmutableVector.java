@@ -28,6 +28,8 @@ package edu.ucla.sspace.vector;
  * other classes the ability to alter the {@code Vector}.  Note that the
  * original {@code Vector} can still be alterned by the object owning it, but
  * classes given a {@code ImmutableVector} cannot make modififications.
+ *
+ * @author Keith Stevens
  */
 public class ImmutableVector implements Vector {
 

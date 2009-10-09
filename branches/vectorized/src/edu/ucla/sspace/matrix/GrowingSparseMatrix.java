@@ -21,11 +21,13 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.ImmutableVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * A growing sparse {@code Matrix} based on the Yale Sparse Matrix Format.  Each
@@ -49,11 +51,13 @@ public class GrowingSparseMatrix implements Matrix {
     private int cols;
 
     /**
-     * Each row is defined as a {@link SparseVector} which does most of the work.
+     * Each row is defined as a {@link SparseVector} which does most of the
+     * work.
      */
-    private final ArrayList<SparseVector> sparseMatrix;
+    private final List<SparseVector> sparseMatrix;
 
     /**
+     * Create a new empty {@code GrowingSparseMatrix}.
      */
     public GrowingSparseMatrix() {
         this.rows = 0;
@@ -62,18 +66,18 @@ public class GrowingSparseMatrix implements Matrix {
     }
 
     /**
-     *
+     * Validate that the row and column indices are non-zero.
      */        
     private void checkIndices(int row, int col) {
-        if (row < 0 || col < 0 || row >= rows || col >= cols) {
+        if (row < 0 || col < 0)
             throw new ArrayIndexOutOfBoundsException();
-        }
     }
 
     /**
      * {@inheritDoc}
      */
     public double get(int row, int col) {
+        checkIndices(row, col);
         return sparseMatrix.get(row).get(col);
     }
 
@@ -88,7 +92,7 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getVector(int row) {
-        return new ImmutableVector(sparseMatrix.get(row));
+        return Vectors.immutableVector(sparseMatrix.get(row));
     }
 
     /**
@@ -100,26 +104,32 @@ public class GrowingSparseMatrix implements Matrix {
 
     /**
      * {@inheritDoc}
+     *
      * The size of the matrix will be expanded if either row or col is larger
      * than the largest previously seen row or column value.    When the matrix
      * is expanded by either dimension, the values for the new row/column will
      * all be assumed to be zero.
      */
     public void set(int row, int col, double val) {
+        checkIndices(row, col);
+
+        // Resize the number of rows if the given row is larger than the max.
         if (row >= sparseMatrix.size()) {
-            while (sparseMatrix.size() <= row) {
+            while (sparseMatrix.size() <= row)
                 sparseMatrix.add(new SparseVector());
-            }
         }
-        if (col == cols)
-            cols++;
-         else if (col > cols)
-            cols = col;
+
+        // Resize the number of columns if the given column is larger than the
+        // max.
+        if (col >= cols)
+            cols = col + 1;
+
         sparseMatrix.get(row).set(col, val);
     }
 
     /** 
      * {@inheritDoc}
+     *
      * The size of the matrix will be expanded if either row or
      * col is larger than the largest previously seen row or column value.
      * When the matrix is expanded by either dimension, the values for the new
@@ -131,9 +141,12 @@ public class GrowingSparseMatrix implements Matrix {
             "invalid number of columns: " + columns.length);
         } else
             cols = columns.length;
+
+        // Resize the number of rows if the given row is larger than the max.
         if (row >= sparseMatrix.size())
             while (sparseMatrix.size() <= row)
                 sparseMatrix.add(new SparseVector());
+
         for (int col = 0; col < cols; ++col) {
             double val = columns[col];
             if (val != 0)
@@ -146,14 +159,14 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public double[][] toDenseArray() {
         double[][] m = new double[rows][cols];
-        for (int r = 0; r < rows; ++r) {
+
+        for (int r = 0; r < rows; ++r) 
             m[r] = sparseMatrix.get(r).toArray(cols);
-        }
         return m;
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public int rows() {
         return sparseMatrix.size();

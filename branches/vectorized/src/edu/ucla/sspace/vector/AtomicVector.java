@@ -24,17 +24,22 @@ package edu.ucla.sspace.vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+
 /**
  * An implementation of a {@code Vector} which provides atomic concurrent access
  * to another {@code Vector}.  This allows reads and writes to be done
  * concurrently.  This is implemented as a decorated around a {@code Vector},
- * and thus does not provide a specific implementation of a {@code Vector}.
+ * and thus does not provide a specific implementation of a {@code Vector},
+ * allowing any {@code Vector} implementation .
+ *
+ * @author Keith Stevens
  */
 public class AtomicVector implements Vector {
+
     /**
      * The original {@code Vector} that this {@code AtomicVector} decorates.
      */
-    Vector vector;
+    private final Vector vector;
 
     /**
      * Read and write locks guarding access to {@code vector}.

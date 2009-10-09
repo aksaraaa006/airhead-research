@@ -30,6 +30,8 @@ package edu.ucla.sspace.vector;
  * do not support this behavior should throw a {@code
  * UnsupportedOperationException}.  These methods are marked as "optional" in
  * the specification for the interface.
+ *
+ * @author Keith Stevens
  */
 public interface Vector {
 

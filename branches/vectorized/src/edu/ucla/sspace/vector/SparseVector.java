@@ -28,8 +28,10 @@ import edu.ucla.sspace.util.SparseDoubleArray;
  * the semantics in memory, thereby saving space at the expense of time.
  *
  * {@see SparseDoubleArray} for an implementation of the functionality.
+ *
+ * @author Keith Stevens
  */
-public class SparseVector implements Vector {
+public class SparseVector implements Vector, Sparse {
 
     /**
      * The {@code SparseDoubleArray} which provides most of the functionality in
@@ -78,10 +80,9 @@ public class SparseVector implements Vector {
     }
 
     /** 
-     * Return the set of non-zero indicies.  This is primarily for the purpose
-     * of summing two {@code SparseVector}s efficiently.
+     * @{inheritDoc}
      */
-    int[] getNonZeroIndicies() {
+    public int[] getNonZeroIndices() {
         return vector.getElementIndices();
     }
 

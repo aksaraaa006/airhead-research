@@ -23,9 +23,12 @@ package edu.ucla.sspace.vector;
 
 import java.util.Arrays;
 
+
 /**
  * A {@code Vector} where all values are held in memory. The underlying
  * implementation is simply an array of doubles.  <p>
+ *
+ * @author Keith Stevens
 */
 public class DenseVector implements Vector {
 
@@ -54,6 +57,19 @@ public class DenseVector implements Vector {
         this.vector = vector;
     }
 	
+    /**
+     * Create a {@code DenseVector} by copying the values from another {@code
+     * Vector}.
+     *
+     * @param vector The {@code Vector} to copy from.
+     */
+    public DenseVector(Vector vector) {
+        this.vector = new double[vector.length()];
+
+        for (int i = 0; i < vector.length(); ++i)
+            set(i, vector.get(i));
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -86,7 +102,6 @@ public class DenseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("unchecked")
     public double[] toArray(int size) {
         double[] array = new double[size];
         for (int i = 0; i < size && i < vector.length; ++i)

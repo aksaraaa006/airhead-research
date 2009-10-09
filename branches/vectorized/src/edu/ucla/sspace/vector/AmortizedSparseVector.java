@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * An implementation of a sparse vector based on the Yale Sparse matrix format.
  * This trades access and modification effiency over memory efficiency.  Only
@@ -36,8 +37,10 @@ import java.util.Map;
  * indices are O(log n).  Writes to already existing indices are O(log n).
  * Writes to non-existing indices are dependent on the insertion time of a
  * {@code ArrayList}, but are at a minimum O(log n).
+ *
+ * @author Keith Stevens
  */
-public class AmortizedSparseVector implements Vector {
+public class AmortizedSparseVector implements Vector, Sparse {
 
     /**
      * An arraylist of non zero values for this row, stored in the correct
@@ -135,6 +138,16 @@ public class AmortizedSparseVector implements Vector {
             dense[item.index] = item.value;
         }
         return dense;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int[] getNonZeroIndices() {
+        int[] indices = new int[values.size()];
+        for (int i = 0; i < values.size(); ++i)
+            indices[i] = values.get(i).index;
+        return indices;
     }
 
     /**

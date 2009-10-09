@@ -21,9 +21,10 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.ImmutableVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
+
 
 /**
  * A sparse {@code Matrix} based on the Yale Sparse Matrix Format, as
@@ -33,13 +34,18 @@ import edu.ucla.sspace.vector.Vector;
  * this matrix is fixed, and attempts to access rows or columns beyond the size
  * will throw an exception.
  *
- *
  * @author David Jurgens
  */
 public class SparseMatrix implements Matrix {
 
+    /**
+     * The number of rows contained in this {@code SparseMatrix}.
+     */
     private final int rows;
 
+    /**
+     * The number of columns contained in this {@code SparseMatrix}.
+     */
     private final int cols;
 
     /**
@@ -71,6 +77,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double get(int row, int col) {
+        checkIndices(row, col);
         return sparseMatrix[row].get(col);
     }
 
@@ -78,7 +85,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getVector(int row) {
-        return new ImmutableVector(sparseMatrix[row]);
+        return Vectors.immutableVector(sparseMatrix[row]);
     }
 
     /**
@@ -99,6 +106,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
+        checkIndices(row, col);
         sparseMatrix[row].set(col, val);
     }
 

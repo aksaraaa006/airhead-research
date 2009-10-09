@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
+
 /**
  * This class provides some simple statistical evaluation methods over a
  * matrix.  The average and standard devation of a matrix can be computed for
@@ -28,6 +29,7 @@ package edu.ucla.sspace.matrix;
  * This is models after the statstics methods provided by NumPy.
  */
 public class Statistics {
+
   /**
    * The dimension over which the statistic should be evaluated.
    */

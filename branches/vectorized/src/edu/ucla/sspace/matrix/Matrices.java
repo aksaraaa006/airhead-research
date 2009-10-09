@@ -26,6 +26,7 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import java.util.logging.Logger;
 
+
 /**
  * A class of static methods for manipulating {@code Matrix} instances.
  *
