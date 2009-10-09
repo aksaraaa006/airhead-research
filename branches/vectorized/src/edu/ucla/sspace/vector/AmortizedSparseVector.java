@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,15 +37,16 @@ import java.util.Map;
  * Writes to non-existing indices are dependent on the insertion time of a
  * {@code ArrayList}, but are at a minimum O(log n).
  */
-public class FastSparseVector implements Vector {
+public class AmortizedSparseVector implements Vector {
+
     /**
      * An arraylist of non zero values for this row, stored in the correct
      * delta order.
      */
-    private ArrayList<CellItem> values;
+    private List<IndexValue> values;
 
     /**
-     * The comparator for a {@code CellItem}.
+     * The comparator for a {@code IndexValue}.
      */
     private CellComparator comp;
 
@@ -54,20 +56,22 @@ public class FastSparseVector implements Vector {
     private int maxLength;
 
     /**
-     * An {@code FastSparseVector} with the maximum number of posible
+     * An {@code AmortizedSparseVector} with {@link Integer#MAX_VALUE}
      * dimensions.
      */
-    public FastSparseVector() {
+    public AmortizedSparseVector() {
         this(Integer.MAX_VALUE);
     }
 
     /**
-     * Create {@code FastSparseVector}, which initially has all dimensions set
-     * to 0.
+     * Create {@code AmortizedSparseVector} of size @{code length}, which
+     * initially has all dimensions set to 0.
+     *
+     * @param length The maximum length of the {@code Vector}.
      */
-    public FastSparseVector(int length) {
+    public AmortizedSparseVector(int length) {
         maxLength = length;
-        values = new ArrayList<CellItem>();
+        values = new ArrayList<IndexValue>();
         comp = new CellComparator();
     }
 
@@ -83,7 +87,7 @@ public class FastSparseVector implements Vector {
      * {@inheritDoc}
      */
     public double get(int index) {
-          CellItem item = new CellItem(index, 0);
+          IndexValue item = new IndexValue(index, 0);
           int valueIndex = Collections.binarySearch(values, item, comp);
           return (valueIndex >= 0) ? values.get(valueIndex).value : 0.0;
     }
@@ -91,11 +95,11 @@ public class FastSparseVector implements Vector {
     /**
      * {@inheritDoc}
      *
-     * If value is 0, then this index will be removed from the {@code
-     * ArrayList}.
+     * All read operations, and writes to indices which already exist are of
+     * time O(log n).  Writers to new indices are of time O(log n).
      */
     public void set(int delta, double value) {
-        CellItem item = new CellItem(delta, 0);
+        IndexValue item = new IndexValue(delta, 0);
         int valueIndex = Collections.binarySearch(values, item, comp);
         if (valueIndex >= 0 && value != 0d) {
             // Replace a currently existing item with a non zero value.
@@ -127,7 +131,7 @@ public class FastSparseVector implements Vector {
      */
     public double[] toArray(int size) {
         double[] dense = new double[size];
-        for (CellItem item : values) {
+        for (IndexValue item : values) {
             dense[item.index] = item.value;
         }
         return dense;
@@ -145,22 +149,22 @@ public class FastSparseVector implements Vector {
      * offset the object creation costs from storing Integer and Double's in the
      * array lists.
      */
-    private class CellItem {
+    private static class IndexValue {
         public int index;
         public double value;
 
-        public CellItem(int index, double value) {
+        public IndexValue(int index, double value) {
             this.index = index;
             this.value = value;
         }
     }
 
     /**
-     * Comparator class for CellItems.  A CellItem is ordered based on it's
+     * Comparator class for IndexValues.  A IndexValue is ordered based on it's
      * index value.
      */
-    private class CellComparator implements Comparator<CellItem> {
-        public int compare(CellItem item1, CellItem item2) {
+    private static class CellComparator implements Comparator<IndexValue> {
+        public int compare(IndexValue item1, IndexValue item2) {
             return item1.index - item2.index;
         }
 

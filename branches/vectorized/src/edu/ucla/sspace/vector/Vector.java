@@ -22,15 +22,21 @@
 package edu.ucla.sspace.vector;
 
 /**
- * An interface for semantic vectors.  This interface allows subclasses to
- * implement the vector with any kind of underlying data type, but the input and
- * output data types must be doubles.
+ * An generalized interface for vectors.  This interface allows implementations
+ * to implement the vector with any kind of underlying data type, but the input
+ * and output data types must be doubles.
+ *
+ * Methods which modify the {@code Vector} are optional.  Implementations which
+ * do not support this behavior should throw a {@code
+ * UnsupportedOperationException}.  These methods are marked as "optional" in
+ * the specification for the interface.
  */
 public interface Vector {
+
     /**
-     * Change the value in the semantic vector by a specified amount.  If there
-     * is not a value set at index, delta should be set to the actual value.
-     * NOTE: Not all implementations must provide this functionality.
+     * Change the value in the semantic vector by a specified amount (optional
+     * operation).  If there is not a value set at index, delta should be set to
+     * the actual value.
      *
      * @param index index to change.
      * @param delta the amount to change by.
@@ -38,8 +44,7 @@ public interface Vector {
     public double add(int index, double delta);
 
     /**
-     * Set the value in the semantic vector.
-     * NOTE: Not all implementations must provide this functionality.
+     * Set the value in the semantic vector (optional operation).
      *
      * @param index index to set.
      * @param value value to set in the vector.
@@ -47,8 +52,7 @@ public interface Vector {
     public void set(int index, double value);
 
     /**
-     * Set all the values in the vector.
-     * NOTE: Not all implementations must provide this functionality.
+     * Set all the values in the vector (optional operation).
      *
      * @param values Values to set for this vector.
      */

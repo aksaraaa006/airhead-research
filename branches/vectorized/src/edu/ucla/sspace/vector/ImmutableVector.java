@@ -21,20 +21,26 @@
 
 package edu.ucla.sspace.vector;
 
+
 /**
  * An immutable {@code Vector}.  This class allows a {@code SemanticSpace} or a
  * {@code Matrix} to return a {@code Vector} stored internally without allowing
- * other classes the ability to alter the {@code Vector}.
+ * other classes the ability to alter the {@code Vector}.  Note that the
+ * original {@code Vector} can still be alterned by the object owning it, but
+ * classes given a {@code ImmutableVector} cannot make modififications.
  */
 public class ImmutableVector implements Vector {
+
     /**
      * The actual vector this {@code ImmutableVector} is decorating.
      */
-    Vector vector;
+    private final Vector vector;
 
     /**
      * Create a new {@code ImmutableVector} around an already existing {@code
      * Vector} providing read only access.
+     *
+     * @param v The {@code Vector} to decorate.
      */
     public ImmutableVector(Vector v) {
         vector = v;
@@ -44,19 +50,24 @@ public class ImmutableVector implements Vector {
      * Method not implemented.
      */
     public double add(int index, double delta) {
-        return 0;
+        throw new UnsupportedOperationException("add is not supported in an " +
+                "ImmutableVector");
     }
 
     /**
      * Method not implemented.
      */
     public void set(int index, double value) {
+        throw new UnsupportedOperationException("set is not supported in an " +
+                "ImmutableVector");
     }
 
     /**
      * Method not implemented.
      */
     public void set(double[] values) {
+        throw new UnsupportedOperationException("set is not supported in an " +
+                "ImmutableVector");
     }
 
     /**
@@ -78,5 +89,9 @@ public class ImmutableVector implements Vector {
      */
     public int length() {
         return vector.length();
+    }
+
+    public String toString() {
+        return vector.toString();
     }
 }

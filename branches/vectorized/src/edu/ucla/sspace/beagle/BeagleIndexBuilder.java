@@ -22,6 +22,7 @@
 package edu.ucla.sspace.beagle;
 
 import edu.ucla.sspace.common.IndexBuilder;
+
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorAlgebra;
@@ -35,17 +36,34 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Queue;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Generate index vectors for the Beagle Semantic Space, and incorporate index
- * vectors of co-occuring words into the Semantic Vector for a focus word.
+ * Generate index vectors for the Beagle {code SemanticSpace}, and incorporate
+ * index vectors of co-occuring words into the Semantic Vector for a focus word.
+ * This is done by first generating a fixed random dense index vector for each
+ * word encountered.  Then, using a window of text on the left and on the right,
+ * several operations are done to incorporate the semantics of this context into
+ * a semantic {@code Vector}.  First, the index vectors of co-occuring words are
+ * summed to the given semantic {@code Vector}.  Then, N-Grams of the context
+ * words are generated, and the circular correlation of these N-Grams are summed
+ * into the given semantic {@code Vector}.
+ *
+ * Most of this work is done {@link updateMeaningWithTerm}.
+ *
+ * Additionally, this {@code IndexBuilder} can be saved, where all of the index
+ * vectors generated so far will be serialized.  This serialization can then be
+ * loaded up to restore the state of the {@code IndexBuilder}.
+ *
  */
 public class BeagleIndexBuilder implements IndexBuilder {
+
     /**
      * The default index vector size, used when one is not specified.
      */
@@ -101,34 +119,62 @@ public class BeagleIndexBuilder implements IndexBuilder {
      */
     private Vector newestRandomVector;
 
+    /**
+     * Create a {@code BeagleIndexBuiler} which uses the {@code
+     * DEFAULT_INDEX_VECTOR_SIZE} as the length of each {@code Vector} generated
+     * in this {@code IndexBuilder}.
+     */
     public BeagleIndexBuilder() {
         init(DEFAULT_INDEX_VECTOR_SIZE);
     }
 
-    public BeagleIndexBuilder(int s) {
-        init(s);
+    /**
+     * Create a {@code BeagleIndexBuilder} which uses {@code vectorLength} as
+     * the size of each generated {@code Vector}.
+     *
+     * @param vectorLength The length of each index and semantic {@code Vector}
+     *                     used in this {@code IndexBuilder}.
+     */
+    public BeagleIndexBuilder(int vectorLength) {
+        init(vectorLength);
     }
 
+    /**
+     * Initialize this {@code BeagleIndexBuilder}.
+     */
     private void init(int s) {
+        // Generate utility classes.
         randomGenerator = new Random();
-        termToRandomIndex = new ConcurrentHashMap<String, Vector>();
-        indexVectorSize = s;
         fft = new RealDoubleFFT_Radix2(indexVectorSize);
+
+        indexVectorSize = s;
+        termToRandomIndex = new ConcurrentHashMap<String, Vector>();
+
+        // Generate the place holder vector, and the first index vector.
         newestRandomVector = generateRandomVector(); 
+        placeHolder = generateRandomVector();
+
         // Enter the zero vector for the empty string.
         termToRandomIndex.put("", getSemanticVector());
+
+        // Generate the permutation arrays.
         stdev = 1 / Math.sqrt(indexVectorSize);
         permute1 = new int[indexVectorSize];
         permute2 = new int[indexVectorSize];
         randomPermute(permute1);
-        placeHolder = generateRandomVector();
         randomPermute(permute2);
     }
 
+    /**
+     * @{inheritDoc}
+     */
     public int expectedSizeOfPrevWords() {
         return 1;
     }
 
+    /**
+     * @{inheritDoc}
+     */
     public int expectedSizeOfNextWords() {
         return 5;
     }

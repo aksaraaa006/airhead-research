@@ -22,6 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.util.IntegerMap;
+
 import edu.ucla.sspace.vector.AtomicVector;
 import edu.ucla.sspace.vector.ImmutableVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -29,6 +30,7 @@ import edu.ucla.sspace.vector.Vector;
 
 import java.util.Arrays;
 import java.util.Map;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -42,17 +44,38 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class AtomicGrowingMatrix implements ConcurrentMatrix {
     
+    /**
+     * The read lock for reading rows from this {@code AtomicGrowingMatrix}.
+     */
     private Lock rowReadLock;
+
+    /**
+     * The write lock for adding rows to this {@code AtomicGrowingMatrix}.
+     */
     private Lock rowWriteLock;
 
+    /**
+     * The read lock for reading from the internal rows.
+     */
     private Lock denseArrayReadLock;
+
+    /**
+     * The write lock for writing to internal rows.
+     */
     private Lock denseArrayWriteLock;
 
+    /**
+     * The number of rows represented in this {@code AtomicGrowingMatrix}.
+     */
     private AtomicInteger rows;
+
+    /** The number of columns represented in this {@code AtomicGrowingMatrix}.
+     */
     private AtomicInteger cols;
   
     /**
-     * Each row is defined as a {@link AtomicVector} which does most of the work.
+     * Each row is defined as a {@link AtomicVector} which does most of the
+     * work.
      */
     private final Map<Integer, AtomicVector> sparseMatrix;
 
@@ -72,23 +95,28 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
         denseArrayWriteLock = rwLock.writeLock();
     }
     
-    /**
-     *
-     */    
-    private void checkIndices(int row, int col) {
-    //     if (row < 0 || col < 0 || row >= rows || col >= cols) {
-    //         throw new ArrayIndexOutOfBoundsException();
-    //     }
-    }
-
-    public double getAndAdd(int row, int col, double delta) {
-        AtomicVector rowEntry = getRow(row, col, true);
-        return rowEntry.getAndAdd(col, delta);
-    }
-
     public double addAndGet(int row, int col, double delta) {
         AtomicVector rowEntry = getRow(row, col, true);
         return rowEntry.addAndGet(col, delta);    
+    }
+
+    /**
+     * Verify that the given row and column value is non-negative
+     *
+     * @param row The row index to check.
+     * @param the The column index to check.
+     */    
+    private void checkIndices(int row, int col) {
+         if (row < 0 || col < 0) {
+             throw new ArrayIndexOutOfBoundsException();
+         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int columns() {
+        return cols.get();
     }
 
     /**
@@ -102,9 +130,11 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(int row) {
-        return new ImmutableVector(getRow(row, -1, false));
+    public double getAndAdd(int row, int col, double delta) {
+        AtomicVector rowEntry = getRow(row, col, true);
+        return rowEntry.getAndAdd(col, delta);
     }
+
 
     /**
      * {@inheritDoc}
@@ -115,8 +145,8 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     }
 
     /**
-     * Gets the {@code AtomicVector} associated with the index, or {@code null} if
-     * no row entry is present, or if {@code createIfAbsent} is {@code true},
+     * Gets the {@code AtomicVector} associated with the index, or {@code null}
+     * if no row entry is present, or if {@code createIfAbsent} is {@code true},
      * creates the missing row and returns that.
      *
      * @param row the row to get
@@ -160,8 +190,15 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     /**
      * {@inheritDoc}
      */
-    public int columns() {
-        return cols.get();
+    public Vector getVector(int row) {
+        return new ImmutableVector(getRow(row, -1, false));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int rows() {
+        return rows.get();
     }
 
     /**
@@ -175,7 +212,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     }
 
     /**
-     *
+     * @{inheritDoc}
      */
     public void setRow(int row, double[] columns) {
         AtomicVector rowEntry = getRow(row, columns.length - 1, true);
@@ -201,12 +238,5 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
         denseArrayWriteLock.unlock();
         rowWriteLock.unlock();
         return m;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int rows() {
-        return rows.get();
     }
 }

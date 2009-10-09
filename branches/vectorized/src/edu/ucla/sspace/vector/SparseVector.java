@@ -26,15 +26,16 @@ import edu.ucla.sspace.util.SparseDoubleArray;
 /**
  * A {@code Vector} instance that keeps only the non-zero values of
  * the semantics in memory, thereby saving space at the expense of time.
- * Internally this class is a wrapper for {@link SparseDoubleArray}, allowing
- * the sparse array functionaltiy to work as a {@code Vector}.
+ *
+ * {@see SparseDoubleArray} for an implementation of the functionality.
  */
 public class SparseVector implements Vector {
+
     /**
      * The {@code SparseDoubleArray} which provides most of the functionality in
      * this class.
      */
-    SparseDoubleArray vector;
+    private SparseDoubleArray vector;
 
     /**
      * Creates a {@code SparseVector} that grows to the maximum size set
