@@ -26,11 +26,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
- * An implementation of a {@code Vector} which provides atomic concurrent access
- * to another {@code Vector}.  This allows reads and writes to be done
- * concurrently.  This is implemented as a decorated around a {@code Vector},
- * and thus does not provide a specific implementation of a {@code Vector},
- * allowing any {@code Vector} implementation .
+ * A decorator of a {@code Vector} which provides atomic concurrent access to
+ * another {@code Vector}.  This allows all reads to be done concurrently, while
+ * limiting to writing to only one thread at a time.  this does not provide a
+ * specific implementation of a {@code Vector}, allowing any {@code Vector}
+ * implementation to be made atomic.
  *
  * @author Keith Stevens
  */

@@ -31,12 +31,13 @@ import java.util.Map;
 
 /**
  * An implementation of a sparse vector based on the Yale Sparse matrix format.
- * This trades access and modification effiency over memory efficiency.  Only
- * non-zero values in the vector are stored in an {@code ArrayList}, which
- * tracks both the index of the value, and the value itself. Lookups for all
- * indices are O(log n).  Writes to already existing indices are O(log n).
- * Writes to non-existing indices are dependent on the insertion time of a
- * {@code ArrayList}, but are at a minimum O(log n).
+ * This class offers better access for modification efficiency over {@link
+ * SparseVector} at the expense of increased memory usage, for certain usage
+ * patterns. Only non-zero values in the vector are stored in an {@code
+ * ArrayList}, which tracks both the index of the value, and the value itself.
+ * Lookups for all indices are O(log n).  Writes to already existing indices are
+ * O(log n).  Writes to non-existing indices are dependent on the insertion time
+ * of a {@code ArrayList}, but are at a minimum O(log n).
  *
  * @author Keith Stevens
  */

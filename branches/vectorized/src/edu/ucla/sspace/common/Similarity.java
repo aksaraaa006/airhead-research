@@ -41,6 +41,7 @@ import java.util.TreeMap;
  * vectors.  {@link SemanticSpace} implementations should use this class.
  *
  * @author Keith Stevens
+ * @author David Jurgens
  */
 public class Similarity {
     
@@ -249,6 +250,33 @@ public class Similarity {
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
+    /**
+     * Returns the Pearson product-moment correlation coefficient of the two
+     * {@code Vector}s.
+     */
+    public static double correlation(Vector arr1, Vector arr2) {
+        // REMINDER: this could be made more effecient by not looping
+        double xSum = 0;
+        double ySum = 0;
+        for (int i = 0; i < arr1.length(); ++i) {
+            xSum += arr1.get(i);
+            ySum += arr2.get(i);
+        }
+        
+        double xMean = xSum / arr1.length();
+        double yMean = ySum / arr1.length();
+    
+        double numerator = 0, xSqSum = 0, ySqSum = 0;
+        for (int i = 0; i < arr1.length(); ++i) {
+            double x = arr1.get(i) - xMean;
+            double y = arr2.get(i) - yMean;
+            numerator += x * y;
+            xSqSum += (x * x);
+            ySqSum += (y * y);
+        }
+        return numerator / Math.sqrt(xSqSum * ySqSum);
+    }
+
     public static double euclideanDistance(double[] a, double[] b) {
         if (a == null || b == null || a.length != b.length)
             throw new IllegalArgumentException("a: " + a + "; b: " + b);
@@ -304,8 +332,8 @@ public class Similarity {
         }
         Set<Double> tmp = new HashSet<Double>();
         for (double d : b) {
-        tmp.add(d);
-        union.add(d);
+            tmp.add(d);
+            union.add(d);
         }
 
         intersection.retainAll(tmp);
@@ -340,6 +368,31 @@ public class Similarity {
         // get the intersection
         c.and(d); 
         return ((double)(c.cardinality())) / union.cardinality();
+    }
+
+    /**
+     * Computes the Jaccard index comparing the similarity both {@code
+     * Vector}swhen viewed as sets of samples.
+     */
+    public static double jaccardIndex(Vector a, Vector b) {
+        check(a, b);
+        
+        Set<Double> intersection = new HashSet<Double>();
+        Set<Double> union = new HashSet<Double>();
+        for (int i = 0; i < a.length(); ++i) {
+            double d = a.get(i);
+            intersection.add(d);
+            union.add(d);
+        }
+        Set<Double> tmp = new HashSet<Double>();
+        for (int i = 0; i < b.length(); ++i) {
+            double d = b.get(i);
+            tmp.add(d);
+            union.add(d);
+        }
+
+        intersection.retainAll(tmp);
+        return ((double)(intersection.size())) / union.size();
     }
 
     /**
@@ -447,4 +500,57 @@ public class Similarity {
         return 1 - ((6d * diff) / (a.length * (a.length * a.length - 1d)));
     }
 
+    /**
+     * Computes the Spearman rank correlation coefficient for the two {@code
+     * Vector}s.  If there is a tie in the ranking of {@code a}, then Pearson's
+     * product-moment coefficient is returned instead.
+     */
+    public static double spearmanRankCorrelationCoefficient(Vector a, 
+                                                            Vector b) {
+        check(a, b);
+
+        SortedMap<Double,Double> ranking = new TreeMap<Double,Double>();
+        for (int i = 0; i < a.length(); ++i) {
+            ranking.put(a.get(i), b.get(i));
+        }
+        
+        double[] sortedB = b.toArray(b.length());
+        Arrays.sort(sortedB);
+        Map<Double,Integer> otherRanking = new HashMap<Double,Integer>();
+        for (int i = 0; i < b.length(); ++i) {
+            otherRanking.put(sortedB[i], i);
+        }
+        
+        // keep track of the last value we saw in the key set so we can check
+        // for ties.  If there are ties then the Pearson's product-moment
+        // coefficient should be returned instead.
+        Double last = null;
+
+        // sum of the differences in rank
+        double diff = 0d;
+
+        // the current rank of the element in a that we are looking at
+        int curRank = 0;
+
+        for (Map.Entry<Double,Double> e : ranking.entrySet()) {
+            Double x = e.getKey();
+            Double y = e.getValue();
+            // check that there are no tied rankings
+            if (last == null)
+                last = x;
+            else if (last.equals(x))
+                // if there was a tie, return the correlation instead.
+                return correlation(a,b);
+            else 
+                last = x;
+
+            // determine the difference in the ranks for both values
+            int rankDiff = curRank - otherRanking.get(y).intValue();
+            diff += rankDiff * rankDiff;
+
+            curRank++;
+        }
+
+        return 1 - ((6 * diff) / (a.length() * (a.length() * a.length() - 1)));
+    }
 }

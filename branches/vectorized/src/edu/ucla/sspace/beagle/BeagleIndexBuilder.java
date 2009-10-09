@@ -53,13 +53,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * a semantic {@code Vector}.  First, the index vectors of co-occuring words are
  * summed to the given semantic {@code Vector}.  Then, N-Grams of the context
  * words are generated, and the circular correlation of these N-Grams are summed
- * into the given semantic {@code Vector}.
+ * into the given semantic {@code Vector}. </p>
  *
- * Most of this work is done {@link updateMeaningWithTerm}.
+ * Most of this work is done {@link updateMeaningWithTerm}. </p>
  *
  * Additionally, this {@code IndexBuilder} can be saved, where all of the index
  * vectors generated so far will be serialized.  This serialization can then be
- * loaded up to restore the state of the {@code IndexBuilder}.
+ * loaded up to restore the state of the {@code IndexBuilder}. </p>
  *
  */
 public class BeagleIndexBuilder implements IndexBuilder {
