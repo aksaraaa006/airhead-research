@@ -24,12 +24,16 @@ package edu.ucla.sspace.beagle;
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
+
 import edu.ucla.sspace.text.IteratorFactory;
+
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,6 +43,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 
 /**
  * An implementation of the Beagle Semantic Space model. This implementation is
@@ -56,8 +61,11 @@ import java.util.concurrent.ConcurrentMap;
  * convolutions of several n-grams is added to the holographic meaning. The
  * main functionality of this class can be found in the {@link IndexBuilder}
  * class.
+ *
+ * @author Keith Stevens
  */
 public class Beagle implements SemanticSpace {
+
     /**
      * The full context size used when scanning the corpus. This is the
      * total number of words considered in the context.
@@ -182,7 +190,7 @@ public class Beagle implements SemanticSpace {
                 if (existingVector == null)
                     termHolographs.put(entry.getKey(), entry.getValue());
                 else
-                    existingVector.addVector(entry.getValue());
+                    Vectors.add(existingVector, entry.getValue());
             }
         }
     }

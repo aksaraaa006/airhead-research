@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.matrix.Matrix.Type;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -43,7 +45,6 @@ import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-import edu.ucla.sspace.matrix.Matrix.Type;
 
 /**
  * A shared utility for printing matrices to files in a uniform manner and

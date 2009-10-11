@@ -24,12 +24,16 @@ package edu.ucla.sspace.beagle;
 import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
+
 import edu.ucla.sspace.text.IteratorFactory;
+
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,8 +43,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 
 /**
  * An implementation of the FlyingHermit Semantic Space model. This implementation is
@@ -58,8 +64,11 @@ import java.util.concurrent.ConcurrentMap;
  * convolutions of several n-grams is added to the holographic meaning. The
  * main functionality of this class can be found in the {@link IndexBuilder}
  * class.
+ *
+ * @author Keith Stevens
  */
 public class FlyingHermit implements SemanticSpace {
+
     /**
      * The full context size used when scanning the corpus. This is the
      * total number of words considered in the context.
@@ -120,7 +129,7 @@ public class FlyingHermit implements SemanticSpace {
     public double[] getVectorFor(String term) {
         Vector finalVector = indexBuilder.getSemanticVector();
         for (Vector v : termHolographs.get(term))
-            finalVector.addVector(v);
+            Vectors.add(finalVector, v);
         return finalVector.toArray(indexVectorSize);
     }
 
