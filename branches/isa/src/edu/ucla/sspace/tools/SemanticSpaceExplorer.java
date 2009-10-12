@@ -49,7 +49,11 @@ import java.util.Map;
 
 /**
  * A utility class that operates as a command-line tool for interacting with
- * semantic space files.
+ * semantic space files.  The utility also provides script execution
+ * capabilities for its commands.  This allows users to develop custom methods
+ * of interacting with one or more semantic spaces.  In additoin, scripting can
+ * help automate certain forms of tests on the expected contents of a semantic
+ * space.
  *
  * @author David Jurgens
  */
@@ -82,7 +86,7 @@ public class SemanticSpaceExplorer {
      * The mapping from file name to the {@code SemanticSpace} that was loaded
      * from that file.
      */
-    private final Map<String,SemanticSpace> fileToOpenedSemanticSpace;
+    private final Map<String,SemanticSpace> fileNameToSSpace;
 
     /**
      * The mapping from the alias of a semantic space to the file name from
@@ -100,22 +104,22 @@ public class SemanticSpaceExplorer {
      */
     private SemanticSpaceExplorer() { 
         this.wordComparator = new WordComparator();
-        fileToOpenedSemanticSpace = new LinkedHashMap<String,SemanticSpace>();
+        fileNameToSSpace = new LinkedHashMap<String,SemanticSpace>();
         aliasToFileName = new HashMap<String,String>();
         current = null;
     }
 
     /**
-     * Returns the name of the current {@code SemanticSpace} that will be used
-     * for commands
+     * Returns the name of the file form which the current {@code SemanticSpace}
+     * was loaded, or {@code null} if no semantic space is currently open.
      *
-     * @return the name of the current space
+     * @return the name of the file from which the current space was loaded
      */
-    private String getCurrentSSpaceName() {
+    private String getCurrentSSpaceFileName() {
         // REMINDER: This instruction is expected to be rare, so rather than
         // save the name and require a lookup every time the current sspace
         // is needed, we use an O(n) call to find the name as necessary
-        for (Map.Entry<String,SemanticSpace> e : fileToOpenedSemanticSpace.entrySet()) {
+        for (Map.Entry<String,SemanticSpace> e : fileNameToSSpace.entrySet()) {
             if (e.getValue() == current) {
                 return e.getKey();
             }
@@ -135,8 +139,8 @@ public class SemanticSpaceExplorer {
     private SemanticSpace getSSpace(String name) {
         String aliased = aliasToFileName.get(name);
         return (aliased != null) 
-            ? fileToOpenedSemanticSpace.get(aliased)
-            : fileToOpenedSemanticSpace.get(name);
+            ? fileNameToSSpace.get(aliased)
+            : fileNameToSSpace.get(name);
     }
 
     /**
@@ -180,8 +184,11 @@ public class SemanticSpaceExplorer {
             return false;
         }
 
+        // A giant switch statement for all of the commands 
         command_switch:
         switch (command) {
+
+        // Loads the semantic space from a file
         case LOAD: {
             if (!commandTokens.hasNext()) {
                 out.println("missing .sspace file argument");
@@ -193,7 +200,7 @@ public class SemanticSpaceExplorer {
                 return false;
             }
             // Don't re-open .sspace files that are already loaded
-            if (fileToOpenedSemanticSpace.containsKey(sspaceFileName))
+            if (fileNameToSSpace.containsKey(sspaceFileName))
                 break;
             String formatStr = commandTokens.next();
             SemanticSpaceUtils.SSpaceFormat format = null;
@@ -213,11 +220,13 @@ public class SemanticSpaceExplorer {
                 out.println("an error occurred while loading the semantic " +
                             "space from " + sspaceFileName + ":\n" + t);
             }
-            fileToOpenedSemanticSpace.put(sspaceFileName, sspace);
+            fileNameToSSpace.put(sspaceFileName, sspace);
             current = sspace;
             break;
         }
 
+        // Removes all references to the space, which free the associated
+        // memory.
         case UNLOAD: {
             if (!commandTokens.hasNext()) {
                 out.println("missing .sspace file argument");
@@ -228,10 +237,10 @@ public class SemanticSpaceExplorer {
             SemanticSpace removed = null;
             if (aliased != null) {
                 aliasToFileName.remove(sspaceName);
-                removed = fileToOpenedSemanticSpace.remove(aliased);
+                removed = fileNameToSSpace.remove(aliased);
             }
             else {
-                removed = fileToOpenedSemanticSpace.remove(sspaceName);
+                removed = fileNameToSSpace.remove(sspaceName);
                 // Remove the alias for the file if it existed
                 Iterator<Map.Entry<String,String>> it = 
                     aliasToFileName.entrySet().iterator();
@@ -248,19 +257,21 @@ public class SemanticSpaceExplorer {
             // the oldest semantic space, or if none are available, null.
             if (removed == current) {
                 Iterator<SemanticSpace> it =
-                    fileToOpenedSemanticSpace.values().iterator();
+                    fileNameToSSpace.values().iterator();
                 current = (it.hasNext()) ? it.next() : null;
             }
             break;
         }
 
+        // Creates an alias for a semantic space file.  This is useful for long
+        // file names.
         case ALIAS: {
             if (!commandTokens.hasNext()) {
                 out.println("missing .sspace file argument");
                 return false;
             }
             String fileName = commandTokens.next();
-            if (!fileToOpenedSemanticSpace.containsKey(fileName)) {
+            if (!fileNameToSSpace.containsKey(fileName)) {
                 out.println(fileName + "is not currently loaded");
                 return false;
             }
@@ -273,6 +284,7 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Finds the nearest neighbors to a word in the current semantic space
         case GET_NEIGHBORS: {
             if (!commandTokens.hasNext()) {
                 out.println("missing word argument");
@@ -319,6 +331,7 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Get the similarity for two words 
         case GET_SIMILARITY: {
             if (current == null) {
                 out.println("no current semantic space");
@@ -351,13 +364,13 @@ public class SemanticSpaceExplorer {
             double[] word1vec = current.getVectorFor(word1);
             if (word1vec == null) {
                 out.println(word1 + " is not in semantic space " 
-                            + getCurrentSSpaceName());
+                            + getCurrentSSpaceFileName());
                 break;
             }
             double[] word2vec = current.getVectorFor(word2);
             if (word2vec == null) {
                 out.println(word2 + " is not in semantic space " 
-                            + getCurrentSSpaceName());
+                            + getCurrentSSpaceFileName());
                 break;
             }
             
@@ -367,6 +380,8 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Compare the vectors for the same word from two different semantic
+        // spaces
         case COMPARE_SSPACE_VECTORS: {
 
             if (!commandTokens.hasNext()) {
@@ -408,6 +423,7 @@ public class SemanticSpaceExplorer {
                 }
             }
 
+            // Get the vectors from each dimension
             double[] sspace1vec = sspace1.getVectorFor(word);
             if (sspace1vec == null) {
                 out.println(word + " is not in semantic space " 
@@ -421,6 +437,7 @@ public class SemanticSpaceExplorer {
                 break;
             }
 
+            // Ensure that the two have the same number of dimensions
             if (sspace1vec.length != sspace2vec.length) {
                 out.println(name1 + " and " + name2 + " have different numbers "
                             + "of dimensions and are not comparable.");
@@ -438,6 +455,7 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Write the results of a command to a file
         case WRITE_COMMAND_RESULTS: {
             if (!commandTokens.hasNext()) {
                 out.println("missing file destination argument");
@@ -445,7 +463,11 @@ public class SemanticSpaceExplorer {
             }
             String fileName = commandTokens.next();
             try {
+                // Open up a new output stream where the command's results will
+                // be sent
                 PrintStream ps = new PrintStream(fileName);
+                // Recursively call execute using the file as the new output
+                // stream
                 execute(commandTokens, ps);
                 ps.close();
             } catch (IOException ioe) {
@@ -455,6 +477,7 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Print the vector for a word
         case PRINT_VECTOR: {
             if (current == null) {
                 out.println("no current semantic space");
@@ -470,7 +493,7 @@ public class SemanticSpaceExplorer {
             double[] vec = current.getVectorFor(word);
             if (vec == null) {
                 out.println(word + " is not in semantic space " +
-                            getCurrentSSpaceName());
+                            getCurrentSSpaceFileName());
                 break;
             }
             
@@ -478,13 +501,20 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Update the current semantic space
         case SET_CURRENT_SSPACE: {
             if (!commandTokens.hasNext()) {
                 out.println("missing .sspace file argument");
                 return false;
             }
-            String fileName = commandTokens.next();
-            SemanticSpace s = fileToOpenedSemanticSpace.get(fileName);
+            String spaceName = commandTokens.next();
+            // Check whether the name was an alias
+            String fileName = aliasToFileName.get(spaceName);
+            // If the argument wasn't an alias, the arg was the file name
+            if (fileName == null)
+                fileName = spaceName;
+            
+            SemanticSpace s = fileNameToSSpace.get(fileName);
             if (s == null) {
                 out.println("no such .sspace (file is not currently loaded)");
                 return false;
@@ -493,8 +523,9 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Get the name of the current semantic space
         case GET_CURRENT_SSPACE: {
-            String currentSpaceName = getCurrentSSpaceName();
+            String currentSpaceName = getCurrentSSpaceFileName();
             if (currentSpaceName != null)
                 out.println(currentSpaceName);
             else
@@ -517,18 +548,19 @@ public class SemanticSpaceExplorer {
      */
     private static String getCommands() {
         return
-            "load file1.sspace format [file2.sspace...]\n" +
-            "unload file1.sspace format [file2.sspace...]\n" +
-            "get-neighbors word [number (default 10)] [similarity measure]\n" +
-            "get-similarity word1 word2 [similarity measure (default cosine)]\n"
-            + "compare-sspace-vectors word sspace1 sspace2 "
-            + "[similarity measure (default: cosine)]\n" +
-            "help\n" +
-            "set-current-sspace filename.sspace\n" +
-            "get-current-sspace\n" +
-            "alias filename.sspace name\n" + 
-            "write-command-results output-file command...\n" +
-            "print-vector word\n";
+            "  load file1.sspace format [file2.sspace...]\n" +
+            "  unload file1.sspace format [file2.sspace...]\n" +
+            "  get-neighbors word [number (default 10)] [similarity measure]\n" +
+            "  get-similarity word1 word2 [similarity measure " + 
+            "(default cosine)]\n" +
+            "  compare-sspace-vectors word sspace1 sspace2 " +
+            "[similarity measure (default: cosine)]\n" +
+            "  help\n" +
+            "  set-current-sspace filename.sspace\n" +
+            "  get-current-sspace\n" +
+            "  alias filename.sspace name\n" + 
+            "  write-command-results output-file command...\n" +
+            "  print-vector word\n";
     }
 
     /**

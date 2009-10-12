@@ -108,16 +108,17 @@ import java.util.concurrent.ConcurrentHashMap;
  *      </b></code> <br>
  *      <i>Default:</i> {@value #DEFAULT_WINDOW_SIZE}
  *
- * <dd style="padding-top: .5em">This variable sets the number of words before
+ * <dd style="padding-top: .5em">This property sets the number of words before
  *      and after that are counted as co-occurring.  With the default value,
- *      {@code 5} words are counted before and {@code 5} words are counter
- *      after.  This class always uses a symmetric window. <p>
+ *      {@value #DEFAULT_WINDOW_SIZE} words are counted before and {@value
+ *      #DEFAULT_WINDOW_SIZE} words are counter after.  This class always uses a
+ *      symmetric window. <p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
  *      </b></code> <br>
  *      <i>Default:</i> {@value #DEFAULT_VECTOR_LENGTH}
  *
- * <dd style="padding-top: .5em">This variable sets the number of dimensions to
+ * <dd style="padding-top: .5em">This property sets the number of dimensions to
  *      be used for the index and semantic vectors. <p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #USE_PERMUTATIONS_PROPERTY}
