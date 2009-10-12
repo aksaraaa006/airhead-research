@@ -35,18 +35,21 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * An implementation of the Beagle Semantic Space model. This implementation is
+ * An implementation of the FlyingHermit Semantic Space model. This implementation is
  * based on <p style="font-family:Garamond, Georgia, serif">Jones, M. N.,
  * Mewhort, D.  J.L. (2007).    Representing Word Meaning and Order Information
  * in a Composite Holographic Lexicon.    <i>Psychological Review</i>
@@ -64,7 +67,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Keith Stevens
  */
-public class Beagle implements SemanticSpace {
+public class FlyingHermit implements SemanticSpace {
 
     /**
      * The full context size used when scanning the corpus. This is the
@@ -73,10 +76,10 @@ public class Beagle implements SemanticSpace {
     public static final int CONTEXT_SIZE = 6;
 
     /**
-     * The Semantic Space name for Beagle
+     * The Semantic Space name for FlyingHermit
      */
-    public static final String BEAGLE_SSPACE_NAME = 
-        "beagle-semantic-space";
+    public static final String FLYING_HERMIT_SSPACE_NAME = 
+        "flying-hermit-semantic-space";
 
     /**
      * The class responsible for creating index vectors, and incorporating them
@@ -88,7 +91,7 @@ public class Beagle implements SemanticSpace {
      * A mapping for terms to their semantic vector representation. A {@code
      * Vector} is used as these representations may be large.
      */
-    private final ConcurrentMap<String, Vector> termHolographs;
+    private final ConcurrentMap<String, List<Vector> > termHolographs;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -105,12 +108,12 @@ public class Beagle implements SemanticSpace {
      */
     private int nextSize;
 
-    public Beagle(IndexBuilder builder, int vectorSize) {
+    public FlyingHermit(IndexBuilder builder, int vectorSize) {
         indexVectorSize = vectorSize;
         indexBuilder = builder;
         prevSize = builder.expectedSizeOfPrevWords();
         nextSize = builder.expectedSizeOfNextWords();
-        termHolographs = new ConcurrentHashMap<String, Vector>();
+        termHolographs = new ConcurrentHashMap<String, List<Vector> >();
     }
 
     /**
@@ -124,14 +127,17 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public double[] getVectorFor(String term) {
-        return termHolographs.get(term).toArray(indexVectorSize);
+        Vector finalVector = indexBuilder.getSemanticVector();
+        for (Vector v : termHolographs.get(term))
+            Vectors.add(finalVector, v);
+        return finalVector.toArray(indexVectorSize);
     }
 
     /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
-        return BEAGLE_SSPACE_NAME + "-" + indexVectorSize;
+        return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize;
     }
 
     /**
@@ -149,7 +155,9 @@ public class Beagle implements SemanticSpace {
         Queue<String> nextWords = new ArrayDeque<String>();
 
         Iterator<String> it = IteratorFactory.tokenize(document);
-        Map<String, Vector> documentVectors = new HashMap<String, Vector>();
+
+        Map<String, Vector> documentHolographs =
+            new HashMap<String, Vector>();
 
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
@@ -169,13 +177,12 @@ public class Beagle implements SemanticSpace {
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
-            Vector meaning = termHolographs.get(focusWord);
+            Vector meaning = documentHolographs.get(focusWord);
             if (meaning == null) {
                 meaning = indexBuilder.getSemanticVector();
-                documentVectors.put(focusWord, meaning);
+                documentHolographs.put(focusWord, meaning);
             }
-            indexBuilder.updateMeaningWithTerm(
-                    meaning, prevWords, nextWords);
+            indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
 
             // Push the focus word into previous word set for the next focus
             // word.
@@ -184,13 +191,22 @@ public class Beagle implements SemanticSpace {
                 prevWords.remove();
         }
 
-        for (Map.Entry<String, Vector> entry : documentVectors.entrySet()) {
-            synchronized (entry.getKey()) {
-                Vector existingVector = termHolographs.get(entry.getKey());
-                if (existingVector == null)
-                    termHolographs.put(entry.getKey(), entry.getValue());
-                else
-                    Vectors.add(existingVector, entry.getValue());
+        for (Map.Entry<String, Vector> entry :
+                documentHolographs.entrySet()) {
+            List<Vector> termVectors = null;
+            synchronized (termHolographs) {
+                termVectors = termHolographs.get(entry.getKey());
+                if (termVectors == null) {
+                    termVectors = new ArrayList<Vector>();
+                    termHolographs.put(entry.getKey(), termVectors);
+                }
+            }
+            synchronized (termVectors) {
+                // Compare the most recent vector to all the saved vectors.  If
+                // the vector with the highest similarity has a similarity over
+                // a threshold, incorporate this {@code Vector} to that
+                // winner.  Otherwise add this {@code Vector} as a new
+                // vector for the term.
             }
         }
     }

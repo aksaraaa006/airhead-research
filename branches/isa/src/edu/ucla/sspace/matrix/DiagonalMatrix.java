@@ -21,105 +21,117 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.Vector;
+
 
 /**
- * A special-case {@code Matrix} implementation for diagonal matrices.  This
+ * A special-case {@code Matrix} implementation for diagonal matrices. This
  * class provides a memory efficient representation and additional bounds
  * checking to ensure non-diagonal elements cannot be set.
  *
  * @author Keith Stevens 
  */
 public class DiagonalMatrix implements Matrix {
+        
+    private final int diags;
+    private double[] values;
     
-  private final int diags;
-  private double[] values;
-  
-  /**
-   */
-  public DiagonalMatrix(int numValues) {
-    diags = numValues;
-    values = new double[diags];
-  }
-
-  /**
-   */
-  public DiagonalMatrix(int numValues, double[] newValues) {
-    diags = numValues;
-    values = new double[diags];
-    for (int i = 0; i < diags; ++i)
-      values[i] = newValues[i];
-  }
-
-  /**
-   *
-   */    
-  private void checkIndices(int row, int col) {
-    if (row < 0 || col < 0 || row >= diags || col >= diags) {
-      throw new ArrayIndexOutOfBoundsException();
+    /**
+     */
+    public DiagonalMatrix(int numValues) {
+        diags = numValues;
+        values = new double[diags];
     }
-  }
 
-  /**
-   * {@inheritDoc}
-   */
-  public double get(int row, int col) {
-    if (row == col)
-      return values[row];
-    return 0;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public double[] getRow(int row) {
-    double[] returnRow = new double[diags];
-    returnRow[row] = values[row];
-    return returnRow;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public int columns() {
-    return diags;
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * @throws IllegalArgumentException if {@code row != col}
-   */
-  public void set(int row, int col, double val) {
-    checkIndices(row, col);
-    if (row != col) {
-      throw new IllegalArgumentException(
-	"cannot set non-diagonal elements in a DiagonalMatrix");
+    /**
+     */
+    public DiagonalMatrix(int numValues, double[] newValues) {
+        diags = numValues;
+        values = new double[diags];
+        for (int i = 0; i < diags; ++i)
+            values[i] = newValues[i];
     }
-    values[row] = val;
-  }
 
-  /**
-   * {@inheritDoc}
-   */
-  public void setRow(int row, double[] columns) {
-    values[row] = columns[row];
-  }
-  
-  /**
-   * {@inheritDoc}
-   */
-  public double[][] toDenseArray() {
-    double[][] m = new double[diags][diags];
-    for (int r = 0; r < diags; ++r) {
-      m[r][r] = values[r];
+    /**
+     *
+     */        
+    private void checkIndices(int row, int col) {
+        if (row < 0 || col < 0 || row >= diags || col >= diags) {
+            throw new ArrayIndexOutOfBoundsException();
+        }
     }
-    return m;
-  }
 
-  /**
-   *
-   */
-  public int rows() {
-    return diags;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public double get(int row, int col) {
+        if (row == col)
+            return values[row];
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getVector(int row) {
+        Vector vector = new SparseVector(diags);
+        vector.set(row, values[row]);
+        return vector;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] getRow(int row) {
+        double[] returnRow = new double[diags];
+        returnRow[row] = values[row];
+        return returnRow;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int columns() {
+        return diags;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException if {@code row != col}
+     */
+    public void set(int row, int col, double val) {
+        checkIndices(row, col);
+        if (row != col) {
+            throw new IllegalArgumentException(
+                    "cannot set non-diagonal elements in a DiagonalMatrix");
+        }
+        values[row] = val;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setRow(int row, double[] columns) {
+        values[row] = columns[row];
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    public double[][] toDenseArray() {
+        double[][] m = new double[diags][diags];
+        for (int r = 0; r < diags; ++r) {
+            m[r][r] = values[r];
+        }
+        return m;
+    }
+
+    /**
+     *
+     */
+    public int rows() {
+        return diags;
+    }
 }

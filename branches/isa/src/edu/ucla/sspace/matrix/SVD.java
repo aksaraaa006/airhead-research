@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.Matrix.Type;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -35,8 +38,6 @@ import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.matrix.MatrixIO.Format;
-import edu.ucla.sspace.matrix.Matrix.Type;
 
 /**
  * A utililty class for invoking different implementations of the <a

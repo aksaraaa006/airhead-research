@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.Vector;
+
+
 /**
  * An interface specification for interacting with matrix objects.
  *
@@ -76,6 +79,12 @@ public interface Matrix {
     double[] getRow(int row);
 
     /**
+     * Return a {@code Vector} for an entire row.  Implementations should return
+     * an approriately typed Vector.
+     */
+    Vector getVector(int row);
+
+    /**
      * Returns the number of columns in this matrix.
      */
     int columns();
@@ -101,4 +110,5 @@ public interface Matrix {
      * Note that the array itself is not made internal to the instance itself.
      */
     void setRow(int row, double[] columns);
+
 }

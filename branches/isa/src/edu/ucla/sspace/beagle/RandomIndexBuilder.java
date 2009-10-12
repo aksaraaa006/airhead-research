@@ -4,8 +4,8 @@ import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorGenerator;
 import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
-import edu.ucla.sspace.vector.SemanticVector;
-import edu.ucla.sspace.vector.SparseSemanticVector;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.SparseVector;
 
 import java.io.File;
 import java.util.Map;
@@ -27,7 +27,7 @@ public class RandomIndexBuilder implements IndexBuilder {
 
     /**
      * A mapping from terms to their Index Vector, stored as a {@code
-     * SemanticVector}.
+     * Vector}.
      */
     private Map<String, IndexVector> wordToIndexVector;
 
@@ -72,8 +72,8 @@ public class RandomIndexBuilder implements IndexBuilder {
     /**
      * Return an empty sparse semantic vector.
      */
-    public SemanticVector getSemanticVector() {
-        return new SparseSemanticVector(indexVectorSize);
+    public Vector getSemanticVector() {
+        return new SparseVector(indexVectorSize);
     }
 
     private IndexVector getIndexVector(String word) {
@@ -121,7 +121,7 @@ public class RandomIndexBuilder implements IndexBuilder {
      * @param meaning The semantic meaning.
      * @param vector The index vector of a co-occuring word.
      */
-    private void addToMeaning(SemanticVector meaning, IndexVector vector) {
+    private void addToMeaning(Vector meaning, IndexVector vector) {
         for (int p : vector.positiveDimensions())
             meaning.add(p, 1);
         for (int p : vector.negativeDimensions())
@@ -131,11 +131,11 @@ public class RandomIndexBuilder implements IndexBuilder {
     /**
      * Sum the index vectors of words in the given context to {@code meaning}.
      *
-     * @param meaning The {@code SemanticVector} of the focus word.
+     * @param meaning The {@code Vector} of the focus word.
      * @param prevWords The words prior to the focus word in the context.
      * @param nextWords The Words after the focus word in the context.
      */
-    public void updateMeaningWithTerm(SemanticVector meaning,
+    public void updateMeaningWithTerm(Vector meaning,
                                       Queue<String> prevWords,
                                       Queue<String> nextWords) {
         for (String word : prevWords)
