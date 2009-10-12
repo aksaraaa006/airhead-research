@@ -22,10 +22,9 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.FileListDocumentIterator;
@@ -80,7 +79,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
  *        output formatting to use when generating the semantic space ({@code
- *        .sspace}) file.  See {@link SemanticSpaceUtils} for format details.
+ *        .sspace}) file.  See {@link SemanticSpaceIO} for format details.
  *
  *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
  *        documents.  The default is one per core.
@@ -336,7 +335,7 @@ public abstract class GenericMain {
 	    : SSpaceFormat.TEXT;
 
 	startTime = System.currentTimeMillis();
-	SemanticSpaceUtils.printSemanticSpace(space, output, format);
+	SemanticSpaceIO.save(space, output, format);
 	endTime = System.currentTimeMillis();
 	verbose("printed space in %.3f seconds%n",
 		((endTime - startTime) / 1000d));
