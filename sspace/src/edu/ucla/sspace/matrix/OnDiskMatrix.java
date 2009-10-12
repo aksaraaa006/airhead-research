@@ -207,25 +207,31 @@ public class OnDiskMatrix implements Matrix {
     }
     
     public void setRow(int row, double[] val) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(baos);
-            for (int i = 0; i < val.length; ++i) {
-            dos.writeDouble(val[i]);
-            }
-            setRow(row, baos.toByteArray());
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+        if (val.length != cols)
+            throw new IllegalArgumentException(
+                "The number of values does not match the number of columns");
+	try {
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    DataOutputStream dos = new DataOutputStream(baos);
+	    for (int i = 0; i < val.length; ++i) {
+		dos.writeDouble(val[i]);
+	    }
+	    setRow(row, baos.toByteArray());
+	} catch (IOException ioe) {
+	    throw new IOError(ioe); // rethrow unchecked
+	}
     }
 
     public void setRow(int row, byte[] valuesAsBytes) {
-        try {
-            seek(row, 0);
-            matrix.write(valuesAsBytes, 0, valuesAsBytes.length);
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+        if (valuesAsBytes.length != cols * BYTES_PER_DOUBLE)
+            throw new IllegalArgumentException(
+                "The number of values does not match the number of columns");
+	try {
+	    seek(row, 0);
+	    matrix.write(valuesAsBytes, 0, valuesAsBytes.length);
+	} catch (IOException ioe) {
+	    throw new IOError(ioe); // rethrow unchecked
+	}
     }
 
     /**

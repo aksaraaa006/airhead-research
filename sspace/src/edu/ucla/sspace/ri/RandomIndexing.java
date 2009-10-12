@@ -21,21 +21,22 @@
 
 package edu.ucla.sspace.ri;
 
+import edu.ucla.sspace.common.Filterable;
+import edu.ucla.sspace.common.SemanticSpace;
+
+import edu.ucla.sspace.text.IteratorFactory;
+
+import edu.ucla.sspace.util.SparseIntArray;
+
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.IOError;
 
 import java.lang.reflect.Constructor;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
@@ -43,16 +44,6 @@ import java.util.Random;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
-
-import edu.ucla.sspace.common.Filterable;
-import edu.ucla.sspace.common.SemanticSpace;
-
-import edu.ucla.sspace.text.IteratorFactory;
-
-import edu.ucla.sspace.util.Duple;
-import edu.ucla.sspace.util.IntegerMap;
-import edu.ucla.sspace.util.SparseIntArray;
-
 
 /**
  * A co-occurrence based approach to statistical semantics that uses a
@@ -117,16 +108,17 @@ import edu.ucla.sspace.util.SparseIntArray;
  *      </b></code> <br>
  *      <i>Default:</i> {@value #DEFAULT_WINDOW_SIZE}
  *
- * <dd style="padding-top: .5em">This variable sets the number of words before
+ * <dd style="padding-top: .5em">This property sets the number of words before
  *      and after that are counted as co-occurring.  With the default value,
- *      {@code 5} words are counted before and {@code 5} words are counter
- *      after.  This class always uses a symmetric window. <p>
+ *      {@value #DEFAULT_WINDOW_SIZE} words are counted before and {@value
+ *      #DEFAULT_WINDOW_SIZE} words are counter after.  This class always uses a
+ *      symmetric window. <p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
  *      </b></code> <br>
  *      <i>Default:</i> {@value #DEFAULT_VECTOR_LENGTH}
  *
- * <dd style="padding-top: .5em">This variable sets the number of dimensions to
+ * <dd style="padding-top: .5em">This property sets the number of dimensions to
  *      be used for the index and semantic vectors. <p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #USE_PERMUTATIONS_PROPERTY}

@@ -67,23 +67,28 @@ public class Similarity {
      *
      * @throws Error if a {@link NoSuchMethodException} is thrown
      */
-    public static Method getMethod(SimType similarityType) {
+    @Deprecated public static Method getMethod(SimType similarityType) {
         String methodName = null;
-
-        switch (similarityType) {
-        case COSINE:
-            methodName = "cosineSimilarity";
+	switch (similarityType) {
+	case COSINE:
+	    methodName = "cosineSimilarity";
+	    break;
+	case PEARSON_CORRELATION:
+	    methodName = "correlation";
+	    break;
+	case EUCLIDEAN:
+	    methodName = "euclideanSimilarity";
+	    break;
+        case SPEARMAN_RANK_CORRELATION:
+            methodName = "spearmanRankCorrelationCoefficient";
             break;
-        case PEARSON_CORRELATION:
-            methodName = "correlation";
+        case JACCARD_INDEX:
+            methodName = "jaccardIndex";
             break;
-        case EUCLIDEAN:
-            methodName = "euclideanSimilarity";
-            break;
-        }
-    
-        Method m = null;
-
+        default:
+            assert false : similarityType;
+	}
+ 	Method m = null;
         try { 
             m = Similarity.class.getMethod(methodName,
                            new Class[] {double[].class, double[].class});
@@ -93,6 +98,37 @@ public class Similarity {
         }
 
         return m;
+    }
+
+    /**
+     * Calculates the similarity of the two vectors using the provided
+     * similarity measure.
+     *
+     * @param similarityType the similarity evaluation to use when comparing
+     *        {@code a} and {@code b}
+     * @param a a vector
+     * @param b a vector
+     *
+     * @return the similarity according to the specified measure
+     */
+    public static double getSimilarity(SimType similarityType, 
+                                       double[] a, double[] b) {
+        
+	switch (similarityType) {
+	case COSINE:
+	    return cosineSimilarity(a, b);
+	case PEARSON_CORRELATION:
+	    return correlation(a, b);
+	case EUCLIDEAN:
+	    return euclideanSimilarity(a, b);
+        case SPEARMAN_RANK_CORRELATION:
+            return spearmanRankCorrelationCoefficient(a, b);
+        case JACCARD_INDEX:
+            return jaccardIndex(a, b);
+        default:
+            assert false : similarityType;
+	}
+        return 0;
     }
 
     /**

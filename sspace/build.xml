@@ -85,7 +85,7 @@
     </javac>
   </target>
 
-  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar">
+  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
   
@@ -117,6 +117,22 @@
 	<attribute name="Implementation-Title" value="Coals"/>
 	<attribute name="Implementation-Version" value="${version}"/>
 	<attribute name="Main-Class" value="edu.ucla.sspace.mains.CoalsMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="isa-jar" depends="compile">
+    <jar destfile="${bin.dir}/isa.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Incremental Semantic Analysis"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.IsaMain"/>
       </manifest>
     </jar>
   </target>
