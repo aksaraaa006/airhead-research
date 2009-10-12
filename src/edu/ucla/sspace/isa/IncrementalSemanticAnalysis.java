@@ -48,6 +48,7 @@ import java.util.Set;
 
 import java.util.logging.Logger;
 
+
 /**
  * An implementation of Incremental Semantic Analysis (ISA).  This
  * implementation is based on the following paper.  <ul>
@@ -62,9 +63,124 @@ import java.util.logging.Logger;
  *
  * </ul>
  *
+ * <p> ISA is notable in that it builds semantics incrementally using both
+ * information from the co-occurrence of a word <i>and</i> the semantics of the
+ * co-occurring word.  Similar to <a
+ * href="http://code.google.com/p/airhead-research/wiki/RandomIndexing">Random
+ * Indexing</a> (RI), ISA uses index vectors to reduce the number of dimensions
+ * needed to represent the full co-occurrence matrix.  In contrast, other
+ * semantic space algorithms such as RI, HAL and BEAGLE, ISA uses the semantics
+ * of the co-occurring words to update the semantics of their neighbors.
+ * Formally, the semantics of a word <i>w<sub>i</sub></i> are updated for the
+ * co-occurrence of another word <i>w<sub>j</sub></i> as: <div
+ * style="font-family:Constantia, Lucidabright, Lucida\ Serif, Lucida, DejaVu\
+ * Serif, Bitstream\ Vera\ Serif, Liberation\ Serif, Georgia, serif">
+ * sem(<i>w<sub>i</sub></i>) += i &middot (m<sub>c</sub> &middot
+ * sem(<i>w<sub>j</sub></i>) + (1 - m<sub>c</sub>) &middot
+ * IV(<i>w<sub>j</sub></i>)) </div> <br> where <i>sem</i> is the semantics for a
+ * word, and <i>IV</i> is the index vector for a word.  <i>i</i> defines the
+ * impact rate, which is how much the co-occurrence affects the semantics.
+ * <i>m<sub>c</sub></i> defines the degree to which the semantics affect the
+ * co-occurring word's semantics.  This weighting factor is based on the
+ * frequency of occurrence; the semantics of frequently occurring words cause
+ * less impact.  <i>m<sub>c</sub></i> is formally defined as 1 &divide;
+ * <i>e</i><sup>freq(word) &divide; <i>k<sub>m</sub></i></sup>, where
+ * <i>k<sub>m</sub></i> is a weighting factor for determing how quickly the
+ * semantic of a a word diminish in their affect on co-occurring words.
+ *
+ * <p> This class defines the following configurable properties that may be set
+ * using either the System properties or using the {@link
+ * IncrementalSemanticAnalysis#IncrementalSemanticAnalysis(Properties)}
+ * constructor.  The two most important properties for configuring ISA are
+ * {@value #IMPACT_RATE_PROPERTY} and {@value #HISTORY_DECAY_RATE_PROPERTY}.
+ * The values that these properties set have been initialized to the values
+ * specified in Baroni et al.
+ *
+ * <dl style="margin-left: 1em">
+ 
+ * <dt> <i>Property:</i> <code><b>{@value #IMPACT_RATE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_IMPACT_RATE}
+ *
+ * <dd style="padding-top: .5em">This property specifies the impact rate of
+ *      co-occurrence, which specifies to what degree does the co-occurrence of
+ *      one word affect the semantics of the other.  This rate affects both the
+ *      impact of the index vector for a co-occurring word as well as the impact
+ *      of the semantics.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #HISTORY_DECAY_RATE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_HISTORY_DECAY_RATE}
+ *
+ * <dd style="padding-top: .5em">This property specifies the decay rate at which
+ *       the semantics of co-occurring words lessen their impact.  A word's
+ *       frequency of occurrence is combined with the history decay rate to
+ *       indicate the degree to which the word's semantics will influence
+ *       (i.e. be added to) the semantics of a co-occurring word.  High values
+ *       will cause the semantics of frequently occurring words to have minimal
+ *       impact on other words' semantics.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #WINDOW_SIZE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_WINDOW_SIZE}
+ *
+ * <dd style="padding-top: .5em">This property sets the number of words before
+ *      and after that are counted as co-occurring.  With the default value,
+ *      {@code 5} words are counted before and {@code 5} words are counter
+ *      after.  This class always uses a symmetric window. <p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_VECTOR_LENGTH}
+ *
+ * <dd style="padding-top: .5em">This property sets the number of dimensions to
+ *      be used for the index and semantic vectors. <p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #USE_PERMUTATIONS_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code false}
+ *
+ * <dd style="padding-top: .5em">This property specifies whether to enable
+ *      permuting the index vectors of co-occurring words.  Enabling this option
+ *      will cause the word semantics to include word-ordering information.
+ *      However this option is best used with a larger corpus.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link edu.ucla.sspace.ri.DefaultPermutationFunction 
+ *      DefaultPermutationFunction} 
+ *
+ * <dd style="padding-top: .5em">This property specifies the fully qualified
+ *      class name of a {@link PermutationFunction} instance that will be used
+ *      to permute index vectors.  If the {@value #USE_PERMUTATIONS_PROPERTY} is
+ *      set to {@code false}, the value of this property has no effect.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #INDEX_VECTOR_GENERATOR_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link RandomIndexVectorGenerator} 
+ *
+ * <dd style="padding-top: .5em">This property specifies the source of {@link
+ *       IndexVector} instances.  Users who want to provide more fine-grain
+ *       control over the number of and distribution of values in the index
+ *       vectors can provide their own {@link IndexVectorGenerator} instance by
+ *       setting this value to the fully qualified class name.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #USE_SPARSE_SEMANTICS_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code true} 
+ *
+ * <dd style="padding-top: .5em">This property specifies whether to use a sparse
+ *       encoding for each word's semantics.  Using a sparse encoding can result
+ *       in a large saving in memory, while requiring more time to process each
+ *       document.<p>
+ *
+ * </dl> <p>
+ *
  * <p> Due to the incremental nature of ISA, instance of this class are
  * <i>not</i> designed to be multi-threaded.  Documents must be processed
- * sequentially to properly compute the something.
+ * sequentially to properly model how the semantics of co-occurring words affect
+ * each other.  Multi-threading would induce an ambiguous ordering to
+ * co-occurrence.
  * 
  * @author David Jurgens
  */
@@ -284,7 +400,6 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
 	wordToIndexVector = new HashMap<String,IndexVector>();
 	wordToMeaning = new HashMap<String,SemanticVector>();
         wordToOccurrences = new HashMap<String,Integer>();
-	//semanticFilter = new HashSet<String>();
     }
 
 
@@ -293,6 +408,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * {@code PermutationFunction}.
      *
      * @param className the fully qualified name of a class
+     *
+     * @return a permutation function of the specified class name
      */ 
     private static PermutationFunction 
 	    loadPermutationFunction(String className) {
@@ -305,6 +422,18 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
 	}
     }
 
+    /**
+     * Reflectively instantiates an {@code IndexVectorGenerator} using the
+     * specified class name and passing in the {@code Properties} into its
+     * constructor.
+     *
+     * @param className the name of the {@code IndexVectorGenerator} to
+     *        instantiate
+     * @param properties the set of properties to use in initializing the
+     *        generator
+     *
+     * @return the index vector generator
+     */
     @SuppressWarnings("unchecked") private static IndexVectorGenerator 
 	    loadIndexVectorGenerator(String className, Properties properties) {
 	try {
@@ -515,7 +644,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     }
     
     /**
-     * Does nothing, as ISA in an incremental algorithm.
+     * Does nothing, as ISA in an incremental algorithm and no final processing
+     * needs to be performed on the space.
      *
      * @properties {@inheritDoc}
      */
@@ -534,20 +664,6 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
 	wordToIndexVector.clear();
 	wordToIndexVector.putAll(m);
     }
-
-    /**
-     * {@inheritDoc} Note that all words will still have an index vector
-     * assigned to them, which is necessary to properly compute the semantics.
-     *
-     * @param semanticsToRetain the set of words for which semantics should be
-     *        computed.
-     */
-    /*
-    public void setSemanticFilter(Set<String> semanticsToRetain) {
-	semanticFilter.clear();
-	semanticFilter.addAll(semanticsToRetain);
-    }
-    */
 
     /**
      * Update the semantics using the weighed combination of the semantics of
@@ -579,7 +695,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     }
 
     /**
-     * An abstract for the vector that stores the semantics of a word.
+     * An abstraction for the vector that stores the semantics of a word.
      */
     interface SemanticVector {
 
