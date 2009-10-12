@@ -28,8 +28,6 @@ import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorUtil;
 import edu.ucla.sspace.ri.RandomIndexing;
 
-import edu.ucla.sspace.text.IteratorFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.IOError;

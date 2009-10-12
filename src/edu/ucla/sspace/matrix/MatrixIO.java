@@ -555,7 +555,6 @@ public class MatrixIO {
 	return m;
     }
 
-    
     /**
      * Creates a {@code Matrix} from the data encoded as {@link
      * Format#SVDLIBC_DENSE_TEXT} in provided file.
