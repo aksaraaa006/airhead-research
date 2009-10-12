@@ -140,7 +140,7 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(int row) {
+    public Vector getRowVector(int row) {
         return new DenseVector(getRow(row));
     }
 

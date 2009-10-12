@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author David Jurgens
  */
-public class AtomicGrowingMatrix implements ConcurrentMatrix {
+public class AtomicGrowingMatrix implements AtomicMatrix {
     
     /**
      * The read lock for reading rows from this {@code AtomicGrowingMatrix}.
@@ -81,6 +81,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     private final Map<Integer, AtomicVector> sparseMatrix;
 
     /**
+     * Create an empty {@code AtomicGrowingMatrix}.
      */
     public AtomicGrowingMatrix() {
         this.rows = new AtomicInteger(0);
@@ -96,6 +97,9 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
         denseArrayWriteLock = rwLock.writeLock();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public double addAndGet(int row, int col, double delta) {
         AtomicVector rowEntry = getRow(row, col, true);
         return rowEntry.addAndGet(col, delta);    
@@ -191,7 +195,7 @@ public class AtomicGrowingMatrix implements ConcurrentMatrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(int row) {
+    public Vector getRowVector(int row) {
         return Vectors.immutableVector(getRow(row, -1, false));
     }
 

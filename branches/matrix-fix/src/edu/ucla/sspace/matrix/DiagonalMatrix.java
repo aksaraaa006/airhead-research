@@ -34,32 +34,47 @@ import edu.ucla.sspace.vector.Vector;
  */
 public class DiagonalMatrix implements Matrix {
         
-    private final int diags;
+    /**
+     * The number diagonal values in this {@code Matrix}.
+     */
     private double[] values;
     
     /**
+     * Create a new {@code DiagonalMatrix with {@code numValues} rows and
+     * columns.
+     *
+     * @param numValues The number of rows, columns, and diagonals in this
+     *                  {@code DiagonalMatrix}.
      */
     public DiagonalMatrix(int numValues) {
-        diags = numValues;
-        values = new double[diags];
+        values = new double[numValues];
     }
 
     /**
+     * Create a new {@code DiagonalMatrix with {@code newValues} as the diagonal
+     * values.
+     *
+     * @param newValues The values to use as the diagonals of this {@code
+     *                  Matrix}.
      */
-    public DiagonalMatrix(int numValues, double[] newValues) {
-        diags = numValues;
-        values = new double[diags];
-        for (int i = 0; i < diags; ++i)
+    public DiagonalMatrix(double[] newValues) {
+        values = new double[newValues.length];
+        for (int i = 0; i < values.length; ++i)
             values[i] = newValues[i];
     }
 
     /**
+     * Check that the given row and column values are non-negative, and less
+     * than the number of diagonals in this {@code DiagonalMatrix}.
      *
+     * @param row The row index to check.
+     * @param col The col index to check.
+     *
+     * @throws IllegalArgumentException if either index is invalid.
      */        
     private void checkIndices(int row, int col) {
-        if (row < 0 || col < 0 || row >= diags || col >= diags) {
+        if (row < 0 || col < 0 || row >= values.length || col >= values.length)
             throw new ArrayIndexOutOfBoundsException();
-        }
     }
 
     /**
@@ -74,8 +89,8 @@ public class DiagonalMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(int row) {
-        Vector vector = new SparseVector(diags);
+    public Vector getRowVector(int row) {
+        Vector vector = new SparseVector(values.length);
         vector.set(row, values[row]);
         return vector;
     }
@@ -84,7 +99,7 @@ public class DiagonalMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        double[] returnRow = new double[diags];
+        double[] returnRow = new double[values.length];
         returnRow[row] = values[row];
         return returnRow;
     }
@@ -93,7 +108,7 @@ public class DiagonalMatrix implements Matrix {
      * {@inheritDoc}
      */
     public int columns() {
-        return diags;
+        return values.length;
     }
 
     /**
@@ -112,26 +127,37 @@ public class DiagonalMatrix implements Matrix {
 
     /**
      * {@inheritDoc}
+     *
+     * Note that any values are not on the diagonal are ignored.
      */
-    public void setRow(int row, double[] columns) {
-        values[row] = columns[row];
+    public void setRow(int row, double[] values) {
+        values[row] = values[row];
     }
     
     /**
      * {@inheritDoc}
+     *
+     * Note that any values are not on the diagonal are ignored.
+     */
+    public void setRow(int row, Vector vector) {
+        values[row] = vector.get(row);
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-        double[][] m = new double[diags][diags];
-        for (int r = 0; r < diags; ++r) {
+        double[][] m = new double[values.length][values.length];
+        for (int r = 0; r < values.length; ++r) {
             m[r][r] = values[r];
         }
         return m;
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     public int rows() {
-        return diags;
+        return values.length;
     }
 }

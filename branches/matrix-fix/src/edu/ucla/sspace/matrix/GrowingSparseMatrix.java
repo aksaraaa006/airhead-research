@@ -91,7 +91,7 @@ public class GrowingSparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(int row) {
+    public Vector getRowVector(int row) {
         return Vectors.immutableVector(sparseMatrix.get(row));
     }
 
@@ -149,6 +149,33 @@ public class GrowingSparseMatrix implements Matrix {
 
         for (int col = 0; col < cols; ++col) {
             double val = columns[col];
+            if (val != 0)
+                sparseMatrix.get(row).set(col, val);
+        }
+    }
+
+    /** 
+     * {@inheritDoc}
+     *
+     * The size of the matrix will be expanded if either row or
+     * col is larger than the largest previously seen row or column value.
+     * When the matrix is expanded by either dimension, the values for the new
+     * row/column will all be assumed to be zero.
+     */
+    public void setRow(int row, Vector columns) {
+        if (columns.length() < cols) {
+            throw new IllegalArgumentException(
+            "invalid number of columns: " + columns.length());
+        } else
+            cols = columns.length();
+
+        // Resize the number of rows if the given row is larger than the max.
+        if (row >= sparseMatrix.size())
+            while (sparseMatrix.size() <= row)
+                sparseMatrix.add(new SparseVector());
+
+        for (int col = 0; col < cols; ++col) {
+            double val = columns.get(col);
             if (val != 0)
                 sparseMatrix.get(row).set(col, val);
         }

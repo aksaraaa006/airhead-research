@@ -61,8 +61,8 @@ public class SynchronizedMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized Vector getVector(int row) {
-        return m.getVector(row);
+    public synchronized Vector getRowVector(int row) {
+        return m.getRowVector(row);
     }
 
     /**
@@ -89,8 +89,15 @@ public class SynchronizedMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized void setRow(int row, double[] columns) {
-        m.setRow(row, columns);
+    public synchronized void setRow(int row, double[] values) {
+        m.setRow(row, values);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void setRow(int row, Vector values) {
+        m.setRow(row, values);
     }
      
     /**

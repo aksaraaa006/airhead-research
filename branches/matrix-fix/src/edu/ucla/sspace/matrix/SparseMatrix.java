@@ -84,7 +84,7 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(int row) {
+    public Vector getRowVector(int row) {
         return Vectors.immutableVector(sparseMatrix[row]);
     }
 
@@ -120,6 +120,19 @@ public class SparseMatrix implements Matrix {
         }
         for (int col = 0; col < cols; ++col) {
             sparseMatrix[row].set(col, columns[col]);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setRow(int row, Vector values) {
+        if (values.length() != cols) {
+            throw new IllegalArgumentException(
+            "invalid number of columns: " + values.length());
+        }
+        for (int col = 0; col < cols; ++col) {
+            sparseMatrix[row].set(col, values.get(col)); 
         }
     }
 
