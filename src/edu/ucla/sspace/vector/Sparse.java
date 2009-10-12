@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens 
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,13 +19,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.matrix;
+package edu.ucla.sspace.vector;
 
+/**
+ * Interface for a {@code Vector} implementation indicating that it is
+ * sparse, and providing functionality to retrieve the non zero indices.
+ *
+ * @author Keith Stevens
+ */
+public interface Sparse extends Vector {
 
-public interface ConcurrentMatrix extends Matrix {
-
-    double getAndAdd(int row, int col, double delta);
-
-    double addAndGet(int row, int col, double delta);
-
+    /**
+     * Return an array of all the non zero indices in this Sparse
+     * implementation.
+     */
+    int[] getNonZeroIndices();
 }

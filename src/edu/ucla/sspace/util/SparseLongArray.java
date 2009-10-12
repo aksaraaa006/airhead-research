@@ -123,6 +123,15 @@ public class SparseLongArray implements SparseArray<Long> {
     public Long get(int index) {
 	return getPrimitive(index);
     }
+
+    /**
+     * Returns the indices of the array that contain non-{@code 0} values.
+     *
+     * @return the indices that contain values
+     */
+    public int[] getElementIndices() {
+        return indices;
+    }
     
     /**
      * Retrieve the value at specified index or 0 if no value had been

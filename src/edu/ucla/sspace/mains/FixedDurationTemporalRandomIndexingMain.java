@@ -150,7 +150,7 @@ public class FixedDurationTemporalRandomIndexingMain {
      * Whether to print the semantic shift and other statistics for the
      * interesting word set for each slice.
      */
-    private boolean printInterestingWordShifts; 
+    private boolean printInterestingTokenShifts; 
 
     /**
      * Whether to write the incremental {@code .sspace} files to disk during the
@@ -248,7 +248,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 	options.addOption('R', "saveSlices", "write semantic slices as " +
                           ".sspace files to disk", false, null, 
                           "Output Options");
-	options.addOption('P', "printInterestingWordShifts", "prints the "
+	options.addOption('P', "printInterestingTokenShifts", "prints the "
 			  + "vectors for each interesting word", false, null, 
 			  "Output Options");
 	options.addOption('N', "printInterestingTokenNeighbors", "prints the "
@@ -388,9 +388,9 @@ public class FixedDurationTemporalRandomIndexingMain {
                 argOptions.getIntOption("printInterestingTokenNeighbors");        
         }
 
-        if (argOptions.hasOption("printInterestingWordShifts")) {
-            printInterestingWordShifts =
-                argOptions.getBooleanOption("printInterestingWordShifts");
+        if (argOptions.hasOption("printInterestingTokenShifts")) {
+            printInterestingTokenShifts =
+                argOptions.getBooleanOption("printInterestingTokenShifts");
         }
         if (argOptions.hasOption("printInterestingTokenNeighborComparison")) {
             compareNeighbors = true;
@@ -706,7 +706,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 
 	if (argOptions.hasOption("sliceDuration")) {
 	    props.setProperty(FixedDurationTemporalRandomIndexing.
-			      SEMANTIC_SLICE_DURATION_PROPERTY,
+			      SEMANTIC_PARTITION_DURATION_PROPERTY,
 			      argOptions.getStringOption("sliceDuration"));
 	}
 	
@@ -772,7 +772,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 
 	// final variables necessary due to the anonymous inner class
 	final boolean writeSemanticSlices = saveSlices;
-	final boolean writeSemanticShifts = printInterestingWordShifts;
+	final boolean writeSemanticShifts = printInterestingTokenShifts;
 	final boolean writeInterestingWordNeighbors = 
             interestingWordNeighbors > 0;
 
@@ -934,12 +934,13 @@ public class FixedDurationTemporalRandomIndexingMain {
 	    
 	    "  The remaining options require the use of the -I " + 
 	    "--interestingTokenList option to\n  specify a set of word for use"+
-	    "in tracking temporal changes.\n\n  2) For each of the interesting"+
-	    "words, -P, --printSemanticShifts will track\n     the semantics" +
-	    "through time and report the semantic shift along with other\n" +
+	    " in tracking temporal changes.\n\n  2) For each of the interesting"
+	    + "words, -P, --printInterestingTokenShifts will track\n" +
+            "     the semantics" +
+	    " through time and report the semantic shift along with other\n" +
 	    "     distance statistics.\n\n"  +
 	    "  3) For each of the interesting words, -N, " +
-	    "--printInterestingTokenNeighbors\n     will print the nearest" +
+	    "--printInterestingTokenNeighbors\n     will print the nearest " +
 	    "neighbor for each in the semantic space.  The\n     number " +
 	    "of neighbors to print should be specified.\n\n" +
 
@@ -947,12 +948,12 @@ public class FixedDurationTemporalRandomIndexingMain {
             "similar\n     neighbors using the --printInterestingTokenNeighbors"
             + " and then compare\n     those neighbors with each other using " +
             "the\n     --printInterestingTokenNeighborComparison option.  " +
-            "This creates a file\n     with the pair-wise cosine similarities" +
-            "for all neighbors.  Note that this\n     option requires both" +
+            "This creates a file\n     with the pair-wise cosine similarities "+
+            "for all neighbors.  Note that this\n     option requires both " +
             "flags to be specified.\n\n" +
 
 	    "Semantic filters limit the set of tokens for which the " +
-	    "semantics are kept.\nThis limits the potential memory overhead" +
+	    "semantics are kept.\nThis limits the potential memory overhead " +
 	    "for calculating semantics for a\nlarge set of words." +
 
 	    "\n\nThe -C, --compoundWords option specifies a file name of " +
@@ -960,7 +961,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 	    " \"white house\".  Each compound\ntoken should be specified on " +
 	    "its own line.\n\n" +
 
-	    "Token filter configurations are specified as a comman-separated " +
+	    "Token filter configurations are specified as a comma-separated " +
 	    "list of file\nnames, where each file name has an optional string" +
 	    " with values:inclusive or\nexclusive, which species whether the" +
 	    " token are to be used for an exclusive\nfilter. The default " +

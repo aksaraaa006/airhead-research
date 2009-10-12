@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.Vector;
+
 
 /**
  * A {@code Matrix} decorator class that provides thread-safe access to a
@@ -39,55 +41,62 @@ public class SynchronizedMatrix implements Matrix {
      * the provided {@code Matrix} instance.
      */
     public SynchronizedMatrix(Matrix matrix) {
-	this.m = matrix;
+        this.m = matrix;
     }
     
     /**
      * {@inheritDoc}
      */
     public synchronized int columns() {
-	return m.columns();
+        return m.columns();
     }
            
     /**
      * {@inheritDoc}
      */
     public synchronized double get(int row, int col) {
-	return m.get(row, col);
+        return m.get(row, col);
     }
            
     /**
      * {@inheritDoc}
      */
+    public synchronized Vector getVector(int row) {
+        return m.getVector(row);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public synchronized double[] getRow(int row) {
-	return m.getRow(row);
+        return m.getRow(row);
     }
            
     /**
      * {@inheritDoc}
      */
     public synchronized int rows() {
-	return m.rows();
+        return m.rows();
     }
            
     /**
      * {@inheritDoc}
      */
     public synchronized void set(int row, int col, double val) {
-	m.set(row, col, val);
+        m.set(row, col, val);
     }
 
     /**
      * {@inheritDoc}
      */
     public synchronized void setRow(int row, double[] columns) {
-	m.setRow(row, columns);
+        m.setRow(row, columns);
     }
      
     /**
      * {@inheritDoc}
      */
     public synchronized double[][] toDenseArray() {
-	return m.toDenseArray();
+        return m.toDenseArray();
     }
 }

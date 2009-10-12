@@ -78,6 +78,7 @@ public interface SemanticSpace {
      * @return the vector for the provided word or {@code null} if the word was
      *         not in the space.
      */
+    // TODO: Rename to getVector.  Also change to return a sspace Vector.
     double[] getVectorFor(String word);
 
     /**
@@ -106,5 +107,6 @@ public interface SemanticSpace {
     /**
      * Returns the length of vectors in this semantic space.
      */
+    // TODO: rename getVectorLength.
     int getVectorSize();
 }

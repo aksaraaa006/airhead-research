@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.Vector;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -104,6 +106,21 @@ public class ArrayMatrix implements Matrix {
     public double get(int row, int col) {
 	int index = getIndex(row, col);
 	return matrix[index];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getVector(int row) {
+        if (row >= rows) {
+            throw new ArrayIndexOutOfBoundsException("row: " + rows);
+        }
+        Vector rowArr = new DenseVector(cols);
+        int index = getIndex(row, 0);
+        for (int i = 0; i < cols; ++i) {
+            rowArr.set(i, matrix[index++]);
+        }
+        return rowArr;
     }
 
     /**
