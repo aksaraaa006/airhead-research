@@ -130,34 +130,31 @@ public class ArrayMatrix implements Matrix {
      * @throws ArrayIndexOutOfBoundsException if 
      */
     private void checkIndices(int row, int col) {
-    if (row < 0 || row >= rows) {
-        throw new ArrayIndexOutOfBoundsException("row: " + row);
-    }
-    else if (col < 0 || col >= cols) {
-        throw new ArrayIndexOutOfBoundsException("column: " + col);
-    }
+        if (row < 0 || row >= rows)
+            throw new ArrayIndexOutOfBoundsException("row: " + row);
+        else if (col < 0 || col >= cols)
+            throw new ArrayIndexOutOfBoundsException("column: " + col);
     }
 
     /**
      * {@inheritDoc}
      */
     public double get(int row, int col) {
-    int index = getIndex(row, col);
-    return matrix[index];
+        int index = getIndex(row, col);
+        return matrix[index];
     }
 
     /**
      * {@inheritDoc}
      */
     public Vector getRowVector(int row) {
-        if (row >= rows) {
+        if (row >= rows)
             throw new ArrayIndexOutOfBoundsException("row: " + rows);
-        }
+
         Vector rowArr = new DenseVector(cols);
         int index = getIndex(row, 0);
-        for (int i = 0; i < cols; ++i) {
+        for (int i = 0; i < cols; ++i)
             rowArr.set(i, matrix[index++]);
-        }
         return rowArr;
     }
 
@@ -165,71 +162,79 @@ public class ArrayMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-    if (row >= rows) {
-        throw new ArrayIndexOutOfBoundsException("row: " + rows);
-    }
-    double[] rowArr = new double[cols];
-    int index = getIndex(row, 0);
-    for (int i = 0; i < cols; ++i) {
-        rowArr[i] = matrix[index++];
-    }
-    return rowArr;
+        if (row >= rows)
+            throw new ArrayIndexOutOfBoundsException("row: " + rows);
+
+        double[] rowArr = new double[cols];
+        int index = getIndex(row, 0);
+        for (int i = 0; i < cols; ++i)
+            rowArr[i] = matrix[index++];
+        return rowArr;
     }
 
     /**
      * {@inheritDoc}
      */
     public int columns() {
-    return cols;
+        return cols;
     }
  
     /**
      * Returns the one-dimension index in the matrix for the row and column.
      */
     private int getIndex(int row, int col) {
-    return (row * cols) + col;
+        return (row * cols) + col;
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
-    int index = getIndex(row, col);
-    matrix[index] = val;
+        int index = getIndex(row, col);
+        matrix[index] = val;
     }
 
     /**
      * {@inheritDoc}
      */
     public void setRow(int row, double[] columns) {
-    if (columns.length != cols) {
-        throw new IllegalArgumentException(
-        "invalid number of columns: " + columns.length);
-    }
-    for (int col = 0; col < cols; ++col) {
-        matrix[getIndex(row,col)] = columns[col];
-    }
+        if (columns.length != cols)
+            throw new IllegalArgumentException(
+                    "invalid number of columns: " + columns.length);
+
+        for (int col = 0; col < cols; ++col)
+            matrix[getIndex(row,col)] = columns[col];
     }
     
     /**
      * {@inheritDoc}
      */
-    public double[][] toDenseArray() {
-    double[][] m = new double[rows][cols];
-    int i = 0;
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-        m[row][col] = matrix[i++];
-        }
-    }
-    return m;
+    public void setRow(int row, Vector values) {
+        if (values.length() != cols)
+            throw new IllegalArgumentException(
+                    "invalid number of columns: " + values.length());
+
+        for (int col = 0; col < cols; ++col)
+            matrix[getIndex(row,col)] = values.get(col);
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
-    public int rows() {
-    return rows;
+    public double[][] toDenseArray() {
+        double[][] m = new double[rows][cols];
+        int i = 0;
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col)
+                m[row][col] = matrix[i++];
+        }
+        return m;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public int rows() {
+        return rows;
+    }
 }

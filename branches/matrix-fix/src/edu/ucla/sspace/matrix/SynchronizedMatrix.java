@@ -29,7 +29,7 @@ import edu.ucla.sspace.vector.Vector;
  * backing {@code Matrix} instance.
  */
 
-public class SynchronizedMatrix implements Matrix {
+public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     
     /**
      * The backing instance of the matrix.
@@ -44,6 +44,24 @@ public class SynchronizedMatrix implements Matrix {
         this.m = matrix;
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized double addAndGet(int row, int col, double delta) {
+        double value = m.get(row, col) + delta;
+        m.set(row, col, value);
+        return value;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized double getAndAdd(int row, int col, double delta) {
+        double value = m.get(row, col);
+        m.set(row, col, value + delta);
+        return value;
+    }
+
     /**
      * {@inheritDoc}
      */

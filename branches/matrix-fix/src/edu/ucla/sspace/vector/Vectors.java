@@ -88,6 +88,29 @@ public class Vectors {
     }
 
     /**
+     * Copy all of the values from one {@code Vector} into another.  After the
+     * operation, all of the values in {@code dest} will be the same as that of
+     * {@code source}.  The legnth of {@code dest} must be as long as the length
+     * of {@code source}.  Once completed {@code dest} is returned.
+     *
+     * @param dest The {@code Vector} to copy values into.
+     * @param source The {@code Vector} to copy values from.
+     * 
+     * @return {@code dest} after being copied from {@code source}.
+     *
+     * @throws IllegalArgumentException if the length of {@code dest} is less
+     *                                  than that of {@code source}.
+     */
+    public static Vector copy(Vector dest, Vector source) {
+        if (dest.length() != source.length())
+            throw new IllegalArgumentException("Vector lengths do not match");
+
+        for (int i = 0; i < source.length(); ++i)
+            dest.set(i, source.get(i));
+        return dest;
+    }
+
+    /**
      * Return a new {@code Vector} which is the summation of {@code vector2} and
      * {@code vector1}.
      *

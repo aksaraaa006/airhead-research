@@ -225,6 +225,16 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         rowEntry.set(columns);
         denseArrayReadLock.unlock();
     }
+
+    /**
+     * @{inheritDoc}
+     */
+    public void setRow(int row, Vector values) {
+        AtomicVector rowEntry = getRow(row, values.length() - 1, true);
+        denseArrayReadLock.lock();
+        Vectors.copy(rowEntry, values);
+        denseArrayReadLock.unlock();
+    }
   
     /**
      * {@inheritDoc}

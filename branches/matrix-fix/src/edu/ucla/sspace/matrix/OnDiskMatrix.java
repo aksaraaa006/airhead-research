@@ -23,6 +23,7 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -54,6 +55,9 @@ public class OnDiskMatrix implements Matrix {
      */
     private static final int HEADER_LENGTH = 8;
 
+    /**
+     * The number of bytes in a double.
+     */
     private static final int BYTES_PER_DOUBLE = 8;
 
     /**
@@ -61,8 +65,14 @@ public class OnDiskMatrix implements Matrix {
      */
     private final RandomAccessFile matrix; 
 
+    /**
+     * The number of rows stored in this {@code Matrix}.
+     */
     private final int rows;
 
+    /**
+     * The number of columns stored in this {@code Matrix}.
+     */
     private final int cols;
 
     /**
@@ -117,12 +127,10 @@ public class OnDiskMatrix implements Matrix {
      * exception if they are not.
      */
     private void checkIndices(int row, int col) {
-        if (row < 0 || row >= rows) {
+        if (row < 0 || row >= rows)
             throw new ArrayIndexOutOfBoundsException("row: " + row);
-        }
-        else if (col < 0 || col >= cols) {
+        else if (col < 0 || col >= cols)
             throw new ArrayIndexOutOfBoundsException("column: " + col);
-        }
     }
 
     /**
@@ -183,11 +191,10 @@ public class OnDiskMatrix implements Matrix {
     private void seek(long row, long col) {
         try {
             long index = (row * cols * BYTES_PER_DOUBLE)
-            + (col * BYTES_PER_DOUBLE) 
-            + HEADER_LENGTH;
-            if (index != matrix.getFilePointer()) {
-            matrix.seek(index);
-        }
+                         + (col * BYTES_PER_DOUBLE) 
+                         + HEADER_LENGTH;
+            if (index != matrix.getFilePointer())
+                matrix.seek(index);
         } catch (IOException ioe) {
             throw new IOError(ioe); // rethrow unchecked
         }
@@ -206,19 +213,45 @@ public class OnDiskMatrix implements Matrix {
         }
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public void setRow(int row, double[] val) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(baos);
-            for (int i = 0; i < val.length; ++i) {
-            dos.writeDouble(val[i]);
-            }
+
+            for (int i = 0; i < val.length; ++i)
+                dos.writeDouble(val[i]);
             setRow(row, baos.toByteArray());
         } catch (IOException ioe) {
             throw new IOError(ioe); // rethrow unchecked
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void setRow(int row, Vector values) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            for (int i = 0; i < values.length(); ++i)
+                dos.writeDouble(values.get(i));
+            setRow(row, baos.toByteArray());
+        } catch (IOException ioe) {
+            throw new IOError(ioe); // rethrow unchecked
+        }
+    }
+
+    /**
+     * Interpret the bytes stored in {@code valuesAsBytes} and store them as the
+     * values for {@code row}.
+     *
+     * @param row The row to set values.
+     * @param valuesAsBytes The values of {@code row} as a byte array.
+     */
     public void setRow(int row, byte[] valuesAsBytes) {
         try {
             seek(row, 0);
@@ -236,9 +269,8 @@ public class OnDiskMatrix implements Matrix {
             matrix.seek(0);
             double[][] m = new double[rows][cols];
             for (int row = 0; row < rows; ++row) {
-            for (int col = 0; col < cols; ++col) {
-                m[row][col] = matrix.readDouble();
-            }
+                for (int col = 0; col < cols; ++col)
+                    m[row][col] = matrix.readDouble();
             }
             return m;
         } catch (IOException ioe) {
