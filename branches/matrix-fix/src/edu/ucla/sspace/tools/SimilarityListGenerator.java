@@ -21,6 +21,19 @@
 
 package edu.ucla.sspace.tools;
 
+import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.FileBasedSemanticSpace;
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.Similarity.SimType;
+import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceUtils;
+import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.WordComparator;
+
+import edu.ucla.sspace.util.BoundedSortedMap;
+import edu.ucla.sspace.util.Pair;
+import edu.ucla.sspace.util.SortedMultiMap;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -38,20 +51,6 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.FileBasedSemanticSpace;
-import edu.ucla.sspace.common.Similarity;
-import edu.ucla.sspace.common.Similarity.SimType;
-import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
-import edu.ucla.sspace.common.WordComparator;
-
-import edu.ucla.sspace.matrix.VectorIO;
-
-import edu.ucla.sspace.util.BoundedSortedMap;
-import edu.ucla.sspace.util.Pair;
-import edu.ucla.sspace.util.SortedMultiMap;
 
 /**
  * A utility tool for generating lists of most similar words for each word in a
