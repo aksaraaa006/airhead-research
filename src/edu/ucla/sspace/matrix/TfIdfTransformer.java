@@ -19,10 +19,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.lsa;
+package edu.ucla.sspace.matrix;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class TfIdfTransformer implements MatrixTransformer {
 
