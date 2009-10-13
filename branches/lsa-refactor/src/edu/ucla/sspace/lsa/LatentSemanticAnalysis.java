@@ -21,6 +21,16 @@
 
 package edu.ucla.sspace.lsa;
 
+import edu.ucla.sspace.common.SemanticSpace;
+
+import edu.ucla.sspace.matrix.LogEntropyTransformer;
+import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixTransformer;
+import edu.ucla.sspace.matrix.SVD;
+
+import edu.ucla.sspace.text.IteratorFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
@@ -42,14 +52,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.logging.Logger;
-
-import edu.ucla.sspace.common.SemanticSpace;
-
-import edu.ucla.sspace.matrix.Matrices;
-import edu.ucla.sspace.matrix.Matrix;
-import edu.ucla.sspace.matrix.SVD;
-
-import edu.ucla.sspace.text.IteratorFactory;
 
 /**
  * An implementation of Latent Semantic Analysis (LSA).  This implementation is

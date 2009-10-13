@@ -23,6 +23,8 @@ package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.common.Clustering;
 import edu.ucla.sspace.common.IndexBuilder;
+import edu.ucla.sspace.matrix.LogEntropyTransformer;
+import edu.ucla.sspace.matrix.MatrixTransformer;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.SpectralClustering;
@@ -32,9 +34,6 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SVD;
 
 import edu.ucla.sspace.text.WordIterator;
-
-import edu.ucla.sspace.lsa.MatrixTransformer;
-import edu.ucla.sspace.lsa.LogEntropyTransformer;
 
 import edu.ucla.sspace.vector.Vector;
 
