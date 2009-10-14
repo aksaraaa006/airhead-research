@@ -24,7 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.util.IntegerMap;
 
 import edu.ucla.sspace.vector.AtomicVector;
-import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -140,6 +140,29 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         return rowEntry.getAndAdd(col, delta);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public double[] getColumn(int column) {
+        rowReadLock.lock();
+        double[] values = new double[rows.get()];
+        for (int row = 0; row < rows.get(); ++row)
+            values[row] = get(row, column);
+        rowReadLock.unlock();
+        return values;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getColumnVector(int column) {
+        rowReadLock.lock();
+        Vector values = new CompactSparseVector(rows.get());
+        for (int row = 0; row < rows.get(); ++row)
+            values.set(row, get(row, column));
+        rowReadLock.unlock();
+        return values;
+    }
 
     /**
      * {@inheritDoc}
@@ -165,6 +188,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      *         and it was not to be created if absent
      */
     private AtomicVector getRow(int row, int col, boolean createIfAbsent) {
+        checkIndices(row, col);
+
         rowReadLock.lock();
         AtomicVector rowEntry = sparseMatrix.get(row);
         rowReadLock.unlock();
@@ -176,7 +201,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
             // this thread was waiting on the lock
             rowEntry = sparseMatrix.get(row);
             if (rowEntry == null) {
-                    rowEntry = new AtomicVector(new SparseVector());
+                    rowEntry = new AtomicVector(new CompactSparseVector());
 
                 // update the bounds as necessary
                 if (row >= rows.get()) {
@@ -210,12 +235,30 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
+        checkIndices(row, col);
+
         AtomicVector rowEntry = getRow(row, col, true);
         denseArrayReadLock.lock();
         rowEntry.set(col, val);
         denseArrayReadLock.unlock();
     }
 
+    /**
+     * @{inheritDoc}
+     */
+    public void setColumn(int column, double[] values) {
+        for (int row = 0; row < rows.get(); ++row)
+            set(row, column, values[row]);
+    }
+
+    /**
+     * @{inheritDoc}
+     */
+    public void setColumn(int column, Vector values) {
+        for (int row = 0; row < rows.get(); ++row)
+            set(row, column, values.get(row));
+    }
+  
     /**
      * @{inheritDoc}
      */

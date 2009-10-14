@@ -82,6 +82,24 @@ public interface Matrix {
     double get(int row, int col);
 
     /**
+     * Returns the entire column.
+     *
+     * @param column The column to return an array for.
+     *
+     * @return A double array representing the column at {@code column}.
+     */
+    double[] getColumn(int column);
+
+    /**
+     * Returns the entire column.
+     *
+     * @param column The column to return a {@code Vector} for.
+     *
+     * @return A {@code Vector} representing the column at {@code column}.
+     */
+    Vector getColumnVector(int column);
+
+    /**
      * Returns the entire row.
      *
      * @param row The row to return an array for.
@@ -130,6 +148,26 @@ public interface Matrix {
      * @param val The new value of the specified cell.
      */
     void set(int row, int col, double val);
+
+    /**
+     * Sets the values for the column of this {@code Matrix} using the provided
+     * array.  Note that the array itself is not made internal to the instance
+     * itself.
+     *
+     * @param column The column to update.
+     * @param columns The values to update into {@code column}.
+     */
+    void setColumn(int column, double[] values);
+
+    /**
+     * Sets the values for the column of this {@code Matrix} using the provided
+     * {@code Vector}.  Note that the {@code Vector} itself is not made internal
+     * to the instance itself.
+     *
+     * @param column The column to update.
+     * @param values The values to update into {@code column}.
+     */
+    void setColumn(int column, Vector values);
 
     /**
      * Sets the values for the row of this {@code Matrix} using the provided

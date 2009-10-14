@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 
@@ -81,6 +81,8 @@ public class DiagonalMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double get(int row, int col) {
+        checkIndices(row, col);
+
         if (row == col)
             return values[row];
         return 0;
@@ -89,19 +91,45 @@ public class DiagonalMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
-        Vector vector = new SparseVector(values.length);
-        vector.set(row, values[row]);
-        return vector;
+    public double[] getColumn(int column) {
+        checkIndices(0, column);
+
+        double[] columnValues = new double[values.length];
+        columnValues[column] = values[column];
+        return columnValues;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getColumnVector(int column) {
+        checkIndices(0, column);
+
+        Vector columnValues = new CompactSparseVector(values.length);
+        columnValues.set(column, values[column]);
+        return columnValues;
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
+        checkIndices(row, 0);
+
         double[] returnRow = new double[values.length];
         returnRow[row] = values[row];
         return returnRow;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getRowVector(int row) {
+        checkIndices(row, 0);
+
+        Vector vector = new CompactSparseVector(values.length);
+        vector.set(row, values[row]);
+        return vector;
     }
 
     /**
@@ -118,6 +146,7 @@ public class DiagonalMatrix implements Matrix {
      */
     public void set(int row, int col, double val) {
         checkIndices(row, col);
+
         if (row != col) {
             throw new IllegalArgumentException(
                     "cannot set non-diagonal elements in a DiagonalMatrix");
@@ -130,7 +159,31 @@ public class DiagonalMatrix implements Matrix {
      *
      * Note that any values are not on the diagonal are ignored.
      */
+    public void setColumn(int column, double[] values) {
+        checkIndices(values.length - 1, column);
+
+        values[column] = values[column];
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * Note that any values are not on the diagonal are ignored.
+     */
+    public void setColumn(int column, Vector vector) {
+        checkIndices(vector.length() - 1, column);
+
+        values[column] = vector.get(column);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Note that any values are not on the diagonal are ignored.
+     */
     public void setRow(int row, double[] values) {
+        checkIndices(row, values.length - 1);
+
         values[row] = values[row];
     }
     
@@ -140,6 +193,8 @@ public class DiagonalMatrix implements Matrix {
      * Note that any values are not on the diagonal are ignored.
      */
     public void setRow(int row, Vector vector) {
+        checkIndices(row, vector.length() - 1);
+
         values[row] = vector.get(row);
     }
 

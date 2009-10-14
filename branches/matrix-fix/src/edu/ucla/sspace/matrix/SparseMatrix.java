@@ -21,14 +21,14 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
 
 /**
  * A sparse {@code Matrix} based on the Yale Sparse Matrix Format, as
- * implemented in {@link SparseVector}.  Each row is allocated a pair of arrays
+ * implemented in {@link CompactSparseVector}.  Each row is allocated a pair of arrays
  * which keeps the non-zero column values in column order.  Lookups are O(log n)
  * where n is the number of non-zero values for the largest row.   The size of
  * this matrix is fixed, and attempts to access rows or columns beyond the size
@@ -49,19 +49,19 @@ public class SparseMatrix implements Matrix {
     private final int cols;
 
     /**
-     * Each row is defined as a {@link SparseVector} which does most of the
+     * Each row is defined as a {@link CompactSparseVector} which does most of the
      * work.
      */
-    private final SparseVector[] sparseMatrix;
+    private final CompactSparseVector[] sparseMatrix;
 
     /**
      */
     public SparseMatrix(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
-        sparseMatrix = new SparseVector[rows];
+        sparseMatrix = new CompactSparseVector[rows];
         for (int i = 0; i < rows; ++i)
-            sparseMatrix[i] = new SparseVector(cols);
+            sparseMatrix[i] = new CompactSparseVector(cols);
     }
 
     /**
@@ -84,8 +84,21 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
-        return Vectors.immutableVector(sparseMatrix[row]);
+    public double[] getColumn(int column) {
+        double[] values = new double[rows];
+        for (int row = 0; row < rows; ++row)
+            values[row] = get(row, column);
+        return values;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getColumnVector(int column) {
+        Vector values = new CompactSparseVector(rows);
+        for (int row = 0; row < rows; ++row)
+            values.set(row, get(row, column));
+        return values;
     }
 
     /**
@@ -93,6 +106,13 @@ public class SparseMatrix implements Matrix {
      */
     public double[] getRow(int row) {
         return sparseMatrix[row].toArray(cols);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getRowVector(int row) {
+        return Vectors.immutableVector(sparseMatrix[row]);
     }
 
     /**
@@ -113,10 +133,34 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
+    public void setColumn(int column, double[] values) {
+        if (values.length != rows) {
+            throw new IllegalArgumentException(
+                    "invalid number of rows: " + values.length);
+        }
+        for (int row = 0; row < rows; ++row)
+            set(row, column, values[row]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setColumn(int column, Vector values) {
+        if (values.length() != rows) {
+            throw new IllegalArgumentException(
+                    "invalid number of rows: " + values.length());
+        }
+        for (int row = 0; row < rows; ++row)
+            set(row, column, values.get(row));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void setRow(int row, double[] columns) {
         if (columns.length != cols) {
             throw new IllegalArgumentException(
-            "invalid number of columns: " + columns.length);
+                "invalid number of columns: " + columns.length);
         }
         for (int col = 0; col < cols; ++col) {
             sparseMatrix[row].set(col, columns[col]);
@@ -129,7 +173,7 @@ public class SparseMatrix implements Matrix {
     public void setRow(int row, Vector values) {
         if (values.length() != cols) {
             throw new IllegalArgumentException(
-            "invalid number of columns: " + values.length());
+                "invalid number of columns: " + values.length());
         }
         for (int col = 0; col < cols; ++col) {
             sparseMatrix[row].set(col, values.get(col)); 

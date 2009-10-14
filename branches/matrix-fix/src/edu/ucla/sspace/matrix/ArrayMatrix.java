@@ -73,7 +73,6 @@ public class ArrayMatrix implements Matrix {
      * @throws IllegalArgumentExceptiona if matrix2d is invalid.
      */
     public ArrayMatrix(double[][] matrix2d) {
-
       if (matrix2d == null)
           throw new IllegalArgumentException("invalid matrix dimensions");
 
@@ -140,6 +139,8 @@ public class ArrayMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double get(int row, int col) {
+        checkIndices(row, col);
+
         int index = getIndex(row, col);
         return matrix[index];
     }
@@ -147,28 +148,45 @@ public class ArrayMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
-        if (row >= rows)
-            throw new ArrayIndexOutOfBoundsException("row: " + rows);
+    public double[] getColumn(int column) {
+        checkIndices(0, column);
 
-        Vector rowArr = new DenseVector(cols);
-        int index = getIndex(row, 0);
-        for (int i = 0; i < cols; ++i)
-            rowArr.set(i, matrix[index++]);
-        return rowArr;
+        double[] values = new double[rows];
+        for (int row = 0; row < rows; ++row)
+            values[row] = get(row, column);
+        return values;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getColumnVector(int column) {
+        return new DenseVector(getColumn(column));
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        if (row >= rows)
-            throw new ArrayIndexOutOfBoundsException("row: " + rows);
+        checkIndices(row, 0);
 
         double[] rowArr = new double[cols];
         int index = getIndex(row, 0);
         for (int i = 0; i < cols; ++i)
             rowArr[i] = matrix[index++];
+        return rowArr;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getRowVector(int row) {
+        checkIndices(row, 0);
+
+        Vector rowArr = new DenseVector(cols);
+        int index = getIndex(row, 0);
+        for (int i = 0; i < cols; ++i)
+            rowArr.set(i, matrix[index++]);
         return rowArr;
     }
 
@@ -190,6 +208,8 @@ public class ArrayMatrix implements Matrix {
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
+        checkIndices(row, col);
+
         int index = getIndex(row, col);
         matrix[index] = val;
     }
@@ -197,10 +217,28 @@ public class ArrayMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
+    public void setColumn(int column, double[] values) {
+        checkIndices(values.length - 1, column);
+
+        for (int row = 0; row < rows; ++row)
+            matrix[getIndex(row,column)] = values[column];
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    public void setColumn(int column, Vector values) {
+        checkIndices(values.length() - 1, column);
+
+        for (int row = 0; row < rows; ++row)
+            matrix[getIndex(row,column)] = values.get(row);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void setRow(int row, double[] columns) {
-        if (columns.length != cols)
-            throw new IllegalArgumentException(
-                    "invalid number of columns: " + columns.length);
+        checkIndices(row, columns.length - 1);
 
         for (int col = 0; col < cols; ++col)
             matrix[getIndex(row,col)] = columns[col];
@@ -210,9 +248,7 @@ public class ArrayMatrix implements Matrix {
      * {@inheritDoc}
      */
     public void setRow(int row, Vector values) {
-        if (values.length() != cols)
-            throw new IllegalArgumentException(
-                    "invalid number of columns: " + values.length());
+        checkIndices(row, values.length() - 1);
 
         for (int col = 0; col < cols; ++col)
             matrix[getIndex(row,col)] = values.get(col);

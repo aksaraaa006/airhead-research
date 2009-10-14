@@ -41,7 +41,7 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public class AmortizedSparseVector implements Vector, Sparse {
+public class AmortizedSparseVector implements Vector, SparseVector {
 
     /**
      * An arraylist of non zero values for this row, stored in the correct

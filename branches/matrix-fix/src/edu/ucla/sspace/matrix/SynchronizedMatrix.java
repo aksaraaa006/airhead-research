@@ -79,8 +79,15 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized Vector getRowVector(int row) {
-        return m.getRowVector(row);
+    public synchronized double[] getColumn(int column) {
+        return m.getColumn(column);
+    }
+           
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized Vector getColumnVector(int column) {
+        return m.getColumnVector(column);
     }
 
     /**
@@ -93,6 +100,13 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
+    public synchronized Vector getRowVector(int row) {
+        return m.getRowVector(row);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public synchronized int rows() {
         return m.rows();
     }
@@ -102,6 +116,20 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
      */
     public synchronized void set(int row, int col, double val) {
         m.set(row, col, val);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void setColumn(int column, double[] values) {
+        m.setColumn(column, values);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void setColumn(int column, Vector values) {
+        m.setColumn(column, values);
     }
 
     /**

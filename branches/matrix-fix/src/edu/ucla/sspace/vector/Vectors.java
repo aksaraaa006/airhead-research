@@ -72,8 +72,8 @@ public class Vectors {
 
         // If vector is a sparse vector, simply get the non zero values and
         // add them to this instance.
-        if (vector2 instanceof Sparse) {
-            addSparseValues(vector1, (Sparse) vector2);
+        if (vector2 instanceof SparseVector) {
+            addSparseValues(vector1, (SparseVector) vector2);
         } else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -126,10 +126,10 @@ public class Vectors {
         Vector finalVector;
         // If vector is a sparse vector, simply get the non zero values and
         // add them to this instance.
-        if (vector2 instanceof Sparse) {
-            finalVector = new SparseVector(vector1.length());
-            addSparseValues(finalVector, (Sparse) vector1);
-            addSparseValues(finalVector, (Sparse) vector2);
+        if (vector2 instanceof SparseVector) {
+            finalVector = new CompactSparseVector(vector1.length());
+            addSparseValues(finalVector, (SparseVector) vector1);
+            addSparseValues(finalVector, (SparseVector) vector2);
         } else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -144,14 +144,14 @@ public class Vectors {
     }
 
     /**
-     * Add the values from a {@code SparseVector} to a {@code Vector}.  Only the
-     * non-zero indices will be traversed to save time.
+     * Add the values from a {@code CompactSparseVector} to a {@code Vector}.
+     * Only the non-zero indices will be traversed to save time.
      *
      * @param destination The vector to write new values to.
      * @param source The vector to read values from.
      */
     private static void addSparseValues(Vector destination,
-                                        Sparse source) {
+                                        SparseVector source) {
         int[] otherIndices = source.getNonZeroIndices();
         for (int index : otherIndices)
             destination.add(index, source.get(index));

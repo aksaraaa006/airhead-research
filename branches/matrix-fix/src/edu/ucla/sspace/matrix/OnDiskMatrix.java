@@ -99,8 +99,8 @@ public class OnDiskMatrix implements Matrix {
             this.cols = cols;
             
             // initialize the matrix in memory;
-            long length = 
-            (HEADER_LENGTH + ((long)rows * (long)cols * BYTES_PER_DOUBLE));
+            long length =
+                (HEADER_LENGTH + ((long)rows * (long)cols * BYTES_PER_DOUBLE));
             matrix.setLength(length);
             matrix.seek(0);
             matrix.writeInt(rows);
@@ -148,8 +148,18 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
-        return new DenseVector(getRow(row));
+    public double[] getColumn(int column) {
+        double[] values = new double[rows];
+        for (int row = 0; row < rows; ++row)
+            values[row] = get(row, column);
+        return values;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getColumnVector(int column) {
+        return new DenseVector(getColumn(column));
     }
 
     /**
@@ -174,6 +184,13 @@ public class OnDiskMatrix implements Matrix {
         } catch (IOException ioe) {
             throw new IOError(ioe); // rethrow unchecked
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getRowVector(int row) {
+        return new DenseVector(getRow(row));
     }
 
     /**
@@ -213,6 +230,22 @@ public class OnDiskMatrix implements Matrix {
         }
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    public void setColumn(int column, double[] values) {
+        for (int row = 0; row < rows; ++row)
+            set(row, column, values[row]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setColumn(int column, Vector values) {
+        for (int row = 0; row < rows; ++row)
+            set(row, column, values.get(row));
+    }
+
     /**
      * {@inheritDoc}
      */
