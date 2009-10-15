@@ -24,7 +24,10 @@ package edu.ucla.sspace.matrix;
 
 /**
  * An interface for any {@code Matrix} which wants to support atomic behavior.
- * All implementations must be threadsafe.
+ * All implementations must be thread safe such that each operation is atomic.
+ * It is acceptable for several operations to be many read, but anytime a
+ * modification operation takes place, there must be only one thread performing
+ * a modification and no other threads reading data.
  *
  * @author David Jurgens
  */

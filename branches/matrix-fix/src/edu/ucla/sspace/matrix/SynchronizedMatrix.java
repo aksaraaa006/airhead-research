@@ -25,7 +25,7 @@ import edu.ucla.sspace.vector.Vector;
 
 
 /**
- * A {@code Matrix} decorator class that provides thread-safe access to a
+ * A {@code Matrix} decorator class that provides thread safe access to a
  * backing {@code Matrix} instance.
  */
 

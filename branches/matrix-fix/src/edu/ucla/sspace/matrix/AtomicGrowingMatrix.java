@@ -70,7 +70,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     private AtomicInteger rows;
 
-    /** The number of columns represented in this {@code AtomicGrowingMatrix}.
+    /**
+     * The number of columns represented in this {@code AtomicGrowingMatrix}.
      */
     private AtomicInteger cols;
   
@@ -81,7 +82,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     private final Map<Integer, AtomicVector> sparseMatrix;
 
     /**
-     * Create an empty {@code AtomicGrowingMatrix}.
+     * Create an {@code AtomicGrowingMatrix} with 0 rows and 0 columns.
      */
     public AtomicGrowingMatrix() {
         this.rows = new AtomicInteger(0);
