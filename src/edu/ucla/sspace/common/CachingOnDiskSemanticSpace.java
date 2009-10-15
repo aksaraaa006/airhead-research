@@ -37,6 +37,7 @@ import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  * A {@link SemanticSpace} where most vector data is kept on disk, but
  * frequently accessed data is kept in memory.  This class is designed for large
@@ -82,6 +83,9 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
      * the file with the specified name.
      *
      * @param filename the name of a file containing a semantic space
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public CachingOnDiskSemanticSpace(String filename) throws IOException {
         this(new File(filename));
@@ -92,6 +96,9 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
      * the specified file.
      *
      * @param file a file containing a semantic space
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the fil
      */
     public CachingOnDiskSemanticSpace(File file) throws IOException {
         backingSpace = new OnDiskSemanticSpace(file);
@@ -123,7 +130,7 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
     public synchronized double[] getVectorFor(String word) {
         double[] vector = wordToVector.get(word);
         if (vector != null)
-            return vector ;
+            return vector;
         vector = backingSpace.getVectorFor(word);
         if (vector != null)
             wordToVector.put(word, vector);
@@ -139,6 +146,8 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
 
     /**
      * Not supported; throws an {@link UnsupportedOperationException} if called.
+     *
+     * @throws an {@link UnsupportedOperationException} if called.
      */
     public void processDocument(BufferedReader document) { 
         throw new UnsupportedOperationException(
@@ -147,6 +156,8 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
 
     /**
      * Not supported; throws an {@link UnsupportedOperationException} if called.
+     *
+     * @throws an {@link UnsupportedOperationException} if called.
      */
     public void processSpace(Properties props) { 
         throw new UnsupportedOperationException(

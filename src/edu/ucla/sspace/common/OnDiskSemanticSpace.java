@@ -121,38 +121,50 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     /**
      * Creates the {@link OnDiskSemanticSpace} from the file.
      *
-     * @param filename 
+     * @param filename the name of a semantic space file
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
+     * @throws Error if the 4-byte header for the file contains an unrecognized
+     *         semantic space format
      */
-    public OnDiskSemanticSpace(String filename) {
+    public OnDiskSemanticSpace(String filename) throws IOException {
 	this(new File(filename));
     }
 
     /**
      * Creates the {@link OnDiskSemanticSpace} from the provided file.
      *
-     * @param file
+     * @param file a file containing a store semantic space
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
+     * @throws Error if the 4-byte header for the file contains an unrecognized
+     *         semantic space format
      */
-    public OnDiskSemanticSpace(File file) {
+    public OnDiskSemanticSpace(File file) throws IOException {
         containsHeader = true;
-        try {
-            SSpaceFormat format = SemanticSpaceIO.getFormat(file);
-            if (format == null)
-                throw new Error("Unrecognzied format in " +
-                                "file: " + file.getName());
+        SSpaceFormat format = SemanticSpaceIO.getFormat(file);
+        if (format == null)
+            throw new Error("Unrecognzied format in " +
+                            "file: " + file.getName());
             loadOffsetsFromFormat(file, format);
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
     }
 
     /**
-     * Creates the {@link OnDiskSemanticSpace} from the provided file in
-     * the specified format.
+     * Creates the {@link OnDiskSemanticSpace} from the provided file in the
+     * specified format.  This constructor should only be used for loading
+     * semantic space files that do not have the 4-byte header indicating their
+     * format.
      *
-     * @param file 
-     * @param format
+     * @param file a file containing a semantic space
+     * @param format the format of the semanti space.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    @Deprecated public OnDiskSemanticSpace(File file, SSpaceFormat format) {
+    @Deprecated public OnDiskSemanticSpace(File file, SSpaceFormat format) 
+            throws IOException {
         containsHeader = false;
         loadOffsetsFromFormat(file, format);
     }
@@ -161,42 +173,47 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * Loads the words and offets for each word's vector in the semantic space
      * file using the format as a guide to how the semantic space data is stored
      * in the file.
+     * 
+     * @param file a file containing semantic space data
+     * @param format the format of the data in the file
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    private void loadOffsetsFromFormat(File file, SSpaceFormat format) {
+    private void loadOffsetsFromFormat(File file, SSpaceFormat format) 
+            throws IOException {
 	this.format = format;
 	spaceName = file.getName();
 
-	// NOTE: Use a LinkedHashMap here because this will ensure that the words
-	// are returned in the same row-order as the matrix.  This generates better
-	// disk I/O behavior for accessing the matrix since each word is directly
-	// after the previous on disk.
+	// NOTE: Use a LinkedHashMap here because this will ensure that the
+	// words are returned in the same row-order as the matrix.  This
+	// generates better disk I/O behavior for accessing the matrix since
+	// each word is directly after the previous on disk.
 	termToOffset = new LinkedHashMap<String,Long>();
 	long start = System.currentTimeMillis();
 	int dims = -1;
 	RandomAccessFile raf = null;
 	RandomAccessBufferedReader lnr = null;
-	try {
-	    switch (format) {
-	    case TEXT:
-		lnr = new RandomAccessBufferedReader(file);
-		dims = loadTextOffsets(lnr);
-		break;
-	    case BINARY:
-		raf = new RandomAccessFile(file, "r");
-		dims = loadBinaryOffsets(raf);
-		break;
-	    case SPARSE_TEXT:
-		lnr = new RandomAccessBufferedReader(file);
-		dims = loadSparseTextOffsets(lnr);
-		break;
-	    case SPARSE_BINARY:
-		raf = new RandomAccessFile(file, "r");
-		dims = loadSparseBinaryOffsets(raf);
-		break;
-	    }
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}  
+        switch (format) {
+        case TEXT:
+            lnr = new RandomAccessBufferedReader(file);
+            dims = loadTextOffsets(lnr);
+            break;
+        case BINARY:
+            raf = new RandomAccessFile(file, "r");
+            dims = loadBinaryOffsets(raf);
+            break;
+        case SPARSE_TEXT:
+            lnr = new RandomAccessBufferedReader(file);
+            dims = loadSparseTextOffsets(lnr);
+            break;
+        case SPARSE_BINARY:
+            raf = new RandomAccessFile(file, "r");
+            dims = loadSparseBinaryOffsets(raf);
+            break;
+        default:
+            assert false : format;
+        }
 	if (LOGGER.isLoggable(Level.FINE)) {
 	    LOGGER.fine("loaded " + format + " .sspace file in " +
 			(System.currentTimeMillis() - start) + "ms");
