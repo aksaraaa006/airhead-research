@@ -197,8 +197,12 @@ public class HALMain extends GenericMain {
  	System.out.println(
  	    "usage: java HALMain [options] <output-dir>\n" + 
 	    argOptions.prettyPrint() + "\n" +
+
+            // HAL specifics
 	    "Note that the --retain and --threshold properties are mutually " + 
 	    "exclusive;\nusing both will cause an exception\n\n" + 
+
+            // Token Filter Description
 	    "Token filter configurations are specified as a comman-separated " +
 	    "list of file\nnames, where each file name has an optional string" +
 	    " with values:inclusive or\nexclusive, which species whether the" +
@@ -206,10 +210,19 @@ public class HALMain extends GenericMain {
 	    "value is include. An example configuration might look like:\n" +
 	    "  --tokenFilter=english-dictionary.txt=include," +
 	    "stop-list.txt=exclude" +
+
+            // Compound Token Description
 	    "\n\nThe -C, --compoundWords option specifies a file name of " +
 	    "multiple tokens that\nshould be counted as a single word, e.g." +
 	    " \"white house\".  Each compound\ntoken should be specified on " +
 	    "its own line." +
+
+            // S-Space Format
+            "\n\nThe output of the program is a semantic space stored in the " +
+            "specified format.\nValid options are text, sparse_text, binary, " +
+            "and sparse_binary." +
+
+            // Tag
 	    "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
     }
 }

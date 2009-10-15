@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens 
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -26,11 +26,19 @@ import edu.ucla.sspace.util.SparseDoubleArray;
 /**
  * A {@code Vector} instance that keeps only the non-zero values of
  * the semantics in memory, thereby saving space at the expense of time.
- * Internally this class is a wrapper for {@link SparseDoubleArray}, allowing
- * the sparse array functionaltiy to work as a {@code Vector}.
+ *
+ * {@see SparseDoubleArray} for an implementation of the functionality.
+ *
+ * @author Keith Stevens
  */
-public class SparseVector implements Vector {
-    SparseDoubleArray vector;
+public class SparseVector implements Vector, Sparse {
+
+    /**
+     * The {@code SparseDoubleArray} which provides most of the functionality in
+     * this class.
+     */
+    private SparseDoubleArray vector;
+
     /**
      * Creates a {@code SparseVector} that grows to the maximum size set
      * by {@link Double#MAX_VALUE}.
@@ -52,34 +60,16 @@ public class SparseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public void addVector(Vector vector) {
-        // Skip vectors of different lengths.
-        if (vector.length() != length())
-            return;
-
-        if (vector instanceof SparseVector) {
-            SparseVector v = (SparseVector) vector;
-            // If vector is a sparse vector, simply get the non zero values and
-            // add them to this instance.
-            int[] otherIndicies = v.getNonZeroIndicies();
-            for (int index : otherIndicies)
-                add(index, vector.get(index));
-        } else {
-            // Otherwise, inspect all values of vector, and only add the non
-            // zero values.
-            for (int i = 0; i < length(); ++i) {
-                double value = vector.get(i);
-                if (value != 0d)
-                    add(i, value);
-            }
-        }
+    public double add(int index, double delta) {
+        set(index, get(index) + delta);
+        return get(index) + delta;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void add(int index, double delta) {
-        set(index, get(index) + delta);
+    public void set(double[] values) {
+        vector = new SparseDoubleArray(values);
     }
 
     /**
@@ -90,10 +80,9 @@ public class SparseVector implements Vector {
     }
 
     /** 
-     * Return the set of non-zero indicies.  This is primarily for the purpose
-     * of summing two {@code SparseVector}s efficiently.
+     * @{inheritDoc}
      */
-    int[] getNonZeroIndicies() {
+    public int[] getNonZeroIndices() {
         return vector.getElementIndices();
     }
 
@@ -116,7 +105,7 @@ public class SparseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public double length() {
+    public int length() {
         return vector.length();
     }
 }

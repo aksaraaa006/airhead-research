@@ -22,37 +22,43 @@
 package edu.ucla.sspace.vector;
 
 /**
- * An interface for semantic vectors.  This interface allows subclasses to
- * implement the vector with any kind of underlying data type, but the input and
- * output data types must be doubles.
+ * An generalized interface for vectors.  This interface allows implementations
+ * to implement the vector with any kind of underlying data type, but the input
+ * and output data types must be doubles.
+ *
+ * Methods which modify the {@code Vector} are optional.  Implementations which
+ * do not support this behavior should throw a {@code
+ * UnsupportedOperationException}.  These methods are marked as "optional" in
+ * the specification for the interface.
+ *
+ * @author Keith Stevens
  */
-// TODO: Rename to Vector.
 public interface Vector {
+
     /**
-     * Change the value in the semantic vector by a specified amount.  If there is
-     * not a value set at index, delta should be set to the actual value.
+     * Change the value in the semantic vector by a specified amount (optional
+     * operation).  If there is not a value set at index, delta should be set to
+     * the actual value.
      *
      * @param index index to change.
      * @param delta the amount to change by.
      */
-    public void add(int index, double delta);
+    public double add(int index, double delta);
 
     /**
-     * Add the contents of {@code vector} to the current {@code Vector}.
-     * Underlying implemntations may have a more efficient method of adding
-     * vectors together based on what type of Vector is passed in.
-     *
-     * @param vector A Vector to be summed into the current vector.
-     */
-    public void addVector(Vector vector);
-
-    /**
-     * Set the value in the semantic vector.
+     * Set the value in the semantic vector (optional operation).
      *
      * @param index index to set.
      * @param value value to set in the vector.
      */
     public void set(int index, double value);
+
+    /**
+     * Set all the values in the vector (optional operation).
+     *
+     * @param values Values to set for this vector.
+     */
+    public void set(double[] values);
 
     /**
      * Return the value of the semantic vector at the given index.
@@ -75,5 +81,5 @@ public interface Vector {
      *
      * @return Size of the vector.
      */
-    public double length();
+    public int length();
 }

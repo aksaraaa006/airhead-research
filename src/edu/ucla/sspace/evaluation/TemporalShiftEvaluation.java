@@ -1,4 +1,4 @@
-package edu.ucla.sspace.evalutation;
+package edu.ucla.sspace.evaluatation;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.Similarity;

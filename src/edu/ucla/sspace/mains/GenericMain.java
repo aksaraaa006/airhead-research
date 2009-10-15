@@ -114,7 +114,18 @@ public abstract class GenericMain {
      */
     protected final ArgOptions argOptions;
 
+    /**
+     * Whether the {@link SemanticSpace} class is capable of running with
+     * multiple threads.
+     */
+    protected final boolean isMultiThreaded;
+
     public GenericMain() {
+        this(true);
+    }
+
+    public GenericMain(boolean isMultiThreaded) {
+        this.isMultiThreaded = isMultiThreaded;
 	argOptions = setupOptions();
 	verbose = false;
     }
@@ -185,10 +196,12 @@ public abstract class GenericMain {
 			  "FILE[,FILE...]", "Required (at least one of)");
 
 	options.addOption('o', "outputFormat", "the .sspace format to use",
-			  true, "text|binary|sparse_text|sparse_binary", 
+			  true, "FORMAT", 
 			  "Program Options");
-	options.addOption('t', "threads", "the number of threads to use",
-			  true, "INT", "Program Options");
+        if (isMultiThreaded) {
+            options.addOption('t', "threads", "the number of threads to use",
+                              true, "INT", "Program Options");
+        }
 	options.addOption('w', "overwrite", "specifies whether to " +
 			  "overwrite the existing output", true, "BOOL",
 			  "Program Options");
@@ -285,7 +298,11 @@ public abstract class GenericMain {
 	// all the documents are listed in one file, with one document per line
 	Iterator<Document> docIter = getDocumentIterator();
 	
-	int numThreads = Runtime.getRuntime().availableProcessors();
+        // Check whether this class supports mutlithreading when deciding how
+        // many threads to use by default
+	int numThreads = (isMultiThreaded)
+            ? Runtime.getRuntime().availableProcessors()
+            : 1;
 	if (argOptions.hasOption("threads")) {
 	    numThreads = argOptions.getIntOption("threads");
 	}
@@ -424,7 +441,7 @@ public abstract class GenericMain {
 	for (Thread t : threads)
 	    t.start();
 
-	verbose("Beginning processing using %d threads", numThreads);
+	verbose("Beginning processing using %d threads%n", numThreads);
 
 	// wait until all the documents have been parsed
 	for (Thread t : threads)
