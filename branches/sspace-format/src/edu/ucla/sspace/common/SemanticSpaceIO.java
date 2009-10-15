@@ -42,6 +42,7 @@ import java.util.Set;
 
 import java.util.logging.Logger;
 
+
 /**
  * A collection of utility methods for reading and writing {@link SemanticSpace}
  * instances.  For a full description of the supported formats, see the <a
@@ -87,7 +88,11 @@ public class SemanticSpaceIO {
      * @param sspaceFile a file containing a semantic space
      *
      * @return the format in which a semantic space is stored in the provided
-     * file or {@code null} if the file does not have a recognized format.
+     *         file or {@code null} if the file does not have a recognized
+     *         format.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     static SSpaceFormat getFormat(File sspaceFile) throws IOException {
         InputStream is = new FileInputStream(sspaceFile);
@@ -157,6 +162,8 @@ public class SemanticSpaceIO {
      *
      * @throws IllegalArgumentException if the file does not contain an internal
      *         format specification
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public static SemanticSpace load(String sspaceFileName) throws IOException {
 	return load(new File(sspaceFileName));
@@ -169,6 +176,9 @@ public class SemanticSpaceIO {
      * @param sspaceFileName the name of a file containing a {@link
      *        SemanticSpace} that has been written to disk
      * @param format the format of the {@link SemanticSpace} in the file
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     @Deprecated public static SemanticSpace load(String sspaceFileName, 
                                                  SSpaceFormat format) 
@@ -185,6 +195,8 @@ public class SemanticSpaceIO {
      *
      * @throws IllegalArgumentException if the file does not contain an internal
      *         format specification
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public static SemanticSpace load(File sspaceFile) throws IOException {
         // Peek at the file in order to determine how big it will be if unpacked
@@ -203,6 +215,9 @@ public class SemanticSpaceIO {
      * @param sspaceFile a file containing a {@link SemanticSpace} that has
      *        been written to disk
      * @param format the format of the {@link SemanticSpace} in the file
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     @Deprecated public static SemanticSpace load(File sspaceFile, 
                                                  SSpaceFormat format) 
@@ -225,6 +240,9 @@ public class SemanticSpaceIO {
      *        formatting information
      *
      * @return the semantic space in the file 
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     private static SemanticSpace loadInternal(File sspaceFile, 
                                               SSpaceFormat format,
@@ -258,6 +276,9 @@ public class SemanticSpaceIO {
      * Writes the data contained in the {@link SemanticSpace} to the file with
      * the provided name using the {@link SSpaceFormat#TEXT} format.  See <a
      * href="#format">here</a> for file format specifications.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public static void save(SemanticSpace sspace, String outputFileName) 
 	    throws IOException {
@@ -268,6 +289,9 @@ public class SemanticSpaceIO {
      * Writes the data contained in the {@link SemanticSpace} to the provided
      * file using the {@link SSpaceFormat#TEXT} format.  See <a
      * href="#format">here</a> for file format specifications.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public static void save(SemanticSpace sspace, File output) 
 	    throws IOException {
@@ -278,6 +302,9 @@ public class SemanticSpaceIO {
      * Writes the data contained in the {@link SemanticSpace} to the provided
      * file and format.  See <a href="#format">here</a> for file format
      * specifications.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public static void save(SemanticSpace sspace, File output, 
                             SSpaceFormat format) throws IOException {
@@ -308,6 +335,9 @@ public class SemanticSpaceIO {
      * @param os the output stream into which a semantic space is to be saved
      * @param format the format of the data that will be written after the
      *        header
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     private static void writeHeader(OutputStream os, SSpaceFormat format) 
             throws IOException {
@@ -321,6 +351,9 @@ public class SemanticSpaceIO {
      *
      * @param sspace the semantic space to be written
      * @param output the file into which the space will be written
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     private static void writeText(SemanticSpace sspace, File output) 
 	    throws IOException {
@@ -351,6 +384,9 @@ public class SemanticSpaceIO {
      *
      * @param sspace the semantic space to be written
      * @param output the file into which the space will be written
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     private static void writeBinary(SemanticSpace sspace, File output) 
 	    throws IOException {
@@ -385,6 +421,9 @@ public class SemanticSpaceIO {
      *
      * @param sspace the semantic space to be written
      * @param output the file into which the space will be written
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     private static void writeSparseText(SemanticSpace sspace, File output) 
 	    throws IOException {
@@ -433,6 +472,9 @@ public class SemanticSpaceIO {
      *
      * @param sspace the semantic space to be written
      * @param output the file into which the space will be written
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     private static void writeSparseBinary(SemanticSpace sspace, File output) 
 	    throws IOException {

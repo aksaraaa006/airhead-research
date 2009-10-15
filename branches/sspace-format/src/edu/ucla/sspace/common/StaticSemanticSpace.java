@@ -90,6 +90,9 @@ public class StaticSemanticSpace implements SemanticSpace {
      * Creates the {@link StaticSemanticSpace} from the file.
      *
      * @param filename the name of a file containing {@code SemanticSpace} data.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public StaticSemanticSpace(String filename) throws IOException {
 	this(new File(filename));
@@ -100,6 +103,9 @@ public class StaticSemanticSpace implements SemanticSpace {
      *
      * @param file a file containing the data of a {@link
      *        edu.ucla.sspace.common.SemanticSpace}.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     public StaticSemanticSpace(File file) throws IOException {
         spaceName = file.getName();
@@ -124,6 +130,9 @@ public class StaticSemanticSpace implements SemanticSpace {
      * @param file a file containing the data of a {@link
      *        edu.ucla.sspace.common.SemanticSpace}.
      * @param format the format of the semantic space
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
     @Deprecated public StaticSemanticSpace(File file, SSpaceFormat format) 
             throws IOException {
@@ -347,6 +356,8 @@ public class StaticSemanticSpace implements SemanticSpace {
 
     /**
      * Not supported; throws an {@link UnsupportedOperationException} if called.
+     *
+     * @throws an {@link UnsupportedOperationException} if called
      */
     public void processDocument(BufferedReader document) { 
         throw new UnsupportedOperationException(
@@ -355,6 +366,8 @@ public class StaticSemanticSpace implements SemanticSpace {
 
     /**
      * Not supported; throws an {@link UnsupportedOperationException} if called.
+     *
+     * @throws an {@link UnsupportedOperationException} if called
      */
     public void processSpace(Properties props) { 
         throw new UnsupportedOperationException(
