@@ -89,6 +89,38 @@
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
   
+  <target name="sspace-jar" depends="compile">
+    <jar destfile="${bin.dir}/sspace-lib.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+        <!-- Who is building this jar? -->
+        <attribute name="Built-By" value="${user.name}"/>
+        <!-- Information about the program itself -->
+        <attribute name="Implementation-Vendor" value="AIRhead Research"/>
+        <attribute name="Implementation-Title" value="Full release of the
+          S-Space package"/>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="sspace-src-jar" depends="compile">
+    <jar destfile="${bin.dir}/sspace-src.jar" basedir="src">
+      <include name="edu/**/*.java"/>
+      <manifest>
+        <!-- Who is building this jar? -->
+        <attribute name="Built-By" value="${user.name}"/>
+        <!-- Information about the program itself -->
+        <attribute name="Implementation-Vendor" value="AIRhead Research"/>
+        <attribute name="Implementation-Title" value="Full release of the
+          S-Space package source code"/>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+    </jar>
+  </target>
+
+
   <target name="lsa-jar" depends="compile">
     <jar destfile="${bin.dir}/lsa.jar" basedir="classes">
       <include name="edu/**/*.class"/>
