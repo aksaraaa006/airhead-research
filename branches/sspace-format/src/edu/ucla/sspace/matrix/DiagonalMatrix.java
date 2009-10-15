@@ -24,6 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
+
 /**
  * A special-case {@code Matrix} implementation for diagonal matrices. This
  * class provides a memory efficient representation and additional bounds

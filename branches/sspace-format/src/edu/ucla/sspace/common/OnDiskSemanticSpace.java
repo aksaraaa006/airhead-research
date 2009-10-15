@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  * A {@link SemanticSpace} where all vector data is kept on disk.  This class is
  * designed for large semantic spaces whose data, even in sparse format, will
@@ -225,11 +226,13 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * Loads the {@link SemanticSpace} from the text formatted file, adding its
-     * words to {@link #termToOffset} and returning the {@code Matrix} containing
-     * the space's vectors.
+     * Loads the {@link SemanticSpace} from the {@code TEXT} formatted file,
+     * adding its words to {@link #termToOffset} and returning the number of
+     * dimensions for each vector
      *
-     * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
+     * @param textSSpace a file in {@link SSpaceFormat#TEXT text} format
+     *
+     * @return the number of dimensions for vectors in the loaded semantic space
      */
     private int loadTextOffsets(RandomAccessBufferedReader textSSpace) 
             throws IOException {
@@ -527,24 +530,51 @@ public class OnDiskSemanticSpace implements SemanticSpace {
 
     private static class RandomAccessBufferedReader {
 
+        /**
+         * The file from which the data is being read
+         */
 	private final File backingFile;
 
+        /**
+         * The reader into the contents of the file
+         */
 	private BufferedReader current;
 
+        /**
+         * The number for the line that will be returned next by {@code
+         * readLine}
+         */
 	private int currentLineNumber;
 
+        /**
+         * Creates a random access reader for the file and initializes its
+         * position at the first line.
+         *
+         * @param f the file to be accessed
+         */
 	public RandomAccessBufferedReader(File f) throws IOException {
 	    backingFile = f;
 	    reset();
 	}
 
-	private void reset() throws IOException {
-	    current = new BufferedReader(new FileReader(backingFile));
-	    currentLineNumber = 0;
-	}
+        /**
+         * Returns the number of the line that will next be returned by {@link
+         * #nextLine()}.
+         *
+         * @return the line number of the next line that will be returned.
+         */
+        public int getLineNumber() {
+            return currentLineNumber;
+        }
 
+        /**
+         * Move the reader to the specified line number.  The next call to
+         * {@code readLine} will return the line at that number.
+         *
+         * @param lineNum the number of the line that should next be returned
+         */
 	public void moveToLine(int lineNum) throws IOException {
-	    // if we are trying to go backward in the stream, close it and
+	    // If we are trying to go backward in the stream, close it and
 	    // restart from the beginning
 	    if (lineNum < currentLineNumber) {
 		reset(); 
@@ -553,13 +583,28 @@ public class OnDiskSemanticSpace implements SemanticSpace {
 		current.readLine();
 	    }
 
-	    // update to the new line number
+	    // Update to the new line number
 	    currentLineNumber = lineNum;
 	}
 	
+        /**
+         * Returns the line in the file at the current position and advances the
+         * current position to the next line.
+         *
+         * @return the line at the current position
+         */
 	public String readLine() throws IOException {
 	    currentLineNumber++;
 	    return current.readLine();
+	}
+
+        /**
+         * Resets the position of this reader to the very first line in the
+         * file.
+         */
+	private void reset() throws IOException {
+	    current = new BufferedReader(new FileReader(backingFile));
+	    currentLineNumber = 0;
 	}
     }
 
