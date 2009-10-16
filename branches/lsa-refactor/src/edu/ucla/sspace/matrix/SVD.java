@@ -25,7 +25,9 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Matrix.Type;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -134,6 +136,28 @@ public class SVD {
     private SVD() { }
 
     /**
+     * Returns the fastest available SVD algorithm supported on the current
+     * system.
+     *
+     * @return the fastest algorithm available or {@code null} if no SVD
+     *         algorithm is available
+     */
+    static Algorithm getFastestAvailableAlgorithm() {
+        if (isSVDLIBCavailable())
+            return Algorithm.SVDLIBC;
+        else if (isMatlabAvailable())
+            return Algorithm.MATLAB;
+        else if (isOctaveAvailable())
+            return Algorithm.OCTAVE;
+        else if (isJAMAavailable())
+            return Algorithm.JAMA;
+        else if (isColtAvailable())
+            return Algorithm.COLT;
+        else
+            return null;
+    }
+
+    /**
      * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
      * {@link Format#MATLAB_SPARSE Matlab sparse} format using the specified SVD
      * algorithm to generate the specified number of singular values.
@@ -207,12 +231,29 @@ public class SVD {
     public static Matrix[] svd(File matrix, Algorithm alg, 
 			       Format format, int dimensions) {
 	try {
+            File converted = null;
 	    switch (alg) {
-	    case SVDLIBC:
-		File converted = MatrixIO.convertFormat(
-		    matrix, format, Format.SVDLIBC_SPARSE_TEXT);
-		return svdlibc(converted, dimensions, 
-			       Format.SVDLIBC_SPARSE_TEXT);
+	    case SVDLIBC: {
+                // check whether the input matrix is in an SVDLIBC-acceptable
+                // format already and if not convert
+                switch (format) {
+                case SVDLIBC_DENSE_BINARY:
+                case SVDLIBC_DENSE_TEXT:
+                case SVDLIBC_SPARSE_TEXT:
+                case SVDLIBC_SPARSE_BINARY:
+                    converted = matrix;
+                    break;
+                default:
+                    SVD_LOGGER.fine("converting input matrix format " +
+                                    "from" + format + " to SVDLIBC " +
+                                    "ready format");
+                    converted = MatrixIO.convertFormat(
+                        matrix, format, Format.SVDLIBC_SPARSE_BINARY);
+                    format = Format.SVDLIBC_SPARSE_BINARY;
+                    break;
+                }
+		return svdlibc(converted, dimensions, format);
+            }
 	    case JAMA:
 		return jamaSVD(matrix, format, dimensions);
 	    case MATLAB:
@@ -228,7 +269,7 @@ public class SVD {
 		// ensures that we don't do an unnecessary matrix conversion
 		Format originalFormat = format;
 		File originalMatrix = matrix;
-
+                
 		// Try to peform the SVD with any installed algorithm.  Go in
 		// order of speed.  If any algorithm causes an error, go on to
 		// the next until all are exhausted.
@@ -244,9 +285,12 @@ public class SVD {
 			    converted = matrix;
 			    break;
 			default:
+                            SVD_LOGGER.fine("converting input matrix format " +
+                                            "from" + format + " to SVDLIBC" +
+                                            " ready format");
 			    converted = MatrixIO.convertFormat(
-				matrix, format, Format.SVDLIBC_SPARSE_TEXT);
-			    format = Format.SVDLIBC_SPARSE_TEXT;
+				matrix, format, Format.SVDLIBC_SPARSE_BINARY);
+			    format = Format.SVDLIBC_SPARSE_BINARY;
 			    break;
 			}
 			return svdlibc(converted, dimensions, format);		
@@ -433,7 +477,7 @@ public class SVD {
 		// Otherwise, try to load the class from the specified .jar
 		// file.  If the ClassLoader for loading all COLT classes has
 		// not yet been initialized, do so now.  We need to maintain
-		// onlyone class loader for all COLT classes, otherwise the
+		// only one class loader for all COLT classes, otherwise the
 		// reflective invocation will fail; the constructor type system
 		// does not work correctly if the parameter objects have been
 		// loaded from a different class loader. --jurgens
@@ -466,8 +510,9 @@ public class SVD {
      */
     private static boolean isSVDLIBCavailable() {
 	try {
-	    Process svdlibc = Runtime.getRuntime().exec("svd");	    
-	} catch (IOException ioe) {
+	    Process svdlibc = Runtime.getRuntime().exec("svd");
+            svdlibc.waitFor();
+	} catch (Exception e) {
 	    return false;
 	}
 	return true;
@@ -478,8 +523,9 @@ public class SVD {
      */
     private static boolean isOctaveAvailable() {
 	try {
-	    Process svdlibc = Runtime.getRuntime().exec("octave -v");
-	} catch (IOException ioe) {
+	    Process octave = Runtime.getRuntime().exec("octave -v");
+            octave.waitFor();
+	} catch (Exception e) {
 	    return false;
 	}
 	return true;	
@@ -490,8 +536,9 @@ public class SVD {
      */
     private static boolean isMatlabAvailable() {
 	try {
-	    Process svdlibc = Runtime.getRuntime().exec("matlab -h");
-	} catch (IOException ioe) {
+	    Process matlab = Runtime.getRuntime().exec("matlab -h");
+            matlab.waitFor();
+	} catch (Exception ioe) {
 	    return false;
 	}
 	return true;
@@ -819,14 +866,18 @@ public class SVD {
 	    SVD_LOGGER.fine("creating SVDLIBC factor matrices at: " + 
 			      outputMatrixPrefix);
 	    String commandLine = "svd -o " + outputMatrixPrefix + formatString +
+                " -w db " + // output is dense binary
 		" -d " + dimensions + " " + matrix.getAbsolutePath();
 	    SVD_LOGGER.fine(commandLine);
 	    Process svdlibc = Runtime.getRuntime().exec(commandLine);
 
-	    BufferedReader br = new BufferedReader(
+	    BufferedReader stdout = new BufferedReader(
 		new InputStreamReader(svdlibc.getInputStream()));
+	    BufferedReader stderr = new BufferedReader(
+		new InputStreamReader(svdlibc.getErrorStream()));
+
 	    StringBuilder output = new StringBuilder("SVDLIBC output:\n");
-	    for (String line = null; (line = br.readLine()) != null; ) {
+	    for (String line = null; (line = stderr.readLine()) != null; ) {
 		output.append(line).append("\n");
 	    }
 	    SVD_LOGGER.fine(output.toString());
@@ -846,19 +897,28 @@ public class SVD {
 		return new Matrix[] { 
 		    // load U in memory, since that is what most algorithms will
 		    // be using (i.e. it is the word space).  SVDLIBC returns
-		    // this as U transpose, so correct it.
-		    Matrices.transpose(MatrixIO.readMatrix(Ut,
-				Format.SVDLIBC_DENSE_TEXT, Type.DENSE_IN_MEMORY)),
+		    // this as U transpose, so correct it by indicating that the
+		    // read operation should transpose the matrix as it is built
+		    MatrixIO.readMatrix(Ut, Format.SVDLIBC_DENSE_BINARY, 
+                                        Type.DENSE_IN_MEMORY, true),
 		    // Sigma only has n values for an n^2 matrix, so make it
-		    // sparse
+		    // sparse.  Note that even if we specify the output to be in
+		    // dense binary, the signular vectors are still reported as
+		    // text
 		    readSVDLIBCsingularVector(S),
 		    // V could be large, so just keep it on disk.  
-		    MatrixIO.readMatrix(Vt, Format.SVDLIBC_DENSE_TEXT, 
+		    MatrixIO.readMatrix(Vt, Format.SVDLIBC_DENSE_BINARY, 
 					Type.DENSE_ON_DISK)
 		};
 	    }
 	    else {
+                StringBuilder sb = new StringBuilder();
+                for (String line = null; (line = stderr.readLine()) != null; ) {
+                    sb.append(line);
+                }
 		// warning or error?
+                System.out.println("exit status: " + exitStatus);
+                System.out.println("stderr:\n" + sb.toString());
 	    }
 	} catch (IOException ioe) {
 	    SVD_LOGGER.log(Level.SEVERE, "SVDLIBC", ioe);
@@ -876,7 +936,6 @@ public class SVD {
      */
     private static Matrix readSVDLIBCsingularVector(File sigmaMatrixFile)
 	    throws IOException {
-
 	BufferedReader br = 
 	    new BufferedReader(new FileReader(sigmaMatrixFile)); 
 
@@ -918,6 +977,13 @@ public class SVD {
 	    File uOutput = File.createTempFile("matlab-svds-U",".dat");
 	    File sOutput = File.createTempFile("matlab-svds-S",".dat");
 	    File vOutput = File.createTempFile("matlab-svds-V",".dat");
+            if (SVD_LOGGER.isLoggable(Level.FINE)) {
+                SVD_LOGGER.fine("writing Matlab output to files:\n" + 
+                                "  " + uOutput + "\n" +
+                                "  " + sOutput + "\n" +
+                                "  " + vOutput + "\n");
+            }
+
 	    uOutput.deleteOnExit();
 	    sOutput.deleteOnExit();
 	    vOutput.deleteOnExit();
@@ -972,8 +1038,8 @@ public class SVD {
 				    Type.SPARSE_ON_DISK),
 		// V could be large, so just keep it on disk.  Furthermore,
 		// Matlab does not transpose V, so transpose it
-		Matrices.transpose(MatrixIO.readMatrix(vOutput,
-			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
+		MatrixIO.readMatrix(vOutput, Format.DENSE_TEXT, 
+                                    Type.DENSE_ON_DISK, true)
 		};
 	    }
 
@@ -1058,8 +1124,8 @@ public class SVD {
 				    Type.SPARSE_ON_DISK),
 		// V could be large, so just keep it on disk.  Furthermore,
 		// Octave does not transpose V, so transpose it
-		Matrices.transpose(MatrixIO.readMatrix(vOutput,
-			    Format.DENSE_TEXT, Type.DENSE_ON_DISK))
+		MatrixIO.readMatrix(vOutput, Format.DENSE_TEXT, 
+                                    Type.DENSE_ON_DISK, true)
 		};
 	    }
 
