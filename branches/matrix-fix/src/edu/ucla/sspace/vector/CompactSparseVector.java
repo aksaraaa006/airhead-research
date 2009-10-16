@@ -40,11 +40,17 @@ public class CompactSparseVector implements Vector, SparseVector {
     private SparseDoubleArray vector;
 
     /**
+     * The maximum known length of this {@code Vector}.
+     */
+    private int knownLength;
+
+    /**
      * Creates a {@code CompactSparseVector} that grows to the maximum size set
      * by {@link Double#MAX_VALUE}.
      */
     public CompactSparseVector() {
         vector = new SparseDoubleArray();
+        knownLength = 0;
     }
 
     /** 
@@ -55,12 +61,15 @@ public class CompactSparseVector implements Vector, SparseVector {
      */
     public CompactSparseVector(int length) {
         vector = new SparseDoubleArray(length);
+        knownLength = length;
     }
 
     /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
+        updateLength(index);
+
         set(index, get(index) + delta);
         return get(index) + delta;
     }
@@ -69,6 +78,8 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public void set(double[] values) {
+        updateLength(values.length);
+
         vector = new SparseDoubleArray(values);
     }
 
@@ -76,6 +87,8 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public void set(int index, double value) {
+        updateLength(index);
+
         vector.setPrimitive(index, value);
     }
 
@@ -91,6 +104,8 @@ public class CompactSparseVector implements Vector, SparseVector {
      */
     @SuppressWarnings("unchecked")
     public double[] toArray(int size) {
+        updateLength(size);
+
         double[] array = new double[size];
         return vector.toPrimitiveArray(array);
     }
@@ -99,6 +114,8 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public double get(int index) {
+        updateLength(index);
+
         return vector.getPrimitive(index);
     }
 
@@ -106,6 +123,17 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public int length() {
-        return vector.length();
+        return knownLength;
+    }
+
+    /**
+     * Extend the known length of this {@code Vector} if the given length is
+     * longer than any previously seen length.
+     *
+     * @param length The new possible length of the {@code Vector}.
+     */
+    private void updateLength(int length) {
+        if (knownLength <= length)
+            knownLength = length;
     }
 }
