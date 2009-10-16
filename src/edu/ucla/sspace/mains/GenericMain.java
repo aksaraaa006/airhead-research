@@ -48,6 +48,10 @@ import java.util.Set;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A base class for running {@link SemanticSpace} algorithms.  All derived main
@@ -102,7 +106,10 @@ public abstract class GenericMain {
     /**
      * Extension used for all saved semantic space files.
      */
-    public static final String EXT = ".sspace";
+    public static final String EXT = ".sspace";    
+
+    private static final Logger LOGGER = 
+        Logger.getLogger(GenericMain.class.getName());
 
     /**
      * Whether to emit messages to {@code stdout} when the {@code verbose}
@@ -293,8 +300,16 @@ public abstract class GenericMain {
 	    throw new IllegalArgumentException(
 		"output directory is not a directory: " + outputDir);
 	}
-
+        
 	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+        if (verbose) {
+            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
+            Handler verboseHandler = new ConsoleHandler();
+            verboseHandler.setLevel(Level.FINE);
+            appRooLogger.addHandler(verboseHandler);
+            appRooLogger.setLevel(Level.FINE);
+            appRooLogger.setUseParentHandlers(false);
+        }
 
 	// all the documents are listed in one file, with one document per line
 	Iterator<Document> docIter = getDocumentIterator();
@@ -340,7 +355,7 @@ public abstract class GenericMain {
 	long startTime = System.currentTimeMillis();
 	space.processSpace(props);
 	long endTime = System.currentTimeMillis();
-	verbose("processed space in %.3f seconds%n",
+	verbose("processed space in %.3f seconds",
 		((endTime - startTime) / 1000d));
 	
 	File output = (overwrite)
@@ -355,7 +370,7 @@ public abstract class GenericMain {
 	startTime = System.currentTimeMillis();
 	SemanticSpaceUtils.printSemanticSpace(space, output, format);
 	endTime = System.currentTimeMillis();
-	verbose("printed space in %.3f seconds%n",
+	verbose("printed space in %.3f seconds",
 		((endTime - startTime) / 1000d));
 
 	postProcessing();
@@ -383,11 +398,11 @@ public abstract class GenericMain {
 	    int terms = 0;
 	    sspace.processDocument(doc.reader());
 	    long endTime = System.currentTimeMillis();
-	    verbose("processed document #%d in %.3f seconds%n",
+	    verbose("processed document #%d in %.3f seconds",
 		    docNumber, ((endTime - startTime) / 1000d));
 	}
 
-	verbose("processed %d document in %.3f total seconds)%n",
+	verbose("processed %d document in %.3f total seconds)",
 		count,
 		((System.currentTimeMillis() - processStart) / 1000d));	    
     }
@@ -428,7 +443,7 @@ public abstract class GenericMain {
 				t.printStackTrace();
 			    }
 			    long endTime = System.currentTimeMillis();
-			    verbose("parsed document #%d in %.3f seconds%n",
+			    verbose("parsed document #%d in %.3f seconds",
 				    docNumber, ((endTime - startTime) / 1000d));
 			}
 		    }
@@ -442,13 +457,13 @@ public abstract class GenericMain {
 	for (Thread t : threads)
 	    t.start();
 
-	verbose("Beginning processing using %d threads%n", numThreads);
+	verbose("Beginning processing using %d threads", numThreads);
 
 	// wait until all the documents have been parsed
 	for (Thread t : threads)
 	    t.join();
 
-	verbose("parsed %d document in %.3f total seconds)%n",
+	verbose("parsed %d document in %.3f total seconds)",
 		count.get(),
 		((System.currentTimeMillis() - threadStart) / 1000d));
     }
@@ -474,14 +489,11 @@ public abstract class GenericMain {
     }
 
     protected void verbose(String msg) {
-	if (verbose) {
-	    System.out.println(msg);
-	}
+        LOGGER.fine(msg);
     }
 
     protected void verbose(String format, Object... args) {
-	if (verbose) {
-	    System.out.printf(format, args);
-	}
+        if (LOGGER.isLoggable(Level.FINE))
+            LOGGER.fine(String.format(format, args));	
     }
 }

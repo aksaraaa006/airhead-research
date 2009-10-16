@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.util.Pair;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -30,37 +32,25 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TfIdfTransformer implements MatrixTransformer {
+public class TfIdfTransform implements Transform {
 
-    public static void main(String[] args) {
-	try {
-	    if (args.length != 2) {
-		System.out.println(
-		    "usage: java <input matrix file> <output file>");
-		return;
-	    }
-	    
-	    new TfIdfTransformer().
-		transform(new File(args[0]), new File(args[1]));
-	} catch (IOException ioe) {
-	    ioe.printStackTrace();
-	}
-    }
-
-    public File transform(File input) throws IOException {
+    
+    public File transform(File inputMatrixFile, MatrixIO.Format format) 
+            throws IOException {
 	// create a temp file for the output
-	File output = File.createTempFile(input.getName() + 
+	File output = File.createTempFile(inputMatrixFile.getName() + 
 					  ".tf-idf-transform", "dat");
-	transform(input, output);
+	transform(inputMatrixFile, format, output);
 	return output;
     }
 
-    public void transform(File input, File output) throws IOException {
+    public void transform(File inputMatrixFile, MatrixIO.Format inputFormat, 
+                          File outputMatrixFile) throws IOException {
 
 	// for each document and for each term in that document how many
 	// times did that term appear
-	Map<Pair,Integer> docToTermFreq = 
-	    new HashMap<Pair,Integer>();
+	Map<Pair<Integer>,Integer> docToTermFreq = 
+	    new HashMap<Pair<Integer>,Integer>();
 	
 	// for each term, in how many documents did that term appear?
 	Map<Integer,Integer> termToDocOccurences = 
@@ -75,7 +65,7 @@ public class TfIdfTransformer implements MatrixTransformer {
 	int numDocs = 0;	   	    
 	
 	// calculate all the statistics on the original term-document matrix
-	BufferedReader br = new BufferedReader(new FileReader(input));
+	BufferedReader br = new BufferedReader(new FileReader(inputMatrixFile));
 	for (String line = null; (line = br.readLine()) != null; ) {
 	    String[] termDocCount = line.split("\\s+");
 	    
@@ -102,49 +92,28 @@ public class TfIdfTransformer implements MatrixTransformer {
 			       ? count
 			       : Integer.valueOf(count + docTermCount));
 	    
-	    docToTermFreq.put(new Pair(term, doc), count);
+	    docToTermFreq.put(new Pair<Integer>(term, doc), count);
 	}
 	br.close();
 	
 	// the output the new matrix where the count value is replaced by
 	// the tf-idf value
-	PrintWriter pw = new PrintWriter(output);
-	for (Map.Entry<Pair,Integer> e : docToTermFreq.entrySet()) { 
-	    Pair p = e.getKey();
+	PrintWriter pw = new PrintWriter(outputMatrixFile);
+	for (Map.Entry<Pair<Integer>,Integer> e : docToTermFreq.entrySet()) { 
+	    Pair<Integer> termAndDoc = e.getKey();
 	    double count = e.getValue().intValue();
-	    double tf = count / docToTermCount.get(p.doc);
+	    double tf = count / docToTermCount.get(termAndDoc.y);
 	    double idf = Math.log((double)numDocs / 
-				  termToDocOccurences.get(p.term));
-	    pw.println(p.term + "\t" +
-		       p.doc + "\t" +
+				  termToDocOccurences.get(termAndDoc.x));
+	    pw.println(termAndDoc.x + "\t" +
+		       termAndDoc.y + "\t" +
 		       (tf * idf));
 	}
 	pw.close();
     }
 
-
-    private static class Pair {
-	
-	Integer term;
-	Integer doc;
-
-	public Pair(Integer term, Integer doc) {
-	    this.term = term;
-	    this.doc = doc;
-	}
-
-	public boolean equals(Object o) {
-	    if (o instanceof Pair) {
-		Pair p = (Pair)o;
-		return p.term.equals(term) && p.term.equals(term);
-	    }
-	    return false;
-	}
-
-	public int hashCode() {
-	    return term.hashCode() + doc.hashCode();
-	}
-	
+    public Matrix transform(Matrix matrix) {
+        throw new UnsupportedOperationException();
     }
 
     public String toString() {

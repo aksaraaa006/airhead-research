@@ -23,13 +23,14 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.SVD.Algorithm;
 
 import java.util.logging.Logger;
 
 
 /**
- * A class of static methods for manipulating {@code Matrix} instances.
- *
+ * A class of static methods for manipulating and creating {@code Matrix}
+ * instances.
  *
  * @see Matrix
  * @see MatrixIO
@@ -122,7 +123,32 @@ public class Matrices {
 	    return new OnDiskMatrix(rows, cols);
 	}
 	throw new IllegalArgumentException(
-	    "Unknown matrix type: " + matrixType);
+            "Unknown matrix type: " + matrixType);
+    }
+
+    /**
+     * Returns a {@link MatrixBuilder} in the default format of the fastest
+     * available {@link SVD.Algorithm SVD algorithm}.
+     *
+     * @return a matrix builder to be used in creating a matrix for use with the
+     *         {@link SVD} class
+     */
+    public static MatrixBuilder getMatrixBuilderForSVD() {
+        Algorithm fastest = SVD.getFastestAvailableAlgorithm();
+        if (fastest == null) {
+            if (false)
+                throw new Error("maybe?");
+        }
+        
+        switch (fastest) {
+        case SVDLIBC:
+            //return new SvdlibcSparseTextMatrixBuilder();
+            return new SvdlibcSparseBinaryMatrixBuilder();
+        // In all other cases, use the sparse Matlab format, as it covers both
+        // Matlab and Octave.
+        default:
+            return new MatlabSparseMatrixBuilder();
+        }
     }
 
     /**
@@ -190,12 +216,12 @@ public class Matrices {
 	if (m1.columns() != m2.rows()) 
 	    return null;
 	if (m2 instanceof DiagonalMatrix) {
-      if (m1 instanceof DiagonalMatrix)
-        return multiplyBothDiag(m1, m2);
-      else
-        return multiplyRightDiag(m1, m2);
+            if (m1 instanceof DiagonalMatrix)
+                return multiplyBothDiag(m1, m2);
+            else
+                return multiplyRightDiag(m1, m2);
 	} else if (m1 instanceof DiagonalMatrix) {
-	  return multiplyLeftDiag(m1, m2);
+            return multiplyLeftDiag(m1, m2);
 	}
 
 	int size = m1.columns();
@@ -210,7 +236,7 @@ public class Matrices {
 		resultMatrix.set(r, c, resultValue);
 	    }
 	}
-      return resultMatrix;
+        return resultMatrix;
     }
 
     /**
@@ -223,8 +249,8 @@ public class Matrices {
 	// cases.  Ideally, we should put in a package method for determining
 	// whether a given matrix instance is sparse and/or on disk. -jurgens
 	Matrix resized = create(rows, columns, 
-			       !(matrix instanceof SparseMatrix ||
-				 matrix instanceof DiagonalMatrix));
+                                !(matrix instanceof SparseMatrix ||
+                                  matrix instanceof DiagonalMatrix));
 	int r = Math.min(rows, matrix.rows());
 	int c = Math.min(columns, matrix.columns());
 	for (int row = 0; row < r; ++row) {

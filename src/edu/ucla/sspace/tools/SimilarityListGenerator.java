@@ -196,11 +196,6 @@ public class SimilarityListGenerator {
 	WordComparator comparator = new WordComparator(numThreads);
 
 	for (String word : words) {
-	    for (String other : words) {
-
-		// skip comparing the same word to itself
-		if (word.equals(other)) 
-		    continue;
 
 		// compute the k most-similar words to this word
 		SortedMultiMap<Double,String> mostSimilar =
@@ -228,7 +223,6 @@ public class SimilarityListGenerator {
 		    outputWriter.println(sb.toString());
 		    outputWriter.flush();
 		}
-	    }
 	}
     }
 
