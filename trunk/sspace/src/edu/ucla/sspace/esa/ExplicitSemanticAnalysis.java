@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.SparseVector;

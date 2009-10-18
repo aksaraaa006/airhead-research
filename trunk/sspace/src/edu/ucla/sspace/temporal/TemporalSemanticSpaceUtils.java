@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.temporal;
 
-import edu.ucla.sspace.matrix.VectorIO;
+import edu.ucla.sspace.vector.VectorIO;
 
 import java.io.DataOutputStream;
 import java.io.File;

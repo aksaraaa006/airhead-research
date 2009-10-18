@@ -27,11 +27,22 @@ package edu.ucla.sspace.matrix;
  * matrix.  The average and standard devation of a matrix can be computed for
  * either all values, all values in a each row, or all values in each column.
  * This is models after the statstics methods provided by NumPy.
+ *
+ * @author Keith Stevens
  */
 public class Statistics {
 
     /**
      * The dimension over which the statistic should be evaluated.
+     *
+     * For {@code ALL}, only one average value, or one standard deviation value
+     * will be computed for an entire matrix.</p>
+     *
+     * For {@code ROW}, an average value, or a standard deviation, will be
+     * computed for each row in the matrix.</p>
+     *
+     * For {@code COLUMN}, an average value, or a standard deviation, will be
+     * computed for each column in the matrix.</p>
      */
     public enum Dimension {
         ALL,
@@ -49,12 +60,16 @@ public class Statistics {
      * @param dim The dimension across which analysis should take place.
      *
      * @return A matrix of the standard deviations.
+     *
+     * @throws IllegalArgumentException if {@code average} is not formatted such
+     *                                  that it matches the requested
+     *                                  dimension to compute over.
      */
     public static Matrix std(Matrix m, Matrix average, Dimension dim) {
         // Generate the average if not provided.
-        if (average == null) {
+        if (average == null)
             average = average(m, dim);
-        }
+
         // Handle a few error cases.
         if ((dim == Dimension.ALL &&
              (average.rows() != 1 || average.columns() != 1)) ||
@@ -62,34 +77,36 @@ public class Statistics {
              (average.rows() != m.rows() || average.columns() != 1)) ||
             (dim == Dimension.COLUMN &&
              (average.rows() != 1 || average.columns() != m.columns()))) {
-            return null;
+            throw new IllegalArgumentException(
+                    "The matrix is not properly formatted.");
         }
 
         Matrix std = null;
         if (dim == Dimension.ALL) {
+            // Compute the Standard Deviation of all values in the matrix.
             double variance = 0;
             std = new ArrayMatrix(1, 1);
             for (int i = 0; i < m.rows(); ++i) {
-                for (int j = 0; j < m.columns(); ++j) {
+                for (int j = 0; j < m.columns(); ++j)
                     variance += Math.pow(m.get(i, j) - average.get(0, 0), 2);
-                }
             }
 
             variance = variance / (double) (m.rows() * m.columns());
             std.set(0, 0, Math.sqrt(variance));
         } else if (dim == Dimension.ROW) {
+            // Compute the Standard Deviation for each row in the matrix.
             std = new ArrayMatrix(m.rows(), 1);
             for (int i = 0; i < m.rows(); ++i) {
                 double variance = 0;
-                for (int j = 0; j < m.columns(); ++j) {
+                for (int j = 0; j < m.columns(); ++j)
                     variance += Math.pow(m.get(i, j) - average.get(i, 0), 2);
-                }
 
                 variance = variance / (double) m.columns();
                 std.set(i, 0, Math.sqrt(variance));
             }
 
         } else if (dim == Dimension.COLUMN) {
+            // Compute the Standard Deviation of each column in the matrix.
             std = new ArrayMatrix(1, m.columns());
 
             for (int i = 0; i < m.rows(); ++i) {
@@ -120,34 +137,39 @@ public class Statistics {
      */
     public static Matrix average(Matrix m, Dimension dim) {
         Matrix averageMatrix = null;
+
         if (dim == Dimension.ALL) {
+            // Compute the average of all values in the matrix.
             double average = 0;
             for (int i = 0; i < m.rows(); ++i) {
-                for (int j = 0; j < m.columns(); ++j) {
+                for (int j = 0; j < m.columns(); ++j)
                     average += m.get(i, j);
-                }
             }
+
             averageMatrix = new ArrayMatrix(1, 1);
             average = average / (double) (m.rows() * m.columns());
             averageMatrix.set(1, 1, average);
         } else if (dim == Dimension.ROW) {
+            // Compute the average of each row in the matrix.
             averageMatrix = new ArrayMatrix(m.rows(), 1);
             for (int i = 0; i < m.rows(); ++i) {
                 double average = 0;
-                for (int j = 0; j < m.columns(); ++j) {
+                for (int j = 0; j < m.columns(); ++j)
                     average += m.get(i, j);
-                }
+
                 average = average / (double) m.columns();
                 averageMatrix.set(i, 0, average);
             }
         } else if (dim == Dimension.COLUMN) {
+            // Compute the average of each column in the matrix.
             averageMatrix = new ArrayMatrix(1, m.columns());
             for (int i = 0; i < m.rows(); ++i) {
                 for (int j = 0; j < m.columns(); ++j) {
-                    averageMatrix.set(0, j,
-                                      m.get(i, j) + averageMatrix.get(0, j));
+                    double newValue = m.get(i, j) + averageMatrix.get(0, j);
+                    averageMatrix.set(0, j, newValue);
                 }
             }
+
             for (int i = 0; i < m.columns(); ++i) {
                 double average = averageMatrix.get(0, i);
                 average = average / (double) m.rows();
@@ -171,10 +193,10 @@ public class Statistics {
      */
     public static Matrix std(Matrix m, Matrix average,
                              Dimension dim, int errorCode) {
-        // Generate the average if not provided.
-        if (average == null) {
+        // Generate the Standard Deviation if not provided.
+        if (average == null)
             average = average(m, dim, errorCode);
-        }
+
         // Handle a few error cases.
         if ((dim == Dimension.ALL &&
              (average.rows() != 1 || average.columns() != 1)) ||
@@ -182,50 +204,64 @@ public class Statistics {
              (average.rows() != m.rows() || average.columns() != 1)) ||
             (dim == Dimension.COLUMN &&
              (average.rows() != 1 || average.columns() != m.columns()))) {
-            return null;
+            throw new IllegalArgumentException(
+                    "The matrix is not properly formatted.");
         }
+
         Matrix std = null;
         if (dim == Dimension.ALL) {
+            // Compute the Standard Deviation of the matrix over all values.
             double variance = 0;
             std = new ArrayMatrix(1, 1);
             int validSize = 0;
             for (int i = 0; i < m.rows(); ++i) {
                 for (int j = 0; j < m.columns(); ++j) {
+                    // Skip values which should not be considered.
                     if (m.get(i,j) == errorCode)
                         continue;
+
                     validSize++;
                     variance += Math.pow(m.get(i, j) - average.get(0, 0), 2);
                 }
             }
+
             variance = variance / (double) validSize;
             std.set(0, 0, Math.sqrt(variance));
         } else if (dim == Dimension.ROW) {
+            // Compute the Standard Deviation of each row in the matrix.
             std = new ArrayMatrix(m.rows(), 1);
             for (int i = 0; i < m.rows(); ++i) {
                 double variance = 0;
                 int validSize = 0;
                 for (int j = 0; j < m.columns(); ++j) {
+                    // Skip values which should not be considered.
                     if (m.get(i,j) == errorCode)
                         continue;
+
                     validSize++;
                     variance += Math.pow(m.get(i, j) - average.get(i, 0), 2);
                 }
+
                 variance = variance / (double) validSize;
                 std.set(i, 0, Math.sqrt(variance));
             }
         } else if (dim == Dimension.COLUMN) {
+            // Compute the Standard Deviation of each column in the matrix.
             std = new ArrayMatrix(1, m.columns());
             Matrix validSize = new ArrayMatrix(1, m.columns());
             for (int i = 0; i < m.rows(); ++i) {
                 for (int j = 0; j < m.columns(); ++j) {
+                    // Skip values which should not be considered.
                     if (m.get(i,j) == errorCode)
                         continue;
+
                     double variance = std.get(0, j);
                     variance += Math.pow(m.get(i, j) - average.get(0, j), 2);
                     std.set(0, j, variance);
                     validSize.set(0, j, validSize.get(0, j)+1);
                 }
             }
+
             for (int i = 0; i < m.columns(); ++i) {
                 double variance = std.get(0, i);
                 variance = variance / validSize.get(0, i);
@@ -247,46 +283,57 @@ public class Statistics {
      */
     public static Matrix average(Matrix m, Dimension dim, int errorCode) {
         Matrix averageMatrix = null;
+
         if (dim == Dimension.ALL) {
+            // Compute the average of all values in the matrix.
             int validSize = 0;
             double average = 0;
             for (int i = 0; i < m.rows(); ++i) {
                 for (int j = 0; j < m.columns(); ++j) {
+                    // Skip values which should not be considered.
                     if (m.get(i, j) == errorCode)
                         continue;
+
                     validSize++;
                     average += m.get(i, j);
                 }
             }
+
             averageMatrix = new ArrayMatrix(1, 1);
             average = average / (double) validSize;
             averageMatrix.set(1, 1, average);
         } else if (dim == Dimension.ROW) {
+            // Compute the average of each row in the matrix.
             averageMatrix = new ArrayMatrix(m.rows(), 1);
             for (int i = 0; i < m.rows(); ++i) {
                 double average = 0;
                 int validSize = 0;
                 for (int j = 0; j < m.columns(); ++j) {
+                    // Skip values which should not be considered.
                     if (m.get(i, j) == errorCode)
                         continue;
                     validSize++;
                     average += m.get(i, j);
                 }
+
                 average = average / (double) validSize;
                 averageMatrix.set(i, 0, average);
             }
         } else if (dim == Dimension.COLUMN) {
+            // Compute the average of each column in the matrix.
             averageMatrix = new ArrayMatrix(1, m.columns());
             Matrix validSize = new ArrayMatrix(1, m.columns());
             for (int i = 0; i < m.rows(); ++i) {
                 for (int j = 0; j < m.columns(); ++j) {
+                    // Skip values which should not be considered.
                     if (m.get(i, j) == errorCode)
                         continue;
-                    validSize.set(0, j, validSize.get(0, j)+1);
-                    averageMatrix.set(0, j,
-                                      m.get(i, j) + averageMatrix.get(0, j));
+                    validSize.set(0, j, validSize.get(0, j) + 1);
+                    double newValue = m.get(i, j) + averageMatrix.get(0, j);
+                    averageMatrix.set(0, j, newValue);
                 }
             }
+
             for (int i = 0; i < m.columns(); ++i) {
                 double average = averageMatrix.get(0, i);
                 average = average / validSize.get(0, i);
