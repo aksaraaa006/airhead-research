@@ -26,7 +26,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
-import edu.ucla.sspace.matrix.ConcurrentMatrix;
+import edu.ucla.sspace.matrix.AtomicMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
@@ -225,7 +225,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The matrix used for storing weight co-occurrence statistics of those
      * words that occur both before and after.
      */
-    private ConcurrentMatrix cooccurrenceMatrix;
+    private AtomicMatrix cooccurrenceMatrix;
 
     private Matrix reduced;
 

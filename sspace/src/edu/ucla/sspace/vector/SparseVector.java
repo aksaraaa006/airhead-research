@@ -21,91 +21,17 @@
 
 package edu.ucla.sspace.vector;
 
-import edu.ucla.sspace.util.SparseDoubleArray;
-
 /**
- * A {@code Vector} instance that keeps only the non-zero values of
- * the semantics in memory, thereby saving space at the expense of time.
- *
- * {@see SparseDoubleArray} for an implementation of the functionality.
+ * Interface for a {@code Vector} implementation indicating that it is
+ * sparse, and providing functionality to retrieve the non zero indices.
  *
  * @author Keith Stevens
  */
-public class SparseVector implements Vector, Sparse {
+public interface SparseVector extends Vector {
 
     /**
-     * The {@code SparseDoubleArray} which provides most of the functionality in
-     * this class.
+     * Return an array of all the non zero indices in this Sparse
+     * implementation.
      */
-    private SparseDoubleArray vector;
-
-    /**
-     * Creates a {@code SparseVector} that grows to the maximum size set
-     * by {@link Double#MAX_VALUE}.
-     */
-    public SparseVector() {
-        vector = new SparseDoubleArray();
-    }
-
-    /** 
-     * Create a {@code SparseVector} with the given size, having no
-     * non-zero values.
-     *
-     * @param length The length of this {@code SparseVector}.
-     */
-    public SparseVector(int length) {
-        vector = new SparseDoubleArray(length);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double add(int index, double delta) {
-        set(index, get(index) + delta);
-        return get(index) + delta;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(double[] values) {
-        vector = new SparseDoubleArray(values);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(int index, double value) {
-        vector.setPrimitive(index, value);
-    }
-
-    /** 
-     * @{inheritDoc}
-     */
-    public int[] getNonZeroIndices() {
-        return vector.getElementIndices();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("unchecked")
-    public double[] toArray(int size) {
-        double[] array = new double[size];
-        return vector.toPrimitiveArray(array);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double get(int index) {
-        return vector.getPrimitive(index);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int length() {
-        return vector.length();
-    }
+    int[] getNonZeroIndices();
 }
