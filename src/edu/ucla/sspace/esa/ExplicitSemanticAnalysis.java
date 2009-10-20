@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -190,7 +191,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
             termCounts.put(term, (count == null) ? 0 : count.intValue() + 1);
         }
 
-        Vector documentVector = new SparseVector(getVectorSize());
+        Vector documentVector = new CompactSparseVector(getVectorSize());
         for (Map.Entry<String, Integer> entry : termCounts.entrySet()) {
             Vector termVector = getTfIdfWeightedVector(entry.getKey(),
                                                        entry.getValue());
@@ -211,14 +212,14 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
         Vector docCounts = new DenseVector(cols);
         for (int row = 0; row < rows; ++row) {
             SparseVector vector =
-                (SparseVector) termWikiMatrix.getVector(row);
+                (SparseVector) termWikiMatrix.getRowVector(row);
             for (int index : vector.getNonZeroIndices())
                 docCounts.add(index, vector.get(index));
         }
 
         for (int row = 0; row < rows; ++row) {
             SparseVector vector =
-                (SparseVector) termWikiMatrix.getVector(row);
+                (SparseVector) termWikiMatrix.getRowVector(row);
             int[] nonZero = vector.getNonZeroIndices();
             double idf = Math.log(articleCount.get() / nonZero.length);
             for (int index : nonZero) {

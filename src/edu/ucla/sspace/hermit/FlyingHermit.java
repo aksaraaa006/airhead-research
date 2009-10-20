@@ -36,6 +36,7 @@ import java.io.IOException;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -49,11 +50,11 @@ import java.util.concurrent.ConcurrentMap;
 
 
 /**
- * An implementation of the FlyingHermit Semantic Space model. This implementation is
- * based on <p style="font-family:Garamond, Georgia, serif">Jones, M. N.,
- * Mewhort, D.  J.L. (2007).    Representing Word Meaning and Order Information
- * in a Composite Holographic Lexicon.    <i>Psychological Review</i>
- * <b>114</b>, 1-37.  Available <a
+ * An implementation of the {@code FlyingHermit} Semantic Space model. This
+ * implementation is based on <p style="font-family:Garamond, Georgia,
+ * serif">Jones, M. N., Mewhort, D.  J.L. (2007).    Representing Word Meaning
+ * and Order Information in a Composite Holographic Lexicon.    <i>Psychological
+ * Review</i> <b>114</b>, 1-37.  Available <a
  * href="www.indiana.edu/~clcl/BEAGLE/Jones_Mewhort_PR.pdf">here</a></p>
  *
  * For every word, a unique random index vector is created, where the vector has
@@ -88,10 +89,21 @@ public class FlyingHermit implements SemanticSpace {
     private final IndexBuilder indexBuilder;
 
     /**
-     * A mapping for terms to their semantic vector representation. A {@code
-     * Vector} is used as these representations may be large.
+     * A mapping for terms to their set of semantic vector representations.
+     * This will contain the set of senses that {@code Flying Hermit} generates
+     * as it's processing the corpus.  This {@code Map} is used prior to {@code
+     * processSpace} being called.
      */
-    private final ConcurrentMap<String, List<Vector> > termHolographs;
+    private ConcurrentMap<String, List<Vector>> termVectors;
+
+    /**
+     * A mapping from a term sense to it's semantic representation.  This
+     * differs from {@code TermHolographs} in that it is index by keys of the
+     * form "term-senseNum", and map directly to only one of the term's
+     * representations.  This {@code Map} is used after {@code processSpace} is
+     * called.
+     */
+    private ConcurrentMap<String, Vector> splitSenses;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -101,36 +113,44 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * The number of words in the context to save prior to the focus word.
      */
-    private int prevSize;
+    private final int prevSize;
 
     /**
      * The number of words in the context to save after the focus word.
      */
-    private int nextSize;
+    private final int nextSize;
 
-    public FlyingHermit(IndexBuilder builder, int vectorSize) {
+    /**
+     * The threshold to use when combining term {@code Vector}s.  If the
+     * similarity between the most recent {@code Vector} and the centroids
+     * stored so far.
+     */
+    private double clusterThreshold;
+
+    public FlyingHermit(IndexBuilder builder,
+                        int vectorSize,
+                        double threshold) {
         indexVectorSize = vectorSize;
         indexBuilder = builder;
+        clusterThreshold = threshold;
         prevSize = builder.expectedSizeOfPrevWords();
         nextSize = builder.expectedSizeOfNextWords();
-        termHolographs = new ConcurrentHashMap<String, List<Vector> >();
+        termVectors = new ConcurrentHashMap<String, List<Vector> >();
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-        return termHolographs.keySet();
+        return Collections.unmodifiableSet(splitSenses.keySet());
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] getVectorFor(String term) {
-        Vector finalVector = indexBuilder.getSemanticVector();
-        for (Vector v : termHolographs.get(term))
-            Vectors.add(finalVector, v);
-        return finalVector.toArray(indexVectorSize);
+        Vector sense = splitSenses.get(term);
+        return (sense != null) ? sense.toArray(indexVectorSize) : null;
     }
 
     /**
@@ -191,29 +211,59 @@ public class FlyingHermit implements SemanticSpace {
                 prevWords.remove();
         }
 
-        for (Map.Entry<String, Vector> entry :
-                documentHolographs.entrySet()) {
-            List<Vector> termVectors = null;
-            synchronized (termHolographs) {
-                termVectors = termHolographs.get(entry.getKey());
-                if (termVectors == null) {
-                    termVectors = new ArrayList<Vector>();
-                    termHolographs.put(entry.getKey(), termVectors);
+        // Compare the most recent vector to all the saved vectors.  If the
+        // vector with the highest similarity has a similarity over a threshold,
+        // incorporate this {@code Vector} to that winner.  Otherwise add this
+        // {@code Vector} as a new vector for the term.
+        for (Map.Entry<String, Vector> entry : documentHolographs.entrySet()) {
+            // Get the set of term vectors for this word that have been found so
+            // far.
+            List<Vector> termSenses = null;
+            synchronized (termVectors) {
+                termSenses = termVectors.get(entry.getKey());
+                if (termSenses == null) {
+                    termSenses = new ArrayList<Vector>();
+                    termVectors.put(entry.getKey(), termSenses);
                 }
             }
+
+            // Update the set of centriods.
             synchronized (termVectors) {
-                // Compare the most recent vector to all the saved vectors.  If
-                // the vector with the highest similarity has a similarity over
-                // a threshold, incorporate this {@code Vector} to that
-                // winner.  Otherwise add this {@code Vector} as a new
-                // vector for the term.
+                Vector bestMatch = null;
+                double bestScore = 0;
+                double similarity = 0;
+                
+                // Find the centriod with the best similarity.
+                for (Vector centroid : termSenses) {
+                    similarity =
+                        Similarity.cosineSimilarity(centroid, entry.getValue());
+                    if (similarity > bestScore) {
+                        bestScore = similarity;
+                        bestMatch = centroid;
+                    }
+                }
+
+                // Add the current term vector if the similarity is high enough,
+                // or set it as a new centroid.
+                if (similarity > clusterThreshold)
+                    Vectors.add(bestMatch, entry.getValue());
+                else
+                    termSenses.add(entry.getValue());
             }
         }
     }
     
     /**
-     * No processing is performed on the holographs.
+     * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        splitSenses = new ConcurrentHashMap<String, Vector>();
+        for (Map.Entry<String, List<Vector>> entry : termVectors.entrySet()) {
+            List<Vector> holographs = entry.getValue();
+            for (int i = 0; i < holographs.size(); ++i)
+                splitSenses.put(entry.getKey() + "-" + i,
+                                    holographs.get(i));
+            termVectors.remove(entry.getKey(), entry.getValue());
+        }
     }
 }
