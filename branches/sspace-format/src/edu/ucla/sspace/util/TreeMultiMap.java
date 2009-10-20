@@ -507,7 +507,7 @@ public class TreeMultiMap<K,V>
 	private void advance() {
 	    // Check whether the current key has any additional mappings that
 	    // have not been returned
-	    if (curValues != null && curValues.hasNext()) {
+	    if (curValues.hasNext()) {
 		next = new MultiMapEntry(curKey, curValues.next());
 		//System.out.println("next = " + next);
 	    }

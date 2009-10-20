@@ -228,18 +228,15 @@ public abstract class OrderedTemporalRandomIndexing
 	
 	// Translate the On-line TRI properties into RI properties
 	Properties riProps = new Properties();
+	
+	riProps.put(RandomIndexing.VECTOR_LENGTH_PROPERTY,
+		    props.get(VECTOR_LENGTH_PROPERTY));
 
-        // Conditionally assign any of the specified Ordered TRI properties to
-        // the RI instance if they were set
-        String prop = null;
-        if ((prop = props.getProperty(VECTOR_LENGTH_PROPERTY)) != null)
-            riProps.put(RandomIndexing.VECTOR_LENGTH_PROPERTY, prop);
+	riProps.put(RandomIndexing.WINDOW_SIZE_PROPERTY,
+		    props.get(WINDOW_SIZE_PROPERTY));
 
-        if ((prop = props.getProperty(WINDOW_SIZE_PROPERTY)) != null)
-            riProps.put(RandomIndexing.WINDOW_SIZE_PROPERTY, prop);
-
-        if ((prop = props.getProperty(USE_SPARSE_SEMANTICS_PROPERTY)) != null)
-            riProps.put(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY, prop);
+	riProps.put(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY,
+		    props.get(USE_SPARSE_SEMANTICS_PROPERTY));
 
 	currentSlice = new RandomIndexing(riProps);
     }
@@ -283,7 +280,7 @@ public abstract class OrderedTemporalRandomIndexing
     public void processDocument(BufferedReader document, long timeStamp) 
 	    throws IOException {
 
-	if (startTime != null && shouldPartitionSpace(timeStamp)) {
+	if (shouldPartitionSpace(timeStamp)) {
 	    for (Iterator<Runnable> it = partitionHooks.iterator(); 
 		     it.hasNext(); ) {
 		Runnable r = it.next();

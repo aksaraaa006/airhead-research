@@ -41,7 +41,7 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public class AmortizedSparseVector implements Vector, SparseVector {
+public class AmortizedSparseVector implements Vector, Sparse {
 
     /**
      * An arraylist of non zero values for this row, stored in the correct
@@ -60,17 +60,11 @@ public class AmortizedSparseVector implements Vector, SparseVector {
     private int maxLength;
 
     /**
-     * The maximum known length of this vector.
-     */
-    private int knownLength;
-
-    /**
      * An {@code AmortizedSparseVector} with {@link Integer#MAX_VALUE}
      * dimensions.
      */
     public AmortizedSparseVector() {
         this(Integer.MAX_VALUE);
-        knownLength = 0;
     }
 
     /**
@@ -80,7 +74,6 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * @param length The maximum length of the {@code Vector}.
      */
     public AmortizedSparseVector(int length) {
-        knownLength = length;
         maxLength = length;
         values = new ArrayList<IndexValue>();
         comp = new CellComparator();
@@ -90,8 +83,6 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        checkIndex(index);
-
         double value = get(index) + delta;
         set(index, value);
         return value;
@@ -100,11 +91,9 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public double get(int index) {
-        checkIndex(index);
-
-        IndexValue item = new IndexValue(index, 0);
-        int valueIndex = Collections.binarySearch(values, item, comp);
-        return (valueIndex >= 0) ? values.get(valueIndex).value : 0.0;
+          IndexValue item = new IndexValue(index, 0);
+          int valueIndex = Collections.binarySearch(values, item, comp);
+          return (valueIndex >= 0) ? values.get(valueIndex).value : 0.0;
     }
 
     /**
@@ -113,10 +102,8 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * All read operations, and writes to indices which already exist are of
      * time O(log n).  Writers to new indices are of time O(log n).
      */
-    public void set(int index, double value) {
-        checkIndex(index);
-
-        IndexValue item = new IndexValue(index, 0);
+    public void set(int delta, double value) {
+        IndexValue item = new IndexValue(delta, 0);
         int valueIndex = Collections.binarySearch(values, item, comp);
         if (valueIndex >= 0 && value != 0d) {
             // Replace a currently existing item with a non zero value.
@@ -137,8 +124,6 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * Note that any values which are 0 are left out of the vector.
      */
     public void set(double[] value) {
-        checkIndex(value.length);
-
         for (int i = 0; i < value.length; ++i) {
             if (value[i] != 0d)
                 set(i, value[i]);
@@ -149,8 +134,6 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public double[] toArray(int size) {
-        checkIndex(size);
-
         double[] dense = new double[size];
         for (IndexValue item : values) {
             dense[item.index] = item.value;
@@ -172,19 +155,7 @@ public class AmortizedSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public int length() {
-        return knownLength;
-    }
-
-    /**
-     * If {@code length} is longer than the currently known reset the value of
-     * {@code knownLength}.
-     */
-    private void checkIndex(int length) {
-        if (maxLength == Integer.MAX_VALUE && knownLength < length)
-            knownLength = length;
-        else if (length < 0 || length >= maxLength)
-            throw new IllegalArgumentException("Length must be non negative " +
-                    "and less than the maximum length");
+        return maxLength;
     }
 
     /**

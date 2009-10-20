@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.vector.VectorIO;
+import edu.ucla.sspace.matrix.VectorIO;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
