@@ -144,6 +144,45 @@ public class Vectors {
     }
 
     /**
+     * Multiple the values in {@code left} and {@code right} and store the
+     * product in {@code left}.  This is an element by element multiplication.
+     *
+     * @param left The left {@code Vector} to multiply, and contain the result
+     *             values.
+     * @param right The right {@code Vector} to multiply.
+     *
+     * @return The product of {@code left} and {@code right}
+     */
+    public static Vector multiply(Vector left, Vector right) {
+        for (int i = 0; i < left.length(); ++i)
+            left.set(i, left.get(i) * right.get(i));
+        return left;
+    }
+
+    /**
+     * Multiple the values in {@code left} and {@code right} and store the
+     * product in a new {@code Vector}.  This is an element by element
+     * multiplication.
+     *
+     * @param left The left {@code Vector} to multiply.
+     * @param right The right {@code Vector} to multiply.
+     *
+     * @return The product of {@code left} and {@code right}
+     */
+    public static Vector multiplyUnmodified(Vector left, Vector right) {
+        Vector result;
+        if (left instanceof SparseVector ||
+            right instanceof SparseVector)
+            result = new CompactSparseVector(left.length());
+        else
+            result = new DenseVector(left.length());
+
+        for (int i = 0; i < left.length(); ++i)
+            result.set(i, left.get(i) * right.get(i));
+        return result;
+    }
+
+    /**
      * Add the values from a {@code CompactSparseVector} to a {@code Vector}.
      * Only the non-zero indices will be traversed to save time.
      *

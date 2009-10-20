@@ -21,9 +21,11 @@
 
 package edu.ucla.sspace.beagle;
 
-import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
+
+import edu.ucla.sspace.index.IndexBuilder;
+import edu.ucla.sspace.index.BeagleIndexBuilder;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -171,7 +173,7 @@ public class Beagle implements SemanticSpace {
             // one, as determined by the index builder.
             Vector meaning = termHolographs.get(focusWord);
             if (meaning == null) {
-                meaning = indexBuilder.getSemanticVector();
+                meaning = indexBuilder.getEmtpyVector();
                 documentVectors.put(focusWord, meaning);
             }
             indexBuilder.updateMeaningWithTerm(

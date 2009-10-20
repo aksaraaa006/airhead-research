@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.index;
 
 
 import edu.ucla.sspace.vector.Vector;
@@ -45,8 +45,10 @@ import java.util.Queue;
 public interface IndexBuilder {
 
     /**
-     * Given a current meaning vector, update it using index vectors from a given
-     * window of words.
+     * Given a current meaning vector, update it using index vectors from a
+     * given window of words.  If the terms in {@code prevWords} or {@code
+     * nextWords} do not already have a {@code Vector} for them, this method
+     * will auto generate one.
      *
      * @param meaning An existing meaning vector. After calling this method, the
      *                values of meaning will be updated according to some scheme.
@@ -60,8 +62,8 @@ public interface IndexBuilder {
                                       Queue<String> nextWords);
 
     /**
-     * Read in an set of existing index vectors from a binary file, along with any
-     * other data needed to represent the index vector accurately.
+     * Read in an set of existing index vectors from a binary file, along with
+     * any other data needed to represent the index vector accurately.
      *
      * @param vectorFile The file representing the stored {@code IndexBuiler}.
      */
@@ -76,15 +78,26 @@ public interface IndexBuilder {
     public void saveIndexVectors(File vectorFile);
 
     /**
-     * Return a new {@code Vector} appropriate for use with a specific {@code
-     * IndexBuilder}.  For {@code IndexBuilder}s which use a dense representation
-     * internally, a {@code DenseVector} would be appropriate, whereas a {@code
-     * SparseVector} would be fitting for {@code IndexBuilder}s which utilize
-     * sparse representations internally.
+     * Return a new, emtpy {@code Vector} appropriate for use with a specific
+     * {@code IndexBuilder}.  For {@code IndexBuilder}s which use a dense
+     * representation internally, a {@code DenseVector} would be appropriate,
+     * whereas a {@code SparseVector} would be fitting for {@code IndexBuilder}s
+     * which utilize sparse representations internally.
      *
      * @return a {@Vector} having the same type as the vectors used internally.
      */
-    public Vector getSemanticVector();
+    public Vector getEmtpyVector();
+
+    /**
+     * Return an index {@code Vector} for the given term, if no {@code Vector}
+     * exists for {@code term}, then generate a new one.  Any modification done
+     * by this method must be thread safe.
+     *
+     * @param term The term specifying the index {@code Vector} to return.
+     *
+     * @return A {@code Vector} corresponding to {@code term}.
+     */
+    //public Vector getIndexVector(String term);
 
     /**
      * Return the number of words expected before the focus word when examining

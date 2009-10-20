@@ -21,11 +21,12 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.beagle.Beagle;
+
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.beagle.Beagle;
-import edu.ucla.sspace.beagle.BeagleIndexBuilder;
+import edu.ucla.sspace.index.BeagleIndexBuilder;
 
 import java.io.IOException;
 

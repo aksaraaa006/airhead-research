@@ -22,10 +22,11 @@
 package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.common.Clustering;
-import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.SpectralClustering;
+
+import edu.ucla.sspace.index.IndexBuilder;
 
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
@@ -525,7 +526,7 @@ public class Hermit implements SemanticSpace {
     int assignmentIndex = 0;
     for (Map.Entry<Integer, List<int[]>> e :
         triplet.docToContextMap.entrySet()) {
-      Vector meaning = indexBuilder.getSemanticVector();
+      Vector meaning = indexBuilder.getEmtpyVector();
       for (int[] context : e.getValue()) {
         // Create the queues needed to represent the current context.
         Queue<String> prevWords = new ArrayDeque<String>();

@@ -1,23 +1,27 @@
-package edu.ucla.sspace.beagle;
+package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorGenerator;
 import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
-import edu.ucla.sspace.vector.Vector;
+
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.File;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Generate index vectors for the Beagle Semantic Space, and incorporate index
  * vectors of co-occuring words into the Semantic Vector for a focus word.
  */
 public class RandomIndexBuilder implements IndexBuilder {
+
     /**
      * The default number of dimensions to be used by the index and semantic
      * vectors.
@@ -63,7 +67,7 @@ public class RandomIndexBuilder implements IndexBuilder {
     }
 
     public void init(int vectorSize, int windowSize) {
-	wordToIndexVector = new ConcurrentHashMap<String, IndexVector>();
+        wordToIndexVector = new ConcurrentHashMap<String, IndexVector>();
         indexVectorSize = vectorSize;
         this.windowSize = windowSize;
         indexVectorGenerator = new RandomIndexVectorGenerator();
@@ -72,18 +76,21 @@ public class RandomIndexBuilder implements IndexBuilder {
     /**
      * Return an empty sparse semantic vector.
      */
-    public Vector getSemanticVector() {
+    public Vector getEmtpyVector() {
         return new CompactSparseVector(indexVectorSize);
     }
 
-    private IndexVector getIndexVector(String word) {
+    /**
+     * {@inheritDoc
+     */
+    public IndexVector getIndexVector(String word) {
         IndexVector v = wordToIndexVector.get(word);
         if (v == null) {
-	    // lock on th word in case multiple threads attempt to add it at
-	    // once
-	    synchronized(word) {
-                // recheck in case another thread added it while we were waiting
-                // for the lock
+            // lock on th word in case multiple threads attempt to add it at
+            // once
+            synchronized(word) {
+                // recheck in case another thread added it while we were
+                // waiting for the lock
                 v = wordToIndexVector.get(word);
                 if (v == null) {
                     v = indexVectorGenerator.create(indexVectorSize);
@@ -103,12 +110,16 @@ public class RandomIndexBuilder implements IndexBuilder {
     }
 
     /**
+     * {@inheritDoc}
+     *
      * Currently not implemented.
      */
     public void loadIndexVectors(File file) {
     }
 
     /**
+     * {@inheritDoc}
+     *
      * Currently not implemented.
      */
     public void saveIndexVectors(File file) {
@@ -129,11 +140,10 @@ public class RandomIndexBuilder implements IndexBuilder {
     }
 
     /**
-     * Sum the index vectors of words in the given context to {@code meaning}.
+     * {@inheritDoc}
      *
-     * @param meaning The {@code Vector} of the focus word.
-     * @param prevWords The words prior to the focus word in the context.
-     * @param nextWords The Words after the focus word in the context.
+     * </p> Sum the index vectors of words in the given context to {@code
+     * meaning}.
      */
     public void updateMeaningWithTerm(Vector meaning,
                                       Queue<String> prevWords,

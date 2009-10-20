@@ -19,11 +19,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.beagle;
+package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.common.IndexBuilder;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
+
+import edu.ucla.sspace.index.IndexBuilder;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -127,7 +128,7 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public double[] getVectorFor(String term) {
-        Vector finalVector = indexBuilder.getSemanticVector();
+        Vector finalVector = indexBuilder.getEmtpyVector();
         for (Vector v : termHolographs.get(term))
             Vectors.add(finalVector, v);
         return finalVector.toArray(indexVectorSize);
@@ -169,6 +170,7 @@ public class FlyingHermit implements SemanticSpace {
         prevWords.offer("");
 
         String focusWord = null;
+        //long start = System.currentTimeMillis();
         while (!nextWords.isEmpty()) {
             focusWord = nextWords.remove();
             if (it.hasNext())
@@ -179,7 +181,7 @@ public class FlyingHermit implements SemanticSpace {
             // one, as determined by the index builder.
             Vector meaning = documentHolographs.get(focusWord);
             if (meaning == null) {
-                meaning = indexBuilder.getSemanticVector();
+                meaning = indexBuilder.getEmtpyVector();
                 documentHolographs.put(focusWord, meaning);
             }
             indexBuilder.updateMeaningWithTerm(meaning, prevWords, nextWords);
@@ -190,6 +192,7 @@ public class FlyingHermit implements SemanticSpace {
             if (prevWords.size() > prevSize)
                 prevWords.remove();
         }
+        //long terms = System.currentTimeMillis();
 
         for (Map.Entry<String, Vector> entry :
                 documentHolographs.entrySet()) {
@@ -209,6 +212,10 @@ public class FlyingHermit implements SemanticSpace {
                 // vector for the term.
             }
         }
+        //long end = System.currentTimeMillis();
+        //System.out.println("time spent per all terms: " + (terms- start));
+        //System.out.println("time spent per clustering: " + (end - terms));
+        //System.out.println("time spent per doc: " + (end - start));
     }
     
     /**
