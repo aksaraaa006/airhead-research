@@ -89,8 +89,7 @@ public class TimeSpan {
      *        character to denote the time unit
      *
      * @throws IllegalArgumentException if <ul> <li> any of the parameters are
-     *         negative <li> if any of the time units are specified more than
-     *         once</ul>
+     *         negative <li> if any of the time units are specified twice
      */
     public TimeSpan(String timespan) {
 	
@@ -178,6 +177,7 @@ public class TimeSpan {
      * @throws IllegalArgumentException if any of the parameters are negative
      */
     public TimeSpan(int years, int months, int weeks, int days, int hours) {
+	
 	checkDuration(years);
 	checkDuration(months);
 	checkDuration(weeks);
@@ -195,16 +195,8 @@ public class TimeSpan {
      * Checks whether the index is already set in the bit flags and throws an
      * exception if so.
      *
-     * @param bigFlag an {code int} bit sequence, where each bit represents a a
-     *        time span value whose value is {@code 1} if that value has been
-     *        set
-     * @param index the index of the field whose value is to be checked whether
-     *        it has already been set
      * @param field the name of the index, which is used in the exception
      *        message
-     *
-     * @throws IllegalArgumentException if the value for the field has already
-     *         been set
      */
     private static void checkSetTwice(int bitFlag, int index, String field) {
 	// check that the field's index has not already been set
@@ -221,66 +213,6 @@ public class TimeSpan {
 	    throw new IllegalArgumentException(
 		"Duration must be non-negative");
     }    
-
-    /**
-     * Returns the day component of this time span.  This value does not reflect
-     * the total number of days that make up this time span, but rather how many
-     * days were specified in addition to the other time components to comprise
-     * the total duration.
-     *
-     * @returns the day component of this time span
-     */
-    public int getDays() {
-        return days;
-    }
-     
-    /**
-     * Returns the hour component of this time span.  This value does not
-     * reflect the total number of hours that make up this time span, but rather
-     * how many hours were specified in addition to the other time components to
-     * comprise the total duration.
-     *
-     * @returns the hour component of this time span
-     */
-    public int getHours() {
-        return hours;
-    }
-
-    /**
-     * Returns the month component of this time span.  This value does not
-     * reflect the total number of months that make up this time span, but
-     * rather how many months were specified in addition to the other time
-     * components to comprise the total duration.
-     *
-     * @returns the month component of this time span
-     */
-    public int getMonths() {
-        return months;
-    }
-
-    /**
-     * Returns the week component of this time span.  This value does not
-     * reflect the total number of weeks that make up this time span, but rather
-     * how many weeks were specified in addition to the other time components to
-     * comprise the total duration.
-     *
-     * @returns the week component of this time span
-     */
-    public int getWeeks() {
-        return weeks;
-    }
-
-    /**
-     * Returns the year component of this time span.  This value does not
-     * reflect the total number of years that make up this time span, but rather
-     * how many years were specified in addition to the other time components to
-     * comprise the total duration.
-     *
-     * @returns the year component of this time span
-     */
-    public int getYears() {
-        return years;
-    }
 
     /**
      * Returns {@code true} if the end date occurs after the start date during

@@ -25,11 +25,11 @@ import edu.ucla.sspace.vector.Vector;
 
 
 /**
- * A {@code Matrix} decorator class that provides thread safe access to a
+ * A {@code Matrix} decorator class that provides thread-safe access to a
  * backing {@code Matrix} instance.
  */
 
-public class SynchronizedMatrix implements Matrix, AtomicMatrix {
+public class SynchronizedMatrix implements Matrix {
     
     /**
      * The backing instance of the matrix.
@@ -47,24 +47,6 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized double addAndGet(int row, int col, double delta) {
-        double value = m.get(row, col) + delta;
-        m.set(row, col, value);
-        return value;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized double getAndAdd(int row, int col, double delta) {
-        double value = m.get(row, col);
-        m.set(row, col, value + delta);
-        return value;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public synchronized int columns() {
         return m.columns();
     }
@@ -79,15 +61,8 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized double[] getColumn(int column) {
-        return m.getColumn(column);
-    }
-           
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized Vector getColumnVector(int column) {
-        return m.getColumnVector(column);
+    public synchronized Vector getVector(int row) {
+        return m.getVector(row);
     }
 
     /**
@@ -97,13 +72,6 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
         return m.getRow(row);
     }
            
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized Vector getRowVector(int row) {
-        return m.getRowVector(row);
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -121,29 +89,8 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized void setColumn(int column, double[] values) {
-        m.setColumn(column, values);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized void setColumn(int column, Vector values) {
-        m.setColumn(column, values);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized void setRow(int row, double[] values) {
-        m.setRow(row, values);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized void setRow(int row, Vector values) {
-        m.setRow(row, values);
+    public synchronized void setRow(int row, double[] columns) {
+        m.setRow(row, columns);
     }
      
     /**

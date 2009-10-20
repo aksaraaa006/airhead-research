@@ -72,8 +72,8 @@ public class Vectors {
 
         // If vector is a sparse vector, simply get the non zero values and
         // add them to this instance.
-        if (vector2 instanceof SparseVector) {
-            addSparseValues(vector1, (SparseVector) vector2);
+        if (vector2 instanceof Sparse) {
+            addSparseValues(vector1, (Sparse) vector2);
         } else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -85,29 +85,6 @@ public class Vectors {
             }
         }
         return vector1;
-    }
-
-    /**
-     * Copy all of the values from one {@code Vector} into another.  After the
-     * operation, all of the values in {@code dest} will be the same as that of
-     * {@code source}.  The legnth of {@code dest} must be as long as the length
-     * of {@code source}.  Once completed {@code dest} is returned.
-     *
-     * @param dest The {@code Vector} to copy values into.
-     * @param source The {@code Vector} to copy values from.
-     * 
-     * @return {@code dest} after being copied from {@code source}.
-     *
-     * @throws IllegalArgumentException if the length of {@code dest} is less
-     *                                  than that of {@code source}.
-     */
-    public static Vector copy(Vector dest, Vector source) {
-        if (dest.length() != source.length())
-            throw new IllegalArgumentException("Vector lengths do not match");
-
-        for (int i = 0; i < source.length(); ++i)
-            dest.set(i, source.get(i));
-        return dest;
     }
 
     /**
@@ -126,10 +103,10 @@ public class Vectors {
         Vector finalVector;
         // If vector is a sparse vector, simply get the non zero values and
         // add them to this instance.
-        if (vector2 instanceof SparseVector) {
-            finalVector = new CompactSparseVector(vector1.length());
-            addSparseValues(finalVector, (SparseVector) vector1);
-            addSparseValues(finalVector, (SparseVector) vector2);
+        if (vector2 instanceof Sparse) {
+            finalVector = new SparseVector(vector1.length());
+            addSparseValues(finalVector, (Sparse) vector1);
+            addSparseValues(finalVector, (Sparse) vector2);
         } else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -144,14 +121,14 @@ public class Vectors {
     }
 
     /**
-     * Add the values from a {@code CompactSparseVector} to a {@code Vector}.
-     * Only the non-zero indices will be traversed to save time.
+     * Add the values from a {@code SparseVector} to a {@code Vector}.  Only the
+     * non-zero indices will be traversed to save time.
      *
      * @param destination The vector to write new values to.
      * @param source The vector to read values from.
      */
     private static void addSparseValues(Vector destination,
-                                        SparseVector source) {
+                                        Sparse source) {
         int[] otherIndices = source.getNonZeroIndices();
         for (int index : otherIndices)
             destination.add(index, source.get(index));
