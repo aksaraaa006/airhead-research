@@ -22,14 +22,13 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.FileBasedSemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceIO;
-import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceUtils;
+import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
 import edu.ucla.sspace.common.WordComparator;
-
-import edu.ucla.sspace.matrix.VectorIO;
 
 import edu.ucla.sspace.util.BoundedSortedMap;
 import edu.ucla.sspace.util.Pair;

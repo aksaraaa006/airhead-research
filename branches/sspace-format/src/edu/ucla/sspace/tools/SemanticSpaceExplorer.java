@@ -27,7 +27,7 @@ import edu.ucla.sspace.common.SemanticSpaceUtils;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.WordComparator;
 
-import edu.ucla.sspace.matrix.VectorIO;
+import edu.ucla.sspace.vector.VectorIO;
 
 import edu.ucla.sspace.text.WordIterator;
 

@@ -5,7 +5,7 @@ import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorGenerator;
 import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.CompactSparseVector;
 
 import java.io.File;
 import java.util.Map;
@@ -73,7 +73,7 @@ public class RandomIndexBuilder implements IndexBuilder {
      * Return an empty sparse semantic vector.
      */
     public Vector getSemanticVector() {
-        return new SparseVector(indexVectorSize);
+        return new CompactSparseVector(indexVectorSize);
     }
 
     private IndexVector getIndexVector(String word) {
