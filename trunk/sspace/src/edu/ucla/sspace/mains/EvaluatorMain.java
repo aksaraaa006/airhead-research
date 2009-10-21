@@ -23,8 +23,8 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
 
@@ -241,8 +241,7 @@ public class EvaluatorMain {
 	    SemanticSpace sspace = fileToSSpace.get(sspaceFileName);
 	    if (sspace == null) {
 		verbose("loading semantic space %s...", sspaceFileName);
-		sspace = SemanticSpaceUtils.
-		    loadSemanticSpace(new File(sspaceFileName), format);
+		sspace = SemanticSpaceIO.load(sspaceFileName);
 		fileToSSpace.put(sspaceFileName, sspace);
 		verbose("done");
 	    }

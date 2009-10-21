@@ -420,15 +420,26 @@ public class MatrixIO {
                 return array;
             }
 
+            case SVDLIBC_DENSE_BINARY: {
+                DataInputStream in = new DataInputStream(new FileInputStream(input));
+                int numRows = in.readInt();
+                int numCols = in.readInt();
+                double[][] array = new double[numRows][numCols];
+
+                for (int row = 0; row < numRows; ++row) {
+                    for (int col = 0; col < numCols; ++col) {
+                        array[row][col] = in.readFloat();
+                    }
+                }                 
+                
+                return array;
+            }
+
             case SVDLIBC_DENSE_TEXT:
                 // TODO IMPLEMENT ME.
                 break;
 
-            case SVDLIBC_SPARSE_BINARY:
-                // TODO IMPLEMENT ME.
-                break;
-
-            case SVDLIBC_DENSE_BINARY: {
+            case SVDLIBC_SPARSE_BINARY: {
                 DataInputStream in = new DataInputStream(new FileInputStream(input));
                 int numRows = in.readInt();
                 int numCols = in.readInt();
@@ -525,7 +536,6 @@ public class MatrixIO {
         return m;
     }
 
-    
     /**
      * Creates a {@code Matrix} from the data encoded as {@link
      * Format#SVDLIBC_DENSE_TEXT} in provided file.

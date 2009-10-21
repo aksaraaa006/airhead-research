@@ -227,9 +227,9 @@
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.ClusterTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.common.FileBasedSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
@@ -246,7 +246,6 @@
       <test name="edu.ucla.sspace.text.StringUtilsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestCompoundWordIterator" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.text.WordFilterTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.util.HashMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.IntegerMapTests" todir="${report.dir}"/>

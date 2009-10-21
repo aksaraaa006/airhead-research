@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
@@ -35,6 +35,8 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -49,10 +51,9 @@ import java.util.logging.Logger;
  * An unmodifiable {@link SemanticSpace} whose data is loaded into memory from
  * an {@code .sspace} file.  Instance of this class perform no document
  * processing, and the {@code processDocument} and {@code processSpace} methods
- * do nothing.  The input file format should be one of formats produced by
- * {@link edu.ucla.sspace.common.SemanticSpaceUtils}.<p>
+ * throw an {@link UnsupportedOperationException}.  
  *
- * In general, users should call {@link
+ * <p> In general, users should call {@link
  * edu.ucla.sspace.common.SemanticSpaceUtils#loadSemanticSpace(File)
  * SemanticSpaceUtils.loadSemanticSpace(File)} rather than create an instance of
  * this class directly.<p>
@@ -63,61 +64,91 @@ import java.util.logging.Logger;
  * @see SemanticSpaceUtils
  * @see SemanticSpaceUtils.SSpaceFormat
  */
-public class FileBasedSemanticSpace implements SemanticSpace {
+public class StaticSemanticSpace implements SemanticSpace {
 
     private static final Logger LOGGER = 
-	Logger.getLogger(FileBasedSemanticSpace.class.getName());
+	Logger.getLogger(StaticSemanticSpace.class.getName());
 
     /**
      * The {@code Matrix} which contains the data read from a finished {@link
      * SemanticSpace}.
      */
-    private final Matrix wordSpace;
+    private Matrix wordSpace;
 
     /**
      * A mapping of terms to row indexes.  Also serves as a quick means of
      * retrieving the words known by this {@link SemanticSpace}.
      */
-    private final Map<String, Integer> termToIndex ;
+    private Map<String, Integer> termToIndex ;
 
     /**
      * The name of this semantic space.
      */
-    private final String spaceName;
+    private String spaceName;    
 
     /**
-     * Creates the {@link FileBasedSemanticSpace} from the file using the {@link
-     * SSpaceFormat#TEXT text} format.
+     * Creates the {@link StaticSemanticSpace} from the file.
      *
-     * @param filename filename of the data intended be provided by this
-     *   {@link edu.ucla.sspace.common.SemanticSpace}.
+     * @param filename the name of a file containing {@code SemanticSpace} data.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    public FileBasedSemanticSpace(String filename) {
-	this(new File(filename), SSpaceFormat.TEXT);
+    public StaticSemanticSpace(String filename) throws IOException {
+	this(new File(filename));
     }
 
     /**
-     * Creates the {@link FileBasedSemanticSpace} from the provided file in the
-     * {@link SSpaceFormat#TEXT text} format.
+     * Creates the {@link StaticSemanticSpace} from the provided file.
      *
-     * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.SemanticSpace}.
+     * @param file a file containing the data of a {@link
+     *        edu.ucla.sspace.common.SemanticSpace}.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    public FileBasedSemanticSpace(File file) {
-	this(file, SSpaceFormat.TEXT);
+    public StaticSemanticSpace(File file) throws IOException {
+        spaceName = file.getName();
+        SSpaceFormat format = SemanticSpaceIO.getFormat(file);
+        if (format == null)
+            throw new Error("Unrecognzied format in " +
+                            "file: " + file.getName());
+        DataInputStream dis = new DataInputStream(new FileInputStream(file));
+        // Read off the four byte header from the stream so the loading methods
+        // do not see the data.  This is necessary to support older formats that
+        // did not include the header.
+        dis.readInt();
+        loadFromFormat(dis, format);
     }
 
     /**
-     * Creates the {@link FileBasedSemanticSpace} from the provided file in
-     * the specified format.
+     * Creates the {@link StaticSemanticSpace} from the provided file in the
+     * specified format.  This method is only to be used in accessing {@code
+     * SemanticSpace} files that do not include the format in their file
+     * contents.
      *
-     * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.SemanticSpace}.
+     * @param file a file containing the data of a {@link
+     *        edu.ucla.sspace.common.SemanticSpace}.
+     * @param format the format of the semantic space
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    public FileBasedSemanticSpace(File file, SSpaceFormat format) {
+    @Deprecated public StaticSemanticSpace(File file, SSpaceFormat format) 
+            throws IOException {
+        loadFromFormat(new FileInputStream(file), format);
+        spaceName = file.getName();
+    }
 
-	spaceName = file.getName();
-
+    /**
+     * Loads the semantic space data from the specified stream, using the format
+     * to determine how the data is layed out internally within the stream.
+     *
+     * @param is the input stream from which the semantic space will be read
+     * @param format the internal data formatting of the semantic space
+     */
+    private void loadFromFormat(InputStream is, SSpaceFormat format)
+            throws IOException {
 	// NOTE: Use a LinkedHashMap here because this will ensure that the words
 	// are returned in the same row-order as the matrix.  This generates better
 	// disk I/O behavior for accessing the matrix since each word is directly
@@ -125,34 +156,31 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	termToIndex = new LinkedHashMap<String, Integer>();
 	Matrix m = null;
 	long start = System.currentTimeMillis();
-	try {
-	    switch (format) {
-	    case TEXT:
-		m = Matrices.synchronizedMatrix(loadText(file));
-		break;
-	    case BINARY:
-		m = Matrices.synchronizedMatrix(loadBinary(file));
-		break;
-	      
-	    // REMINDER: we don't use synchronized here because the current
-	    // sparse matrix implementations are thread-safe.  We really should
-	    // be aware of this for when the file-based sparse matrix gets
-	    // implemented.  -jurgens 05/29/09
-	    case SPARSE_TEXT:
-		m = loadSparseText(file);
-		break;
-	    case SPARSE_BINARY:
-		m = loadSparseBinary(file);
-		break;
-	    }
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}  
+
+        switch (format) {
+        case TEXT:
+            m = Matrices.synchronizedMatrix(loadText(is));
+            break;
+        case BINARY:
+            m = Matrices.synchronizedMatrix(loadBinary(is));
+            break;
+	    
+	// REMINDER: we don't use synchronized here because the current
+	// sparse matrix implementations are thread-safe.  We really should
+	// be aware of this for when the file-based sparse matrix gets
+	// implemented.  -jurgens 05/29/09
+        case SPARSE_TEXT:
+            m = loadSparseText(is);
+            break;
+        case SPARSE_BINARY:
+            m = loadSparseBinary(is);
+            break;
+        }
+        
 	if (LOGGER.isLoggable(Level.FINE)) {
 	    LOGGER.fine("loaded " + format + " .sspace file in " +
 			(System.currentTimeMillis() - start) + "ms");
-	}
-	
+	}	
 	wordSpace = m;
     }
 
@@ -163,13 +191,15 @@ public class FileBasedSemanticSpace implements SemanticSpace {
      *
      * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
      */
-    private Matrix loadText(File sspaceFile) throws IOException {
+    private Matrix loadText(InputStream fileStream) throws IOException {
 	Matrix matrix = null;
 
-	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
+	BufferedReader br = 
+            new BufferedReader(new InputStreamReader(fileStream));
 	String line = br.readLine();
 	if (line == null)
-	    throw new IOError(new Throwable("An empty file has been passed in"));
+	    throw new IOException("Empty .sspace file");
+        // Strip off the 4-byte (2 char) header
 	String[] dimensions = line.split("\\s");
 	int rows = Integer.parseInt(dimensions[0]);
 	int columns = Integer.parseInt(dimensions[1]);
@@ -180,12 +210,14 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	
 	matrix = Matrices.create(rows, columns, true);
 	while ((line = br.readLine()) != null) {
+            if (index >= rows)
+                throw new IOException("More rows than specified");
 	    String[] termVectorPair = line.split("\\|");
 	    String[] values = termVectorPair[1].split("\\s");
 	    termToIndex.put(termVectorPair[0], index);
 	    if (values.length != columns) {
-		throw new IOError(
-		    new Throwable("improperly formated semantic space file"));	    
+		throw new IOException(
+                    "improperly formated semantic space file");
 	    }
 	    for (int c = 0; c < columns; ++c) {
 		double d = Double.parseDouble(values[c]);
@@ -195,6 +227,9 @@ public class FileBasedSemanticSpace implements SemanticSpace {
 	    matrix.setRow(index, row);
 	    index++;
 	}
+        if (index != rows)
+            throw new IOException(String.format(
+                "Expected %d rows; saw %d", rows, index));
 	return matrix;    
     }
 
@@ -205,10 +240,11 @@ public class FileBasedSemanticSpace implements SemanticSpace {
      *
      * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
      */
-    private Matrix loadSparseText(File sspaceFile) throws IOException {
+    private Matrix loadSparseText(InputStream fileStream) throws IOException {
 	Matrix matrix = null;
 
-	BufferedReader br = new BufferedReader(new FileReader(sspaceFile));
+	BufferedReader br = 
+            new BufferedReader(new InputStreamReader(fileStream));
 	String line = br.readLine();
 	if (line == null)
 	    throw new IOError(new Throwable("An empty file has been passed in"));
@@ -243,9 +279,8 @@ public class FileBasedSemanticSpace implements SemanticSpace {
      *
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
-    private Matrix loadBinary(File sspaceFile) throws IOException {
-	DataInputStream dis = 
-	    new DataInputStream(new FileInputStream(sspaceFile));
+    private Matrix loadBinary(InputStream fileStream) throws IOException {
+	DataInputStream dis = new DataInputStream(fileStream);
 	int rows = dis.readInt();
 	int cols = dis.readInt();
 	// create a dense matrix
@@ -269,9 +304,8 @@ public class FileBasedSemanticSpace implements SemanticSpace {
      *
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
-    private Matrix loadSparseBinary(File sspaceFile) throws IOException {
-	DataInputStream dis = 
-	    new DataInputStream(new FileInputStream(sspaceFile));
+    private Matrix loadSparseBinary(InputStream fileStream) throws IOException {
+	DataInputStream dis = new DataInputStream(fileStream);
 	int rows = dis.readInt();
 	int cols = dis.readInt();
 	// create a sparse matrix
@@ -321,13 +355,22 @@ public class FileBasedSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * A noop.
+     * Not supported; throws an {@link UnsupportedOperationException} if called.
+     *
+     * @throws an {@link UnsupportedOperationException} if called
      */
-    public void processDocument(BufferedReader document) { }
+    public void processDocument(BufferedReader document) { 
+        throw new UnsupportedOperationException(
+            "StaticSemanticSpace instances cannot be updated");
+    }
 
     /**
-     * A noop.
+     * Not supported; throws an {@link UnsupportedOperationException} if called.
+     *
+     * @throws an {@link UnsupportedOperationException} if called
      */
-    public void processSpace(Properties props) { }
-
+    public void processSpace(Properties props) { 
+        throw new UnsupportedOperationException(
+            "StaticSemanticSpace instances cannot be updated");
+    }
 }

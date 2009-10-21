@@ -141,6 +141,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         return rowEntry.getAndAdd(col, delta);
     }
 
+
     /**
      * {@inheritDoc}
      */
