@@ -34,10 +34,10 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MatrixIOtests {
-  public static double[][] testMatrix = {
-    {2.3, 0, 4.2},
-    {0, 1.3, 2.2},
-    {3.8, 0, 0.5}};
+    public static double[][] testMatrix = {
+        {2.3, 0, 4.2},
+        {0, 1.3, 2.2},
+        {3.8, 0, 0.5}};
 
     public static File getMatlabFile() throws Exception {
 	File f = File.createTempFile("unit-test",".dat");
@@ -53,61 +53,61 @@ public class MatrixIOtests {
     }
 
     public static File getSparseSVDLIBCFile() throws Exception {
-      File f = File.createTempFile("unit-test",".dat");
-      PrintWriter pw = new PrintWriter(f);
-      pw.println("3 3 6");
-      pw.println("2");
-      pw.println("0 2.3");
-      pw.println("2 3.8");
+        File f = File.createTempFile("unit-test",".dat");
+        PrintWriter pw = new PrintWriter(f);
+        pw.println("3 3 6");
+        pw.println("2");
+        pw.println("0 2.3");
+        pw.println("2 3.8");
 
-      pw.println("1");
-      pw.println("1 1.3");
+        pw.println("1");
+        pw.println("1 1.3");
 
-      pw.println("3");
-      pw.println("0 4.2");
-      pw.println("1 2.2");
-      pw.println("2 0.5");
-      pw.close();
-      return f;
+        pw.println("3");
+        pw.println("0 4.2");
+        pw.println("1 2.2");
+        pw.println("2 0.5");
+        pw.close();
+        return f;
     }
 
     public static File getSparseBinarySVDLIBCFile() throws Exception {
-      File f = File.createTempFile("unit-test",".dat");
-      DataOutputStream pw = new DataOutputStream(new FileOutputStream(f));
-      pw.writeInt(3);
-      pw.writeInt(3);
-      pw.writeInt(6);
+        File f = File.createTempFile("unit-test",".dat");
+        DataOutputStream pw = new DataOutputStream(new FileOutputStream(f));
+        pw.writeInt(3);
+        pw.writeInt(3);
+        pw.writeInt(6);
 
-      pw.writeInt(2);
-      pw.writeInt(0);
-      pw.writeDouble(2.3);
-      pw.writeInt(2);
-      pw.writeDouble(3.8);
+        pw.writeInt(2);
+        pw.writeInt(0);
+        pw.writeDouble(2.3);
+        pw.writeInt(2);
+        pw.writeDouble(3.8);
 
-      pw.writeInt(1);
-      pw.writeInt(1);
-      pw.writeDouble(1.3);
+        pw.writeInt(1);
+        pw.writeInt(1);
+        pw.writeDouble(1.3);
 
-      pw.writeInt(3);
-      pw.writeInt(0);
-      pw.writeDouble(4.2);
-      pw.writeInt(1);
-      pw.writeDouble(2.2);
-      pw.writeInt(2);
-      pw.writeDouble(0.5);
+        pw.writeInt(3);
+        pw.writeInt(0);
+        pw.writeDouble(4.2);
+        pw.writeInt(1);
+        pw.writeDouble(2.2);
+        pw.writeInt(2);
+        pw.writeDouble(0.5);
 
-      pw.close();
-      return f;
+        pw.close();
+        return f;
     }
 
     @Test public void matlabToSVDLIBCsparse() throws Exception {
 	
 	File matlab = getMatlabFile();
 	File svdlibc = MatrixIO.convertFormat(matlab,
-	    MatrixIO.Format.MATLAB_SPARSE, MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
+            MatrixIO.Format.MATLAB_SPARSE, MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
 	
 	WordIterator it = new WordIterator(
-	    new BufferedReader(new FileReader(svdlibc)));
+            new BufferedReader(new FileReader(svdlibc)));
 
 	// size
 	assertEquals("3", it.next());
@@ -137,49 +137,49 @@ public class MatrixIOtests {
     }
 
     @Test public void readMatrixArrayFromMatlabSparse() throws Exception {
-      File matlab = getMatlabFile();
-      double[][] resultMatrix =
-        MatrixIO.readMatrixArray(matlab, MatrixIO.Format.MATLAB_SPARSE);
-      assertEquals(testMatrix.length, resultMatrix.length); 
-      assertEquals(testMatrix[0].length, resultMatrix[0].length); 
-      int rows = testMatrix.length;
-      int cols = testMatrix[0].length;
-      for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-          assertEquals(testMatrix[i][j], resultMatrix[i][j], 0.0001);
+        File matlab = getMatlabFile();
+        double[][] resultMatrix =
+            MatrixIO.readMatrixArray(matlab, MatrixIO.Format.MATLAB_SPARSE);
+        assertEquals(testMatrix.length, resultMatrix.length); 
+        assertEquals(testMatrix[0].length, resultMatrix[0].length); 
+        int rows = testMatrix.length;
+        int cols = testMatrix[0].length;
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                assertEquals(testMatrix[i][j], resultMatrix[i][j], 0.0001);
+            }
         }
-      }
     }
 
     @Test public void readMatrixArrayFromSVDLIBCSparse() throws Exception {
-      File svdlibcSparseText = getSparseSVDLIBCFile();
-      double[][] resultMatrix =
-        MatrixIO.readMatrixArray(svdlibcSparseText,
-                                 MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
-      assertEquals(testMatrix.length, resultMatrix.length); 
-      assertEquals(testMatrix[0].length, resultMatrix[0].length); 
-      int rows = testMatrix.length;
-      int cols = testMatrix[0].length;
-      for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-          assertEquals(testMatrix[i][j], resultMatrix[i][j], 0.0001);
+        File svdlibcSparseText = getSparseSVDLIBCFile();
+        double[][] resultMatrix =
+            MatrixIO.readMatrixArray(svdlibcSparseText,
+                                     MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
+        assertEquals(testMatrix.length, resultMatrix.length); 
+        assertEquals(testMatrix[0].length, resultMatrix[0].length); 
+        int rows = testMatrix.length;
+        int cols = testMatrix[0].length;
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                assertEquals(testMatrix[i][j], resultMatrix[i][j], 0.0001);
+            }
         }
-      }
     }
 
     @Test public void readMatrixArrayFromSVDLIBCSparseBinary() throws Exception {
-      File svdlibcSparseText = getSparseBinarySVDLIBCFile();
-      double[][] resultMatrix =
-        MatrixIO.readMatrixArray(svdlibcSparseText,
-                                 MatrixIO.Format.SVDLIBC_SPARSE_BINARY);
-      assertEquals(testMatrix.length, resultMatrix.length); 
-      assertEquals(testMatrix[0].length, resultMatrix[0].length); 
-      int rows = testMatrix.length;
-      int cols = testMatrix[0].length;
-      for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-          assertEquals(testMatrix[i][j], resultMatrix[i][j], 0.0001);
+        File svdlibcSparseText = getSparseBinarySVDLIBCFile();
+        double[][] resultMatrix =
+            MatrixIO.readMatrixArray(svdlibcSparseText,
+                                     MatrixIO.Format.SVDLIBC_SPARSE_BINARY);
+        assertEquals(testMatrix.length, resultMatrix.length); 
+        assertEquals(testMatrix[0].length, resultMatrix[0].length); 
+        int rows = testMatrix.length;
+        int cols = testMatrix[0].length;
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                assertEquals(testMatrix[i][j], resultMatrix[i][j], 0.0001);
+            }
         }
-      }
     }
 }

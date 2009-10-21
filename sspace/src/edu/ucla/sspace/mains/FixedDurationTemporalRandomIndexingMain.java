@@ -23,8 +23,8 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.common.WordComparator;
@@ -501,7 +501,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 				      outputDir);
 	    
 	    long startTime = System.currentTimeMillis();
-	    SemanticSpaceUtils.printSemanticSpace(sspace, output, format);
+	    SemanticSpaceIO.save(sspace, output, format);
 	    long endTime = System.currentTimeMillis();
 	    verbose("printed space in %.3f seconds%n",
 		    ((endTime - startTime) / 1000d));

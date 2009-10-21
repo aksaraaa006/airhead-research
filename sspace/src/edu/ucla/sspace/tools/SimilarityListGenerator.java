@@ -22,12 +22,10 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.FileBasedSemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.WordComparator;
 
 import edu.ucla.sspace.util.BoundedSortedMap;
@@ -84,12 +82,6 @@ public class SimilarityListGenerator {
 	argOptions.addOption('n', "numSimilar", "the number of similar words " +
 			     "to print (default: 10)", true, "String", 
 			     "Program Options");
-
-	argOptions.addOption('f', "sspaceFormat", ".sspace file format" +
-			     " (default: text)", true, "text|binary", 
-			     "Program Options");
-
-
 	argOptions.addOption('t', "threads", "the number of threads to use" +
 			     " (default: #procesors)", true, "int", 
 			     "Program Options");
@@ -173,16 +165,7 @@ public class SimilarityListGenerator {
 
 	LOGGER.fine("loading .sspace file: " + sspaceFile.getName());
 	
-	SSpaceFormat format = SSpaceFormat.TEXT;
-	if (argOptions.hasOption("sspaceFormat")) {
-	    // capitalize the name to be consistent with the enum
-	    String formatName = 
-		argOptions.getStringOption("sspaceFormat").toUpperCase();
-	    format = SSpaceFormat.valueOf(formatName);
-	}
-
-	final SemanticSpace sspace = 
-	    SemanticSpaceUtils.loadSemanticSpace(sspaceFile, format);
+	final SemanticSpace sspace = SemanticSpaceIO.load(sspaceFile);
 
 	File output = (overwrite)
 	    ? new File(outputDir, sspaceFile.getName() + ".similarityList")
@@ -194,41 +177,32 @@ public class SimilarityListGenerator {
 	final Set<String> words = sspace.getWords();
 	WordComparator comparator = new WordComparator(numThreads);
 
-	for (String word : words) {
-	    for (String other : words) {
-
-		// skip comparing the same word to itself
-		if (word.equals(other)) 
-		    continue;
-
-		// compute the k most-similar words to this word
-		SortedMultiMap<Double,String> mostSimilar =
-		    comparator.getMostSimilar(word, sspace, numSimilar,
-					      similarityType);
+	for (String word : words) {            
+            // compute the k most-similar words to this word
+            SortedMultiMap<Double,String> mostSimilar =
+                comparator.getMostSimilar(word, sspace, numSimilar,
+                                          similarityType);
+            
+            // once processing has finished write the k most-similar words to
+            // the output file.
+            StringBuilder sb = new StringBuilder(256);
+            sb.append(word).append("|");
+            for (Map.Entry<Double,String> e : 
+                     mostSimilar.entrySet()) {
+                String s = e.getValue();
+                Double d = e.getKey();
 		
-
-		// once processing has finished write the k most-similar
-		// words to the output file.
-		StringBuilder sb = new StringBuilder(256);
-		sb.append(word).append("|");
-		for (Map.Entry<Double,String> e : 
-			 mostSimilar.entrySet()) {
-		    String s = e.getValue();
-		    Double d = e.getKey();
-		
-		    sb.append(s);
-		    if (printSimilarity) {
-			sb.append(" ").append(d);
-		    }
-		    sb.append("|");
-		}
-		
-		synchronized(outputWriter) {
-		    outputWriter.println(sb.toString());
-		    outputWriter.flush();
-		}
-	    }
-	}
+                sb.append(s);
+                if (printSimilarity) {
+                    sb.append(" ").append(d);
+                }
+                sb.append("|");
+            }
+            
+            synchronized(outputWriter) {
+                outputWriter.println(sb.toString());
+                outputWriter.flush();
+            }
+        }
     }
-
 }

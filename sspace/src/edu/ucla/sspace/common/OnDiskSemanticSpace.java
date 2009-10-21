@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
@@ -33,6 +33,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 
 import java.util.Collections;
@@ -52,8 +53,8 @@ import java.util.logging.Logger;
  *
  * The performance of this class is dependent on the format of the backing
  * vector data; {@code .sspace} files in {@link SSpaceFormat#BINARY binary} or
- * {@link SSpaceFormat#SPARSE_BINARY sparse binary} format will be faster for
- * accessing the data.<p>
+ * {@link SSpaceFormat#SPARSE_BINARY sparse binary} format will likely be faster
+ * for accessing the data due to it being in its native format.<p>
  *
  * The {@code getWords} method will return words in the order they are stored on
  * disk.  Accessing the words in this order will have to a significant
@@ -65,8 +66,8 @@ import java.util.logging.Logger;
  *
  * This class is thread-safe.
  *
- * @see SemanticSpaceUtils
- * @see FileBasedSemanticSpace
+ * @see SemanticSpaceIO
+ * @see StaticSemanticSpace
  */
 public class OnDiskSemanticSpace implements SemanticSpace {
 
@@ -78,102 +79,142 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * If the {@code .sspace} is in binary, this will be a byte offset;
      * otherwise it is a line number in the text file.
      */
-    private final Map<String,Long> termToOffset;
-
+    private Map<String,Long> termToOffset;
+    
     /**
-     * The name of this semantic space.
+     * Whether the underlying semantic space file contains a 4-byte header
+     * indicating its format.  Before version 1.0 this was not required, so this
+     * flag enables older .sspace files to be manually loaded with a specific
+     * format, without breaking the binary compatibility of the rest of the
+     * file.
      */
-    private final String spaceName;
-
+    private final boolean containsHeader;
+    
     /**
      * The number of dimensions used in this semantic space.  This value is set
      * when the {@code termToOffset} map is populated and is used for error
      * checking in the files.
      */
-    private final int dimensions;
+    private int dimensions;
+
+    /**
+     * The name of this semantic space.
+     */
+    private String spaceName;
 
     /**
      * The reader for accessing a text-based {@code .sspace} file, or {@code
      * null} if the {@code .sspace} file is in binary format.
      */
-    private final RandomAccessBufferedReader textSSpace;
+    private RandomAccessBufferedReader textSSpace;
 
     /**
      * Byte access for a binary format {@code .sspace} file, or {@code null} if
      * the {@code .sspace} file is in text format.
      */
-    private final RandomAccessFile binarySSpace;
+    private RandomAccessFile binarySSpace;
 
     /**
      * The format of the file that backs this space.
      */
-    private final SSpaceFormat format;
+    private SSpaceFormat format;
 
     /**
-     * Creates the {@link OnDiskSemanticSpace} from the file using the {@link
-     * SSpaceFormat#TEXT text} format.
+     * Creates the {@link OnDiskSemanticSpace} from the file.
      *
-     * @param filename filename of the data intended be provided by this
-     *   {@link edu.ucla.sspace.common.SemanticSpace}.
+     * @param filename the name of a semantic space file
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
+     * @throws Error if the 4-byte header for the file contains an unrecognized
+     *         semantic space format
      */
-    public OnDiskSemanticSpace(String filename) {
-	this(new File(filename), SSpaceFormat.TEXT);
+    public OnDiskSemanticSpace(String filename) throws IOException {
+	this(new File(filename));
+    }
+
+    /**
+     * Creates the {@link OnDiskSemanticSpace} from the provided file.
+     *
+     * @param file a file containing a store semantic space
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
+     * @throws Error if the 4-byte header for the file contains an unrecognized
+     *         semantic space format
+     */
+    public OnDiskSemanticSpace(File file) throws IOException {
+        containsHeader = true;
+        SSpaceFormat format = SemanticSpaceIO.getFormat(file);
+        if (format == null)
+            throw new Error("Unrecognzied format in " +
+                            "file: " + file.getName());
+            loadOffsetsFromFormat(file, format);
     }
 
     /**
      * Creates the {@link OnDiskSemanticSpace} from the provided file in the
-     * {@link SSpaceFormat#TEXT text} format.
+     * specified format.  This constructor should only be used for loading
+     * semantic space files that do not have the 4-byte header indicating their
+     * format.
      *
-     * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.SemanticSpace}.
+     * @param file a file containing a semantic space
+     * @param format the format of the semanti space.
+     *
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    public OnDiskSemanticSpace(File file) {
-	this(file, SSpaceFormat.TEXT);
+    @Deprecated public OnDiskSemanticSpace(File file, SSpaceFormat format) 
+            throws IOException {
+        containsHeader = false;
+        loadOffsetsFromFormat(file, format);
     }
-
+    
     /**
-     * Creates the {@link OnDiskSemanticSpace} from the provided file in
-     * the specified format.
+     * Loads the words and offets for each word's vector in the semantic space
+     * file using the format as a guide to how the semantic space data is stored
+     * in the file.
+     * 
+     * @param file a file containing semantic space data
+     * @param format the format of the data in the file
      *
-     * @param file a file containing the data intended be provided by this {@link
-     *   edu.ucla.sspace.common.SemanticSpace}.
+     * @throws IOException if any I/O exception occurs when reading the semantic
+     *         space data from the file
      */
-    public OnDiskSemanticSpace(File file, SSpaceFormat format) {
-
+    private void loadOffsetsFromFormat(File file, SSpaceFormat format) 
+            throws IOException {
 	this.format = format;
 	spaceName = file.getName();
 
-	// NOTE: Use a LinkedHashMap here because this will ensure that the words
-	// are returned in the same row-order as the matrix.  This generates better
-	// disk I/O behavior for accessing the matrix since each word is directly
-	// after the previous on disk.
+	// NOTE: Use a LinkedHashMap here because this will ensure that the
+	// words are returned in the same row-order as the matrix.  This
+	// generates better disk I/O behavior for accessing the matrix since
+	// each word is directly after the previous on disk.
 	termToOffset = new LinkedHashMap<String,Long>();
 	long start = System.currentTimeMillis();
 	int dims = -1;
 	RandomAccessFile raf = null;
 	RandomAccessBufferedReader lnr = null;
-	try {
-	    switch (format) {
-	    case TEXT:
-		lnr = new RandomAccessBufferedReader(file);
-		dims = loadTextOffsets(lnr);
-		break;
-	    case BINARY:
-		raf = new RandomAccessFile(file, "r");
-		dims = loadBinaryOffsets(raf);
-		break;
-	    case SPARSE_TEXT:
-		lnr = new RandomAccessBufferedReader(file);
-		dims = loadSparseTextOffsets(lnr);
-		break;
-	    case SPARSE_BINARY:
-		raf = new RandomAccessFile(file, "r");
-		dims = loadSparseBinaryOffsets(raf);
-		break;
-	    }
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}  
+        switch (format) {
+        case TEXT:
+            lnr = new RandomAccessBufferedReader(file);
+            dims = loadTextOffsets(lnr);
+            break;
+        case BINARY:
+            raf = new RandomAccessFile(file, "r");
+            dims = loadBinaryOffsets(raf);
+            break;
+        case SPARSE_TEXT:
+            lnr = new RandomAccessBufferedReader(file);
+            dims = loadSparseTextOffsets(lnr);
+            break;
+        case SPARSE_BINARY:
+            raf = new RandomAccessFile(file, "r");
+            dims = loadSparseBinaryOffsets(raf);
+            break;
+        default:
+            assert false : format;
+        }
 	if (LOGGER.isLoggable(Level.FINE)) {
 	    LOGGER.fine("loaded " + format + " .sspace file in " +
 			(System.currentTimeMillis() - start) + "ms");
@@ -193,10 +234,14 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *
      * @return the number of dimensions for vectors in the loaded semantic space
      */
-    private int loadTextOffsets(RandomAccessBufferedReader textSSpace) throws IOException {
+    private int loadTextOffsets(RandomAccessBufferedReader textSSpace) 
+            throws IOException {
 	String line = textSSpace.readLine();
 	if (line == null)
 	    throw new IOError(new Throwable("An empty file has been passed in"));
+        // Strip off the 4-byte (2 char) header
+        if (containsHeader)
+            line = line.substring(4);
 	String[] dimensionStrs = line.split("\\s");
 	int dimensions = Integer.parseInt(dimensionStrs[1]);
 
@@ -211,13 +256,12 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * Returns the vector from the semantic space that is stored on disk in a
-     * {@code TEXT} format file.
+     * Loads a vector from the backing semantic space file in {@code TEXT}
+     * format using the predetermined offet for the word.
      *
      * @param word a word in the semantic space
-     *
-     * @return the vector for the word or {@code null} if the word is not in the
-     * semantic space
+     * @return the vector for the word or {@code null} if the word does not
+     *         exist in the semantic space
      */
     private double[] loadTextVector(String word) throws IOException {
 	Long lineNumber = termToOffset.get(word);
@@ -257,40 +301,49 @@ public class OnDiskSemanticSpace implements SemanticSpace {
 	if (line == null)
 	    throw new IOError(new Throwable("An empty file has been passed in"));
 
+        // Strip off the 4-byte (2 char) header
+        if (containsHeader) {
+            line = line.substring(4);
+            System.out.println(line);
+        }        
+
 	String[] dimensions = line.split("\\s");
 	int columns = Integer.parseInt(dimensions[1]);
-
+        int rows = Integer.parseInt(dimensions[0]);
 	int row = 1;
 	
 	while ((line = textSSpace.readLine()) != null) {
 	    String[] termVectorPair = line.split("\\|");
-
 	    termToOffset.put(termVectorPair[0], Long.valueOf(row));
 	    row++;
 	}
+        if ((row - 1) != rows)
+            throw new IOException(String.format(
+                "Different number of rows than specified (%d): %d", rows, row));
 	return columns;    
     }
 
     /**
-     * Returns the vector from the semantic space that is stored on disk in a
-     * {@code SPARSE_TEXT} format file.
+     * Loads a vector from the backing semantic space file in {@code
+     * SPARSE_TEXT} format using the predetermined offet for the word.
      *
      * @param word a word in the semantic space
-     *
-     * @return the vector for the word or {@code null} if the word is not in the
-     * semantic space
+     * @return the vector for the word or {@code null} if the word does not
+     *         exist in the semantic space
      */
     private double[] loadSparseTextVector(String word) throws IOException {
 	Long lineNumber = termToOffset.get(word);
 	if (lineNumber == null)
 	    return null;
-	
+
+
 	// skip to the line where the word's vector is found
 	textSSpace.moveToLine(lineNumber.intValue());
 	String line = textSSpace.readLine();
-	
+	if (line == null)
+            System.out.printf("%s -> null row %d%n", word, lineNumber);
 	double[] row = new double[dimensions];
-
+        
 	String[] termVectorPair = line.split("\\|");
 	String[] values = termVectorPair[1].split(",");
 	
@@ -313,6 +366,10 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     private int loadBinaryOffsets(RandomAccessFile binarySSpace) 
 	    throws IOException {
 
+        // Reader off the 4-byte header if it exists
+        if (containsHeader)
+            binarySSpace.readInt();
+    
 	int rows = binarySSpace.readInt();
 	int cols = binarySSpace.readInt();
 
@@ -328,16 +385,14 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * Returns the vector from the semantic space that is stored on disk in a
-     * {@code BINARY} format file.
+     * Loads a vector from the backing semantic space file in {@code BINARY}
+     * format using the predetermined offet for the word.
      *
      * @param word a word in the semantic space
-     *
-     * @return the vector for the word or {@code null} if the word is not in the
-     * semantic space
+     * @return the vector for the word or {@code null} if the word does not
+     *         exist in the semantic space
      */
     private double[] loadBinaryVector(String word) throws IOException {
-
 	Long byteOffset = termToOffset.get(word);
 	if (byteOffset == null)
 	    return null;
@@ -363,6 +418,10 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     private int loadSparseBinaryOffsets(RandomAccessFile binarySSpace) 
 	    throws IOException {
 
+        // Reader off the 4-byte header if it exists
+        if (containsHeader) {
+             int header = binarySSpace.readInt();
+        }
 	int rows = binarySSpace.readInt();
 	int cols = binarySSpace.readInt();
 
@@ -381,13 +440,12 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * Returns the vector from the semantic space that is stored on disk in a
-     * {@code SPARSE_BINARY} format file.
+     * Loads a vector from the backing semantic space file in {@code
+     * SPARSE_BINARY} format using the predetermined offet for the word.
      *
      * @param word a word in the semantic space
-     *
-     * @return the vector for the word or {@code null} if the word is not in the
-     * semantic space
+     * @return the vector for the word or {@code null} if the word does not
+     *         exist in the semantic space
      */
     private double[] loadSparseBinaryVector(String word) throws IOException {
 	Long byteOffset = termToOffset.get(word);
@@ -416,6 +474,9 @@ public class OnDiskSemanticSpace implements SemanticSpace {
   
     /**
      * {@inheritDoc}
+     *
+     * @throws IOError if any {@code IOException} occurs when reading the data
+     *         from the underlying semantic space file.
      */
     public synchronized double[] getVectorFor(String word) {
 	try {
@@ -452,18 +513,20 @@ public class OnDiskSemanticSpace implements SemanticSpace {
     }
 
     /**
-     * Does nothing.
-     *
-     * @param document {@inheritDoc}
+     * Not supported; throws an {@link UnsupportedOperationException} if called.
      */
-    public void processDocument(BufferedReader document) { }
+    public void processDocument(BufferedReader document) { 
+        throw new UnsupportedOperationException(
+            "OnDiskSemanticSpace instances cannot be updated");
+    }
 
     /**
-     * Does nothing.
-     *
-     * @param props {@inheritDoc}
+     * Not supported; throws an {@link UnsupportedOperationException} if called.
      */
-    public void processSpace(Properties props) { }
+    public void processSpace(Properties props) { 
+        throw new UnsupportedOperationException(
+            "OnDiskSemanticSpace instances cannot be updated");
+    }
 
     /**
      * A utility class for randomly seeking in in a text file.  The current

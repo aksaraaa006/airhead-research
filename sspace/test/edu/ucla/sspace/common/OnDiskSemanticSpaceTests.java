@@ -1,6 +1,6 @@
 package edu.ucla.sspace.common;
 
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.matrix.*;
 import edu.ucla.sspace.text.*; 
@@ -50,9 +50,8 @@ public class OnDiskSemanticSpaceTests {
     @Test public void testText() throws Exception { 
 	File textFile = File.createTempFile("test-text",".sspace");
 	textFile.deleteOnExit();
-	SemanticSpaceUtils.printSemanticSpace(test, textFile, SSpaceFormat.TEXT);
-	SemanticSpace onDisk = 
-	    new OnDiskSemanticSpace(textFile, SSpaceFormat.TEXT);
+	SemanticSpaceIO.save(test, textFile, SSpaceFormat.TEXT);
+	SemanticSpace onDisk = new OnDiskSemanticSpace(textFile);
 	
 	assertEquals(test.getWords().size(), onDisk.getWords().size());
 	assertTrue(test.getWords().containsAll(onDisk.getWords()));
@@ -65,10 +64,8 @@ public class OnDiskSemanticSpaceTests {
     @Test public void testSparseText() throws Exception { 
 	File sparseTextFile = File.createTempFile("test-sparse-text",".sspace");
 	sparseTextFile.deleteOnExit();
-	SemanticSpaceUtils.
-	    printSemanticSpace(test, sparseTextFile, SSpaceFormat.SPARSE_TEXT);
-	SemanticSpace onDisk = 
-	    new OnDiskSemanticSpace(sparseTextFile, SSpaceFormat.SPARSE_TEXT);
+	SemanticSpaceIO.save(test, sparseTextFile, SSpaceFormat.SPARSE_TEXT);
+	SemanticSpace onDisk = new OnDiskSemanticSpace(sparseTextFile);
 	
 	assertEquals(test.getWords().size(), onDisk.getWords().size());
 	assertTrue(test.getWords().containsAll(onDisk.getWords()));
@@ -81,10 +78,8 @@ public class OnDiskSemanticSpaceTests {
     @Test public void testBinary() throws Exception { 
 	File binaryFile = File.createTempFile("test-binary",".sspace");
  	binaryFile.deleteOnExit();
-	SemanticSpaceUtils.
-	    printSemanticSpace(test, binaryFile, SSpaceFormat.BINARY);
-	SemanticSpace onDisk = 
-	    new OnDiskSemanticSpace(binaryFile, SSpaceFormat.BINARY);
+	SemanticSpaceIO.save(test, binaryFile, SSpaceFormat.BINARY);
+	SemanticSpace onDisk = new OnDiskSemanticSpace(binaryFile);
 	
 	assertEquals(test.getWords().size(), onDisk.getWords().size());
 	assertTrue(test.getWords().containsAll(onDisk.getWords()));
@@ -97,16 +92,14 @@ public class OnDiskSemanticSpaceTests {
     @Test public void testSparseBinary() throws Exception { 
 	File sparseBinaryFile = File.createTempFile("test-sparse-binary",".sspace");
 	sparseBinaryFile.deleteOnExit();
-	SemanticSpaceUtils.printSemanticSpace(test, sparseBinaryFile, 
-					      SSpaceFormat.SPARSE_BINARY);
-	SemanticSpace onDisk = 
-	    new OnDiskSemanticSpace(sparseBinaryFile, SSpaceFormat.SPARSE_BINARY);
+	SemanticSpaceIO.save(test, sparseBinaryFile);
+        SemanticSpace onDisk = new OnDiskSemanticSpace(sparseBinaryFile);
 	
-	assertEquals(test.getWords().size(), onDisk.getWords().size());
-	assertTrue(test.getWords().containsAll(onDisk.getWords()));
-	for (String word : test.getWords()) {
-	    assertEquals(Arrays.toString(test.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
-	}	
+        assertEquals(test.getWords().size(), onDisk.getWords().size());
+        assertTrue(test.getWords().containsAll(onDisk.getWords()));
+        for (String word : test.getWords()) {
+            assertEquals(Arrays.toString(test.getVectorFor(word)),
+                         Arrays.toString(onDisk.getVectorFor(word)));
+        }
     }
 }
