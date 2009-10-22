@@ -64,8 +64,7 @@ public class TfIdfTransform implements Transform {
     /**
      * Creates an instance of {@code TfIdfTransform}.
      */
-    public TfIdfTransform() { }
-    
+    public TfIdfTransform() { }    
     
     /**
      * Transforms the matrix in the file using the term frequency-inverse
@@ -143,7 +142,7 @@ public class TfIdfTransform implements Transform {
         // Make one pass through the matrix to calculate the global statistics
 
 	int numUniqueWords = dis.readInt();
-	int numDocs = dis.readInt(); // equal to the number of rows
+	int numDocs = dis.readInt(); 
         int numMatrixEntries = dis.readInt();
 
         // Keep track of how many times a word was seen throughout the
@@ -180,7 +179,6 @@ public class TfIdfTransform implements Transform {
         dos.writeInt(numUniqueWords);
         dos.writeInt(numDocs);
         dos.writeInt(numMatrixEntries);
-
 
         // Calculate the term-frequency
         docIndex = 0;
