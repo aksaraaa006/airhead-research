@@ -49,6 +49,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 
 /**
  * An implementation of the {@code FlyingHermit} Semantic Space model. This
@@ -82,6 +85,12 @@ public class FlyingHermit implements SemanticSpace {
      */
     public static final String FLYING_HERMIT_SSPACE_NAME = 
         "flying-hermit-semantic-space";
+
+    /**
+     * The logger used to record all output
+     */
+    private static final Logger HERMIT_LOGGER =
+        Logger.getLogger(FlyingHermit.class.getName());
 
     /**
      * The class responsible for creating index vectors, and incorporating them
@@ -174,6 +183,8 @@ public class FlyingHermit implements SemanticSpace {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
 
+	    HERMIT_LOGGER.info("Processing a new document.");
+
         Iterator<String> it = IteratorFactory.tokenize(document);
 
         Map<String, Vector> documentHolographs =
@@ -257,6 +268,7 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+	    HERMIT_LOGGER.info("Starting with " + termVectors.size() + " terms.");
         splitSenses = new ConcurrentHashMap<String, Vector>();
         for (Map.Entry<String, List<Vector>> entry : termVectors.entrySet()) {
             List<Vector> holographs = entry.getValue();
@@ -265,5 +277,6 @@ public class FlyingHermit implements SemanticSpace {
                                     holographs.get(i));
             termVectors.remove(entry.getKey(), entry.getValue());
         }
+	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
     }
 }
