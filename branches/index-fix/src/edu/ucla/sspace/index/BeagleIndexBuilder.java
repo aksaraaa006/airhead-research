@@ -146,7 +146,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
         placeHolder = generateRandomVector();
 
         // Enter the zero vector for the empty string.
-        termToRandomIndex.put("", getEmtpyVector());
+        termToRandomIndex.put("", getEmptyVector());
 
         // Generate the permutation arrays.
         stdev = 1 / Math.sqrt(indexVectorSize);
@@ -243,7 +243,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
     /**
      * Return an empty dense semantic vector.
      */
-    public Vector getEmtpyVector() {
+    public Vector getEmptyVector() {
         return new DenseVector(indexVectorSize);
     }
 
@@ -267,7 +267,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * value.
      */
     private Vector generateRandomVector() {
-        Vector termVector = getEmtpyVector();
+        Vector termVector = getEmptyVector();
         for (int i = 0; i < indexVectorSize; i++)
             termVector.set(i, randomGenerator.nextGaussian() * stdev);
         return termVector;
@@ -317,7 +317,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
 
         //long convo = System.currentTimeMillis();
         // Generate the semantics of the circular convolution of n-grams.
-        Vector orderVector = getEmtpyVector();
+        Vector orderVector = getEmptyVector();
         Vectors.add(orderVector, groupConvolution(prevWords, nextWords));
 
         // Add the final context vector into meaning.
@@ -340,7 +340,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
     private Vector groupConvolution(Queue<String> prevWords,
                                     Queue<String> nextWords) {
         // Generate an empty Vector to hold the convolution.
-        Vector result = getEmtpyVector();
+        Vector result = getEmptyVector();
 
         // Do the convolutions starting at index 0.
         Vector tempConvolution =
@@ -401,7 +401,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * @return The shuffled version of {@code data}.
      */
     private Vector changeVector(Vector data, int[] orderVector) {
-        Vector result = getEmtpyVector();
+        Vector result = getEmptyVector();
         for (int i = 0; i < indexVectorSize; i++)
             result.set(i, data.get(orderVector[i]));
         return result;

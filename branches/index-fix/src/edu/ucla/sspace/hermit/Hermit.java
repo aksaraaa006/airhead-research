@@ -526,7 +526,7 @@ public class Hermit implements SemanticSpace {
     int assignmentIndex = 0;
     for (Map.Entry<Integer, List<int[]>> e :
         triplet.docToContextMap.entrySet()) {
-      Vector meaning = indexBuilder.getEmtpyVector();
+      Vector meaning = indexBuilder.getEmptyVector();
       for (int[] context : e.getValue()) {
         // Create the queues needed to represent the current context.
         Queue<String> prevWords = new ArrayDeque<String>();

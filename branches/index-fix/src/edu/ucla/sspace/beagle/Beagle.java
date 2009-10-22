@@ -173,7 +173,7 @@ public class Beagle implements SemanticSpace {
             // one, as determined by the index builder.
             Vector meaning = termHolographs.get(focusWord);
             if (meaning == null) {
-                meaning = indexBuilder.getEmtpyVector();
+                meaning = indexBuilder.getEmptyVector();
                 documentVectors.put(focusWord, meaning);
             }
             indexBuilder.updateMeaningWithTerm(

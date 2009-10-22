@@ -86,7 +86,7 @@ public interface IndexBuilder {
      *
      * @return a {@Vector} having the same type as the vectors used internally.
      */
-    public Vector getEmtpyVector();
+    public Vector getEmptyVector();
 
     /**
      * Return an index {@code Vector} for the given term, if no {@code Vector}

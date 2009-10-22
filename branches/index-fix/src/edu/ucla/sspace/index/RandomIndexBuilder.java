@@ -76,7 +76,7 @@ public class RandomIndexBuilder implements IndexBuilder {
     /**
      * Return an empty sparse semantic vector.
      */
-    public Vector getEmtpyVector() {
+    public Vector getEmptyVector() {
         return new CompactSparseVector(indexVectorSize);
     }
 
