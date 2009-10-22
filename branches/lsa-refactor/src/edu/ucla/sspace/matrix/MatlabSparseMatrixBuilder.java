@@ -36,6 +36,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  * A {@code MatrixBuilder} implementation for creating matrix files in the
  * Matlab&cp; sparse matrix format.
@@ -187,7 +188,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     }
 
     /**
-     * {@inheritDoc} One this method has been called, any subsequent calls will
+     * {@inheritDoc} Once this method has been called, any subsequent calls will
      * have no effect and will not throw an exception.
      */
     public synchronized void finish() {

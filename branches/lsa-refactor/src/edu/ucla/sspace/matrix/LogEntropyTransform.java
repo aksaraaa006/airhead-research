@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.Sparse;
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -40,8 +43,11 @@ import static edu.ucla.sspace.common.Statistics.log2_1p;
 
 
 /**
- * Transforms a term-document matrix using log and entropy techniques.  See the
- * following papers for details and analysis:
+ * Transforms a matrix using log-entropy weighting.  The input matrix is assumed
+ * to be formatted as rows representing terms and columns representing
+ * documents.  Each matrix cell indicates the number of times the row's word
+ * occurs within the column's document.  See the following papers for details
+ * and analysis:
  *
  * <ul> 
  *
@@ -62,6 +68,8 @@ import static edu.ucla.sspace.common.Statistics.log2_1p;
  * </ul>
  *
  * @author David Jurgens
+ *
+ * @see TfIdfTransform
  */
 public class LogEntropyTransform implements Transform {
 
@@ -74,26 +82,48 @@ public class LogEntropyTransform implements Transform {
 	Logger.getLogger(LogEntropyTransform.class.getName());
 
     /**
-     * 
+     * Creates an instance of {@code LogEntropyTransform}.
      */
     public LogEntropyTransform() { }
 
+    /**
+     * Transforms the matrix in the file using the log-entropy transform and
+     * returns a temporary file containing the result.
+     *
+     * @param inputMatrixFile a file containing a matrix in the specified format
+     * @param format the format of the matrix
+     *
+     * @return a file with the transformed version of the input.  This file is
+     *         marked to be deleted when the JVM exits.
+     *
+     * @throws IOException if any error occurs while reading the input matrix or
+     *         writing the output matrix
+     */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
              throws IOException {
 	// create a temp file for the output
 	File output = File.createTempFile(inputMatrixFile.getName() + 
-					  ".log-entropy-transform", "dat");
+					  ".log-entropy-transform", ".dat");
 	transform(inputMatrixFile, format, output);
 	return output;
     }
 
     /**
-     * Transforms the matrix contained in the {@code input} argument, writing
-     * the results to the {@code output} file.
-     */    
-    public void transform(File inputMatrixFile, MatrixIO.Format inputFormat, 
+     * Transforms the input matrix using the log-entropy transform and
+     * writes the result to the file for the output matrix.
+     *
+     * @param inputMatrixFile a file containing a matrix in the specified format
+     * @param format the format of the input matrix, and the format in which the
+     *        output matrix will be written
+     * @param outputMatrixFile the file to which the transformed matrix will be
+     *        written
+     *
+     * @throws IOException if any error occurs while reading the input matrix or
+     *         writing the output matrix
+     */
+    public void transform(File inputMatrixFile, MatrixIO.Format format, 
                           File outputMatrixFile) throws IOException {
-        switch (inputFormat) {
+        switch (format) {
         case SVDLIBC_SPARSE_BINARY:
             svdlibcSparseBinaryTransform(inputMatrixFile, outputMatrixFile);
             break;
@@ -101,15 +131,21 @@ public class LogEntropyTransform implements Transform {
             matlabSparseTransform(inputMatrixFile, outputMatrixFile);
             break;
         default:
-            throw new UnsupportedOperationException("Format " + inputFormat +
+            throw new UnsupportedOperationException("Format " + format +
                 " is not currently supported for transform.  Email " +
                 "s-space-research-dev@googlegroups.com to have it implemented");
         }
-
     }
-
+    
+    /**
+     * Performs the log-entropy transform on the matrix file in the {@link
+     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format.
+     *
+     * @param inputMatrixFile the matrix file to be transformed
+     * @param outputMatrixFile the file that will contain the transformed matrix
+     */
     private void svdlibcSparseBinaryTransform(File inputMatrixFile, 
-                                               File outputMatrixFile) 
+                                              File outputMatrixFile) 
             throws IOException {
 
         // Open the input matrix as a random access file to allow for us to
@@ -121,12 +157,6 @@ public class LogEntropyTransform implements Transform {
 	int numUniqueWords = raf.readInt();
 	int numDocs = raf.readInt(); // equal to the number of rows
         int numMatrixEntries = raf.readInt();
-        System.out.printf("words: %d, docs: %d, nz: %d%n", 
-                          numUniqueWords, numDocs, numMatrixEntries);
-
-        // Keep track of how many terms appear in each document, which will be
-        // used to calculate a word's probability in the document itself
-	//int[] docToNumTerms = new int[numDocs];
 
         // Also keep track of how many times a word was seen throughout the
         // entire corpus (i.e. matrix)
@@ -146,11 +176,6 @@ public class LogEntropyTransform implements Transform {
                 termToGlobalCount[termIndex] += occurrences; 
             }
 	}
-
-        // NB: we do not need to worry about the case where the matrix data
-        // ended early because the last few terms did not occur in any document
-        // because by construction, they would have had to occur in at least one
-        // document to have a separate column in the matrix.
 
         // Seek back to the start of the data for the next pass
         raf.seek(12); // 3 integers
@@ -184,13 +209,13 @@ public class LogEntropyTransform implements Transform {
 
         DataOutputStream dos = 
             new DataOutputStream(new FileOutputStream(outputMatrixFile));
-        // Reset the original once more for the last pass
-        raf.seek(12); // 3 ints
-
         // Write the matrix header
         dos.writeInt(numUniqueWords);
         dos.writeInt(numDocs);
         dos.writeInt(numMatrixEntries);
+
+        // Reset the original once more for the last pass
+        raf.seek(12); // 3 ints
 
 	// Last, rewrite the original matrix using the log-entropy
 	// transformation describe on page 17 of Landauer et al. "An
@@ -218,7 +243,13 @@ public class LogEntropyTransform implements Transform {
         dos.close();
     }
 
-    
+    /**
+     * Performs the log-entropy transform on the matrix file in the {@link
+     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format.
+     *
+     * @param inputMatrixFile the matrix file to be transformed
+     * @param outputMatrixFile the file that will contain the transformed matrix
+     */
     private void matlabSparseTransform(File inputMatrixFile, 
                                        File outputMatrixFile) 
             throws IOException {
@@ -306,10 +337,101 @@ public class LogEntropyTransform implements Transform {
 	pw.close();
     }      
 
+    /**
+     * Returns the log-entropy transformm of the input matrix.
+     *
+     * @param matrix the matrix to be transformed
+     *
+     * @return the transformed version of the input matrix
+     */
     public Matrix transform(Matrix matrix) {
-        throw new UnsupportedOperationException();
+        // NOTE: as of 0.9.9, there is no good way to create a new matrix of the
+        // same type unless you already know the type or use reflection.  In
+        // addition, there's no way to access the Matrix.Type for a given
+        // instance, further obfuscating what class should be instantiated.
+        // Therefore, we just make a guess.  This is definitely a case for
+        // concern in the API.  -jurgens
+        Matrix transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+                                             Matrix.Type.DENSE_IN_MEMORY);
+        int rows = matrix.rows();
+        int cols = matrix.columns();
+        
+        // Count how many total words are in each document.  We need this value
+        // when calculating the entropy of each word in the next step.
+        int[] docToNumWords = new int[cols];
+        for (int doc = 0; doc < cols; ++doc) {
+            // sum how many time each term appears the doc
+            for (int term = 0; term < rows; ++term)
+                docToNumWords[doc] += matrix.get(term, doc);
+        }
+
+        for (int row = 0; row < rows; ++row) {
+            // Each row is a word
+            Vector rowVec = matrix.getVector(row);
+            
+            // Get the total number of times the word occurs
+            double occurrencesInCorpus = 0;
+
+            // Special case for sparse vectors
+            if (rowVec instanceof Sparse) {
+                Sparse sv = (Sparse)rowVec;
+                for (int nonZeroCol : sv.getNonZeroIndices())
+                    occurrencesInCorpus += rowVec.get(nonZeroCol);
+            }
+            else {
+                for (int col = 0; col < cols; ++col)
+                    occurrencesInCorpus += rowVec.get(col);
+            }
+
+            double wordEntropy = 0;
+
+            // Then calculate the entropy (information gain) for the occurrence
+            // of the word in each document
+            if (rowVec instanceof Sparse) {
+                Sparse sv = (Sparse)rowVec;
+                for (int doc : sv.getNonZeroIndices()) {                    
+                    double occurrences = rowVec.get(doc);
+                    double probabilityOfWord = 
+                        occurrences / docToNumWords[doc];
+                    wordEntropy += probabilityOfWord * log2(probabilityOfWord);
+                }
+            }
+            else {
+                for (int doc = 0; doc < cols; ++doc) {
+                    double occurrences = rowVec.get(doc);
+                    double probabilityOfWord = 
+                        occurrences / docToNumWords[doc];
+                    wordEntropy += probabilityOfWord * log2(probabilityOfWord);
+
+                }
+            }
+
+            // log2(cols) = log of the number of documents
+            double entropy = 1 + (wordEntropy / log2(cols));
+
+            // Last, take the log value of each occurrence and multiply by the
+            // entropy to get the new value in the transformed matrix
+            if (rowVec instanceof Sparse) {
+                Sparse sv = (Sparse)rowVec;
+                for (int doc : sv.getNonZeroIndices()) {                    
+                    double occurrences = rowVec.get(doc);
+                    transformed.set(row, doc, log2_1p(occurrences) * entropy);
+                }
+            }
+            else {
+                for (int doc = 0; doc < cols; ++doc) {
+                    double occurrences = rowVec.get(doc);
+                    transformed.set(row, doc, log2_1p(occurrences) * entropy);
+                }
+            }
+        }
+
+        return transformed;
     }
 
+    /**
+     * Returns the name of this transform.
+     */
     public String toString() {
 	return "log-entropy";
     }

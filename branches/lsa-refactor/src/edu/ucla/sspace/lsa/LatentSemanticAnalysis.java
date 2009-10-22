@@ -271,9 +271,9 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     public void processDocument(BufferedReader document) throws IOException {
 
         // Create a mapping for each term that is seen in the document to the
-        // number of times it has been seen.  This would more elegantly be a
-        // SparseArray<Integer> however, the length of the sparse array isn't
-        // known ahead of time, which prevents it being used by the
+        // number of times it has been seen.  This mapping would more elegantly
+        // be a SparseArray<Integer> however, the length of the sparse array
+        // isn't known ahead of time, which prevents it being used by the
         // MatrixBuilder.  Note that the SparseArray implementation would also
         // incur an additional performance hit since each word would have to be
         // converted to its index form for each occurrence, which results in a
@@ -303,17 +303,15 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
 	document.close();
 
-	// check that we actually loaded in some terms before we increase the
+	// Check that we actually loaded in some terms before we increase the
 	// documentIndex.  This could possibly save some dimensions in the final
 	// array for documents that were essentially blank.  If we didn't see
 	// any terms, just return 0
 	if (termCounts.isEmpty())
 	    return;
 
-        // Get the total number of unique words after processing to determine
-        // how many rows are in the matrix.  This cannot be determined prior to
-        // processing the document since the document may contain additional
-        // unique words, which increases the number of rows.
+        // Get the total number of terms encountered so far, including any new
+        // unique terms found in the most recent document
         int totalNumberOfUniqueWords = termIndexCounter.get();
 
         // Convert the Map count to a SparseArray

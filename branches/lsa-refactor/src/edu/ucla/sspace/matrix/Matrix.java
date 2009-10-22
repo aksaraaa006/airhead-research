@@ -62,10 +62,10 @@ public interface Matrix {
 	 */
 	DENSE_ON_DISK,
 
-    /**
-     * A diagonal matrix, saving a little more meory than a sparse matrix.
-     */
-    DIAGONAL_IN_MEMORY,
+        /**
+         * A diagonal matrix, saving a little more meory than a sparse matrix.
+         */
+        DIAGONAL_IN_MEMORY,
     }
 
     /**
