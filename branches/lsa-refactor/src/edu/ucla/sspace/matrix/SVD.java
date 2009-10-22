@@ -926,7 +926,7 @@ public class SVD {
 	    else {
                 StringBuilder sb = new StringBuilder();
                 for (String line = null; (line = stderr.readLine()) != null; ) {
-                    sb.append(line);
+                    sb.append(line).append("\n");
                 }
 		// warning or error?
                 SVD_LOGGER.warning("svdlibc exited with error status.  " + 
@@ -1146,7 +1146,7 @@ public class SVD {
             else {
                 StringBuilder sb = new StringBuilder();
                 for (String line = null; (line = stderr.readLine()) != null; ) {
-                    sb.append(line);
+                    sb.append(line).append("\n");
                 }
 		// warning or error?
                 SVD_LOGGER.warning("Octave exited with error status.  " + 

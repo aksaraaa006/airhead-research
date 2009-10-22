@@ -380,7 +380,7 @@ public class MatrixIO {
             for (int i = 0; i < nonZero; ++i, ++entriesSeen) {
                 int row = dis.readInt();
                 float val = dis.readFloat();
-                pw.println(row + " " + col + " " + val);
+                pw.println((1 + row) + " " + (1 + col) + " " + val);
             }
         }
         
