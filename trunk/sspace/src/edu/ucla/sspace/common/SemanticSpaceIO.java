@@ -23,6 +23,8 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.vector.VectorIO;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -95,8 +97,8 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     static SSpaceFormat getFormat(File sspaceFile) throws IOException {
-        InputStream is = new FileInputStream(sspaceFile);
-        DataInputStream dis = new DataInputStream(is);
+        DataInputStream dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(sspaceFile)));
         // read the expected header
         char header = dis.readChar();
         if (header != 's')
@@ -391,8 +393,8 @@ public class SemanticSpaceIO {
     private static void writeBinary(SemanticSpace sspace, File output) 
 	    throws IOException {
 
-	DataOutputStream dos = 
-	    new DataOutputStream(new FileOutputStream(output));
+	DataOutputStream dos = new DataOutputStream(
+            new BufferedOutputStream(new FileOutputStream(output)));
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
@@ -479,8 +481,8 @@ public class SemanticSpaceIO {
     private static void writeSparseBinary(SemanticSpace sspace, File output) 
 	    throws IOException {
 
-	DataOutputStream dos = 
-	    new DataOutputStream(new FileOutputStream(output));
+	DataOutputStream dos = new DataOutputStream(
+            new BufferedOutputStream(new FileOutputStream(output)));
 	Set<String> words = sspace.getWords();
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;

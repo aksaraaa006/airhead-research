@@ -177,6 +177,7 @@ public class SimilarityListGenerator {
 	final Set<String> words = sspace.getWords();
 	WordComparator comparator = new WordComparator(numThreads);
 
+
 	for (String word : words) {            
             // compute the k most-similar words to this word
             SortedMultiMap<Double,String> mostSimilar =
@@ -191,18 +192,16 @@ public class SimilarityListGenerator {
                      mostSimilar.entrySet()) {
                 String s = e.getValue();
                 Double d = e.getKey();
-		
+
                 sb.append(s);
                 if (printSimilarity) {
                     sb.append(" ").append(d);
                 }
                 sb.append("|");
-            }
-            
-            synchronized(outputWriter) {
+                
                 outputWriter.println(sb.toString());
                 outputWriter.flush();
             }
-        }
+	}
     }
 }

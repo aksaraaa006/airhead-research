@@ -23,12 +23,14 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.SVD.Algorithm;
 
 import java.util.logging.Logger;
 
 
 /**
- * A class of static methods for manipulating {@code Matrix} instances.
+ * A class of static methods for manipulating and creating {@code Matrix}
+ * instances.
  *
  * @see Matrix
  * @see MatrixIO
@@ -122,6 +124,38 @@ public class Matrices {
     }
 
     /**
+     * Returns a {@link MatrixBuilder} in the default format of the fastest
+     * available {@link SVD.Algorithm SVD algorithm}.
+     *
+     * @return a matrix builder to be used in creating a matrix for use with the
+     *         {@link SVD} class
+     */
+    public static MatrixBuilder getMatrixBuilderForSVD() {
+        Algorithm fastest = SVD.getFastestAvailableAlgorithm();
+        // In the unlikely case that this is called when no SVD support is
+        // available, return a default instance rather than error out.  This
+        // enables programs that call this method without invoking the SVD (or
+        // those that do so optionally) to continue working without error.
+        if (fastest == null) {
+            LOGGER.warning("no SVD support detected.  Returning default " +
+                           "matrix builder instead");
+            return new MatlabSparseMatrixBuilder();
+        }
+        
+        switch (fastest) {
+        case SVDLIBC:
+            return new SvdlibcSparseBinaryMatrixBuilder();
+
+        // In all other cases, use the sparse Matlab format, as it covers both
+        // Matlab and Octave.  This format doesn't matter much for Jama or Colt,
+        // as both formats need to have the matrix loaded back into memory in
+        // order to perform the SVD.
+        default:
+            return new MatlabSparseMatrixBuilder();
+        }
+    }
+
+    /**
      * Returns {@code true} if the format is likely to produce a dense matrix.
      * Due to the actual matrix contents being unknown, the return value is
      * actual a best-effort guess.
@@ -142,9 +176,9 @@ public class Matrices {
             default:
                 // We should never get here unless another format is added and
                 // this method is never updated
-                assert false;
-                return true;
+                assert false : format;
         }
+        return true;
     }
 
     private static Matrix multiplyRightDiag(Matrix m1, Matrix m2) {
@@ -186,6 +220,17 @@ public class Matrices {
                     "The number of columns in the first matrix do not match " +
                     "the number of rows in the second matrix.");
 
+	if (m1.columns() != m2.rows()) 
+	    return null;
+	if (m2 instanceof DiagonalMatrix) {
+            if (m1 instanceof DiagonalMatrix)
+                return multiplyBothDiag(m1, m2);
+            else
+                return multiplyRightDiag(m1, m2);
+	} else if (m1 instanceof DiagonalMatrix) {
+            return multiplyLeftDiag(m1, m2);
+	}
+
         // Multiply diagnonal matricies with simpler algorithms.
         if (m2 instanceof DiagonalMatrix) {
           if (m1 instanceof DiagonalMatrix)
@@ -225,8 +270,9 @@ public class Matrices {
         int r = Math.min(rows, matrix.rows());
         int c = Math.min(columns, matrix.columns());
         for (int row = 0; row < r; ++row) {
-            for (int col = 0; col < c; ++col)
+            for (int col = 0; col < c; ++col) {
                 resized.set(row, col, matrix.get(row, col));
+            }
         }
 
         return resized;
