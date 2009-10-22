@@ -23,6 +23,7 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorUtil;
@@ -252,6 +253,14 @@ public class RandomIndexingMain extends GenericMain {
 	}
 
 	return ri;
+    }
+
+    /**
+     * Returns the {@likn SSpaceFormat.SPARSE_BINARY sparse binary} format as
+     * the default format of a {@code RandomIndexing} space.
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
     }
 
     /**

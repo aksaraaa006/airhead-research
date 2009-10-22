@@ -28,6 +28,7 @@ import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.util.IntegerMap;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
@@ -113,7 +114,8 @@ public class StaticSemanticSpace implements SemanticSpace {
         if (format == null)
             throw new Error("Unrecognzied format in " +
                             "file: " + file.getName());
-        DataInputStream dis = new DataInputStream(new FileInputStream(file));
+        DataInputStream dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(file)));
         // Read off the four byte header from the stream so the loading methods
         // do not see the data.  This is necessary to support older formats that
         // did not include the header.
@@ -136,7 +138,8 @@ public class StaticSemanticSpace implements SemanticSpace {
      */
     @Deprecated public StaticSemanticSpace(File file, SSpaceFormat format) 
             throws IOException {
-        loadFromFormat(new FileInputStream(file), format);
+        loadFromFormat(new BufferedInputStream(
+                           new FileInputStream(file)), format);
         spaceName = file.getName();
     }
 
