@@ -174,7 +174,17 @@ public class MatrixIO {
     }
 
     /**
+     * Converts the format of the input {@code matrix}, returning a temporary
+     * file containing the matrix's data in the desired format.
      *
+     * @param matrix a file containing a matrix to convert
+     * @param current the format of the {@code matrix} file
+     * @param desired the format of the returned matrix file
+     *
+     * @returns a matrix file with the same data in the desired format
+     *
+     * @throws IOException if any error occurs while reading the input matrix or
+     *         wring the output matrix
      */
     public static File convertFormat(File matrix, Format current, 
 				     Format desired) throws IOException {
@@ -183,25 +193,25 @@ public class MatrixIO {
 	}
 	
 	switch (current) {
-	case DENSE_TEXT: {
-	    break;
-	}
 	case MATLAB_SPARSE: {
 	    if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
-		File output = 
-		    File.createTempFile("matlab-to-SVDLIBC-sparse",".dat");
+		File output = File.createTempFile(
+                    "matlab-to-SVDLIBC-sparse-text",".dat");
 		output.deleteOnExit();
 		matlabToSVDLIBCsparse(matrix, output);
 		return output;
 	    }
 	    break;
 	}
-	case SVDLIBC_SPARSE_TEXT: {
-	    break;
-	}
-	case SVDLIBC_DENSE_TEXT: {
-	    break;
-	}
+        case SVDLIBC_SPARSE_BINARY: {
+            if (desired.equals(Format.MATLAB_SPARSE)) {
+		File output = File.createTempFile(
+                    "SVDLIBC-sparse-binary-to-Matlab",".dat");
+		output.deleteOnExit();
+		svdlibcSparseBinaryToMatlab(matrix, output);
+		return output;
+            }
+        }
 	}
 	throw new UnsupportedOperationException(
 	    "converting from " + current + " to " + desired + 
@@ -343,6 +353,39 @@ public class MatrixIO {
 
 	pw.flush();
 	pw.close();
+    }
+
+    /**
+     * Reads in a matrix in the {@link Format#SVDLIBC_SPARSE_BINARY} format and writes
+     * it to the output file in the {@link Format#MATLAB_SPARSE} format.
+     */
+    private static void svdlibcSparseBinaryToMatlab(File input, File output) 
+	    throws IOException {
+        
+        DataInputStream dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(input)));
+
+        PrintWriter pw = new PrintWriter(output);
+
+        int rows = dis.readInt();
+        int cols = dis.readInt();
+        int entries = dis.readInt();
+
+        // SVDLIBC sparse binary is organized as column data.  
+        int entriesSeen = 0;
+        int col = 0;
+        for (; entriesSeen < entries; ++col) {
+            int nonZero = dis.readInt();
+
+            for (int i = 0; i < nonZero; ++i, ++entriesSeen) {
+                int row = dis.readInt();
+                float val = dis.readFloat();
+                pw.println(row + " " + col + " " + val);
+            }
+        }
+        
+        dis.close();
+        pw.close();
     }
 
     /**
