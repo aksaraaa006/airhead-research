@@ -257,8 +257,20 @@ public class SVD {
 	    case JAMA:
 		return jamaSVD(matrix, format, dimensions);
 	    case MATLAB:
+                // If the format of the input matrix isn't immediately useable
+                // by Matlab convert it
+                if (!format.equals(Format.MATLAB_SPARSE)) {
+                    matrix = MatrixIO.convertFormat(
+                        matrix, format, Format.MATLAB_SPARSE);
+                }
 		return matlabSVDS(matrix, dimensions);
 	    case OCTAVE:
+                // If the format of the input matrix isn't immediately useable
+                // by Octave convert it
+                if (!format.equals(Format.MATLAB_SPARSE)) {
+                    matrix = MatrixIO.convertFormat(
+                        matrix, format, Format.MATLAB_SPARSE);
+                }
 		return octaveSVDS(matrix, dimensions);
 	    case COLT:
 		return coltSVD(matrix, format, dimensions);
@@ -859,7 +871,7 @@ public class SVD {
 		    "Format type is not accepted");
 	    }
 
-	    File outputMatrixFile = File.createTempFile("svdlibc", "dat");
+	    File outputMatrixFile = File.createTempFile("svdlibc", ".dat");
 	    outputMatrixFile.deleteOnExit();
 	    String outputMatrixPrefix = outputMatrixFile.getAbsolutePath();
 
@@ -917,8 +929,8 @@ public class SVD {
                     sb.append(line);
                 }
 		// warning or error?
-                System.out.println("exit status: " + exitStatus);
-                System.out.println("stderr:\n" + sb.toString());
+                SVD_LOGGER.warning("svdlibc exited with error status.  " + 
+                                   "stderr:\n" + sb.toString());
 	    }
 	} catch (IOException ioe) {
 	    SVD_LOGGER.log(Level.SEVERE, "SVDLIBC", ioe);
@@ -1099,6 +1111,9 @@ public class SVD {
 
 	    BufferedReader br = new BufferedReader(
 		new InputStreamReader(octave.getInputStream()));
+	    BufferedReader stderr = new BufferedReader(
+		new InputStreamReader(octave.getErrorStream()));
+
 	    // capture the output
 	    StringBuilder output = new StringBuilder("Octave svds output:\n");
 	    for (String line = null; (line = br.readLine()) != null; ) {
@@ -1128,7 +1143,15 @@ public class SVD {
                                     Type.DENSE_ON_DISK, true)
 		};
 	    }
-
+            else {
+                StringBuilder sb = new StringBuilder();
+                for (String line = null; (line = stderr.readLine()) != null; ) {
+                    sb.append(line);
+                }
+		// warning or error?
+                SVD_LOGGER.warning("Octave exited with error status.  " + 
+                                   "stderr:\n" + sb.toString());
+            }
 	} catch (IOException ioe) {
 	    SVD_LOGGER.log(Level.SEVERE, "Octave svds", ioe);
 	} catch (InterruptedException ie) {
