@@ -135,17 +135,24 @@ public class Matrices {
      */
     public static MatrixBuilder getMatrixBuilderForSVD() {
         Algorithm fastest = SVD.getFastestAvailableAlgorithm();
+        // In the unlikely case that this is called when no SVD support is
+        // available, return a default instance rather than error out.  This
+        // enables programs that call this method without invoking the SVD (or
+        // those that do so optionally) to continue working without error.
         if (fastest == null) {
-            if (false)
-                throw new Error("maybe?");
+            LOGGER.warning("no SVD support detected.  Returning default " +
+                           "matrix builder instead");
+            return new MatlabSparseMatrixBuilder();
         }
         
         switch (fastest) {
         case SVDLIBC:
-            //return new SvdlibcSparseTextMatrixBuilder();
             return new SvdlibcSparseBinaryMatrixBuilder();
+
         // In all other cases, use the sparse Matlab format, as it covers both
-        // Matlab and Octave.
+        // Matlab and Octave.  This format doesn't matter much for Jama or Colt,
+        // as both formats need to have the matrix loaded back into memory in
+        // order to perform the SVD.
         default:
             return new MatlabSparseMatrixBuilder();
         }
@@ -172,9 +179,9 @@ public class Matrices {
 	default:
 	    // We should never get here unless another format is added and this
 	    // method is never updated
-	    assert false;
-	    return true;
+	    assert false : format;
 	}
+        return true;
     }
 
     private static Matrix multiplyRightDiag(Matrix m1, Matrix m2) {

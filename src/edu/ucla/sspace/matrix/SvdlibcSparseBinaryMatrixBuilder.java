@@ -288,7 +288,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
     }
 
     /**
-     * {@inheritDoc} One this method has been called, any subsequent calls will
+     * {@inheritDoc} Once this method has been called, any subsequent calls will
      * have no effect and will not throw an exception.
      */
     public synchronized void finish() {

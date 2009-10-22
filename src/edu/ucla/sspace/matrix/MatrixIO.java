@@ -187,7 +187,7 @@ public class MatrixIO {
 	case MATLAB_SPARSE: {
 	    if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
 		File output = 
-		    File.createTempFile("matlab-to-SVDLIBC-sparse","dat");
+		    File.createTempFile("matlab-to-SVDLIBC-sparse",".dat");
 		output.deleteOnExit();
 		matlabToSVDLIBCsparse(matrix, output);
 		return output;
@@ -464,12 +464,19 @@ public class MatrixIO {
     }
 
     /**
+     * Converts the contents of a matrix file as a {@link Matrix} object, using
+     * the provided type description as a hint for what kind to create.  The
+     * type of {@code Matrix} object created will be based on an estimate of
+     * whether the data will fit into the available memory.  Note that the
+     * returned {@link Matrix} instance is not backed by the data on file;
+     * changes to the {@code Matrix} will <i>not</i> be reflected in the
+     * original file's data.
      *
-     *
-     *
-     * @param matrix
-     * @param format
-     * @param matrixType
+     * @param matrix a file contain matrix data
+     * @param format the format of the file
+     * @param matrixType the expected type and behavior of the matrix in
+     *        relation to memory.  This value will be used as a hint for what
+     *        kind of {@code Matrix} instance to create
      *
      * @return the {@code Matrix} instance that contains the data in the
      *         provided file
@@ -481,16 +488,27 @@ public class MatrixIO {
     }
 
     /**
+     * Converts the contents of a matrix file as a {@link Matrix} object, using
+     * the provided type description as a hint for what kind to create.  The
+     * type of {@code Matrix} object created will be based on an estimate of
+     * whether the data will fit into the available memory.  Note that the
+     * returned {@link Matrix} instance is not backed by the data on file;
+     * changes to the {@code Matrix} will <i>not</i> be reflected in the
+     * original file's data.
      *
-     * @param matrix
-     * @param format
-     * @param matrixType
+     * @param matrix a file contain matrix data
+     * @param format the format of the file
+     * @param matrixType the expected type and behavior of the matrix in
+     *        relation to memory.  This value will be used as a hint for what
+     *        kind of {@code Matrix} instance to create
      * @param transposeOnRead {@code true} if the matrix should be transposed as
      *        its data is read in.  For certain formats, this is more efficient
      *        than reading the data in and then transposing it directly.
      *
      * @return the {@code Matrix} instance that contains the data in the
      *         provided file, optionally transposed from its original format
+     *
+     * @throws IOException if any error occurs while reading in the matrix data
      */
     public static Matrix readMatrix(File matrix, Format format, 
 				    Type matrixType, boolean transposeOnRead) 
@@ -540,13 +558,19 @@ public class MatrixIO {
 	int rows = 0;
 	int cols = -1;
 	for (String line = null; (line = br.readLine()) != null; rows++) {
+            // Create a scanner to parse out the values from the current line of
+            // the file.
             Scanner s = new Scanner(line);
             int vals = 0;
+            // Count how many columns the row has
             for (; s.hasNextDouble(); vals++, s.nextDouble())
                 ;
 
+            // Base case if the number of columns has not been set
             if (cols == -1) 
                 cols = vals;
+            // Otherwise, ensure that the number of values in the current row
+            // matches the number of values seen in the first
             else {
                 if (cols != vals) {
                     throw new Error("line " + (rows + 1) + " contains an " + 
@@ -554,19 +578,20 @@ public class MatrixIO {
                 }
             }
 	}
+        br.close();
 
         if (MATRIX_IO_LOGGER.isLoggable(Level.FINE)) {
             MATRIX_IO_LOGGER.fine("reading in text matrix with " + rows  +
                                   " rows and " + cols + " cols");
         }
 
+        // Once the matrix has had its dimensions determined, re-open the file
+        // to load the data into a Matrix instance.  Use a Scanner to parse the
+        // text for us.
+        Scanner scanner = new Scanner(matrix);
 	Matrix m = (transposeOnRead)
             ? Matrices.create(cols, rows, matrixType)
             : Matrices.create(rows, cols, matrixType);
-
-        // Reopen the file to initialize the array with the file's data
-        br.close();
-        Scanner scanner = new Scanner(matrix);
         
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
@@ -581,7 +606,6 @@ public class MatrixIO {
 	
 	return m;
     }
-
     
     /**
      * Creates a {@code Matrix} from the data encoded as {@link

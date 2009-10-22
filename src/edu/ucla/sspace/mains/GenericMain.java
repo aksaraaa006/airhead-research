@@ -302,6 +302,10 @@ public abstract class GenericMain {
 	}
         
 	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+        // If verbose output is enabled, update all the loggers in the S-Space
+        // package logging tree to output at Level.FINE (normally, it is
+        // Level.INFO).  This provides a more detailed view of how the execution
+        // flow is proceeding.
         if (verbose) {
             Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
             Handler verboseHandler = new ConsoleHandler();
