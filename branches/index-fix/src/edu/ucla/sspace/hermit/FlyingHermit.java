@@ -183,8 +183,6 @@ public class FlyingHermit implements SemanticSpace {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
 
-	    HERMIT_LOGGER.info("Processing a new document.");
-
         Iterator<String> it = IteratorFactory.tokenize(document);
 
         Map<String, Vector> documentHolographs =
@@ -239,10 +237,10 @@ public class FlyingHermit implements SemanticSpace {
             }
 
             // Update the set of centriods.
-            synchronized (termVectors) {
+            synchronized (termSenses) {
                 Vector bestMatch = null;
-                double bestScore = 0;
-                double similarity = 0;
+                double bestScore = -1;
+                double similarity = -1;
                 
                 // Find the centriod with the best similarity.
                 for (Vector centroid : termSenses) {
@@ -256,7 +254,7 @@ public class FlyingHermit implements SemanticSpace {
 
                 // Add the current term vector if the similarity is high enough,
                 // or set it as a new centroid.
-                if (similarity > clusterThreshold)
+                if (similarity > clusterThreshold || termSenses.size() >= 5)
                     Vectors.add(bestMatch, entry.getValue());
                 else
                     termSenses.add(entry.getValue());
@@ -278,5 +276,8 @@ public class FlyingHermit implements SemanticSpace {
             termVectors.remove(entry.getKey(), entry.getValue());
         }
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
+        Set<String> words = getWords();
+        for (String term : words)
+            System.out.println(term);
     }
 }
