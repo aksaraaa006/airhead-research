@@ -195,7 +195,7 @@ public class TfIdfTransform implements Transform {
                 double termFreq =
                     occurrences / termToOccurrencesInCorpus[termIndex];
                 double invDocFreq = 
-                    Math.log(numDocs / (1 + termToDocCount[termIndex]));
+                    Math.log(numDocs / (1d + termToDocCount[termIndex]));
 
                 dos.writeInt(termIndex);
                 dos.writeFloat((float)(termFreq * invDocFreq));
