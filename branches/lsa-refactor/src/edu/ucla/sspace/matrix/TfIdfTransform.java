@@ -26,9 +26,13 @@ import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.vector.Sparse;
 import edu.ucla.sspace.vector.Vector;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -130,15 +134,17 @@ public class TfIdfTransform implements Transform {
                                               File outputMatrixFile) 
             throws IOException {
         
-                // Open the input matrix as a random access file to allow for us to
+        // Open the input matrix as a random access file to allow for us to
         // travel backwards as multiple passes are needed
-        RandomAccessFile raf = new RandomAccessFile(inputMatrixFile, "r");
+        //RandomAccessFile raf = new RandomAccessFile(inputMatrixFile, "r");
+        DataInputStream dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(inputMatrixFile)));
 
         // Make one pass through the matrix to calculate the global statistics
 
-	int numUniqueWords = raf.readInt();
-	int numDocs = raf.readInt(); // equal to the number of rows
-        int numMatrixEntries = raf.readInt();
+	int numUniqueWords = dis.readInt();
+	int numDocs = dis.readInt(); // equal to the number of rows
+        int numMatrixEntries = dis.readInt();
 
         // Keep track of how many times a word was seen throughout the
         // entire corpus (i.e. matrix)
@@ -151,39 +157,42 @@ public class TfIdfTransform implements Transform {
         int entriesSeen = 0;
         int docIndex = 0;
         for (; entriesSeen < numMatrixEntries; ++docIndex) {
-            int numUniqueWordsInDoc = raf.readInt();
+            int numUniqueWordsInDoc = dis.readInt();
 
             for (int i = 0; i < numUniqueWordsInDoc; ++i, ++entriesSeen) {
-                int termIndex = raf.readInt();
+                int termIndex = dis.readInt();
                 // Update that the term appeared in another document
                 termToDocCount[termIndex]++;
                 // occurrence is specified as a float, rather than an int
-                int occurrences = (int)(raf.readFloat());
+                int occurrences = (int)(dis.readFloat());
                 termToOccurrencesInCorpus[termIndex] += occurrences; 
             }
 	}
 
-        DataOutputStream dos = 
-            new DataOutputStream(new FileOutputStream(outputMatrixFile));
+        dis.close();
+        dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(inputMatrixFile)));
+        dis.skip(12); // 3 integers
+
+        DataOutputStream dos = new DataOutputStream(
+            new BufferedOutputStream(new FileOutputStream(outputMatrixFile)));
         // Write the matrix header
         dos.writeInt(numUniqueWords);
         dos.writeInt(numDocs);
         dos.writeInt(numMatrixEntries);
 
-        // Seek back to the start of the data for the next pass
-        raf.seek(12); // 3 integers
 
         // Calculate the term-frequency
         docIndex = 0;
         entriesSeen = 0;
         for (; entriesSeen < numMatrixEntries; ++docIndex) {
-            int numUniqueWordsInDoc = raf.readInt();
+            int numUniqueWordsInDoc = dis.readInt();
             dos.writeInt(numUniqueWordsInDoc); // unchanged in new matrix
 
             for (int i = 0; i < numUniqueWordsInDoc; ++entriesSeen, ++i) {
-                int termIndex = raf.readInt();
+                int termIndex = dis.readInt();
                 // occurrence is specified as a float, rather than an int
-                float occurrences = raf.readFloat();
+                float occurrences = dis.readFloat();
                 
                 double termFreq =
                     occurrences / termToOccurrencesInCorpus[termIndex];
@@ -194,6 +203,7 @@ public class TfIdfTransform implements Transform {
                 dos.writeFloat((float)(termFreq * invDocFreq));
             }
         }
+        dis.close();
         dos.close();
     }
 
