@@ -28,8 +28,11 @@ import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.vector.Sparse;
 import edu.ucla.sspace.vector.Vector;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.IOError;
 import java.io.IOException;
@@ -66,7 +69,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
     /**
      * The writer used to add data to the transposed matrix file
      */
-    private final RandomAccessFile matrixRaf;
+    private final DataOutputStream matrixDos;
 
     /**
      * Whether the builder has finished adding data to the matrix array
@@ -116,13 +119,15 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
         isFinished = false;
         try {
             // Interact with the matrix using a RandomAccessFile
-            matrixRaf = new RandomAccessFile(backingFile, "rw");
+            //matrixRaf = new RandomAccessFile(backingFile, "rw");
+            matrixDos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(backingFile)));
 
             // write the 12 byte header to advance the file pointer to where the
             // matrix data will start.  The header will be back filled once the
             // matrix data has been finalized
             for (int i = 0; i < 3; ++i)
-                matrixRaf.writeInt(0);
+                matrixDos.writeInt(0);
 
         } catch (IOException ioe) {
             throw new IOError(ioe);
@@ -169,11 +174,11 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
 
         // Write the column to file
         try {
-            matrixRaf.writeInt(nonZero);
+            matrixDos.writeInt(nonZero);
             for (int i = 0; i < column.length; ++i) {
                 if (column[i] != 0d) {
-                    matrixRaf.writeInt(i); // write the row index
-                    matrixRaf.writeFloat((float)column[i]);
+                    matrixDos.writeInt(i); // write the row index
+                    matrixDos.writeFloat((float)column[i]);
                 }
             }
         } catch (IOException ioe) {
@@ -208,10 +213,10 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
         int[] nonZero = column.getElementIndices();
         nonZeroValues += nonZero.length;
         try {
-            matrixRaf.writeInt(nonZero.length);
+            matrixDos.writeInt(nonZero.length);
             for (int i : nonZero) {
-                matrixRaf.writeInt(i); // write the row index
-                matrixRaf.writeFloat(column.get(i).floatValue());
+                matrixDos.writeInt(i); // write the row index
+                matrixDos.writeFloat(column.get(i).floatValue());
             }
         } catch (IOException ioe) {
             throw new IOError(ioe);
@@ -248,11 +253,11 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
             int[] nonZero = s.getNonZeroIndices();
             nonZeroValues += nonZero.length;
             try {
-                matrixRaf.writeInt(nonZero.length);
+                matrixDos.writeInt(nonZero.length);
                 for (int i : nonZero) {
                     double val = s.get(i);
-                    matrixRaf.writeInt(i); // write the row index
-                    matrixRaf.writeFloat((float)val);
+                    matrixDos.writeInt(i); // write the row index
+                    matrixDos.writeFloat((float)val);
                 } 
             } catch (IOException ioe) {
                 throw new IOError(ioe);
@@ -271,13 +276,13 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
             // Update the matrix count
             nonZeroValues += nonZero;
             try {
-                matrixRaf.writeInt(nonZero);
+                matrixDos.writeInt(nonZero);
                 // Write the number of non-zero values in the column
                 for (int i = 0; i < column.length(); ++i) {
                     double value = column.get(i);
                     if (value != 0d) {
-                        matrixRaf.writeInt(i); // write the row index
-                        matrixRaf.writeFloat((float)value);
+                        matrixDos.writeInt(i); // write the row index
+                        matrixDos.writeFloat((float)value);
                     }
                 }
             } catch (IOException ioe) {
@@ -295,9 +300,14 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
         if (!isFinished) {
             isFinished = true;
             try {
+                matrixDos.close();
+                // Re-open as a random access file so we can overwrite the 3 int
+                // header that specifies the number of dimensions and values
+                RandomAccessFile matrixRaf =
+                    new RandomAccessFile(matrixFile, "rw");
+
                 // Back fill the dimensions of the matrix and the number of
                 // non-zero values as the 3 int header in the file
-                matrixRaf.seek(0);
                 matrixRaf.writeInt(numRows);
                 matrixRaf.writeInt(curCol);
                 matrixRaf.writeInt(nonZeroValues);
