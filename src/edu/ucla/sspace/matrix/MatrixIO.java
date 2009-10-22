@@ -23,6 +23,8 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -442,7 +444,8 @@ public class MatrixIO {
 	case SVDLIBC_SPARSE_BINARY:
 
 	case SVDLIBC_DENSE_BINARY: {
-        DataInputStream in = new DataInputStream(new FileInputStream(input));
+            DataInputStream in = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(input)));
         int numRows = in.readInt();
         int numCols = in.readInt();
         int allNonZeros = in.readInt();
@@ -686,8 +689,8 @@ public class MatrixIO {
     private static Matrix readDenseSVDLIBCbinary(File matrix, Type matrixType,
                                                  boolean transposeOnRead) 
 	    throws IOException {
-	DataInputStream dis = 
-            new DataInputStream(new FileInputStream(matrix));
+	DataInputStream dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(matrix)));
 
         int rows = dis.readInt();
         int cols = dis.readInt();
@@ -751,8 +754,8 @@ public class MatrixIO {
         }
 
         case SVDLIBC_DENSE_BINARY: {
-	    DataOutputStream outStream =
-		new DataOutputStream(new FileOutputStream(output));
+	    DataOutputStream outStream = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(output)));
 	    outStream.writeInt(matrix.rows());
 	    outStream.writeInt(matrix.columns());
 	    for (int i = 0; i < matrix.rows(); ++i) {
