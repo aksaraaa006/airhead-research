@@ -111,6 +111,30 @@ public class Vectors {
     }
 
     /**
+     * Create a copy of a given {@code Vector} with the same type as the
+     * original.
+     *
+     * @param source The {@code Vector} to copy.
+     *
+     * @return A copy of {@code source} with the same type.
+     */
+    public static Vector copyOf(Vector source) {
+        Vector result = null;
+        if (source instanceof DenseVector) {
+            result = new DenseVector(source.length());
+            for (int i = 0; i < source.length(); ++i)
+                result.set(i, source.get(i));
+        } else if (source instanceof CompactSparseVector) {
+            result = new CompactSparseVector(source.length());
+            copyFromSparseVector(result, (SparseVector) source);
+        } else if (source instanceof AmortizedSparseVector) {
+            result = new AmortizedSparseVector(source.length());
+            copyFromSparseVector(result, (SparseVector) source);
+        }
+        return result;
+    }
+
+    /**
      * Return a new {@code Vector} which is the summation of {@code vector2} and
      * {@code vector1}.
      *
@@ -194,5 +218,18 @@ public class Vectors {
         int[] otherIndices = source.getNonZeroIndices();
         for (int index : otherIndices)
             destination.add(index, source.get(index));
+    }
+
+    /**
+     * Copy values from a {@code SparseVector} into another vector
+     *
+     * @param destination The {@code Vector to copy values into.
+     * @param source The {@code @SparseVector} to copy values from.
+     */
+    private static void copyFromSparseVector(Vector destination,
+                                             SparseVector source) {
+        int[] nonZeroIndices = source.getNonZeroIndices();
+        for (int i = 0; i < nonZeroIndices.length; ++i)
+            destination.set(i, source.get(i));
     }
 }

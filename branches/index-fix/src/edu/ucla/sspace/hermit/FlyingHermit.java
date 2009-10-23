@@ -28,8 +28,12 @@ import edu.ucla.sspace.index.IndexBuilder;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+
+import edu.ucla.sspace.util.BottomUpVectorClusterMap;
+import edu.ucla.sspace.util.SimpleVectorClusterMap;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -115,6 +119,8 @@ public class FlyingHermit implements SemanticSpace {
      */
     private ConcurrentMap<String, Vector> splitSenses;
 
+    private BottomUpVectorClusterMap clusterMap;
+
     /**
      * The size of each index vector, as set when the sspace is created.
      */
@@ -137,14 +143,14 @@ public class FlyingHermit implements SemanticSpace {
      */
     private double clusterThreshold;
 
-    public FlyingHermit(IndexBuilder builder,
-                        int vectorSize) {
+    public FlyingHermit(IndexBuilder builder, int vectorSize) {
         indexVectorSize = vectorSize;
         indexBuilder = builder;
         clusterThreshold = .75;
         prevSize = builder.expectedSizeOfPrevWords();
         nextSize = builder.expectedSizeOfNextWords();
         termVectors = new ConcurrentHashMap<String, List<Vector> >();
+        clusterMap = new SimpleVectorClusterMap(clusterThreshold, 5);
     }
 
     /**
@@ -224,42 +230,8 @@ public class FlyingHermit implements SemanticSpace {
         // vector with the highest similarity has a similarity over a threshold,
         // incorporate this {@code Vector} to that winner.  Otherwise add this
         // {@code Vector} as a new vector for the term.
-        for (Map.Entry<String, Vector> entry : documentHolographs.entrySet()) {
-            // Get the set of term vectors for this word that have been found so
-            // far.
-            List<Vector> termSenses = null;
-            synchronized (termVectors) {
-                termSenses = termVectors.get(entry.getKey());
-                if (termSenses == null) {
-                    termSenses = new ArrayList<Vector>();
-                    termVectors.put(entry.getKey(), termSenses);
-                }
-            }
-
-            // Update the set of centriods.
-            synchronized (termSenses) {
-                Vector bestMatch = null;
-                double bestScore = -1;
-                double similarity = -1;
-                
-                // Find the centriod with the best similarity.
-                for (Vector centroid : termSenses) {
-                    similarity =
-                        Similarity.cosineSimilarity(centroid, entry.getValue());
-                    if (similarity > bestScore) {
-                        bestScore = similarity;
-                        bestMatch = centroid;
-                    }
-                }
-
-                // Add the current term vector if the similarity is high enough,
-                // or set it as a new centroid.
-                if (similarity > clusterThreshold || termSenses.size() >= 5)
-                    Vectors.add(bestMatch, entry.getValue());
-                else
-                    termSenses.add(entry.getValue());
-            }
-        }
+        for (Map.Entry<String, Vector> entry : documentHolographs.entrySet())
+            clusterMap.addVector(entry.getKey(), entry.getValue());
     }
     
     /**
@@ -268,13 +240,24 @@ public class FlyingHermit implements SemanticSpace {
     public void processSpace(Properties properties) {
 	    HERMIT_LOGGER.info("Starting with " + termVectors.size() + " terms.");
         splitSenses = new ConcurrentHashMap<String, Vector>();
-        for (Map.Entry<String, List<Vector>> entry : termVectors.entrySet()) {
-            List<Vector> holographs = entry.getValue();
-            for (int i = 0; i < holographs.size(); ++i)
-                splitSenses.put(entry.getKey() + "-" + i,
-                                    holographs.get(i));
-            termVectors.remove(entry.getKey(), entry.getValue());
+        Set<String> terms = clusterMap.keySet();
+        for (String term : terms) {
+            List<List<Vector>> clusters = clusterMap.getClusters(term);
+            int i = 0;
+            for (List<Vector> cluster : clusters) {
+                Vector sense = null;
+                for (Vector v : cluster) {
+                    if (sense == null)
+                        sense = Vectors.copyOf(cluster.get(0));
+                    else
+                        Vectors.add(sense, v);
+                }
+                splitSenses.put(term + "-" + i, sense);
+                ++i;
+            }
+            clusterMap.removeClusters(term);
         }
+
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
         Set<String> words = getWords();
         for (String term : words)
