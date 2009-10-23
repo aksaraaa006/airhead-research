@@ -19,6 +19,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+//TODO Have ISA use Vectors.
+
 package edu.ucla.sspace.isa;
 
 import edu.ucla.sspace.common.SemanticSpace;
@@ -31,6 +33,9 @@ import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.SparseDoubleArray;
+
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -190,7 +195,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-	"edu.ucla.sspace.isa.IncrementalSemanticAnalysis";
+    "edu.ucla.sspace.isa.IncrementalSemanticAnalysis";
 
     /**
      * The property to specify the decay rate for determing how much the history
@@ -210,35 +215,35 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * generating {@code IndexVector} instances.
      */
     public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
-	PROPERTY_PREFIX + ".indexVectorGenerator";
+    PROPERTY_PREFIX + ".indexVectorGenerator";
 
     /**
      * The property to specify the fully qualified named of a {@link
      * PermutationFunction} if using permutations is enabled.
      */
     public static final String PERMUTATION_FUNCTION_PROPERTY = 
-	PROPERTY_PREFIX + ".permutationFunction";
+    PROPERTY_PREFIX + ".permutationFunction";
 
     /**
      * The property to specify whether the index vectors for co-occurrent words
      * should be permuted based on their relative position.
      */
     public static final String USE_PERMUTATIONS_PROPERTY = 
-	PROPERTY_PREFIX + ".usePermutations";
+    PROPERTY_PREFIX + ".usePermutations";
 
     /**
      * The property to specify the number of dimensions to be used by the index
      * and semantic vectors.
      */
     public static final String VECTOR_LENGTH_PROPERTY = 
-	PROPERTY_PREFIX + ".vectorLength";
+    PROPERTY_PREFIX + ".vectorLength";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String WINDOW_SIZE_PROPERTY = 
-	PROPERTY_PREFIX + ".windowSize";
+    PROPERTY_PREFIX + ".windowSize";
 
     /**
      * Specifies whether to use a sparse encoding for each word's semantics,
@@ -246,7 +251,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * requires more computation.
      */
     public static final String USE_SPARSE_SEMANTICS_PROPERTY = 
-	PROPERTY_PREFIX + ".sparseSemantics";
+    PROPERTY_PREFIX + ".sparseSemantics";
 
     /**
      * The default rate at which the history (semantics) decays when affecting
@@ -350,40 +355,40 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      *        instance
      */
     public IncrementalSemanticAnalysis(Properties properties) {
-	String vectorLengthProp = 
-	    properties.getProperty(VECTOR_LENGTH_PROPERTY);
-	vectorLength = (vectorLengthProp != null)
-	    ? Integer.parseInt(vectorLengthProp)
-	    : DEFAULT_VECTOR_LENGTH;
+        String vectorLengthProp = 
+            properties.getProperty(VECTOR_LENGTH_PROPERTY);
+        vectorLength = (vectorLengthProp != null)
+            ? Integer.parseInt(vectorLengthProp)
+            : DEFAULT_VECTOR_LENGTH;
 
-	String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
-	windowSize = (windowSizeProp != null)
-	    ? Integer.parseInt(windowSizeProp)
-	    : DEFAULT_WINDOW_SIZE;
+        String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
+        windowSize = (windowSizeProp != null)
+            ? Integer.parseInt(windowSizeProp)
+            : DEFAULT_WINDOW_SIZE;
 
-	String usePermutationsProp = 
-	    properties.getProperty(USE_PERMUTATIONS_PROPERTY);
-	usePermutations = (usePermutationsProp != null)
-	    ? Boolean.parseBoolean(usePermutationsProp)
-	    : false;
+        String usePermutationsProp = 
+            properties.getProperty(USE_PERMUTATIONS_PROPERTY);
+        usePermutations = (usePermutationsProp != null)
+            ? Boolean.parseBoolean(usePermutationsProp)
+            : false;
 
-	String permutationFuncProp =
-	    properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
-	permutationFunc = (permutationFuncProp != null)
-	    ? loadPermutationFunction(permutationFuncProp)
-	    : null; //new DefaultPermutationFunction;
+        String permutationFuncProp =
+            properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
+        permutationFunc = (permutationFuncProp != null)
+            ? loadPermutationFunction(permutationFuncProp)
+            : null; //new DefaultPermutationFunction;
 
-	String ivgProp = 
-	    properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
-	indexVectorGenerator = (ivgProp != null) 
-	    ? loadIndexVectorGenerator(ivgProp, properties)
-	    : new RandomIndexVectorGenerator(properties);
+        String ivgProp = 
+            properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
+        indexVectorGenerator = (ivgProp != null) 
+            ? loadIndexVectorGenerator(ivgProp, properties)
+            : new RandomIndexVectorGenerator(properties);
 
-	String useSparseProp = 
-	    properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
-	useSparseSemantics = (useSparseProp != null)
-	    ? Boolean.parseBoolean(useSparseProp)
-	    : true;
+        String useSparseProp = 
+            properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
+        useSparseSemantics = (useSparseProp != null)
+            ? Boolean.parseBoolean(useSparseProp)
+            : true;
 
         String decayRateProp = 
             properties.getProperty(HISTORY_DECAY_RATE_PROPERTY);
@@ -396,10 +401,10 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         impactRate = (impactRateProp != null)
             ? Double.parseDouble(impactRateProp)
             : DEFAULT_IMPACT_RATE;
-        
-	wordToIndexVector = new HashMap<String,IndexVector>();
-	wordToMeaning = new HashMap<String,SemanticVector>();
-        wordToOccurrences = new HashMap<String,Integer>();
+            
+        wordToIndexVector = new HashMap<String,IndexVector>();
+        wordToMeaning = new HashMap<String,SemanticVector>();
+            wordToOccurrences = new HashMap<String,Integer>();
     }
 
 
@@ -411,15 +416,15 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      *
      * @return a permutation function of the specified class name
      */ 
-    private static PermutationFunction 
-	    loadPermutationFunction(String className) {
-	try {
-	    Class clazz = Class.forName(className);
-	    return (PermutationFunction)(clazz.newInstance());
-	} catch (Exception e) {
-	    // catch all of the exception and rethrow them as an error
-	    throw new Error(e);
-	}
+    private static PermutationFunction loadPermutationFunction(
+            String className) {
+        try {
+            Class clazz = Class.forName(className);
+            return (PermutationFunction)(clazz.newInstance());
+        } catch (Exception e) {
+            // catch all of the exception and rethrow them as an error
+            throw new Error(e);
+        }
     }
 
     /**
@@ -434,18 +439,19 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      *
      * @return the index vector generator
      */
-    @SuppressWarnings("unchecked") private static IndexVectorGenerator 
-	    loadIndexVectorGenerator(String className, Properties properties) {
-	try {
-	    Class clazz = Class.forName(className);
-	    Constructor c = clazz.getConstructor(Properties.class);
-	    IndexVectorGenerator ivg = (IndexVectorGenerator)
-		c.newInstance(new Object[] {properties});
-	    return ivg;
-	} catch (Exception e) {
-	    // rethrow
-	    throw new Error(e);
-	}
+    @SuppressWarnings("unchecked")
+    private static IndexVectorGenerator loadIndexVectorGenerator(
+            String className, Properties properties) {
+        try {
+            Class clazz = Class.forName(className);
+            Constructor c = clazz.getConstructor(Properties.class);
+            IndexVectorGenerator ivg = (IndexVectorGenerator)
+            c.newInstance(new Object[] {properties});
+            return ivg;
+        } catch (Exception e) {
+            // rethrow
+            throw new Error(e);
+        }
     }
 
     /**
@@ -454,7 +460,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * same mapping on multiple corpora while keeping the same semantic space.
      */
     public void clearSemantics() {
-	wordToMeaning.clear();
+        wordToMeaning.clear();
     }
 
     /**
@@ -463,13 +469,12 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * @param the index vector for a word
      */
     private IndexVector getIndexVector(String word) {
-	
-	IndexVector v = wordToIndexVector.get(word);
-	if (v == null) {
+        IndexVector v = wordToIndexVector.get(word);
+        if (v == null) {
             v = indexVectorGenerator.create(vectorLength);
             wordToIndexVector.put(word, v);
         }
-	return v;
+        return v;
     }  
 
     /**
@@ -482,15 +487,14 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * @return the {@code SemanticVector} for the provide word.
      */
     private SemanticVector getSemanticVector(String word) {
-
-	SemanticVector v = wordToMeaning.get(word);
-	if (v == null) {
+        SemanticVector v = wordToMeaning.get(word);
+        if (v == null) {
             v = (useSparseSemantics) 
                 ? new SparseSemanticVector()
                 : new DenseSemanticVector();
             wordToMeaning.put(word, v);
         }
-	return v;
+        return v;
     }
 
     /**
@@ -507,19 +511,19 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     /**
      * {@inheritDoc}
      */ 
-    public double[] getVectorFor(String word) {
-	SemanticVector v = wordToMeaning.get(word);
-	if (v == null) {
-	    return null;
-	}
-	double[] vec = v.toArray();
-	return vec;
+    public Vector getVector(String word) {
+        SemanticVector v = wordToMeaning.get(word);
+        if (v == null) {
+            return null;
+        }
+        double[] vec = v.toArray();
+        return new DenseVector(vec);
     }
 
     /**
      * {@inheritDoc}
      */ 
-    public int getVectorSize() {
+    public int getVectorLength() {
         return vectorLength;
     }
 
@@ -532,7 +536,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      *         to represent them
      */
     public Map<String,IndexVector> getWordToIndexVector() {
-	return Collections.unmodifiableMap(wordToIndexVector);
+        return Collections.unmodifiableMap(wordToIndexVector);
     }
 
     /**
@@ -546,103 +550,99 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * {@inheritDoc}  Note that this method is <i>not</i> thread safe.
      */
     public void processDocument(BufferedReader document) throws IOException {
+        Queue<String> prevWords = new ArrayDeque<String>(windowSize);
+        Queue<String> nextWords = new ArrayDeque<String>(windowSize);
 
-	Queue<String> prevWords = new ArrayDeque<String>(windowSize);
-	Queue<String> nextWords = new ArrayDeque<String>(windowSize);
+        Iterator<String> documentTokens = 
+            IteratorFactory.tokenizeOrdered(document);
 
-	Iterator<String> documentTokens = 
-	    IteratorFactory.tokenizeOrdered(document);
+        String focusWord = null;
 
-	String focusWord = null;
-
-	// Prefetch the first windowSize words.  As soon as a word enters the
-	// nextWords buffer increase its occurrence count.
-	for (int i = 0; i < windowSize && documentTokens.hasNext(); ++i) 
-	    nextWords.offer(documentTokens.next());        
-	
-	while (!nextWords.isEmpty()) {
-	    
-	    focusWord = nextWords.remove();
-
-	    // shift over the window to the next word
-	    if (documentTokens.hasNext()) {
-		String windowEdge = documentTokens.next(); 
-		nextWords.offer(windowEdge);
-	    }    
+        // Prefetch the first windowSize words.  As soon as a word enters the
+        // nextWords buffer increase its occurrence count.
+        for (int i = 0; i < windowSize && documentTokens.hasNext(); ++i) 
+            nextWords.offer(documentTokens.next());        
+        
+        while (!nextWords.isEmpty()) {
             
-            // Don't bother calculating the semantics for empty tokens
-            // (i.e. words that were filtered out)
-	    if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+            focusWord = nextWords.remove();
 
-		SemanticVector focusMeaning = getSemanticVector(focusWord);
+            // shift over the window to the next word
+            if (documentTokens.hasNext()) {
+                String windowEdge = documentTokens.next(); 
+                nextWords.offer(windowEdge);
+            }    
+                
+                // Don't bother calculating the semantics for empty tokens
+                // (i.e. words that were filtered out)
+            if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                SemanticVector focusMeaning = getSemanticVector(focusWord);
 
-		// Sum up the index vector for all the surrounding words.  If
-		// permutations are enabled, permute the index vector based on
-		// its relative position to the focus word.
-		int permutations = -(prevWords.size());		
-		for (String word : prevWords) {
-		    
-		    // Skip the addition of any words that are excluded from the
-		    // filter set.  Note that by doing the exclusion here, we
-		    // ensure that the token stream maintains its existing
-		    // ordering, which is necessary when permutations are taken
-		    // into account.
-		    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-			++permutations;
-			continue;
-		    }
-		    
-		    IndexVector iv = getIndexVector(word);
-		    if (usePermutations) {
-			iv = permutationFunc.permute(iv, permutations);
-			++permutations;
-		    }
+                // Sum up the index vector for all the surrounding words.  If
+                // permutations are enabled, permute the index vector based on
+                // its relative position to the focus word.
+                int permutations = -(prevWords.size());        
+                for (String word : prevWords) {
+                    // Skip the addition of any words that are excluded from the
+                    // filter set.  Note that by doing the exclusion here, we
+                    // ensure that the token stream maintains its existing
+                    // ordering, which is necessary when permutations are taken
+                    // into account.
+                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        ++permutations;
+                        continue;
+                    }
+                    
+                    IndexVector iv = getIndexVector(word);
+                    if (usePermutations) {
+                        iv = permutationFunc.permute(iv, permutations);
+                        ++permutations;
+                    }
+                            
+                    updateSemantics(focusMeaning, word, iv);
+                }
+                
+                // Repeat for the words in the forward window.
+                permutations = 1;
+                for (String word : nextWords) {
+                    // Skip the addition of any words that are excluded from the
+                    // filter set.  Note that by doing the exclusion here, we
+                    // ensure that the token stream maintains its existing
+                    // ordering, which is necessary when permutations are taken
+                    // into account.
+                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        ++permutations;
+                        continue;
+                    }
+                    
+                    IndexVector iv = getIndexVector(word);
+                    if (usePermutations) {
+                        iv = permutationFunc.permute(iv, permutations);
+                        ++permutations;
+                    }
                     
                     updateSemantics(focusMeaning, word, iv);
-		}
-		
-		// Repeat for the words in the forward window.
-		permutations = 1;
-		for (String word : nextWords) {
-		    
-		    // Skip the addition of any words that are excluded from the
-		    // filter set.  Note that by doing the exclusion here, we
-		    // ensure that the token stream maintains its existing
-		    // ordering, which is necessary when permutations are taken
-		    // into account.
-		    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-			++permutations;
-			continue;
-		    }
-		    
-		    IndexVector iv = getIndexVector(word);
-		    if (usePermutations) {
-			iv = permutationFunc.permute(iv, permutations);
-			++permutations;
-		    }
-		    
-                    updateSemantics(focusMeaning, word, iv);
-		}
-	    }
+                }
+            }
 
-	    // Last put this focus word in the prev words and shift off the
-	    // front of the previous word window if it now contains more words
-	    // than the maximum window size
-	    prevWords.offer(focusWord);
+            // Last put this focus word in the prev words and shift off the
+            // front of the previous word window if it now contains more words
+            // than the maximum window size
+            prevWords.offer(focusWord);
 
             // Increment the frequency count for the word now that it has been
             // seen and processed.
             Integer count = wordToOccurrences.get(focusWord);
             wordToOccurrences.put(focusWord, (count == null) ? 1 : count + 1);
 
-	    if (prevWords.size() > windowSize) {
-		prevWords.remove();
-	    }
-	}	
+            if (prevWords.size() > windowSize) {
+                prevWords.remove();
+            }
+        }    
 
-	document.close();
+        document.close();
     }
-    
+        
     /**
      * Does nothing, as ISA in an incremental algorithm and no final processing
      * needs to be performed on the space.
@@ -661,8 +661,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      *        used represent it when calculating other word's semantics
      */
     public void setWordToIndexVector(Map<String,IndexVector> m) {
-	wordToIndexVector.clear();
-	wordToIndexVector.putAll(m);
+        wordToIndexVector.clear();
+        wordToIndexVector.putAll(m);
     }
 
     /**
@@ -675,9 +675,9 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * @param iv the index vector for the co-occurring word, which has be
      *        permuted as necessary
      */    
-    private void updateSemantics(SemanticVector toUpdate, String cooccurringWord,
+    private void updateSemantics(SemanticVector toUpdate,
+                                 String cooccurringWord,
                                  IndexVector iv) {
-
         SemanticVector prevWordSemantics = getSemanticVector(cooccurringWord);
         
         Integer occurrences = wordToOccurrences.get(cooccurringWord);
@@ -699,22 +699,22 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      */
     interface SemanticVector {
 
-	/**
-	 * Adds the bits specified for the {@code IndexVector} to this
-	 * semantic representation.
-	 */
-	void add(IndexVector v, double percentage);
+        /**
+         * Adds the bits specified for the {@code IndexVector} to this
+         * semantic representation.
+         */
+        void add(IndexVector v, double percentage);
 
-	/**
-	 * Adds the bits specified for the {@code SemanticVector} to this
-	 * semantic representation.
-	 */
-	void add(SemanticVector v, double percentage);
+        /**
+         * Adds the bits specified for the {@code SemanticVector} to this
+         * semantic representation.
+         */
+        void add(SemanticVector v, double percentage);
 
-	/**
-	 * Returns the full vector representing these semantics.
-	 */
-	double[] toArray();
+        /**
+         * Returns the full vector representing these semantics.
+         */
+        double[] toArray();
     }
     
     class SparseSemanticVector implements SemanticVector {
@@ -726,26 +726,25 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         }
 
         /**
-	 * {@inheritDoc}
-	 */
-	public void add(IndexVector v, double percentage) {
-
-	    for (int p : v.positiveDimensions())
-		semantics.set(p, semantics.getPrimitive(p) + percentage);
-			
-	    for (int n : v.negativeDimensions()) 
-                semantics.set(n, semantics.getPrimitive(n) - percentage);
+         * {@inheritDoc}
+         */
+        public void add(IndexVector v, double percentage) {
+            for (int p : v.positiveDimensions())
+            semantics.set(p, semantics.getPrimitive(p) + percentage);
+                
+            for (int n : v.negativeDimensions()) 
+                    semantics.set(n,
+                                  semantics.getPrimitive(n) - percentage);
         }
 
         /**
-	 * {@inheritDoc}
-	 */
-	public void add(SemanticVector v, double percentage) {
-
+         * {@inheritDoc}
+         */
+        public void add(SemanticVector v, double percentage) {
             double[] vec = v.toArray();
             for (int i = 0; i < vec.length; ++i) 
-                semantics.
-                    set(i, semantics.getPrimitive(i) + percentage * vec[i]);
+                semantics.set(
+                        i, semantics.getPrimitive(i) + percentage * vec[i]);
         }
 
         /**
@@ -755,7 +754,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             return semantics.toPrimitiveArray(new double[vectorLength]);
         }
     }
-    
+        
     class DenseSemanticVector implements SemanticVector {
 
         private final double[] semantics;
@@ -765,25 +764,23 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         }
 
         /**
-	 * {@inheritDoc}
-	 */
-	public void add(IndexVector v, double percentage) {
-
-	    for (int p : v.positiveDimensions())
-		semantics[p] += percentage;
-			
-	    for (int n : v.negativeDimensions()) 
-                semantics[n] -= percentage;
+         * {@inheritDoc}
+         */
+        public void add(IndexVector v, double percentage) {
+            for (int p : v.positiveDimensions())
+                semantics[p] += percentage;
+                
+            for (int n : v.negativeDimensions()) 
+                    semantics[n] -= percentage;
         }
 
         /**
-	 * {@inheritDoc}
-	 */
-	public void add(SemanticVector v, double percentage) {
-
-            double[] vec = v.toArray();
-            for (int i = 0; i < vec.length; ++i) 
-                semantics[i] += percentage * vec[i];
+         * {@inheritDoc}
+         */
+        public void add(SemanticVector v, double percentage) {
+                double[] vec = v.toArray();
+                for (int i = 0; i < vec.length; ++i) 
+                    semantics[i] += percentage * vec[i];
         }
 
         /**

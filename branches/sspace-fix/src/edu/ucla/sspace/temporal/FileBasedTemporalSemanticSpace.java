@@ -456,7 +456,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
       return dimensions;
     }
 

@@ -24,14 +24,16 @@ package edu.ucla.sspace.coals;
 import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Normalize;
+import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SVD;
 
-import edu.ucla.sspace.matrix.ArrayMatrix;
-import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import edu.ucla.sspace.text.StringUtils;
 import edu.ucla.sspace.text.IteratorFactory;
@@ -139,9 +141,11 @@ public class Coals implements SemanticSpace {
   /**
    * {@inheritDoc}
    */
-  public double[] getVectorFor(String term) {
-    if (wordToIndex.containsKey(term))
-      return finalCorrelation.getRow(wordToIndex.get(term).intValue());
+  public Vector getVector(String term) {
+    if (wordToIndex.containsKey(term)) {
+        int index = wordToIndex.get(term).intValue();
+      return Vectors.immutableVector(finalCorrelation.getRowVector(index));
+    }
     return null;
   }
 
@@ -152,7 +156,7 @@ public class Coals implements SemanticSpace {
     return ret;
   }
 
-  public int getVectorSize() {
+  public int getVectorLength() {
     return reducedDims;
   }
 

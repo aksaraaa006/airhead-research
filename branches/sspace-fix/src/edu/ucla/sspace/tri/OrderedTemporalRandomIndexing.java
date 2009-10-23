@@ -422,8 +422,8 @@ public abstract class OrderedTemporalRandomIndexing
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-	return currentSlice.getVectorSize();
+    public int getVectorLength() {
+	return currentSlice.getVectorLength();
     }
 
 

@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
 
 import java.io.BufferedInputStream;
@@ -366,7 +367,7 @@ public class SemanticSpaceIO {
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
 	if (words.size() > 0) {
-	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	    dimensions = sspace.getVectorLength();
 	}
         writeHeader(os, SSpaceFormat.TEXT);
 	// write out how many vectors there are and the number of dimensions
@@ -375,8 +376,7 @@ public class SemanticSpaceIO {
 		    " words with " + dimensions + "-dimensional vectors");
 
 	for (String word : words) {
-	    pw.println(word + "|" + 
-		       VectorIO.toString(sspace.getVectorFor(word)));
+	    pw.println(word + "|" + VectorIO.toString(sspace.getVector(word)));
 	}
 	pw.close();
     }
@@ -399,7 +399,7 @@ public class SemanticSpaceIO {
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
 	if (words.size() > 0) {
-	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	    dimensions = sspace.getVectorLength();
 	}
         writeHeader(dos, SSpaceFormat.BINARY);
 	// write out how many vectors there are and the number of dimensions
@@ -410,9 +410,13 @@ public class SemanticSpaceIO {
 
 	for (String word : words) {
 	    dos.writeUTF(word);
-	    for (double d : sspace.getVectorFor(word)) {
-		dos.writeDouble(d);
+        Vector v = sspace.getVector(word);
+        for (int i = 0; i < v.length(); ++i) {
+            dos.writeDouble(v.get(i));
 	    }
+        // Some vectors may have a shorter length, so pad extra dimensions.
+        for (int i = v.length(); i < sspace.getVectorLength(); ++i)
+            dos.writeDouble(0);
 	}
 	dos.close();
     }
@@ -435,7 +439,7 @@ public class SemanticSpaceIO {
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
 	if (words.size() > 0) {
-	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	    dimensions = sspace.getVectorLength();
 	}
 
         writeHeader(os, SSpaceFormat.SPARSE_TEXT);
@@ -448,7 +452,8 @@ public class SemanticSpaceIO {
 	for (String word : words) {
 	    pw.print(word + "|");
 	    // for each vector, write all the non-zero elements and their indices
-	    double[] vector = sspace.getVectorFor(word);
+        Vector v = sspace.getVector(word);
+	    double[] vector = v.toArray(v.length());
 	    boolean first = true;
 	    StringBuilder sb = new StringBuilder(dimensions * 4);
 	    for (int i = 0; i < vector.length; ++i) {
@@ -487,7 +492,7 @@ public class SemanticSpaceIO {
 	// determine how many dimensions are used by the vectors
 	int dimensions = 0;
 	if (words.size() > 0) {
-	    dimensions = (sspace.getVectorFor(words.iterator().next())).length;
+	    dimensions = sspace.getVectorLength();
 	}
 
         writeHeader(dos, SSpaceFormat.SPARSE_BINARY);
@@ -500,7 +505,8 @@ public class SemanticSpaceIO {
 
 	for (String word : words) {
 	    dos.writeUTF(word);
-	    double[] vector = sspace.getVectorFor(word);
+	    double[] vector =
+            sspace.getVector(word).toArray(sspace.getVectorLength());
 	    // count how many are non-zero
 	    int nonZero = 0;
 	    for (double d : vector) {

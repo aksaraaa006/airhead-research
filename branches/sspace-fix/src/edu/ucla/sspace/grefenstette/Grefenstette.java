@@ -28,6 +28,8 @@ import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.util.Pair;
 
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.File;
@@ -460,22 +462,15 @@ public class Grefenstette implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String word) {
-	int wordIndex;
+    public Vector getVector(String word) {
         word = word.toLowerCase();
-	if( objectTable.containsKey(word) ) {
-	    wordIndex = objectTable.get(word);
-            if( wordIndex < syntacticCooccurrence.rows() ) {
-                try {
-	        return syntacticCooccurrence.getRow(wordIndex);
-                } catch (NullPointerException npe) {
-                    
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    
-                }
+        if(objectTable.containsKey(word)) {
+            int wordIndex = objectTable.get(word);
+            if(wordIndex < syntacticCooccurrence.rows()) {
+                return syntacticCooccurrence.getRowVector(wordIndex);
             }
-	}
-	return null;
+        }
+        return null;
     }
     
     /**
@@ -494,7 +489,7 @@ public class Grefenstette implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
       return syntacticCooccurrence.columns();
     }
 }

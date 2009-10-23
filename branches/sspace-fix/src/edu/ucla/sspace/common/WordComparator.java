@@ -21,6 +21,12 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.util.BoundedSortedMultiMap;
+import edu.ucla.sspace.util.MultiMap;
+import edu.ucla.sspace.util.SortedMultiMap;
+
+import edu.ucla.sspace.vector.Vector;
+
 import java.lang.reflect.Method;
 
 import java.util.Map;
@@ -36,9 +42,6 @@ import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import edu.ucla.sspace.util.BoundedSortedMultiMap;
-import edu.ucla.sspace.util.MultiMap;
-import edu.ucla.sspace.util.SortedMultiMap;
 
 /**
  * A utility class for finding the {@code k} most-similar words to a provided
@@ -88,13 +91,15 @@ public class WordComparator {
 
 	//ThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(4);
 
-	final double[] vector = sspace.getVectorFor(word);
+    Vector v = sspace.getVector(word);
 
 	// if the semantic space did not have the word, then return null
-	if (vector == null) {
+	if (v == null) {
 	    return null;
 	}
 	
+	final double[] vector = v.toArray(sspace.getVectorLength());
+
 	Set<String> words = sspace.getWords();
 	
 	// the most-similar set will automatically retain only a fixed number
@@ -171,7 +176,9 @@ public class WordComparator {
 
 	public void run() {
 	    try {	    
-		double[] otherVec = sspace.getVectorFor(other);
+        Vector otherV = sspace.getVector(other);
+		double[] otherVec = otherV.toArray(sspace.getVectorLength());
+
 		Double similarity = Similarity.getSimilarity(
                     similarityMeasure, vector, otherVec);
 		

@@ -35,6 +35,8 @@ import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
 
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
@@ -164,21 +166,21 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * The prefix for naming publically accessible properties
      */
     private static final String PROPERTY_PREFIX =
-	"edu.ucla.sspace.lsa.LatentSemanticAnalysis";
+    "edu.ucla.sspace.lsa.LatentSemanticAnalysis";
 
     /**
      * The property to define the {@link Transform} class to be used
      * when processing the space after all the documents have been seen.
      */
     public static final String MATRIX_TRANSFORM_PROPERTY =
-	PROPERTY_PREFIX + ".transform";
+    PROPERTY_PREFIX + ".transform";
 
     /**
      * The property to set the number of dimension to which the space should be
      * reduced using the SVD
      */
     public static final String LSA_DIMENSIONS_PROPERTY =
-	PROPERTY_PREFIX + ".dimensions";
+    PROPERTY_PREFIX + ".dimensions";
 
     /**
      * The property to set the specific SVD algorithm used by an instance during
@@ -188,7 +190,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * {@link SVD}.
      */
     public static final String LSA_SVD_ALGORITHM_PROPERTY = 
-	PROPERTY_PREFIX + ".svd.algorithm";
+    PROPERTY_PREFIX + ".svd.algorithm";
 
     /**
      * The name prefix used with {@link #getName()}
@@ -200,7 +202,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * The logger used to record all output
      */
     private static final Logger LSA_LOGGER = 
-	Logger.getLogger(LatentSemanticAnalysis.class.getName());
+    Logger.getLogger(LatentSemanticAnalysis.class.getName());
 
     /**
      * A mapping from a word to the row index in the that word-document matrix
@@ -242,7 +244,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      *         the backing array files required for processing
      */
     public LatentSemanticAnalysis() throws IOException {
-	this(System.getProperties());
+    this(System.getProperties());
     }
 
     /**
@@ -253,14 +255,13 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      *         the backing array files required for processing
      */
     public LatentSemanticAnalysis(Properties properties) throws IOException {
-
-	termToIndex = new ConcurrentHashMap<String,Integer>();
-	termIndexCounter = new AtomicInteger(0);
+        termToIndex = new ConcurrentHashMap<String,Integer>();
+        termIndexCounter = new AtomicInteger(0);
 
         termDocumentMatrixBuilder = Matrices.getMatrixBuilderForSVD();
 
-	wordSpace = null;
-	documentSpace = null;
+        wordSpace = null;
+        documentSpace = null;
     }   
 
     /**
@@ -269,7 +270,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * @param document {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-
         // Create a mapping for each term that is seen in the document to the
         // number of times it has been seen.  This mapping would more elegantly
         // be a SparseArray<Integer> however, the length of the sparse array
@@ -301,14 +301,14 @@ public class LatentSemanticAnalysis implements SemanticSpace {
                            : 1 + termCount.intValue());
         }
 
-	document.close();
+        document.close();
 
-	// Check that we actually loaded in some terms before we increase the
-	// documentIndex.  This could possibly save some dimensions in the final
-	// array for documents that were essentially blank.  If we didn't see
-	// any terms, just return 0
-	if (termCounts.isEmpty())
-	    return;
+        // Check that we actually loaded in some terms before we increase the
+        // documentIndex.  This could possibly save some dimensions in the final
+        // array for documents that were essentially blank.  If we didn't see
+        // any terms, just perform no updates. 
+        if (termCounts.isEmpty())
+            return;
 
         // Get the total number of terms encountered so far, including any new
         // unique terms found in the most recent document
@@ -324,50 +324,46 @@ public class LatentSemanticAnalysis implements SemanticSpace {
         // document.
         termDocumentMatrixBuilder.addColumn(documentColumn);
     }
-	
+    
     /**
      * Adds the term to the list of terms and gives it an index, or if the term
      * has already been added, does nothing.
      */
     private void addTerm(String term) {
+        Integer index = termToIndex.get(term);
 
-	Integer index = termToIndex.get(term);
+        if (index == null) {
 
-	if (index == null) {
-
-	    synchronized(this) {
-
-		// recheck to see if the term was added while blocking
-		index = termToIndex.get(term);
-		// if some other thread has not already added this term while
-		// the current thread was blocking waiting on the lock, then add
-		// it.
-		if (index == null) {
-		    index = Integer.valueOf(termIndexCounter.getAndIncrement());
-		    termToIndex.put(term, index);
-		}
-	    }
-	}
+            synchronized(this) {
+                // recheck to see if the term was added while blocking
+                index = termToIndex.get(term);
+                // if some other thread has not already added this term while
+                // the current thread was blocking waiting on the lock, then add
+                // it.
+                if (index == null) {
+                    index = Integer.valueOf(termIndexCounter.getAndIncrement());
+                    termToIndex.put(term, index);
+                }
+            }
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(termToIndex.keySet());
+        return Collections.unmodifiableSet(termToIndex.keySet());
     }
 
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String word) {
-
-	// determine the index for the word
-	Integer index = termToIndex.get(word);
+    public Vector getVector(String word) {
+        // determine the index for the word
+        Integer index = termToIndex.get(word);
         
         return (index == null)
-	    ? null
-	    : wordSpace.getRow(index.intValue());
+            ? null : wordSpace.getRowVector(index.intValue());
     }
 
     /**
@@ -393,26 +389,26 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * @return the semantics of the document in the document space
      */
     public double[] getDocumentVector(int documentNumber) {
-	if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
-	    throw new IllegalArgumentException(
-		"Document number is not within the bounds of the number of "
-		+ "documents: " + documentNumber);
-	}
-	return documentSpace.getRow(documentNumber);
+        if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
+            throw new IllegalArgumentException(
+                    "Document number is not within the bounds of the number of "
+                    + "documents: " + documentNumber);
+        }
+        return documentSpace.getRow(documentNumber);
     }
 
     /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
-	return LSA_SSPACE_NAME;
+        return LSA_SSPACE_NAME;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-      return wordSpace.columns();
+    public int getVectorLength() {
+        return wordSpace.columns();
     }
 
     /**
@@ -428,84 +424,83 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      *        properties.
      */
     public void processSpace(Properties properties) {
-	try {
-	    // first ensure that we are no longer writing to the matrix
-            termDocumentMatrixBuilder.finish();
+        try {
+            // first ensure that we are no longer writing to the matrix
+                termDocumentMatrixBuilder.finish();
 
-	    Transform transform = new LogEntropyTransform();
+            Transform transform = new LogEntropyTransform();
 
-	    String transformClass = 
-		properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
-	    if (transformClass != null) {
-		try {
-		    Class clazz = Class.forName(transformClass);
-		    transform = (Transform)(clazz.newInstance());
-		} 
-		// perform a general catch here due to the number of possible
-		// things that could go wrong.  Rethrow all exceptions as an
-		// error.
-		catch (Exception e) {
-		    throw new Error(e);
-		} 
-	    }
-
-	    LSA_LOGGER.info("performing " + transform + " transform");
-            
-            // Get the finished matrix file from the builder
-	    File termDocumentMatrix = termDocumentMatrixBuilder.getFile();
-            if (LSA_LOGGER.isLoggable(Level.FINE)) {
-                LSA_LOGGER.fine("stored term-document matrix in format " + 
-                                termDocumentMatrixBuilder.getMatrixFormat()
-                                + " at " + termDocumentMatrix.getAbsolutePath());
+            String transformClass = 
+            properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
+            if (transformClass != null) {
+                try {
+                    Class clazz = Class.forName(transformClass);
+                    transform = (Transform)(clazz.newInstance());
+                } 
+                // perform a general catch here due to the number of possible
+                // things that could go wrong.  Rethrow all exceptions as an
+                // error.
+                catch (Exception e) {
+                    throw new Error(e);
+                } 
             }
 
-	    // Convert the raw term counts using the specified transform
+            LSA_LOGGER.info("performing " + transform + " transform");
+                
+                // Get the finished matrix file from the builder
+            File termDocumentMatrix = termDocumentMatrixBuilder.getFile();
+            if (LSA_LOGGER.isLoggable(Level.FINE)) {
+                LSA_LOGGER.fine("stored term-document matrix in format " + 
+                        termDocumentMatrixBuilder.getMatrixFormat()
+                        + " at " + termDocumentMatrix.getAbsolutePath());
+            }
+
+            // Convert the raw term counts using the specified transform
             File transformedMatrix = transform.transform(termDocumentMatrix, 
-                termDocumentMatrixBuilder.getMatrixFormat());
+                    termDocumentMatrixBuilder.getMatrixFormat());
 
             if (LSA_LOGGER.isLoggable(Level.FINE)) {
                 LSA_LOGGER.fine("transformed matrix to " + 
-                                transformedMatrix.getAbsolutePath());
+                        transformedMatrix.getAbsolutePath());
             }
-	    
-	    int dimensions = 300; // default
-	    String userSpecfiedDims = 
-		properties.getProperty(LSA_DIMENSIONS_PROPERTY);
-	    if (userSpecfiedDims != null) {
-		try {
-		    dimensions = Integer.parseInt(userSpecfiedDims);
-		} catch (NumberFormatException nfe) {
-		    throw new IllegalArgumentException(
-			LSA_DIMENSIONS_PROPERTY + " is not an integer: " +
-			userSpecfiedDims);
-		}
-	    }
+            
+            int dimensions = 300; // default
+            String userSpecfiedDims = 
+            properties.getProperty(LSA_DIMENSIONS_PROPERTY);
+            if (userSpecfiedDims != null) {
+                try {
+                    dimensions = Integer.parseInt(userSpecfiedDims);
+                } catch (NumberFormatException nfe) {
+                    throw new IllegalArgumentException(
+                            LSA_DIMENSIONS_PROPERTY + " is not an integer: " +
+                            userSpecfiedDims);
+                }
+            }
 
-	    LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
+            LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
 
             // Determine whether the user specified any specific SVD algorithm
             // or whether the fastest available should be used.
-	    String svdProp = properties.getProperty(LSA_SVD_ALGORITHM_PROPERTY);
-	    SVD.Algorithm alg = (svdProp == null)
-		? SVD.Algorithm.ANY
-		: SVD.Algorithm.valueOf(svdProp);
- 
-	    // Compute SVD on the pre-processed matrix.
-	    Matrix[] usv = SVD.svd(transformedMatrix, alg,
-                                   termDocumentMatrixBuilder.getMatrixFormat(),
-				   dimensions);
-	    
-	    // Load the left factor matrix, which is the word semantic space
-	    wordSpace = usv[0];
-	    // We transpose the document space to provide easier access to the
-	    // document vectors, which in the un-transposed version are the
-	    // columns.  NOTE: if the Matrix interface ever adds a getColumn()
-	    // method, it might be better to use that instead.
-	    documentSpace = Matrices.transpose(usv[2]);
-
-	} catch (IOException ioe) {
-	    //rethrow as Error
-	    throw new IOError(ioe);
-	}
+            String svdProp = properties.getProperty(LSA_SVD_ALGORITHM_PROPERTY);
+            SVD.Algorithm alg = (svdProp == null)
+                ? SVD.Algorithm.ANY
+                : SVD.Algorithm.valueOf(svdProp);
+     
+            // Compute SVD on the pre-processed matrix.
+            Matrix[] usv = SVD.svd(transformedMatrix, alg,
+                    termDocumentMatrixBuilder.getMatrixFormat(),
+                    dimensions);
+            
+            // Load the left factor matrix, which is the word semantic space
+            wordSpace = usv[0];
+            // We transpose the document space to provide easier access to the
+            // document vectors, which in the un-transposed version are the
+            // columns.  NOTE: if the Matrix interface ever adds a getColumn()
+            // method, it might be better to use that instead.
+            documentSpace = Matrices.transpose(usv[2]);
+        } catch (IOException ioe) {
+            //rethrow as Error
+            throw new IOError(ioe);
+        }
     }
 }

@@ -44,7 +44,7 @@ public class Vectors {
      * @return An immutable version of {@code vector}.
      */
     public static Vector immutableVector(Vector vector) {
-        return new ImmutableVector(vector);
+        return (vector != null) ? new ImmutableVector(vector) : null;
     }
 
     /**
@@ -54,7 +54,7 @@ public class Vectors {
      * @return An atomic version of {@code vector}.
      */
     public static Vector atomicVector(Vector vector) {
-        return new AtomicVector(vector);
+        return (vector != null) ? new AtomicVector(vector) : null;
     }
 
     /**

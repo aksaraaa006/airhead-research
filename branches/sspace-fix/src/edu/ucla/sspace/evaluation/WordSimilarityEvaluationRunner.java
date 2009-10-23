@@ -21,15 +21,18 @@
 
 package edu.ucla.sspace.evaluation;
 
+import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.Similarity.SimType;
+
+import edu.ucla.sspace.vector.Vector;
+
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.Similarity;
-import edu.ucla.sspace.common.Similarity.SimType;
 
 /**
  * A test-runner for evaluating the performance of a {@link SemanticSpace} on a
@@ -41,60 +44,58 @@ public class WordSimilarityEvaluationRunner {
      *
      */
     public static Report evaluate(SemanticSpace sspace,
-				  WordSimilarityEvaluation test,
-				  Similarity.SimType vectorComparisonType) {
+                  WordSimilarityEvaluation test,
+                  Similarity.SimType vectorComparisonType) {
+        Collection<WordSimilarity> wordPairs = test.getPairs();
+        int unanswerable = 0;
 
-	Collection<WordSimilarity> wordPairs = test.getPairs();
-	int unanswerable = 0;
+        // Use lists here to keep track of the judgements for each word pair
+        // that the SemanticSpace has vectors for.  This allows us to skip
+        // trying to correlate human judgements for pairs that the S-Space
+        // cannot handle.
+        List<Double> humanJudgements = new ArrayList<Double>(wordPairs.size());
+        List<Double> sspaceJudgements = new ArrayList<Double>(wordPairs.size());
+        
+        double testRange = test.getMostSimilarValue() - 
+            test.getLeastSimilarValue();
+        
 
-	// Use lists here to keep track of the judgements for each word pair
-	// that the SemanticSpace has vectors for.  This allows us to skip
-	// trying to correlate human judgements for pairs that the S-Space
-	// cannot handle.
-	List<Double> humanJudgements = new ArrayList<Double>(wordPairs.size());
-	List<Double> sspaceJudgements = new ArrayList<Double>(wordPairs.size());
-	
-	double testRange = test.getMostSimilarValue() - 
-	    test.getLeastSimilarValue();
-	
+        question_loop:
+        for (WordSimilarity pair : wordPairs) {
+            // get the vector for each word
+            Vector firstVector = sspace.getVector(pair.getFirstWord());
+            Vector secondVector = sspace.getVector(pair.getSecondWord());
 
-	question_loop:
-	for (WordSimilarity pair : wordPairs) {
+            // check that the s-space had both words
+            if (firstVector == null || secondVector == null) {
+                unanswerable++;
+                continue;
+            }
 
-	    // get the vector for each word
-	    double[] firstVector = sspace.getVectorFor(pair.getFirstWord());
-	    double[] secondVector = sspace.getVectorFor(pair.getSecondWord());
+            // use the similarity result and scale it based on the original
+            // answers
+            double similarity = 
+                    Similarity.getSimilarity(vectorComparisonType, 
+                                             firstVector, secondVector);
+            double scaled = (similarity * testRange) +
+                             test.getLeastSimilarValue();
 
-	    // check that the s-space had both words
-	    if (firstVector == null || secondVector == null) {
-		unanswerable++;
-		continue;
-	    }
+            humanJudgements.add(pair.getSimilarity());
+            sspaceJudgements.add(scaled);
+        }
+        
+        // create arrays to to calculate the correlation
+        double[] humanArr = new double[humanJudgements.size()];
+        double[] sspaceArr = new double[humanJudgements.size()];
 
-	    // use the similarity result and scale it based on the original
-	    // answers
-	    double similarity = 
-                Similarity.getSimilarity(vectorComparisonType, 
-                                         firstVector, secondVector);
-	    double scaled = (similarity * testRange) 
-		+ test.getLeastSimilarValue();
+        for(int i = 0; i < humanArr.length; ++i) {
+            humanArr[i] = humanJudgements.get(i);
+            sspaceArr[i] = sspaceJudgements.get(i);
+        }
 
-	    humanJudgements.add(pair.getSimilarity());
-	    sspaceJudgements.add(scaled);
-	}
-	
-	// create arrays to to calculate the correlation
-	double[] humanArr = new double[humanJudgements.size()];
-	double[] sspaceArr = new double[humanJudgements.size()];
+        double correlation = Similarity.correlation(humanArr, sspaceArr);
 
-	for(int i = 0; i < humanArr.length; ++i) {
-	    humanArr[i] = humanJudgements.get(i);
-	    sspaceArr[i] = sspaceJudgements.get(i);
-	}
-
-	double correlation = Similarity.correlation(humanArr, sspaceArr);
-
-	return new SimpleReport(wordPairs.size(), correlation, unanswerable);
+        return new SimpleReport(wordPairs.size(), correlation, unanswerable);
     }
 
     /**
@@ -103,13 +104,13 @@ public class WordSimilarityEvaluationRunner {
      * {@link Method#invoke(Object,Object[])) Method.invoke} call.
      */
     private static double invoke(Method m, double[] d1, double[] d2) {
-	try {
-	    Double d = (Double)(m.invoke(null, new Object[] {d1, d2}));
-	    return d.doubleValue();
-	} catch (Exception e) {
-	    // generic catch and rethrow
-	    throw new Error(e);
-	}
+        try {
+            Double d = (Double)(m.invoke(null, new Object[] {d1, d2}));
+            return d.doubleValue();
+        } catch (Exception e) {
+            // generic catch and rethrow
+            throw new Error(e);
+        }
     }
 
     /**
@@ -118,64 +119,63 @@ public class WordSimilarityEvaluationRunner {
      */
     public interface Report {
 
-	/**
-	 * Returns the total number of word pairs.
-	 */
-	int numberOfWordPairs();
+        /**
+         * Returns the total number of word pairs.
+         */
+        int numberOfWordPairs();
 
-	/**
-	 * Returns the correlation between the {@link SemanticSpace} similarity
-	 * judgements and the provided human similarity judgements.
-	 */
-	double correlation();
+        /**
+         * Returns the correlation between the {@link SemanticSpace} similarity
+         * judgements and the provided human similarity judgements.
+         */
+        double correlation();
 
-	/**
-	 * Returns the number of questions for which the {@link SemanticSpace}
-	 * could not give an answer due to missing word vectors.
-	 */
-	int unanswerableQuestions();
-
+        /**
+         * Returns the number of questions for which the {@link SemanticSpace}
+         * could not give an answer due to missing word vectors.
+         */
+        int unanswerableQuestions();
     }
 
     private static class SimpleReport implements Report {
-	
-	private final int numWordPairs;
+        
+        private final int numWordPairs;
 
-	private final double correlation;
+        private final double correlation;
 
-	private final int unanswerable;
+        private final int unanswerable;
 
-	public SimpleReport(int numWordPairs, double correlation, 
-			    int unanswerable) {
-	    this.numWordPairs = numWordPairs;
-	    this.correlation = correlation;
-	    this.unanswerable = unanswerable;
-	}
+        public SimpleReport(int numWordPairs, double correlation, 
+                    int unanswerable) {
+            this.numWordPairs = numWordPairs;
+            this.correlation = correlation;
+            this.unanswerable = unanswerable;
+        }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public int numberOfWordPairs() {
-	    return numWordPairs;
-	}
+        /**
+         * {@inheritDoc}
+         */
+        public int numberOfWordPairs() {
+            return numWordPairs;
+        }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public double correlation() {
-	    return correlation;
-	}
+        /**
+         * {@inheritDoc}
+         */
+        public double correlation() {
+            return correlation;
+        }
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public int unanswerableQuestions() {
-	    return unanswerable;
-	}
+        /**
+         * {@inheritDoc}
+         */
+        public int unanswerableQuestions() {
+            return unanswerable;
+        }
 
-	public String toString() {
-	    return String.format("%.4f correlation; %d/%d unanswered",
-				 correlation, unanswerable, numWordPairs);
-	}
+        public String toString() {
+            return String.format("%.4f correlation; %d/%d unanswered",
+                     correlation, unanswerable, numWordPairs);
+        }
     }
 }

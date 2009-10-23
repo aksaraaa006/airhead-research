@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.hal;
 
-
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
@@ -34,6 +33,9 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.MultiMap;
+
+import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -52,6 +54,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * A {@code SemanticSpace} implementation of the Hyperspace Analogue to Language
@@ -151,7 +154,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-	"edu.ucla.sspace.hal.HyperspaceAnalogueToLanguage";
+    "edu.ucla.sspace.hal.HyperspaceAnalogueToLanguage";
     
     /**
      * The property to specify the minimum entropy theshold a word should have
@@ -159,28 +162,28 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * of this property should be a double
      */
     public static final String ENTROPY_THRESHOLD_PROPERTY =
-	PROPERTY_PREFIX + ".threshold";
+    PROPERTY_PREFIX + ".threshold";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String WINDOW_SIZE_PROPERTY =
-	PROPERTY_PREFIX + ".windowSize";
+    PROPERTY_PREFIX + ".windowSize";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String RETAIN_PROPERTY =
-	"edu.ucla.sspace.hal.retainColumns";
+    "edu.ucla.sspace.hal.retainColumns";
 
     /**
      * The property to set the {@link WeightingFunction} to be used with
      * weighting the co-occurrence of neighboring words based on their distance.
      */
     public static final String WEIGHTING_FUNCTION_PROPERTY =
-	"edu.ucla.sspace.hal.weighting";
+    "edu.ucla.sspace.hal.weighting";
     
     /**
      * The default number of words before and after the focus word to include
@@ -189,15 +192,15 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
 
     /**
      * The default {@code WeightingFunction} to use.
-     */    	
+     */        
     public static final WeightingFunction DEFAULT_WEIGHTING = 
-	new LinearWeighting();
+    new LinearWeighting();
 
     /**
      * Logger for HAL
      */
     private static final Logger LOGGER = 
-	Logger.getLogger(HyperspaceAnalogueToLanguage.class.getName());
+    Logger.getLogger(HyperspaceAnalogueToLanguage.class.getName());
 
     /**
      * Map that pairs the word with it's position in the matrix
@@ -209,7 +212,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * window
      */
     private final int windowSize;
-	
+    
     /**
      * The type of weight to apply to a the co-occurrence word based on its
      * relative location
@@ -233,7 +236,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * Constructs a new instance using the system properties for configuration.
      */
     public HyperspaceAnalogueToLanguage() {
-	this(System.getProperties());
+        this(System.getProperties());
     }
     
     /**
@@ -241,128 +244,121 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * configuration.
      */
     public HyperspaceAnalogueToLanguage(Properties properties) {
+        cooccurrenceMatrix = new AtomicGrowingMatrix();
+        reduced = null;
+        termToIndex = new ConcurrentHashMap<String,Integer>();
+        
+        wordIndexCounter = 0;
 
-	cooccurrenceMatrix = new AtomicGrowingMatrix();
-	reduced = null;
-	termToIndex = new ConcurrentHashMap<String,Integer>();
-	
-	wordIndexCounter = 0;
+        String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
+        windowSize = (windowSizeProp != null)
+            ? Integer.parseInt(windowSizeProp)
+            : DEFAULT_WINDOW_SIZE;
 
-	String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
-	windowSize = (windowSizeProp != null)
-	    ? Integer.parseInt(windowSizeProp)
-	    : DEFAULT_WINDOW_SIZE;
-
-	String weightFuncProp = 
-	    properties.getProperty(WEIGHTING_FUNCTION_PROPERTY);
-	weighting = (weightFuncProp == null) 
-	    ? DEFAULT_WEIGHTING
-	    : loadWeightingFunction(weightFuncProp);
+        String weightFuncProp = 
+        properties.getProperty(WEIGHTING_FUNCTION_PROPERTY);
+        weighting = (weightFuncProp == null) 
+            ? DEFAULT_WEIGHTING
+            : loadWeightingFunction(weightFuncProp);
     }
 
     /**
      * Creates an instance of {@link WeightingFunction} based on the provide
      * class name.
      */
+    @SuppressWarnings("unchecked")
     private static WeightingFunction loadWeightingFunction(String classname) {
-	try {
-	    @SuppressWarnings("unchecked")
-	    Class<WeightingFunction> clazz = 
-		(Class<WeightingFunction>)Class.forName(classname);
-	    WeightingFunction wf = clazz.newInstance();
-	    return wf;
-	} catch (Exception e) {
-	    // rethrow based on any reflection errors
-	    throw new Error(e);
-	}
+        try {
+            Class<WeightingFunction> clazz = 
+            (Class<WeightingFunction>)Class.forName(classname);
+            WeightingFunction wf = clazz.newInstance();
+            return wf;
+        } catch (Exception e) {
+            // rethrow based on any reflection errors
+            throw new Error(e);
+        }
     }
-	
+    
     /**
      * {@inheritDoc}
      */
     public void  processDocument(BufferedReader document) throws IOException {
-	
-	Queue<String> nextWords = new ArrayDeque<String>();
-	Queue<String> prevWords = new ArrayDeque<String>();
-		
-	Iterator<String> documentTokens = 
-	    IteratorFactory.tokenizeOrdered(document);
-		
-	String focus = null;
-		
-	//Load the first windowSize words into the Queue		
-	for(int i = 0;  i < windowSize && documentTokens.hasNext(); i++)
-	    nextWords.offer(documentTokens.next());
-	
-		
-	while(!nextWords.isEmpty()) {
-	    
-	    // Load the top of the nextWords Queue into the focus word
-	    focus = nextWords.remove();
+        Queue<String> nextWords = new ArrayDeque<String>();
+        Queue<String> prevWords = new ArrayDeque<String>();
+            
+        Iterator<String> documentTokens = 
+            IteratorFactory.tokenizeOrdered(document);
+            
+        String focus = null;
+            
+        //Load the first windowSize words into the Queue        
+        for(int i = 0;  i < windowSize && documentTokens.hasNext(); i++)
+            nextWords.offer(documentTokens.next());
+            
+        while(!nextWords.isEmpty()) {
+            
+            // Load the top of the nextWords Queue into the focus word
+            focus = nextWords.remove();
 
-	    // Add the next word to nextWords queue (if possible)
-	    if (documentTokens.hasNext()) {		
-		String windowEdge = documentTokens.next();
-		nextWords.offer(windowEdge);
-	    }			
+            // Add the next word to nextWords queue (if possible)
+            if (documentTokens.hasNext()) {        
+                String windowEdge = documentTokens.next();
+                nextWords.offer(windowEdge);
+            }            
 
-	    // If the filter does not accept this word, skip the semantic
-	    // processing, continue with the next word
-	    if (focus.equals(IteratorFactory.EMPTY_TOKEN)) {
-		// shift the window
-		prevWords.offer(focus);
-		if (prevWords.size() > windowSize)
-		    prevWords.remove();
-		continue;
-	    }
-		
-	    int focusIndex = getIndexFor(focus);
-	    
-	    // Iterate through the words occurring after and add values
-	    int wordDistance = 1;
-	    for (String after : nextWords) {
+            // If the filter does not accept this word, skip the semantic
+            // processing, continue with the next word
+            if (focus.equals(IteratorFactory.EMPTY_TOKEN)) {
+            // shift the window
+                prevWords.offer(focus);
+                if (prevWords.size() > windowSize)
+                    prevWords.remove();
+                continue;
+            }
+            
+            int focusIndex = getIndexFor(focus);
+            
+            // Iterate through the words occurring after and add values
+            int wordDistance = 1;
+            for (String after : nextWords) {
+                // skip adding co-occurence values for words that are not
+                // accepted by the filter
+                if (!after.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    int index = getIndexFor(after);
+                    
+                    // Get the current number of times that the focus word has
+                    // co-occurred with this word appearing after it.  Weightb
+                    // the word appropriately baed on distance
+                    cooccurrenceMatrix.addAndGet(focusIndex, index,
+                            weighting.weight(wordDistance, windowSize));
+                }
+             
+                wordDistance++;        
+            }
 
-		// skip adding co-occurence values for words that are not
-		// accepted by the filter
-		if (!after.equals(IteratorFactory.EMPTY_TOKEN)) {
-		    int index = getIndexFor(after);
-		    
-		    // Get the current number of times that the focus word has
-		    // co-occurred with this word appearing after it.  Weightb the
-		    // word appropriately baed on distance
-		    cooccurrenceMatrix.
-			addAndGet(focusIndex, index, weighting.
-				  weight(wordDistance, windowSize));
-		}
-		 
-		wordDistance++;		
-	    }
+            wordDistance = -1; // in front of the focus word
+            for (String before : prevWords) {
+                // skip adding co-occurence values for words that are not
+                // accepted by the filter
+                if (!before.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    int index = getIndexFor(before);
 
-	    wordDistance = -1; // in front of the focus word
-	    for (String before : prevWords) {
-
-		// skip adding co-occurence values for words that are not
-		// accepted by the filter
-		if (!before.equals(IteratorFactory.EMPTY_TOKEN)) {
-		    int index = getIndexFor(before);
-
-		    // Get the current number of times that the focus word has
-		    // co-occurred with this word before after it.  Weight the
-		    // word appropriately baed on distance
-		    cooccurrenceMatrix.
-			addAndGet(index, focusIndex, weighting.
-				  weight(wordDistance, windowSize));
-		}
-		wordDistance--;
-	    }
-	    			
-	    // last, put this focus word in the prev words and shift off the
-	    // front if it is larger than the window
-	    prevWords.offer(focus);
-	    if (prevWords.size() > windowSize)
-		prevWords.remove();
-	}
-    }	
+                    // Get the current number of times that the focus word has
+                    // co-occurred with this word before after it.  Weight the
+                    // word appropriately baed on distance
+                    cooccurrenceMatrix.addAndGet(index, focusIndex,
+                            weighting.weight(wordDistance, windowSize));
+                }
+                wordDistance--;
+            }
+                    
+            // last, put this focus word in the prev words and shift off the
+            // front if it is larger than the window
+            prevWords.offer(focus);
+            if (prevWords.size() > windowSize)
+                prevWords.remove();
+        }
+    }
 
     /**
      * Returns the index in the co-occurence matrix for this word.  If the word
@@ -370,126 +366,121 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * returns that index.
      */
     private final int getIndexFor(String word) {
-
-	Integer index = termToIndex.get(word);
-	if (index == null) {	 
-	    synchronized(this) {
-		// recheck to see if the term was added while blocking
-		index = termToIndex.get(word);
-		// if another thread has not already added this word while the
-		// current thread was blocking waiting on the lock, then add it.
-		if (index == null) {
-		    int i = wordIndexCounter++;
-		    termToIndex.put(word, i);
-		    return i; // avoid the auto-boxing to assign i to index
-		}
-	    }
-	}
-	return index;
+        Integer index = termToIndex.get(word);
+        if (index == null) {     
+            synchronized(this) {
+                // recheck to see if the term was added while blocking
+                index = termToIndex.get(word);
+                // if another thread has not already added this word while the
+                // current thread was blocking waiting on the lock, then add it.
+                if (index == null) {
+                    int i = wordIndexCounter++;
+                    termToIndex.put(word, i);
+                    return i; // avoid the auto-boxing to assign i to index
+                }
+            }
+        }
+        return index;
     }
     
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	// If no documents have been processed, it will be empty		
-	return Collections.unmodifiableSet(termToIndex.keySet());			
-    }		
+        // If no documents have been processed, it will be empty        
+        return Collections.unmodifiableSet(termToIndex.keySet());            
+    }        
 
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String word) {
-
-	Integer index = termToIndex.get(word);
-	if (index == null)
-	    return null;
-
-	// If the matrix hasn't had columns dropped then the returned vector
-	// will be the combination of the word's row and column
-	else if (reduced == null) {
-
-	    double[] semVector = new double[cooccurrenceMatrix.columns() * 2];
-			    
-	    double[] row = cooccurrenceMatrix.getRow(index);
-	    double[] col = getColumn(index);
-	    
-	    // Puts the semantic values of the following words for the focus into
-	    // the array to be returned
-	    System.arraycopy(row, 0, semVector, 0, row.length);
-	    // Puts the semantic values of the words preceding the focus into
-	    // the array to be returned
-	    System.arraycopy(col, 0, semVector, row.length, col.length);
-	    return semVector;
-	}
-
-	// The co-occurrence matrix has had columns dropped so the vector is
-	// just the word's row
-	else {
-	    return reduced.getRow(index);
-	}
+    public Vector getVector(String word) {
+        Integer index = termToIndex.get(word);
+        if (index == null)
+            return null;
+        else if (reduced == null) {
+            // If the matrix hasn't had columns dropped then the returned vector
+            // will be the combination of the word's row and column
+            Vector vector =
+                new CompactSparseVector(cooccurrenceMatrix.columns() * 2);
+                    
+            double[] row = cooccurrenceMatrix.getRow(index);
+            double[] col = getColumn(index);
+            
+            // Puts the semantic values of the following words for the focus
+            // into the array to be returned
+            for (int i = 0; i < row.length; ++i) {
+                if (row[i] != 0d)
+                    vector.set(i, row[i]);
+            }
+            // Puts the semantic values of the words preceding the focus into
+            // the array to be returned
+            for (int i = 0; i < col.length; ++i) {
+                if (col[i] != 0d)
+                    vector.set(i, col[i]);
+            }
+            return vector;
+        } else {
+            // The co-occurrence matrix has had columns dropped so the vector is
+            // just the word's row
+                return reduced.getRowVector(index);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-      return (cooccurrenceMatrix != null && 
-              cooccurrenceMatrix.rows() == cooccurrenceMatrix.columns()) ?
-        cooccurrenceMatrix.columns() :
-        reduced.columns();
+    public int getVectorLength() {
+        if (cooccurrenceMatrix != null && 
+            cooccurrenceMatrix.rows() == cooccurrenceMatrix.columns())
+            return cooccurrenceMatrix.columns();
+        return reduced.columns();
     }
 
     private double[] getColumn(int col) {
-	int rows = cooccurrenceMatrix.rows();
-	double[] column = new double[rows];
-	for (int row = 0; row < rows; ++row) {
-	    column[row] = cooccurrenceMatrix.get(row, col);
-	}
-	return column;
+        int rows = cooccurrenceMatrix.rows();
+        double[] column = new double[rows];
+        for (int row = 0; row < rows; ++row) {
+            column[row] = cooccurrenceMatrix.get(row, col);
+        }
+        return column;
     }
-	
+    
     /**
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-    
-	// Get threshold value defined by user
-	String userDefinedThresh = 
-	    properties.getProperty(ENTROPY_THRESHOLD_PROPERTY);
-	String retainProp = 
-	    properties.getProperty(RETAIN_PROPERTY);
-	if (userDefinedThresh != null && retainProp != null) {
-	    throw new IllegalArgumentException(
-		"Cannot define the " + ENTROPY_THRESHOLD_PROPERTY + " and " +
-		RETAIN_PROPERTY + " properties at the same time");
-	}
-	else if (userDefinedThresh != null) {	    
-	    try {
-		double threshold = Double.parseDouble(userDefinedThresh);
-		thresholdColumns(threshold);
-	    } 
-	    catch (NumberFormatException nfe) {
-		throw new IllegalArgumentException(
-		    ENTROPY_THRESHOLD_PROPERTY + " is not an number: " +
-		    userDefinedThresh);
-	    }
-	}
-	else if (retainProp != null) {
-	    try {
-		int toRetain = Integer.parseInt(retainProp);
-		retainOnly(toRetain);
-	    } 
-	    catch (NumberFormatException nfe) {
-		throw new IllegalArgumentException(
-		    RETAIN_PROPERTY + " is not an number: " +
-		    userDefinedThresh);
-	    }
-	}
-	// The default is not to drop any columns
-	else {
-	    return;
-	}
+        // Get threshold value defined by user
+        String userDefinedThresh = 
+            properties.getProperty(ENTROPY_THRESHOLD_PROPERTY);
+        String retainProp = 
+            properties.getProperty(RETAIN_PROPERTY);
+        if (userDefinedThresh != null && retainProp != null) {
+            throw new IllegalArgumentException(
+            "Cannot define the " + ENTROPY_THRESHOLD_PROPERTY + " and " +
+            RETAIN_PROPERTY + " properties at the same time");
+        } else if (userDefinedThresh != null) {        
+            try {
+                double threshold = Double.parseDouble(userDefinedThresh);
+                thresholdColumns(threshold);
+            } catch (NumberFormatException nfe) {
+                throw new IllegalArgumentException(
+                    ENTROPY_THRESHOLD_PROPERTY + " is not an number: " +
+                    userDefinedThresh);
+            }
+        } else if (retainProp != null) {
+            try {
+                int toRetain = Integer.parseInt(retainProp);
+                retainOnly(toRetain);
+            } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException(
+                RETAIN_PROPERTY + " is not an number: " +
+                userDefinedThresh);
+            }
+        } else {
+            // The default is not to drop any columns
+            return;
+        }
     }
 
     /**
@@ -499,57 +490,53 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * @param columns the number of columns to keep
      */
     private void retainOnly(int columns) {
+        int words = termToIndex.size();
+        MultiMap<Double,Integer> entropyToIndex = 
+            new BoundedSortedMultiMap<Double,Integer>(columns, false, 
+                                  true, true);
 
-	int words = termToIndex.size();
-	MultiMap<Double,Integer> entropyToIndex = 
-	    new BoundedSortedMultiMap<Double,Integer>(columns, false, 
-						      true, true);
+        // first check all the columns in the co-occurrence matrix
+        for (int col = 0; col < words; ++col) {
+            entropyToIndex.put(Statistics.entropy(getColumn(col)), col);
+        }
 
-	// first check all the columns in the co-occurrence matrix
-	for (int col = 0; col < words; ++col) {
+        // Next check the rows.  Note that in the full version, the row's values
+        // become a columns with the word's row is appended to the column.
+        for (int row = 0; row < words; ++row) {
+            double[] rowArr = cooccurrenceMatrix.getRow(row);
+            entropyToIndex.put(Statistics.entropy(rowArr), row + words);
+        }
 
-	    entropyToIndex.put(Statistics.entropy(getColumn(col)), col);
-	}
+        LOGGER.info("reducing to " + columns + " columns");
 
-	// Next check the rows.  Note that in the full version, the row's values
-	// become a columns with the word's row is appended to the column.
-	for (int row = 0; row < words; ++row) {
+        // create the next matrix that will contain the fixed number of columns
+        reduced = new SparseMatrix(words, columns);
 
-	    double[] rowArr = cooccurrenceMatrix.getRow(row);
-	    entropyToIndex.put(Statistics.entropy(rowArr), row + words);
-	}
+        Set<Integer> indicesToKeep = 
+            new HashSet<Integer>(entropyToIndex.values());
 
-	LOGGER.info("reducing to " + columns + " columns");
-
-	// create the next matrix that will contain the fixed number of columns
-	reduced = new SparseMatrix(words, columns);
-
-	Set<Integer> indicesToKeep = 
-	    new HashSet<Integer>(entropyToIndex.values());
-
-	for (int word = 0; word < words; ++word) {
-	    int newColIndex = 0;
-	    for (int col = 0; col < words * 2; ++col) {
-		if (indicesToKeep.contains(col)) {
-		    if (col < words) {
-			reduced.set(word, newColIndex, 
-				    cooccurrenceMatrix.get(word, col));
-		    }
-		    // the column value is really from one of the transposed
-		    // rows
-		    else {
-			reduced.set(word, newColIndex, 
-				    cooccurrenceMatrix.get(col - words, word));
-		    }
-		    newColIndex++;
-		}
-	    }
-	}
-	
-	// replace the co-occurrence matrix with the truncated version
-	cooccurrenceMatrix = null;
+        for (int word = 0; word < words; ++word) {
+            int newColIndex = 0;
+            for (int col = 0; col < words * 2; ++col) {
+                if (indicesToKeep.contains(col)) {
+                    if (col < words) {
+                        reduced.set(word, newColIndex, 
+                                    cooccurrenceMatrix.get(word, col));
+                    } else {
+                        // the column value is really from one of the transposed
+                        // rows
+                        reduced.set(word, newColIndex, 
+                                    cooccurrenceMatrix.get(col - words, word));
+                    }
+                    newColIndex++;
+                }
+            }
+        }
+        
+        // replace the co-occurrence matrix with the truncated version
+        cooccurrenceMatrix = null;
     }
-    
+        
     /**
      * Calculates the entropy of all the columns in the co-occurrence matrix and
      * removes those columns that are below the threshold, setting {@link
@@ -558,68 +545,62 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * @param threshold
      */
     private void thresholdColumns(double threshold) {
+        int words = termToIndex.size();
+        BitSet colsToDrop = new BitSet(words * 2);
 
-	int words = termToIndex.size();
-	BitSet colsToDrop = new BitSet(words * 2);
+        // first check all the columns in the co-occurrence matrix
+        for (int col = 0; col < words; ++col) {
+            double[] column = getColumn(col);
+            double entropy = Statistics.entropy(column);
 
-	// first check all the columns in the co-occurrence matrix
-	for (int col = 0; col < words; ++col) {
+            if (entropy < threshold)
+                colsToDrop.set(col);
+        }
 
-	    double[] column = getColumn(col);
-	    double entropy = Statistics.entropy(column);
+        // Next check the rows.  Note that in the full version, the row's values
+        // become a columns with the word's row is appended to the column.
+        for (int row = 0; row < words; ++row) {
+            double[] rowArr = cooccurrenceMatrix.getRow(row);
+            double entropy = Statistics.entropy(rowArr);
 
-	    if (entropy < threshold)
-		colsToDrop.set(col);
-	}
+            // add an offset based on the number of words.
+            if (entropy < threshold) 
+                colsToDrop.set(row + words);
+        }
 
-	// Next check the rows.  Note that in the full version, the row's values
-	// become a columns with the word's row is appended to the column.
-	for (int row = 0; row < words; ++row) {
+        LOGGER.info("dropping " + colsToDrop.cardinality() + "/" + (words*2) +
+                " columns, which were below the threshold of " + threshold);
+        
+        // create the next matrix that will contain only those columns with
+        // enough entropy to pass the threshold
+        reduced = new SparseMatrix(words, (words*2)-colsToDrop.cardinality());
 
-	    double[] rowArr = cooccurrenceMatrix.getRow(row);
-	    double entropy = Statistics.entropy(rowArr);
-
-	    // add an offset based on the number of words.
-	    if (entropy < threshold) 
-		colsToDrop.set(row + words);
-
-	}
-
-	LOGGER.info("dropping " + colsToDrop.cardinality() + "/" + (words*2) +
-		    " columns, which were below the threshold of " + threshold);
-	
-	// create the next matrix that will contain only those columns with
-	// enough entropy to pass the threshold
-	reduced = 
-	    new SparseMatrix(words, (words*2)-colsToDrop.cardinality());
-
-	for (int word = 0; word < words; ++word) {
-	    int newColIndex = 0;
-	    for (int col = 0; col < words * 2; ++col) {
-		if (!colsToDrop.get(col)) {
-		    if (col < words) {
-			reduced.set(word, newColIndex, 
-				    cooccurrenceMatrix.get(word, col));
-		    }
-		    // the column value is really from one of the transposed
-		    // rows
-		    else {
-			reduced.set(word, newColIndex, 
-				    cooccurrenceMatrix.get(col - words, word));
-		    }
-		    newColIndex++;
-		}
-	    }
-	}
-	
-	// replace the co-occurrence matrix with the truncated version
-	cooccurrenceMatrix = null;
+        for (int word = 0; word < words; ++word) {
+            int newColIndex = 0;
+            for (int col = 0; col < words * 2; ++col) {
+                if (!colsToDrop.get(col)) {
+                    if (col < words) {
+                        reduced.set(word, newColIndex, 
+                                cooccurrenceMatrix.get(word, col));
+                    } else {
+                        // the column value is really from one of the transposed
+                        // rows
+                        reduced.set(word, newColIndex, 
+                                    cooccurrenceMatrix.get(col - words, word));
+                    }
+                    newColIndex++;
+                }
+            }
+        }
+        
+        // replace the co-occurrence matrix with the truncated version
+        cooccurrenceMatrix = null;
     }
-	
+        
     /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
-	return "hal-semantic-space";
+        return "hal-semantic-space";
     }
 }

@@ -191,7 +191,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
             termCounts.put(term, (count == null) ? 0 : count.intValue() + 1);
         }
 
-        Vector documentVector = new CompactSparseVector(getVectorSize());
+        Vector documentVector = new CompactSparseVector(getVectorLength());
         for (Map.Entry<String, Integer> entry : termCounts.entrySet()) {
             Vector termVector = getTfIdfWeightedVector(entry.getKey(),
                                                        entry.getValue());
@@ -279,14 +279,18 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
         return articleCount.get();
     }
 
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String word) {
+    public Vector getVector(String word) {
+        Integer index = termToIndex.get(word);
+        if (index != null)
+            return Vectors.immutableVector(
+                    termWikiMatrix.getRowVector(index.intValue()));
         return null;
     }
 

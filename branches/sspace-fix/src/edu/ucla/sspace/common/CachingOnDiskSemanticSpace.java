@@ -23,6 +23,9 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
@@ -127,21 +130,24 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
      * @throws IOError if any {@code IOException} occurs when reading the data
      *         from the underlying semantic space file.
      */
-    public synchronized double[] getVectorFor(String word) {
+    public synchronized Vector getVector(String word) {
         double[] vector = wordToVector.get(word);
         if (vector != null)
-            return vector;
-        vector = backingSpace.getVectorFor(word);
-        if (vector != null)
-            wordToVector.put(word, vector);
+            return new DenseVector(vector);
+
+        Vector v = backingSpace.getVector(word);
+        if (v != null) {
+            wordToVector.put(word, v.toArray(v.length()));
+            return v;
+        }
         return null;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-        return backingSpace.getVectorSize();
+    public int getVectorLength() {
+        return backingSpace.getVectorLength();
     }
 
     /**

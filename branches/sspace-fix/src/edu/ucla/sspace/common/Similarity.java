@@ -19,6 +19,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// TODO make sure similarity methods don't choke when vectors are of different
+// lengths.
+//
 package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.vector.Vector;
@@ -113,21 +116,46 @@ public class Similarity {
      */
     public static double getSimilarity(SimType similarityType, 
                                        double[] a, double[] b) {
-        
-	switch (similarityType) {
-	case COSINE:
-	    return cosineSimilarity(a, b);
-	case PEARSON_CORRELATION:
-	    return correlation(a, b);
-	case EUCLIDEAN:
-	    return euclideanSimilarity(a, b);
-        case SPEARMAN_RANK_CORRELATION:
-            return spearmanRankCorrelationCoefficient(a, b);
-        case JACCARD_INDEX:
-            return jaccardIndex(a, b);
-        default:
-            assert false : similarityType;
-	}
+        switch (similarityType) {
+            case COSINE:
+                return cosineSimilarity(a, b);
+            case PEARSON_CORRELATION:
+                return correlation(a, b);
+            case EUCLIDEAN:
+                return euclideanSimilarity(a, b);
+            case SPEARMAN_RANK_CORRELATION:
+                return spearmanRankCorrelationCoefficient(a, b);
+            case JACCARD_INDEX:
+                return jaccardIndex(a, b);
+        }
+        return 0;
+    }
+
+    /**
+     * Calculates the similarity of the two vectors using the provided
+     * similarity measure.
+     *
+     * @param similarityType the similarity evaluation to use when comparing
+     *        {@code a} and {@code b}
+     * @param a a {@code Vector}
+     * @param b a {@code Vector}
+     *
+     * @return the similarity according to the specified measure
+     */
+    public static double getSimilarity(SimType similarityType, 
+                                       Vector a, Vector b) {
+        switch (similarityType) {
+            case COSINE:
+                return cosineSimilarity(a, b);
+            case PEARSON_CORRELATION:
+                return correlation(a, b);
+            case EUCLIDEAN:
+                return euclideanSimilarity(a, b);
+            case SPEARMAN_RANK_CORRELATION:
+                return spearmanRankCorrelationCoefficient(a, b);
+            case JACCARD_INDEX:
+                return jaccardIndex(a, b);
+        }
         return 0;
     }
 
