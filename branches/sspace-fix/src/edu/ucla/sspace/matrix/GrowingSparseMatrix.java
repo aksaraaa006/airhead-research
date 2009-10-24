@@ -112,7 +112,9 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getRowVector(int row) {
-        return Vectors.immutableVector(sparseMatrix.get(row));
+        Vector v = sparseMatrix.get(row);
+        v.setKnownLength(columns());
+        return Vectors.immutableVector(v);
     }
 
     /**

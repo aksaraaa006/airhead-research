@@ -223,7 +223,9 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * {@inheritDoc}
      */
     public Vector getRowVector(int row) {
-        return Vectors.immutableVector(getRow(row, -1, false));
+        Vector v = getRow(row, -1, false);
+        v.setKnownLenght(columns());
+        return Vectors.immutableVector(v);
     }
 
     /**

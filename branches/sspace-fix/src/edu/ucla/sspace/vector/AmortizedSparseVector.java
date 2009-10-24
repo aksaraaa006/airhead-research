@@ -176,6 +176,13 @@ public class AmortizedSparseVector implements Vector, SparseVector {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public void setKnownLength(int length) {
+        knownLength = length;
+    }
+
+    /**
      * If {@code length} is longer than the currently known reset the value of
      * {@code knownLength}.
      */
