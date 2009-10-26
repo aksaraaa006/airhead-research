@@ -31,6 +31,10 @@ import edu.ucla.sspace.index.RandomIndexBuilder;
 import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.Hermit;
 
+import edu.ucla.sspace.util.BottomUpVectorClusterMap;
+import edu.ucla.sspace.util.SimpleVectorClusterMap;
+import edu.ucla.sspace.util.ExemplarVectorClusterMap;
+
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -82,9 +86,13 @@ import java.util.Properties;
  * @author Keith Stevens 
  */
 public class HermitMain extends GenericMain {
+    public static final String SIMPLE_CLUSTER = "SimpleVectorClusterMap";
+    public static final String EXEMPLAR_CLUSTER = "ExemplarVectorClusterMap";
+
     private static final int DEFAULT_DIMENSION = 2048;
     private int dimension;
     private IndexBuilder builder;
+    private BottomUpVectorClusterMap clusterMap;
 
     private HermitMain() {
     }
@@ -93,25 +101,26 @@ public class HermitMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     public void addExtraOptions(ArgOptions options) {
-        options.addOption('n', "dimensions", 
-                          "the number of dimensions in the semantic space",
-                           true, "INT"); 
-        options.addOption('p', "preprocess", "a MatrixTransform class to " +
-                          "use for preprocessing", true, "CLASSNAME");
         options.addOption('h', "holographsize",
                           "The size of the holograph vectors",
-                          true, "INT");
+                          true, "INT", "Process Properties");
         options.addOption('b', "builder", "Index builder to use for hermit",
                           true, "CLASSNAME", "Process Properties");
+        options.addOption('t', "threshold",
+                          "The threshold for clustering similar context vectors",
+                          true, "DOUBLE", "Cluster Properties");
+        options.addOption('s', "senseCount",
+                          "The maximum number of senses Hermit should produce",
+                          true, "INT", "Cluster Properties");
         options.addOption('c', "cluster",
                           "Class type to use for clustering semantic vectors",
-                          true, "CLASSNAME", "Process Properties");
+                          true, "CLASSNAME", "Cluster Properties");
         options.addOption('S', "saveVectors",
                           "Save index vectors to a binary file",
-                          true, "FILE", "Process Properties");
+                          true, "FILE", "Post Processing");
         options.addOption('L', "loadVectors",
                           "Load index vectors from a binary file",
-                          true, "FILE", "Process Properties");
+                          true, "FILE", "Post Processing");
     }
 
     public static void main(String[] args) {
@@ -138,6 +147,21 @@ public class HermitMain extends GenericMain {
                             argOptions.getStringOption("loadVectors")));
         } else if (builderType.equals("RandomIndexBuilder"))
             builder = new RandomIndexBuilder(dimension);
+
+        int maxSenseCount = (argOptions.hasOption("senseCount"))
+            ? argOptions.getIntOption("senseCount")
+            : 2;
+        double threshold = (argOptions.hasOption("threshold"))
+            ? argOptions.getDoubleOption("threshold")
+            : .75;
+
+        String clusterName = (argOptions.hasOption("cluster"))
+            ? argOptions.getStringOption("cluster")
+            : SIMPLE_CLUSTER;
+        if (clusterName.equals(SIMPLE_CLUSTER))
+            clusterMap = new SimpleVectorClusterMap(threshold, maxSenseCount);
+        else if (clusterName.equals(EXEMPLAR_CLUSTER))
+            clusterMap = new ExemplarVectorClusterMap(threshold, maxSenseCount);
     }
 
     protected void postProcessing() {
@@ -148,7 +172,7 @@ public class HermitMain extends GenericMain {
     }
 
     public SemanticSpace getSpace() {
-        return new FlyingHermit(builder, dimension);
+        return new FlyingHermit(builder, dimension, clusterMap);
     }
 
     public Properties setupProperties() {
@@ -156,15 +180,6 @@ public class HermitMain extends GenericMain {
         // -Dprop=<val> to the JVM directly.
         Properties props = System.getProperties();
 
-        if (argOptions.hasOption("dimensions"))
-            props.setProperty(Hermit.LSA_DIMENSIONS_PROPERTY,
-                              argOptions.getStringOption("dimensions"));
-        if (argOptions.hasOption("preprocess"))
-            props.setProperty(Hermit.MATRIX_TRANSFORM_PROPERTY,
-                              argOptions.getStringOption("preprocess"));
-        if (argOptions.hasOption("cluster"))
-            props.setProperty(Hermit.CLUSTER_PROPERTY,
-                              argOptions.getStringOption("cluster"));
         if (argOptions.hasOption("threads"))
             props.setProperty(Hermit.NUM_THREADS_PROPERTY,
                               argOptions.getStringOption("threads"));

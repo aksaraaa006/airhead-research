@@ -28,19 +28,17 @@ import edu.ucla.sspace.index.IndexBuilder;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.BottomUpVectorClusterMap;
+
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
-
-import edu.ucla.sspace.util.BottomUpVectorClusterMap;
-import edu.ucla.sspace.util.SimpleVectorClusterMap;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -119,6 +117,10 @@ public class FlyingHermit implements SemanticSpace {
      */
     private ConcurrentMap<String, Vector> splitSenses;
 
+    /**
+     * The type of clustering used for {@code FlyingHermit}.  This specifies how
+     * hermit will merge it's context vectors into different senses.
+     */
     private BottomUpVectorClusterMap clusterMap;
 
     /**
@@ -136,21 +138,15 @@ public class FlyingHermit implements SemanticSpace {
      */
     private final int nextSize;
 
-    /**
-     * The threshold to use when combining term {@code Vector}s.  If the
-     * similarity between the most recent {@code Vector} and the centroids
-     * stored so far.
-     */
-    private double clusterThreshold;
-
-    public FlyingHermit(IndexBuilder builder, int vectorSize) {
+    public FlyingHermit(IndexBuilder builder,
+                        int vectorSize,
+                        BottomUpVectorClusterMap cluster) {
         indexVectorSize = vectorSize;
         indexBuilder = builder;
-        clusterThreshold = .75;
+        clusterMap = cluster;
         prevSize = builder.expectedSizeOfPrevWords();
         nextSize = builder.expectedSizeOfNextWords();
         termVectors = new ConcurrentHashMap<String, List<Vector> >();
-        clusterMap = new SimpleVectorClusterMap(clusterThreshold, 5);
     }
 
     /**
