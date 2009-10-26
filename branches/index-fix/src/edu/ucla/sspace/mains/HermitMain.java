@@ -31,6 +31,8 @@ import edu.ucla.sspace.index.RandomIndexBuilder;
 import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.Hermit;
 
+import edu.ucla.sspace.text.IteratorFactory;
+
 import edu.ucla.sspace.util.BottomUpVectorClusterMap;
 import edu.ucla.sspace.util.SimpleVectorClusterMap;
 import edu.ucla.sspace.util.ExemplarVectorClusterMap;
@@ -106,9 +108,13 @@ public class HermitMain extends GenericMain {
                           true, "INT", "Process Properties");
         options.addOption('b', "builder", "Index builder to use for hermit",
                           true, "CLASSNAME", "Process Properties");
+        options.addOption('r', "replacementMap",
+                          "A file which specifies mappings between terms " + 
+                          "and their replacements",
+                          true, "FILE", "Processing Properties");
         options.addOption('t', "threshold",
-                          "The threshold for clustering similar context vectors",
-                          true, "DOUBLE", "Cluster Properties");
+                          "The threshold for clustering similar context " +
+                          "vectors", true, "DOUBLE", "Cluster Properties");
         options.addOption('s', "senseCount",
                           "The maximum number of senses Hermit should produce",
                           true, "INT", "Cluster Properties");
@@ -162,6 +168,7 @@ public class HermitMain extends GenericMain {
             clusterMap = new SimpleVectorClusterMap(threshold, maxSenseCount);
         else if (clusterName.equals(EXEMPLAR_CLUSTER))
             clusterMap = new ExemplarVectorClusterMap(threshold, maxSenseCount);
+
     }
 
     protected void postProcessing() {
@@ -186,6 +193,10 @@ public class HermitMain extends GenericMain {
         else
             props.setProperty(Hermit.NUM_THREADS_PROPERTY,
                               "" + Runtime.getRuntime().availableProcessors());
+
+        if (argOptions.hasOption("replacementMap"))
+            props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,
+                              argOptions.getStringOption("replacementMap"));
         return props;
     }
 
