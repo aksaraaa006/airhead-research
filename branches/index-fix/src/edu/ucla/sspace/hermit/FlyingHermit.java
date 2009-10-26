@@ -237,7 +237,7 @@ public class FlyingHermit implements SemanticSpace {
     public void processSpace(Properties properties) {
 	    HERMIT_LOGGER.info("Starting with " + termVectors.size() + " terms.");
         splitSenses = new ConcurrentHashMap<String, Vector>();
-        Set<String> terms = new TreeSet(clusterMap.keySet());
+        Set<String> terms = new TreeSet<String>(clusterMap.keySet());
         for (String term : terms) {
             List<List<Vector>> clusters = clusterMap.getClusters(term);
             int i = 0;
@@ -250,6 +250,7 @@ public class FlyingHermit implements SemanticSpace {
                         Vectors.add(sense, v);
                 }
                 splitSenses.put(term + "-" + i, sense);
+                HERMIT_LOGGER.info("Adding sense" + term + "-" + i);
                 ++i;
             }
             clusterMap.removeClusters(term);
