@@ -25,17 +25,16 @@ import static edu.ucla.sspace.common.Similarity.cosineSimilarity;
 
 import edu.ucla.sspace.common.Index;
 
+import edu.ucla.sspace.matrix.LogEntropyTransform;
+import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
-import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.SVD;
+import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.BoundedSortedMap;
 import edu.ucla.sspace.util.Pair;
-
-import edu.ucla.sspace.lsa.LogEntropyTransformer;
-import edu.ucla.sspace.lsa.MatrixTransformer;
 
 import java.io.BufferedReader;
 import java.io.File;

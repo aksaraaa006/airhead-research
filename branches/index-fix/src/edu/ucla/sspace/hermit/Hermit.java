@@ -29,13 +29,13 @@ import edu.ucla.sspace.common.SpectralClustering;
 import edu.ucla.sspace.index.IndexBuilder;
 
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
+import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.SVD;
+import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.text.WordIterator;
-
-import edu.ucla.sspace.lsa.MatrixTransformer;
-import edu.ucla.sspace.lsa.LogEntropyTransformer;
 
 import edu.ucla.sspace.vector.Vector;
 
@@ -86,13 +86,13 @@ import java.util.logging.Logger;
 public class Hermit implements SemanticSpace {
   private static final int CONTEXT_SIZE = 7;
   public static final String MATRIX_TRANSFORM_PROPERTY =
-  "edu.ucla.sspace.lsa.Hermit.transform";
+  "edu.ucla.sspace.hermit.Hermit.transform";
 
   public static final String CLUSTER_PROPERTY =
   "edu.ucla.sspace.hermit.Hermit.cluster";
 
   public static final String LSA_DIMENSIONS_PROPERTY =
-  "edu.ucla.sspace.lsa.Hermit.dimensions";
+  "edu.ucla.sspace.hermit.Hermit.dimensions";
 
   public static final String NUM_THREADS_PROPERTY = 
   "edu.ucla.sspace.hermit.Hermit.threads";
@@ -427,14 +427,14 @@ public class Hermit implements SemanticSpace {
 
       // After doing the hermit splitting, do the regular transformations and
       // dimensionality reduction.
-      MatrixTransformer transform = new LogEntropyTransformer();
+      Transform transform = new LogEntropyTransform();
 
       String transformClass = 
       properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
       if (transformClass != null) {
         try {
           Class clazz = Class.forName(transformClass);
-          transform = (MatrixTransformer)(clazz.newInstance());
+          transform = (Transform)(clazz.newInstance());
         } 
         // perform a general catch here due to the number of possible
         // things that could go wrong.  Rethrow all exceptions as an
@@ -447,8 +447,9 @@ public class Hermit implements SemanticSpace {
       File processedTermDocMatrix = rawTermDocMatrix; // dumpLSAMatrix(termDocMatrix);
 
       // Convert the split term counts using the specified transform
-      File processedTermDocumentMatrix =
-        transform.transform(processedTermDocMatrix);
+      File processedTermDocumentMatrix = // FIXME
+          transform.transform(processedTermDocMatrix, 
+                              MatrixIO.Format.MATLAB_SPARSE);
         
       int dimensions = 300; // default
       String userSpecfiedDims = 

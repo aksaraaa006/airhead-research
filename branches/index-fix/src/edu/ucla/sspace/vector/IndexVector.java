@@ -21,25 +21,116 @@
 
 package edu.ucla.sspace.vector;
 
+import java.util.Arrays;
+
 
 /**
- * An interface for ternary (+1, 0, -1) valued index vectors.  
- *
- * @see RandomIndexing
+ * An class for ternary (+1, 0, -1) valued index vectors.  This will return +1
+ * for indicies returned by {@code positiveDimensions}, -1 for indices returned
+ * by {@code negativeDimensions}, and 0 for all others.
  */
-public interface IndexVector {
+public class IndexVector implements Vector {
+
+    /**
+     * The length of the created {@code IndexVector}.
+     */
+    private int indexVectorLength;
+
+    /**
+     * The indices which are all set to +1.
+     */
+    private int[] positiveDimensions;
+
+    /**
+     * The indices which are all set to -1.
+     */
+    private int[] negativeDimensions;
+
+    /**
+     * Create an {@code IndexVector} with the specified length, and
+     * postive/negative dimensions.
+     *
+     * @param length The lenght of the {@code IndexVector}.
+     * @param positiveIndices All indices which are pre-set to +1.
+     * @param negativeIndices All indices which are pre-set to -1.
+     */
+    public IndexVector(int length,
+                       int[] positiveIndices,
+                       int[] negativeIndices) {
+        indexVectorLength = length;
+        positiveDimensions = positiveIndices;
+        negativeDimensions = negativeIndices;
+    }
+
+    /**
+     * {@inheritDoc}.
+     */
+    public double add(int index, double delta) {
+        throw new UnsupportedOperationException(
+                "Add is not supported on a IndexVector");
+    }
+
+    /**
+     * {@inheritDoc}.
+     */
+    public double get(int index) {
+        if (Arrays.binarySearch(positiveDimensions, index) >= 0)
+            return 1;
+        if (Arrays.binarySearch(negativeDimensions, index) >= 0)
+            return -1;
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}.
+     */
+    public int length() {
+        return indexVectorLength;
+    }
+
+    /**
+     * {@inheritDoc}.
+     */
+    public void set(int index, double value) {
+        throw new UnsupportedOperationException(
+                "Set is not supported on a IndexVector");
+    }
+
+    /**
+     * {@inheritDoc}.
+     */
+    public void set(double[] values) {
+        throw new UnsupportedOperationException(
+                "Set is not supported on a IndexVector");
+    }
 
     /**
      * Returns the indices at which this vector is valued {@code -1}.
      *
      * @return An array of indices which have negative values.
      */
-    int[] negativeDimensions();
+    public int[] negativeDimensions() {
+        return negativeDimensions;
+    }
     
     /**
      * Returns the indices at which this vector is valued {@code +1}.
      *
      * @return An array of indices which have positive values.
      */
-    int[] positiveDimensions();
+    public int[] positiveDimensions() {
+        return positiveDimensions;
+    }
+    
+    /**
+     * {@inheritDoc}.
+     */
+    public double[] toArray(int size) {
+        double[] array = new double[size];
+        for (int p : positiveDimensions)
+            array[p] = 1;
+        for (int n : negativeDimensions)
+            array[n] = -1;
+        return array;
+    }
 }

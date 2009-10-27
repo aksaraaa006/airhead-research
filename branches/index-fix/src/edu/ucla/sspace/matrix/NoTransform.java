@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.lsa;
+package edu.ucla.sspace.matrix;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,17 +31,21 @@ import java.nio.channels.FileChannel;
 /**
  * Performs no transform on the input matrix.
  */
-public class NoTransform implements MatrixTransformer {
+public class NoTransform implements Transform {
 
-    public File transform(File matrixInput) {
-	return matrixInput;
+    public NoTransform() { }
+
+    public File transform(File inputMatrixFile, MatrixIO.Format format) 
+            throws IOException {
+        return inputMatrixFile;
     }
 
-    public void transform(File matrixInput, File matrixOutput) 
+    public void transform(File inputMatrixFile, MatrixIO.Format inputFormat, 
+                          File outputMatrixFile) 
 	    throws IOException {
-        FileChannel original = new FileInputStream(matrixInput).getChannel();
-    
-        FileChannel copy = new FileOutputStream(matrixOutput).getChannel();
+        FileChannel original = 
+            new FileInputStream(inputMatrixFile).getChannel();
+        FileChannel copy = new FileOutputStream(outputMatrixFile).getChannel();
     
 	// Duplicate the contents of the input matrix in the provided file
         copy.transferFrom(original, 0, original.size());
@@ -50,8 +54,11 @@ public class NoTransform implements MatrixTransformer {
         copy.close();
     }
 
+    public Matrix transform(Matrix input) {
+        return input;
+    }
+
     public String toString() {
 	return "no";
-    }
-    
+    }    
 }

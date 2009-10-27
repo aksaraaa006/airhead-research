@@ -74,6 +74,11 @@ public class Vectors {
         // add them to this instance.
         if (vector2 instanceof SparseVector) {
             addSparseValues(vector1, (SparseVector) vector2);
+        } else if (vector2 instanceof IndexVector) {
+            // When adding an IndexVector just retrieve the positive and
+            // negative dimensions.  Then iterate through them adding +/- 1 for
+            // each index returned.
+            addIndexValues(vector1, (IndexVector) vector2);
         } else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -85,6 +90,45 @@ public class Vectors {
             }
         }
         return vector1;
+    }
+
+    /**
+     * Return a new {@code Vector} which is the summation of {@code vector2} and
+     * {@code vector1}.
+     *
+     * @param vector1 The first vector to used in a summation.
+     * @param vector2 The second vector to be used in a summation.
+     * @return The summation of {code vector1} and {@code vector2}.
+     */
+    public static Vector addUnmodified(Vector vector1, Vector vector2) {
+        // Skip vectors of different lengths.
+        if (vector2.length() != vector1.length())
+            return null;
+
+        Vector finalVector;
+        // If vector is a sparse vector, simply get the non zero values and
+        // add them to this instance.
+        if (vector1 instanceof SparseVector &&
+            vector2 instanceof SparseVector) {
+            finalVector = new CompactSparseVector(vector1.length());
+            addSparseValues(finalVector, (SparseVector) vector1);
+            addSparseValues(finalVector, (SparseVector) vector2);
+        } else if (vector1 instanceof IndexVector &&
+                   vector2 instanceof IndexVector) {
+            finalVector = new CompactSparseVector(vector1.length());
+            addIndexValues(finalVector, (IndexVector) vector1);
+            addIndexValues(finalVector, (IndexVector) vector2);
+        } else {
+            // Otherwise, inspect all values of vector, and only add the non
+            // zero values.
+            finalVector = new DenseVector(vector1.length());
+            for (int i = 0; i < vector2.length(); ++i) {
+                double value = vector2.get(i) + vector1.get(i);
+                if (value != 0d)
+                    finalVector.add(i, value);
+            }
+        }
+        return finalVector;
     }
 
     /**
@@ -132,39 +176,6 @@ public class Vectors {
             copyFromSparseVector(result, (SparseVector) source);
         }
         return result;
-    }
-
-    /**
-     * Return a new {@code Vector} which is the summation of {@code vector2} and
-     * {@code vector1}.
-     *
-     * @param vector1 The first vector to used in a summation.
-     * @param vector2 The second vector to be used in a summation.
-     * @return The summation of {code vector1} and {@code vector2}.
-     */
-    public static Vector addUnmodified(Vector vector1, Vector vector2) {
-        // Skip vectors of different lengths.
-        if (vector2.length() != vector1.length())
-            return null;
-
-        Vector finalVector;
-        // If vector is a sparse vector, simply get the non zero values and
-        // add them to this instance.
-        if (vector2 instanceof SparseVector) {
-            finalVector = new CompactSparseVector(vector1.length());
-            addSparseValues(finalVector, (SparseVector) vector1);
-            addSparseValues(finalVector, (SparseVector) vector2);
-        } else {
-            // Otherwise, inspect all values of vector, and only add the non
-            // zero values.
-            finalVector = new DenseVector(vector1.length());
-            for (int i = 0; i < vector2.length(); ++i) {
-                double value = vector2.get(i) + vector1.get(i);
-                if (value != 0d)
-                    finalVector.add(i, value);
-            }
-        }
-        return finalVector;
     }
 
     /**
@@ -218,6 +229,23 @@ public class Vectors {
         int[] otherIndices = source.getNonZeroIndices();
         for (int index : otherIndices)
             destination.add(index, source.get(index));
+    }
+
+    /**
+     * Add the values from a {@code IndexVector} to a {@code Vector}.
+     * Only the positive and negative indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void addIndexValues(Vector destination,
+                                       IndexVector source) {
+        int[] positive = source.positiveDimensions();
+        int[] negative = source.negativeDimensions();
+        for (int p : positive)
+            destination.add(p, 1);
+        for (int n : negative)
+            destination.add(n, -1);
     }
 
     /**

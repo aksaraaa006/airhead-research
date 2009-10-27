@@ -23,7 +23,7 @@ package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
+import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.WordComparator;
 
@@ -195,26 +195,14 @@ public class SemanticSpaceExplorer {
                 return false;
             }
             String sspaceFileName = commandTokens.next();
-            if (!commandTokens.hasNext()) {
-                out.println("missing .sspace file format");
-                return false;
-            }
+            
             // Don't re-open .sspace files that are already loaded
             if (fileNameToSSpace.containsKey(sspaceFileName))
                 break;
-            String formatStr = commandTokens.next();
-            SemanticSpaceUtils.SSpaceFormat format = null;
-            try {
-                format = SemanticSpaceUtils.SSpaceFormat.valueOf(
-                    formatStr.toUpperCase());
-            } catch (IllegalArgumentException iae) {
-                out.println("invalid .sspace format: " + formatStr);
-                return false;
-            }
+
             SemanticSpace sspace = null;
             try {
-                sspace = SemanticSpaceUtils.loadSemanticSpace(
-                    new File(sspaceFileName), format);
+                sspace = SemanticSpaceIO.load(sspaceFileName);
             } catch (Throwable t) {
                 // Catch Throwable since this method may throw an IOError
                 out.println("an error occurred while loading the semantic " +
@@ -548,8 +536,8 @@ public class SemanticSpaceExplorer {
      */
     private static String getCommands() {
         return
-            "  load file1.sspace format [file2.sspace...]\n" +
-            "  unload file1.sspace format [file2.sspace...]\n" +
+            "  load file1.sspace [file2.sspace...]\n" +
+            "  unload file1.sspace [file2.sspace...]\n" +
             "  get-neighbors word [number (default 10)] [similarity measure]\n" +
             "  get-similarity word1 word2 [similarity measure " + 
             "(default cosine)]\n" +

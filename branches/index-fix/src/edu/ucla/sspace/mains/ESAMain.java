@@ -23,7 +23,7 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
+import edu.ucla.sspace.common.SemanticSpaceIO;
 
 import edu.ucla.sspace.esa.ExplicitSemanticAnalysis;
 
@@ -152,7 +152,7 @@ public class ESAMain extends GenericMain {
 
 	// print the space
 	long startTime = System.currentTimeMillis();
-	SemanticSpaceUtils.printSemanticSpace(esa, output);
+	SemanticSpaceIO.save(esa, output);
 	long endTime = System.currentTimeMillis();
 	verbose("printed space in %.3f seconds%n",
 		((endTime - startTime) / 1000d));

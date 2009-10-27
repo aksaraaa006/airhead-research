@@ -23,8 +23,8 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceUtils;
-import edu.ucla.sspace.common.SemanticSpaceUtils.SSpaceFormat;
+import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.common.WordComparator;
@@ -46,6 +46,7 @@ import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.SortedMultiMap;
 import edu.ucla.sspace.util.TimeSpan;
+import edu.ucla.sspace.util.TreeMultiMap;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -64,6 +65,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
@@ -83,6 +85,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -120,7 +124,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 
     /**
      * Whether the nearest neighbors for each interesting word should be
-     * compared after processing each slice.
+     * compared after processing each partition.
      */
     private boolean compareNeighbors;
 
@@ -131,7 +135,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 
     /**
      * How many nearest neightbors of the words in {@code interestingWords} to
-     * print for each semantic slice.  If this variable is 0, no neighbors are
+     * print for each semantic partition.  If this variable is 0, no neighbors are
      * printed.
      */
     private int interestingWordNeighbors;
@@ -147,8 +151,8 @@ public class FixedDurationTemporalRandomIndexingMain {
     private boolean overwrite;
 
     /**
-     * Whether to print the semantic shift and other statistics for the
-     * interesting word set for each slice.
+     * Whether to print the semantic shifts and other statistics for the
+     * interesting word set for each partition.
      */
     private boolean printInterestingTokenShifts; 
 
@@ -156,14 +160,19 @@ public class FixedDurationTemporalRandomIndexingMain {
      * Whether to write the incremental {@code .sspace} files to disk during the
      * processing of each time span.
      */
-    private boolean saveSlices;
+    private boolean savePartitions;
+
+    /**
+     * Whether to print a complete sorted list of all the semantic shifts for
+     * each interesting word from the last partition.
+     */
+    private boolean printShiftRankings;
 
     /**
      * The word comparator used for computing similarity scores when calculating
      * the semantic shift.
      */
     private WordComparator wordComparator;
-
 
     /**
      * A mapping from each word to the vectors that account for its temporal
@@ -179,13 +188,14 @@ public class FixedDurationTemporalRandomIndexingMain {
         compareNeighbors = false;
 	wordToTemporalSemantics = 
 	    new HashMap<String,SortedMap<Long,double[]>>();
-	saveSlices = false;
+	savePartitions = false;
+        printShiftRankings = false;
     }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
-    public ArgOptions createOptions() {
+    protected ArgOptions createOptions() {
 	ArgOptions options = new ArgOptions();
 	options.addOption('f', "fileList", "a list of document files", 
 			  true, "FILE[,FILE...]", "Required (at least one of)");
@@ -194,7 +204,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 			  "FILE[,FILE...]", "Required (at least one of)");
 
 	options.addOption('T', "timespan", "the timespan for each semantic " +
-			  "slice", true, "Date String", "Required");
+			  "partition", true, "Date String", "Required");
 
 	options.addOption('o', "outputFormat", "the .sspace format to use",
 			  true, "{text|binary}", "Program Options");
@@ -245,7 +255,10 @@ public class FixedDurationTemporalRandomIndexingMain {
 	// Output Options
 	options.addOption('I', "interestingTokenList", "list of interesting " +
 			  "words", true, "FILE", "Output Options");
-	options.addOption('R', "saveSlices", "write semantic slices as " +
+	options.addOption('K', "printShiftRankings", "print ranked list of " +
+                          "semantic shifts for each interesting word", false, 
+                          null, "Output Options");
+	options.addOption('R', "savePartitions", "write semantic partitions as " +
                           ".sspace files to disk", false, null, 
                           "Output Options");
 	options.addOption('P', "printInterestingTokenShifts", "prints the "
@@ -291,7 +304,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 
 	if (!argOptions.hasOption("timespan")) {
 	    throw new IllegalArgumentException(
-		"must specify a timespan duration for the semantic slice");
+		"must specify a timespan duration for the semantic partition");
 	}
 
 	// Get the time span that will be used to group the documents
@@ -299,7 +312,13 @@ public class FixedDurationTemporalRandomIndexingMain {
 	TimeSpan timeSpan = new TimeSpan(timespanStr);
 
 	if (argOptions.hasOption('v') || argOptions.hasOption("verbose")) {
-	    Logger.getLogger("edu.ucla.sspace").setLevel(Level.FINE);
+            // Enable all the logging at the FINE level for the application
+            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
+            Handler verboseHandler = new ConsoleHandler();
+            verboseHandler.setLevel(Level.FINE);
+            appRooLogger.addHandler(verboseHandler);
+            appRooLogger.setLevel(Level.FINE);
+            appRooLogger.setUseParentHandlers(false);
 	}
 	
 	// all the documents are listed in one file, with one document per line
@@ -369,16 +388,21 @@ public class FixedDurationTemporalRandomIndexingMain {
 	}
 
 	// Check whether the incremental .sspace files should be written to disk
-	if (argOptions.hasOption("saveSlices")) {
-	    saveSlices = true;
-	}
+	if (argOptions.hasOption("savePartitions"))
+	    savePartitions = true;
+        
+        // Check wether each partition should generate a ranked list of words
+        // according to their semantic shift
+        if (argOptions.hasOption("printShiftRankings"))
+            printShiftRankings = true;
+
 	// if the user did not indicate any interesting words, and the .sspace
 	// files are not being written, then the program has no output, which is
 	// an error
 	else if (interestingWords.isEmpty()) {
 	    throw new IllegalArgumentException(
 		"Must specify some form of output as either a non-empty set" +
-		"of interesting words and/or writing the semantic slice .sspace"
+		"of interesting words and/or writing the semantic partition .sspace"
 		+ "files to disk");
 	}
 
@@ -477,7 +501,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 				      outputDir);
 	    
 	    long startTime = System.currentTimeMillis();
-	    SemanticSpaceUtils.printSemanticSpace(sspace, output, format);
+	    SemanticSpaceIO.save(sspace, output, format);
 	    long endTime = System.currentTimeMillis();
 	    verbose("printed space in %.3f seconds%n",
 		    ((endTime - startTime) / 1000d));
@@ -488,28 +512,29 @@ public class FixedDurationTemporalRandomIndexingMain {
 
     /**
      * Adds the temporal semantics for each interesting word using the provided
-     * semantic slice.
+     * semantic partition.
      *
-     * @param currentSemanticSliceStartTime the start time of the semantic slice
+     * @param currentSemanticPartitionStartTime the start time of the semantic
+     *        partition
      */
-    private void updateTemporalSemantics(long currentSemanticSliceStartTime,
-                                         SemanticSpace semanticSlice) {
+    private void updateTemporalSemantics(long currentSemanticPartitionStartTime,
+                                         SemanticSpace semanticPartition) {
         
         // Pre-allocate the zero vector so that if multiple interesting words
         // are not present in the space, they all point to the same zero
         // semantics
-        double[] zeroVector = new double[semanticSlice.getVectorSize()];
+        double[] zeroVector = new double[semanticPartition.getVectorSize()];
 
         for (String word : interestingWords) {
             // update the vectors
             SortedMap<Long,double[]> temporalSemantics = 
                 wordToTemporalSemantics.get(word);
-            double[] semantics = semanticSlice.getVectorFor(word);
-            // If the word was not in the current slice, then give it the zero
+            double[] semantics = semanticPartition.getVectorFor(word);
+            // If the word was not in the current partition, then give it the zero
             // vector
             if (semantics == null)
                 semantics = zeroVector;
-            temporalSemantics.put(currentSemanticSliceStartTime,
+            temporalSemantics.put(currentSemanticPartitionStartTime,
                                   semantics);
         }
     }
@@ -517,9 +542,9 @@ public class FixedDurationTemporalRandomIndexingMain {
     /**
      * Prints the semantic shifts for all the words in the {@link
      * #wordToTemporalSemantics} map, using the {code dateString} for naming the
-     * output file with the date of the last semantic slice.
+     * output file with the date of the last semantic partition.
      *
-     * @param dateString the date of the last semantic slice.
+     * @param dateString the date of the last semantic partition.
      */
     private void printSemanticShifts(String dateString) throws IOException {
 
@@ -534,7 +559,7 @@ public class FixedDurationTemporalRandomIndexingMain {
                 timeStampToSemantics.entrySet().iterator();
             
             PrintWriter pw = new PrintWriter(new File(outputDir,
-		word + "." + dateString + ".temporal-changes.txt"));
+		word + "." + dateString + ".temporal-changes.txt"));            
 	    
             // Write the header so we can keep track of what all the columns
             // mean
@@ -566,28 +591,101 @@ public class FixedDurationTemporalRandomIndexingMain {
     }
 
     /**
+     * Computes the ranking of which words underwent the most dramatic shifts in
+     *  the most recent partition and then prints the ranking list of a file.
+     *
+     * @param dateString the string to use when indiciation which partition is
+     *        having its ranking lists printed.  This string becomes a part of
+     *        the file name.
+     */
+    private void printShiftRankings(String dateString, 
+                                    long startOfMostRecentPartition,
+                                    TimeSpan partitionDuration) 
+            throws IOException {
+
+        SortedMultiMap<Double,String> shiftToWord = 
+            new TreeMultiMap<Double,String>();
+
+        // Create a second time span than is twice the duration.  We will use
+        // this to check whether two partition's vectors were adjacent in the
+        // slice by seeing wether the timestamps fall within this duration
+        TimeSpan twoPartitions = new TimeSpan(partitionDuration.getYears() * 2,
+                                              partitionDuration.getMonths() * 2,
+                                              partitionDuration.getWeeks() * 2,
+                                              partitionDuration.getDays() * 2,
+                                              partitionDuration.getHours() * 2);
+        
+        // Once we have all the vectors for each word in each sspace,
+        // calculate how much the vector has changed.
+        for (Map.Entry<String,SortedMap<Long,double[]>> e : 
+                 wordToTemporalSemantics.entrySet()) {
+            String word = e.getKey();
+            SortedMap<Long,double[]> m = e.getValue();
+            
+            // Skip computing shifts for words without enough partitions
+            if (m.size() < 2)
+                continue;
+
+            // Get the timestamps as a navigable map so we can identify the last
+            // two keys in it more easly.
+            NavigableMap<Long,double[]> timestampToVector = 
+                (e instanceof NavigableMap) 
+                ? (NavigableMap<Long,double[]>)m
+                : new TreeMap<Long,double[]>(m);            
+
+            Map.Entry<Long,double[]> mostRecent = timestampToVector.lastEntry();
+            // Skip calculating the shift for words who most recent partition
+            // was not the same as the most recent partition for TRI
+	    if (!mostRecent.getKey().equals(startOfMostRecentPartition))
+                continue;
+            
+            Map.Entry<Long,double[]> secondMostRecent = 
+                timestampToVector.lowerEntry(mostRecent.getKey());
+            // Skip calculating the shift for words where the two most recent
+            // partitoins aren't contiguous.  Check for this using the custom
+            // time span that covers two partitions
+	    if (!twoPartitions.insideRange(secondMostRecent.getKey(),
+                                           mostRecent.getKey()))
+                continue;
+
+            
+            // Compute the semantic shift of the two partitions
+            shiftToWord.put(Similarity.cosineSimilarity(
+                            secondMostRecent.getValue(),
+                            mostRecent.getValue()), word);
+        }
+
+        PrintWriter pw = new PrintWriter(new File(outputDir,
+            "shift-ranks-for." + dateString + ".txt"));
+        for (Map.Entry<Double,String> e : shiftToWord.entrySet()) {
+            pw.println(e.getKey() + "\t" + e.getValue());
+        }        
+        pw.close();
+    }
+
+    /**
      * Using the {@link wordToTemporalSemantics} set and input parameters,
      * calculates the shift in each word's semantic vector per recorded time
      * period and also prints out the nearest neighbors to each word for each
      * time period.
      *
-     * @param dateString the string that encodes the date of the semantic slice.
+     * @param dateString the string that encodes the date of the semantic partition.
      *        This will be used as a part of the file name to indicate when the
      *        shifts occurred.
-     * @param semanticSlice the current semantic that will be used to identify
+     * @param semanticPartition the current semantic that will be used to identify
      *        the neighbors of each interesting word
      */
     private void printWordNeighbors(String dateString,
-                                    SemanticSpace semanticSlice) 
+                                    SemanticSpace semanticPartition) 
             throws IOException {
 	
-	LOGGER.info("printing the most similar words for the semantic slice" +
+	LOGGER.info("printing the most similar words for the semantic partition" +
                     "starting at: " + dateString);
 
 	// generate the similarity lists
 	for (String toExamine : interestingWords) {
 	    SortedMultiMap<Double,String> mostSimilar = 
-		wordComparator.getMostSimilar(toExamine, semanticSlice,
+		wordComparator.getMostSimilar(toExamine, semanticPartition,
                                               interestingWordNeighbors,
 					      Similarity.SimType.COSINE);
 
@@ -612,7 +710,7 @@ public class FixedDurationTemporalRandomIndexingMain {
                     // words.  This gives an indication of whether any of the
                     // words might be outliers.
                     writeNeighborComparison(neighborComparisonFile, 
-                                            mostSimilar, semanticSlice);
+                                            mostSimilar, semanticPartition);
                 }
 	    }
 	}    
@@ -704,10 +802,10 @@ public class FixedDurationTemporalRandomIndexingMain {
 			      argOptions.getStringOption("useSparseSemantics"));
 	}
 
-	if (argOptions.hasOption("sliceDuration")) {
+	if (argOptions.hasOption("partitionDuration")) {
 	    props.setProperty(FixedDurationTemporalRandomIndexing.
 			      SEMANTIC_PARTITION_DURATION_PROPERTY,
-			      argOptions.getStringOption("sliceDuration"));
+			      argOptions.getStringOption("partitionDuration"));
 	}
 	
 	// Initialize the IteratorFactory to tokenize the documents according to
@@ -771,10 +869,11 @@ public class FixedDurationTemporalRandomIndexingMain {
 	final Queue<Long> futureStartTimes = new ConcurrentLinkedQueue<Long>();
 
 	// final variables necessary due to the anonymous inner class
-	final boolean writeSemanticSlices = saveSlices;
+	final boolean writeSemanticPartitions = savePartitions;
 	final boolean writeSemanticShifts = printInterestingTokenShifts;
 	final boolean writeInterestingWordNeighbors = 
             interestingWordNeighbors > 0;
+        final boolean writeShiftRankings = printShiftRankings;
 
 	/**
 	 * A runnable that serializes the current semantic space to disk and
@@ -791,21 +890,26 @@ public class FixedDurationTemporalRandomIndexingMain {
 			// Save the s-space only when requried to.  This
 			// operation can be very slow due to I/O requirements,
 			// and is not mandatory when computing the shifts
-			if (writeSemanticSlices) {
-			    LOGGER.info("writing semantic slice starting at:" + 
+			if (writeSemanticPartitions) {
+			    LOGGER.info("writing semantic partition starting at:" + 
 					dateString);
 			    // save the current contets of the semantic space
 			    printSpace(fdTri, "-" + dateString + "-");
 			}
 
-                        // Add the semantics from the current semantic slice
+                        // Add the semantics from the current semantic partition
                         // for each of the interesting words
                         updateTemporalSemantics(curSSpaceStartTime.get(),
                                                 fdTri);
                         
 			if (writeSemanticShifts) 
 			    printSemanticShifts(dateString);
-			
+
+                        if (writeShiftRankings) 
+                            printShiftRankings(dateString, 
+                                               curSSpaceStartTime.get(),
+                                               timeSpan);
+
                         // NOTE: since the FD-TRI implementaiton resets
                         // its semantics after every 
 			if (interestingWordNeighbors > 0) 
@@ -863,7 +967,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 				;
 
 			    // Check whether the time for this document would
-			    // exceed the maximum time span for any TRI slice.
+			    // exceed the maximum time span for any TRI partition.
 			    // Loop to ensure that if this thread does loop and
 			    // another thread has an earlier time that exceeds
 			    // the time period, then this thread will block
@@ -927,7 +1031,7 @@ public class FixedDurationTemporalRandomIndexingMain {
 
 	    "\nFixed-Duration TRI provides four main output options:\n\n" +
 
-	    "  1) Outputting each semantic slice as a separate .sspace file.  "+
+	    "  1) Outputting each semantic partition as a separate .sspace file.  "+
 	    "Each file\n     is named using the yyyy_MM_ww_dd_hh format to " +
 	    "indicate it start date.\n     This is the most expensive of the " +
 	    "operations due to I/O overhead.\n\n" +

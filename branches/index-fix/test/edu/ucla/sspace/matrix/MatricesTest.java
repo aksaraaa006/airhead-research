@@ -47,9 +47,9 @@ public class MatricesTest {
 
   @Test public void multipleBothDiagonalTest() {
     double[] data1 = {1, 2, 3, 4, 5};
-    Matrix leftMatrix = new DiagonalMatrix(data1.length, data1);
+    Matrix leftMatrix = new DiagonalMatrix(data1);
     double[] data2 = {5, 4, 3, 2, 1};
-    Matrix rightMatrix = new DiagonalMatrix(data2.length, data2);
+    Matrix rightMatrix = new DiagonalMatrix(data2);
     Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
     assertEquals(data1.length, result.rows());
     assertEquals(data1.length, result.columns());
@@ -66,7 +66,7 @@ public class MatricesTest {
 
   @Test public void multiplyLeftDiagonalTemultiplest() {
     double[] data2 = {1, 2, 3, 0};
-    Matrix leftMatrix = new DiagonalMatrix(4, data2);
+    Matrix leftMatrix = new DiagonalMatrix(data2);
     double[] data1 = {1, 2, 3, 4};
     Matrix rightMatrix = new ArrayMatrix(4, 1, data1);
     Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
@@ -81,7 +81,7 @@ public class MatricesTest {
     double[] data1 = {1, 2, 3, 4, 1, 1, 1, 1, 5, 4, 3, 2};
     Matrix leftMatrix = new ArrayMatrix(3, 4, data1);
     double[] data2 = {1, 2, 3, 0};
-    Matrix rightMatrix = new DiagonalMatrix(4, data2);
+    Matrix rightMatrix = new DiagonalMatrix(data2);
     Matrix result = Matrices.multiply(leftMatrix, rightMatrix);
     double[][] expectations = {{1, 4, 9, 0},
                                {1, 2, 3, 0},

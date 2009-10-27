@@ -23,6 +23,7 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.lsa.LatentSemanticAnalysis;
 
@@ -156,6 +157,14 @@ public class LSAMain extends GenericMain {
       } catch (IOException ioe) {
         throw new IOError(ioe);
       }
+    }
+
+    /**
+     * Returns the {@likn SSpaceFormat.BINARY binary} format as the default
+     * format of a {@code LatentSemanticAnalysis} space.
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.BINARY;
     }
 
     protected Properties setupProperties() {
