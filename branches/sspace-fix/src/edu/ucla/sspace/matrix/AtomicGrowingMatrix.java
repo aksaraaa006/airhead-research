@@ -190,7 +190,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      *         and it was not to be created if absent
      */
     private AtomicVector getRow(int row, int col, boolean createIfAbsent) {
-        checkIndices(row, col);
+        checkIndices(row, (col == -1) ? columns() : col);
 
         rowReadLock.lock();
         AtomicVector rowEntry = sparseMatrix.get(row);
