@@ -109,11 +109,11 @@ public class HermitMain extends GenericMain {
                           true, "CLASSNAME", "Process Properties");
         options.addOption('u', "user", "IndexUser to use for hermit",
                           true, "CLASSNAME", "Process Properties");
-        options.addOption('w', "windowSize",
+        options.addOption('s', "windowSize",
                           "The number of words before, and after the focus " +
                           "term to inspect",
                           true, "INT,INT", "Process Properties");
-        options.addOption('r', "replacementMap",
+        options.addOption('m', "replacementMap",
                           "A file which specifies mappings between terms " + 
                           "and their replacements",
                           true, "FILE", "Processing Properties");
@@ -124,10 +124,10 @@ public class HermitMain extends GenericMain {
         options.addOption('e', "threshold",
                           "The threshold for clustering similar context " +
                           "vectors", true, "DOUBLE", "Cluster Properties");
-        options.addOption('s', "senseCount",
+        options.addOption('c', "senseCount",
                           "The maximum number of senses Hermit should produce",
                           true, "INT", "Cluster Properties");
-        options.addOption('c', "cluster",
+        options.addOption('r', "cluster",
                           "Class type to use for clustering semantic vectors",
                           true, "CLASSNAME", "Cluster Properties");
 
