@@ -174,7 +174,7 @@ public class RandomIndexUser implements IndexUser {
         IndexVector permutedVector =
             new IndexVector(length, positive, negative);
 
-        return Vectors.addUnmodified(result, permutedVector);
+        return Vectors.add(focusVector, permutedVector);
     }
 
     /**

@@ -22,6 +22,7 @@
 package edu.ucla.sspace.index;
 
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.IndexVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -29,6 +30,7 @@ import edu.ucla.sspace.fft.FastFourierTransform;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Queue;
 
@@ -54,15 +56,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BeagleIndexUser implements IndexUser {
 
+
     /**
      * The default index vector size, used when one is not specified.
      */
-    private static final int DEFAULT_INDEX_VECTOR_SIZE = 512;
+    private static final int DEFAULT_INDEX_VECTOR_LENGTH = 512;
 
     /**
      * The current size of all index vectors, and semantic vectors.
      */
-    private int indexVectorSize;
+    private int indexVectorLength;
 
     /**
      * An empty place holder vector to represent the focus word when computing
@@ -104,8 +107,8 @@ public class BeagleIndexUser implements IndexUser {
      * DEFAULT_INDEX_VECTOR_SIZE} as the length of each {@code Vector} generated
      * in this {@code IndexUser}.
      */
-    public BeagleIndexUser(Vector holder) {
-        init(DEFAULT_INDEX_VECTOR_SIZE, holder);
+    public BeagleIndexUser() {
+        this(System.getProperties());
     }
 
     /**
@@ -115,35 +118,43 @@ public class BeagleIndexUser implements IndexUser {
      * @param vectorLength The length of each index and semantic {@code Vector}
      *                     used in this {@code IndexUser}.
      */
-    public BeagleIndexUser(int vectorLength, Vector holder) {
-        init(vectorLength, holder);
+    public BeagleIndexUser(Properties prop) {
+        // TODO figure out the placeholder issue.
+        String indexVectorProp = prop.getProperty(INDEX_VECTOR_LENGTH_PROPERTY);
+        indexVectorLength = (indexVectorProp != null)
+            ? Integer.parseInt(indexVectorProp)
+            : DEFAULT_INDEX_VECTOR_LENGTH;
+
+        // Save the place holder vector.
+        int[] positives = new int[indexVectorLength];
+        for (int i = 0; i < indexVectorLength; ++i)
+            positives[i] = i;
+        int[] negatives = new int[0];
+
+        placeHolder = new IndexVector(indexVectorLength, positives, negatives);
+        lastSeenVector = new DenseVector(indexVectorLength);
+
+        // Generate the permutation arrays.
+        permute1 = new int[indexVectorLength];
+        permute2 = new int[indexVectorLength];
+        randomPermute(permute1);
+        randomPermute(permute2);
     }
 
     /**
      * Initialize this {@code BeagleIndexUser}.
      */
     private void init(int s, Vector holder) {
-        indexVectorSize = s;
-
-        // Save the place holder vector.
-        placeHolder = holder;
-        lastSeenVector = new DenseVector(s);
-
-        // Generate the permutation arrays.
-        permute1 = new int[indexVectorSize];
-        permute2 = new int[indexVectorSize];
-        randomPermute(permute1);
-        randomPermute(permute2);
     }
 
     /**
-     * Populate the given array with values 0 to {@code indexVectorSize}, and
+     * Populate the given array with values 0 to {@code indexVectorLength}, and
      * then shuffly the values randomly.
      */
     private void randomPermute(int[] permute) {
-        for (int i = 0; i < indexVectorSize; i++)
+        for (int i = 0; i < indexVectorLength; i++)
             permute[i] = i;
-        for (int i = indexVectorSize - 1; i > 0; i--) {
+        for (int i = indexVectorLength - 1; i > 0; i--) {
             int w = (int) Math.floor(Math.random() * (i+1));
             int temp = permute[w];
             permute[w] = permute[i];
@@ -165,10 +176,11 @@ public class BeagleIndexUser implements IndexUser {
     public Vector generateMeaning(Vector focusVector,
                                   Vector termVector,
                                   int distance) {
-        Vector result = new DenseVector(indexVectorSize);
+        if (distance < 0) 
+            return focusVector;
 
         // Add the termVector to the result.
-        Vectors.add(result, termVector);
+        Vectors.add(focusVector, termVector);
 
         if (focusVector != lastSeenVector) {
             // When we change words, create the new first and second Convolution
@@ -177,7 +189,7 @@ public class BeagleIndexUser implements IndexUser {
             // term.  The second convolution is of a place holder and the given
             // co-occurring term.
             firstConvolution = convolute(lastSeenVector, placeHolder);
-            Vectors.add(result, firstConvolution);
+            Vectors.add(focusVector, firstConvolution);
             firstConvolution = convolute(firstConvolution, termVector);
 
             secondConvolution = convolute(placeHolder, termVector);
@@ -189,10 +201,10 @@ public class BeagleIndexUser implements IndexUser {
         }
 
         // Add the newest convolutions to the result.
-        Vectors.add(result, firstConvolution);
-        Vectors.add(result, secondConvolution);
+        Vectors.add(focusVector, firstConvolution);
+        Vectors.add(focusVector, secondConvolution);
 
-        return result;
+        return focusVector;
     }
 
     /**
@@ -234,8 +246,8 @@ public class BeagleIndexUser implements IndexUser {
      * @return The shuffled version of {@code data}.
      */
     private Vector changeVector(Vector data, int[] orderVector) {
-        Vector result = new DenseVector(indexVectorSize);
-        for (int i = 0; i < indexVectorSize; i++)
+        Vector result = new DenseVector(indexVectorLength);
+        for (int i = 0; i < indexVectorLength; i++)
             result.set(i, data.get(orderVector[i]));
         return result;
     }

@@ -24,12 +24,10 @@ package edu.ucla.sspace.mains;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.index.IndexBuilder;
-import edu.ucla.sspace.index.BeagleIndexBuilder;
-import edu.ucla.sspace.index.RandomIndexBuilder;
+import edu.ucla.sspace.index.IndexGenerator;
+import edu.ucla.sspace.index.IndexUser;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
-import edu.ucla.sspace.hermit.Hermit;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -53,15 +51,10 @@ import java.util.Properties;
  * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA
  *      vectors.  See {@link Hermit} for default value
  * 
- * <li> {@code --preprocess=<class name>} specifies an instance of {@link
- *      edu.ucla.sspace.lsa.MatrixTransformer} to use in preprocessing the
- *      word-document matrix compiled by LSA prior to computing the SVD.  See
- *      {@link Hermit} for default value
- *
  * <li> {@code --holographsize} length of the holograph vectors used in
  *      conjuction with the lsa term-document matrix.  by default 2048.
  *
- * <li> {@code --builder} class name of the
+ * <li> {@code --generator} class name of the
  *      {@link edu.ucla.sspace.common.IndexBuilder} used to compose the
  *      holograph vectors.  Currently only accepts "BeagleIndexBuilder" and
  *      "RandomIndexBuilder".
@@ -82,8 +75,7 @@ import java.util.Properties;
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.
  *
- * @see Hermit
- * @see edu.ucla.sspace.lsa.MatrixTransformer MatrixTransformer
+ * @see FlyingHermit
  *
  * @author Keith Stevens 
  */
@@ -93,7 +85,10 @@ public class HermitMain extends GenericMain {
 
     private static final int DEFAULT_DIMENSION = 2048;
     private int dimension;
-    private IndexBuilder builder;
+    private int prevWordsSize;
+    private int nextWordsSize;
+    private IndexGenerator generator;
+    private IndexUser user;
     private BottomUpVectorClusterMap clusterMap;
 
     private HermitMain() {
@@ -103,15 +98,29 @@ public class HermitMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     public void addExtraOptions(ArgOptions options) {
+        // Add process property arguements such as the size of index vectors,
+        // the generator class to use, the user class to use, the window sizes
+        // that should be inspected and the set of terms to replace during
+        // processing.
         options.addOption('h', "holographsize",
                           "The size of the holograph vectors",
                           true, "INT", "Process Properties");
-        options.addOption('b', "builder", "Index builder to use for hermit",
+        options.addOption('g', "generator", "IndexGenerator to use for hermit",
                           true, "CLASSNAME", "Process Properties");
+        options.addOption('u', "user", "IndexUser to use for hermit",
+                          true, "CLASSNAME", "Process Properties");
+        options.addOption('w', "windowSize",
+                          "The number of words before, and after the focus " +
+                          "term to inspect",
+                          true, "INT,INT", "Process Properties");
         options.addOption('r', "replacementMap",
                           "A file which specifies mappings between terms " + 
                           "and their replacements",
                           true, "FILE", "Processing Properties");
+
+        // Add arguments for setting clustering properties such as the
+        // similarity threshold, maximum number of senses to create, and the
+        // clustering mechanism to use. 
         options.addOption('t', "threshold",
                           "The threshold for clustering similar context " +
                           "vectors", true, "DOUBLE", "Cluster Properties");
@@ -121,12 +130,14 @@ public class HermitMain extends GenericMain {
         options.addOption('c', "cluster",
                           "Class type to use for clustering semantic vectors",
                           true, "CLASSNAME", "Cluster Properties");
+
+        // Additional processing steps.
         options.addOption('S', "saveVectors",
                           "Save index vectors to a binary file",
                           true, "FILE", "Post Processing");
         options.addOption('L', "loadVectors",
                           "Load index vectors from a binary file",
-                          true, "FILE", "Post Processing");
+                          true, "FILE", "Pre Processing");
     }
 
     public static void main(String[] args) {
@@ -143,17 +154,46 @@ public class HermitMain extends GenericMain {
         dimension = (argOptions.hasOption("holographsize"))
             ? argOptions.getIntOption("holographsize")
             : DEFAULT_DIMENSION;
-        String builderType = (argOptions.hasOption("builder"))
-            ? argOptions.getStringOption("builder")
-            : "BeagleIndexBuilder";
-        if (builderType.equals("BeagleIndexBuilder")) {
-            builder = new BeagleIndexBuilder(dimension);
-            if (argOptions.hasOption("loadVectors"))
-                builder.loadIndexVectors(new File(
-                            argOptions.getStringOption("loadVectors")));
-        } else if (builderType.equals("RandomIndexBuilder"))
-            builder = new RandomIndexBuilder(dimension);
 
+        // Create the generator.
+        String generatorType = (argOptions.hasOption("generator"))
+            ? argOptions.getStringOption("generator")
+            : "edu.ucla.sspace.index.RandomIndexGenerator";
+        try {
+            Class generatorClazz = Class.forName(generatorType);
+            System.setProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY,
+                               Integer.toString(dimension));
+            generator = (IndexGenerator) (generatorClazz.newInstance());
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+
+        // Create the user.
+        String userType = (argOptions.hasOption("user"))
+            ? argOptions.getStringOption("user")
+            : "edu.ucla.sspace.index.RandomIndexUser";
+        try {
+            Class userClazz = Class.forName(userType);
+            System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
+                               Integer.toString(dimension));
+            user = (IndexUser) (userClazz.newInstance());
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+
+        if (argOptions.hasOption("loadVectors"))
+            generator.loadIndexVectors(
+                    new File(argOptions.getStringOption("loadVectors")));
+
+        // Process the window size arguments;
+        String windowValue = (argOptions.hasOption('w'))
+            ? argOptions.getStringOption('w')
+            : "5,5";
+        String[] prevNext = windowValue.split(",");
+        prevWordsSize = Integer.parseInt(prevNext[0]);
+        nextWordsSize = Integer.parseInt(prevNext[1]);
+
+        // Process the cluster arguments.
         int maxSenseCount = (argOptions.hasOption("senseCount"))
             ? argOptions.getIntOption("senseCount")
             : 2;
@@ -168,31 +208,24 @@ public class HermitMain extends GenericMain {
             clusterMap = new SimpleVectorClusterMap(threshold, maxSenseCount);
         else if (clusterName.equals(EXEMPLAR_CLUSTER))
             clusterMap = new ExemplarVectorClusterMap(threshold, maxSenseCount);
-
     }
 
     protected void postProcessing() {
         if (argOptions.hasOption("saveVectors")) {
             String filename = argOptions.getStringOption("saveVectors");
-            builder.saveIndexVectors(new File(filename));
+            generator.saveIndexVectors(new File(filename));
         }
     }
 
     public SemanticSpace getSpace() {
-        return new FlyingHermit(builder, dimension, clusterMap);
+        return new FlyingHermit(generator, user, clusterMap,
+                                dimension, prevWordsSize, nextWordsSize);
     }
 
     public Properties setupProperties() {
         // use the System properties in case the user specified them as
         // -Dprop=<val> to the JVM directly.
         Properties props = System.getProperties();
-
-        if (argOptions.hasOption("threads"))
-            props.setProperty(Hermit.NUM_THREADS_PROPERTY,
-                              argOptions.getStringOption("threads"));
-        else
-            props.setProperty(Hermit.NUM_THREADS_PROPERTY,
-                              "" + Runtime.getRuntime().availableProcessors());
 
         if (argOptions.hasOption("replacementMap"))
             props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,

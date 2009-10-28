@@ -7,6 +7,8 @@ import edu.ucla.sspace.common.SemanticSpaceIO;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOError;
+import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,7 +19,7 @@ import java.util.TreeSet;
 
 
 public class HermitEvaluation {
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException {
         ArgOptions options = new ArgOptions();
         options.addOption('c', "controlSpace",
                           "The serialized SemanticSpace to test against",
@@ -44,12 +46,8 @@ public class HermitEvaluation {
         }
 
         // Read in the set of test words to compare.
-        Set<String> wordList = new TreeSet<String>();
-        BufferedReader br = new BufferedReader(new FileReader(
-                    options.getStringOption('w')));
-        String line = null;
-        while ((line = br.readLine()) != null)
-            wordList.add(line);
+        Set<String> wordList = parseWordList(options.getStringOption('w'));
+
 
         Map<String, double[]> controlVectors =
             new HashMap<String, double[]>(wordList.size()*2);
@@ -77,5 +75,18 @@ public class HermitEvaluation {
             }
             // Evaluate this bizznizz.
         }
+    }
+
+    public static Set<String> parseWordList(String filename) {
+        Set<String> wordList = new TreeSet<String>();
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            String line = null;
+            while ((line = br.readLine()) != null)
+                wordList.add(line);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+        return wordList; 
     }
 }

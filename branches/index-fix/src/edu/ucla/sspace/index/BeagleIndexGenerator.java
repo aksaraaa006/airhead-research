@@ -35,6 +35,7 @@ import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Queue;
 
@@ -53,9 +54,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BeagleIndexGenerator implements IndexGenerator {
 
     /**
+     * The prefix for naming public properties.
+     */
+    private static final String PROPERTY_PREFIX = 
+        "edu.ucla.sspace.index.BeagleIndexGenerator";
+
+    /**
      * The default index vector size, used when one is not specified.
      */
-    private static final int DEFAULT_INDEX_VECTOR_SIZE = 512;
+    private static final int DEFAULT_INDEX_VECTOR_LENGTH = 512;
 
     /**
      * A mapping from terms to their Index Vector, stored as a {@code
@@ -66,7 +73,7 @@ public class BeagleIndexGenerator implements IndexGenerator {
     /**
      * The current size of all index vectors, and semantic vectors.
      */
-    private int indexVectorSize;
+    private int indexVectorLength;
 
     /**
      * The standard deviation used for generating a new index vector for terms.
@@ -84,7 +91,7 @@ public class BeagleIndexGenerator implements IndexGenerator {
      * in this {@code IndexGenerator}.
      */
     public BeagleIndexGenerator() {
-        init(DEFAULT_INDEX_VECTOR_SIZE);
+        this(System.getProperties());
     }
 
     /**
@@ -94,22 +101,19 @@ public class BeagleIndexGenerator implements IndexGenerator {
      * @param vectorLength The length of each index and semantic {@code Vector}
      *                     used in this {@code IndexGenerator}.
      */
-    public BeagleIndexGenerator(int vectorLength) {
-        init(vectorLength);
-    }
-
-    /**
-     * Initialize this {@code BeagleIndexGenerator}.
-     */
-    private void init(int s) {
+    public BeagleIndexGenerator(Properties prop) {
         // Generate utility classes.
         randomGenerator = new Random();
 
-        indexVectorSize = s;
+        String indexVectorProp = prop.getProperty(
+                IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY);
+        indexVectorLength = (indexVectorProp != null)
+            ? Integer.parseInt(indexVectorProp)
+            : DEFAULT_INDEX_VECTOR_LENGTH;
         termToRandomIndex = new ConcurrentHashMap<String, Vector>();
 
         // Generate the permutation arrays.
-        stdev = 1 / Math.sqrt(indexVectorSize);
+        stdev = 1 / Math.sqrt(indexVectorLength);
     }
 
     /**
@@ -129,8 +133,8 @@ public class BeagleIndexGenerator implements IndexGenerator {
                 int wordSize = in.readInt();
                 byte[] word = new byte[wordSize];
                 in.read(word);
-                double[] vector = new double[indexVectorSize];
-                for (int j = 0; j < indexVectorSize; ++j) {
+                double[] vector = new double[indexVectorLength];
+                for (int j = 0; j < indexVectorLength; ++j) {
                     vector[j] = in.readDouble();
                 }
                 termToRandomIndex.put(new String(word),
@@ -162,7 +166,7 @@ public class BeagleIndexGenerator implements IndexGenerator {
                 Vector vector = entry.getValue();
                 out.writeInt(word.length());
                 out.write(word.getBytes(), 0, word.length());
-                for (int i = 0; i < indexVectorSize; ++i) {
+                for (int i = 0; i < indexVectorLength; ++i) {
                     out.writeDouble(vector.get(i));
                 }
             }
@@ -175,7 +179,7 @@ public class BeagleIndexGenerator implements IndexGenerator {
      * Return an empty dense semantic vector.
      */
     public Vector getEmtpyVector() {
-        return new DenseVector(indexVectorSize);
+        return new DenseVector(indexVectorLength);
     }
 
     /**
@@ -184,7 +188,7 @@ public class BeagleIndexGenerator implements IndexGenerator {
      */
     private Vector generateRandomVector() {
         Vector termVector = getEmtpyVector();
-        for (int i = 0; i < indexVectorSize; i++)
+        for (int i = 0; i < indexVectorLength; i++)
             termVector.set(i, randomGenerator.nextGaussian() * stdev);
         return termVector;
     }
