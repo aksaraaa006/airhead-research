@@ -121,7 +121,7 @@ public class HermitMain extends GenericMain {
         // Add arguments for setting clustering properties such as the
         // similarity threshold, maximum number of senses to create, and the
         // clustering mechanism to use. 
-        options.addOption('t', "threshold",
+        options.addOption('e', "threshold",
                           "The threshold for clustering similar context " +
                           "vectors", true, "DOUBLE", "Cluster Properties");
         options.addOption('s', "senseCount",
