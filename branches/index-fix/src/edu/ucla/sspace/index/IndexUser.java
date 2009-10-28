@@ -53,6 +53,14 @@ public interface IndexUser {
         PROPERTY_PREFIX + ".length";
 
     /**
+     * The property to specify the size of the window this IndexUser is expected
+     * to handle.  The property value should be of the form
+     * "leftWindowSize,rightWindowSize"
+     */
+    public static final String WINDOW_SIZE_PROPERTY =
+        PROPERTY_PREFIX + ".window";
+
+    /**
      * Generate a meaning {@code Vector} for some focus term, and a co-occuring
      * term which occurs some terms away.  This can include a simple summation
      * of the occurring term's {@code Vector} to the focus term's {@code

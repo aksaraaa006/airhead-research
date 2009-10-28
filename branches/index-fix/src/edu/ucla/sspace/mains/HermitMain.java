@@ -155,6 +155,15 @@ public class HermitMain extends GenericMain {
             ? argOptions.getIntOption("holographsize")
             : DEFAULT_DIMENSION;
 
+        // Process the window size arguments;
+        String windowValue = (argOptions.hasOption('w'))
+            ? argOptions.getStringOption('w')
+            : "5,5";
+        String[] prevNext = windowValue.split(",");
+        prevWordsSize = Integer.parseInt(prevNext[0]);
+        nextWordsSize = Integer.parseInt(prevNext[1]);
+
+
         // Create the generator.
         String generatorType = (argOptions.hasOption("generator"))
             ? argOptions.getStringOption("generator")
@@ -176,6 +185,8 @@ public class HermitMain extends GenericMain {
             Class userClazz = Class.forName(userType);
             System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
                                Integer.toString(dimension));
+            System.setProperty(IndexUser.WINDOW_SIZE_PROPERTY,
+                               windowValue);
             user = (IndexUser) (userClazz.newInstance());
         } catch (Exception e) {
             throw new Error(e);
@@ -184,14 +195,6 @@ public class HermitMain extends GenericMain {
         if (argOptions.hasOption("loadVectors"))
             generator.loadIndexVectors(
                     new File(argOptions.getStringOption("loadVectors")));
-
-        // Process the window size arguments;
-        String windowValue = (argOptions.hasOption('w'))
-            ? argOptions.getStringOption('w')
-            : "5,5";
-        String[] prevNext = windowValue.split(",");
-        prevWordsSize = Integer.parseInt(prevNext[0]);
-        nextWordsSize = Integer.parseInt(prevNext[1]);
 
         // Process the cluster arguments.
         int maxSenseCount = (argOptions.hasOption("senseCount"))

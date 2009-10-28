@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 
 /**
@@ -43,75 +44,28 @@ import java.util.Map;
 public class RandomIndexUser implements IndexUser {
 
     /**
-     * A mapping from word distance to a particular permutation function.
-     */
-    private final Map<Integer,Function> permutationToReordering;
-    
-    /**
      * Create an empty set of permutations.
      */
     public RandomIndexUser() {
-        permutationToReordering = new HashMap<Integer,Function>();
+        this(System.getProperties());
     }
 
     /**
-     * Returns the bijective mapping for each integer in the form of an array
-     * based on the the current exponent of the permutation.
-     *
-     * @param exponent the exponent for the current permutation 
-     * @param dimensions the number of dimenensions in the index vector being
-     *        permuted
-     *
-     * @return the mapping for each index to its new index
+     * Create a new {@code RandomIndexUser} which first initializes the {@code
+     * PermutationFactory} with the expected number of permutations.
      */
-    private Function getFunction(int exponent, int dimensions) {
-        // Base case: we keep the same ordering.  Create this function on the
-        // fly to save space, since the base case should rarely get called.
-        if (exponent == 0) {
-            int[] func = new int[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                func[i] = i;
-            }
-            return new Function(func, func);
-        }
+    public RandomIndexUser(Properties props) {
+        String windowSizeProp =
+            props.getProperty(IndexUser.WINDOW_SIZE_PROPERTY, "5,5");
+        String[] leftRight = windowSizeProp.split(",");
+        int leftSize = Integer.parseInt(leftRight[0]);
+        int rightSize = Integer.parseInt(leftRight[1]);
 
-        exponent = Math.abs(exponent);
+        String vectorLengthProp =
+            props.getProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY);
+        int vectorLength = Integer.parseInt(vectorLengthProp);
 
-        Function function = permutationToReordering.get(exponent);
-        
-        // If there wasn't a funcion for that exponent then created one by
-        // permuting the lower exponents value.  Use recursion to access the
-        // lower exponents value to ensure that any non-existent lower-exponent
-        // functions are created along the way.
-        if (function == null) {
-            // lookup the prior function
-            int priorExponent = exponent - 1;
-            Function priorFunc = getFunction(priorExponent, dimensions);
-            
-            // convert to an object based array to use Collections.shuffle()
-            Integer[] objFunc = new Integer[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                objFunc[i] = Integer.valueOf(priorFunc.forward[i]);
-            }
-
-            // then shuffle it to get a new permutation
-            java.util.List<Integer> list = Arrays.asList(objFunc);
-            Collections.shuffle(list, RandomIndexGenerator.RANDOM);
-            
-            // convert back to a primitive array
-            int[] forwardMapping = new int[dimensions];
-            int[] backwardMapping = new int[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                forwardMapping[i] = objFunc[i].intValue();
-                backwardMapping[objFunc[i].intValue()] = i;
-            }            
-            function = new Function(forwardMapping, backwardMapping);
-
-            // store it in the function map for later usee
-            permutationToReordering.put(exponent, function);
-        }
-
-        return function;
+        PermutationFactory.init(rightSize, vectorLength);
     }
 
     /**
@@ -146,7 +100,8 @@ public class RandomIndexUser implements IndexUser {
 
         for (int count = 1; count <= totalPermutations; ++count) {            
             // load the reordering funcion for this iteration of the permutation
-            Function function = getFunction(count, length);
+            PermutationFactory.Function function =
+                PermutationFactory.getFunction(count);
 
             // based on whether this is an inverse permutation, select whether
             // to use the forward or backwards mapping.
@@ -177,18 +132,4 @@ public class RandomIndexUser implements IndexUser {
         return Vectors.add(focusVector, permutedVector);
     }
 
-    /**
-     * A bijective, invertible mapping between indices.
-     */
-    private static class Function {
-
-        private final int[] forward;
-        private final int[] backward;
-
-        public Function(int[] forward, int[] backward) {
-            this.forward = forward;
-            this.backward = backward;
-        }
-
-    }
 }
