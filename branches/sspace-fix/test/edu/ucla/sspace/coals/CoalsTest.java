@@ -23,7 +23,10 @@ package edu.ucla.sspace.coals;
 
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.ArrayMatrix;
+
 import edu.ucla.sspace.text.StringDocument;
+
+import edu.ucla.sspace.vector.Vector;
 
 import org.junit.*;
 
@@ -33,6 +36,7 @@ import java.io.IOException;
 
 import java.util.Properties;
 import java.util.Set;
+
 
 public class CoalsTest {
   @Test public void testGetWords() throws IOException {
@@ -45,9 +49,9 @@ public class CoalsTest {
     Set<String> wordSet = coals.getWords();
     assertEquals(13, wordSet.size());
     assertTrue(wordSet.contains("woodchuck"));
-    double[] woodchuckMeaning = coals.getVectorFor("woodchuck");
+    Vector woodchuckMeaning = coals.getVector("woodchuck");
     assertTrue(woodchuckMeaning != null);
-    assertEquals(13, woodchuckMeaning.length);
+    assertEquals(13, woodchuckMeaning.length());
   }
 
   @Test public void testSVDCoals() throws IOException {
@@ -59,9 +63,9 @@ public class CoalsTest {
     props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "");
     props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY, "3");
     coals.processSpace(props);
-    double[] woodchuck = coals.getVectorFor("woodchuck");
+    Vector woodchuck = coals.getVector("woodchuck");
     assertTrue(woodchuck != null);
-    assertEquals(3, woodchuck.length);
+    assertEquals(3, woodchuck.length());
   }
 
   @Test public void testCoals() throws IOException {
