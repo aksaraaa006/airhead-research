@@ -38,13 +38,13 @@ public class Vectors {
     private Vectors() { }
 
     /**
-     * Return an {@code ImmutableVector} for the given {@code Vector}.
+     * Return an {@code ViewVector} for the given {@code Vector} with no offset.
      *
      * @param vector The {@code Vector} to decorate as immutable.
      * @return An immutable version of {@code vector}.
      */
     public static Vector immutableVector(Vector vector) {
-        return (vector != null) ? new ImmutableVector(vector) : null;
+        return (vector != null) ? new ViewVector(vector) : null;
     }
 
     /**
@@ -55,6 +55,19 @@ public class Vectors {
      */
     public static Vector atomicVector(Vector vector) {
         return (vector != null) ? new AtomicVector(vector) : null;
+    }
+
+    /**
+     * Return a {@code ViewVector} for the given {@code Vector} with a specified
+     * offset and length.
+     *
+     * @param vector The {@code Vector} to decorate as embedded within a View.
+     * @param offset The offset at which values in {@code Vector} should be
+     *               mapped.
+     * @param length The length of {@code vector}.
+     */
+    public static Vector viewVector(Vector vector, int offset, int length) {
+        return (vector != null) ? new ViewVector(vector, offset, length) : null;
     }
 
     /**

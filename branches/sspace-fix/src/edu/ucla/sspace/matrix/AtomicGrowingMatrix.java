@@ -224,9 +224,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public Vector getRowVector(int row) {
         Vector v = getRow(row, -1, false);
-        // A slight cheat to set the known length of the returned vector.
-        v.get(columns()-1);
-        return Vectors.immutableVector(v);
+        return Vectors.viewVector(v, 0, cols.get());
     }
 
     /**

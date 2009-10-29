@@ -138,13 +138,6 @@ public class CompactSparseVector implements Vector, SparseVector {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public void setKnownLength(int length) {
-        knownLength = length;
-    }
-
-    /**
      * Extend the known length of this {@code Vector} if the given length is
      * longer than any previously seen length.
      *

@@ -34,14 +34,4 @@ public interface SparseVector extends Vector {
      * implementation.
      */
     int[] getNonZeroIndices();
-
-    /**
-     * Set the known length of the {@code SparseVector}.  For {@code
-     * SparseVector} implementations which do not permit growing this should be
-     * a no-op, but for any which permit growing, this should set a bound on the
-     * maximum size.
-     *
-     * @param length The new known length of the {@code SparseVector}.
-     */
-    void setKnownLength(int length);
 }
