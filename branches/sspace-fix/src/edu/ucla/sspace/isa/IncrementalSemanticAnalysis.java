@@ -19,8 +19,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//TODO Have ISA use Vectors.
-
 package edu.ucla.sspace.isa;
 
 import edu.ucla.sspace.common.SemanticSpace;
@@ -34,6 +32,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.SparseDoubleArray;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
 
@@ -195,7 +194,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-    "edu.ucla.sspace.isa.IncrementalSemanticAnalysis";
+        "edu.ucla.sspace.isa.IncrementalSemanticAnalysis";
 
     /**
      * The property to specify the decay rate for determing how much the history
@@ -215,35 +214,35 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * generating {@code IndexVector} instances.
      */
     public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
-    PROPERTY_PREFIX + ".indexVectorGenerator";
+        PROPERTY_PREFIX + ".indexVectorGenerator";
 
     /**
      * The property to specify the fully qualified named of a {@link
      * PermutationFunction} if using permutations is enabled.
      */
     public static final String PERMUTATION_FUNCTION_PROPERTY = 
-    PROPERTY_PREFIX + ".permutationFunction";
+        PROPERTY_PREFIX + ".permutationFunction";
 
     /**
      * The property to specify whether the index vectors for co-occurrent words
      * should be permuted based on their relative position.
      */
     public static final String USE_PERMUTATIONS_PROPERTY = 
-    PROPERTY_PREFIX + ".usePermutations";
+        PROPERTY_PREFIX + ".usePermutations";
 
     /**
      * The property to specify the number of dimensions to be used by the index
      * and semantic vectors.
      */
     public static final String VECTOR_LENGTH_PROPERTY = 
-    PROPERTY_PREFIX + ".vectorLength";
+        PROPERTY_PREFIX + ".vectorLength";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String WINDOW_SIZE_PROPERTY = 
-    PROPERTY_PREFIX + ".windowSize";
+        PROPERTY_PREFIX + ".windowSize";
 
     /**
      * Specifies whether to use a sparse encoding for each word's semantics,
@@ -251,7 +250,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * requires more computation.
      */
     public static final String USE_SPARSE_SEMANTICS_PROPERTY = 
-    PROPERTY_PREFIX + ".sparseSemantics";
+        PROPERTY_PREFIX + ".sparseSemantics";
 
     /**
      * The default rate at which the history (semantics) decays when affecting
@@ -517,7 +516,9 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             return null;
         }
         double[] vec = v.toArray();
-        return new DenseVector(vec);
+        return (useSparseSemantics)
+            ? new CompactSparseVector(vec)
+            : new DenseVector(vec);
     }
 
     /**
@@ -573,8 +574,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
                 nextWords.offer(windowEdge);
             }    
                 
-                // Don't bother calculating the semantics for empty tokens
-                // (i.e. words that were filtered out)
+            // Don't bother calculating the semantics for empty tokens
+            // (i.e. words that were filtered out)
             if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
                 SemanticVector focusMeaning = getSemanticVector(focusWord);
 

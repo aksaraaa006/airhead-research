@@ -64,7 +64,7 @@ import java.util.logging.Logger;
 public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
 
     private static final Logger LOGGER = 
-    Logger.getLogger(FileBasedTemporalSemanticSpace.class.getName());
+        Logger.getLogger(FileBasedTemporalSemanticSpace.class.getName());
 
     /**
      * A mapping of terms to row indexes.  Also serves as a quick means of

@@ -75,7 +75,7 @@ public interface SemanticSpace {
     /**
      * Returns the semantic vector for the provided word.
      *
-     * @param word a word in the semantic space
+     * @param word a word which may be in the semantic space
      *
      * @return The {@code Vector} for the provided word or {@code null} if the
      *          word was not in the space.

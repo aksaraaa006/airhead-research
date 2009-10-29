@@ -99,21 +99,6 @@ public class WordSimilarityEvaluationRunner {
     }
 
     /**
-     * Invokes the provided method, passing in the two {@code double} arrays as
-     * arguments.  This method is provided as an unchecked wrapper around the
-     * {@link Method#invoke(Object,Object[])) Method.invoke} call.
-     */
-    private static double invoke(Method m, double[] d1, double[] d2) {
-        try {
-            Double d = (Double)(m.invoke(null, new Object[] {d1, d2}));
-            return d.doubleValue();
-        } catch (Exception e) {
-            // generic catch and rethrow
-            throw new Error(e);
-        }
-    }
-
-    /**
      * A report of the performance of a {@link SemanticSpace} on a particular
      * {@link WordSimilarityEvaluation} test.
      */

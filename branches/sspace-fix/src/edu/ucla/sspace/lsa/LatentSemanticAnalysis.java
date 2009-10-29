@@ -166,21 +166,21 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * The prefix for naming publically accessible properties
      */
     private static final String PROPERTY_PREFIX =
-    "edu.ucla.sspace.lsa.LatentSemanticAnalysis";
+        "edu.ucla.sspace.lsa.LatentSemanticAnalysis";
 
     /**
      * The property to define the {@link Transform} class to be used
      * when processing the space after all the documents have been seen.
      */
     public static final String MATRIX_TRANSFORM_PROPERTY =
-    PROPERTY_PREFIX + ".transform";
+        PROPERTY_PREFIX + ".transform";
 
     /**
      * The property to set the number of dimension to which the space should be
      * reduced using the SVD
      */
     public static final String LSA_DIMENSIONS_PROPERTY =
-    PROPERTY_PREFIX + ".dimensions";
+        PROPERTY_PREFIX + ".dimensions";
 
     /**
      * The property to set the specific SVD algorithm used by an instance during
@@ -190,19 +190,19 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * {@link SVD}.
      */
     public static final String LSA_SVD_ALGORITHM_PROPERTY = 
-    PROPERTY_PREFIX + ".svd.algorithm";
+        PROPERTY_PREFIX + ".svd.algorithm";
 
     /**
      * The name prefix used with {@link #getName()}
      */
     private static final String LSA_SSPACE_NAME =
-     "lsa-semantic-space";
+        "lsa-semantic-space";
 
     /**
      * The logger used to record all output
      */
     private static final Logger LSA_LOGGER = 
-    Logger.getLogger(LatentSemanticAnalysis.class.getName());
+        Logger.getLogger(LatentSemanticAnalysis.class.getName());
 
     /**
      * A mapping from a word to the row index in the that word-document matrix
@@ -231,8 +231,9 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
     /**
      * The document space of the LSA model, which is the right factor matrix of
-     * the SVD of the word-document matrix.  This matrix is only available after the
-     * {@link #processSpace(Properties) processSpace} method has been called.
+     * the SVD of the word-document matrix.  This matrix is only available after
+     * the {@link #processSpace(Properties) processSpace} method has been
+     * called.
      */
     private Matrix documentSpace;
     
@@ -244,7 +245,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      *         the backing array files required for processing
      */
     public LatentSemanticAnalysis() throws IOException {
-    this(System.getProperties());
+        this(System.getProperties());
     }
 
     /**
@@ -363,7 +364,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
         Integer index = termToIndex.get(word);
         
         return (index == null)
-            ? null : wordSpace.getRowVector(index.intValue());
+            ? null
+            : wordSpace.getRowVector(index.intValue());
     }
 
     /**

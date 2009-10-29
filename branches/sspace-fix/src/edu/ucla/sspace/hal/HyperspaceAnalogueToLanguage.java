@@ -154,7 +154,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-    "edu.ucla.sspace.hal.HyperspaceAnalogueToLanguage";
+        "edu.ucla.sspace.hal.HyperspaceAnalogueToLanguage";
     
     /**
      * The property to specify the minimum entropy theshold a word should have
@@ -162,28 +162,28 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * of this property should be a double
      */
     public static final String ENTROPY_THRESHOLD_PROPERTY =
-    PROPERTY_PREFIX + ".threshold";
+        PROPERTY_PREFIX + ".threshold";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String WINDOW_SIZE_PROPERTY =
-    PROPERTY_PREFIX + ".windowSize";
+        PROPERTY_PREFIX + ".windowSize";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String RETAIN_PROPERTY =
-    "edu.ucla.sspace.hal.retainColumns";
+        "edu.ucla.sspace.hal.retainColumns";
 
     /**
      * The property to set the {@link WeightingFunction} to be used with
      * weighting the co-occurrence of neighboring words based on their distance.
      */
     public static final String WEIGHTING_FUNCTION_PROPERTY =
-    "edu.ucla.sspace.hal.weighting";
+        "edu.ucla.sspace.hal.weighting";
     
     /**
      * The default number of words before and after the focus word to include
@@ -194,13 +194,13 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The default {@code WeightingFunction} to use.
      */        
     public static final WeightingFunction DEFAULT_WEIGHTING = 
-    new LinearWeighting();
+        new LinearWeighting();
 
     /**
      * Logger for HAL
      */
     private static final Logger LOGGER = 
-    Logger.getLogger(HyperspaceAnalogueToLanguage.class.getName());
+        Logger.getLogger(HyperspaceAnalogueToLanguage.class.getName());
 
     /**
      * Map that pairs the word with it's position in the matrix
@@ -266,9 +266,9 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * Creates an instance of {@link WeightingFunction} based on the provide
      * class name.
      */
-    @SuppressWarnings("unchecked")
     private static WeightingFunction loadWeightingFunction(String classname) {
         try {
+            @SuppressWarnings("unchecked")
             Class<WeightingFunction> clazz = 
             (Class<WeightingFunction>)Class.forName(classname);
             WeightingFunction wf = clazz.newInstance();
@@ -398,9 +398,9 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         Integer index = termToIndex.get(word);
         if (index == null)
             return null;
+        // If the matrix hasn't had columns dropped then the returned vector
+        // will be the combination of the word's row and column
         else if (reduced == null) {
-            // If the matrix hasn't had columns dropped then the returned vector
-            // will be the combination of the word's row and column
             Vector vector =
                 new CompactSparseVector(cooccurrenceMatrix.columns() * 2);
                     
@@ -420,10 +420,11 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
                     vector.set(i, col[i]);
             }
             return vector;
-        } else {
-            // The co-occurrence matrix has had columns dropped so the vector is
-            // just the word's row
-                return reduced.getRowVector(index);
+        }
+        // The co-occurrence matrix has had columns dropped so the vector is
+        // just the word's row
+        else {
+            return reduced.getRowVector(index);
         }
     }
 
@@ -459,7 +460,8 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
             throw new IllegalArgumentException(
             "Cannot define the " + ENTROPY_THRESHOLD_PROPERTY + " and " +
             RETAIN_PROPERTY + " properties at the same time");
-        } else if (userDefinedThresh != null) {        
+        }
+        else if (userDefinedThresh != null) {        
             try {
                 double threshold = Double.parseDouble(userDefinedThresh);
                 thresholdColumns(threshold);
@@ -468,7 +470,8 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
                     ENTROPY_THRESHOLD_PROPERTY + " is not an number: " +
                     userDefinedThresh);
             }
-        } else if (retainProp != null) {
+        }
+        else if (retainProp != null) {
             try {
                 int toRetain = Integer.parseInt(retainProp);
                 retainOnly(toRetain);
@@ -477,8 +480,9 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
                 RETAIN_PROPERTY + " is not an number: " +
                 userDefinedThresh);
             }
-        } else {
-            // The default is not to drop any columns
+        }
+        // The default is not to drop any columns
+        else {
             return;
         }
     }

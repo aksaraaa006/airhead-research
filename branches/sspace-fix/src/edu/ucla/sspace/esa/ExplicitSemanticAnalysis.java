@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -9,7 +9,7 @@
  * by the Free Software Foundation and distributed hereunder to you.
  *
  * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
- * EXPRESS OR IMPLIED ARE MADE.    BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
  * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
  * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
  * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -70,7 +71,7 @@ import java.util.logging.Logger;
  *
  * </ul>
  *
- * @author David Jurgens
+ * @author Keith Stevens 
  */
 public class ExplicitSemanticAnalysis implements DocumentSpace {
     public static final String ESA_SSPACE_NAME =
@@ -96,7 +97,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     /**
      * A mapping from a wiki dimension to it's article title.
      */
-    private final ArrayList<String> indexToArticle;
+    private final List<String> indexToArticle;
 
     /**
      * The total number of articles seen so far.

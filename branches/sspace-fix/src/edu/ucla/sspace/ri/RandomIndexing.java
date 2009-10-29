@@ -191,55 +191,55 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RandomIndexing implements SemanticSpace, Filterable {
 
     public static final String RI_SSPACE_NAME =
-    "random-indexing";
+        "random-indexing";
 
     /**
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-    "edu.ucla.sspace.ri.RandomIndexing";
+        "edu.ucla.sspace.ri.RandomIndexing";
 
     /**
      * The property to specify the number of dimensions to be used by the index
      * and semantic vectors.
      */
     public static final String VECTOR_LENGTH_PROPERTY = 
-    PROPERTY_PREFIX + ".vectorLength";
+        PROPERTY_PREFIX + ".vectorLength";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String WINDOW_SIZE_PROPERTY = 
-    PROPERTY_PREFIX + ".windowSize";
+        PROPERTY_PREFIX + ".windowSize";
 
     /**
      * The property to specify whether the index vectors for co-occurrent words
      * should be permuted based on their relative position.
      */
     public static final String USE_PERMUTATIONS_PROPERTY = 
-    PROPERTY_PREFIX + ".usePermutations";
+        PROPERTY_PREFIX + ".usePermutations";
 
     /**
      * The property to specify the fully qualified named of a {@link
      * PermutationFunction} if using permutations is enabled.
      */
     public static final String PERMUTATION_FUNCTION_PROPERTY = 
-    PROPERTY_PREFIX + ".permutationFunction";
+        PROPERTY_PREFIX + ".permutationFunction";
 
     /**
      * The property to specify the {@link IndexVectorGenerator} class to use for
      * generating {@code IndexVector} instances.
      */
     public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
-    PROPERTY_PREFIX + ".indexVectorGenerator";
+        PROPERTY_PREFIX + ".indexVectorGenerator";
 
     /**
      * Specifies whether to use a sparse encoding for each word's semantics,
      * which saves space but requires more computation.
      */
     public static final String USE_SPARSE_SEMANTICS_PROPERTY = 
-    PROPERTY_PREFIX + ".sparseSemantics";
+        PROPERTY_PREFIX + ".sparseSemantics";
 
     /**
      * The default number of words to view before and after each word in focus.
@@ -317,7 +317,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      * System} properties for configuration.
      */
     public RandomIndexing() {
-    this(System.getProperties());
+        this(System.getProperties());
     }
 
     /**
@@ -383,8 +383,8 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     @SuppressWarnings("unchecked")
-     private static IndexVectorGenerator loadIndexVectorGenerator(
-             String className, Properties properties) {
+    private static IndexVectorGenerator loadIndexVectorGenerator(
+            String className, Properties properties) {
         try {
             Class clazz = Class.forName(className);
             Constructor c = clazz.getConstructor(Properties.class);

@@ -48,7 +48,8 @@ public class Vectors {
     }
 
     /**
-     * Return an {@code AtomicVector} for the given {@code Vector}.
+     * Return thread safe version of a {@code Vector} that guarantees atomic
+     * access to all operations.
      *
      * @param vector The {@code Vector} to decorate as atomic.
      * @return An atomic version of {@code vector}.

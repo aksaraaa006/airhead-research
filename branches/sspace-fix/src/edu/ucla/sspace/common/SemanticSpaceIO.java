@@ -414,9 +414,6 @@ public class SemanticSpaceIO {
         for (int i = 0; i < v.length(); ++i) {
             dos.writeDouble(v.get(i));
 	    }
-        // Some vectors may have a shorter length, so pad extra dimensions.
-        for (int i = v.length(); i < sspace.getVectorLength(); ++i)
-            dos.writeDouble(0);
 	}
 	dos.close();
     }

@@ -19,9 +19,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TODO make sure similarity methods don't choke when vectors are of different
-// lengths.
-//
 package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.vector.Vector;
@@ -70,18 +67,19 @@ public class Similarity {
      *
      * @throws Error if a {@link NoSuchMethodException} is thrown
      */
-    @Deprecated public static Method getMethod(SimType similarityType) {
+    @Deprecated
+     public static Method getMethod(SimType similarityType) {
         String methodName = null;
-	switch (similarityType) {
-	case COSINE:
-	    methodName = "cosineSimilarity";
-	    break;
-	case PEARSON_CORRELATION:
-	    methodName = "correlation";
-	    break;
-	case EUCLIDEAN:
-	    methodName = "euclideanSimilarity";
-	    break;
+        switch (similarityType) {
+        case COSINE:
+            methodName = "cosineSimilarity";
+            break;
+        case PEARSON_CORRELATION:
+            methodName = "correlation";
+            break;
+        case EUCLIDEAN:
+            methodName = "euclideanSimilarity";
+            break;
         case SPEARMAN_RANK_CORRELATION:
             methodName = "spearmanRankCorrelationCoefficient";
             break;
@@ -90,8 +88,8 @@ public class Similarity {
             break;
         default:
             assert false : similarityType;
-	}
- 	Method m = null;
+        }
+         Method m = null;
         try { 
             m = Similarity.class.getMethod(methodName,
                            new Class[] {double[].class, double[].class});
@@ -193,6 +191,9 @@ public class Similarity {
 
     /**
      * Returns the cosine similarity of the two arrays.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double cosineSimilarity(double[] a, double[] b) {
         check(a,b);
@@ -215,11 +216,13 @@ public class Similarity {
         
     /**
      * Returns the cosine similarity of the two arrays.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double cosineSimilarity(int[] a, int[] b) {
-        if (a.length != b.length) {
-            return -1;
-        }
+        check(a, b);
+
         long dotProduct = 0;
         long aMagnitude = 0;
         long bMagnitude = 0;
@@ -240,6 +243,9 @@ public class Similarity {
 
     /**
      * Returns the cosine similarity of the two {@code Vector}.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double cosineSimilarity(Vector a, Vector b) {
         check(a,b);
@@ -263,8 +269,13 @@ public class Similarity {
     /**
      * Returns the Pearson product-moment correlation coefficient of the two
      * arrays.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double correlation(double[] arr1, double[] arr2) {
+        check(arr1, arr2);
+
         // REMINDER: this could be made more effecient by not looping
         double xSum = 0;
         double ySum = 0;
@@ -290,8 +301,13 @@ public class Similarity {
     /**
      * Returns the Pearson product-moment correlation coefficient of the two
      * arrays.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double correlation(int[] arr1, int[] arr2) {
+        check(arr1, arr2);
+
         // REMINDER: this could be made more effecient by not looping
         long xSum = 0;
         long ySum = 0;
@@ -317,8 +333,13 @@ public class Similarity {
     /**
      * Returns the Pearson product-moment correlation coefficient of the two
      * {@code Vector}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double correlation(Vector arr1, Vector arr2) {
+        check(arr1, arr2);
+
         // REMINDER: this could be made more effecient by not looping
         double xSum = 0;
         double ySum = 0;
@@ -342,6 +363,8 @@ public class Similarity {
     }
 
     public static double euclideanDistance(double[] a, double[] b) {
+        check(a, b);
+
         if (a == null || b == null || a.length != b.length)
             throw new IllegalArgumentException("a: " + a + "; b: " + b);
         
@@ -384,6 +407,9 @@ public class Similarity {
     /**
      * Computes the Jaccard index comparing the similarity both arrays when
      * viewed as sets of samples.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double jaccardIndex(double[] a, double[] b) {
         check(a, b);
@@ -407,6 +433,9 @@ public class Similarity {
     /**
      * Computes the Jaccard index comparing the similarity both arrays when
      * viewed as sets of samples.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double jaccardIndex(int[] a, int[] b) {
         check(a, b);
@@ -436,7 +465,10 @@ public class Similarity {
 
     /**
      * Computes the Jaccard index comparing the similarity both {@code
-     * Vector}swhen viewed as sets of samples.
+     * Vector}s when viewed as sets of samples.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double jaccardIndex(Vector a, Vector b) {
         check(a, b);
@@ -463,6 +495,9 @@ public class Similarity {
      * Computes the Spearman rank correlation coefficient for the two arrays.
      * If there is a tie in the ranking of {@code a}, then Pearson's
      * product-moment coefficient is returned instead.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double spearmanRankCorrelationCoefficient(double[] a, 
                                                             double[] b) {
@@ -476,7 +511,7 @@ public class Similarity {
         Arrays.sort(sortedB);
         Map<Double,Integer> otherRanking = new HashMap<Double,Integer>();
         for (int i = 0; i < b.length; ++i) {
-        otherRanking.put(sortedB[i], i);
+            otherRanking.put(sortedB[i], i);
         }
         
         // keep track of the last value we saw in the key set so we can check
@@ -516,6 +551,9 @@ public class Similarity {
      * Computes the Spearman rank correlation coefficient for the two arrays.
      * If there is a tie in the ranking of {@code a}, then Pearson's
      * product-moment coefficient is returned instead.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double spearmanRankCorrelationCoefficient(int[] a, int[] b) {
         check(a,b);
@@ -568,6 +606,9 @@ public class Similarity {
      * Computes the Spearman rank correlation coefficient for the two {@code
      * Vector}s.  If there is a tie in the ranking of {@code a}, then Pearson's
      * product-moment coefficient is returned instead.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
      */
     public static double spearmanRankCorrelationCoefficient(Vector a, 
                                                             Vector b) {

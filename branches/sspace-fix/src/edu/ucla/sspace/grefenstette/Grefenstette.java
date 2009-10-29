@@ -469,6 +469,9 @@ public class Grefenstette implements SemanticSpace {
             if(wordIndex < syntacticCooccurrence.rows()) {
                 return syntacticCooccurrence.getRowVector(wordIndex);
             }
+            // At this section, several exception handlers were removed.  These
+            // may have been superfluous, or the code may have relied on them
+            // being caught.
         }
         return null;
     }
