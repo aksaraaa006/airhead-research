@@ -344,7 +344,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
 	    properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
 	permutationFunc = (permutationFuncProp != null)
 	    ? loadPermutationFunction(permutationFuncProp)
-	    : null; //new DefaultPermutationFunction;
+	    : new DefaultPermutationFunction();
 
 	String ivgProp = 
 	    properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
