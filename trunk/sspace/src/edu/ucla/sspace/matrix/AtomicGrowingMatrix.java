@@ -183,7 +183,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     public double[] getRow(int row) {
         checkIndices(row, 0);
         AtomicVector rowEntry = getRow(row, -1, false);
-        return (rowEntroy == null)
+        return (rowEntry == null)
             ? new double[cols.get()]
             : rowEntry.toArray(cols.get());
     }
