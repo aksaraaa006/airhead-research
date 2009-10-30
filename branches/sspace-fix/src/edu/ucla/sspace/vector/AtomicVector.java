@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Keith Stevens
  */
-class AtomicVector implements Vector {
+public class AtomicVector implements Vector {
 
     /**
      * The original {@code Vector} that this {@code AtomicVector} decorates.
