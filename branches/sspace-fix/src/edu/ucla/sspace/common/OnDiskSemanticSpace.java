@@ -305,7 +305,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
      */
     private int loadSparseTextOffsets(RandomAccessBufferedReader textSSpace) 
-        throws IOException {
+            throws IOException {
         String line = textSSpace.readLine();
         if (line == null)
             throw new IOError(new Throwable(
@@ -373,7 +373,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
     private int loadBinaryOffsets(RandomAccessFile binarySSpace) 
-        throws IOException {
+            throws IOException {
 
         // Reader off the 4-byte header if it exists
         if (containsHeader)
@@ -425,7 +425,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
     private int loadSparseBinaryOffsets(RandomAccessFile binarySSpace) 
-        throws IOException {
+            throws IOException {
         // Reader off the 4-byte header if it exists
         if (containsHeader) {
              int header = binarySSpace.readInt();
