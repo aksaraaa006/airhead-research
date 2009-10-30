@@ -1,3 +1,12 @@
 #summary Coding standards for the SSpace code packages
 
-We use the Java coding conventions: [http://java.sun.com/docs/codeconv/html/CodeConvTOC.doc.html]
+We use an extension of the Java coding conventions: [http://java.sun.com/docs/codeconv/html/CodeConvTOC.doc.html]
+
+With regards to spacing, there are a few rules:
+  * No tabs should be use.
+  * Every indentation uses 4 spaces.
+  * Every class starts with a new line.
+  * Major code blocks should be separated with a new line.
+  * If a method declaration is split, the arguments should all line up.
+     * Indentations must be at least 4 spaces deeper than the code indentation.
+  * If a method declaration is split, any thows statements must be indented by 8 spaces.
