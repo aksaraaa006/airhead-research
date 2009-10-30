@@ -26,6 +26,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
+import edu.ucla.sspace.index.RandomIndexUser;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
 
@@ -113,6 +114,9 @@ public class HermitMain extends GenericMain {
                           "The number of words before, and after the focus " +
                           "term to inspect",
                           true, "INT,INT", "Process Properties");
+        options.addOption('p', "usePermutations",
+                          "Set to true if permutations should be used",
+                          true, "BOOL", "Process Properties");
         options.addOption('m', "replacementMap",
                           "A file which specifies mappings between terms " + 
                           "and their replacements",
@@ -187,6 +191,11 @@ public class HermitMain extends GenericMain {
                                Integer.toString(dimension));
             System.setProperty(IndexUser.WINDOW_SIZE_PROPERTY,
                                windowValue);
+            if (argOptions.hasOption("usePermutations") &&
+                argOptions.getStringOption("usePermutations").equals("true"))
+                System.setProperty(RandomIndexUser.USE_PERMUTATION_PROPERTY,
+                                   "true");
+
             user = (IndexUser) (userClazz.newInstance());
         } catch (Exception e) {
             throw new Error(e);
