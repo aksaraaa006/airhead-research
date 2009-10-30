@@ -40,7 +40,7 @@ package edu.ucla.sspace.vector;
  *
  * @author Keith Stevens
  */
-public class ViewVector implements Vector {
+class ViewVector implements Vector {
 
     /**
      * The actual vector this {@code ViewVector} is decorating.
