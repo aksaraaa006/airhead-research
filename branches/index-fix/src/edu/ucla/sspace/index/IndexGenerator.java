@@ -65,17 +65,6 @@ public interface IndexGenerator {
     public void saveIndexVectors(File vectorFile);
 
     /**
-     * Return a new, emtpy {@code Vector} appropriate for use with a specific
-     * {@code IndexBuilder}.  For {@code IndexBuilder}s which use a dense
-     * representation internally, a {@code DenseVector} would be appropriate,
-     * whereas a {@code SparseVector} would be fitting for {@code IndexBuilder}s
-     * which utilize sparse representations internally.
-     *
-     * @return a {@Vector} having the same type as the vectors used internally.
-     */
-    public Vector getEmtpyVector();
-
-    /**
      * Return an index {@code Vector} for the given term, if no {@code Vector}
      * exists for {@code term}, then generate a new one.  Any modification done
      * by this method must be thread safe.

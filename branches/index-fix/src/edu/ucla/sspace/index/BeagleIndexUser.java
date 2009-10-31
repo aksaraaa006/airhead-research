@@ -103,7 +103,7 @@ public class BeagleIndexUser implements IndexUser {
     private int[] permute2;
 
     /**
-     * Create a {@code BeagleIndexBuiler} which uses the {@code
+     * Creates a {@code BeagleIndexBuiler} which uses the {@code
      * DEFAULT_INDEX_VECTOR_SIZE} as the length of each {@code Vector} generated
      * in this {@code IndexUser}.
      */
@@ -112,7 +112,7 @@ public class BeagleIndexUser implements IndexUser {
     }
 
     /**
-     * Create a {@code BeagleIndexUser} which uses {@code vectorLength} as
+     * Creates a {@code BeagleIndexUser} which uses {@code vectorLength} as
      * the size of each generated {@code Vector}.
      *
      * @param vectorLength The length of each index and semantic {@code Vector}
@@ -142,30 +142,15 @@ public class BeagleIndexUser implements IndexUser {
     }
 
     /**
-     * Initialize this {@code BeagleIndexUser}.
+     * Initializes this {@code BeagleIndexUser}.
      */
     private void init(int s, Vector holder) {
     }
 
     /**
-     * Populate the given array with values 0 to {@code indexVectorLength}, and
-     * then shuffly the values randomly.
-     */
-    private void randomPermute(int[] permute) {
-        for (int i = 0; i < indexVectorLength; i++)
-            permute[i] = i;
-        for (int i = indexVectorLength - 1; i > 0; i--) {
-            int w = (int) Math.floor(Math.random() * (i+1));
-            int temp = permute[w];
-            permute[w] = permute[i];
-            permute[i] = permute[w];
-        }
-    }
-
-    /**
      * {@inheritDoc}
      *
-     * </p>Add a holograph encoding the co-occurance information, and the
+     * </p>Adds a holograph encoding the co-occurance information, and the
      * ordering information of the given context.  {@code termVector} will be
      * added to the result {@code Vector}, and then the convolution of any prior
      * convoluted n-grams will be convoluted with the given {@code termVector}
@@ -205,6 +190,28 @@ public class BeagleIndexUser implements IndexUser {
         Vectors.add(focusVector, secondConvolution);
 
         return focusVector;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getEmtpyVector() {
+        return new DenseVector(indexVectorLength);
+    }
+
+    /**
+     * Populates the given array with values 0 to {@code indexVectorLength}, and
+     * then shuffly the values randomly.
+     */
+    private void randomPermute(int[] permute) {
+        for (int i = 0; i < indexVectorLength; i++)
+            permute[i] = i;
+        for (int i = indexVectorLength - 1; i > 0; i--) {
+            int w = (int) Math.floor(Math.random() * (i+1));
+            int temp = permute[w];
+            permute[w] = permute[i];
+            permute[i] = permute[w];
+        }
     }
 
     /**

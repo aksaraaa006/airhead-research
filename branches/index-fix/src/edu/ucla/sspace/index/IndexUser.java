@@ -79,4 +79,14 @@ public interface IndexUser {
     public Vector generateMeaning(Vector focusVector,
                                   Vector termVector,
                                   int distance);
+    /**
+     * Return a new, emtpy {@code Vector} appropriate for use with a specific
+     * {@code IndexBuilder}.  For {@code IndexBuilder}s which use a dense
+     * representation internally, a {@code DenseVector} would be appropriate,
+     * whereas a {@code SparseVector} would be fitting for {@code IndexBuilder}s
+     * which utilize sparse representations internally.
+     *
+     * @return a {@Vector} having the same type as the vectors used internally.
+     */
+    public Vector getEmtpyVector();
 }

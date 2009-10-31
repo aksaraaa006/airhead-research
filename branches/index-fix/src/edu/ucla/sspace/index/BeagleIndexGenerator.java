@@ -176,18 +176,11 @@ public class BeagleIndexGenerator implements IndexGenerator {
     }
 
     /**
-     * Return an empty dense semantic vector.
-     */
-    public Vector getEmtpyVector() {
-        return new DenseVector(indexVectorLength);
-    }
-
-    /**
      * Generate a new random vector using a guassian distribution for each
      * value.
      */
     private Vector generateRandomVector() {
-        Vector termVector = getEmtpyVector();
+        Vector termVector = new DenseVector(indexVectorLength);
         for (int i = 0; i < indexVectorLength; i++)
             termVector.set(i, randomGenerator.nextGaussian() * stdev);
         return termVector;

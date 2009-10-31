@@ -173,13 +173,6 @@ public class RandomIndexGenerator implements IndexGenerator {
     }
 
     /**
-     * {@inheritDoc}.
-     */
-    public Vector getEmtpyVector() {
-        return new CompactSparseVector(indexVectorLength);
-    }
-
-    /**
      * Creates an {@code IndexVector} with the provided length.
      *
      * @param length the length of the index vector

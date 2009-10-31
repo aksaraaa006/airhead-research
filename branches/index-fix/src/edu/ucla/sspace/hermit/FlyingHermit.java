@@ -111,7 +111,7 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * The class responsible for combining index vectors.
      */
-    private final IndexUser indexUser;
+    private final Class indexUserClazz;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -147,14 +147,14 @@ public class FlyingHermit implements SemanticSpace {
      * Create a new instance of {@code FlyingHermit} which takes ownership
      */
     public FlyingHermit(IndexGenerator generator,
-                        IndexUser user,
+                        Class userClazz,
                         BottomUpVectorClusterMap cluster,
                         int vectorSize,
                         int prevWordsSize,
                         int nextWordsSize) {
         indexVectorSize = vectorSize;
         indexGenerator = generator;
-        indexUser = user;
+        indexUserClazz = userClazz;
         clusterMap = cluster;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
@@ -198,8 +198,14 @@ public class FlyingHermit implements SemanticSpace {
 
         Iterator<String> it = IteratorFactory.tokenize(document);
 
-        Map<String, Vector> documentHolographs =
-            new HashMap<String, Vector>();
+        IndexUser indexUser = null;
+        try {
+            indexUser = (IndexUser) indexUserClazz.newInstance();
+        } catch (Exception ie) {
+            throw new Error(ie);
+        }
+
+        Map<String, Vector> documentContexts = new HashMap<String, Vector>();
 
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
@@ -219,10 +225,10 @@ public class FlyingHermit implements SemanticSpace {
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
-            Vector meaning = documentHolographs.get(focusWord);
+            Vector meaning = documentContexts.get(focusWord);
             if (meaning == null) {
-                meaning = indexGenerator.getEmtpyVector();
-                documentHolographs.put(focusWord, meaning);
+                meaning = indexUser.getEmtpyVector();
+                documentContexts.put(focusWord, meaning);
             }
 
             // Process the previous words, specifying their distance from the
@@ -254,7 +260,7 @@ public class FlyingHermit implements SemanticSpace {
         // vector with the highest similarity has a similarity over a threshold,
         // incorporate this {@code Vector} to that winner.  Otherwise add this
         // {@code Vector} as a new vector for the term.
-        for (Map.Entry<String, Vector> entry : documentHolographs.entrySet())
+        for (Map.Entry<String, Vector> entry : documentContexts.entrySet())
             clusterMap.addVector(entry.getKey(), entry.getValue());
     }
     
@@ -262,7 +268,6 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-	    //HERMIT_LOGGER.info("Starting with " + termVectors.size() + " terms.");
         splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
         for (String term : terms) {
@@ -270,22 +275,22 @@ public class FlyingHermit implements SemanticSpace {
             int i = 0;
             for (List<Vector> cluster : clusters) {
                 Vector sense = null;
+                HERMIT_LOGGER.info("There are " + cluster.size() +
+                                   " senses for word " + term);
                 for (Vector v : cluster) {
                     if (sense == null)
-                        sense = Vectors.copyOf(cluster.get(0));
+                        sense = Vectors.copyOf(v);
                     else
                         Vectors.add(sense, v);
                 }
+                if (sense == null) 
+                    HERMIT_LOGGER.info("THIS SHOULDNOT HAPPENERKE");
                 splitSenses.put(term + "-" + i, sense);
-                HERMIT_LOGGER.info("Adding sense" + term + "-" + i);
                 ++i;
             }
             clusterMap.removeClusters(term);
         }
 
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
-        Set<String> words = getWords();
-        for (String term : words)
-            System.out.println(term);
     }
 }

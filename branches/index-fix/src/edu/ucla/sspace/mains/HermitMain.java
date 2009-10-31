@@ -48,33 +48,9 @@ import java.util.Properties;
  * command line.  This class takes in several command line arguments.
  *
  * <ul>
- *
- * <li> {@code --dimensions=<int>} how many dimensions to use for the LSA
- *      vectors.  See {@link Hermit} for default value
- * 
- * <li> {@code --holographsize} length of the holograph vectors used in
- *      conjuction with the lsa term-document matrix.  by default 2048.
- *
- * <li> {@code --generator} class name of the
- *      {@link edu.ucla.sspace.common.IndexBuilder} used to compose the
- *      holograph vectors.  Currently only accepts "BeagleIndexBuilder" and
- *      "RandomIndexBuilder".
  * </ul>
  *
  * <p>
- *
- * An invocation will produce one file as output {@code
- * hermit-semantic-space.sspace}.  If {@code overwrite} was set to {@code true},
- * this file will be replaced for each new semantic space.  Otherwise, a new
- * output file of the format {@code hermit-semantic-space<number>.sspace} will
- * be created, where {@code <number>} is a unique identifier for that program's
- * invocation.  The output file will be placed in the directory specified on the
- * command line.
- *
- * <p>
- *
- * This class is desgined to run multi-threaded and performs well with one
- * thread per core, which is the default setting.
  *
  * @see FlyingHermit
  *
@@ -89,7 +65,7 @@ public class HermitMain extends GenericMain {
     private int prevWordsSize;
     private int nextWordsSize;
     private IndexGenerator generator;
-    private IndexUser user;
+    private Class indexUserClazz;
     private BottomUpVectorClusterMap clusterMap;
 
     private HermitMain() {
@@ -103,12 +79,12 @@ public class HermitMain extends GenericMain {
         // the generator class to use, the user class to use, the window sizes
         // that should be inspected and the set of terms to replace during
         // processing.
-        options.addOption('h', "holographsize",
-                          "The size of the holograph vectors",
+        options.addOption('l', "vectorLength",
+                          "The size of the vectors",
                           true, "INT", "Process Properties");
         options.addOption('g', "generator", "IndexGenerator to use for hermit",
                           true, "CLASSNAME", "Process Properties");
-        options.addOption('u', "user", "IndexUser to use for hermit",
+        options.addOption('e', "user", "IndexUser to use for hermit",
                           true, "CLASSNAME", "Process Properties");
         options.addOption('s', "windowSize",
                           "The number of words before, and after the focus " +
@@ -116,7 +92,10 @@ public class HermitMain extends GenericMain {
                           true, "INT,INT", "Process Properties");
         options.addOption('p', "usePermutations",
                           "Set to true if permutations should be used",
-                          true, "BOOL", "Process Properties");
+                          false, null, "Process Properties");
+        options.addOption('u', "useDenseSemantics",
+                          "Set to true if dense vectors should be used",
+                          false, null, "Process Properties");
         options.addOption('m', "replacementMap",
                           "A file which specifies mappings between terms " + 
                           "and their replacements",
@@ -125,7 +104,7 @@ public class HermitMain extends GenericMain {
         // Add arguments for setting clustering properties such as the
         // similarity threshold, maximum number of senses to create, and the
         // clustering mechanism to use. 
-        options.addOption('e', "threshold",
+        options.addOption('h', "threshold",
                           "The threshold for clustering similar context " +
                           "vectors", true, "DOUBLE", "Cluster Properties");
         options.addOption('c', "senseCount",
@@ -155,8 +134,8 @@ public class HermitMain extends GenericMain {
     }
     
     public void handleExtraOptions() {
-        dimension = (argOptions.hasOption("holographsize"))
-            ? argOptions.getIntOption("holographsize")
+        dimension = (argOptions.hasOption("vectorLength"))
+            ? argOptions.getIntOption("vectorLength")
             : DEFAULT_DIMENSION;
 
         // Process the window size arguments;
@@ -186,17 +165,17 @@ public class HermitMain extends GenericMain {
             ? argOptions.getStringOption("user")
             : "edu.ucla.sspace.index.RandomIndexUser";
         try {
-            Class userClazz = Class.forName(userType);
+            indexUserClazz = Class.forName(userType);
             System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
                                Integer.toString(dimension));
             System.setProperty(IndexUser.WINDOW_SIZE_PROPERTY,
                                windowValue);
-            if (argOptions.hasOption("usePermutations") &&
-                argOptions.getStringOption("usePermutations").equals("true"))
+            if (argOptions.hasOption("usePermutations"))
                 System.setProperty(RandomIndexUser.USE_PERMUTATION_PROPERTY,
                                    "true");
-
-            user = (IndexUser) (userClazz.newInstance());
+            if (argOptions.hasOption("useDenseSemantics"))
+                System.setProperty(RandomIndexUser.USE_DENSE_SEMANTICS_PROPERTY,
+                                   "true");
         } catch (Exception e) {
             throw new Error(e);
         }
@@ -230,7 +209,7 @@ public class HermitMain extends GenericMain {
     }
 
     public SemanticSpace getSpace() {
-        return new FlyingHermit(generator, user, clusterMap,
+        return new FlyingHermit(generator, indexUserClazz, clusterMap,
                                 dimension, prevWordsSize, nextWordsSize);
     }
 

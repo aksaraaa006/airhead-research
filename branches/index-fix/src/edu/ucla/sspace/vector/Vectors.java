@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.lang.reflect.Constructor;
+
 
 /**
  * A collection of methods on {@code Vector}s, following a format similar to
@@ -164,6 +166,7 @@ public class Vectors {
      */
     public static Vector copyOf(Vector source) {
         Vector result = null;
+
         if (source instanceof DenseVector) {
             result = new DenseVector(source.length());
             for (int i = 0; i < source.length(); ++i)
@@ -174,6 +177,18 @@ public class Vectors {
         } else if (source instanceof AmortizedSparseVector) {
             result = new AmortizedSparseVector(source.length());
             copyFromSparseVector(result, (SparseVector) source);
+        } else {
+            // Create a copy of the given class using reflection.  This code
+            // assumes that the given implemenation of Vector has a constructor
+            // which accepts another Vector.
+            try {
+                Class<? extends Vector> sourceClazz = source.getClass();
+                Constructor<? extends Vector> constructor =
+                    sourceClazz.getConstructor(Vector.class);
+                result = (Vector) constructor.newInstance(source);
+            } catch (Exception e) {
+                throw new Error(e);
+            }
         }
         return result;
     }
