@@ -200,6 +200,13 @@ public class BeagleIndexUser implements IndexUser {
     }
 
     /**
+     * Returns a string describing this {@code IndexUser}.
+     */
+    public String toString() {
+        return "BeagleIndexUser";
+    }
+
+    /**
      * Populates the given array with values 0 to {@code indexVectorLength}, and
      * then shuffly the values randomly.
      */

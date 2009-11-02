@@ -196,6 +196,13 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     }
 
     /**
+     * Returns a string describing this {@code ClusterMap}.
+     */
+    public String toString() {
+        return "SimpleClusterMap";
+    }
+
+    /**
      * A simple class which represents a single cluster in the Exemplar model.
      * In this, the {@code MAX_EXEMPLARS} most recent {@code Vector}s are stored
      * in this cluster, with all other vectors being summed into a centroied
@@ -249,4 +256,5 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             }
         }
     }
+
 }

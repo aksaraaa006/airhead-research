@@ -114,6 +114,12 @@ public class FlyingHermit implements SemanticSpace {
     private final Class indexUserClazz;
 
     /**
+     * A fixed String describing the {@code IndexUser} that {@code FlyingHermit}
+     * uses.
+     */
+    private final String indexUserDescription;
+
+    /**
      * A mapping from a term sense to it's semantic representation.  This
      * differs from {@code TermHolographs} in that it is index by keys of the
      * form "term-senseNum", and map directly to only one of the term's
@@ -158,6 +164,13 @@ public class FlyingHermit implements SemanticSpace {
         clusterMap = cluster;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
+
+        try {
+            IndexUser indexUser = (IndexUser) indexUserClazz.newInstance();
+            indexUserDescription = indexUser.toString();
+        } catch (Exception ie) {
+            throw new Error(ie);
+        }
     }
 
     /**
@@ -179,7 +192,10 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-        return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize;
+        return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize + 
+               "-w" + prevSize + "_" + nextSize +
+               "-" + indexUserDescription.toString() +
+               "-" + clusterMap.toString();
     }
 
     /**
@@ -196,7 +212,8 @@ public class FlyingHermit implements SemanticSpace {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
 
-        Iterator<String> it = IteratorFactory.tokenize(document);
+        Iterator<String> it =
+            IteratorFactory.tokenizeOrderedWithReplacement(document);
 
         IndexUser indexUser = null;
         try {
@@ -276,15 +293,14 @@ public class FlyingHermit implements SemanticSpace {
             for (List<Vector> cluster : clusters) {
                 Vector sense = null;
                 HERMIT_LOGGER.info("There are " + cluster.size() +
-                                   " senses for word " + term);
+                                   " instances for sense: " + i + 
+                                   " of word " + term);
                 for (Vector v : cluster) {
                     if (sense == null)
                         sense = Vectors.copyOf(v);
                     else
                         Vectors.add(sense, v);
                 }
-                if (sense == null) 
-                    HERMIT_LOGGER.info("THIS SHOULDNOT HAPPENERKE");
                 splitSenses.put(term + "-" + i, sense);
                 ++i;
             }

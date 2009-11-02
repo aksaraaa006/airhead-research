@@ -53,6 +53,7 @@ public class WordReplacementIterator implements Iterator<String> {
         baseIterator = base;
         replacementMap = map;
         next = null;
+        advance();
     }
 
     /**

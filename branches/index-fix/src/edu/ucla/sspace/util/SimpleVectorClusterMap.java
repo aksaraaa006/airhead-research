@@ -176,4 +176,11 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
     public synchronized int size() {
         return vectorClusters.size();
     }
+
+    /**
+     * Returns a string describing this {@code ClusterMap}.
+     */
+    public String toString() {
+        return "SimpleClusterMap";
+    }
 }
