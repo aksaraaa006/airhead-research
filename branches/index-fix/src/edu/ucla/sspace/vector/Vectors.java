@@ -55,8 +55,19 @@ public class Vectors {
      * @param vector The {@code Vector} to decorate as atomic.
      * @return An atomic version of {@code vector}.
      */
-    public static Vector atomicVector(Vector vector) {
+    public static AtomicVector atomicVector(Vector vector) {
         return new AtomicVector(vector);
+    }
+
+    /**
+     * Returns a syncrhonized view of a given {@code Vector}.  This may
+     * show slightly better performance than using an {@code AtomicVector}.
+     *
+     * @param vector The {@code Vector} to decorate as synchronized.
+     * @return An atomic version of {@code vector}.
+     */
+    public static SynchronizedVector synchronizedVector(Vector vector) {
+        return new SynchronizedVector(vector);
     }
 
     /**
@@ -103,6 +114,13 @@ public class Vectors {
      * @return The summation of {code vector1} and {@code vector2}.
      */
     public static Vector addUnmodified(Vector vector1, Vector vector2) {
+        if (vector1 == null && vector1 == null)
+            return null;
+        if (vector1 == null)
+            return copyOf(vector2);
+        if (vector2 == null)
+            return copyOf(vector1);
+
         // Skip vectors of different lengths.
         if (vector2.length() != vector1.length())
             return null;
@@ -255,11 +273,9 @@ public class Vectors {
      */
     private static void addIndexValues(Vector destination,
                                        IndexVector source) {
-        int[] positive = source.positiveDimensions();
-        int[] negative = source.negativeDimensions();
-        for (int p : positive)
+        for (int p : source.positiveDimensions())
             destination.add(p, 1);
-        for (int n : negative)
+        for (int n : source.negativeDimensions())
             destination.add(n, -1);
     }
 

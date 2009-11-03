@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.IndexVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;

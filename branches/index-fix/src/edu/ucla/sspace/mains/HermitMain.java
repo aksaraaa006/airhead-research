@@ -29,6 +29,7 @@ import edu.ucla.sspace.index.IndexUser;
 import edu.ucla.sspace.index.RandomIndexUser;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
+import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -64,6 +65,7 @@ public class HermitMain extends GenericMain {
     private int dimension;
     private int prevWordsSize;
     private int nextWordsSize;
+    private boolean useSecondOrder;
     private IndexGenerator generator;
     private Class indexUserClazz;
     private BottomUpVectorClusterMap clusterMap;
@@ -100,6 +102,9 @@ public class HermitMain extends GenericMain {
                           "A file which specifies mappings between terms " + 
                           "and their replacements",
                           true, "FILE", "Processing Properties");
+        options.addOption('O', "useSecondOrder",
+                          "Use second order co-occurances is set",
+                           false, null, "Process Properties");
 
         // Add arguments for setting clustering properties such as the
         // similarity threshold, maximum number of senses to create, and the
@@ -137,6 +142,8 @@ public class HermitMain extends GenericMain {
         dimension = (argOptions.hasOption("vectorLength"))
             ? argOptions.getIntOption("vectorLength")
             : DEFAULT_DIMENSION;
+
+        useSecondOrder = argOptions.hasOption("useSecondOrder");
 
         // Process the window size arguments;
         String windowValue = (argOptions.hasOption('w'))
@@ -209,8 +216,11 @@ public class HermitMain extends GenericMain {
     }
 
     public SemanticSpace getSpace() {
-        return new FlyingHermit(generator, indexUserClazz, clusterMap,
-                                dimension, prevWordsSize, nextWordsSize);
+        return (useSecondOrder)
+            ? new SecondOrderFlyingHermit(generator, indexUserClazz, clusterMap,
+                                          dimension, prevWordsSize, nextWordsSize)
+            : new FlyingHermit(generator, indexUserClazz, clusterMap,
+                               dimension, prevWordsSize, nextWordsSize);
     }
 
     public Properties setupProperties() {

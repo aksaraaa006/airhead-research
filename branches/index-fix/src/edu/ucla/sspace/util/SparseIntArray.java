@@ -171,7 +171,8 @@ public class SparseIntArray implements SparseArray<Integer> {
 
     /**
      * Sets the value of the index to the value using the Java primitives
-     * without auto-boxing.
+     * without auto-boxing.  if {@code value} is 0, and the value at {@code
+     * index} is already zero, this will be a no-op.
      */
     public void setPrimitive(int index, int value) {
         int pos = Arrays.binarySearch(indices, index);
@@ -225,8 +226,6 @@ public class SparseIntArray implements SparseArray<Integer> {
             values = newValues;
         }
 
-        // note that in the even of a set with value 0 where the pos was
-        // not present, this method is a no-op
     }
 
     /**
