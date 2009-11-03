@@ -292,17 +292,20 @@ public class FlyingHermit implements SemanticSpace {
             int i = 0;
             for (List<Vector> cluster : clusters) {
                 Vector sense = null;
-                HERMIT_LOGGER.info("There are " + cluster.size() +
-                                   " instances for sense: " + i + 
-                                   " of word " + term);
                 for (Vector v : cluster) {
                     if (sense == null)
                         sense = Vectors.copyOf(v);
                     else
                         Vectors.add(sense, v);
                 }
-                splitSenses.put(term + "-" + i, sense);
-                //HERMIT_LOGGER.info("Adding sense" + term + "-" + i);
+                String senseName = term;
+                if (i != 0)
+                    senseName += "-" + i;
+                splitSenses.put(senseName, sense);
+                HERMIT_LOGGER.info("There are " + cluster.size() +
+                                   " instances for sense: " + i + 
+                                   " of word " + term + 
+                                   " stored as: " + senseName);
                 ++i;
             }
             clusterMap.removeClusters(term);

@@ -60,9 +60,11 @@ public class HermitEvaluation {
         SemanticSpace controlSpace =
             SemanticSpaceIO.load(options.getStringOption("controlSpace"));
         for (String wordPair : wordList) {
-            String[] word1Word2 = wordPair.split("-");
-            for (String word : word1Word2)
-                controlVectors.put(word, controlSpace.getVectorFor(word));
+            String[] word1Word2 = wordPair.split(",");
+            controlVectors.put(word1Word2[0],
+                               controlSpace.getVectorFor(word1Word2[0]));
+            controlVectors.put(word1Word2[1],
+                               controlSpace.getVectorFor(word1Word2[1]));
         }
 
         // Load up the vectors from the hermit sense and compare them to the
@@ -74,17 +76,23 @@ public class HermitEvaluation {
 
         int senseCount =  options.getIntOption('n');
         for (String wordPair : wordList) {
-            String[] word1Word2 = wordPair.split("-");
+            String[] word1Word2 = wordPair.split(",");
 
             // Retrieve the original vectors from the map.
             double[] word1Vec = controlVectors.get(word1Word2[0]);
             double[] word2Vec = controlVectors.get(word1Word2[1]);
+            System.out.println(word1Word2[0]);
+            System.out.println(word1Word2[1]);
+            if (word1Vec == null)
+                System.out.println("wtf");
+            if (word2Vec == null)
+                System.out.println("wtf2");
 
             List<double[]> hermitVectors = new ArrayList<double[]>();
 
             // Retrieve up to senseCount hermit senses.
             for (int i = 0; i < senseCount; ++i) {
-                String senseName = wordPair.replace("-", "") + "-" + i;
+                String senseName = word1Word2[2] + "-" + i;
                 if (hermitWords.contains(senseName))
                     hermitVectors.add(hermitSpace.getVectorFor(senseName));
                 else
@@ -109,11 +117,13 @@ public class HermitEvaluation {
                 else
                     word2Matches.add(i);
             }
+
             for (Integer word1m : word1Matches)
-                System.out.println(wordPair + " sense_" + word1m +
+                System.out.println(word1Word2[2] + " sense_" + word1m +
                                    " matches word 1");
-            for (Integer word2m : word1Matches)
-                System.out.println(wordPair + " sense_" + word2m +
+
+            for (Integer word2m : word2Matches)
+                System.out.println(word1Word2[2] + " sense_" + word2m +
                                    " matches word 2");
         }
     }
