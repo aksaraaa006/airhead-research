@@ -28,7 +28,7 @@ public class HermitEvaluation {
                           "The serialized Hermit SemanticSpace to test",
                           true, "FILE", "Test Properties");
         options.addOption('n', "numberOfSenses",
-                          "The expected number of senses for each word",
+                          "The maximum number of senses for each word",
                           true, "INT", "Test Properties");
         options.addOption('w', "wordPairs",
                           "The List of word pairs to be compared in the " +
@@ -48,10 +48,12 @@ public class HermitEvaluation {
         // Read in the set of test words to compare.
         Set<String> wordList = parseWordList(options.getStringOption('w'));
 
-
         Map<String, double[]> controlVectors =
             new HashMap<String, double[]>(wordList.size()*2);
 
+        // Load up the vectors from the control space which has one vector per
+        // word, but was built using the semantic space.  We load up each
+        // semantic space separately so that everything can fit in memory.
         SemanticSpace controlSpace =
             SemanticSpaceIO.load(options.getStringOption("controlSpace"));
         for (String wordPair : wordList) {
@@ -60,6 +62,9 @@ public class HermitEvaluation {
                 controlVectors.put(word, controlSpace.getVectorFor(word));
         }
 
+        // Load up the vectors from the hermit sense and compare them to the
+        // control senses to determine which control sense best matches each
+        // hermit sense.
         SemanticSpace hermitSpace =
             SemanticSpaceIO.load(options.getStringOption("hermitSpace"));
         Set<String> hermitWords = hermitSpace.getWords();
@@ -67,13 +72,40 @@ public class HermitEvaluation {
         int senseCount =  options.getIntOption('n');
         for (String wordPair : wordList) {
             String[] word1Word2 = wordPair.split("-");
+
+            // Retrieve the original vectors from the map.
+            double[] word1Vec = controlVectors.get(word1Word2[0]);
+            double[] word2Vec = controlVectors.get(word1Word2[1]);
+
             List<double[]> hermitVectors = new ArrayList<double[]>();
+
+            // Retrieve up to senseCount hermit senses.
             for (int i = 0; i < senseCount; ++i) {
-                if (hermitWords.contains(wordPair+"-"+i))
-                    hermitVectors.add(
-                            hermitSpace.getVectorFor(wordPair+"-"+i));
+                String senseName = wordPair + "-" + i
+                if (hermitWords.contains(senseName))
+                    hermitVectors.add(hermitSpace.getVectorFor(senseName));
+                else
+                    break;
             }
-            // Evaluate this bizznizz.
+
+            // Store the index of each word sense with the matches corresponding
+            // to the original word word vector.
+            List<Integer> word1Matches = new ArrayList<Integer>();
+            List<Integer> word2Matches = new ArrayList<Integer>();
+            for (int i = 0; i < hermitVectors.length(); ++i) {
+                // Compute the similarity of a hermit sense vector to each of
+                // the original word vectors.
+                double word1Sim = Similarity.cosineSimilarity(
+                        word1Vec,hermitVectors.get(i));
+                double word2Sim = Similarity.cosineSimilarity(
+                        word2Vec,hermitVectors.get(i));
+
+                // Match the hermit sense with the best matching original sense.
+                if (word1Sim > word2Sim)
+                    word1Matches.add(i);
+                else
+                    word2Matches.add(i);
+            }
         }
     }
 
