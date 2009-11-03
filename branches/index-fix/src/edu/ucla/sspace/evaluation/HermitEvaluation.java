@@ -3,6 +3,7 @@ package edu.ucla.sspace.evaluation;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.Similarity;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,7 +42,9 @@ public class HermitEvaluation {
             !options.hasOption('h') ||
             !options.hasOption('n') ||
             !options.hasOption('w')) {
-            System.out.println("error");
+            System.out.println(
+                    "usage: java edu.ucla.sspace.evaluation.HermitEvaluation " +
+                    " [options] " + options.prettyPrint());
             System.exit(1);
         }
 
@@ -81,7 +84,7 @@ public class HermitEvaluation {
 
             // Retrieve up to senseCount hermit senses.
             for (int i = 0; i < senseCount; ++i) {
-                String senseName = wordPair + "-" + i
+                String senseName = wordPair.replace("-", "") + "-" + i;
                 if (hermitWords.contains(senseName))
                     hermitVectors.add(hermitSpace.getVectorFor(senseName));
                 else
@@ -92,13 +95,13 @@ public class HermitEvaluation {
             // to the original word word vector.
             List<Integer> word1Matches = new ArrayList<Integer>();
             List<Integer> word2Matches = new ArrayList<Integer>();
-            for (int i = 0; i < hermitVectors.length(); ++i) {
+            for (int i = 0; i < hermitVectors.size(); ++i) {
                 // Compute the similarity of a hermit sense vector to each of
                 // the original word vectors.
                 double word1Sim = Similarity.cosineSimilarity(
-                        word1Vec,hermitVectors.get(i));
+                        word1Vec, hermitVectors.get(i));
                 double word2Sim = Similarity.cosineSimilarity(
-                        word2Vec,hermitVectors.get(i));
+                        word2Vec, hermitVectors.get(i));
 
                 // Match the hermit sense with the best matching original sense.
                 if (word1Sim > word2Sim)
@@ -106,6 +109,12 @@ public class HermitEvaluation {
                 else
                     word2Matches.add(i);
             }
+            for (Integer word1m : word1Matches)
+                System.out.println(wordPair + " sense_" + word1m +
+                                   " matches word 1");
+            for (Integer word2m : word1Matches)
+                System.out.println(wordPair + " sense_" + word2m +
+                                   " matches word 2");
         }
     }
 

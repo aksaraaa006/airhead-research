@@ -181,6 +181,6 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      * Returns a string describing this {@code ClusterMap}.
      */
     public String toString() {
-        return "SimpleClusterMap";
+        return "SimpleClusterMap-SenseCount" + maxNumClusters;
     }
 }

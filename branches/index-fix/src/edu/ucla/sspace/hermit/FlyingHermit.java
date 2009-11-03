@@ -302,6 +302,7 @@ public class FlyingHermit implements SemanticSpace {
                         Vectors.add(sense, v);
                 }
                 splitSenses.put(term + "-" + i, sense);
+                //HERMIT_LOGGER.info("Adding sense" + term + "-" + i);
                 ++i;
             }
             clusterMap.removeClusters(term);
