@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Keith Stevens
  */
-private class SynchronizedVector implements Vector {
+class SynchronizedVector implements Vector {
 
     /**
      * The original {@code Vector} that this {@code SynchronizedVector}

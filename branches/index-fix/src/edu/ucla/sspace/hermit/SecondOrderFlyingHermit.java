@@ -249,6 +249,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             Vector meaning = getTerm(focusWord, indexUser);
             Vector secondMeaning = indexUser.getEmtpyVector();
 
+            int secondOrderCount = 0;
+
             // Process the previous words, specifying their distance from the
             // focus word.
             int distance = -1 * prevWords.size();
@@ -256,12 +258,13 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
                 // Update the first order meaning.
                 Vector termVector = indexGenerator.getIndexVector(term);
                 indexUser.generateMeaning(meaning, termVector, distance);
+                ++distance;
 
                 // Update the second order meaning. 
-                //indexUser.generateMeaning(secondMeaning,
-                //                          getTerm(term, indexUser), 0);
-
-                ++distance;
+                termVector = getTerm(term, indexUser);
+                if (termVector != null)
+                    Vectors.add(secondMeaning, termVector);
+                ++secondOrderCount;
             }
 
             distance = 1;
@@ -271,12 +274,13 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
                 // Update the first order meaning.
                 Vector termVector = indexGenerator.getIndexVector(term);
                 indexUser.generateMeaning(meaning, termVector, distance);
+                ++distance;
 
                 // Update the second order meaning. 
-                //indexUser.generateMeaning(secondMeaning,
-                //                          getTerm(term, indexUser), 0);
-
-                ++distance;
+                termVector = getTerm(term, indexUser);
+                //if (termVector != null)
+                //    Vectors.add(secondMeaning, termVector);
+                ++secondOrderCount;
             }
 
             // Push the focus word into previous word set for the next focus
