@@ -78,7 +78,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     /**
      * {@inheritDoc}
      */
-    public void addVector(String key, Vector value) {
+    public int addVector(String key, Vector value) {
         // Get the set of term vectors for this word that have been found so
         // far.
         List<ExemplarCluster> termClusters = vectorClusters.get(key);
@@ -108,7 +108,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             for (i = 0; i < scores.length; ++i)
                 scores[i] /= totalScore;
             double bestScore = -1;
-            int bestIndex = -1;
+            int bestIndex = termClusters.size();
             for (i = 0; i < scores.length; ++i) {
                 if (scores[i] > bestScore) {
                     bestScore = scores[i];
@@ -128,6 +128,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
                 // into a new cluster.
                 termClusters.add(new ExemplarCluster(value));
             }
+            return bestIndex;
         }
     }
 
@@ -197,6 +198,10 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      */
     public String toString() {
         return "ExemplarClusterMap";
+    }
+
+    public int getMaxNumClusters() {
+        return maxNumClusters;
     }
 
     /**

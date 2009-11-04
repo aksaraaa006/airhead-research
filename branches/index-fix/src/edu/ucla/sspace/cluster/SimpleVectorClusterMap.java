@@ -73,7 +73,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
     /**
      * {@inheritDoc}
      */
-    public void addVector(String key, Vector value) {
+    public int addVector(String key, Vector value) {
         // Get the set of term vectors for this word that have been found so
         // far.
         List<Cluster> termClusters = vectorClusters.get(key);
@@ -90,16 +90,20 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         // Update the set of centriods.
         synchronized (termClusters) {
             Cluster bestMatch = null;
+            int bestIndex = termClusters.size();
             double bestScore = -1;
             double similarity = -1;
             
             // Find the centriod with the best similarity.
+            int i = 0;
             for (Cluster cluster : termClusters) {
                 similarity = cluster.compareWithVector(value);
                 if (similarity > bestScore) {
                     bestScore = similarity;
                     bestMatch = cluster;
+                    bestIndex = i;
                 }
+                ++i;
             }
 
             // Add the current term vector if the similarity is high enough,
@@ -109,6 +113,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
                 bestMatch.addVector(value);
             else
                 termClusters.add(new Cluster(value));
+            return bestIndex;
         }
     }
 
@@ -178,5 +183,9 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      */
     public String toString() {
         return "SimpleClusterMap-SenseCount" + maxNumClusters;
+    }
+
+    public int getMaxNumClusters() {
+        return maxNumClusters;
     }
 }

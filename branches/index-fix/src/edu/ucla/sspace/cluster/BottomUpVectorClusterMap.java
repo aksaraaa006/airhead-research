@@ -49,7 +49,7 @@ public interface BottomUpVectorClusterMap {
      * @param key The string corresponding to this {@code Vector}
      * @param value The {@code Vector} to cluster.
      */
-    void addVector(String key, Vector value);
+    int addVector(String key, Vector value);
 
     /**
      * Clear all clusters and mappings.
@@ -108,4 +108,6 @@ public interface BottomUpVectorClusterMap {
      * @param key The key whose clusters are to be removed.
      */
     void removeClusters(String key);
+
+    int getMaxNumClusters();
 }

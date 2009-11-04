@@ -37,10 +37,14 @@ import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -69,6 +73,7 @@ public class HermitMain extends GenericMain {
     private IndexGenerator generator;
     private Class indexUserClazz;
     private BottomUpVectorClusterMap clusterMap;
+    private Map<String, String> replacementMap;
 
     private HermitMain() {
     }
@@ -98,13 +103,19 @@ public class HermitMain extends GenericMain {
         options.addOption('u', "useDenseSemantics",
                           "Set to true if dense vectors should be used",
                           false, null, "Process Properties");
-        options.addOption('m', "replacementMap",
-                          "A file which specifies mappings between terms " + 
-                          "and their replacements",
-                          true, "FILE", "Processing Properties");
         options.addOption('O', "useSecondOrder",
                           "Use second order co-occurances is set",
                            false, null, "Process Properties");
+        
+        // Add more tokenizing options.
+        options.addOption('m', "replacementMap",
+                          "A file which specifies mappings between terms " + 
+                          "and their replacements",
+                          true, "FILE", "Tokenizing Options");
+        options.addOption('T', "tokenizeWithReplacementMap",
+                          "If true, the replacement map will be used when " +
+                          "tokenizing",
+                          false, null, "Tokenizing Options");
 
         // Add arguments for setting clustering properties such as the
         // similarity threshold, maximum number of senses to create, and the
@@ -126,6 +137,20 @@ public class HermitMain extends GenericMain {
         options.addOption('L', "loadVectors",
                           "Load index vectors from a binary file",
                           true, "FILE", "Pre Processing");
+    }
+
+    private void prepareReplacementMap(String filename) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            String line = null;
+            replacementMap = new HashMap<String, String>();
+            while ((line = br.readLine()) != null) {
+                String[] wordReplacement = line.split("\\s+");
+                replacementMap.put(wordReplacement[0], wordReplacement[1]);
+            }
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     public static void main(String[] args) {
@@ -153,6 +178,9 @@ public class HermitMain extends GenericMain {
         prevWordsSize = Integer.parseInt(prevNext[0]);
         nextWordsSize = Integer.parseInt(prevNext[1]);
 
+        if (!argOptions.hasOption('T') && argOptions.hasOption('m')) {
+            prepareReplacementMap(argOptions.getStringOption('m'));
+        }
 
         // Create the generator.
         String generatorType = (argOptions.hasOption("generator"))
@@ -217,10 +245,12 @@ public class HermitMain extends GenericMain {
 
     public SemanticSpace getSpace() {
         return (useSecondOrder)
-            ? new SecondOrderFlyingHermit(generator, indexUserClazz, clusterMap,
-                                          dimension, prevWordsSize, nextWordsSize)
-            : new FlyingHermit(generator, indexUserClazz, clusterMap,
-                               dimension, prevWordsSize, nextWordsSize);
+            ? new SecondOrderFlyingHermit(
+                    generator, indexUserClazz, clusterMap, replacementMap,
+                    dimension, prevWordsSize, nextWordsSize)
+            : new FlyingHermit(
+                    generator, indexUserClazz, clusterMap, replacementMap,
+                    dimension, prevWordsSize, nextWordsSize);
     }
 
     public Properties setupProperties() {
@@ -228,7 +258,8 @@ public class HermitMain extends GenericMain {
         // -Dprop=<val> to the JVM directly.
         Properties props = System.getProperties();
 
-        if (argOptions.hasOption("replacementMap"))
+        if (argOptions.hasOption("replacementMap") &&
+            argOptions.hasOption('T'))
             props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,
                               argOptions.getStringOption("replacementMap"));
         return props;

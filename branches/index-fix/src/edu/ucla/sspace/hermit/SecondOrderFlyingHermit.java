@@ -57,6 +57,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -133,6 +135,10 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
 
     private ConcurrentMap<String, Vector> firstOrderMap;
 
+    private ConcurrentMap<String, AtomicInteger> accuracyMap;
+
+    private Map<String, String> replacementMap;
+
     /**
      * The type of clustering used for {@code SecondOrderFlyingHermit}.  This
      * specifies how hermit will merge it's context vectors into different
@@ -162,6 +168,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
     public SecondOrderFlyingHermit(IndexGenerator generator,
                         Class userClazz,
                         BottomUpVectorClusterMap cluster,
+                        Map<String, String> remap,
                         int vectorSize,
                         int prevWordsSize,
                         int nextWordsSize) {
@@ -169,9 +176,11 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
         indexGenerator = generator;
         indexUserClazz = userClazz;
         clusterMap = cluster;
+        replacementMap = remap;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
         firstOrderMap = new ConcurrentHashMap<String, Vector>();
+        accuracyMap = new ConcurrentHashMap<String, AtomicInteger>();
 
         try {
             IndexUser indexUser = (IndexUser) indexUserClazz.newInstance();
@@ -219,6 +228,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
     public void processDocument(BufferedReader document) throws IOException {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
+        Queue<String> nextReplacements = new ArrayDeque<String>();
 
         Iterator<String> it =
             IteratorFactory.tokenizeOrderedWithReplacement(document);
@@ -233,7 +243,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
         for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
-            nextWords.offer(it.next().intern());
+            addNextWord(it, nextWords, nextReplacements);
+
         // Assume the previous words in the context are empty words. Note that
         // this is not specified in the original paper, but makes computation
         // much easier.
@@ -242,8 +253,10 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
         String focusWord = null;
         while (!nextWords.isEmpty()) {
             focusWord = nextWords.remove();
+            String replacement = nextReplacements.remove();
+
             if (it.hasNext())
-                nextWords.offer(it.next().intern());
+                addNextWord(it, nextWords, nextReplacements);
 
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
@@ -305,10 +318,38 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             double scale = 1 / (double) secondOrderCount;
             for (int i = 0; i < secondMeaning.length(); ++i)
                 secondMeaning.set(i, secondMeaning.get(i) / scale);
-            clusterMap.addVector(focusWord, secondMeaning);
+            int clusterNum = clusterMap.addVector(focusWord, secondMeaning);
+
+            // Count the accuracy of the current cluster assignment for the word
+            // if it is a word we are tracking.
+            if (!replacement.equals("")) {
+                String key = focusWord + "-" + clusterNum + "-" + replacement;
+                AtomicInteger clusterCount = accuracyMap.putIfAbsent(
+                        key, new AtomicInteger(1));
+                if (clusterCount != null)
+                    clusterCount.incrementAndGet();
+            }
         }
     }
-    
+
+    private void addNextWord(Iterator<String> it,
+                             Queue<String> nextWords,
+                             Queue<String> nextReplacements) {
+        String term = it.next();
+        String replacement = "";
+        if (replacementMap != null) {
+            replacement = replacementMap.get(term);
+            if (replacement != null) {
+                String swap = term;
+                term = replacement;
+                replacement = swap;
+            } else
+                replacement = "";
+        }
+        nextWords.offer(term.intern());
+        nextReplacements.offer(replacement);
+    }
+
     private Vector getTerm(String term, IndexUser user) {
         Vector vector = firstOrderMap.get(term);
         if (vector == null) {
@@ -359,5 +400,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
         }
 
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
+
+        for (Map.Entry<String, AtomicInteger> entry : accuracyMap.entrySet())
+            System.out.println(entry.getKey() + " " + entry.getValue().get());
     }
 }

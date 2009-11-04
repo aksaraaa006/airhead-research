@@ -55,6 +55,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -129,6 +131,10 @@ public class FlyingHermit implements SemanticSpace {
      */
     private ConcurrentMap<String, Vector> splitSenses;
 
+    private Map<String, String> replacementMap;
+
+    private ConcurrentMap<String, AtomicInteger> accuracyMap;
+
     /**
      * The type of clustering used for {@code FlyingHermit}.  This specifies how
      * hermit will merge it's context vectors into different senses.
@@ -156,6 +162,7 @@ public class FlyingHermit implements SemanticSpace {
     public FlyingHermit(IndexGenerator generator,
                         Class userClazz,
                         BottomUpVectorClusterMap cluster,
+                        Map<String, String> remap,
                         int vectorSize,
                         int prevWordsSize,
                         int nextWordsSize) {
@@ -163,8 +170,11 @@ public class FlyingHermit implements SemanticSpace {
         indexGenerator = generator;
         indexUserClazz = userClazz;
         clusterMap = cluster;
+        replacementMap = remap;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
+
+        accuracyMap = new ConcurrentHashMap<String, AtomicInteger>();
 
         try {
             IndexUser indexUser = (IndexUser) indexUserClazz.newInstance();
@@ -212,6 +222,7 @@ public class FlyingHermit implements SemanticSpace {
     public void processDocument(BufferedReader document) throws IOException {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
+        Queue<String> nextReplacements = new ArrayDeque<String>();
 
         Iterator<String> it =
             IteratorFactory.tokenizeOrderedWithReplacement(document);
@@ -223,12 +234,11 @@ public class FlyingHermit implements SemanticSpace {
             throw new Error(ie);
         }
 
-        Map<String, Vector> documentContexts = new HashMap<String, Vector>();
-
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
         for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
-            nextWords.offer(it.next().intern());
+            addNextWord(it, nextWords, nextReplacements);
+
         // Assume the previous words in the context are empty words. Note that
         // this is not specified in the original paper, but makes computation
         // much easier.
@@ -237,17 +247,14 @@ public class FlyingHermit implements SemanticSpace {
         String focusWord = null;
         while (!nextWords.isEmpty()) {
             focusWord = nextWords.remove();
+            String replacement = nextReplacements.remove();
             if (it.hasNext())
-                nextWords.offer(it.next().intern());
+                addNextWord(it, nextWords, nextReplacements);
 
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
-            Vector meaning = documentContexts.get(focusWord);
-            if (meaning == null) {
-                meaning = indexUser.getEmtpyVector();
-                documentContexts.put(focusWord, meaning);
-            }
+            Vector meaning = indexUser.getEmtpyVector();
 
             // Process the previous words, specifying their distance from the
             // focus word.
@@ -272,16 +279,43 @@ public class FlyingHermit implements SemanticSpace {
             prevWords.offer(focusWord);
             if (prevWords.size() > prevSize)
                 prevWords.remove();
-        }
 
-        // Compare the most recent vector to all the saved vectors.  If the
-        // vector with the highest similarity has a similarity over a threshold,
-        // incorporate this {@code Vector} to that winner.  Otherwise add this
-        // {@code Vector} as a new vector for the term.
-        for (Map.Entry<String, Vector> entry : documentContexts.entrySet())
-            clusterMap.addVector(entry.getKey(), entry.getValue());
+            // Compare the most recent vector to all the saved vectors.  If the
+            // vector with the highest similarity has a similarity over a
+            // threshold, incorporate this {@code Vector} to that winner.
+            // Otherwise add this {@code Vector} as a new vector for the term.
+            int clusterNum = clusterMap.addVector(focusWord, meaning);
+
+            // Count the accuracy of the current cluster assignment for the word
+            // if it is a word we are tracking.
+            if (!replacement.equals("")) {
+                String key = focusWord + "-" + clusterNum + "-" + replacement;
+                AtomicInteger clusterCount = accuracyMap.putIfAbsent(
+                        key, new AtomicInteger(1));
+                if (clusterCount != null)
+                    clusterCount.incrementAndGet();
+            }
+        }
     }
     
+    private void addNextWord(Iterator<String> it,
+                             Queue<String> nextWords,
+                             Queue<String> nextReplacements) {
+        String term = it.next();
+        String replacement = "";
+        if (replacementMap != null) {
+            replacement = replacementMap.get(term);
+            if (replacement != null) {
+                String swap = term;
+                term = replacement;
+                replacement = swap;
+            } else
+                replacement = "";
+        }
+        nextWords.offer(term.intern());
+        nextReplacements.offer(replacement);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -313,5 +347,8 @@ public class FlyingHermit implements SemanticSpace {
         }
 
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
+
+        for (Map.Entry<String, AtomicInteger> entry : accuracyMap.entrySet())
+            System.out.println(entry.getKey() + " " + entry.getValue().get());
     }
 }
