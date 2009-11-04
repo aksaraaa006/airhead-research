@@ -83,16 +83,15 @@ public class HermitEvaluation {
             double[] word2Vec = controlVectors.get(word1Word2[1]);
             System.out.println(word1Word2[0]);
             System.out.println(word1Word2[1]);
-            if (word1Vec == null)
-                System.out.println("wtf");
-            if (word2Vec == null)
-                System.out.println("wtf2");
 
             List<double[]> hermitVectors = new ArrayList<double[]>();
 
             // Retrieve up to senseCount hermit senses.
             for (int i = 0; i < senseCount; ++i) {
-                String senseName = word1Word2[2] + "-" + i;
+                String senseName = word1Word2[2];
+                if (i > 0)
+                    senseName += "-" + i;
+
                 if (hermitWords.contains(senseName))
                     hermitVectors.add(hermitSpace.getVectorFor(senseName));
                 else

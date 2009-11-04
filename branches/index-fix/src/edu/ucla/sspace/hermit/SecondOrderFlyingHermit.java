@@ -259,13 +259,18 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             for (String term : prevWords) {
                 // Update the first order meaning.
                 Vector termVector = indexGenerator.getIndexVector(term);
-                indexUser.generateMeaning(meaning, termVector, distance);
+                synchronized(meaning) {
+                    indexUser.generateMeaning(meaning, termVector, distance);
+                }
                 ++distance;
 
                 // Update the second order meaning. 
                 termVector = getTerm(term, indexUser);
-                if (termVector != null)
-                    Vectors.add(secondMeaning, termVector);
+                if (termVector != null) {
+                    synchronized (termVector) {
+                        Vectors.add(secondMeaning, termVector);
+                    }
+                }
                 ++secondOrderCount;
             }
 
@@ -275,13 +280,18 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             for (String term : nextWords) {
                 // Update the first order meaning.
                 Vector termVector = indexGenerator.getIndexVector(term);
-                indexUser.generateMeaning(meaning, termVector, distance);
+                synchronized(meaning) {
+                    indexUser.generateMeaning(meaning, termVector, distance);
+                }
                 ++distance;
 
                 // Update the second order meaning. 
                 termVector = getTerm(term, indexUser);
-                if (termVector != null)
-                    Vectors.add(secondMeaning, termVector);
+                if (termVector != null) {
+                    synchronized (termVector) {
+                        Vectors.add(secondMeaning, termVector);
+                    }
+                }
                 ++secondOrderCount;
             }
 
@@ -305,7 +315,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             synchronized (firstOrderMap) {
                 vector = firstOrderMap.get(term);
                 if (vector == null) {
-                    vector = Vectors.atomicVector(user.getEmtpyVector());
+                    vector = user.getEmtpyVector();
                     firstOrderMap.put(term, vector);
                 }
             }
