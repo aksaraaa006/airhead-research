@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.util;
+package edu.ucla.sspace.cluster;
 
 import edu.ucla.sspace.common.Similarity;
 
@@ -53,7 +53,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     /**
      * A mapping from Strings to cluster centroids.
      */
-    private Map<String, List<Cluster>> vectorClusters;
+    private Map<String, List<ExemplarCluster>> vectorClusters;
 
     /**
      * The threshold for clustering
@@ -72,7 +72,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     public ExemplarVectorClusterMap(double threshold, int maxClusters) {
         clusterThreshold = threshold;
         maxNumClusters = maxClusters;
-        vectorClusters = new HashMap<String, List<Cluster>>();
+        vectorClusters = new HashMap<String, List<ExemplarCluster>>();
     }
 
     /**
@@ -81,12 +81,12 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     public void addVector(String key, Vector value) {
         // Get the set of term vectors for this word that have been found so
         // far.
-        List<Cluster> termClusters = vectorClusters.get(key);
+        List<ExemplarCluster> termClusters = vectorClusters.get(key);
         if (termClusters == null) {
             synchronized (this) {
                 termClusters = vectorClusters.get(key);
                 if (termClusters == null) {
-                    termClusters = new ArrayList<Cluster>();
+                    termClusters = new ArrayList<ExemplarCluster>();
                     vectorClusters.put(key, termClusters);
                 }
             }
@@ -98,7 +98,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             double totalScore = 0;
             // Compute the similarity of value with each of the clusters.
             int i = 0;
-            for (Cluster cluster : termClusters) {
+            for (ExemplarCluster cluster : termClusters) {
                 scores[i] = cluster.compareWithVector(value);
                 totalScore += scores[i];
                 ++i;
@@ -126,9 +126,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
                 // If there are not the maximum number of clusters, and the
                 // similarity to all known clusters was too weak, add the value
                 // into a new cluster.
-                Cluster newCluster = new Cluster();
-                newCluster.addVector(value);
-                termClusters.add(newCluster);
+                termClusters.add(new ExemplarCluster(value));
             }
         }
     }
@@ -144,24 +142,23 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      * {@inheritDoc}
      */
     public synchronized List<Vector> getCluster(String key, int clusterIndex) {
-        List<Cluster> termClusters = vectorClusters.get(key);
+        List<ExemplarCluster> termClusters = vectorClusters.get(key);
         if (termClusters == null || termClusters.size() <= clusterIndex)
             return null;
-        return new ArrayList<Vector>(termClusters.get(clusterIndex).exemplars);
+        return termClusters.get(clusterIndex).getMembers();
     }
 
     /**
      * {@inheritDoc}
      */
     public synchronized List<List<Vector>> getClusters(String key) {
-        List<Cluster> termClusters = vectorClusters.get(key);
+        List<ExemplarCluster> termClusters = vectorClusters.get(key);
         if (termClusters == null)
             return null;
         List<List<Vector>> clusters =
             new ArrayList<List<Vector>>(termClusters.size());
-        for (Cluster cluster : termClusters) {
-            List<Vector> c = new ArrayList<Vector>(cluster.exemplars);
-            clusters.add(c);
+        for (ExemplarCluster cluster : termClusters) {
+            clusters.add(cluster.getMembers());
         }
         return clusters;
     }
@@ -177,7 +174,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      * {@inheritDoc}
      */
     public synchronized int getNumClusters(String key) {
-        List<Cluster> termClusters = vectorClusters.get(key);
+        List<ExemplarCluster> termClusters = vectorClusters.get(key);
         return (termClusters != null) ? termClusters.size() : 0;
     }
 
@@ -199,7 +196,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      * Returns a string describing this {@code ClusterMap}.
      */
     public String toString() {
-        return "SimpleClusterMap";
+        return "ExemplarClusterMap";
     }
 
     /**
@@ -210,15 +207,14 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      * between a given {@code Vector} and all exemplars, and the centroid is
      * returned.
      */
-    private class Cluster {
+    private class ExemplarCluster extends Cluster {
         public int MAX_EXEMPLARS = 20;
 
         public Queue<Vector> exemplars;
-        public Vector centroid;
 
-        public Cluster() {
+        public ExemplarCluster(Vector vector) {
+            super(vector);
             exemplars = new LinkedList<Vector>();
-            centroid = null;
         }
 
         /**
@@ -230,31 +226,35 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
          * @return The total similarity of {@code vector} to all {@code Vector}s
          *         in this cluster.
          */
-        public double compareWithVector(Vector vector) {
+        public synchronized double compareWithVector(Vector vector) {
             double similarity = 0;
             for (Vector exemplar : exemplars)
                 similarity += Similarity.cosineSimilarity(vector, exemplar);
-            if (centroid != null)
-                similarity += Similarity.cosineSimilarity(vector, centroid);
+            similarity += super.compareWithVector(vector);
+            similarity /= (exemplars.size() + 1);
             return similarity;
         }
 
         /**
-         * Add a {@code Vector} to this {@code Cluster}.  If the maximum number
-         * of stored {@code Vector}s has been reached, add the oldest {@code
-         * Vector} into the centroid.
+         * Add a {@code Vector} to this {@code ExemplarCluster}.  If the maximum
+         * number of stored {@code Vector}s has been reached, add the oldest
+         * {@code Vector} into the centroid.
          *
          * @param vector The new {@code Vector} to add to the cluster.
          */
-        public void addVector(Vector vector) {
+        public synchronized void addVector(Vector vector) {
             exemplars.add(vector);
             if (exemplars.size() > MAX_EXEMPLARS) {
-                if (centroid == null)
-                    centroid = Vectors.copyOf(exemplars.remove());
-                else
-                    Vectors.add(centroid, exemplars.remove());
+                super.addVector(exemplars.remove());
             }
         }
-    }
 
+        public synchronized List<Vector> getMembers() {
+            return new ArrayList<Vector>(exemplars);
+        }
+
+        public synchronized int getTotalMemberCount() {
+            return super.getTotalMemberCount() + exemplars.size();
+        }
+    }
 }

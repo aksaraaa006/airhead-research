@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.util;
+package edu.ucla.sspace.cluster;
 
 import edu.ucla.sspace.common.Similarity;
 
@@ -48,7 +48,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
     /**
      * A mapping from Strings to cluster centroids.
      */
-    private Map<String, List<Vector>> vectorClusters;
+    private Map<String, List<Cluster>> vectorClusters;
 
     /**
      * The threshold for clustering
@@ -67,7 +67,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
     public SimpleVectorClusterMap(double threshold, int maxClusters) {
         clusterThreshold = threshold;
         maxNumClusters = maxClusters;
-        vectorClusters = new HashMap<String, List<Vector>>();
+        vectorClusters = new HashMap<String, List<Cluster>>();
     }
 
     /**
@@ -76,12 +76,12 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
     public void addVector(String key, Vector value) {
         // Get the set of term vectors for this word that have been found so
         // far.
-        List<Vector> termClusters = vectorClusters.get(key);
+        List<Cluster> termClusters = vectorClusters.get(key);
         if (termClusters == null) {
             synchronized (this) {
                 termClusters = vectorClusters.get(key);
                 if (termClusters == null) {
-                    termClusters = new ArrayList<Vector>();
+                    termClusters = new ArrayList<Cluster>();
                     vectorClusters.put(key, termClusters);
                 }
             }
@@ -89,16 +89,16 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
 
         // Update the set of centriods.
         synchronized (termClusters) {
-            Vector bestMatch = null;
+            Cluster bestMatch = null;
             double bestScore = -1;
             double similarity = -1;
             
             // Find the centriod with the best similarity.
-            for (Vector centroid : termClusters) {
-                similarity = Similarity.cosineSimilarity(centroid, value);
+            for (Cluster cluster : termClusters) {
+                similarity = cluster.compareWithVector(value);
                 if (similarity > bestScore) {
                     bestScore = similarity;
-                    bestMatch = centroid;
+                    bestMatch = cluster;
                 }
             }
 
@@ -106,9 +106,9 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
             // or set it as a new centroid.
             if (similarity > clusterThreshold ||
                 termClusters.size() >= maxNumClusters)
-                Vectors.add(bestMatch, value);
+                bestMatch.addVector(value);
             else
-                termClusters.add(value);
+                termClusters.add(new Cluster(value));
         }
     }
 
@@ -123,27 +123,23 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      * {@inheritDoc}
      */
     public synchronized List<Vector> getCluster(String key, int clusterIndex) {
-        List<Vector> termClusters = vectorClusters.get(key);
+        List<Cluster> termClusters = vectorClusters.get(key);
         if (termClusters == null || termClusters.size() <= clusterIndex)
             return null;
-        List<Vector> cluster = new ArrayList<Vector>();
-        cluster.add(termClusters.get(clusterIndex));
-        return cluster;
+        return termClusters.get(clusterIndex).getMembers();
     }
 
     /**
      * {@inheritDoc}
      */
     public synchronized List<List<Vector>> getClusters(String key) {
-        List<Vector> termClusters = vectorClusters.get(key);
+        List<Cluster> termClusters = vectorClusters.get(key);
         if (termClusters == null)
             return null;
         List<List<Vector>> clusters =
             new ArrayList<List<Vector>>(termClusters.size());
-        for (Vector centroid : termClusters) {
-            List<Vector> cluster = new ArrayList<Vector>(1);
-            cluster.add(centroid);
-            clusters.add(cluster);
+        for (Cluster cluster : termClusters) {
+            clusters.add(cluster.getMembers());
         }
         return clusters;
     }
@@ -159,7 +155,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      * {@inheritDoc}
      */
     public synchronized int getNumClusters(String key) {
-        List<Vector> termClusters = vectorClusters.get(key);
+        List<Cluster> termClusters = vectorClusters.get(key);
         return (termClusters != null) ? termClusters.size() : 0;
     }
 

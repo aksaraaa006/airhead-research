@@ -21,6 +21,10 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
+import edu.ucla.sspace.cluster.SimpleVectorClusterMap;
+import edu.ucla.sspace.cluster.ExemplarVectorClusterMap;
+
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
@@ -32,10 +36,6 @@ import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
 import edu.ucla.sspace.text.IteratorFactory;
-
-import edu.ucla.sspace.util.BottomUpVectorClusterMap;
-import edu.ucla.sspace.util.SimpleVectorClusterMap;
-import edu.ucla.sspace.util.ExemplarVectorClusterMap;
 
 import java.io.File;
 import java.io.IOError;

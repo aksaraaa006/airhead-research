@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.hermit;
 
+import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
+
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
@@ -28,8 +30,6 @@ import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
 
 import edu.ucla.sspace.text.IteratorFactory;
-
-import edu.ucla.sspace.util.BottomUpVectorClusterMap;
 
 import edu.ucla.sspace.vector.AtomicVector;
 import edu.ucla.sspace.vector.DenseVector;
