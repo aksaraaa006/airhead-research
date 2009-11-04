@@ -345,7 +345,14 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
                     else
                         Vectors.add(sense, v);
                 }
-                splitSenses.put(term + "-" + i, sense);
+                String senseName = term;
+                if (i != 0)
+                    senseName += "-" + i;
+                splitSenses.put(senseName, sense);
+                HERMIT_LOGGER.info("There are " + cluster.size() +
+                                   " instances for sense: " + i + 
+                                   " of word " + term + 
+                                   " stored as: " + senseName);
                 ++i;
             }
             clusterMap.removeClusters(term);
