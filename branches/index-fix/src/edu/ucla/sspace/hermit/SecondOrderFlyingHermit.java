@@ -32,7 +32,9 @@ import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.util.BottomUpVectorClusterMap;
 
 import edu.ucla.sspace.vector.AtomicVector;
+import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -247,7 +249,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
             Vector meaning = getTerm(focusWord, indexUser);
-            Vector secondMeaning = indexUser.getEmtpyVector();
+            Vector secondMeaning = new DenseVector(meaning.length());
 
             int secondOrderCount = 0;
 
@@ -278,8 +280,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
 
                 // Update the second order meaning. 
                 termVector = getTerm(term, indexUser);
-                //if (termVector != null)
-                //    Vectors.add(secondMeaning, termVector);
+                if (termVector != null)
+                    Vectors.add(secondMeaning, termVector);
                 ++secondOrderCount;
             }
 
@@ -290,7 +292,10 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
                 prevWords.remove();
 
             // Add the second order meaning vector to the cluster map.
-            //clusterMap.addVector(focusWord, secondMeaning);
+            double scale = 1 / (double) secondOrderCount;
+            for (int i = 0; i < secondMeaning.length(); ++i)
+                secondMeaning.set(i, secondMeaning.get(i) / scale);
+            clusterMap.addVector(focusWord, secondMeaning);
         }
     }
     
@@ -300,8 +305,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             synchronized (firstOrderMap) {
                 vector = firstOrderMap.get(term);
                 if (vector == null) {
-                    //vector = Vectors.atomicVector(user.getEmtpyVector());
-                    vector = Vectors.synchronizedVector(user.getEmtpyVector());
+                    vector = Vectors.atomicVector(user.getEmtpyVector());
                     firstOrderMap.put(term, vector);
                 }
             }
@@ -313,6 +317,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        firstOrderMap.clear();
+
         splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
         for (String term : terms) {
