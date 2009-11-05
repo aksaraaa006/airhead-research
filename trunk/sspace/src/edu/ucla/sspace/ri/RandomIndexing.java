@@ -708,11 +708,11 @@ public class RandomIndexing implements SemanticSpace, Filterable {
          */
         public synchronized void add(IndexVector v) {
             for (int p : v.positiveDimensions()) {
-                intArray.set(p, intArray.getPrimitive(p) + 1);
+                intArray.setPrimitive(p, intArray.getPrimitive(p) + 1);
             }
             
             for (int n : v.negativeDimensions()) {
-                intArray.set(n, intArray.getPrimitive(n) - 1);
+                intArray.setPrimitive(n, intArray.getPrimitive(n) - 1);
             }        
         }
     
