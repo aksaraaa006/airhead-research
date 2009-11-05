@@ -146,7 +146,9 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
 
 
     /**
-     * {@inheritDoc}
+     * {@inheritDoc} The length of the returned column reflects the size of
+     * matrix at the time of the call, which may be different from earlier calls
+     * to {@link #rows()}
      */
     public double[] getColumn(int column) {
         checkIndices(0, column);
@@ -159,7 +161,9 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritDoc} The length of the returned row vector reflects the size of
+     * matrix at the time of the call, which may be different from earlier calls
+     * to {@link #rows()}
      */
     public Vector getColumnVector(int column) {
         checkIndices(0, column);
@@ -171,13 +175,17 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         return values;
     }
 
-     /**
-     * {@inheritDoc}
+    /**
+     * {@inheritDoc} The length of the returned row reflects the size of matrix
+     * at the time of the call, which may be different from earlier calls to
+     * {@link #columns()}.
      */
     public double[] getRow(int row) {
         checkIndices(row, 0);
         AtomicVector rowEntry = getRow(row, -1, false);
-        return rowEntry.toArray(cols.get());
+        return (rowEntry == null)
+            ? new double[cols.get()]
+            : rowEntry.toArray(cols.get());
     }
 
     /**
@@ -224,10 +232,13 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritDoc} The length of the returned row vector reflects the size of
+     * matrix at the time of the call, which may be different from earlier calls
+     * to {@link #columns()}
      */
     public Vector getRowVector(int row) {
-        return Vectors.immutableVector(getRow(row, -1, false));
+        Vector v = getRow(row, -1, false);
+        return Vectors.viewVector(v, 0, cols.get());
     }
 
     /**

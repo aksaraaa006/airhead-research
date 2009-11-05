@@ -5,6 +5,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.*;
 import edu.ucla.sspace.text.*; 
 import edu.ucla.sspace.util.*;
+import edu.ucla.sspace.vector.*;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -38,13 +39,13 @@ public class OnDiskSemanticSpaceTests {
     
     public OnDiskSemanticSpaceTests() {
 	test = new DummySemanticSpace();
-	test.setVectorFor("cow", new double[] {1, 0, 0, 0});
-	test.setVectorFor("dog", new double[] {0, 1, 0, 0});
-	test.setVectorFor("ear", new double[] {0, 0, 1, 0});
-	test.setVectorFor("fig", new double[] {0, 0, 0, 1});
-	test.setVectorFor("git", new double[] {1, 1, 0, 0});
-	test.setVectorFor("hat", new double[] {1, 0, 1, 0});
-	test.setVectorFor("its", new double[] {1, 0, 0, 1});
+	test.setVector("cow", new DenseVector(new double[] {1, 0, 0, 0}));
+	test.setVector("dog", new DenseVector(new double[] {0, 1, 0, 0}));
+	test.setVector("ear", new DenseVector(new double[] {0, 0, 1, 0}));
+	test.setVector("fig", new DenseVector(new double[] {0, 0, 0, 1}));
+	test.setVector("git", new DenseVector(new double[] {1, 1, 0, 0}));
+	test.setVector("hat", new DenseVector(new double[] {1, 0, 1, 0}));
+	test.setVector("its", new DenseVector(new double[] {1, 0, 0, 1}));
     }
 
     @Test public void testText() throws Exception { 
@@ -56,8 +57,8 @@ public class OnDiskSemanticSpaceTests {
 	assertEquals(test.getWords().size(), onDisk.getWords().size());
 	assertTrue(test.getWords().containsAll(onDisk.getWords()));
 	for (String word : test.getWords()) {
-	    assertEquals(Arrays.toString(test.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(test.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
@@ -70,8 +71,8 @@ public class OnDiskSemanticSpaceTests {
 	assertEquals(test.getWords().size(), onDisk.getWords().size());
 	assertTrue(test.getWords().containsAll(onDisk.getWords()));
 	for (String word : test.getWords()) {
-	    assertEquals(Arrays.toString(test.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(test.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
@@ -84,8 +85,8 @@ public class OnDiskSemanticSpaceTests {
 	assertEquals(test.getWords().size(), onDisk.getWords().size());
 	assertTrue(test.getWords().containsAll(onDisk.getWords()));
 	for (String word : test.getWords()) {
-	    assertEquals(Arrays.toString(test.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(test.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
@@ -98,8 +99,8 @@ public class OnDiskSemanticSpaceTests {
         assertEquals(test.getWords().size(), onDisk.getWords().size());
         assertTrue(test.getWords().containsAll(onDisk.getWords()));
         for (String word : test.getWords()) {
-            assertEquals(Arrays.toString(test.getVectorFor(word)),
-                         Arrays.toString(onDisk.getVectorFor(word)));
+            assertEquals(VectorIO.toString(test.getVector(word)),
+                         VectorIO.toString(onDisk.getVector(word)));
         }
     }
 }
