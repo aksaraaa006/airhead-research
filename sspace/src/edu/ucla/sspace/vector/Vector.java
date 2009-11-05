@@ -26,10 +26,10 @@ package edu.ucla.sspace.vector;
  * to implement the vector with any kind of underlying data type, but the input
  * and output data types must be doubles.
  *
- * Methods which modify the {@code Vector} are optional.  Implementations which
- * do not support this behavior should throw a {@code
- * UnsupportedOperationException}.  These methods are marked as "optional" in
- * the specification for the interface.
+ * <p>Methods which modify the state of a {@code Vector} are optional.
+ * Implementations that are not modifiable should throw an {@code
+ * UnsupportedOperationException} if such methods are called.  These methods are
+ * marked as "optional" in the specification for the interface.
  *
  * @author Keith Stevens
  */
@@ -42,23 +42,9 @@ public interface Vector {
      *
      * @param index index to change.
      * @param delta the amount to change by.
+     * @return the resulting value at the index
      */
-    public double add(int index, double delta);
-
-    /**
-     * Set the value in the semantic vector (optional operation).
-     *
-     * @param index index to set.
-     * @param value value to set in the vector.
-     */
-    public void set(int index, double value);
-
-    /**
-     * Set all the values in the vector (optional operation).
-     *
-     * @param values Values to set for this vector.
-     */
-    public void set(double[] values);
+    double add(int index, double delta);
 
     /**
      * Return the value of the semantic vector at the given index.
@@ -66,20 +52,35 @@ public interface Vector {
      * @param index index to retrieve.
      * @return value at index.
      */
-    public double get(int index);
+    double get(int index);
 
+    /**
+     * Return the size of the {@code Vector}.
+     *
+     * @return size of the vector.
+     */
+    int length();
+
+    /**
+     * Set the value in the semantic vector (optional operation).
+     *
+     * @param index index to set.
+     * @param value value to set in the vector.
+     */
+    void set(int index, double value);
+
+    /**
+     * Set all the values in the vector (optional operation).
+     *
+     * @param values Values to set for this vector.
+     */
+    void set(double[] values);
+    
     /**
      * Return a double array representing this semantic vector.
      *
      * @param size The maximum size of the array returned.
      * @return A double array of this vector.
      */
-    public double[] toArray(int size);
-
-    /**
-     * Return the size of the {@code Vector}.
-     *
-     * @return Size of the vector.
-     */
-    public int length();
+    double[] toArray(int size);
 }
