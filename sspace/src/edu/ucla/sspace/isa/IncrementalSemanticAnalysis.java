@@ -23,6 +23,7 @@ package edu.ucla.sspace.isa;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.ri.DefaultPermutationFunction;
 import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.IndexVectorGenerator;
 import edu.ucla.sspace.ri.PermutationFunction;
@@ -371,11 +372,11 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             ? Boolean.parseBoolean(usePermutationsProp)
             : false;
 
-        String permutationFuncProp =
-            properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
-        permutationFunc = (permutationFuncProp != null)
-            ? loadPermutationFunction(permutationFuncProp)
-            : null; //new DefaultPermutationFunction;
+	String permutationFuncProp =
+	    properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
+	permutationFunc = (permutationFuncProp != null)
+	    ? loadPermutationFunction(permutationFuncProp)
+	    : new DefaultPermutationFunction();
 
         String ivgProp = 
             properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
@@ -731,11 +732,12 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
          */
         public void add(IndexVector v, double percentage) {
             for (int p : v.positiveDimensions())
-            semantics.set(p, semantics.getPrimitive(p) + percentage);
+                semantics.setPrimitive(p, 
+                    semantics.getPrimitive(p) + percentage);
                 
             for (int n : v.negativeDimensions()) 
-                    semantics.set(n,
-                                  semantics.getPrimitive(n) - percentage);
+                semantics.setPrimitive(n,
+                    semantics.getPrimitive(n) - percentage);
         }
 
         /**
@@ -744,8 +746,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         public void add(SemanticVector v, double percentage) {
             double[] vec = v.toArray();
             for (int i = 0; i < vec.length; ++i) 
-                semantics.set(
-                        i, semantics.getPrimitive(i) + percentage * vec[i]);
+                semantics.setPrimitive(
+                    i, semantics.getPrimitive(i) + percentage * vec[i]);
         }
 
         /**
@@ -770,18 +772,18 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         public void add(IndexVector v, double percentage) {
             for (int p : v.positiveDimensions())
                 semantics[p] += percentage;
-                
+            
             for (int n : v.negativeDimensions()) 
-                    semantics[n] -= percentage;
+                semantics[n] -= percentage;
         }
 
         /**
          * {@inheritDoc}
          */
         public void add(SemanticVector v, double percentage) {
-                double[] vec = v.toArray();
-                for (int i = 0; i < vec.length; ++i) 
-                    semantics[i] += percentage * vec[i];
+            double[] vec = v.toArray();
+            for (int i = 0; i < vec.length; ++i) 
+                semantics[i] += percentage * vec[i];
         }
 
         /**
