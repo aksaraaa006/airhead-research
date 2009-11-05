@@ -23,6 +23,7 @@ package edu.ucla.sspace.esa;
 
 import edu.ucla.sspace.common.DocumentSpace;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.StaticSemanticSpace;
 
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
@@ -37,6 +38,7 @@ import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import java.io.BufferedReader;
+import java.io.IOError;
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -90,6 +92,12 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     private Matrix termWikiMatrix;
 
     /**
+     * A restored version of a {@code SemanticSpace}.  This will be used to use
+     * a previous computation of {@code ExplicitSemanticAnalysis}.
+     */
+    private StaticSemanticSpace storedSpace;
+
+    /**
      * A mapping from a term to it's row index in {@code termWikiMatrix}.
      */
     private final ConcurrentMap<String, Integer> termToIndex;
@@ -115,6 +123,24 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
         termWikiMatrix = new GrowingSparseMatrix();
         articleCount = new AtomicInteger(0);
         termCounter = new AtomicInteger(0);
+        storedSpace = null;
+    }
+
+    /**
+     * Creates an instance of {@code ExplicitSemanticAnalysis} which will use
+     * the given stored semantic space as the source of term vectors.
+     */
+    public ExplicitSemanticAnalysis(String filename) {
+        try {
+            storedSpace = new StaticSemanticSpace(filename);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+        indexToArticle = null; 
+        termToIndex = null;
+        termWikiMatrix = null; 
+        articleCount = null;
+        termCounter = null;
     }
 
     /**
@@ -123,6 +149,9 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * @param article A wikipedia article.
      */
     public void processDocument(BufferedReader article) throws IOException {
+        if (storedSpace != null)
+            return;
+
         Map<String, Integer> termCounts =
             new LinkedHashMap<String, Integer>(1 << 10, 16f);    
 
@@ -183,7 +212,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * {@inheritDoc}
      */
     public Vector representDocument(BufferedReader document)
-        throws IOException {
+            throws IOException {
         Map<String, Integer> termCounts = new HashMap<String, Integer>();
         Iterator<String> articleTokens = IteratorFactory.tokenize(document);
         while (articleTokens.hasNext()) {
@@ -208,6 +237,9 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        if (storedSpace != null)
+            return;
+
         int rows = termWikiMatrix.rows();
         int cols = termWikiMatrix.columns();
         Vector docCounts = new DenseVector(cols);
@@ -239,7 +271,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * @return the TF-IDF of {@code word}.
      */
     private Vector getTfIdfWeightedVector(String word, int frequency) {
-        Vector termVector = getSemanticVectorFor(word);
+        Vector termVector = getVector(word);
         if (termVector == null)
             return null;
         SparseVector sparseTermVector = (SparseVector) termVector;
@@ -281,13 +313,18 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * {@inheritDoc}
      */
     public int getVectorLength() {
-        return articleCount.get();
+        return (storedSpace != null)
+            ? storedSpace.getVectorLength()
+            : articleCount.get();
     }
 
     /**
      * {@inheritDoc}
      */
     public Vector getVector(String word) {
+        if (storedSpace != null)
+            return storedSpace.getVector(word);
+
         Integer index = termToIndex.get(word);
         if (index != null)
             return Vectors.immutableVector(
@@ -298,14 +335,9 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     /**
      * {@inheritDoc}
      */
-    public Vector getSemanticVectorFor(String word) {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public Set<String> getWords() {
-        return Collections.unmodifiableSet(termToIndex.keySet());
+        return (storedSpace != null)
+            ? storedSpace.getWords()
+            : Collections.unmodifiableSet(termToIndex.keySet());
     }        
 }

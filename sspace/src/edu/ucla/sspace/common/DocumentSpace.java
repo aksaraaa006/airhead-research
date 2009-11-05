@@ -50,16 +50,4 @@ public interface DocumentSpace extends SemanticSpace {
    * @throws IOException if any error occurs while reading the document
    */
   Vector representDocument(BufferedReader document) throws IOException;
-
-  /**
-   * Return a semantic vector for a particular word.  This may be used in place
-   * of getVectorFor, due to the possiblity that a word's vector may be many
-   * millions of dimensions in size.
-   *
-   * @param term The term to return a vector for.
-   *
-   * @return A {@code Vector} representing the term.
-   */
-  Vector getSemanticVectorFor(String term);
-
 }
