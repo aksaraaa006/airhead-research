@@ -23,6 +23,8 @@ package edu.ucla.sspace.temporal;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 
@@ -91,7 +93,7 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      * @return the semantic vector for the word after the provided time or
      *         {@code null} if the word was not in the space.
      */
-    double[] getVectorAfter(String word, long startTime);
+    Vector getVectorAfter(String word, long startTime);
 
     /**
      * Returns the provided word's semantic vector based on all temporal
@@ -105,7 +107,7 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      * @return the semantic vector for the word after the provided time or
      *         {@code null} if the word was not in the space.
      */
-    double[] getVectorBefore(String word, long endTime);
+    Vector getVectorBefore(String word, long endTime);
 
     /**
      * Returns the provided word's semantic vector based on all temporal
@@ -126,7 +128,7 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      * @throws IllegalArgumentException if {@code startTime} &gt; {@code
      *         endTime}
      */
-    double[] getVectorBetween(String word, long startTime, long endTime);
+    Vector getVectorBetween(String word, long startTime, long endTime);
 
     /**
      * Returns the provided word's semantic vector based on all temporal
@@ -136,6 +138,5 @@ public interface TemporalSemanticSpace extends SemanticSpace {
      *
      * @return {@inheritDoc}
      */
-    double[] getVectorFor(String word);
-
+    Vector getVector(String word);
 }

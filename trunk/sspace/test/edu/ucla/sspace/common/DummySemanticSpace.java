@@ -3,10 +3,14 @@ package edu.ucla.sspace.common;
 import edu.ucla.sspace.matrix.*;
 import edu.ucla.sspace.text.*; 
 import edu.ucla.sspace.util.*;
+import edu.ucla.sspace.vector.*;
 
 import java.io.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * A test-only {@link SemanticSpace}, where all the semantic vectors must be
@@ -14,12 +18,12 @@ import java.util.*;
  */
 public class DummySemanticSpace implements SemanticSpace {
 
-    private final Map<String,double[]> wordToVector;
+    private final Map<String,Vector> wordToVector;
 
     private int dimensions;
     
     public DummySemanticSpace() {
-	wordToVector = new HashMap<String,double[]>();
+        wordToVector = new HashMap<String,Vector>();
     }
     
     /**
@@ -31,29 +35,29 @@ public class DummySemanticSpace implements SemanticSpace {
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return wordToVector.keySet();
+        return wordToVector.keySet();
     }
 
     /**
      * Returns the manually assigned vector for the word
      */
-    public double[] getVectorFor(String word) {
-	return wordToVector.get(word);
+    public Vector getVector(String word) {
+        return wordToVector.get(word);
     }
 
     /**
      * Sets the vector for the word
      */
-    public double[] setVectorFor(String word, double[] vector) {
-      dimensions = vector.length;
-	return wordToVector.put(word, vector);
+    public Vector setVector(String word, Vector vector) {
+        dimensions = vector.length();
+        return wordToVector.put(word, vector);
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-      return dimensions;
+    public int getVectorLength() {
+        return dimensions;
     }
 
     /**
@@ -65,7 +69,7 @@ public class DummySemanticSpace implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-	return "DummySemanticSpace";
+        return "DummySemanticSpace";
     }
 
 }
