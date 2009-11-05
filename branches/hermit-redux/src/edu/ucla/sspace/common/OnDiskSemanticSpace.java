@@ -26,6 +26,11 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -73,7 +78,7 @@ import java.util.logging.Logger;
 public class OnDiskSemanticSpace implements SemanticSpace {
 
     private static final Logger LOGGER = 
-	Logger.getLogger(OnDiskSemanticSpace.class.getName());
+        Logger.getLogger(OnDiskSemanticSpace.class.getName());
 
     /**
      * A mapping of terms to offsets in the file where the word will be found.
@@ -131,7 +136,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *         semantic space format
      */
     public OnDiskSemanticSpace(String filename) throws IOException {
-	this(new File(filename));
+        this(new File(filename));
     }
 
     /**
@@ -150,7 +155,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
         if (format == null)
             throw new Error("Unrecognzied format in " +
                             "file: " + file.getName());
-            loadOffsetsFromFormat(file, format);
+        loadOffsetsFromFormat(file, format);
     }
 
     /**
@@ -165,8 +170,9 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @throws IOException if any I/O exception occurs when reading the semantic
      *         space data from the file
      */
-    @Deprecated public OnDiskSemanticSpace(File file, SSpaceFormat format) 
-            throws IOException {
+    @Deprecated
+    public OnDiskSemanticSpace(File file, SSpaceFormat format)
+        throws IOException {
         containsHeader = false;
         loadOffsetsFromFormat(file, format);
     }
@@ -184,46 +190,46 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      */
     private void loadOffsetsFromFormat(File file, SSpaceFormat format) 
             throws IOException {
-	this.format = format;
-	spaceName = file.getName();
+        this.format = format;
+        spaceName = file.getName();
 
-	// NOTE: Use a LinkedHashMap here because this will ensure that the
-	// words are returned in the same row-order as the matrix.  This
-	// generates better disk I/O behavior for accessing the matrix since
-	// each word is directly after the previous on disk.
-	termToOffset = new LinkedHashMap<String,Long>();
-	long start = System.currentTimeMillis();
-	int dims = -1;
-	RandomAccessFile raf = null;
-	RandomAccessBufferedReader lnr = null;
+        // NOTE: Use a LinkedHashMap here because this will ensure that the
+        // words are returned in the same row-order as the matrix.  This
+        // generates better disk I/O behavior for accessing the matrix since
+        // each word is directly after the previous on disk.
+        termToOffset = new LinkedHashMap<String,Long>();
+        long start = System.currentTimeMillis();
+        int dims = -1;
+        RandomAccessFile raf = null;
+        RandomAccessBufferedReader lnr = null;
         switch (format) {
-        case TEXT:
-            lnr = new RandomAccessBufferedReader(file);
-            dims = loadTextOffsets(lnr);
-            break;
-        case BINARY:
-            raf = new RandomAccessFile(file, "r");
-            dims = loadBinaryOffsets(raf);
-            break;
-        case SPARSE_TEXT:
-            lnr = new RandomAccessBufferedReader(file);
-            dims = loadSparseTextOffsets(lnr);
-            break;
-        case SPARSE_BINARY:
-            raf = new RandomAccessFile(file, "r");
-            dims = loadSparseBinaryOffsets(raf);
-            break;
-        default:
+            case TEXT:
+                lnr = new RandomAccessBufferedReader(file);
+                dims = loadTextOffsets(lnr);
+                break;
+            case BINARY:
+                raf = new RandomAccessFile(file, "r");
+                dims = loadBinaryOffsets(raf);
+                break;
+            case SPARSE_TEXT:
+                lnr = new RandomAccessBufferedReader(file);
+                dims = loadSparseTextOffsets(lnr);
+                break;
+            case SPARSE_BINARY:
+                raf = new RandomAccessFile(file, "r");
+                dims = loadSparseBinaryOffsets(raf);
+                break;
+            default:
             assert false : format;
         }
-	if (LOGGER.isLoggable(Level.FINE)) {
-	    LOGGER.fine("loaded " + format + " .sspace file in " +
-			(System.currentTimeMillis() - start) + "ms");
-	}
-	
-	this.dimensions = dims;
-	this.binarySSpace = raf;
-	this.textSSpace = lnr;
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("loaded " + format + " .sspace file in " +
+                (System.currentTimeMillis() - start) + "ms");
+        }
+    
+        this.dimensions = dims;
+        this.binarySSpace = raf;
+        this.textSSpace = lnr;
     }
 
     /**
@@ -237,23 +243,25 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      */
     private int loadTextOffsets(RandomAccessBufferedReader textSSpace) 
             throws IOException {
-	String line = textSSpace.readLine();
-	if (line == null)
-	    throw new IOError(new Throwable("An empty file has been passed in"));
+        String line = textSSpace.readLine();
+        if (line == null)
+            throw new IOError(new Throwable(
+                        "An empty file has been passed in"));
+
         // Strip off the 4-byte (2 char) header
         if (containsHeader)
             line = line.substring(4);
-	String[] dimensionStrs = line.split("\\s");
-	int dimensions = Integer.parseInt(dimensionStrs[1]);
+        String[] dimensionStrs = line.split("\\s");
+        int dimensions = Integer.parseInt(dimensionStrs[1]);
 
-	int row = 1;	
-	while ((line = textSSpace.readLine()) != null) {
-	    String[] termVectorPair = line.split("\\|");
-	    termToOffset.put(termVectorPair[0], Long.valueOf(row));
-	    row++;
-	}
+        int row = 1;    
+        while ((line = textSSpace.readLine()) != null) {
+            String[] termVectorPair = line.split("\\|");
+            termToOffset.put(termVectorPair[0], Long.valueOf(row));
+            row++;
+        }
 
-	return dimensions;
+        return dimensions;
     }
 
     /**
@@ -265,42 +273,43 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *         exist in the semantic space
      */
     private double[] loadTextVector(String word) throws IOException {
-	Long lineNumber = termToOffset.get(word);
-	if (lineNumber == null)
-	    return null;
-	
-	// skip to the line where the word's vector is found
-	textSSpace.moveToLine(lineNumber.intValue());
-	String line = textSSpace.readLine();
-	
-	double[] row = new double[dimensions];
-	String[] termVectorPair = line.split("\\|");
-	String[] values = termVectorPair[1].split("\\s");
-	
-	if (values.length != dimensions) {
-	    throw new IOError(
-		new Throwable("improperly formated semantic space file"));
-	}
-	for (int c = 0; c < dimensions; ++c) {
-	    double d = Double.parseDouble(values[c]);
-	    row[c] = d;
-	}
-	return row;
+        Long lineNumber = termToOffset.get(word);
+        if (lineNumber == null)
+            return null;
+        
+        // skip to the line where the word's vector is found
+        textSSpace.moveToLine(lineNumber.intValue());
+        String line = textSSpace.readLine();
+        
+        double[] row = new double[dimensions];
+        String[] termVectorPair = line.split("\\|");
+        String[] values = termVectorPair[1].split("\\s");
+        
+        if (values.length != dimensions) {
+            throw new IOError(new Throwable(
+                        "improperly formated semantic space file"));
+        }
+        for (int c = 0; c < dimensions; ++c) {
+            double d = Double.parseDouble(values[c]);
+            row[c] = d;
+        }
+        return row;
     }
 
     /**
      * Loads the {@link SemanticSpace} from the text formatted file, adding its
-     * words to {@link #termToOffset} and returning the {@code Matrix} containing
+     * words to {@link #termToOffset} and returning the {@code Matrix}
+     * containing
      * the space's vectors.
      *
      * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
      */
     private int loadSparseTextOffsets(RandomAccessBufferedReader textSSpace) 
-	    throws IOException {
-
-	String line = textSSpace.readLine();
-	if (line == null)
-	    throw new IOError(new Throwable("An empty file has been passed in"));
+            throws IOException {
+        String line = textSSpace.readLine();
+        if (line == null)
+            throw new IOError(new Throwable(
+                        "An empty file has been passed in"));
 
         // Strip off the 4-byte (2 char) header
         if (containsHeader) {
@@ -308,20 +317,20 @@ public class OnDiskSemanticSpace implements SemanticSpace {
             System.out.println(line);
         }        
 
-	String[] dimensions = line.split("\\s");
-	int columns = Integer.parseInt(dimensions[1]);
+        String[] dimensions = line.split("\\s");
+        int columns = Integer.parseInt(dimensions[1]);
         int rows = Integer.parseInt(dimensions[0]);
-	int row = 1;
-	
-	while ((line = textSSpace.readLine()) != null) {
-	    String[] termVectorPair = line.split("\\|");
-	    termToOffset.put(termVectorPair[0], Long.valueOf(row));
-	    row++;
-	}
+        int row = 1;
+        
+        while ((line = textSSpace.readLine()) != null) {
+            String[] termVectorPair = line.split("\\|");
+            termToOffset.put(termVectorPair[0], Long.valueOf(row));
+            row++;
+        }
         if ((row - 1) != rows)
             throw new IOException(String.format(
                 "Different number of rows than specified (%d): %d", rows, row));
-	return columns;    
+        return columns;    
     }
 
     /**
@@ -333,28 +342,27 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *         exist in the semantic space
      */
     private double[] loadSparseTextVector(String word) throws IOException {
-	Long lineNumber = termToOffset.get(word);
-	if (lineNumber == null)
-	    return null;
+        Long lineNumber = termToOffset.get(word);
+        if (lineNumber == null)
+            return null;
 
-
-	// skip to the line where the word's vector is found
-	textSSpace.moveToLine(lineNumber.intValue());
-	String line = textSSpace.readLine();
-	if (line == null)
+        // skip to the line where the word's vector is found
+        textSSpace.moveToLine(lineNumber.intValue());
+        String line = textSSpace.readLine();
+        if (line == null)
             System.out.printf("%s -> null row %d%n", word, lineNumber);
-	double[] row = new double[dimensions];
+        double[] row = new double[dimensions];
+            
+        String[] termVectorPair = line.split("\\|");
+        String[] values = termVectorPair[1].split(",");
         
-	String[] termVectorPair = line.split("\\|");
-	String[] values = termVectorPair[1].split(",");
-	
-	// even indicies are columns, odd are the values
-	for (int i = 0; i < values.length; i +=2 ) {
-	    int col = Integer.parseInt(values[i]);
-	    double val = Double.parseDouble(values[i+1]);
-	    row[col] = val;
-	}
-	return row;
+        // even indicies are columns, odd are the values
+        for (int i = 0; i < values.length; i +=2 ) {
+            int col = Integer.parseInt(values[i]);
+            double val = Double.parseDouble(values[i+1]);
+            row[col] = val;
+        }
+        return row;
     }
 
     /**
@@ -365,24 +373,24 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
     private int loadBinaryOffsets(RandomAccessFile binarySSpace) 
-	    throws IOException {
+            throws IOException {
 
         // Reader off the 4-byte header if it exists
         if (containsHeader)
             binarySSpace.readInt();
     
-	int rows = binarySSpace.readInt();
-	int cols = binarySSpace.readInt();
+        int rows = binarySSpace.readInt();
+        int cols = binarySSpace.readInt();
 
-	for (int row = 0; row < rows; ++row) {
-	    String word = binarySSpace.readUTF();
-	    termToOffset.put(word, binarySSpace.getFilePointer());
-	    // read and discard the rest of the vector
-	    for (int col = 0; col < cols; ++col) {
-		binarySSpace.readDouble();
-	    }
-	}
-	return cols;
+        for (int row = 0; row < rows; ++row) {
+            String word = binarySSpace.readUTF();
+            termToOffset.put(word, binarySSpace.getFilePointer());
+            // read and discard the rest of the vector
+            for (int col = 0; col < cols; ++col) {
+                binarySSpace.readDouble();
+            }
+        }
+        return cols;
     }
 
     /**
@@ -394,19 +402,19 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *         exist in the semantic space
      */
     private double[] loadBinaryVector(String word) throws IOException {
-	Long byteOffset = termToOffset.get(word);
-	if (byteOffset == null)
-	    return null;
+        Long byteOffset = termToOffset.get(word);
+        if (byteOffset == null)
+            return null;
 
-	binarySSpace.seek(byteOffset);
+        binarySSpace.seek(byteOffset);
 
-	double[] vector = new double[dimensions];
-	
-	for (int col = 0; col < dimensions; ++col) {
-	    vector[col] = binarySSpace.readDouble();
-	}
+        double[] vector = new double[dimensions];
+        
+        for (int col = 0; col < dimensions; ++col) {
+            vector[col] = binarySSpace.readDouble();
+        }
 
-	return vector;
+        return vector;
     }
 
     /**
@@ -417,27 +425,26 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
     private int loadSparseBinaryOffsets(RandomAccessFile binarySSpace) 
-	    throws IOException {
-
+            throws IOException {
         // Reader off the 4-byte header if it exists
         if (containsHeader) {
              int header = binarySSpace.readInt();
         }
-	int rows = binarySSpace.readInt();
-	int cols = binarySSpace.readInt();
+        int rows = binarySSpace.readInt();
+        int cols = binarySSpace.readInt();
 
-	for (long row = 0; row < rows; ++row) {
-	    String word = binarySSpace.readUTF();
-	    termToOffset.put(word, binarySSpace.getFilePointer());
-	    
-	    // read and discard the rest of the vector
-	    int nonZero = binarySSpace.readInt();
-	    for (int i = 0; i < nonZero; ++i) {
-		binarySSpace.readInt();
-		binarySSpace.readDouble();
-	    }
-	}
-	return cols;
+        for (long row = 0; row < rows; ++row) {
+            String word = binarySSpace.readUTF();
+            termToOffset.put(word, binarySSpace.getFilePointer());
+            
+            // read and discard the rest of the vector
+            int nonZero = binarySSpace.readInt();
+            for (int i = 0; i < nonZero; ++i) {
+                binarySSpace.readInt();
+                binarySSpace.readDouble();
+            }
+        }
+        return cols;
     }
 
     /**
@@ -449,28 +456,28 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *         exist in the semantic space
      */
     private double[] loadSparseBinaryVector(String word) throws IOException {
-	Long byteOffset = termToOffset.get(word);
-	if (byteOffset == null)
-	    return null;
+        Long byteOffset = termToOffset.get(word);
+        if (byteOffset == null)
+            return null;
 
-	binarySSpace.seek(byteOffset);
-		    
-	int nonZero = binarySSpace.readInt();
-	double[] vector = new double[dimensions];
-	for (int i = 0; i < nonZero; ++i) {
-	    int col = binarySSpace.readInt();
-	    double val = binarySSpace.readDouble();
-	    vector[col] = val;
-	}
+        binarySSpace.seek(byteOffset);
+                
+        int nonZero = binarySSpace.readInt();
+        double[] vector = new double[dimensions];
+        for (int i = 0; i < nonZero; ++i) {
+            int col = binarySSpace.readInt();
+            double val = binarySSpace.readDouble();
+            vector[col] = val;
+        }
 
-	return vector;
+        return vector;
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(termToOffset.keySet());
+        return Collections.unmodifiableSet(termToOffset.keySet());
     }
   
     /**
@@ -479,38 +486,38 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @throws IOError if any {@code IOException} occurs when reading the data
      *         from the underlying semantic space file.
      */
-    public synchronized double[] getVectorFor(String word) {
-	try {
-	    switch (format) {
-	    case TEXT:
-		return loadTextVector(word);
-	    case BINARY:
-		return loadBinaryVector(word);
-	    case SPARSE_TEXT:
-		return loadSparseTextVector(word);
-	    case SPARSE_BINARY:
-		return loadSparseBinaryVector(word);
-	    }
-	} catch (IOException ioe) {
-	    // rethrow as something catastrophic must have happened to the
-	    // underlying .sspace file
-	    throw new IOError(ioe);
-	}
-	return null;
+    public synchronized Vector getVector(String word) {
+        try {
+            switch (format) {
+            case TEXT:
+                return new DenseVector(loadTextVector(word));
+            case BINARY:
+                return new DenseVector(loadBinaryVector(word));
+            case SPARSE_TEXT:
+                return new CompactSparseVector(loadSparseTextVector(word));
+            case SPARSE_BINARY:
+                return new CompactSparseVector(loadSparseBinaryVector(word));
+            }
+        } catch (IOException ioe) {
+            // rethrow as something catastrophic must have happened to the
+            // underlying .sspace file
+            throw new IOError(ioe);
+        }
+        return null;
     }
 
     /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
-      return spaceName;
+        return spaceName;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-      return dimensions;
+    public int getVectorLength() {
+        return dimensions;
     }
 
     /**
@@ -541,18 +548,18 @@ public class OnDiskSemanticSpace implements SemanticSpace {
         /**
          * The file from which the data is being read
          */
-	private final File backingFile;
+        private final File backingFile;
 
         /**
          * The reader into the contents of the file
          */
-	private BufferedReader current;
+        private BufferedReader current;
 
         /**
          * The number for the line that will be returned next by {@code
          * readLine}
          */
-	private int currentLineNumber;
+        private int currentLineNumber;
 
         /**
          * Creates a random access reader for the file and initializes its
@@ -560,10 +567,10 @@ public class OnDiskSemanticSpace implements SemanticSpace {
          *
          * @param f the file to be accessed
          */
-	public RandomAccessBufferedReader(File f) throws IOException {
-	    backingFile = f;
-	    reset();
-	}
+        public RandomAccessBufferedReader(File f) throws IOException {
+            backingFile = f;
+            reset();
+        }
 
         /**
          * Returns the number of the line that will next be returned by {@link
@@ -581,39 +588,39 @@ public class OnDiskSemanticSpace implements SemanticSpace {
          *
          * @param lineNum the number of the line that should next be returned
          */
-	public void moveToLine(int lineNum) throws IOException {
-	    // If we are trying to go backward in the stream, close it and
-	    // restart from the beginning
-	    if (lineNum < currentLineNumber) {
-		reset(); 
-	    }
-	    for (int i = currentLineNumber; i < lineNum; ++i) {
-		current.readLine();
-	    }
+        public void moveToLine(int lineNum) throws IOException {
+            // If we are trying to go backward in the stream, close it and
+            // restart from the beginning
+            if (lineNum < currentLineNumber) {
+                reset(); 
+            }
+            for (int i = currentLineNumber; i < lineNum; ++i) {
+                current.readLine();
+            }
 
-	    // Update to the new line number
-	    currentLineNumber = lineNum;
-	}
-	
+            // Update to the new line number
+            currentLineNumber = lineNum;
+        }
+        
         /**
          * Returns the line in the file at the current position and advances the
          * current position to the next line.
          *
          * @return the line at the current position
          */
-	public String readLine() throws IOException {
-	    currentLineNumber++;
-	    return current.readLine();
-	}
+        public String readLine() throws IOException {
+            currentLineNumber++;
+            return current.readLine();
+        }
 
         /**
          * Resets the position of this reader to the very first line in the
          * file.
          */
-	private void reset() throws IOException {
-	    current = new BufferedReader(new FileReader(backingFile));
-	    currentLineNumber = 0;
-	}
+        private void reset() throws IOException {
+            current = new BufferedReader(new FileReader(backingFile));
+            currentLineNumber = 0;
+        }
     }
 
 }

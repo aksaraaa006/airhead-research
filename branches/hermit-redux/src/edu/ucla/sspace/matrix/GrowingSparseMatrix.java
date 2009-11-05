@@ -22,6 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -112,7 +113,8 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getRowVector(int row) {
-        return Vectors.immutableVector(sparseMatrix.get(row));
+        Vector v = sparseMatrix.get(row);
+        return Vectors.viewVector(v, 0, cols);
     }
 
     /**

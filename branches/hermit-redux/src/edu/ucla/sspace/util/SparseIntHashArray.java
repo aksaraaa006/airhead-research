@@ -130,7 +130,10 @@ public class SparseIntHashArray implements SparseArray<Integer> {
      * {@inheritDoc}
      */
     public void set(int index, Integer value) {
-	indexToValue.put(index, value);
+        if (value == 0)
+            indexToValue.remove(index);
+        else
+            indexToValue.put(index, value);
     }
 
     /**

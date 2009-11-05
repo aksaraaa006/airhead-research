@@ -21,6 +21,15 @@
 
 package edu.ucla.sspace.tri;
 
+import edu.ucla.sspace.common.Filterable;
+
+import edu.ucla.sspace.ri.IndexVector;
+import edu.ucla.sspace.ri.RandomIndexing;
+
+import edu.ucla.sspace.temporal.TemporalSemanticSpace;
+
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 
@@ -34,12 +43,6 @@ import java.util.SortedSet;
 
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.common.Filterable;
-
-import edu.ucla.sspace.ri.IndexVector;
-import edu.ucla.sspace.ri.RandomIndexing;
-
-import edu.ucla.sspace.temporal.TemporalSemanticSpace;
 
 /**
  * A simplified version of {@link TemporalRandomIndexing} that imposes
@@ -131,42 +134,42 @@ public abstract class OrderedTemporalRandomIndexing
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-	"edu.ucla.sspace.tri.OrderedTemporalRandomIndexing";
+    "edu.ucla.sspace.tri.OrderedTemporalRandomIndexing";
 
     /**
      * The property to specify the fully qualified named of a {@link
      * edu.ucla.sspace.ri.PermutationFunction} if using permutations is enabled.
      */
     public static final String PERMUTATION_FUNCTION_PROPERTY = 
-	PROPERTY_PREFIX + ".permutationFunction";
+    PROPERTY_PREFIX + ".permutationFunction";
 
     /**
      * The property to specify whether the index vectors for co-occurrent words
      * should be permuted based on their relative position.
      */
     public static final String USE_PERMUTATIONS_PROPERTY = 
-	PROPERTY_PREFIX + ".usePermutations";
+    PROPERTY_PREFIX + ".usePermutations";
 
     /**
      * Specifies whether to use a sparse encoding for each word's semantics,
      * which saves space but requires more computation.
      */
     public static final String USE_SPARSE_SEMANTICS_PROPERTY = 
-	PROPERTY_PREFIX + ".sparseSemantics";
+    PROPERTY_PREFIX + ".sparseSemantics";
 
     /**
      * The property to specify the number of dimensions to be used by the index
      * and semantic vectors.
      */
     public static final String VECTOR_LENGTH_PROPERTY = 
-	PROPERTY_PREFIX + ".vectorLength";
+    PROPERTY_PREFIX + ".vectorLength";
 
     /**
      * The property to specify the number of words to view before and after each
      * word in focus.
      */
     public static final String WINDOW_SIZE_PROPERTY = 
-	PROPERTY_PREFIX + ".windowSize";
+    PROPERTY_PREFIX + ".windowSize";
 
     /**
      * The default number of dimensions to be used by the index and semantic
@@ -183,7 +186,7 @@ public abstract class OrderedTemporalRandomIndexing
      * The logger used for instances of this class
      */
     private static final Logger LOGGER =
-	Logger.getLogger(OrderedTemporalRandomIndexing.class.getName());
+    Logger.getLogger(OrderedTemporalRandomIndexing.class.getName());
     
     /**
      * The collection of hooks that are to be run prior to every time this
@@ -213,7 +216,7 @@ public abstract class OrderedTemporalRandomIndexing
      * the system properties to configure the behavior.
      */
     public OrderedTemporalRandomIndexing() {
-	this(System.getProperties());
+        this(System.getProperties());
     }
 
     /**
@@ -224,10 +227,10 @@ public abstract class OrderedTemporalRandomIndexing
      */
     public OrderedTemporalRandomIndexing(Properties props) {
 
-	partitionHooks = new ArrayList<Runnable>();
-	
-	// Translate the On-line TRI properties into RI properties
-	Properties riProps = new Properties();
+        partitionHooks = new ArrayList<Runnable>();
+        
+        // Translate the On-line TRI properties into RI properties
+        Properties riProps = new Properties();
 
         // Conditionally assign any of the specified Ordered TRI properties to
         // the RI instance if they were set
@@ -241,7 +244,7 @@ public abstract class OrderedTemporalRandomIndexing
         if ((prop = props.getProperty(USE_SPARSE_SEMANTICS_PROPERTY)) != null)
             riProps.put(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY, prop);
 
-	currentSlice = new RandomIndexing(riProps);
+        currentSlice = new RandomIndexing(riProps);
     }
 
     /**
@@ -253,7 +256,7 @@ public abstract class OrderedTemporalRandomIndexing
      * @param hook a runnable to be invoked.
      */
     public void addPartitionHook(Runnable hook) {
-	partitionHooks.add(hook);
+        partitionHooks.add(hook);
     }
 
     /**
@@ -261,55 +264,55 @@ public abstract class OrderedTemporalRandomIndexing
      * processing.
      */
     protected void clear() {
-	// Reset the current semantic slice
-	currentSlice.clearSemantics();
+        // Reset the current semantic slice
+        currentSlice.clearSemantics();
 
-	// Clear the start and end times, which will be reset after the next
-	// document is processed following the clear() operation
-	startTime = null;
-	endTime = null;
+        // Clear the start and end times, which will be reset after the next
+        // document is processed following the clear() operation
+        startTime = null;
+        endTime = null;
     }
 
     /**
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-	processDocument(document, System.currentTimeMillis());
+        processDocument(document, System.currentTimeMillis());
     }
 
     /**
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document, long timeStamp) 
-	    throws IOException {
+        throws IOException {
 
-	if (startTime != null && shouldPartitionSpace(timeStamp)) {
-	    for (Iterator<Runnable> it = partitionHooks.iterator(); 
-		     it.hasNext(); ) {
-		Runnable r = it.next();
-		// If one of the hooks has errors, remove it from processing but
-		// don't stop processing.
-		try {
-		    r.run();
-		} catch (Throwable t) {
-		    LOGGER.warning("Partition hook " + r + " caused the " + 
-				   "following exception during its operations" +
-				   t + " and is being removed");
-		    it.remove();
-		}
-	    }
-	    clear();
-	}
-	
-	// Update the semantic slice ranges as necessary
-	if (startTime == null) {
-	    startTime = timeStamp;
-	    endTime = timeStamp;
-	}
-	else if (endTime < timeStamp)
-	    timeStamp = endTime;
+        if (startTime != null && shouldPartitionSpace(timeStamp)) {
+            for (Iterator<Runnable> it = partitionHooks.iterator(); 
+                 it.hasNext(); ) {
+                Runnable r = it.next();
+                // If one of the hooks has errors, remove it from processing but
+                // don't stop processing.
+                try {
+                    r.run();
+                } catch (Throwable t) {
+                    LOGGER.warning("Partition hook " + r + " caused the " + 
+                           "following exception during its operations" +
+                           t + " and is being removed");
+                    it.remove();
+                }
+            }
+            clear();
+        }
+        
+        // Update the semantic slice ranges as necessary
+        if (startTime == null) {
+            startTime = timeStamp;
+            endTime = timeStamp;
+        }
+        else if (endTime < timeStamp)
+            timeStamp = endTime;
 
-	currentSlice.processDocument(document);
+        currentSlice.processDocument(document);
     }
 
     /**
@@ -322,7 +325,7 @@ public abstract class OrderedTemporalRandomIndexing
      *        computed.
      */
     public void setSemanticFilter(Set<String> semanticsToRetain) {
-	currentSlice.setSemanticFilter(semanticsToRetain);
+        currentSlice.setSemanticFilter(semanticsToRetain);
     }
 
     /**
@@ -344,14 +347,14 @@ public abstract class OrderedTemporalRandomIndexing
      * {@inheritDoc}
      */
     public Long startTime() {
-	return startTime;
+        return startTime;
     }
 
     /**
      * {@inheritDoc}
      */
     public Long endTime() {
-	return endTime;
+        return endTime;
     }
 
     /**
@@ -367,8 +370,8 @@ public abstract class OrderedTemporalRandomIndexing
      * @throws UnsupportedOperationException if called
      */ 
     public SortedSet<Long> getTimeSteps(String word) {
-	throw new UnsupportedOperationException(
-	    "getTimeSteps is not supported");
+        throw new UnsupportedOperationException(
+            "getTimeSteps is not supported");
     }
     
     /**
@@ -379,9 +382,9 @@ public abstract class OrderedTemporalRandomIndexing
      *
      * @throws UnsupportedOperationException if called
      */ 
-    public double[] getVectorAfter(String word, long startTime) {
-	throw new UnsupportedOperationException(
-	    "getVectorAfter is not supported");
+    public Vector getVectorAfter(String word, long startTime) {
+        throw new UnsupportedOperationException(
+            "getVectorAfter is not supported");
     }
 
     /**
@@ -392,9 +395,9 @@ public abstract class OrderedTemporalRandomIndexing
      *
      * @throws UnsupportedOperationException if called
      */ 
-    public double[] getVectorBefore(String word, long endTime) {
-	throw new UnsupportedOperationException(
-	    "getVectorBefore is not supported");
+    public Vector getVectorBefore(String word, long endTime) {
+        throw new UnsupportedOperationException(
+            "getVectorBefore is not supported");
     }
 
     /**
@@ -406,24 +409,24 @@ public abstract class OrderedTemporalRandomIndexing
      *
      * @throws UnsupportedOperationException if called
      */ 
-    public double[] getVectorBetween(String word, long startTime, 
-				     long endTime) {
-	throw new UnsupportedOperationException(
-	    "getVectorBetween is not supported");
+    public Vector getVectorBetween(String word, long startTime, 
+                     long endTime) {
+        throw new UnsupportedOperationException(
+            "getVectorBetween is not supported");
     }
 
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String word) {
-	return currentSlice.getVectorFor(word);
+    public Vector getVector(String word) {
+        return currentSlice.getVector(word);
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-	return currentSlice.getVectorSize();
+    public int getVectorLength() {
+        return currentSlice.getVectorLength();
     }
 
 
@@ -433,7 +436,7 @@ public abstract class OrderedTemporalRandomIndexing
      * seen in all semantic slices.
      */
     public Set<String> getWords() {
-	return currentSlice.getWords();
+        return currentSlice.getWords();
     }
 
     /**
@@ -445,7 +448,7 @@ public abstract class OrderedTemporalRandomIndexing
      *         to represent them
      */
     public Map<String,IndexVector> getWordToIndexVector() {
-	return currentSlice.getWordToIndexVector();
+        return currentSlice.getWordToIndexVector();
     }
 
     /**
@@ -465,7 +468,7 @@ public abstract class OrderedTemporalRandomIndexing
      *        used represent it when calculating other word's semantics
      */
     public void setWordToIndexVector(Map<String,IndexVector> m) {
-	currentSlice.setWordToIndexVector(m);
+        currentSlice.setWordToIndexVector(m);
     }
 
 }
