@@ -28,14 +28,16 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.SparseIntArray;
 
-import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 
 import java.lang.reflect.Constructor;
 
+import java.util.Arrays;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashSet;
@@ -462,15 +464,9 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      */ 
     public Vector getVector(String word) {
         SemanticVector v = wordToMeaning.get(word);
-        if (v == null) {
-            return null;
-        }
-        int[] vec = v.getVector();
-        Vector vector = new CompactSparseVector(vec.length);
-        for (int i = 0; i < vec.length; ++i) {
-            vector.set(i, vec[i]);
-        }
-        return vector;
+        return (v == null) 
+            ? null
+            : Vectors.immutableVector(v);
     }
 
     /**
@@ -641,9 +637,12 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     /**
-     * A vector for storing the semantics of a word.
+     * A vector for storing the semantics of a word.  This interface extends the
+     * {@link Vector} interface by allowing the addition of {@link
+     * IndexVectors}.  All other state-modifying methods of this class will
+     * throw an {@link UnsupportedOperationException}.
      */
-    interface SemanticVector {
+    interface SemanticVector extends Vector {
 
         /**
          * Adds the bits specified for the {@code IndexVector} to this
@@ -651,10 +650,6 @@ public class RandomIndexing implements SemanticSpace, Filterable {
          */
         void add(IndexVector v);
 
-        /**
-         * Returns the full vector representing these semantics.
-         */
-        int[] getVector();
     }
 
     /**
@@ -669,6 +664,14 @@ public class RandomIndexing implements SemanticSpace, Filterable {
         public DenseSemanticVector() {
             vector = new int[vectorLength];
         }
+        
+        /**
+         * Throws {@link UnsupportedOperationException} if called.
+         */
+        public double add(int index, double delta) {
+            throw new UnsupportedOperationException(
+                "cannot modify semantic vectors");
+        }
     
         /**
          * {@inheritDoc}
@@ -681,12 +684,51 @@ public class RandomIndexing implements SemanticSpace, Filterable {
             vector[n]--;
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        public double get(int index) {
+            return vector[index];
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int length() {
+            return vectorLength;
+        }
+
+        /**
+         * Throws {@link UnsupportedOperationException} if called.
+         */
+        public void set(int index, double value) {
+            throw new UnsupportedOperationException(
+                "cannot modify semantic vectors");
+        }
+
+        /**
+         * Throws {@link UnsupportedOperationException} if called.
+         */
+        public void set(double[] values) {
+            throw new UnsupportedOperationException(
+                "cannot modify semantic vectors");
+        }
     
         /**
          * {@inheritDoc}
          */
         public synchronized int[] getVector() {
             return vector;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public double[] toArray(int length) {
+            double[] array = new double[length];
+            for (int i = 0; i < vector.length; ++i)
+                array[i] = vector[i];
+            return array;
         }
     }
 
@@ -696,11 +738,20 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      *
      * This class is thread-safe.
      */
-    class SparseSemanticVector implements SemanticVector {
+    class SparseSemanticVector implements SemanticVector, SparseVector {
+
         private final SparseIntArray intArray;
 
         public SparseSemanticVector() {
             intArray = new SparseIntArray();
+        }
+
+        /**
+         * Throws {@link UnsupportedOperationException} if called.
+         */
+        public double add(int index, double delta) {
+            throw new UnsupportedOperationException(
+                "cannot modify semantic vectors");
         }
     
         /**
@@ -708,19 +759,72 @@ public class RandomIndexing implements SemanticSpace, Filterable {
          */
         public synchronized void add(IndexVector v) {
             for (int p : v.positiveDimensions()) {
-                intArray.set(p, intArray.getPrimitive(p) + 1);
+                intArray.setPrimitive(p, intArray.getPrimitive(p) + 1);
             }
             
             for (int n : v.negativeDimensions()) {
-                intArray.set(n, intArray.getPrimitive(n) - 1);
+                intArray.setPrimitive(n, intArray.getPrimitive(n) - 1);
             }        
         }
     
         /**
          * {@inheritDoc}
          */
-        public synchronized int[] getVector() {
-            return intArray.toPrimitiveArray(new int[vectorLength]);
+        public double get(int index) {
+            return intArray.getPrimitive(index);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int[] getNonZeroIndices() {
+            return intArray.getElementIndices();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int length() {
+            return vectorLength;
+        }
+
+        /**
+         * Throws {@link UnsupportedOperationException} if called.
+         */
+        public void set(int index, double value) {
+            throw new UnsupportedOperationException(
+                "cannot modify semantic vectors");
+        }
+
+        /**
+         * Throws {@link UnsupportedOperationException} if called.
+         */
+        public void set(double[] values) {
+            throw new UnsupportedOperationException(
+                "cannot modify semantic vectors");
+        }
+    
+        /**
+         * {@inheritDoc}
+         */
+        public double[] toArray() {
+            double[] array = new double[vectorLength];
+            for (int i : intArray.getElementIndices())
+                array[i] = intArray.get(i);
+            return array;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public double[] toArray(int length) {
+            double[] array = new double[length];
+            for (int i : intArray.getElementIndices()) {
+                if (i >= length)
+                    break;
+                array[i] = intArray.get(i);
+            }
+            return array;
         }
     }
 }
