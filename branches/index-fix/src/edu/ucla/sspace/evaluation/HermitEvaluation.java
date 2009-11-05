@@ -5,6 +5,8 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
 
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -51,8 +53,8 @@ public class HermitEvaluation {
         // Read in the set of test words to compare.
         Set<String> wordList = parseWordList(options.getStringOption('w'));
 
-        Map<String, double[]> controlVectors =
-            new HashMap<String, double[]>(wordList.size()*2);
+        Map<String, Vector> controlVectors =
+            new HashMap<String, Vector>(wordList.size()*2);
 
         // Load up the vectors from the control space which has one vector per
         // word, but was built using the semantic space.  We load up each
@@ -62,9 +64,9 @@ public class HermitEvaluation {
         for (String wordPair : wordList) {
             String[] word1Word2 = wordPair.split(",");
             controlVectors.put(word1Word2[0],
-                               controlSpace.getVectorFor(word1Word2[0]));
+                               controlSpace.getVector(word1Word2[0]));
             controlVectors.put(word1Word2[1],
-                               controlSpace.getVectorFor(word1Word2[1]));
+                               controlSpace.getVector(word1Word2[1]));
         }
 
         // Load up the vectors from the hermit sense and compare them to the
@@ -79,12 +81,12 @@ public class HermitEvaluation {
             String[] word1Word2 = wordPair.split(",");
 
             // Retrieve the original vectors from the map.
-            double[] word1Vec = controlVectors.get(word1Word2[0]);
-            double[] word2Vec = controlVectors.get(word1Word2[1]);
+            Vector word1Vec = controlVectors.get(word1Word2[0]);
+            Vector word2Vec = controlVectors.get(word1Word2[1]);
             System.out.println(word1Word2[0]);
             System.out.println(word1Word2[1]);
 
-            List<double[]> hermitVectors = new ArrayList<double[]>();
+            List<Vector> hermitVectors = new ArrayList<Vector>();
 
             // Retrieve up to senseCount hermit senses.
             for (int i = 0; i < senseCount; ++i) {
@@ -93,7 +95,7 @@ public class HermitEvaluation {
                     senseName += "-" + i;
 
                 if (hermitWords.contains(senseName))
-                    hermitVectors.add(hermitSpace.getVectorFor(senseName));
+                    hermitVectors.add(hermitSpace.getVector(senseName));
                 else
                     break;
             }

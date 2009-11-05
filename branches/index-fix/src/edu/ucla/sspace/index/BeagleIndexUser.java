@@ -195,7 +195,7 @@ public class BeagleIndexUser implements IndexUser {
     /**
      * {@inheritDoc}
      */
-    public Vector getEmtpyVector() {
+    public Vector getEmptyVector() {
         return new DenseVector(indexVectorLength);
     }
 

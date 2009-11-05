@@ -65,6 +65,17 @@ public class CompactSparseVector implements Vector, SparseVector {
     }
 
     /**
+     * Create a {@code CompactSparseVector} from an array, saving only the non
+     * zero entries.
+     *
+     * @param array The double array to produce a sparse vector from.
+     */
+    public CompactSparseVector(double[] array) {
+        vector = new SparseDoubleArray(array);
+        knownLength = array.length;
+    }
+
+    /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {

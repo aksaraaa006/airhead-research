@@ -200,9 +200,9 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String term) {
+    public Vector getVector(String term) {
         Vector sense = splitSenses.get(term);
-        return (sense != null) ? sense.toArray(indexVectorSize) : null;
+        return (sense != null) ? Vectors.immutableVector(sense) : null;
     }
 
     /**
@@ -218,7 +218,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
         return indexVectorSize;
     }
 
@@ -356,7 +356,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             synchronized (firstOrderMap) {
                 vector = firstOrderMap.get(term);
                 if (vector == null) {
-                    vector = user.getEmtpyVector();
+                    vector = user.getEmptyVector();
                     firstOrderMap.put(term, vector);
                 }
             }

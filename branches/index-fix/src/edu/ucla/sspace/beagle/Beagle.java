@@ -125,8 +125,8 @@ public class Beagle implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String term) {
-        return termHolographs.get(term).toArray(indexVectorSize);
+    public Vector getVector(String term) {
+        return Vectors.immutableVector(termHolographs.get(term));
     }
 
     /**
@@ -139,7 +139,7 @@ public class Beagle implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
         return indexVectorSize;
     }
 

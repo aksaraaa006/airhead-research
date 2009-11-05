@@ -182,7 +182,7 @@ public class RandomIndexUser implements IndexUser {
     /**
      * {@inheritDoc}.
      */
-    public Vector getEmtpyVector() {
+    public Vector getEmptyVector() {
         return (useDenseVectors)
             ? new DenseRandomIndexVector(vectorLength)
             : new SparseRandomIndexVector(vectorLength);

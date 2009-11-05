@@ -48,6 +48,8 @@ import edu.ucla.sspace.util.SortedMultiMap;
 import edu.ucla.sspace.util.TimeSpan;
 import edu.ucla.sspace.util.TreeMultiMap;
 
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -523,17 +525,19 @@ public class FixedDurationTemporalRandomIndexingMain {
         // Pre-allocate the zero vector so that if multiple interesting words
         // are not present in the space, they all point to the same zero
         // semantics
-        double[] zeroVector = new double[semanticPartition.getVectorSize()];
+        double[] zeroVector = new double[semanticPartition.getVectorLength()];
 
         for (String word : interestingWords) {
             // update the vectors
             SortedMap<Long,double[]> temporalSemantics = 
                 wordToTemporalSemantics.get(word);
-            double[] semantics = semanticPartition.getVectorFor(word);
-            // If the word was not in the current partition, then give it the zero
-            // vector
-            if (semantics == null)
-                semantics = zeroVector;
+            Vector vector = semanticPartition.getVector(word);
+            double[] semantics = zeroVector;
+            // If the word was not in the current partition, then give it the
+            // zero vector
+            if (semantics != null)
+                semantics = vector.toArray(semanticPartition.getVectorLength());
+
             temporalSemantics.put(currentSemanticPartitionStartTime,
                                   semantics);
         }
@@ -753,8 +757,8 @@ public class FixedDurationTemporalRandomIndexingMain {
             for (String other : mostSimilar.values()) {
                 // determine how similar the two words are
                 double similarity = Similarity.cosineSimilarity(
-		    sspace.getVectorFor(word),
-                    sspace.getVectorFor(other));
+                        sspace.getVector(word),
+                        sspace.getVector(other));
                 sb.append(similarity).append(" ");
             }
             pw.println(sb.toString());

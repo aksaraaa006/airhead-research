@@ -263,7 +263,7 @@ public class FixedDurationTemporalRandomIndexing
      * {@inheritDoc}
      */
     public String getSpaceName() {
-	return PROPERTY_PREFIX + "-" + partitionDuration + "-" + getVectorSize();
+	return PROPERTY_PREFIX + "-" + partitionDuration + "-" + getVectorLength();
     }
 
     /**

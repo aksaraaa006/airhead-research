@@ -23,6 +23,9 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
@@ -65,13 +68,13 @@ import java.util.logging.Logger;
 public class CachingOnDiskSemanticSpace implements SemanticSpace {
 
     private static final Logger LOGGER = 
-	Logger.getLogger(CachingOnDiskSemanticSpace.class.getName());
+        Logger.getLogger(CachingOnDiskSemanticSpace.class.getName());
 
     /**
      * A mapping for words that have had their vector recently loaded into
      * memory.
      */
-    private final Map<String,double[]> wordToVector;
+    private final Map<String, Vector> wordToVector;
 
     /**
      * The backing semantic space that reads in the data from disk.
@@ -79,8 +82,8 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
     private final SemanticSpace backingSpace;
 
     /**
-     * Creates a new instance of {@code CachingOnDiskSemanticSpace} from the data in
-     * the file with the specified name.
+     * Creates a new instance of {@code CachingOnDiskSemanticSpace} from the
+     * data in the file with the specified name.
      *
      * @param filename the name of a file containing a semantic space
      *
@@ -102,7 +105,7 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
      */
     public CachingOnDiskSemanticSpace(File file) throws IOException {
         backingSpace = new OnDiskSemanticSpace(file);
-        wordToVector = new WeakHashMap<String,double[]>();
+        wordToVector = new WeakHashMap<String,Vector>();
     }
 
     /**
@@ -127,21 +130,22 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
      * @throws IOError if any {@code IOException} occurs when reading the data
      *         from the underlying semantic space file.
      */
-    public synchronized double[] getVectorFor(String word) {
-        double[] vector = wordToVector.get(word);
+    public synchronized Vector getVector(String word) {
+        Vector vector = wordToVector.get(word);
         if (vector != null)
-            return vector;
-        vector = backingSpace.getVectorFor(word);
-        if (vector != null)
-            wordToVector.put(word, vector);
-        return null;
+            return Vectors.immutableVector(vector);
+
+        Vector v = backingSpace.getVector(word);
+        if (v != null)
+            wordToVector.put(word, v);
+        return v;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-        return backingSpace.getVectorSize();
+    public int getVectorLength() {
+        return backingSpace.getVectorLength();
     }
 
     /**

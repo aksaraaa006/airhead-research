@@ -29,6 +29,7 @@ import edu.ucla.sspace.common.WordComparator;
 
 import edu.ucla.sspace.text.WordIterator;
 
+import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
 
 import edu.ucla.sspace.util.SortedMultiMap;
@@ -349,13 +350,13 @@ public class SemanticSpaceExplorer {
                 }
             }
 
-            double[] word1vec = current.getVectorFor(word1);
+            Vector word1vec = current.getVector(word1);
             if (word1vec == null) {
                 out.println(word1 + " is not in semantic space " 
                             + getCurrentSSpaceFileName());
                 break;
             }
-            double[] word2vec = current.getVectorFor(word2);
+            Vector word2vec = current.getVector(word2);
             if (word2vec == null) {
                 out.println(word2 + " is not in semantic space " 
                             + getCurrentSSpaceFileName());
@@ -412,13 +413,13 @@ public class SemanticSpaceExplorer {
             }
 
             // Get the vectors from each dimension
-            double[] sspace1vec = sspace1.getVectorFor(word);
+            Vector sspace1vec = sspace1.getVector(word);
             if (sspace1vec == null) {
                 out.println(word + " is not in semantic space " 
                             + name1);
                 break;
             }
-            double[] sspace2vec = sspace2.getVectorFor(word);
+            Vector sspace2vec = sspace2.getVector(word);
             if (sspace2vec == null) {
                 out.println(word + " is not in semantic space " 
                             + name2);
@@ -426,7 +427,7 @@ public class SemanticSpaceExplorer {
             }
 
             // Ensure that the two have the same number of dimensions
-            if (sspace1vec.length != sspace2vec.length) {
+            if (sspace1vec.length() != sspace2vec.length()) {
                 out.println(name1 + " and " + name2 + " have different numbers "
                             + "of dimensions and are not comparable.");
                 break;
@@ -478,7 +479,7 @@ public class SemanticSpaceExplorer {
             }
             String word = commandTokens.next();
 
-            double[] vec = current.getVectorFor(word);
+            Vector vec = current.getVector(word);
             if (vec == null) {
                 out.println(word + " is not in semantic space " +
                             getCurrentSSpaceFileName());

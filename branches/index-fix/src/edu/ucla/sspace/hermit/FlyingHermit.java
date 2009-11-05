@@ -194,9 +194,8 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String term) {
-        Vector sense = splitSenses.get(term);
-        return (sense != null) ? sense.toArray(indexVectorSize) : null;
+    public Vector getVector(String term) {
+        return Vectors.immutableVector(splitSenses.get(term));
     }
 
     /**
@@ -212,7 +211,7 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
         return indexVectorSize;
     }
 
@@ -254,7 +253,7 @@ public class FlyingHermit implements SemanticSpace {
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
-            Vector meaning = indexUser.getEmtpyVector();
+            Vector meaning = indexUser.getEmptyVector();
 
             // Process the previous words, specifying their distance from the
             // focus word.

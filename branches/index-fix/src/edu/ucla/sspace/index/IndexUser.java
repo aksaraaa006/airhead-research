@@ -88,5 +88,5 @@ public interface IndexUser {
      *
      * @return a {@Vector} having the same type as the vectors used internally.
      */
-    public Vector getEmtpyVector();
+    public Vector getEmptyVector();
 }
