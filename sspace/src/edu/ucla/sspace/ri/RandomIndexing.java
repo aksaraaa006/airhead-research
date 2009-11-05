@@ -28,6 +28,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.SparseIntArray;
 
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -737,7 +738,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      *
      * This class is thread-safe.
      */
-    class SparseSemanticVector implements SemanticVector {
+    class SparseSemanticVector implements SemanticVector, SparseVector {
 
         private final SparseIntArray intArray;
 
@@ -771,6 +772,13 @@ public class RandomIndexing implements SemanticSpace, Filterable {
          */
         public double get(int index) {
             return intArray.getPrimitive(index);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int[] getNonZeroIndices() {
+            return intArray.getElementIndices();
         }
 
         /**
