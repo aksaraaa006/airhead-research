@@ -26,6 +26,9 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
+
 import edu.ucla.sspace.util.IntegerMap;
 
 import java.io.BufferedInputStream;
@@ -48,6 +51,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  * An unmodifiable {@link SemanticSpace} whose data is loaded into memory from
  * an {@code .sspace} file.  Instance of this class perform no document
@@ -68,7 +72,7 @@ import java.util.logging.Logger;
 public class StaticSemanticSpace implements SemanticSpace {
 
     private static final Logger LOGGER = 
-	Logger.getLogger(StaticSemanticSpace.class.getName());
+        Logger.getLogger(StaticSemanticSpace.class.getName());
 
     /**
      * The {@code Matrix} which contains the data read from a finished {@link
@@ -96,7 +100,7 @@ public class StaticSemanticSpace implements SemanticSpace {
      *         space data from the file
      */
     public StaticSemanticSpace(String filename) throws IOException {
-	this(new File(filename));
+        this(new File(filename));
     }
 
     /**
@@ -152,39 +156,39 @@ public class StaticSemanticSpace implements SemanticSpace {
      */
     private void loadFromFormat(InputStream is, SSpaceFormat format)
             throws IOException {
-	// NOTE: Use a LinkedHashMap here because this will ensure that the words
-	// are returned in the same row-order as the matrix.  This generates better
-	// disk I/O behavior for accessing the matrix since each word is directly
-	// after the previous on disk.
-	termToIndex = new LinkedHashMap<String, Integer>();
-	Matrix m = null;
-	long start = System.currentTimeMillis();
+        // NOTE: Use a LinkedHashMap here because this will ensure that the
+        // words are returned in the same row-order as the matrix.  This
+        // generates better disk I/O behavior for accessing the matrix since
+        // each word is directly after the previous on disk.
+        termToIndex = new LinkedHashMap<String, Integer>();
+        Matrix m = null;
+        long start = System.currentTimeMillis();
 
-        switch (format) {
-        case TEXT:
-            m = Matrices.synchronizedMatrix(loadText(is));
-            break;
-        case BINARY:
-            m = Matrices.synchronizedMatrix(loadBinary(is));
-            break;
-	    
-	// REMINDER: we don't use synchronized here because the current
-	// sparse matrix implementations are thread-safe.  We really should
-	// be aware of this for when the file-based sparse matrix gets
-	// implemented.  -jurgens 05/29/09
-        case SPARSE_TEXT:
-            m = loadSparseText(is);
-            break;
-        case SPARSE_BINARY:
-            m = loadSparseBinary(is);
-            break;
+            switch (format) {
+            case TEXT:
+                m = Matrices.synchronizedMatrix(loadText(is));
+                break;
+            case BINARY:
+                m = Matrices.synchronizedMatrix(loadBinary(is));
+                break;
+            
+            // REMINDER: we don't use synchronized here because the current
+            // sparse matrix implementations are thread-safe.  We really should
+            // be aware of this for when the file-based sparse matrix gets
+            // implemented.  -jurgens 05/29/09
+            case SPARSE_TEXT:
+                m = loadSparseText(is);
+                break;
+            case SPARSE_BINARY:
+                m = loadSparseBinary(is);
+                break;
         }
         
-	if (LOGGER.isLoggable(Level.FINE)) {
-	    LOGGER.fine("loaded " + format + " .sspace file in " +
-			(System.currentTimeMillis() - start) + "ms");
-	}	
-	wordSpace = m;
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("loaded " + format + " .sspace file in " +
+                (System.currentTimeMillis() - start) + "ms");
+        }	
+        wordSpace = m;
     }
 
     /**
@@ -195,45 +199,45 @@ public class StaticSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
      */
     private Matrix loadText(InputStream fileStream) throws IOException {
-	Matrix matrix = null;
+        Matrix matrix = null;
 
-	BufferedReader br = 
-            new BufferedReader(new InputStreamReader(fileStream));
-	String line = br.readLine();
-	if (line == null)
-	    throw new IOException("Empty .sspace file");
-        // Strip off the 4-byte (2 char) header
-	String[] dimensions = line.split("\\s");
-	int rows = Integer.parseInt(dimensions[0]);
-	int columns = Integer.parseInt(dimensions[1]);
-	int index = 0;
-	
-	// reusable array for writing rows into the matrix
-	double[] row = new double[columns];
-	
-	matrix = Matrices.create(rows, columns, true);
-	while ((line = br.readLine()) != null) {
+        BufferedReader br = 
+                new BufferedReader(new InputStreamReader(fileStream));
+        String line = br.readLine();
+        if (line == null)
+            throw new IOException("Empty .sspace file");
+            // Strip off the 4-byte (2 char) header
+        String[] dimensions = line.split("\\s");
+        int rows = Integer.parseInt(dimensions[0]);
+        int columns = Integer.parseInt(dimensions[1]);
+        int index = 0;
+        
+        // reusable array for writing rows into the matrix
+        double[] row = new double[columns];
+        
+        matrix = Matrices.create(rows, columns, true);
+        while ((line = br.readLine()) != null) {
             if (index >= rows)
                 throw new IOException("More rows than specified");
-	    String[] termVectorPair = line.split("\\|");
-	    String[] values = termVectorPair[1].split("\\s");
-	    termToIndex.put(termVectorPair[0], index);
-	    if (values.length != columns) {
-		throw new IOException(
-                    "improperly formated semantic space file");
-	    }
-	    for (int c = 0; c < columns; ++c) {
-		double d = Double.parseDouble(values[c]);
-		row[c] = d;
-		// matrix.set(index, c, d);
-	    }
-	    matrix.setRow(index, row);
-	    index++;
-	}
+            String[] termVectorPair = line.split("\\|");
+            String[] values = termVectorPair[1].split("\\s");
+            termToIndex.put(termVectorPair[0], index);
+            if (values.length != columns) {
+                throw new IOException(
+                            "improperly formated semantic space file");
+            }
+            for (int c = 0; c < columns; ++c) {
+                double d = Double.parseDouble(values[c]);
+                row[c] = d;
+                // matrix.set(index, c, d);
+            }
+            matrix.setRow(index, row);
+            index++;
+        }
         if (index != rows)
             throw new IOException(String.format(
                 "Expected %d rows; saw %d", rows, index));
-	return matrix;    
+        return matrix;    
     }
 
     /**
@@ -244,35 +248,36 @@ public class StaticSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#TEXT text} format
      */
     private Matrix loadSparseText(InputStream fileStream) throws IOException {
-	Matrix matrix = null;
+        Matrix matrix = null;
 
-	BufferedReader br = 
-            new BufferedReader(new InputStreamReader(fileStream));
-	String line = br.readLine();
-	if (line == null)
-	    throw new IOError(new Throwable("An empty file has been passed in"));
-	String[] dimensions = line.split("\\s");
-	int rows = Integer.parseInt(dimensions[0]);
-	int columns = Integer.parseInt(dimensions[1]);
+        BufferedReader br = 
+                new BufferedReader(new InputStreamReader(fileStream));
+        String line = br.readLine();
+        if (line == null)
+            throw new IOError(new Throwable(
+                        "An empty file has been passed in"));
+        String[] dimensions = line.split("\\s");
+        int rows = Integer.parseInt(dimensions[0]);
+        int columns = Integer.parseInt(dimensions[1]);
 
-	int row = 0;
-	
-	// create a sparse matrix
-	matrix = Matrices.create(rows, columns, false);
-	while ((line = br.readLine()) != null) {
-	    String[] termVectorPair = line.split("\\|");
-	    String[] values = termVectorPair[1].split(",");
-	    termToIndex.put(termVectorPair[0], row);
+        int row = 0;
+        
+        // create a sparse matrix
+        matrix = Matrices.create(rows, columns, false);
+        while ((line = br.readLine()) != null) {
+            String[] termVectorPair = line.split("\\|");
+            String[] values = termVectorPair[1].split(",");
+            termToIndex.put(termVectorPair[0], row);
 
-	    // even indicies are columns, odd are the values
-	    for (int i = 0; i < values.length; i +=2 ) {
-		int col = Integer.parseInt(values[i]);
-		double val = Double.parseDouble(values[i+1]);
-		matrix.set(row, col, val);
-	    }
-	    row++;
-	}
-	return matrix;    
+            // even indicies are columns, odd are the values
+            for (int i = 0; i < values.length; i +=2 ) {
+                int col = Integer.parseInt(values[i]);
+                double val = Double.parseDouble(values[i+1]);
+                matrix.set(row, col, val);
+            }
+            row++;
+        }
+        return matrix;    
     }
 
     /**
@@ -283,21 +288,23 @@ public class StaticSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
     private Matrix loadBinary(InputStream fileStream) throws IOException {
-	DataInputStream dis = new DataInputStream(fileStream);
-	int rows = dis.readInt();
-	int cols = dis.readInt();
-	// create a dense matrix
-	Matrix m = Matrices.create(rows, cols, true);
-	double[] d = new double[cols];
-	for (int row = 0; row < rows; ++row) {
-	    String word = dis.readUTF();
-	    termToIndex.put(word, row);
-	    for (int col = 0; col < cols; ++col) {
-		d[col] = dis.readDouble();
-	    }
-	    m.setRow(row, d);
-	}
-	return m;
+        DataInputStream dis = new DataInputStream(fileStream);
+        int rows = dis.readInt();
+        int cols = dis.readInt();
+
+        // create a dense matrix
+        Matrix m = Matrices.create(rows, cols, true);
+        double[] d = new double[cols];
+        for (int row = 0; row < rows; ++row) {
+            String word = dis.readUTF();
+            termToIndex.put(word, row);
+
+            for (int col = 0; col < cols; ++col) {
+                d[col] = dis.readDouble();
+            }
+            m.setRow(row, d);
+        }
+        return m;
     }
 
     /**
@@ -308,53 +315,55 @@ public class StaticSemanticSpace implements SemanticSpace {
      * @param sspaceFile a file in {@link SSpaceFormat#BINARY binary} format
      */
     private Matrix loadSparseBinary(InputStream fileStream) throws IOException {
-	DataInputStream dis = new DataInputStream(fileStream);
-	int rows = dis.readInt();
-	int cols = dis.readInt();
-	// create a sparse matrix
-	Matrix m = Matrices.create(rows, cols, false);
+        DataInputStream dis = new DataInputStream(fileStream);
+        int rows = dis.readInt();
+        int cols = dis.readInt();
+        // create a sparse matrix
+        Matrix m = Matrices.create(rows, cols, false);
 
-	for (int row = 0; row < rows; ++row) {
-	    String word = dis.readUTF();
-	    termToIndex.put(word, row);
-	    
-	    int nonZero = dis.readInt();
-	    for (int i = 0; i < nonZero; ++i) {
-		int col = dis.readInt();
-		double val = dis.readDouble();
-		m.set(row, col, val);
-	    }
-	}
-	return m;
+        for (int row = 0; row < rows; ++row) {
+            String word = dis.readUTF();
+            termToIndex.put(word, row);
+            
+            int nonZero = dis.readInt();
+            for (int i = 0; i < nonZero; ++i) {
+                int col = dis.readInt();
+                double val = dis.readDouble();
+                m.set(row, col, val);
+                }
+        }
+        return m;
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-	return Collections.unmodifiableSet(termToIndex.keySet());
+        return Collections.unmodifiableSet(termToIndex.keySet());
     }
   
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String term) {
-	Integer index = termToIndex.get(term);
-	return (index == null) ? null : wordSpace.getRow(index.intValue());
+    public Vector getVector(String term) {
+        Integer index = termToIndex.get(term);
+        return (index == null)
+            ? null
+            : wordSpace.getRowVector(index.intValue());
     }
 
     /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
-      return spaceName;
+        return spaceName;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
-      return wordSpace.columns();
+    public int getVectorLength() {
+        return wordSpace.columns();
     }
 
     /**

@@ -237,7 +237,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * to {@link #columns()}
      */
     public Vector getRowVector(int row) {
-        return Vectors.immutableVector(getRow(row, -1, false));
+        Vector v = getRow(row, -1, false);
+        return Vectors.viewVector(v, 0, cols.get());
     }
 
     /**

@@ -148,9 +148,8 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public double[] getVectorFor(String term) {
-        Vector sense = splitSenses.get(term);
-        return (sense != null) ? sense.toArray(indexVectorSize) : null;
+    public Vector getVector(String term) {
+        return Vectors.immutableVector(splitSenses.get(term));
     }
 
     /**
@@ -163,7 +162,7 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public int getVectorSize() {
+    public int getVectorLength() {
         return indexVectorSize;
     }
 

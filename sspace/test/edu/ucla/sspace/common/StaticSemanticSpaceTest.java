@@ -26,10 +26,9 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.*;
 import edu.ucla.sspace.text.*; 
 import edu.ucla.sspace.util.*;
+import edu.ucla.sspace.vector.*;
 
 import java.io.*;
-
-import java.util.*;
 
 import org.junit.*;
 
@@ -44,13 +43,13 @@ public class StaticSemanticSpaceTest {
 
     public StaticSemanticSpaceTest() {
 	control = new DummySemanticSpace();
-	control.setVectorFor("cow", new double[] {1, 0, 0, 0});
-	control.setVectorFor("dog", new double[] {0, 1, 0, 0});
-	control.setVectorFor("ear", new double[] {0, 0, 1, 0});
-	control.setVectorFor("fig", new double[] {0, 0, 0, 1});
-	control.setVectorFor("git", new double[] {1, 1, 0, 0});
-	control.setVectorFor("hat", new double[] {1, 0, 1, 0});
-	control.setVectorFor("its", new double[] {1, 0, 0, 1});
+	control.setVector("cow", new DenseVector(new double[] {1, 0, 0, 0}));
+	control.setVector("dog", new DenseVector(new double[] {0, 1, 0, 0}));
+	control.setVector("ear", new DenseVector(new double[] {0, 0, 1, 0}));
+	control.setVector("fig", new DenseVector(new double[] {0, 0, 0, 1}));
+	control.setVector("git", new DenseVector(new double[] {1, 1, 0, 0}));
+	control.setVector("hat", new DenseVector(new double[] {1, 0, 1, 0}));
+	control.setVector("its", new DenseVector(new double[] {1, 0, 0, 1}));
     }
 
     @Test public void testText() throws Exception { 
@@ -62,8 +61,8 @@ public class StaticSemanticSpaceTest {
 	assertEquals(control.getWords().size(), onDisk.getWords().size());
 	assertTrue(control.getWords().containsAll(onDisk.getWords()));
 	for (String word : control.getWords()) {
-	    assertEquals(Arrays.toString(control.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(control.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
@@ -76,8 +75,8 @@ public class StaticSemanticSpaceTest {
 	assertEquals(control.getWords().size(), onDisk.getWords().size());
 	assertTrue(control.getWords().containsAll(onDisk.getWords()));
 	for (String word : control.getWords()) {
-	    assertEquals(Arrays.toString(control.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(control.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
@@ -90,8 +89,8 @@ public class StaticSemanticSpaceTest {
 	assertEquals(control.getWords().size(), onDisk.getWords().size());
 	assertTrue(control.getWords().containsAll(onDisk.getWords()));
 	for (String word : control.getWords()) {
-	    assertEquals(Arrays.toString(control.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(control.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
@@ -104,8 +103,8 @@ public class StaticSemanticSpaceTest {
 	assertEquals(control.getWords().size(), onDisk.getWords().size());
 	assertTrue(control.getWords().containsAll(onDisk.getWords()));
 	for (String word : control.getWords()) {
-	    assertEquals(Arrays.toString(control.getVectorFor(word)),
-			 Arrays.toString(onDisk.getVectorFor(word)));
+	    assertEquals(VectorIO.toString(control.getVector(word)),
+			 VectorIO.toString(onDisk.getVector(word)));
 	}	
     }
 
