@@ -1,0 +1,59 @@
+#summary Methods for representing documents using Semantic Spaces
+
+= Introduction =
+
+A SemanticSpace model provides representations of terms based on their usage.  Using these terms, the contents of a document can be projected into the Semantic Space by combining the semantic representations of the terms found in the document.  This document provides instructions on how to create these document representations.
+
+= Basic Steps =
+
+In order to project a document's contents into a SemanticSpace, there are three basic steps
+  # Build a SemanticSpace using one of the current algorithms.
+  # Load the SemanticSpace into a DocumentVectorBuilder.
+  # Provide the DocumentVectorBuilder with documents which it should represent based on the SemanticSpace.
+
+Building a SemanticSpace is covered in other documents, but a good introduction for this is LatentSemanticAnalysis or RandomIndexing.
+
+= Using a DocumentVectorBuilder =
+
+The DocumentVectorBuilder will tokenize a document and request semantic representations of the document's terms from a SemanticSpace.  These term vectors will then be combined together based on their usage in the document to form a representation of the document.  This document representation will have the same dimensionality as the term vectors themselves, and can be viewed as a projection of the document in the SemanticSpace.
+
+A DocumentVectorBuilder is created simply by providing a pre-built SemanticSpace, along with options specifying how term vectors should be combined.  Typically, the SemanticSpace passed into a DocumentVectorBuilder is one which has been serialized to disk, and then loaded back from disk as a StaticSemanticSpace.  
+
+The DocumentVectorBuilder provides several options for combining term vectors
+  * Weight vectors based on their term frequency in the given document
+  * Provide no weighting, term vectors are only used once if the term is in a document.
+
+Current the DocumentVectorBuilder combines term vectors simply by summing them together and returning the final summation.  In the future more advanced combination methods may be added, such as a circular convolution of term vectors.
+
+= Using the Document Representation =
+
+Once a set of document representations have been generated, they can be used to determine the similarity between any two documents representations that were generated from the same DocumentVectorBuilder.  Since these representations are have the same type as term representations, the existing methods for computing the Semantic Similarity can be used as well.
+
+= A Sample Use Case = 
+
+The following sample main shows how one might read a serialized semantic space from a file for the purpose of creating a DocumentVectorBuilder.  This program would then process two documents, which are both passed in as command line arguments, and print out the semantic similarity of the two documents.
+
+{{{
+import edu.ucla.sspace.common.DocumentVectorBuilder;
+import edu.ucla.sspace.common.StaticSemanticSpace;
+
+import edu.ucla.sspace.vector.Vector;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+
+public class SampleMain {
+    public static void main(String[] args) throws IOException {
+        StaticSemanticSpace sspace = args[0]; 
+        DocumentVectorBuilder builder = new DocumentVectorBuilder(sspace);
+        BufferedReader br = new BufferedReader(new FileReader(args[1]));
+        Vector documentVector = builder.buildVector(br);
+        br = new BufferedReader(new FileReader(args[2]));
+        Vector documentVector2 = builder.buildVector(br);
+
+        System.out.println(Similarity.cosineSimilarity(documentVector, documentVector2));
+    }
+}
+}}}
