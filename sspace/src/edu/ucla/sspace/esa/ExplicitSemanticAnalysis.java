@@ -21,16 +21,12 @@
 
 package edu.ucla.sspace.esa;
 
-import edu.ucla.sspace.common.DocumentSpace;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.StaticSemanticSpace;
 
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.DenseVector;
-import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -41,12 +37,10 @@ import java.io.BufferedReader;
 import java.io.IOError;
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -75,7 +69,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens 
  */
-public class ExplicitSemanticAnalysis implements DocumentSpace {
+public class ExplicitSemanticAnalysis implements SemanticSpace {
     public static final String ESA_SSPACE_NAME =
         "esa-semantic-space";
 
@@ -92,20 +86,9 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     private Matrix termWikiMatrix;
 
     /**
-     * A restored version of a {@code SemanticSpace}.  This will be used to use
-     * a previous computation of {@code ExplicitSemanticAnalysis}.
-     */
-    private StaticSemanticSpace storedSpace;
-
-    /**
      * A mapping from a term to it's row index in {@code termWikiMatrix}.
      */
     private final ConcurrentMap<String, Integer> termToIndex;
-
-    /**
-     * A mapping from a wiki dimension to it's article title.
-     */
-    private final List<String> indexToArticle;
 
     /**
      * The total number of articles seen so far.
@@ -118,29 +101,10 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     private AtomicInteger termCounter;
 
     public ExplicitSemanticAnalysis() {
-        indexToArticle = new ArrayList<String>();
         termToIndex = new ConcurrentHashMap<String, Integer>();
         termWikiMatrix = new GrowingSparseMatrix();
         articleCount = new AtomicInteger(0);
         termCounter = new AtomicInteger(0);
-        storedSpace = null;
-    }
-
-    /**
-     * Creates an instance of {@code ExplicitSemanticAnalysis} which will use
-     * the given stored semantic space as the source of term vectors.
-     */
-    public ExplicitSemanticAnalysis(String filename) {
-        try {
-            storedSpace = new StaticSemanticSpace(filename);
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-        indexToArticle = null; 
-        termToIndex = null;
-        termWikiMatrix = null; 
-        articleCount = null;
-        termCounter = null;
     }
 
     /**
@@ -149,9 +113,6 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * @param article A wikipedia article.
      */
     public void processDocument(BufferedReader article) throws IOException {
-        if (storedSpace != null)
-            return;
-
         Map<String, Integer> termCounts =
             new LinkedHashMap<String, Integer>(1 << 10, 16f);    
 
@@ -182,17 +143,14 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
         article.close();
 
         // check that we actually loaded in some terms before we increase the
-        // articleCount.    This could possibly save some dimensions in the
-        // final array for articles that were essentially blank.    If we didn't
-        // see any terms, just return 0
+        // articleCount.  This could possibly save some dimensions in the
+        // final array for articles that were essentially blank.  If we didn't
+        // see any terms, just return.
         if (termCounts.isEmpty())
-                return;
+            return;
 
         int articleIndex = 0;
-        synchronized (this) {
-            articleIndex = articleCount.incrementAndGet();
-            indexToArticle.add(articleIndex, articleName);
-        }
+        articleIndex = articleCount.incrementAndGet();
 
         // Once the article has been fully parsed, output all of the sparse
         // data points using the writer.    Synchronize on the writer to prevent
@@ -208,76 +166,34 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     }
 
     /**
-     * Represent a document as the summation of term Vectors.
      * {@inheritDoc}
-     */
-    public Vector representDocument(BufferedReader document)
-            throws IOException {
-        Map<String, Integer> termCounts = new HashMap<String, Integer>();
-        Iterator<String> articleTokens = IteratorFactory.tokenize(document);
-        while (articleTokens.hasNext()) {
-            String term = articleTokens.next();
-            Integer count = termCounts.get(term);
-            termCounts.put(term, (count == null) ? 0 : count.intValue() + 1);
-        }
-
-        Vector documentVector = new CompactSparseVector(getVectorLength());
-        for (Map.Entry<String, Integer> entry : termCounts.entrySet()) {
-            Vector termVector = getTfIdfWeightedVector(entry.getKey(),
-                                                       entry.getValue());
-            if (termVector == null)
-                continue;
-            Vectors.add(documentVector, termVector);
-        }
-
-        return documentVector;
-    }
-
-    /**
-     * {@inheritDoc}
+     * Processes the space using a simple in place TfIdf transform.
      */
     public void processSpace(Properties properties) {
-        if (storedSpace != null)
-            return;
-
         int rows = termWikiMatrix.rows();
         int cols = termWikiMatrix.columns();
-        Vector docCounts = new DenseVector(cols);
+        int[] docCounts = new int[rows];
+        // Calculate how frequently each word occurs in the corpus overall.
         for (int row = 0; row < rows; ++row) {
             SparseVector vector =
                 (SparseVector) termWikiMatrix.getRowVector(row);
             for (int index : vector.getNonZeroIndices())
-                docCounts.add(index, vector.get(index));
+                docCounts[row] += vector.get(index);
         }
 
+        // Compute the TF-IDF value for each entry in the matrix.  The document
+        // frequency is simply the number of nonzero elements for each row
+        // (term).
         for (int row = 0; row < rows; ++row) {
             SparseVector vector =
                 (SparseVector) termWikiMatrix.getRowVector(row);
             int[] nonZero = vector.getNonZeroIndices();
-            double idf = Math.log(articleCount.get() / nonZero.length);
+            double idf = Math.log(articleCount.get() / 1 + nonZero.length);
             for (int index : nonZero) {
-                double tf = vector.get(index) * docCounts.get(index);
-                vector.set(index, tf * idf);
+                double tf = vector.get(index) / docCounts[index];
+                termWikiMatrix.set(row, index, tf*idf*idf);
             }
         }
-    }
-
-    /**
-     * Compute the Term Frequency-Inverse Document frequency value for the given
-     * {@code word} by retrieving how many non zero dimensions the word has.
-     *
-     * @param word The word to compute the TF-IDF value of.
-     *
-     * @return the TF-IDF of {@code word}.
-     */
-    private Vector getTfIdfWeightedVector(String word, int frequency) {
-        Vector termVector = getVector(word);
-        if (termVector == null)
-            return null;
-        SparseVector sparseTermVector = (SparseVector) termVector;
-        double docCount = sparseTermVector.getNonZeroIndices().length;
-        double tfidf = frequency * Math.log(articleCount.get() / docCount);
-        return new ScaledVector(sparseTermVector, tfidf);
     }
 
     /**
@@ -287,7 +203,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     private void addTerm(String term) {
         Integer index = termToIndex.get(term);
         if (index == null) {
-            synchronized(this) {
+            synchronized(termToIndex) {
                 // recheck to see if the term was added while blocking
                 index = termToIndex.get(term);
 
@@ -313,18 +229,13 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * {@inheritDoc}
      */
     public int getVectorLength() {
-        return (storedSpace != null)
-            ? storedSpace.getVectorLength()
-            : articleCount.get();
+        return articleCount.get();
     }
 
     /**
      * {@inheritDoc}
      */
     public Vector getVector(String word) {
-        if (storedSpace != null)
-            return storedSpace.getVector(word);
-
         Integer index = termToIndex.get(word);
         if (index != null)
             return Vectors.immutableVector(
@@ -336,8 +247,6 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-        return (storedSpace != null)
-            ? storedSpace.getWords()
-            : Collections.unmodifiableSet(termToIndex.keySet());
+        return Collections.unmodifiableSet(termToIndex.keySet());
     }        
 }

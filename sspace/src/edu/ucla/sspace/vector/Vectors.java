@@ -44,7 +44,11 @@ public class Vectors {
      * @return An immutable version of {@code vector}.
      */
     public static Vector immutableVector(Vector vector) {
-        return (vector != null) ? new ViewVector(vector) : null;
+        if (vector == null)
+            return null;
+        return (vector instanceof SparseVector)
+            ? new SparseViewVector((SparseVector) vector)
+            : new ViewVector(vector);
     }
 
     /**
@@ -68,7 +72,11 @@ public class Vectors {
      * @param length The length of {@code vector}.
      */
     public static Vector viewVector(Vector vector, int offset, int length) {
-        return (vector != null) ? new ViewVector(vector, offset, length) : null;
+        if (vector == null)
+            return null;
+        return (vector instanceof SparseVector)
+            ? new SparseViewVector((SparseVector) vector, offset, length)
+            : new ViewVector(vector, offset, length);
     }
 
     /**
