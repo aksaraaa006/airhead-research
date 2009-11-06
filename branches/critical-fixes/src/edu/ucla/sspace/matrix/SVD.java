@@ -115,19 +115,19 @@ import java.util.logging.Logger;
 public class SVD {
 
     private static final Logger SVD_LOGGER = 
-	Logger.getLogger(SVD.class.getName());
+        Logger.getLogger(SVD.class.getName());
 
     /**
      * Which algorithm to use for computing the Singular Value Decomposition
      * (SVD) of a matrix.
      */
     public enum Algorithm {
-	SVDLIBC,
-	MATLAB,
-	OCTAVE,
+        SVDLIBC,
+        MATLAB,
+        OCTAVE,
         JAMA,
-	COLT,
-	ANY
+        COLT,
+        ANY
     }
 
     /**
@@ -171,8 +171,25 @@ public class SVD {
      * @throws UnsupportedOperationException if no SVD algorithm is available
      */
     public static Matrix[] svd(File matrix, int dimensions) {
-	return svd(matrix, Algorithm.ANY, 
-		   Format.MATLAB_SPARSE, dimensions);	
+        return svd(matrix, Algorithm.ANY, 
+                   Format.MATLAB_SPARSE, dimensions);        
+    }
+
+    /**
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the {@code Matrix}
+     * using the first svd algorithm which is installed.
+     *
+     * @param matrix a {@code Matrix} to decompose.
+     * @param dimensions the number of singular values to calculate
+     *
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
+     *
+     * @throws UnsupportedOperationException if no SVD algorithm is available
+     */
+    public static Matrix[] svd(Matrix matrix, int dimensions) {
+        return svd(matrix, Algorithm.ANY, dimensions);
+
     }
 
     /**
@@ -191,9 +208,63 @@ public class SVD {
      *         unavailable
      */
     public static Matrix[] svd(File matrix, Algorithm alg, int dimensions) {
-	return svd(matrix, alg, Format.MATLAB_SPARSE, dimensions);
+        return svd(matrix, alg, Format.MATLAB_SPARSE, dimensions);
     }
     
+    /**
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the {@code Matrix}
+     * using the specified SVD algorithm to generate the specified number of
+     * singular values.
+     *
+     * @param matrix a {@code Matrix} to decompose
+     * @param alg which algorithm to use for computing the SVD
+     * @param dimensions the number of singular values to calculate
+     *
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
+     *
+     * @throws UnsupportedOperationException if the provided SVD algorithm is
+     *                                       unavailable
+     */
+    public static Matrix[] svd(Matrix matrix, Algorithm alg, int dimensions) {
+        try {
+            File svdMatrixFile = File.createTempFile("tempMatrix", "dat");
+            svdMatrixFile.deleteOnExit();
+            if (alg == Algorithm.ANY)
+                alg = getFastestAvailableAlgorithm();
+
+            switch (alg) {
+                case SVDLIBC:
+                    MatrixIO.writeMatrix(matrix, svdMatrixFile,
+                                         Format.SVDLIBC_DENSE_BINARY);
+                    return svdlibc(svdMatrixFile, dimensions,
+                                   Format.SVDLIBC_DENSE_BINARY);
+                case COLT:
+                    MatrixIO.writeMatrix(matrix, svdMatrixFile,
+                                         Format.MATLAB_SPARSE);
+                    return coltSVD(svdMatrixFile, Format.MATLAB_SPARSE, 
+                                   dimensions);
+                case JAMA:
+                    MatrixIO.writeMatrix(matrix, svdMatrixFile,
+                                         Format.MATLAB_SPARSE);
+                    return jamaSVD(svdMatrixFile, Format.MATLAB_SPARSE,  
+                                   dimensions);
+                case MATLAB:
+                    MatrixIO.writeMatrix(matrix, svdMatrixFile,
+                                         Format.MATLAB_SPARSE);
+                    return matlabSVDS(svdMatrixFile, dimensions);
+                case OCTAVE:
+                    MatrixIO.writeMatrix(matrix, svdMatrixFile,
+                                         Format.MATLAB_SPARSE);
+                    return octaveSVDS(svdMatrixFile, dimensions);
+            }
+        } catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "convertFormat", ioe);
+        }
+
+        throw new UnsupportedOperationException("Unknown algorithm: " + alg);
+    }
+
     /**
      * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
      * specified format using the the fastst SVD algorithm available to generate
@@ -209,7 +280,7 @@ public class SVD {
      * @throws UnsupportedOperationException if no SVD algorithm is available
      */
     public static Matrix[] svd(File matrix, Format format, int dimensions) {
-	return svd(matrix, Algorithm.ANY, format, dimensions);
+        return svd(matrix, Algorithm.ANY, format, dimensions);
     }
 
     /**
@@ -229,11 +300,11 @@ public class SVD {
      *         unavailable
      */
     public static Matrix[] svd(File matrix, Algorithm alg, 
-			       Format format, int dimensions) {
-	try {
+                               Format format, int dimensions) {
+        try {
             File converted = null;
-	    switch (alg) {
-	    case SVDLIBC: {
+            switch (alg) {
+            case SVDLIBC: {
                 // check whether the input matrix is in an SVDLIBC-acceptable
                 // format already and if not convert
                 switch (format) {
@@ -252,123 +323,123 @@ public class SVD {
                     format = Format.SVDLIBC_SPARSE_BINARY;
                     break;
                 }
-		return svdlibc(converted, dimensions, format);
+                return svdlibc(converted, dimensions, format);
             }
-	    case JAMA:
-		return jamaSVD(matrix, format, dimensions);
-	    case MATLAB:
+            case JAMA:
+                return jamaSVD(matrix, format, dimensions);
+            case MATLAB:
                 // If the format of the input matrix isn't immediately useable
                 // by Matlab convert it
                 if (!format.equals(Format.MATLAB_SPARSE)) {
                     matrix = MatrixIO.convertFormat(
                         matrix, format, Format.MATLAB_SPARSE);
                 }
-		return matlabSVDS(matrix, dimensions);
-	    case OCTAVE:
+                return matlabSVDS(matrix, dimensions);
+            case OCTAVE:
                 // If the format of the input matrix isn't immediately useable
                 // by Octave convert it
                 if (!format.equals(Format.MATLAB_SPARSE)) {
                     matrix = MatrixIO.convertFormat(
                         matrix, format, Format.MATLAB_SPARSE);
                 }
-		return octaveSVDS(matrix, dimensions);
-	    case COLT:
-		return coltSVD(matrix, format, dimensions);
-	    case ANY:
+                return octaveSVDS(matrix, dimensions);
+            case COLT:
+                return coltSVD(matrix, format, dimensions);
+            case ANY:
 
-		// Keep copies of these around in case they are MATLAB and we
-		// end up convert for SVDLIBC which ends up failing.  This
-		// ensures that we don't do an unnecessary matrix conversion
-		Format originalFormat = format;
-		File originalMatrix = matrix;
+                // Keep copies of these around in case they are MATLAB and we
+                // end up convert for SVDLIBC which ends up failing.  This
+                // ensures that we don't do an unnecessary matrix conversion
+                Format originalFormat = format;
+                File originalMatrix = matrix;
                 
-		// Try to peform the SVD with any installed algorithm.  Go in
-		// order of speed.  If any algorithm causes an error, go on to
-		// the next until all are exhausted.
-		if (isSVDLIBCavailable()) {
-		    try {
-			// check whether the input matrix is in an
-			// SVDLIBC-acceptable format already and if not convert
-			switch (format) {
-			case SVDLIBC_DENSE_BINARY:
-			case SVDLIBC_DENSE_TEXT:
-			case SVDLIBC_SPARSE_TEXT:
-			case SVDLIBC_SPARSE_BINARY:
-			    converted = matrix;
-			    break;
-			default:
+                // Try to peform the SVD with any installed algorithm.  Go in
+                // order of speed.  If any algorithm causes an error, go on to
+                // the next until all are exhausted.
+                if (isSVDLIBCavailable()) {
+                    try {
+                        // check whether the input matrix is in an
+                        // SVDLIBC-acceptable format already and if not convert
+                        switch (format) {
+                        case SVDLIBC_DENSE_BINARY:
+                        case SVDLIBC_DENSE_TEXT:
+                        case SVDLIBC_SPARSE_TEXT:
+                        case SVDLIBC_SPARSE_BINARY:
+                            converted = matrix;
+                            break;
+                        default:
                             SVD_LOGGER.fine("converting input matrix format " +
                                             "from" + format + " to SVDLIBC" +
                                             " ready format");
-			    converted = MatrixIO.convertFormat(
-				matrix, format, Format.SVDLIBC_SPARSE_BINARY);
-			    format = Format.SVDLIBC_SPARSE_BINARY;
-			    break;
-			}
-			return svdlibc(converted, dimensions, format);		
-		    } catch (UnsupportedOperationException uoe) { }
+                            converted = MatrixIO.convertFormat(
+                                matrix, format, Format.SVDLIBC_SPARSE_BINARY);
+                            format = Format.SVDLIBC_SPARSE_BINARY;
+                            break;
+                        }
+                        return svdlibc(converted, dimensions, format);                
+                    } catch (UnsupportedOperationException uoe) { }
 
-		    // If SVDLIBC didn't work reset the matrix and format back
-		    // to what it orignally was
-		    format = originalFormat;
-		    matrix = originalMatrix;
-		}
+                    // If SVDLIBC didn't work reset the matrix and format back
+                    // to what it orignally was
+                    format = originalFormat;
+                    matrix = originalMatrix;
+                }
 
 
-		if (isMatlabAvailable()) {
-		    try {
-			converted = MatrixIO.convertFormat(
-			    matrix, format, Format.MATLAB_SPARSE);
-		    
-			return matlabSVDS(converted, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
+                if (isMatlabAvailable()) {
+                    try {
+                        converted = MatrixIO.convertFormat(
+                            matrix, format, Format.MATLAB_SPARSE);
+                    
+                        return matlabSVDS(converted, dimensions);
+                    } catch (UnsupportedOperationException uoe) { }
+                }
 
-		if (isOctaveAvailable()) {
-		    try {
-			converted = MatrixIO.convertFormat(
-			    matrix, format, Format.MATLAB_SPARSE);
-			return octaveSVDS(converted, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
+                if (isOctaveAvailable()) {
+                    try {
+                        converted = MatrixIO.convertFormat(
+                            matrix, format, Format.MATLAB_SPARSE);
+                        return octaveSVDS(converted, dimensions);
+                    } catch (UnsupportedOperationException uoe) { }
+                }
 
-		if (isColtAvailable()) {
-		    try {
-			return coltSVD(matrix, format, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
-		
-		if (isJAMAavailable()) {
-		    try {
-			return jamaSVD(matrix, format, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
+                if (isColtAvailable()) {
+                    try {
+                        return coltSVD(matrix, format, dimensions);
+                    } catch (UnsupportedOperationException uoe) { }
+                }
+                
+                if (isJAMAavailable()) {
+                    try {
+                        return jamaSVD(matrix, format, dimensions);
+                    } catch (UnsupportedOperationException uoe) { }
+                }
 
-		// if none of the algoritms were available throw an exception to
-		// let the user know that the SVD cannot be done under any
-		// circumstances
-		throw new UnsupportedOperationException(
-		    "No SVD algorithms are available");
-	    }
-	}
-	catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "convertFormat", ioe);
-	}
+                // if none of the algoritms were available throw an exception to
+                // let the user know that the SVD cannot be done under any
+                // circumstances
+                throw new UnsupportedOperationException(
+                    "No SVD algorithms are available");
+            }
+        }
+        catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "convertFormat", ioe);
+        }
 
-	// required for compilation
-	throw new UnsupportedOperationException("Unknown algorithm: " + alg);
+        // required for compilation
+        throw new UnsupportedOperationException("Unknown algorithm: " + alg);
     }
 
     /**
      * Returns {@code true} if the JAMA library is available
      */
     private static boolean isJAMAavailable() {
-	try {
-	    Class<?> clazz = loadJamaMatrixClass();
-	} catch (ClassNotFoundException cnfe) {
-	    return false;
-	}
-	return true;
+        try {
+            Class<?> clazz = loadJamaMatrixClass();
+        } catch (ClassNotFoundException cnfe) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -378,87 +449,87 @@ public class SVD {
      * it from an external resource.
      */
     private static Class<?> loadJamaMatrixClass() 
-	    throws ClassNotFoundException {
+            throws ClassNotFoundException {
 
-	try {
-	    Class<?> clazz = Class.forName("Jama.Matrix");
-	    return clazz;
-	    
-	} catch (ClassNotFoundException cnfe) {
+        try {
+            Class<?> clazz = Class.forName("Jama.Matrix");
+            return clazz;
+            
+        } catch (ClassNotFoundException cnfe) {
 
-	    // If we see a CNFE, don't immediately give up.  It's most likely
-	    // that this class is being invoked from inside a .jar, so see if
-	    // the user specified where JAMA is manually.
-	    String jamaProp = System.getProperty("jama.path");
-	    
-	    // if not, rethrow since the class does not exist
-	    if (jamaProp == null)
-		throw cnfe;
+            // If we see a CNFE, don't immediately give up.  It's most likely
+            // that this class is being invoked from inside a .jar, so see if
+            // the user specified where JAMA is manually.
+            String jamaProp = System.getProperty("jama.path");
+            
+            // if not, rethrow since the class does not exist
+            if (jamaProp == null)
+                throw cnfe;
 
-	    File jamaJarFile = new File(jamaProp);	    
-	    try {
-		// Otherwise, try to load the class from the specified .jar file
-		java.net.URLClassLoader classLoader = 
-		    new java.net.URLClassLoader(
-		        new java.net.URL[] { jamaJarFile.toURI().toURL() });
-		
-		Class<?> clazz = Class.forName("Jama.Matrix", true,
-					       classLoader);
-		return clazz;
-	    } catch (Exception e) {
-		// fall through and rethrow original
-	    }
-	    
-	    throw cnfe;
-	}
+            File jamaJarFile = new File(jamaProp);            
+            try {
+                // Otherwise, try to load the class from the specified .jar file
+                java.net.URLClassLoader classLoader = 
+                    new java.net.URLClassLoader(
+                        new java.net.URL[] { jamaJarFile.toURI().toURL() });
+                
+                Class<?> clazz = Class.forName("Jama.Matrix", true,
+                                               classLoader);
+                return clazz;
+            } catch (Exception e) {
+                // fall through and rethrow original
+            }
+            
+            throw cnfe;
+        }
     }
 
     /**
      * Returns {@code true} if the COLT library is available
      */
     private static boolean isColtAvailable() {
-	try {
-	    // Try loading just the sparse matrix class, as if it is there, the
-	    // other matrix classes will be there as well
-	    Class<?> clazz = loadColtSparseMatrixClass();
-	} catch (ClassNotFoundException cnfe) {
-	    return false;
-	}
-	return true;
+        try {
+            // Try loading just the sparse matrix class, as if it is there, the
+            // other matrix classes will be there as well
+            Class<?> clazz = loadColtSparseMatrixClass();
+        } catch (ClassNotFoundException cnfe) {
+            return false;
+        }
+        return true;
     }
 
     /**
      * Reflectively loads the COLT {@code SparseDoubleMatrix2D} class.
      */
     private static Class<?> loadColtSparseMatrixClass() 
-	    throws ClassNotFoundException {
+            throws ClassNotFoundException {
 
-	String coltMatrixClassName = 
-	    "cern.colt.matrix.impl.SparseDoubleMatrix2D";	
-	return loadColtClass(coltMatrixClassName);
+        String coltMatrixClassName = 
+            "cern.colt.matrix.impl.SparseDoubleMatrix2D";        
+        return loadColtClass(coltMatrixClassName);
     }
 
     /**
      * Reflectively loads the COLT {@code DenseDoubleMatrix2D} class.
      */
     private static Class<?> loadColtDenseMatrixClass() 
-	    throws ClassNotFoundException {
+            throws ClassNotFoundException {
 
-	String coltMatrixClassName = 
-	    "cern.colt.matrix.impl.DenseDoubleMatrix2D";	
-	return loadColtClass(coltMatrixClassName);
+        String coltMatrixClassName = 
+            "cern.colt.matrix.impl.DenseDoubleMatrix2D";        
+        return loadColtClass(coltMatrixClassName);
     }
 
     /**
      * Reflectively loads the COLT {@code SingularValueDecompositoin} class.
      */
     private static Class<?> loadColtSVDClass() 
-	throws ClassNotFoundException {
+        throws ClassNotFoundException {
 
-	String coltSVDClassName = 
-	    "cern.colt.matrix.linalg.SingularValueDecomposition";	
-	return loadColtClass(coltSVDClassName);
-    }	
+        String coltSVDClassName = 
+            "cern.colt.matrix.linalg.SingularValueDecomposition";        
+        return loadColtClass(coltSVDClassName);
+    }        
 
     /**
      * Reflectively loads the COLT-related class.  If the class is not
@@ -467,47 +538,47 @@ public class SVD {
      * it from an external resource.
      */
     private static Class<?> loadColtClass(String className) 
-	    throws ClassNotFoundException { 
-	try {
-	    Class<?> clazz = 
-		Class.forName(className);
-	    return clazz;
-	    
-	} catch (ClassNotFoundException cnfe) {
+            throws ClassNotFoundException { 
+        try {
+            Class<?> clazz = 
+                Class.forName(className);
+            return clazz;
+            
+        } catch (ClassNotFoundException cnfe) {
 
-	    // If we see a CNFE, don't immediately give up.  It's most likely
-	    // that this class is being invoked from inside a .jar, so see if
-	    // the user specified where COLT is manually.
-	    String coltProp = System.getProperty("colt.path");
-	    
-	    // if not, rethrow since the class does not exist
-	    if (coltProp == null)
-		throw cnfe;
+            // If we see a CNFE, don't immediately give up.  It's most likely
+            // that this class is being invoked from inside a .jar, so see if
+            // the user specified where COLT is manually.
+            String coltProp = System.getProperty("colt.path");
+            
+            // if not, rethrow since the class does not exist
+            if (coltProp == null)
+                throw cnfe;
 
-	    File coltJarFile = new File(coltProp);
-	    try {
-		// Otherwise, try to load the class from the specified .jar
-		// file.  If the ClassLoader for loading all COLT classes has
-		// not yet been initialized, do so now.  We need to maintain
-		// only one class loader for all COLT classes, otherwise the
-		// reflective invocation will fail; the constructor type system
-		// does not work correctly if the parameter objects have been
-		// loaded from a different class loader. --jurgens
-		if (coltClassLoader == null) {
-		    coltClassLoader = 
-			new java.net.URLClassLoader(
-		        new java.net.URL[] { coltJarFile.toURI().toURL() });
-		}
+            File coltJarFile = new File(coltProp);
+            try {
+                // Otherwise, try to load the class from the specified .jar
+                // file.  If the ClassLoader for loading all COLT classes has
+                // not yet been initialized, do so now.  We need to maintain
+                // only one class loader for all COLT classes, otherwise the
+                // reflective invocation will fail; the constructor type system
+                // does not work correctly if the parameter objects have been
+                // loaded from a different class loader. --jurgens
+                if (coltClassLoader == null) {
+                    coltClassLoader = 
+                        new java.net.URLClassLoader(
+                        new java.net.URL[] { coltJarFile.toURI().toURL() });
+                }
 
-		Class<?> clazz = Class.forName(className, true,
-					       coltClassLoader);
-		return clazz;
-	    } catch (Exception e) {
-		// fall through and rethrow original
-	    }
-	    
-	    throw cnfe;
-	}
+                Class<?> clazz = Class.forName(className, true,
+                                               coltClassLoader);
+                return clazz;
+            } catch (Exception e) {
+                // fall through and rethrow original
+            }
+            
+            throw cnfe;
+        }
     }
 
     // A private static field that is only initialized if COLT is used and the
@@ -521,39 +592,39 @@ public class SVD {
      * Returns {@code true} if the SVDLIBC library is available
      */
     private static boolean isSVDLIBCavailable() {
-	try {
-	    Process svdlibc = Runtime.getRuntime().exec("svd");
+        try {
+            Process svdlibc = Runtime.getRuntime().exec("svd");
             svdlibc.waitFor();
-	} catch (Exception e) {
-	    return false;
-	}
-	return true;
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
     /**
      * Returns {@code true} if Octave is available
      */
     private static boolean isOctaveAvailable() {
-	try {
-	    Process octave = Runtime.getRuntime().exec("octave -v");
+        try {
+            Process octave = Runtime.getRuntime().exec("octave -v");
             octave.waitFor();
-	} catch (Exception e) {
-	    return false;
-	}
-	return true;	
+        } catch (Exception e) {
+            return false;
+        }
+        return true;        
     }
 
     /**
      * Returns {@code true} if Matlab is available
      */
     private static boolean isMatlabAvailable() {
-	try {
-	    Process matlab = Runtime.getRuntime().exec("matlab -h");
+        try {
+            Process matlab = Runtime.getRuntime().exec("matlab -h");
             matlab.waitFor();
-	} catch (Exception ioe) {
-	    return false;
-	}
-	return true;
+        } catch (Exception ioe) {
+            return false;
+        }
+        return true;
     }
     
     /**
@@ -569,106 +640,106 @@ public class SVD {
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] jamaSVD(File matrix, Format format, int dimensions) {
-	// Use reflection to load the JAMA classes and perform all the
-	// operation in order to avoid any compile-time dependencies on the
-	// package.
-	try {
-	    SVD_LOGGER.fine("attempting JAMA");
-	    isJAMAavailable();
-	    double[][] inputMatrix = MatrixIO.readMatrixArray(
-		matrix, format);
+        // Use reflection to load the JAMA classes and perform all the
+        // operation in order to avoid any compile-time dependencies on the
+        // package.
+        try {
+            SVD_LOGGER.fine("attempting JAMA");
+            isJAMAavailable();
+            double[][] inputMatrix = MatrixIO.readMatrixArray(
+                matrix, format);
 
-	    int rows = inputMatrix.length;
-	    int cols = inputMatrix[0].length; // assume at least one row
+            int rows = inputMatrix.length;
+            int cols = inputMatrix[0].length; // assume at least one row
 
-	    Class<?> clazz = loadJamaMatrixClass();
-	    Constructor<?> c = clazz.getConstructor(double[][].class);
-	    Object jamaMatrix = 
-		c.newInstance(new Object[] { inputMatrix } );
-	    Method svdMethod = clazz.getMethod("svd", new Class[] {});
-	    Object svdObject = svdMethod.invoke(jamaMatrix, new Object[] {});
-	    
-	    // covert the JAMA u,s,v matrices to our matrices
- 	    String[] matrixMethods = new String[] {"getU", "getS", "getV"};
-	    String[] matrixNames = new String[] {"JAMA-U", "JAMA-S", "JAMA-V"};
-	    
-	    Matrix[] usv = new Matrix[3];
-	    
-	    // Loop to avoid repeating reflection code
-	    for (int i = 0; i < 3; ++i) {
-		Method matrixAccessMethod = svdObject.getClass().
-		    getMethod(matrixMethods[i], new Class[] {});
-		Object matrixObject = matrixAccessMethod.invoke(
-		    svdObject, new Object[] {});
-		Method toArrayMethod = matrixObject.getClass().
-		    getMethod("getArray", new Class[] {});
-		double[][] matrixArray = (double[][])(toArrayMethod.
-		    invoke(matrixObject, new Object[] {}));
+            Class<?> clazz = loadJamaMatrixClass();
+            Constructor<?> c = clazz.getConstructor(double[][].class);
+            Object jamaMatrix = 
+                c.newInstance(new Object[] { inputMatrix } );
+            Method svdMethod = clazz.getMethod("svd", new Class[] {});
+            Object svdObject = svdMethod.invoke(jamaMatrix, new Object[] {});
+            
+            // covert the JAMA u,s,v matrices to our matrices
+             String[] matrixMethods = new String[] {"getU", "getS", "getV"};
+            String[] matrixNames = new String[] {"JAMA-U", "JAMA-S", "JAMA-V"};
+            
+            Matrix[] usv = new Matrix[3];
+            
+            // Loop to avoid repeating reflection code
+            for (int i = 0; i < 3; ++i) {
+                Method matrixAccessMethod = svdObject.getClass().
+                    getMethod(matrixMethods[i], new Class[] {});
+                Object matrixObject = matrixAccessMethod.invoke(
+                    svdObject, new Object[] {});
+                Method toArrayMethod = matrixObject.getClass().
+                    getMethod("getArray", new Class[] {});
+                double[][] matrixArray = (double[][])(toArrayMethod.
+                    invoke(matrixObject, new Object[] {}));
 
-		// JAMA computes the full SVD, so the output matrices need to be
-		// truncated to the desired number of dimensions
-		resize:
-		switch (i) {
-		case 0: { // U array
-		    Matrix u = Matrices.create(rows, dimensions, 
-					       Type.DENSE_IN_MEMORY);
-		    // fill the U matrix by copying over the values
-		    for (int row = 0; row < rows; ++row) {
-			for (int col = 0; col < dimensions; ++col) {
-			    u.set(row, col, matrixArray[row][col]);
-			}
-		    }
-		    usv[i] = u;
-		    break resize;
-		}
+                // JAMA computes the full SVD, so the output matrices need to be
+                // truncated to the desired number of dimensions
+                resize:
+                switch (i) {
+                case 0: { // U array
+                    Matrix u = Matrices.create(rows, dimensions, 
+                                               Type.DENSE_IN_MEMORY);
+                    // fill the U matrix by copying over the values
+                    for (int row = 0; row < rows; ++row) {
+                        for (int col = 0; col < dimensions; ++col) {
+                            u.set(row, col, matrixArray[row][col]);
+                        }
+                    }
+                    usv[i] = u;
+                    break resize;
+                }
 
-		case 1: { // S array
-		    // special case for the diagonal matrix
-		    Matrix s = new DiagonalMatrix(dimensions);
-		    for (int diag = 0; diag < dimensions; ++diag) {
-			s.set(diag, diag, matrixArray[diag][diag]);
-		    }
-		    usv[i] = s;
-		    break resize;
-		}
+                case 1: { // S array
+                    // special case for the diagonal matrix
+                    Matrix s = new DiagonalMatrix(dimensions);
+                    for (int diag = 0; diag < dimensions; ++diag) {
+                        s.set(diag, diag, matrixArray[diag][diag]);
+                    }
+                    usv[i] = s;
+                    break resize;
+                }
 
-		case 2: { // V array
+                case 2: { // V array
 
-		    // create it on disk since it's not expected that people
-		    // will access this matrix
-		    Matrix v = Matrices.create(dimensions, cols,
-					       Type.DENSE_ON_DISK);
+                    // create it on disk since it's not expected that people
+                    // will access this matrix
+                    Matrix v = Matrices.create(dimensions, cols,
+                                               Type.DENSE_ON_DISK);
 
-		    // Fill the V matrix by copying over the values.  Note that
-		    // we manually transpose the matrix because JAMA returns the
-		    // result transposed from what we specify.
-		    for (int row = 0; row < dimensions; ++row) {
-			for (int col = 0; col < cols; ++col) {
-			    v.set(row, col, matrixArray[col][row]);
-			}
-		    }
-		    usv[i] = v;
-		}
-		}
-	    }
+                    // Fill the V matrix by copying over the values.  Note that
+                    // we manually transpose the matrix because JAMA returns the
+                    // result transposed from what we specify.
+                    for (int row = 0; row < dimensions; ++row) {
+                        for (int col = 0; col < cols; ++col) {
+                            v.set(row, col, matrixArray[col][row]);
+                        }
+                    }
+                    usv[i] = v;
+                }
+                }
+            }
 
-	    return usv;
-	} catch (ClassNotFoundException cnfe) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", cnfe);
-	} catch (NoSuchMethodException nsme) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", nsme);
-	} catch (InstantiationException ie) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", ie);
-	} catch (IllegalAccessException iae) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", iae);
-	} catch (InvocationTargetException ite) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", ite);
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", ioe);
-	}
-	
-	throw new UnsupportedOperationException(
-	    "JAMA-based SVD is not available on this system");
+            return usv;
+        } catch (ClassNotFoundException cnfe) {
+            SVD_LOGGER.log(Level.SEVERE, "JAMA", cnfe);
+        } catch (NoSuchMethodException nsme) {
+            SVD_LOGGER.log(Level.SEVERE, "JAMA", nsme);
+        } catch (InstantiationException ie) {
+            SVD_LOGGER.log(Level.SEVERE, "JAMA", ie);
+        } catch (IllegalAccessException iae) {
+            SVD_LOGGER.log(Level.SEVERE, "JAMA", iae);
+        } catch (InvocationTargetException ite) {
+            SVD_LOGGER.log(Level.SEVERE, "JAMA", ite);
+        } catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "JAMA", ioe);
+        }
+        
+        throw new UnsupportedOperationException(
+            "JAMA-based SVD is not available on this system");
     }
 
     /**
@@ -684,156 +755,156 @@ public class SVD {
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] coltSVD(File matrix, Format format, int dimensions) {
-	// Use reflection to load the COLT classes and perform all the
-	// operation in order to avoid any compile-time dependencies on the
-	// package.
-	try {
-	    SVD_LOGGER.fine("attempting COLT");
-	    isColtAvailable();
-	    double[][] inputMatrix = MatrixIO.readMatrixArray(
-		matrix, format);
+        // Use reflection to load the COLT classes and perform all the
+        // operation in order to avoid any compile-time dependencies on the
+        // package.
+        try {
+            SVD_LOGGER.fine("attempting COLT");
+            isColtAvailable();
+            double[][] inputMatrix = MatrixIO.readMatrixArray(
+                matrix, format);
 
-	    int rows = inputMatrix.length;
-	    int cols = inputMatrix[0].length; // assume at least one row
+            int rows = inputMatrix.length;
+            int cols = inputMatrix[0].length; // assume at least one row
 
-	    // COLT provides both a sparse and dense Matrix implementation.
-	    // Estimate which one would be more efficient based on the format
-	    // type.
-	    boolean isDense =  Matrices.isDense(format);
-	    Class<?> clazz = (isDense)
-		? loadColtDenseMatrixClass()
-		: loadColtSparseMatrixClass();
-	    Constructor<?> c = clazz.getConstructor(double[][].class);
-	    
-	    // create the COLT matrix using the java 2D array as values.  Note
-	    // that these values are automatically copied, which makes them
-	    // present in memory at the same time.  This could be particulary
-	    // inefficient if the values are also in memory elsewhere when they
-	    // were used to write to disk.  
-	    //
-	    // A possible option would be determine the matrix dimension but
-	    // still keep the values on disk, then read the values off the disk.
-	    // This would be slower, but may present a large memory savings -
-	    // especially for sparse matrices.  Keeping values on disk should be
-	    // considered if it is later discovered that this method presents a
-	    // performance bottleneck for COLT users.  --jurgens 7/7/09
-	    Object coltMatrix = 
-		c.newInstance(new Object[] { inputMatrix } );
+            // COLT provides both a sparse and dense Matrix implementation.
+            // Estimate which one would be more efficient based on the format
+            // type.
+            boolean isDense =  Matrices.isDense(format);
+            Class<?> clazz = (isDense)
+                ? loadColtDenseMatrixClass()
+                : loadColtSparseMatrixClass();
+            Constructor<?> c = clazz.getConstructor(double[][].class);
+            
+            // create the COLT matrix using the java 2D array as values.  Note
+            // that these values are automatically copied, which makes them
+            // present in memory at the same time.  This could be particulary
+            // inefficient if the values are also in memory elsewhere when they
+            // were used to write to disk.  
+            //
+            // A possible option would be determine the matrix dimension but
+            // still keep the values on disk, then read the values off the disk.
+            // This would be slower, but may present a large memory savings -
+            // especially for sparse matrices.  Keeping values on disk should be
+            // considered if it is later discovered that this method presents a
+            // performance bottleneck for COLT users.  --jurgens 7/7/09
+            Object coltMatrix = 
+                c.newInstance(new Object[] { inputMatrix } );
 
-	    Class<?> svdClass = loadColtSVDClass();
+            Class<?> svdClass = loadColtSVDClass();
 
-	    // Load the base class of both matrix classes for the constructor.
-	    // We need this class for looking up the correct type for the SVD
-	    // class constructor.
-	    Class<?> matrixBaseClass = loadColtClass(
-		"cern.colt.matrix.DoubleMatrix2D");
+            // Load the base class of both matrix classes for the constructor.
+            // We need this class for looking up the correct type for the SVD
+            // class constructor.
+            Class<?> matrixBaseClass = loadColtClass(
+                "cern.colt.matrix.DoubleMatrix2D");
 
-	    // Load the constructor that takes in a DoubleMatrix2D
-  	    Constructor<?> svdConstructor = 
-  		svdClass.getConstructor(matrixBaseClass);
+            // Load the constructor that takes in a DoubleMatrix2D
+              Constructor<?> svdConstructor = 
+                  svdClass.getConstructor(matrixBaseClass);
 
-	    // Compute the full SVD of the matrix
-	    Object svdObject = 
-		svdConstructor.newInstance(coltMatrix);
+            // Compute the full SVD of the matrix
+            Object svdObject = 
+                svdConstructor.newInstance(coltMatrix);
 
-	    Matrix[] usv = new Matrix[3];
+            Matrix[] usv = new Matrix[3];
 
-	    // covert the COLT u,s,v matrices to our matrices
- 	    String[] matrixMethods = new String[] {"getU", "getS", "getV"};
-	    String[] matrixNames = new String[] {"COLT-U", "COLT-S", "COLT-V"};
-	    	    
-	    // Loop to avoid repeating reflection boilerplate code
-	    for (int i = 0; i < 3; ++i) {
-		Method matrixAccessMethod = svdObject.getClass().
-		    getMethod(matrixMethods[i], new Class[] {});
-		Object matrixObject = matrixAccessMethod.invoke(
-		    svdObject, new Object[] {});
-		Method toArrayMethod = matrixObject.getClass().
-		    getMethod("toArray", new Class[] {});
+            // covert the COLT u,s,v matrices to our matrices
+             String[] matrixMethods = new String[] {"getU", "getS", "getV"};
+            String[] matrixNames = new String[] {"COLT-U", "COLT-S", "COLT-V"};
+                        
+            // Loop to avoid repeating reflection boilerplate code
+            for (int i = 0; i < 3; ++i) {
+                Method matrixAccessMethod = svdObject.getClass().
+                    getMethod(matrixMethods[i], new Class[] {});
+                Object matrixObject = matrixAccessMethod.invoke(
+                    svdObject, new Object[] {});
+                Method toArrayMethod = matrixObject.getClass().
+                    getMethod("toArray", new Class[] {});
 
-		// COLT computes the full SVD, so the output matrices need to be
-		// truncated to the desired number of dimensions
-		resize:
-		switch (i) {
-		case 0: { // U array
+                // COLT computes the full SVD, so the output matrices need to be
+                // truncated to the desired number of dimensions
+                resize:
+                switch (i) {
+                case 0: { // U array
 
-		    // get the full array
-		    double[][] matrixArray = (double[][])(toArrayMethod.
-		        invoke(matrixObject, new Object[] {}));
+                    // get the full array
+                    double[][] matrixArray = (double[][])(toArrayMethod.
+                        invoke(matrixObject, new Object[] {}));
 
-		    Matrix u = Matrices.create(rows, dimensions, 
-					       Type.DENSE_IN_MEMORY);
-		    // fill the U matrix by copying over the values
-		    for (int row = 0; row < rows; ++row) {
-			for (int col = 0; col < dimensions; ++col) {
-			    u.set(row, col, matrixArray[row][col]);
-			}
-		    }
-		    usv[i] = u;
-		    break resize;
-		}
+                    Matrix u = Matrices.create(rows, dimensions, 
+                                               Type.DENSE_IN_MEMORY);
+                    // fill the U matrix by copying over the values
+                    for (int row = 0; row < rows; ++row) {
+                        for (int col = 0; col < dimensions; ++col) {
+                            u.set(row, col, matrixArray[row][col]);
+                        }
+                    }
+                    usv[i] = u;
+                    break resize;
+                }
 
-		case 1: { // S array
+                case 1: { // S array
 
-		    // Special case for the diagonal matrix.  Unlike U and V, it
-		    // would be a giant waste to load in the full 2D array for a
-		    // diagonal matrix.  Therefore just reflectively use the
-		    // matrix accessors to save memory.
-		    Matrix s = new DiagonalMatrix(dimensions);
+                    // Special case for the diagonal matrix.  Unlike U and V, it
+                    // would be a giant waste to load in the full 2D array for a
+                    // diagonal matrix.  Therefore just reflectively use the
+                    // matrix accessors to save memory.
+                    Matrix s = new DiagonalMatrix(dimensions);
 
-		    Method get = matrixObject.getClass().
-			getMethod("get", new Class[] {Integer.TYPE, 
-						      Integer.TYPE});
+                    Method get = matrixObject.getClass().
+                        getMethod("get", new Class[] {Integer.TYPE, 
+                                                      Integer.TYPE});
 
-		    for (int diag = 0; diag < dimensions; ++diag) {
-			double value = ((Double)(get.invoke(matrixObject,
-			    new Object[] {Integer.valueOf(diag),
-					  Integer.valueOf(diag) }))).doubleValue();
-			s.set(diag, diag, value);
-		    }
-		    usv[i] = s;
-		    break resize;
-		}
+                    for (int diag = 0; diag < dimensions; ++diag) {
+                        double value = ((Double)(get.invoke(matrixObject,
+                            new Object[] {Integer.valueOf(diag),
+                                          Integer.valueOf(diag) }))).doubleValue();
+                        s.set(diag, diag, value);
+                    }
+                    usv[i] = s;
+                    break resize;
+                }
 
-		case 2: { // V array
+                case 2: { // V array
 
-		    // get the full array
-		    double[][] matrixArray = (double[][])(toArrayMethod.
-		        invoke(matrixObject, new Object[] {}));
+                    // get the full array
+                    double[][] matrixArray = (double[][])(toArrayMethod.
+                        invoke(matrixObject, new Object[] {}));
 
-		    // create it on disk since it's not expected that people
-		    // will access this matrix
-		    Matrix v = Matrices.create(dimensions, cols,
-					       Type.DENSE_ON_DISK);
+                    // create it on disk since it's not expected that people
+                    // will access this matrix
+                    Matrix v = Matrices.create(dimensions, cols,
+                                               Type.DENSE_ON_DISK);
 
-		    // Fill the V matrix by copying over the values.
-		    for (int row = 0; row < dimensions; ++row) {
-			for (int col = 0; col < cols; ++col) {
-			    v.set(row, col, matrixArray[row][col]);
-			}
-		    }
-		    usv[i] = v;
-		}
-		}
-	    }
+                    // Fill the V matrix by copying over the values.
+                    for (int row = 0; row < dimensions; ++row) {
+                        for (int col = 0; col < cols; ++col) {
+                            v.set(row, col, matrixArray[row][col]);
+                        }
+                    }
+                    usv[i] = v;
+                }
+                }
+            }
 
-	    return usv;
-	} catch (ClassNotFoundException cnfe) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", cnfe);
-	} catch (NoSuchMethodException nsme) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", nsme);
-	} catch (InstantiationException ie) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", ie);
-	} catch (IllegalAccessException iae) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", iae);
-	} catch (InvocationTargetException ite) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", ite);
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", ioe);
-	}
-	
-	throw new UnsupportedOperationException(
-	    "COLT-based SVD is not available on this system");
+            return usv;
+        } catch (ClassNotFoundException cnfe) {
+            SVD_LOGGER.log(Level.SEVERE, "COLT", cnfe);
+        } catch (NoSuchMethodException nsme) {
+            SVD_LOGGER.log(Level.SEVERE, "COLT", nsme);
+        } catch (InstantiationException ie) {
+            SVD_LOGGER.log(Level.SEVERE, "COLT", ie);
+        } catch (IllegalAccessException iae) {
+            SVD_LOGGER.log(Level.SEVERE, "COLT", iae);
+        } catch (InvocationTargetException ite) {
+            SVD_LOGGER.log(Level.SEVERE, "COLT", ite);
+        } catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "COLT", ioe);
+        }
+        
+        throw new UnsupportedOperationException(
+            "COLT-based SVD is not available on this system");
     }
 
     /**
@@ -842,104 +913,104 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code Matrix} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices
+     *         in that order
      *
      * @throws UnsupportedOperationException if the SVDLIBC SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] svdlibc(File matrix, int dimensions, Format format) {
-	try {
-	    String formatString = "";
-	    
-	    // output the correct formatting flags based on the matrix type
-	    switch (format) {
-	    case SVDLIBC_DENSE_BINARY:
-		formatString = " -r db ";
-		break;
-	    case SVDLIBC_DENSE_TEXT:
-		formatString = " -r dt ";
-		break;
-	    case SVDLIBC_SPARSE_BINARY:
-		formatString = " -r sb ";
-		break;
-	    case SVDLIBC_SPARSE_TEXT:
-		// Do nothing since it's the default format.
-		break;
-	    default:
-		throw new UnsupportedOperationException(
-		    "Format type is not accepted");
-	    }
+        try {
+            String formatString = "";
+            
+            // output the correct formatting flags based on the matrix type
+            switch (format) {
+            case SVDLIBC_DENSE_BINARY:
+                formatString = " -r db ";
+                break;
+            case SVDLIBC_DENSE_TEXT:
+                formatString = " -r dt ";
+                break;
+            case SVDLIBC_SPARSE_BINARY:
+                formatString = " -r sb ";
+                break;
+            case SVDLIBC_SPARSE_TEXT:
+                // Do nothing since it's the default format.
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                    "Format type is not accepted");
+            }
 
-	    File outputMatrixFile = File.createTempFile("svdlibc", ".dat");
-	    outputMatrixFile.deleteOnExit();
-	    String outputMatrixPrefix = outputMatrixFile.getAbsolutePath();
+            File outputMatrixFile = File.createTempFile("svdlibc", ".dat");
+            outputMatrixFile.deleteOnExit();
+            String outputMatrixPrefix = outputMatrixFile.getAbsolutePath();
 
-	    SVD_LOGGER.fine("creating SVDLIBC factor matrices at: " + 
-			      outputMatrixPrefix);
-	    String commandLine = "svd -o " + outputMatrixPrefix + formatString +
+            SVD_LOGGER.fine("creating SVDLIBC factor matrices at: " + 
+                              outputMatrixPrefix);
+            String commandLine = "svd -o " + outputMatrixPrefix + formatString +
                 " -w db " + // output is dense binary
-		" -d " + dimensions + " " + matrix.getAbsolutePath();
-	    SVD_LOGGER.fine(commandLine);
-	    Process svdlibc = Runtime.getRuntime().exec(commandLine);
+                " -d " + dimensions + " " + matrix.getAbsolutePath();
+            SVD_LOGGER.fine(commandLine);
+            Process svdlibc = Runtime.getRuntime().exec(commandLine);
 
-	    BufferedReader stdout = new BufferedReader(
-		new InputStreamReader(svdlibc.getInputStream()));
-	    BufferedReader stderr = new BufferedReader(
-		new InputStreamReader(svdlibc.getErrorStream()));
+            BufferedReader stdout = new BufferedReader(
+                new InputStreamReader(svdlibc.getInputStream()));
+            BufferedReader stderr = new BufferedReader(
+                new InputStreamReader(svdlibc.getErrorStream()));
 
-	    StringBuilder output = new StringBuilder("SVDLIBC output:\n");
-	    for (String line = null; (line = stderr.readLine()) != null; ) {
-		output.append(line).append("\n");
-	    }
-	    SVD_LOGGER.fine(output.toString());
-	    
-	    int exitStatus = svdlibc.waitFor();
-	    SVD_LOGGER.fine("svdlibc exit status: " + exitStatus);
+            StringBuilder output = new StringBuilder("SVDLIBC output:\n");
+            for (String line = null; (line = stderr.readLine()) != null; ) {
+                output.append(line).append("\n");
+            }
+            SVD_LOGGER.fine(output.toString());
+            
+            int exitStatus = svdlibc.waitFor();
+            SVD_LOGGER.fine("svdlibc exit status: " + exitStatus);
 
-	    // If SVDLIBC was successful in generating the files, return them.
-	    if (exitStatus == 0) {
+            // If SVDLIBC was successful in generating the files, return them.
+            if (exitStatus == 0) {
 
-		File Ut = new File(outputMatrixPrefix + "-Ut");
-		File S  = new File(outputMatrixPrefix + "-S");
-		File Vt = new File(outputMatrixPrefix + "-Vt");
-		    
-		// SVDLIBC returns the matrices in U', S, V' with U and V of
-		// transposed.  To ensure consistence, transpose the U matrix
-		return new Matrix[] { 
-		    // load U in memory, since that is what most algorithms will
-		    // be using (i.e. it is the word space).  SVDLIBC returns
-		    // this as U transpose, so correct it by indicating that the
-		    // read operation should transpose the matrix as it is built
-		    MatrixIO.readMatrix(Ut, Format.SVDLIBC_DENSE_BINARY, 
+                File Ut = new File(outputMatrixPrefix + "-Ut");
+                File S  = new File(outputMatrixPrefix + "-S");
+                File Vt = new File(outputMatrixPrefix + "-Vt");
+                    
+                // SVDLIBC returns the matrices in U', S, V' with U and V of
+                // transposed.  To ensure consistence, transpose the U matrix
+                return new Matrix[] { 
+                    // load U in memory, since that is what most algorithms will
+                    // be using (i.e. it is the word space).  SVDLIBC returns
+                    // this as U transpose, so correct it by indicating that the
+                    // read operation should transpose the matrix as it is built
+                    MatrixIO.readMatrix(Ut, Format.SVDLIBC_DENSE_BINARY, 
                                         Type.DENSE_IN_MEMORY, true),
-		    // Sigma only has n values for an n^2 matrix, so make it
-		    // sparse.  Note that even if we specify the output to be in
-		    // dense binary, the signular vectors are still reported as
-		    // text
-		    readSVDLIBCsingularVector(S),
-		    // V could be large, so just keep it on disk.  
-		    MatrixIO.readMatrix(Vt, Format.SVDLIBC_DENSE_BINARY, 
-					Type.DENSE_ON_DISK)
-		};
-	    }
-	    else {
+                    // Sigma only has n values for an n^2 matrix, so make it
+                    // sparse.  Note that even if we specify the output to be in
+                    // dense binary, the signular vectors are still reported as
+                    // text
+                    readSVDLIBCsingularVector(S),
+                    // V could be large, so just keep it on disk.  
+                    MatrixIO.readMatrix(Vt, Format.SVDLIBC_DENSE_BINARY, 
+                                        Type.DENSE_ON_DISK)
+                };
+            }
+            else {
                 StringBuilder sb = new StringBuilder();
                 for (String line = null; (line = stderr.readLine()) != null; ) {
                     sb.append(line).append("\n");
                 }
-		// warning or error?
+                // warning or error?
                 SVD_LOGGER.warning("svdlibc exited with error status.  " + 
                                    "stderr:\n" + sb.toString());
-	    }
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "SVDLIBC", ioe);
-	} catch (InterruptedException ie) {
-	    SVD_LOGGER.log(Level.SEVERE, "SVDLIBC", ie);
-	}
+            }
+        } catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "SVDLIBC", ioe);
+        } catch (InterruptedException ie) {
+            SVD_LOGGER.log(Level.SEVERE, "SVDLIBC", ie);
+        }
 
-	throw new UnsupportedOperationException(
-	    "SVDLIBC is not correctly installed on this system");
+        throw new UnsupportedOperationException(
+            "SVDLIBC is not correctly installed on this system");
     }
 
     /**
@@ -947,28 +1018,28 @@ public class SVD {
      * that SVDLIBC uses to output the &Sigma; matrix.
      */
     private static Matrix readSVDLIBCsingularVector(File sigmaMatrixFile)
-	    throws IOException {
-	BufferedReader br = 
-	    new BufferedReader(new FileReader(sigmaMatrixFile)); 
+            throws IOException {
+        BufferedReader br = 
+            new BufferedReader(new FileReader(sigmaMatrixFile)); 
 
-	int dimension = -1;
-	int valsSeen = 0;
-	Matrix m = null;
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] vals = line.split("\\s+");
-	    for (int i = 0; i < vals.length; ++i) {
-		// the first value seen should be the number of singular values
-		if (dimension == -1) {
-		    dimension = Integer.parseInt(vals[i]);
-		    m = new DiagonalMatrix(dimension);
-		}
-		else {
-		    m.set(valsSeen, valsSeen, Double.parseDouble(vals[i]));
-		    ++valsSeen;
-		}
-	    }
-	}
-	return m;
+        int dimension = -1;
+        int valsSeen = 0;
+        Matrix m = null;
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] vals = line.split("\\s+");
+            for (int i = 0; i < vals.length; ++i) {
+                // the first value seen should be the number of singular values
+                if (dimension == -1) {
+                    dimension = Integer.parseInt(vals[i]);
+                    m = new DiagonalMatrix(dimension);
+                }
+                else {
+                    m.set(valsSeen, valsSeen, Double.parseDouble(vals[i]));
+                    ++valsSeen;
+                }
+            }
+        }
+        return m;
     }
 
     /**
@@ -977,18 +1048,18 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code Matrix} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices
+     *         in that order
      *
      * @throws UnsupportedOperationException if the Matlab SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] matlabSVDS(File matrix, int dimensions) {
-	try {
-	    // create the matlab file for executing
-	    File uOutput = File.createTempFile("matlab-svds-U",".dat");
-	    File sOutput = File.createTempFile("matlab-svds-S",".dat");
-	    File vOutput = File.createTempFile("matlab-svds-V",".dat");
+        try {
+            // create the matlab file for executing
+            File uOutput = File.createTempFile("matlab-svds-U",".dat");
+            File sOutput = File.createTempFile("matlab-svds-S",".dat");
+            File vOutput = File.createTempFile("matlab-svds-V",".dat");
             if (SVD_LOGGER.isLoggable(Level.FINE)) {
                 SVD_LOGGER.fine("writing Matlab output to files:\n" + 
                                 "  " + uOutput + "\n" +
@@ -996,73 +1067,73 @@ public class SVD {
                                 "  " + vOutput + "\n");
             }
 
-	    uOutput.deleteOnExit();
-	    sOutput.deleteOnExit();
-	    vOutput.deleteOnExit();
+            uOutput.deleteOnExit();
+            sOutput.deleteOnExit();
+            vOutput.deleteOnExit();
 
-	    String commandLine = "matlab -nodisplay -nosplash -nojvm";
-	    SVD_LOGGER.fine(commandLine);
-	    Process matlab = Runtime.getRuntime().exec(commandLine);
-	    
-	    // capture the input so we know then Matlab is finished
-	    BufferedReader br = new BufferedReader(
-		new InputStreamReader(matlab.getInputStream()));
+            String commandLine = "matlab -nodisplay -nosplash -nojvm";
+            SVD_LOGGER.fine(commandLine);
+            Process matlab = Runtime.getRuntime().exec(commandLine);
+            
+            // capture the input so we know then Matlab is finished
+            BufferedReader br = new BufferedReader(
+                new InputStreamReader(matlab.getInputStream()));
 
-	    // pipe Matlab the program to execute
-	    PrintWriter pw = new PrintWriter(matlab.getOutputStream());
-	    pw.println(
-		"Z = load('" + matrix.getAbsolutePath() + "','-ascii');\n" +
-		"A = spconvert(Z);\n" + 
-		"% Remove the raw data file to save space\n" +
-		"clear Z;\n" + 
-		"[U, S, V] = svds(A, " + dimensions + " );\n" +
-		"save " + uOutput.getAbsolutePath() + " U -ASCII\n" +
-		"save " + sOutput.getAbsolutePath() + " S -ASCII\n" +
-		"save " + vOutput.getAbsolutePath() + " V -ASCII\n" + 
-		"fprintf('Matlab Finished\\n');");
-	    pw.close();
+            // pipe Matlab the program to execute
+            PrintWriter pw = new PrintWriter(matlab.getOutputStream());
+            pw.println(
+                "Z = load('" + matrix.getAbsolutePath() + "','-ascii');\n" +
+                "A = spconvert(Z);\n" + 
+                "% Remove the raw data file to save space\n" +
+                "clear Z;\n" + 
+                "[U, S, V] = svds(A, " + dimensions + " );\n" +
+                "save " + uOutput.getAbsolutePath() + " U -ASCII\n" +
+                "save " + sOutput.getAbsolutePath() + " S -ASCII\n" +
+                "save " + vOutput.getAbsolutePath() + " V -ASCII\n" + 
+                "fprintf('Matlab Finished\\n');");
+            pw.close();
 
-	    // capture the output
-	    StringBuilder output = new StringBuilder("Matlab svds output:\n");
-	    for (String line = null; (line = br.readLine()) != null; ) {
-		output.append(line).append("\n");
-		if (line.equals("Matlab Finished")) {
-		    matlab.destroy();
-		}
-	    }
-	    SVD_LOGGER.fine(output.toString());
-	    
-	    int exitStatus = matlab.waitFor();
-	    SVD_LOGGER.fine("Matlab svds exit status: " + exitStatus);
+            // capture the output
+            StringBuilder output = new StringBuilder("Matlab svds output:\n");
+            for (String line = null; (line = br.readLine()) != null; ) {
+                output.append(line).append("\n");
+                if (line.equals("Matlab Finished")) {
+                    matlab.destroy();
+                }
+            }
+            SVD_LOGGER.fine(output.toString());
+            
+            int exitStatus = matlab.waitFor();
+            SVD_LOGGER.fine("Matlab svds exit status: " + exitStatus);
 
-	    // If Matlab was successful in generating the files, return them.
-	    if (exitStatus == 0) {
+            // If Matlab was successful in generating the files, return them.
+            if (exitStatus == 0) {
 
- 		// Matlab returns the matrices in U, S, V, with none of
-		// transposed.  To ensure consistence, transpose the V matrix
-		return new Matrix[] { 
-		// load U in memory, since that is what most algorithms will be
-		// using (i.e. it is the word space)
-		MatrixIO.readMatrix(uOutput, Format.DENSE_TEXT, 
-				    Type.DENSE_IN_MEMORY),
-		// Sigma only has n values for an n^2 matrix, so make it sparse
-		MatrixIO.readMatrix(sOutput, Format.DENSE_TEXT, 
-				    Type.SPARSE_ON_DISK),
-		// V could be large, so just keep it on disk.  Furthermore,
-		// Matlab does not transpose V, so transpose it
-		MatrixIO.readMatrix(vOutput, Format.DENSE_TEXT, 
+                 // Matlab returns the matrices in U, S, V, with none of
+                // transposed.  To ensure consistence, transpose the V matrix
+                return new Matrix[] { 
+                // load U in memory, since that is what most algorithms will be
+                // using (i.e. it is the word space)
+                MatrixIO.readMatrix(uOutput, Format.DENSE_TEXT, 
+                                    Type.DENSE_IN_MEMORY),
+                // Sigma only has n values for an n^2 matrix, so make it sparse
+                MatrixIO.readMatrix(sOutput, Format.DENSE_TEXT, 
+                                    Type.SPARSE_ON_DISK),
+                // V could be large, so just keep it on disk.  Furthermore,
+                // Matlab does not transpose V, so transpose it
+                MatrixIO.readMatrix(vOutput, Format.DENSE_TEXT, 
                                     Type.DENSE_ON_DISK, true)
-		};
-	    }
+                };
+            }
 
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "Matlab svds", ioe);
-	} catch (InterruptedException ie) {
-	    SVD_LOGGER.log(Level.SEVERE, "Matlab svds", ie);
-	}
-	
-	throw new UnsupportedOperationException(
-	    "Matlab svds is not correctly installed on this system");
+        } catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "Matlab svds", ioe);
+        } catch (InterruptedException ie) {
+            SVD_LOGGER.log(Level.SEVERE, "Matlab svds", ie);
+        }
+        
+        throw new UnsupportedOperationException(
+            "Matlab svds is not correctly installed on this system");
     }
 
     /**
@@ -1071,94 +1142,97 @@ public class SVD {
      * @param matrix a file containing a matrix
      * @param dimensions the number of singular values to calculate
      *
-     * @return an array of {@code Matrix} objects for the U, S, and V matrices in
-     *         that order
+     * @return an array of {@code Matrix} objects for the U, S, and V matrices
+     *         in that order
      *
      * @throws UnsupportedOperationException if the Octave SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
     static Matrix[] octaveSVDS(File matrix, int dimensions) {
-	try {
-	    // create the octave file for executing
-	    File octaveFile = File.createTempFile("octave-svds",".m");
-	    File uOutput = File.createTempFile("octave-svds-U",".dat");
-	    File sOutput = File.createTempFile("octave-svds-S",".dat");
-	    File vOutput = File.createTempFile("octave-svds-V",".dat");
-	    octaveFile.deleteOnExit();
-	    uOutput.deleteOnExit();
-	    sOutput.deleteOnExit();
-	    vOutput.deleteOnExit();
+        try {
+            // create the octave file for executing
+            File octaveFile = File.createTempFile("octave-svds",".m");
+            File uOutput = File.createTempFile("octave-svds-U",".dat");
+            File sOutput = File.createTempFile("octave-svds-S",".dat");
+            File vOutput = File.createTempFile("octave-svds-V",".dat");
+            octaveFile.deleteOnExit();
+            uOutput.deleteOnExit();
+            sOutput.deleteOnExit();
+            vOutput.deleteOnExit();
 
-	    // Print the customized Octave program to a file.
-	    PrintWriter pw = new PrintWriter(octaveFile);
-	    pw.println(
-		"Z = load('" + matrix.getAbsolutePath() + "','-ascii');\n" +
-		"A = spconvert(Z);\n" + 
-		"% Remove the raw data file to save space\n" +
-		"clear Z;\n" + 
-		"[U, S, V] = svds(A, " + dimensions + " );\n" +
-		"save(\"-ascii\", \"" + uOutput.getAbsolutePath() + "\", \"U\");\n" +
-		"save(\"-ascii\", \"" + sOutput.getAbsolutePath() + "\", \"S\");\n" +
-		"save(\"-ascii\", \"" + vOutput.getAbsolutePath() + "\", \"V\");\n" +
-		"fprintf('Octave Finished\\n');\n");
-	    pw.close();
-	    
-	    // build a command line where octave executes the previously
-	    // constructed file
-	    String commandLine = "octave " + octaveFile.getAbsolutePath();
-	    SVD_LOGGER.fine(commandLine);
-	    Process octave = Runtime.getRuntime().exec(commandLine);
+            // Print the customized Octave program to a file.
+            PrintWriter pw = new PrintWriter(octaveFile);
+            pw.println(
+                "Z = load('" + matrix.getAbsolutePath() + "','-ascii');\n" +
+                "A = spconvert(Z);\n" + 
+                "% Remove the raw data file to save space\n" +
+                "clear Z;\n" + 
+                "[U, S, V] = svds(A, " + dimensions + " );\n" +
+                "save(\"-ascii\", \"" + uOutput.getAbsolutePath() +
+                "\", \"U\");\n" +
+                "save(\"-ascii\", \"" + sOutput.getAbsolutePath() +
+                "\", \"S\");\n" +
+                "save(\"-ascii\", \"" + vOutput.getAbsolutePath() +
+                "\", \"V\");\n" +
+                "fprintf('Octave Finished\\n');\n");
+            pw.close();
+            
+            // build a command line where octave executes the previously
+            // constructed file
+            String commandLine = "octave " + octaveFile.getAbsolutePath();
+            SVD_LOGGER.fine(commandLine);
+            Process octave = Runtime.getRuntime().exec(commandLine);
 
-	    BufferedReader br = new BufferedReader(
-		new InputStreamReader(octave.getInputStream()));
-	    BufferedReader stderr = new BufferedReader(
-		new InputStreamReader(octave.getErrorStream()));
+            BufferedReader br = new BufferedReader(
+                new InputStreamReader(octave.getInputStream()));
+            BufferedReader stderr = new BufferedReader(
+                new InputStreamReader(octave.getErrorStream()));
 
-	    // capture the output
-	    StringBuilder output = new StringBuilder("Octave svds output:\n");
-	    for (String line = null; (line = br.readLine()) != null; ) {
-		output.append(line).append("\n");
-	    }
-	    SVD_LOGGER.fine(output.toString());
-	    
-	    int exitStatus = octave.waitFor();
-	    SVD_LOGGER.fine("Octave svds exit status: " + exitStatus);
+            // capture the output
+            StringBuilder output = new StringBuilder("Octave svds output:\n");
+            for (String line = null; (line = br.readLine()) != null; ) {
+                output.append(line).append("\n");
+            }
+            SVD_LOGGER.fine(output.toString());
+            
+            int exitStatus = octave.waitFor();
+            SVD_LOGGER.fine("Octave svds exit status: " + exitStatus);
 
-	    // If Octave was successful in generating the files, return them.
-	    if (exitStatus == 0) {
+            // If Octave was successful in generating the files, return them.
+            if (exitStatus == 0) {
 
- 		// Octave returns the matrices in U, S, V, with none of
-		// transposed.  To ensure consistence, transpose the V matrix
-		return new Matrix[] { 
-		// load U in memory, since that is what most algorithms will be
-		// using (i.e. it is the word space)
-		MatrixIO.readMatrix(uOutput, Format.DENSE_TEXT, 
-				    Type.DENSE_IN_MEMORY),
-		// Sigma only has n values for an n^2 matrix, so make it sparse
-		MatrixIO.readMatrix(sOutput, Format.DENSE_TEXT, 
-				    Type.SPARSE_ON_DISK),
-		// V could be large, so just keep it on disk.  Furthermore,
-		// Octave does not transpose V, so transpose it
-		MatrixIO.readMatrix(vOutput, Format.DENSE_TEXT, 
+                 // Octave returns the matrices in U, S, V, with none of
+                // transposed.  To ensure consistence, transpose the V matrix
+                return new Matrix[] { 
+                // load U in memory, since that is what most algorithms will be
+                // using (i.e. it is the word space)
+                MatrixIO.readMatrix(uOutput, Format.DENSE_TEXT, 
+                                    Type.DENSE_IN_MEMORY),
+                // Sigma only has n values for an n^2 matrix, so make it sparse
+                MatrixIO.readMatrix(sOutput, Format.DENSE_TEXT, 
+                                    Type.SPARSE_ON_DISK),
+                // V could be large, so just keep it on disk.  Furthermore,
+                // Octave does not transpose V, so transpose it
+                MatrixIO.readMatrix(vOutput, Format.DENSE_TEXT, 
                                     Type.DENSE_ON_DISK, true)
-		};
-	    }
+                };
+            }
             else {
                 StringBuilder sb = new StringBuilder();
                 for (String line = null; (line = stderr.readLine()) != null; ) {
                     sb.append(line).append("\n");
                 }
-		// warning or error?
+                // warning or error?
                 SVD_LOGGER.warning("Octave exited with error status.  " + 
                                    "stderr:\n" + sb.toString());
             }
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "Octave svds", ioe);
-	} catch (InterruptedException ie) {
-	    SVD_LOGGER.log(Level.SEVERE, "Octave svds", ie);
-	}
-	
-	throw new UnsupportedOperationException(
-	    "Octave svds is not correctly installed on this system");
+        } catch (IOException ioe) {
+            SVD_LOGGER.log(Level.SEVERE, "Octave svds", ioe);
+        } catch (InterruptedException ie) {
+            SVD_LOGGER.log(Level.SEVERE, "Octave svds", ie);
+        }
+        
+        throw new UnsupportedOperationException(
+            "Octave svds is not correctly installed on this system");
     }
 }
