@@ -72,6 +72,12 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
     private final DataOutputStream matrixDos;
 
     /**
+     * Whether the inputted matrix columns should be transposed as rows in the
+     * final matrix data file.
+     */
+    private final boolean transposeData;
+
+    /**
      * Whether the builder has finished adding data to the matrix array
      */
     private boolean isFinished;
@@ -98,30 +104,70 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
     private int nonZeroValues;
 
     /**
+     * The file to which the matrix will be written if the data is to be
+     * transposed in its final form.  The data is originally written in its
+     * non-transposed form to this file and then is converted when {@link
+     * #finish() finish} is called.
+     */
+    private File transposedMatrixFile;
+
+    /**
      * Creates a builder for a matrix in the {@link
      * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format to be
      * stored in a temporary file.
      */
     public SvdlibcSparseBinaryMatrixBuilder() {
-        this(getTempMatrixFile());
+        this(getTempMatrixFile(), false);
+    }
+
+    /**
+     * Creates a builder for a matrix in the {@link
+     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format to be
+     * stored in a temporary file.
+     *
+     * @param transposeData {@code true} if the input matrix columns should be
+     *        tranposed in the backing matrix file
+     */
+    public SvdlibcSparseBinaryMatrixBuilder(boolean transposeData) {
+        this(getTempMatrixFile(), transposeData);
     }
 
     /**
      * Creates a builder for a matrix in the {@link
      * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format,
      * which will be stored in the specified file.
+     *
+     * @param backingFile the file to which the matrix should be written
      */
     public SvdlibcSparseBinaryMatrixBuilder(File backingFile) {
+        this(backingFile, false);
+    }
+
+    /**
+     * Creates a builder for a matrix in the {@link
+     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format,
+     * which will be stored in the specified file.
+     *
+     * @param backingFile the file to which the matrix should be written
+     * @param transposeData {@code true} if the input matrix columns should be
+     *        tranposed in the backing matrix file
+     */
+    public SvdlibcSparseBinaryMatrixBuilder(File backingFile, 
+                                            boolean transposeData) {
         this.matrixFile = backingFile;
+        this.transposeData = transposeData; 
         curCol = 0;
         numRows = 0;
         nonZeroValues = 0;
         isFinished = false;
         try {
+            File matrixDataFile = (transposeData)
+                ? (transposedMatrixFile = getTempMatrixFile())
+                : backingFile;
             // Interact with the matrix using a RandomAccessFile
             //matrixRaf = new RandomAccessFile(backingFile, "rw");
             matrixDos = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(backingFile)));
+                new BufferedOutputStream(new FileOutputStream(matrixDataFile)));
 
             // write the 12 byte header to advance the file pointer to where the
             // matrix data will start.  The header will be back filled once the
@@ -302,9 +348,14 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
             try {
                 matrixDos.close();
                 // Re-open as a random access file so we can overwrite the 3 int
-                // header that specifies the number of dimensions and values
+                // header that specifies the number of dimensions and values.
+                // Note that the location of the matrix data is dependent on
+                // whether the matrix is to be transposed.
+                File dataFile = (transposeData)
+                    ? transposedMatrixFile
+                    : matrixFile
                 RandomAccessFile matrixRaf =
-                    new RandomAccessFile(matrixFile, "rw");
+                    new RandomAccessFile(dataFile, "rw");
 
                 // Back fill the dimensions of the matrix and the number of
                 // non-zero values as the 3 int header in the file
@@ -314,6 +365,52 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
                 matrixRaf.close();
             } catch (IOException ioe) {
                 throw new IOError(ioe);
+            }
+
+            // If the user specified that the matrix should be tranposed, then
+            // transposedMatrixFile will contain the matrix in its un-transposed
+            // form.  Issue a call to SVDLIBC to transposed the file contents
+            // for us.
+            if (transposeData) {
+                try {
+                    LOGGER.fine("transposing svdlibc sparse matrix");
+                    String commandLine = "svd -c " + transposedMatrixFile + " " + 
+                        matrixFile + " -r sb " + " -w sb";
+                    Process svdlibc = Runtime.getRuntime().exec(commandLine);
+                    
+                    BufferedReader stdout = new BufferedReader(
+                        new InputStreamReader(svdlibc.getInputStream()));
+                    BufferedReader stderr = new BufferedReader(
+                        new InputStreamReader(svdlibc.getErrorStream()));
+                    
+                    StringBuilder output = new StringBuilder("SVDLIBC output:\n");
+                    for (String line = null; (line = stderr.readLine()) != null; ) {
+                        output.append(line).append("\n");
+                    }
+                    LOGGER.fine(output.toString());
+                    
+                    int exitStatus = svdlibc.waitFor();
+                    LOGGER.fine("svdlibc exit status: " + exitStatus);
+                    if (exitStatus != 0) {
+                        StringBuilder sb = new StringBuilder();
+                        for (String line = null; (line = stderr.readLine()) != null; ) {
+                            sb.append(line).append("\n");
+                        }
+                        // warning or error?
+                        LOGGER.warning("svdlibc exited with error status.  " + 
+                                       "stderr:\n" + sb.toString());
+                        throw new IllegalStateException(
+                            "Matrix final state is inconsistent");
+                    } 
+                }
+                catch (InterruptedException ise) {
+                    throw new IllegalStateException(
+                        "Matrix final state is inconsistent");
+                }
+                catch (IOException ioe) {
+                    throw new IllegalStateException(
+                        "Matrix final state is inconsistent");
+                }
             }
         }
     }
