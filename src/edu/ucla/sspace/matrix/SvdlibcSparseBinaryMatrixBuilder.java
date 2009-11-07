@@ -353,7 +353,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
                 // whether the matrix is to be transposed.
                 File dataFile = (transposeData)
                     ? transposedMatrixFile
-                    : matrixFile
+                    : matrixFile;
                 RandomAccessFile matrixRaf =
                     new RandomAccessFile(dataFile, "rw");
 
