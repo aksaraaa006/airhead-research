@@ -46,9 +46,17 @@ import java.util.Set;
  */
 public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
 
+    /**
+     * A property prefix.
+     */
     private static final String PROPERTY_PREFIX =
         "edu.ucla.sspace.cluster.SimpleVectorClusterMap";
 
+    /**
+     * The property for setting the weight of an exponential weighted moving
+     * average.  This weight will be given to the historical data, and this
+     * weight subtracted from 1 will be given to the new data points.
+     */
     public static final String WEIGHTING_PROPERTY =
         PROPERTY_PREFIX + ".weights";
 
@@ -67,6 +75,10 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      */
     private final int maxNumClusters;
 
+    /**
+     * A weight for an exponential weighted moving average.  If this value is
+     * not set in the constructor, no moving average will be used.
+     */
     private final double clusterWeight;
 
     /**
@@ -206,7 +218,8 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      * Returns a string describing this {@code ClusterMap}.
      */
     public String toString() {
-        return "SimpleClusterMap-SenseCount" + maxNumClusters;
+        return "SimpleClusterMap-SenseCount" + maxNumClusters +
+               "-clusterWeight" + clusterWeight;
     }
 
     public int getMaxNumClusters() {
