@@ -165,6 +165,16 @@ public class Vectors {
         return finalVector;
     }
 
+    public static Vector addWithScalars(Vector vector1, double weight1,
+                                        Vector vector2, double weight2) {
+        for (int i = 0; i < vector2.length(); ++i) {
+            double value = vector1.get(i) * weight1 +
+                           vector2.get(i) * weight2;
+            vector1.set(i, value);
+        }
+        return vector1;
+    }
+
     /**
      * Copy all of the values from one {@code Vector} into another.  After the
      * operation, all of the values in {@code dest} will be the same as that of
@@ -226,7 +236,7 @@ public class Vectors {
     }
 
     /**
-     * Multiple the values in {@code left} and {@code right} and store the
+     * Multiply the values in {@code left} and {@code right} and store the
      * product in {@code left}.  This is an element by element multiplication.
      *
      * @param left The left {@code Vector} to multiply, and contain the result
@@ -242,7 +252,23 @@ public class Vectors {
     }
 
     /**
-     * Multiple the values in {@code left} and {@code right} and store the
+     * Multiply a {@code Vector} by a scalar value.  The returned vector will
+     * have the same interface type, i.e. {@code Vector} or {@code SparseVector}
+     * {@code vector}.
+     *
+     * @param vector the {@code Vector} to scale.
+     * @param value the value to scale {@code vector} by.
+     *
+     * @return a {@code Vector} having scaled values of {@code vector}.
+     */
+    public static Vector multiplyScalar(Vector vector, double value) {
+        return (vector instanceof SparseVector)
+            ? new SparseScaledVector((SparseVector) vector, value)
+            : new ScaledVector(vector, value);
+    }
+
+    /**
+     * Multiply the values in {@code left} and {@code right} and store the
      * product in a new {@code Vector}.  This is an element by element
      * multiplication.
      *

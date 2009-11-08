@@ -40,6 +40,15 @@ import java.util.Set;
  */
 public interface BottomUpVectorClusterMap {
 
+    public static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.cluster.BottomUpVectorClusterMap";
+
+    public static final String THRESHOLD_PROPERTY =
+        PROPERTY_PREFIX + ".threshold";
+
+    public static final String MAX_CLUSTERS_PROPERTY =
+        PROPERTY_PREFIX + ".maxclusters";
+
     /**
      * Add a {@code Vector} corresponding the the given key and place it in an
      * appropriate cluster.  Implementations may merge this value into a

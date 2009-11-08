@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 
@@ -65,14 +66,21 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      */
     private final int maxNumClusters;
 
+    public ExemplarVectorClusterMap() {
+        this(System.getProperties());
+    }
+
     /**
      * Create a new {@code ExemplarVectorClusterMap} with the given threshold
      * size.
      */
-    public ExemplarVectorClusterMap(double threshold, int maxClusters) {
-        clusterThreshold = threshold;
-        maxNumClusters = maxClusters;
+    public ExemplarVectorClusterMap(Properties props) {
         vectorClusters = new HashMap<String, List<ExemplarCluster>>();
+
+        clusterThreshold = Double.parseDouble(props.getProperty(
+                    BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".75"));
+        maxNumClusters = Integer.parseInt(props.getProperty(
+                    BottomUpVectorClusterMap.MAX_CLUSTERS_PROPERTY, "2"));
     }
 
     /**

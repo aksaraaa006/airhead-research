@@ -36,13 +36,27 @@ public class Cluster {
 
     protected int itemCount;
 
+    protected double oldValueWeight;
+
+    protected double newValueWeight;
+
     public Cluster(Vector firstVector) {
+        this(firstVector, 1, 1);
+    }
+
+    public Cluster(Vector firstVector, double oldWeight, double newWeight) {
         centroid = firstVector; 
+        oldValueWeight = oldWeight;
+        newValueWeight = newWeight;
         itemCount = 1;
     }
 
     public synchronized void addVector(Vector vector) {
-        Vectors.add(centroid, vector);
+        if (oldValueWeight == 1 && newValueWeight == 1)
+            Vectors.add(centroid, vector);
+        else 
+            Vectors.addWithScalars(centroid, oldValueWeight,
+                                   vector, newValueWeight);
         ++itemCount;
     }
 

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 
@@ -44,6 +45,12 @@ import java.util.Set;
  * assigned to the best matching cluster.
  */
 public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
+
+    private static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.cluster.SimpleVectorClusterMap";
+
+    public static final String WEIGHTING_PROPERTY =
+        PROPERTY_PREFIX + ".weights";
 
     /**
      * A mapping from Strings to cluster centroids.
@@ -60,14 +67,25 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      */
     private final int maxNumClusters;
 
+    private final double clusterWeight;
+
     /**
      * Create a new {@code SimpleVectorClusterMap} with the given threshold
      * size.
      */
-    public SimpleVectorClusterMap(double threshold, int maxClusters) {
-        clusterThreshold = threshold;
-        maxNumClusters = maxClusters;
+    public SimpleVectorClusterMap() {
+        this(System.getProperties());
+    }
+
+    public SimpleVectorClusterMap(Properties props) {
         vectorClusters = new HashMap<String, List<Cluster>>();
+
+        clusterThreshold = Double.parseDouble(props.getProperty(
+                    BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".75"));
+        maxNumClusters = Integer.parseInt(props.getProperty(
+                    BottomUpVectorClusterMap.MAX_CLUSTERS_PROPERTY, "2"));
+        clusterWeight =
+            Double.parseDouble(props.getProperty(WEIGHTING_PROPERTY, "0"));
     }
 
     /**
@@ -112,9 +130,15 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
                 termClusters.size() >= maxNumClusters)
                 bestMatch.addVector(value);
             else
-                termClusters.add(new Cluster(value));
+                termClusters.add(getNewCluster(value));
             return bestIndex;
         }
+    }
+
+    private Cluster getNewCluster(Vector vector) {
+        return (clusterWeight == 0d)
+            ? new Cluster(vector)
+            : new Cluster(vector, clusterWeight, 1-clusterWeight);
     }
 
     /**

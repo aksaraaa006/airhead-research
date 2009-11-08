@@ -23,7 +23,6 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
 import edu.ucla.sspace.cluster.SimpleVectorClusterMap;
-import edu.ucla.sspace.cluster.ExemplarVectorClusterMap;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -62,10 +61,22 @@ import java.util.Properties;
  * @author Keith Stevens 
  */
 public class HermitMain extends GenericMain {
-    public static final String SIMPLE_CLUSTER = "SimpleVectorClusterMap";
-    public static final String EXEMPLAR_CLUSTER = "ExemplarVectorClusterMap";
 
-    private static final int DEFAULT_DIMENSION = 2048;
+    public static final String DEFAULT_USER = 
+        "edu.ucla.sspace.index.RandomIndexUser";
+
+    public static final String DEFAULT_GENERATOR =
+        "edu.ucla.sspace.index.RandomIndexGenerator";
+
+    public static final String DEFAULT_CLUSTER =
+        "edu.ucla.sspace.cluster.SimpleVectorClusterMap";
+
+    public static final int DEFAULT_DIMENSION = 2048;
+
+    public static final int DEFAULT_SENSE_COUNT = 2;
+
+    public static final double DEFAULT_THRESHOLD = .75;
+
     private int dimension;
     private int prevWordsSize;
     private int nextWordsSize;
@@ -126,9 +137,13 @@ public class HermitMain extends GenericMain {
         options.addOption('c', "senseCount",
                           "The maximum number of senses Hermit should produce",
                           true, "INT", "Cluster Properties");
-        options.addOption('r', "cluster",
+        options.addOption('M', "cluster",
                           "Class type to use for clustering semantic vectors",
                           true, "CLASSNAME", "Cluster Properties");
+        options.addOption('W', "clusterWeight",
+                          "If set, this weight will be used to expoentially " +
+                          "average vectors in a cluster",
+                          true, "DOUBLE", "Cluster Properties");
 
         // Additional processing steps.
         options.addOption('S', "saveVectors",
@@ -164,16 +179,12 @@ public class HermitMain extends GenericMain {
     }
     
     public void handleExtraOptions() {
-        dimension = (argOptions.hasOption("vectorLength"))
-            ? argOptions.getIntOption("vectorLength")
-            : DEFAULT_DIMENSION;
+        dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
         useSecondOrder = argOptions.hasOption("useSecondOrder");
 
         // Process the window size arguments;
-        String windowValue = (argOptions.hasOption('w'))
-            ? argOptions.getStringOption('w')
-            : "5,5";
+        String windowValue = argOptions.getStringOption('w', "5,5");
         String[] prevNext = windowValue.split(",");
         prevWordsSize = Integer.parseInt(prevNext[0]);
         nextWordsSize = Integer.parseInt(prevNext[1]);
@@ -183,22 +194,14 @@ public class HermitMain extends GenericMain {
         }
 
         // Create the generator.
-        String generatorType = (argOptions.hasOption("generator"))
-            ? argOptions.getStringOption("generator")
-            : "edu.ucla.sspace.index.RandomIndexGenerator";
-        try {
-            Class generatorClazz = Class.forName(generatorType);
-            System.setProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY,
-                               Integer.toString(dimension));
-            generator = (IndexGenerator) (generatorClazz.newInstance());
-        } catch (Exception e) {
-            throw new Error(e);
-        }
+        String generatorType = 
+            argOptions.getStringOption("generator", DEFAULT_GENERATOR);
+        System.setProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY,
+                           Integer.toString(dimension));
+        generator = (IndexGenerator) getObjectInstance(generatorType);
 
         // Create the user.
-        String userType = (argOptions.hasOption("user"))
-            ? argOptions.getStringOption("user")
-            : "edu.ucla.sspace.index.RandomIndexUser";
+        String userType = argOptions.getStringOption("user", DEFAULT_USER);
         try {
             indexUserClazz = Class.forName(userType);
             System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
@@ -220,20 +223,30 @@ public class HermitMain extends GenericMain {
                     new File(argOptions.getStringOption("loadVectors")));
 
         // Process the cluster arguments.
-        int maxSenseCount = (argOptions.hasOption("senseCount"))
-            ? argOptions.getIntOption("senseCount")
-            : 2;
-        double threshold = (argOptions.hasOption("threshold"))
-            ? argOptions.getDoubleOption("threshold")
-            : .75;
+        int maxSenseCount = argOptions.getIntOption("senseCount",
+                                                    DEFAULT_SENSE_COUNT);
+        double threshold = argOptions.getDoubleOption("threshold",
+                                                      DEFAULT_THRESHOLD);
 
-        String clusterName = (argOptions.hasOption("cluster"))
-            ? argOptions.getStringOption("cluster")
-            : SIMPLE_CLUSTER;
-        if (clusterName.equals(SIMPLE_CLUSTER))
-            clusterMap = new SimpleVectorClusterMap(threshold, maxSenseCount);
-        else if (clusterName.equals(EXEMPLAR_CLUSTER))
-            clusterMap = new ExemplarVectorClusterMap(threshold, maxSenseCount);
+        String clusterName =
+            argOptions.getStringOption("cluster", DEFAULT_CLUSTER);
+        System.setProperty(BottomUpVectorClusterMap.THRESHOLD_PROPERTY,
+                           Double.toString(threshold));
+        System.setProperty(BottomUpVectorClusterMap.MAX_CLUSTERS_PROPERTY,
+                           Integer.toString(maxSenseCount));
+        if (argOptions.hasOption('W'))
+            System.setProperty(SimpleVectorClusterMap.WEIGHTING_PROPERTY,
+                               argOptions.getStringOption('W'));
+        clusterMap = (BottomUpVectorClusterMap) getObjectInstance(clusterName);
+    }
+
+    private Object getObjectInstance(String className) {
+        try {
+            Class clazz = Class.forName(className);
+            return clazz.newInstance();
+        } catch (Exception e) {
+            throw new Error(e);
+        }
     }
 
     protected void postProcessing() {

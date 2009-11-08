@@ -27,6 +27,7 @@ import edu.ucla.sspace.vector.Vectors;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -256,7 +257,7 @@ public class RandomIndexUser implements IndexUser {
             }
 
             // Then shuffle it to get a new permutation
-            java.util.List<Integer> list = Arrays.asList(objFunc);
+            List<Integer> list = Arrays.asList(objFunc);
             Collections.shuffle(list, RandomIndexGenerator.RANDOM);
             
             // Convert back to a primitive array
@@ -265,7 +266,7 @@ public class RandomIndexUser implements IndexUser {
             for (int i = 0; i < dimensions; ++i) {
                 forwardMapping[i] = objFunc[i].intValue();
                 backwardMapping[objFunc[i].intValue()] = i;
-            }            
+            }
             function = new Function(forwardMapping, backwardMapping);
 
             // Store it in the function map for later usee
