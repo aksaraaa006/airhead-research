@@ -184,13 +184,14 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
         // Compute the TF-IDF value for each entry in the matrix.  The document
         // frequency is simply the number of nonzero elements for each row
         // (term).
+        int docs = articleCount.get();
         for (int row = 0; row < rows; ++row) {
             SparseVector vector =
                 (SparseVector) termWikiMatrix.getRowVector(row);
             int[] nonZero = vector.getNonZeroIndices();
-            double idf = Math.log(articleCount.get() / 1 + nonZero.length);
+            double idf = Math.log(docs / 1 + nonZero.length);
             for (int index : nonZero) {
-                double tf = vector.get(index) / docCounts[index];
+                double tf = vector.get(index) / docCounts[row];
                 termWikiMatrix.set(row, index, tf*idf*idf);
             }
         }
