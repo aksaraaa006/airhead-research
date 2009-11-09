@@ -38,7 +38,7 @@ import java.io.RandomAccessFile;
 import java.nio.DoubleBuffer;
 
 import java.nio.channels.FileChannel;
-
+import java.nio.channels.FileChannel.MapMode;
 
 /**
  * A Matrix implementation that uses a binary file to read and write Returns a
@@ -60,7 +60,8 @@ public class OnDiskMatrix implements Matrix {
      */
     private static final int BYTES_PER_DOUBLE = 8;
 
-    private static final int MAX_ELEMENTS_PER_REGION = Integer.MAX_VALUE / 2;
+    private static final int MAX_ELEMENTS_PER_REGION = 
+        Integer.MAX_VALUE / BYTES_PER_DOUBLE;
 
     /**
      * The on-disk storage space for the matrix
@@ -114,8 +115,8 @@ public class OnDiskMatrix implements Matrix {
             f.deleteOnExit();
             RandomAccessFile raf = new RandomAccessFile(f, "rw");
             FileChannel fc = raf.getChannel();
-            DoubleBuffer contextBuffer = fc.map(FileChannel.MapMode.READ_WRITE, 0, size)
-                .asDoubleBuffer();
+            DoubleBuffer contextBuffer = 
+                fc.map(MapMode.READ_WRITE, 0, size).asDoubleBuffer();
             fc.close();
             return contextBuffer;
         } catch (IOException ioe) {
