@@ -119,4 +119,6 @@ public interface BottomUpVectorClusterMap {
     void removeClusters(String key);
 
     int getMaxNumClusters();
+
+    int getOverflowCount(String key);
 }

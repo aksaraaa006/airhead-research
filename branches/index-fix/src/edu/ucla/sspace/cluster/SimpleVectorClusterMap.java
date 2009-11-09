@@ -33,6 +33,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * A simple clustering mapping for {@code Vector}s.  For each cluster generated,
@@ -65,6 +70,8 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      */
     private Map<String, List<Cluster>> vectorClusters;
 
+    private ConcurrentMap<String, AtomicInteger> overflowCounts;
+
     /**
      * The threshold for clustering
      */
@@ -91,6 +98,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
 
     public SimpleVectorClusterMap(Properties props) {
         vectorClusters = new HashMap<String, List<Cluster>>();
+        overflowCounts = new ConcurrentHashMap<String, AtomicInteger>();
 
         clusterThreshold = Double.parseDouble(props.getProperty(
                     BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".75"));
@@ -138,10 +146,15 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
 
             // Add the current term vector if the similarity is high enough,
             // or set it as a new centroid.
-            if (similarity > clusterThreshold ||
-                termClusters.size() >= maxNumClusters)
+            if (similarity >= clusterThreshold ||
+                termClusters.size() >= maxNumClusters) {
                 bestMatch.addVector(value);
-            else
+                if (similarity < clusterThreshold) {
+                    AtomicInteger count = overflowCounts.get(key);
+                    if (count != null)
+                        count.incrementAndGet();
+                }
+            } else
                 termClusters.add(getNewCluster(value));
             return bestIndex;
         }
@@ -185,6 +198,11 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         return clusters;
     }
 
+    public synchronized int getOverflowCount(String key) {
+        AtomicInteger count = overflowCounts.get(key);
+        return (count != null) ? count.get() : 0;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -219,7 +237,8 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      */
     public String toString() {
         return "SimpleClusterMap-SenseCount" + maxNumClusters +
-               "-clusterWeight" + clusterWeight;
+               "-clusterWeight" + clusterWeight +
+               "-threshold" + clusterThreshold;
     }
 
     public int getMaxNumClusters() {

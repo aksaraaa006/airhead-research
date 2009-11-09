@@ -36,6 +36,11 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * A cluster map which uses exemplar clusters for {@code Vector}s.  For each
@@ -55,6 +60,8 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      * A mapping from Strings to cluster centroids.
      */
     private Map<String, List<ExemplarCluster>> vectorClusters;
+
+    private ConcurrentMap<String, AtomicInteger> overflowCounts;
 
     /**
      * The threshold for clustering
@@ -76,6 +83,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      */
     public ExemplarVectorClusterMap(Properties props) {
         vectorClusters = new HashMap<String, List<ExemplarCluster>>();
+        overflowCounts = new ConcurrentHashMap<String, AtomicInteger>();
 
         clusterThreshold = Double.parseDouble(props.getProperty(
                     BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".75"));
@@ -128,9 +136,14 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             // long as that score is higher than the threshold, or we have
             // reached the maximum number of clusters.
             if (bestScore > clusterThreshold ||
-                termClusters.size() > maxNumClusters)
+                termClusters.size() > maxNumClusters) {
                 termClusters.get(bestIndex).addVector(value);
-            else  {
+                if (bestScore < clusterThreshold) {
+                    AtomicInteger count = overflowCounts.get(key);
+                    if (count != null)
+                        count.incrementAndGet();
+                }
+            } else  {
                 // If there are not the maximum number of clusters, and the
                 // similarity to all known clusters was too weak, add the value
                 // into a new cluster.
@@ -210,6 +223,11 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
 
     public int getMaxNumClusters() {
         return maxNumClusters;
+    }
+
+    public synchronized int getOverflowCount(String key) {
+        AtomicInteger count = overflowCounts.get(key);
+        return (count != null) ? count.get() : 0;
     }
 
     /**
