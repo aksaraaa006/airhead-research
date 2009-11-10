@@ -40,6 +40,7 @@ import java.nio.DoubleBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
+
 /**
  * A Matrix implementation that uses a binary file to read and write Returns a
  * copy of the specified rowvalues of the matrix.  The matrix is stored in
@@ -93,20 +94,26 @@ public class OnDiskMatrix implements Matrix {
         this.cols = cols;
             
         // Determine how big the array will need to be
-        long arraySizeInBytes = (long)rows * (long)cols * BYTES_PER_DOUBLE;
+
         // Note that to map the array into memory, we have to avoid the case
         // where any mapped part of the array is larger than Integer.MAX_VALUE.
         // Therefore, divide the array up into regions less than this size.
-        int numRegions = (int)(arraySizeInBytes / Integer.MAX_VALUE) + 1;
+        int numRegions = 
+            (int)(((long)rows * cols) / MAX_ELEMENTS_PER_REGION) + 1;
         matrixRegions = new DoubleBuffer[numRegions];
         for (int region = 0; region < numRegions; ++region) {
-            int regionSize = (region + 1 == numRegions)
-                ? (int)(arraySizeInBytes % Integer.MAX_VALUE)
-                : Integer.MAX_VALUE;
-            matrixRegions[region] = createTempBuffer(regionSize);
+            int sizeInBytes = (region + 1 == numRegions) 
+                ? (int)((((long)rows * cols) 
+                         % MAX_ELEMENTS_PER_REGION) * BYTES_PER_DOUBLE)
+                : MAX_ELEMENTS_PER_REGION * BYTES_PER_DOUBLE;
+            matrixRegions[region] = createTempBuffer(sizeInBytes);
         }
      }
 
+    /**
+     *
+     * @param size the size of the buffer in bytes
+     */
     private static DoubleBuffer createTempBuffer(int size) {
         try {
             File f = File.createTempFile("OnDiskMatrix",".matrix");
