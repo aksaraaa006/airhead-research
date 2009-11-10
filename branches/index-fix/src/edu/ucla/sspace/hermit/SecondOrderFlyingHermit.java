@@ -279,7 +279,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
 
                 // Update the second order meaning. 
                 termVector = getTerm(term, indexUser);
-                if (termVector != null) {
+                if (!replacement.equals("") && termVector != null) {
                     synchronized (termVector) {
                         Vectors.add(secondMeaning, termVector);
                     }
@@ -300,7 +300,7 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
 
                 // Update the second order meaning. 
                 termVector = getTerm(term, indexUser);
-                if (termVector != null) {
+                if (!replacement.equals("") && termVector != null) {
                     synchronized (termVector) {
                         Vectors.add(secondMeaning, termVector);
                     }
@@ -314,15 +314,15 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
             if (prevWords.size() > prevSize)
                 prevWords.remove();
 
-            // Add the second order meaning vector to the cluster map.
-            double scale = 1 / (double) secondOrderCount;
-            for (int i = 0; i < secondMeaning.length(); ++i)
-                secondMeaning.set(i, secondMeaning.get(i) / scale);
-            int clusterNum = clusterMap.addVector(focusWord, secondMeaning);
-
-            // Count the accuracy of the current cluster assignment for the word
-            // if it is a word we are tracking.
             if (!replacement.equals("")) {
+                // Add the second order meaning vector to the cluster map.
+                double scale = 1 / (double) secondOrderCount;
+                for (int i = 0; i < secondMeaning.length(); ++i)
+                    secondMeaning.set(i, secondMeaning.get(i) / scale);
+                int clusterNum = clusterMap.addVector(focusWord, secondMeaning);
+
+                // Count the accuracy of the current cluster assignment for the
+                // word if it is a word we are tracking.
                 String key = focusWord + "-" + clusterNum + "-" + replacement;
                 AtomicInteger clusterCount = accuracyMap.putIfAbsent(
                         key, new AtomicInteger(1));
@@ -369,6 +369,10 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
      */
     public void processSpace(Properties properties) {
         firstOrderMap.clear();
+
+        double minPercentage = Double.parseDouble(
+            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".02"));
+        clusterMap.mergeOrDropClusters(minPercentage);
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());

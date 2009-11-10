@@ -121,4 +121,6 @@ public interface BottomUpVectorClusterMap {
     int getMaxNumClusters();
 
     int getOverflowCount(String key);
+
+    void mergeOrDropClusters(double minPercentage);
 }

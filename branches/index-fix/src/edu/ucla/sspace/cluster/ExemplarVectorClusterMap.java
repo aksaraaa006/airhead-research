@@ -288,4 +288,23 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             return super.getTotalMemberCount() + exemplars.size();
         }
     }
+    public synchronized void mergeOrDropClusters(double minPercentage) {
+        for (Map.Entry<String, List<ExemplarCluster>> entry :
+                vectorClusters.entrySet()) {
+            double[] clusterSizes = new double[entry.getValue().size()];
+            int i = 0;
+            int sum = 0;
+            for (Cluster cluster : entry.getValue()) {
+              clusterSizes[i] = cluster.getTotalMemberCount();
+              sum += clusterSizes[i];
+            }
+            int dropCount = 0;
+            for (i = 0; i < clusterSizes.length; ++i) {
+                if (clusterSizes[i]/sum < minPercentage) {
+                    entry.getValue().remove(i + dropCount);
+                    dropCount++;
+                }
+            }
+        }
+    }
 }

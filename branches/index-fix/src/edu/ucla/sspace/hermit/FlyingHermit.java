@@ -31,7 +31,6 @@ import edu.ucla.sspace.index.IndexUser;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -86,7 +85,7 @@ import java.util.logging.Logger;
  * @see RandomIndexUser
  * @author Keith Stevens
  */
-public class FlyingHermit implements SemanticSpace {
+public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
     /**
      * The full context size used when scanning the corpus. This is the
@@ -250,50 +249,51 @@ public class FlyingHermit implements SemanticSpace {
             if (it.hasNext())
                 addNextWord(it, nextWords, nextReplacements);
 
-            // Incorporate the context into the semantic vector for the focus
-            // word.  If the focus word has no semantic vector yet, create a new
-            // one, as determined by the index builder.
-            Vector meaning = indexUser.getEmptyVector();
+            if (!replacement.equals("")) {
+                // Incorporate the context into the semantic vector for the
+                // focus word.  If the focus word has no semantic vector yet,
+                // create a new one, as determined by the index builder.
+                Vector meaning = indexUser.getEmptyVector();
 
-            // Process the previous words, specifying their distance from the
-            // focus word.
-            int distance = -1 * prevWords.size();
-            for (String term : prevWords) {
-                Vector termVector = indexGenerator.getIndexVector(term);
-                indexUser.generateMeaning(meaning, termVector, distance);
-                ++distance;
+                // Process the previous words, specifying their distance from
+                // the focus word.
+                int distance = -1 * prevWords.size();
+                for (String term : prevWords) {
+                    Vector termVector = indexGenerator.getIndexVector(term);
+                    indexUser.generateMeaning(meaning, termVector, distance);
+                    ++distance;
+                }
+
+                distance = 1;
+                // Process the next words, specifying their distance from the
+                // focus word.
+                for (String term : nextWords) {
+                    Vector termVector = indexGenerator.getIndexVector(term);
+                    indexUser.generateMeaning(meaning, termVector, distance);
+                    ++distance;
+                }
+
+
+                // Compare the most recent vector to all the saved vectors.  If
+                // the vector with the highest similarity has a similarity over
+                // a threshold, incorporate this {@code Vector} to that winner.
+                // Otherwise add this {@code Vector} as a new vector for the
+                // term.
+                int clusterNum = clusterMap.addVector(focusWord, meaning);
+
+                // Count the accuracy of the current cluster assignment for the
+                // word if it is a word we are tracking.
+                String key = focusWord + "-" + clusterNum + "-" + replacement;
+                AtomicInteger clusterCount = accuracyMap.putIfAbsent(
+                        key, new AtomicInteger(1));
+                if (clusterCount != null)
+                  clusterCount.incrementAndGet();
             }
-
-            distance = 1;
-            // Process the next words, specifying their distance from the
-            // focus word.
-            for (String term : nextWords) {
-                Vector termVector = indexGenerator.getIndexVector(term);
-                indexUser.generateMeaning(meaning, termVector, distance);
-                ++distance;
-            }
-
             // Push the focus word into previous word set for the next focus
             // word.
             prevWords.offer(focusWord);
             if (prevWords.size() > prevSize)
                 prevWords.remove();
-
-            // Compare the most recent vector to all the saved vectors.  If the
-            // vector with the highest similarity has a similarity over a
-            // threshold, incorporate this {@code Vector} to that winner.
-            // Otherwise add this {@code Vector} as a new vector for the term.
-            int clusterNum = clusterMap.addVector(focusWord, meaning);
-
-            // Count the accuracy of the current cluster assignment for the word
-            // if it is a word we are tracking.
-            if (!replacement.equals("")) {
-                String key = focusWord + "-" + clusterNum + "-" + replacement;
-                AtomicInteger clusterCount = accuracyMap.putIfAbsent(
-                        key, new AtomicInteger(1));
-                if (clusterCount != null)
-                    clusterCount.incrementAndGet();
-            }
         }
     }
     
@@ -319,6 +319,10 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        double minPercentage = Double.parseDouble(
+            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".02"));
+        clusterMap.mergeOrDropClusters(minPercentage);
+
         splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
         for (String term : terms) {
