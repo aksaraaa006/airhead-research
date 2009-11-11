@@ -114,7 +114,6 @@ public class FrequencySemanticSpaceMain extends GenericMain {
      * documents have been processed, the term frequencies will be written to
      * the output file in the order of words with increasing frequencies.
      */
-    @Overloaded
     public void run(String[] args) throws Exception {
         if (args.length == 0) {
             usage();

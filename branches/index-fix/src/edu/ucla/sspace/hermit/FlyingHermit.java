@@ -223,7 +223,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         Queue<String> nextReplacements = new ArrayDeque<String>();
 
         Iterator<String> it =
-            IteratorFactory.tokenizeOrderedWithReplacement(document);
+            IteratorFactory.tokenizeOrdered(document);
 
         IndexUser indexUser = null;
         try {
@@ -259,8 +259,11 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 // the focus word.
                 int distance = -1 * prevWords.size();
                 for (String term : prevWords) {
-                    Vector termVector = indexGenerator.getIndexVector(term);
-                    indexUser.generateMeaning(meaning, termVector, distance);
+                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        Vector termVector = indexGenerator.getIndexVector(term);
+                        indexUser.generateMeaning(meaning, termVector,
+                                                  distance);
+                    }
                     ++distance;
                 }
 
@@ -268,8 +271,11 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 // Process the next words, specifying their distance from the
                 // focus word.
                 for (String term : nextWords) {
-                    Vector termVector = indexGenerator.getIndexVector(term);
-                    indexUser.generateMeaning(meaning, termVector, distance);
+                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        Vector termVector = indexGenerator.getIndexVector(term);
+                        indexUser.generateMeaning(meaning, termVector,
+                                                  distance);
+                    }
                     ++distance;
                 }
 
