@@ -160,8 +160,13 @@ public class HermitMain extends GenericMain {
             String line = null;
             replacementMap = new HashMap<String, String>();
             while ((line = br.readLine()) != null) {
-                String[] wordReplacement = line.split("\\s+");
-                replacementMap.put(wordReplacement[0], wordReplacement[1]);
+                String[] wordReplacement = line.split("\\|");
+                String[] words = wordReplacement[0].split("\\s+");
+                StringBuffer sb = new StringBuffer();
+                for (String w : words)
+                    sb.append(w).append(" ");
+                replacementMap.put(sb.substring(0, sb.length() - 1),
+                                   wordReplacement[1]);
             }
         } catch (IOException ioe) {
             throw new IOError(ioe);
