@@ -355,9 +355,9 @@ public abstract class GenericMain {
                               argOptions.getStringOption("tokenFilter"));            
         }
 
-        if (argOptions.hasOption("compoundTokens")) {
+        if (argOptions.hasOption("compoundWords")) {
             props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
-                              argOptions.getStringOption("compoundTokens"));
+                              argOptions.getStringOption("compoundWords"));
         }
         IteratorFactory.setProperties(props);
 
