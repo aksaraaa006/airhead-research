@@ -358,6 +358,6 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
 
         for (Map.Entry<String, AtomicInteger> entry : accuracyMap.entrySet())
-            System.out.println(entry.getKey() + " " + entry.getValue().get());
+            System.out.println(entry.getKey() + "|" + entry.getValue().get());
     }
 }

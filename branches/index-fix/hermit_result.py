@@ -17,8 +17,8 @@ if __name__ == "__main__":
   conflated_count = {}
   term_count = {}
   for line in results:
-    conflated, sense, original_count = line.split("-")
-    original, count = original_count.split()
+    conflated_sense, count = line.split("|")
+    conflated, sense, original = line.split("-")
     count = int(count)
     sense = int(sense)
     if conflated in result_map:
