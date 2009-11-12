@@ -301,7 +301,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             int dropCount = 0;
             for (i = 0; i < clusterSizes.length; ++i) {
                 if (clusterSizes[i]/sum < minPercentage) {
-                    entry.getValue().remove(i + dropCount);
+                    entry.getValue().remove(i - dropCount);
                     dropCount++;
                 }
             }
