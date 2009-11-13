@@ -227,6 +227,9 @@ public class RandomIndexGenerator implements IndexGenerator {
      * {@inheritDoc}
      */
     public Vector getIndexVector(String term) {
+        if (term == "")
+            return null;
+
         // Check that an index vector does not already exist.
         Vector v = termToRandomIndex.get(term);
         if (v == null) {

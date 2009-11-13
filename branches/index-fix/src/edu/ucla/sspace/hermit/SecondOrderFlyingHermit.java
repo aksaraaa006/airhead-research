@@ -283,8 +283,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
                     synchronized (termVector) {
                         Vectors.add(secondMeaning, termVector);
                     }
+                    ++secondOrderCount;
                 }
-                ++secondOrderCount;
             }
 
             distance = 1;
@@ -304,8 +304,8 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
                     synchronized (termVector) {
                         Vectors.add(secondMeaning, termVector);
                     }
+                    ++secondOrderCount;
                 }
-                ++secondOrderCount;
             }
 
             // Push the focus word into previous word set for the next focus

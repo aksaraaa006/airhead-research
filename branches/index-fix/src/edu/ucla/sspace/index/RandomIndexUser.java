@@ -125,6 +125,13 @@ public class RandomIndexUser implements IndexUser {
     public Vector generateMeaning(Vector focusVector,
                                   Vector termVector,
                                   int distance) {
+        if (focusVector == null)
+            throw new IllegalArgumentException("Null vector given.");
+
+        // Take no action if the given term vector is null.
+        if (termVector == null)
+            return focusVector;
+
         if (!(termVector instanceof IndexVector))
             throw new IllegalArgumentException("IndexVector expected");
 
