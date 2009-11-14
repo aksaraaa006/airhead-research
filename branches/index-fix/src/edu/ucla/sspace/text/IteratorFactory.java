@@ -120,6 +120,12 @@ public class IteratorFactory {
         PROPERTY_PREFIX + ".tokenFilter";
 
     /**
+     * Specifies whether or not steming should be done on tokens.
+     */
+    public static final String USE_STEMMING_PROPERTY =
+        PROPERTY_PREFIX + ".stem";
+
+    /**
      * Specifies the name of a file that contains all the recognized compound
      * tokens
      */
@@ -138,6 +144,11 @@ public class IteratorFactory {
      */
     private static TokenFilter filter;
     
+    /**
+     * True if stemming should be done in a word iterator.
+     */
+    private static boolean useStemming;
+
     /**
      * An optional {@code Map} used to replace terms returned by iterators.
      */
@@ -175,6 +186,8 @@ public class IteratorFactory {
         filter = (filterProp != null)
             ? TokenFilter.loadFromSpecification(filterProp)
             : null;
+
+        useStemming = props.getProperty(USE_STEMMING_PROPERTY) != null;
 
         String compoundTokensProp = 
             props.getProperty(COMPOUND_TOKENS_FILE_PROPERTY);
@@ -332,7 +345,7 @@ public class IteratorFactory {
         } else {
             // Otherwise, just return a standard iterator over all the tokens
             // with no compounding
-            baseIterator = new WordIterator(reader);
+            baseIterator = new WordIterator(reader, useStemming);
         }
 
         return baseIterator;

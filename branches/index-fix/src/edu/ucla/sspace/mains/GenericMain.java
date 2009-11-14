@@ -228,6 +228,9 @@ public abstract class GenericMain {
         options.addOption('v', "verbose", "prints verbose output",
                           false, null, "Program Options");
 
+        options.addOption('Z', "useStemming", "Set to true if words should " + 
+                          "be stemmed using the Porter Stemming algorithm",
+                          false, null, "Tokenizing Options");
         options.addOption('F', "tokenFilter", "filters to apply to the input " +
                           "token stream", true, "FILTER_SPEC", 
                           "Tokenizing Options");
@@ -354,6 +357,9 @@ public abstract class GenericMain {
             props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
                               argOptions.getStringOption("tokenFilter"));            
         }
+
+        if (argOptions.hasOption("useStemming"))
+            props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
 
         if (argOptions.hasOption("compoundWords")) {
             props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
