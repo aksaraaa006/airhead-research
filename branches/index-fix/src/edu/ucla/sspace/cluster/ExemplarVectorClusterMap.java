@@ -26,6 +26,8 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
+import edu.ucla.sspace.matrix.Matrix;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -306,5 +308,9 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
                 }
             }
         }
+    }
+
+    public synchronized Matrix pairWiseSimilarity(String term) {
+        return null;
     }
 }

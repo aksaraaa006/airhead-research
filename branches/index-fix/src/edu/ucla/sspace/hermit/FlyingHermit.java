@@ -35,6 +35,8 @@ import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
+import edu.ucla.sspace.matrix.Matrix;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -331,6 +333,21 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
+
+        // Print out the pairwise similarities.
+        for (String term : terms) {
+            Matrix m = clusterMap.pairWiseSimilarity(term);
+            StringBuilder sb = new StringBuilder();
+            sb.append("term cluster similarity matrix\n");
+            for (int r = 0; r < m.rows(); ++r) {
+                sb.append(r);
+                for (int c = 0; c < m.rows(); ++c)
+                    sb.append(String.format("%3f ", m.get(r, c)));
+                sb.append("\n");
+            }
+            HERMIT_LOGGER.fine(sb.toString());
+        }
+
         for (String term : terms) {
             List<List<Vector>> clusters = clusterMap.getClusters(term);
             int i = 0;
