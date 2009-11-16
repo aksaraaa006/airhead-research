@@ -42,6 +42,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,7 +135,8 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
     private Map<String, String> replacementMap;
 
-    private ConcurrentMap<String, AtomicInteger> accuracyMap;
+    //private ConcurrentMap<String, AtomicInteger> accuracyMap;
+    private AccuracyMap accuracyMap;
 
     /**
      * The type of clustering used for {@code FlyingHermit}.  This specifies how
@@ -175,7 +177,8 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
 
-        accuracyMap = new ConcurrentHashMap<String, AtomicInteger>();
+        //accuracyMap = new ConcurrentHashMap<String, AtomicInteger>();
+        accuracyMap = new AccuracyMap();
 
         try {
             IndexUser indexUser = (IndexUser) indexUserClazz.newInstance();
@@ -291,11 +294,14 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
                 // Count the accuracy of the current cluster assignment for the
                 // word if it is a word we are tracking.
+                accuracyMap.addInstance(focusWord, clusterNum, replacement);
+                /*
                 String key = focusWord + "-" + clusterNum + "-" + replacement;
                 AtomicInteger clusterCount = accuracyMap.putIfAbsent(
                         key, new AtomicInteger(1));
                 if (clusterCount != null)
                   clusterCount.incrementAndGet();
+                */
             }
             // Push the focus word into previous word set for the next focus
             // word.
@@ -394,7 +400,90 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
 	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
 
-        for (Map.Entry<String, AtomicInteger> entry : accuracyMap.entrySet())
-            System.out.println(entry.getKey() + "|" + entry.getValue().get());
+        accuracyMap.printCounts();
+        //for (Map.Entry<String, AtomicInteger> entry : accuracyMap.entrySet())
+        //    System.out.println(entry.getKey() + "|" + entry.getValue().get());
+    }
+
+    private static class AccuracyMap {
+        private Map<String, List<Map<String, Integer>>> wordMap;
+
+        public AccuracyMap() {
+            wordMap = new HashMap<String, List<Map<String, Integer>>>();
+        }
+
+        public void addInstance(String conflatedSense,
+                                Integer senseNum,
+                                String originalSense) {
+            List<Map<String, Integer>> senseCounts = null;
+            synchronized (wordMap) {
+                senseCounts = wordMap.get(conflatedSense);
+                if (senseCounts == null) {
+                    senseCounts = new ArrayList<Map<String, Integer>>();
+                    wordMap.put(conflatedSense, senseCounts);
+                }
+            }
+            Map<String, Integer> originalCounts = null;
+            synchronized (senseCounts) {
+                if (senseNum >= senseCounts.size()) {
+                    for (int i = 0; i <= senseNum; ++i)
+                        senseCounts.add(new HashMap<String, Integer>());
+                }
+                originalCounts = senseCounts.get(senseNum);
+            }
+            synchronized (originalCounts) {
+                Integer termCounts = originalCounts.get(originalSense);
+                originalCounts.put(
+                        originalSense,
+                        (termCounts == null) ? 1 : termCounts.intValue() + 1);
+            }
+        }
+
+        public void moveInstances(String conflatedSense,
+                                  Integer oldSenseNum,
+                                  Integer newSenseNum) {
+            List<Map<String, Integer>> senseCounts = null;
+            senseCounts = wordMap.get(conflatedSense);
+            if (senseCounts == null) {
+                senseCounts = new ArrayList<Map<String, Integer>>();
+                wordMap.put(conflatedSense, senseCounts);
+            }
+
+            Map<String, Integer> oldCounts = null;
+            Map<String, Integer> newCounts = null;
+            oldCounts = senseCounts.get(oldSenseNum);
+            newCounts = senseCounts.get(newSenseNum);
+
+            for (Map.Entry<String, Integer> entry : oldCounts.entrySet()) {
+                Integer newCount = newCounts.get(entry.getKey());
+                Integer oldCount = entry.getValue();
+                newCounts.put(entry.getKey(),
+                              (newCount == null)
+                              ? oldCount
+                              : oldCount.intValue() + newCount.intValue());
+            }
+            oldCounts.clear();
+        }
+
+        public void printCounts() {
+            for (Map.Entry<String, List<Map<String, Integer>>> entry :
+                    wordMap.entrySet()) {
+                String conflated = entry.getKey();
+                int i = 0;
+                for (Map<String, Integer> originalMap : entry.getValue()) {
+                    for (Map.Entry<String, Integer> e :
+                            originalMap.entrySet()) {
+                        String original = e.getKey();
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(conflated).append("-");
+                        if (i != 0)
+                            sb.append(i).append("-");
+                        sb.append(original).append("|");
+                        sb.append(e.getValue());
+                        System.out.println(sb.toString());
+                    }
+                }
+            }
+        }
     }
 }
