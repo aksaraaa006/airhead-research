@@ -300,7 +300,6 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
                     // If the similarity is high enough, add cluster j to
                     // cluster i.
                     if (similarity >= mergeThreshold) {
-                        System.out.println("Merging " + j + " with: " + i);
                         clusters.get(i).addVector(
                                 clusters.get(j).getVector());
 
@@ -327,8 +326,6 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         // Drop any merged clusters.
         int dropped = 0;
         for (Integer dropIndex : skipList) {
-            System.out.println("Dropping " + 
-                               (dropIndex.intValue() - dropped));
             clusters.remove(dropIndex.intValue() - dropped);
             dropped++; 
         }

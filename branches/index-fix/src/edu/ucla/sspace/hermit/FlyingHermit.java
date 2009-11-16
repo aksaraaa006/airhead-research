@@ -355,8 +355,15 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             HERMIT_LOGGER.fine(sb.toString());
         }
 
-        for (String term : terms)
-            clusterMap.mergeOrDropClusters(term, minPercentage);
+        for (String term : terms) {
+            Map<Integer, Integer> mergedMap =
+                clusterMap.mergeOrDropClusters(term, minPercentage);
+            for (Map.Entry<Integer, Integer> mapping : mergedMap.entrySet()) {
+                accuracyMap.moveInstances(term, 
+                                          mapping.getKey(),
+                                          mapping.getValue());
+            }
+        }
 
         // Print out the pairwise similarities.
         for (String term : terms) {
@@ -471,17 +478,20 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 String conflated = entry.getKey();
                 int i = 0;
                 for (Map<String, Integer> originalMap : entry.getValue()) {
+                    if (originalMap.isEmpty()) 
+                        continue;
+
                     for (Map.Entry<String, Integer> e :
                             originalMap.entrySet()) {
                         String original = e.getKey();
                         StringBuilder sb = new StringBuilder();
                         sb.append(conflated).append("-");
-                        if (i != 0)
-                            sb.append(i).append("-");
+                        sb.append(i).append("-");
                         sb.append(original).append("|");
                         sb.append(e.getValue());
                         System.out.println(sb.toString());
                     }
+                    ++i;
                 }
             }
         }
