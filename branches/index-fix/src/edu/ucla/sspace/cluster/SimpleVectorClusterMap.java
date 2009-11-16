@@ -289,7 +289,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
                     if (skipList.contains(i))
                         continue;
 
-                    for (int j = 0; j < clusters.size(); ++j) {
+                    for (int j = i + 1; j < clusters.size(); ++j) {
                         // Compute the similarity between these two clusters.
                         double similarity = Similarity.cosineSimilarity(
                                 clusters.get(i).getVector(),
@@ -309,7 +309,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
                 // Drop any merged clusters.
                 int dropped = 0;
                 for (Integer dropIndex : skipList) {
-                    clusters.remove(dropIndex.intValue() + dropped);
+                    clusters.remove(dropIndex.intValue() - dropped);
                     dropped++; 
                 }
             }

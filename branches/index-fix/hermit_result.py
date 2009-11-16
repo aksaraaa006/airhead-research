@@ -58,5 +58,6 @@ if __name__ == "__main__":
       if s > max_score:
         max_score = s
         max_index = i
-    print k, max_score, permutations[max_index], baseline
+    print k, max_score, permutations[max_index], baseline, (max_score -
+        baseline)
 
