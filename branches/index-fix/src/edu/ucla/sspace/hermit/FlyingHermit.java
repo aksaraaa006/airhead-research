@@ -326,7 +326,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     public void processSpace(Properties properties) {
         double minPercentage = Double.parseDouble(
-            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".02"));
+            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".90"));
         clusterMap.mergeOrDropClusters(minPercentage);
 
         splitSenses = new ConcurrentHashMap<String, Vector>();

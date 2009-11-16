@@ -73,4 +73,8 @@ public class Cluster {
     public synchronized int getTotalMemberCount() {
         return itemCount;
     }
+
+    public synchronized Vector getVector() {
+        return Vectors.immutableVector(centroid);
+    }
 }

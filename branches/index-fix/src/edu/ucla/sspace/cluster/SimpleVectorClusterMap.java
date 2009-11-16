@@ -26,9 +26,13 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
+import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.matrix.Matrix;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -248,10 +252,71 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         return maxNumClusters;
     }
 
+    public synchronized Matrix pairWiseSimilarity(String term) {
+        List<Cluster> termClusters = vectorClusters.get(term);
+        Matrix m = new ArrayMatrix(termClusters.size(), termClusters.size());
+        for (int i = 0; i < termClusters.size(); ++i) {
+            for (int j = i + 1; j < termClusters.size(); ++i) {
+                double similarity = Similarity.cosineSimilarity(
+                        termClusters.get(i).getVector(),
+                        termClusters.get(j).getVector());
+            }
+        }
+        return m;
+    }
+
     /**
      * {@inheritDoc}
      */
     public synchronized void mergeOrDropClusters(double minPercentage) {
+        //dropClusters(minPercentage);
+        mergeClusters(minPercentage);
+    }
+
+    private synchronized void mergeClusters(double mergeThreshold) {
+        for (Map.Entry<String, List<Cluster>> entry :
+                vectorClusters.entrySet()) {
+            List<Cluster> clusters = entry.getValue();
+            boolean merged = true;
+            while (merged) {
+                merged = false;
+
+                Set<Integer> skipList = new HashSet<Integer>();
+                // For each cluster found, try to merge it with other clusters
+                // which are similar enough.
+                for (int i = 0; i < clusters.size(); ++i) {
+                    // Skip any clusters which have already been merged.
+                    if (skipList.contains(i))
+                        continue;
+
+                    for (int j = 0; j < clusters.size(); ++j) {
+                        // Compute the similarity between these two clusters.
+                        double similarity = Similarity.cosineSimilarity(
+                                clusters.get(i).getVector(),
+                                clusters.get(j).getVector());
+                        // If the similarity is high enough, add cluster j to
+                        // cluster i.
+                        if (similarity >= mergeThreshold) {
+                            clusters.get(i).addVector(
+                                    clusters.get(j).getVector());
+                            merged = true;
+                        }
+                        // Mark cluster j as merged so that it gets skipped.
+                        skipList.add(j);
+                    }
+                }
+
+                // Drop any merged clusters.
+                int dropped = 0;
+                for (Integer dropIndex : skipList) {
+                    clusters.remove(dropIndex.intValue() + dropped);
+                    dropped++; 
+                }
+            }
+        }
+    }
+
+    private synchronized void dropClusters(double minPercentage) {
         for (Map.Entry<String, List<Cluster>> entry :
                 vectorClusters.entrySet()) {
             double[] clusterSizes = new double[entry.getValue().size()];
