@@ -21,43 +21,56 @@ if __name__ == "__main__":
     conflated, sense, original = conflated_sense.split("-")
     count = int(count)
     sense = int(sense)
+
     if conflated in result_map:
-      result_map[conflated][(sense, original)] = count
-      conflated_map[conflated].append(original)
-      conflated_count[conflated] += count
+      sense_map = conflated_map[conflated]
     else:
-      result_map[conflated] = {(sense, original):count}
-      conflated_map[conflated] = [original]
-      conflated_count[conflated] = float(count)
+      sense_map = {}
+      conflated_map[conflated] = sense_map
+
+    if sense in sense_map:
+      term_map = sense_map[sense]
+    else:
+      term_map = {}
+      sense_map[sense] = term_map
+
+    if original in term_map:
+      term_map[original] += count
+    else
+      term_map[original] = count
+
     if original in term_count:
       term_count[original] += count
     else:
       term_count[original] = count
 
   for k in conflated_map:
-    word_set = list(set(conflated_map[k]))
-    max_word_count = 0
-    for word in word_set:
-      if term_count[word] > max_word_count:
-        max_word_count = term_count[word]
-    baseline = max_word_count / conflated_count[k]
+    sense_map = conflated_map[k]
+    total_count = 0
+    accuracy_count = 0
+    assignments = []
+    words = []
+    for s in senes_map:
+      term_map = sense_map[s]
+      max_count = 0
+      max_term = ""
+      for o in term_map:
+        count = term_map[o]
+        if count > max_count:
+          max_count = count
+          max_term = o
+        total_count += count
+        words.append(o)
+      assignments.append(max_term)
+      accuracy_count += max_count
 
-    word_scores = result_map[k]
-    scores = []
-    permutations = [p for p in all_perms(range(len(word_set)))]
-    for perm in permutations:
-      score = 0
-      for i, sense in enumerate(perm):
-        if (sense, word_set[i]) in word_scores:
-          score += word_scores[(sense, word_set[i])]
-      scores.append(score/conflated_count[k])
+    words = list(set(words))
+    max_base = 0
+    for word in words:
+      if term_count[word] > max_base:
+        max_base = term_count[word]
 
-    max_score = 0
-    max_index = 0
-    for i, s in enumerate(scores):
-      if s > max_score:
-        max_score = s
-        max_index = i
-    print k, max_score, permutations[max_index], baseline, (max_score -
-        baseline)
+    baseline = max_base / float(total_count)
+
+    print k, accuracy_count, assignemnts, baseline, (accuracy_count - baseline)
 
