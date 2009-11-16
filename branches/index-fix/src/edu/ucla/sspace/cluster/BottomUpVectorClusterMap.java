@@ -26,6 +26,7 @@ import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.matrix.Matrix;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -124,7 +125,8 @@ public interface BottomUpVectorClusterMap {
 
     int getOverflowCount(String key);
 
-    void mergeOrDropClusters(double minPercentage);
+    Map<Integer, Integer> mergeOrDropClusters(String term,
+                                              double minPercentage);
 
     Matrix pairWiseSimilarity(String term);
 }

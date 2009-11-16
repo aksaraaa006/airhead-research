@@ -328,8 +328,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     public void processSpace(Properties properties) {
         double minPercentage = Double.parseDouble(
-            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".90"));
-        clusterMap.mergeOrDropClusters(minPercentage);
+            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
@@ -338,10 +337,31 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         for (String term : terms) {
             Matrix m = clusterMap.pairWiseSimilarity(term);
             StringBuilder sb = new StringBuilder();
+            sb.append(term);
             sb.append("term cluster similarity matrix\n");
             for (int r = 0; r < m.rows(); ++r) {
                 sb.append(r);
-                for (int c = 0; c < m.rows(); ++c)
+                sb.append(":");
+                for (int c = 0; c < m.columns(); ++c)
+                    sb.append(String.format("%3f ", m.get(r, c)));
+                sb.append("\n");
+            }
+            HERMIT_LOGGER.fine(sb.toString());
+        }
+
+        for (String term : terms)
+            clusterMap.mergeOrDropClusters(term, minPercentage);
+
+        // Print out the pairwise similarities.
+        for (String term : terms) {
+            Matrix m = clusterMap.pairWiseSimilarity(term);
+            StringBuilder sb = new StringBuilder();
+            sb.append(term);
+            sb.append("term cluster similarity matrix\n");
+            for (int r = 0; r < m.rows(); ++r) {
+                sb.append(r);
+                sb.append(":");
+                for (int c = 0; c < m.columns(); ++c)
                     sb.append(String.format("%3f ", m.get(r, c)));
                 sb.append("\n");
             }

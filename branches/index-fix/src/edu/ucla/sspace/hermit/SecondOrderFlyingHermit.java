@@ -372,10 +372,13 @@ public class SecondOrderFlyingHermit implements SemanticSpace {
 
         double minPercentage = Double.parseDouble(
             properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".02"));
-        clusterMap.mergeOrDropClusters(minPercentage);
-
         splitSenses = new ConcurrentHashMap<String, Vector>();
+
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
+
+        for (String term : terms)
+            clusterMap.mergeOrDropClusters(term, minPercentage);
+
         for (String term : terms) {
             List<List<Vector>> clusters = clusterMap.getClusters(term);
             int i = 0;
