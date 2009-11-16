@@ -22,7 +22,7 @@ if __name__ == "__main__":
     count = int(count)
     sense = int(sense)
 
-    if conflated in result_map:
+    if conflated in conflated_map:
       sense_map = conflated_map[conflated]
     else:
       sense_map = {}
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     if original in term_map:
       term_map[original] += count
-    else
+    else:
       term_map[original] = count
 
     if original in term_count:
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     accuracy_count = 0
     assignments = []
     words = []
-    for s in senes_map:
+    for s in sense_map:
       term_map = sense_map[s]
       max_count = 0
       max_term = ""
@@ -71,6 +71,7 @@ if __name__ == "__main__":
         max_base = term_count[word]
 
     baseline = max_base / float(total_count)
+    accuracy = accuracy_count / float(total_count)
 
-    print k, accuracy_count, assignemnts, baseline, (accuracy_count - baseline)
+    print k, assignments, accuracy, baseline, (accuracy - baseline)
 
