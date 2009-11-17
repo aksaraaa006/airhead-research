@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 
 
@@ -30,7 +32,9 @@ import java.util.Arrays;
  *
  * @author Keith Stevens
 */
-public class DenseVector implements Vector {
+public class DenseVector implements Vector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The values of this {@code DenseVector}.

@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -117,18 +119,18 @@ public class RandomIndexGenerator implements IndexGenerator {
     /**
      * The number of values to set in an {@link IndexVector}.
      */
-    private final int numVectorValues;
+    private int numVectorValues;
 
     /**
      * The number of dimensions created in each {@code IndexVector}.
      */
-    private final int indexVectorLength;
+    private int indexVectorLength;
 
     /**
      * The variance in the number of values that are set in an {@code
      * IndexVector}.
      */
-    private final int variance;
+    private int variance;
 
     /**
      * A mapping from terms to their Index Vector, stored as a {@code
@@ -171,22 +173,22 @@ public class RandomIndexGenerator implements IndexGenerator {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     public void loadIndexVectors(File file) {
+        // Erase any existing mappings since they are likely to conflict with
+        // the existing index vectors.
+        termToRandomIndex.clear();
         try {
-            DataInputStream inStream = new DataInputStream(
+            ObjectInputStream inStream = new ObjectInputStream(
                     new BufferedInputStream(new FileInputStream(file)));
+            termToRandomIndex = (Map<String, IndexVector>) inStream.readObject();
+            /*
             // Read the required values defining this generator.  If the read
             // values do not match what was passed in during construction, throw
             // an error.
-            int vectorValues = inStream.readInt();
-            int var = inStream.readInt();
-            int vectorLength = inStream.readInt();
-            if (vectorValues != numVectorValues ||
-                var != variance ||
-                vectorLength != indexVectorLength)
-                throw new IllegalArgumentException(
-                        "Stored index vectors will not match those generated " +
-                        "by the current generator.");
+            numVectorValues = inStream.readInt();
+            variance = inStream.readInt();
+            indexVectorLength = inStream.readInt();
 
             // Read the mappings stored in the given file.  For each mapping
             // stored the following order will be read:
@@ -210,11 +212,16 @@ public class RandomIndexGenerator implements IndexGenerator {
                 for (int j = 0; j < numNegatives; ++j)
                     negatives[j] = inStream.readInt();
                 IndexVector vector =
-                    new IndexVector(vectorLength, positives, negatives);
+                    new IndexVector(indexVectorLength, positives, negatives);
                 termToRandomIndex.put(term, vector);
             }
+            */
+            inStream.close();
         } catch (IOException ioe) {
             throw new IOError(ioe);
+        } catch (ClassNotFoundException cnfe) {
+            throw new IllegalArgumentException("The given index vector file " +
+                                               "cannot be deserialized");
         }
     }
 
@@ -223,8 +230,10 @@ public class RandomIndexGenerator implements IndexGenerator {
      */
     public void saveIndexVectors(File file) {
         try {
-            DataOutputStream stream = new DataOutputStream(
+            ObjectOutputStream stream = new ObjectOutputStream(
                     new BufferedOutputStream(new FileOutputStream(file)));
+            stream.writeObject(termToRandomIndex);
+            /*
             // Write the required values which define how index vectors are
             // generated.  These won't be use when the vectors are loaded, but
             // instead used to ensure that the values match with what is
@@ -258,6 +267,7 @@ public class RandomIndexGenerator implements IndexGenerator {
                 for (int n : neg)
                     stream.write(n);
             }
+            */
             stream.close();
         } catch (IOException ioe) {
             throw new IOError(ioe);

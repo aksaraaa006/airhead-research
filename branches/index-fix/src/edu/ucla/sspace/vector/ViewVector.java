@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 
 /**
  * An immutable decorator for an existing {@code Vector} which provides padding
@@ -40,7 +42,9 @@ package edu.ucla.sspace.vector;
  *
  * @author Keith Stevens
  */
-class ViewVector implements Vector {
+class ViewVector implements Vector, Serializable  {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The actual vector this {@code ViewVector} is decorating.

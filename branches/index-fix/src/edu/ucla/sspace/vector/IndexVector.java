@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 
 
@@ -29,7 +31,9 @@ import java.util.Arrays;
  * for indicies returned by {@code positiveDimensions}, -1 for indices returned
  * by {@code negativeDimensions}, and 0 for all others.
  */
-public class IndexVector implements Vector {
+public class IndexVector implements Vector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The length of the created {@code IndexVector}.

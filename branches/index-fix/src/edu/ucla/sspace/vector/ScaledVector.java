@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 
 /**
  * A decorator of a {@code Vector} which provides scales all values in the
@@ -28,7 +30,9 @@ package edu.ucla.sspace.vector;
  *
  * @author Keith Stevens
  */
-public class ScaledVector implements Vector {
+public class ScaledVector implements Vector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The original {@code Vector} that this {@code ScaledVector} decorates.

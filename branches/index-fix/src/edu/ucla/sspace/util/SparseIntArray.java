@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.util;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 
 
@@ -46,7 +48,9 @@ import java.util.Arrays;
  *
  * @see SparseArray
  */
-public class SparseIntArray implements SparseArray<Integer> {
+public class SparseIntArray implements SparseArray<Integer>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The maximum length of this array

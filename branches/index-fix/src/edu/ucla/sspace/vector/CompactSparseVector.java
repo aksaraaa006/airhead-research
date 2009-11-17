@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import edu.ucla.sspace.util.SparseDoubleArray;
 
 /**
@@ -31,7 +33,9 @@ import edu.ucla.sspace.util.SparseDoubleArray;
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector implements Vector, SparseVector {
+public class CompactSparseVector implements Vector, SparseVector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The {@code SparseDoubleArray} which provides most of the functionality in

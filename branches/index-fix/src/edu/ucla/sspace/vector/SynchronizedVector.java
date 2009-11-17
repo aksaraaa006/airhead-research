@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,7 +33,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Keith Stevens
  */
-class SynchronizedVector implements Vector {
+class SynchronizedVector implements Vector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The original {@code Vector} that this {@code SynchronizedVector}

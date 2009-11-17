@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,7 +43,9 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public class AmortizedSparseVector implements Vector, SparseVector {
+public class AmortizedSparseVector implements Vector, SparseVector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * An arraylist of non zero values for this row, stored in the correct

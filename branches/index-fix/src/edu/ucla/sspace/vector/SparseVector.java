@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.vector;
 
+
 /**
  * Interface for a {@code Vector} implementation indicating that it is
  * sparse, and providing functionality to retrieve the non zero indices.
