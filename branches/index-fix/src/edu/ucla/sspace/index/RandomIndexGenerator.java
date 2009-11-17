@@ -25,7 +25,15 @@ import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.IndexVector;
 import edu.ucla.sspace.vector.Vector;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOError;
+import java.io.IOException;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -126,7 +134,7 @@ public class RandomIndexGenerator implements IndexGenerator {
      * A mapping from terms to their Index Vector, stored as a {@code
      * Vector}.
      */
-    private Map<String, Vector> termToRandomIndex;
+    private Map<String, IndexVector> termToRandomIndex;
 
     /**
      * Constructs this instance using the system properties.
@@ -139,7 +147,7 @@ public class RandomIndexGenerator implements IndexGenerator {
      * Constructs this instance using the provided properties.
      */
     public RandomIndexGenerator(Properties properties) {
-        termToRandomIndex = new ConcurrentHashMap<String, Vector>();
+        termToRandomIndex = new ConcurrentHashMap<String, IndexVector>();
 
         String indexVectorLengthProp =
             properties.getProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY);
@@ -164,12 +172,96 @@ public class RandomIndexGenerator implements IndexGenerator {
      * {@inheritDoc}
      */
     public void loadIndexVectors(File file) {
+        try {
+            DataInputStream inStream = new DataInputStream(
+                    new BufferedInputStream(new FileInputStream(file)));
+            // Read the required values defining this generator.  If the read
+            // values do not match what was passed in during construction, throw
+            // an error.
+            int vectorValues = inStream.readInt();
+            int var = inStream.readInt();
+            int vectorLength = inStream.readInt();
+            if (vectorValues != numVectorValues ||
+                var != variance ||
+                vectorLength != indexVectorLength)
+                throw new IllegalArgumentException(
+                        "Stored index vectors will not match those generated " +
+                        "by the current generator.");
+
+            // Read the mappings stored in the given file.  For each mapping
+            // stored the following order will be read:
+            //    1) The string being mapped
+            //    2) the number of positive values
+            //    3) the positive values
+            //    4) the number of negative values
+            //    5) the negative values
+            // The read mappings will then be stored in termToRandomIndex.
+            int numMappings = inStream.readInt();
+            for (int i = 0; i > numMappings; ++i) {
+                String term = inStream.readUTF();
+
+                int numPositive = inStream.readInt();
+                int[] positives = new int[numPositive];
+                for (int j = 0; j < numPositive; ++j)
+                    positives[j] = inStream.readInt();
+
+                int numNegatives = inStream.readInt();
+                int[] negatives = new int[numNegatives];
+                for (int j = 0; j < numNegatives; ++j)
+                    negatives[j] = inStream.readInt();
+                IndexVector vector =
+                    new IndexVector(vectorLength, positives, negatives);
+                termToRandomIndex.put(term, vector);
+            }
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public void saveIndexVectors(File file) {
+        try {
+            DataOutputStream stream = new DataOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(file)));
+            // Write the required values which define how index vectors are
+            // generated.  These won't be use when the vectors are loaded, but
+            // instead used to ensure that the values match with what is
+            // constructued. 
+            stream.writeInt(numVectorValues);
+            stream.writeInt(variance);
+            stream.writeInt(indexVectorLength);
+
+            // Write the index vector for each string mapped in this generator.
+            // For each mapping the order will be:
+            //   1) utf version of the string
+            //   2) number of positive dimensions
+            //   3) all positive dimensions
+            //   4) number of negative dimensions
+            //   5) all negative dimensions
+            stream.writeInt(termToRandomIndex.size());
+            for (Map.Entry<String, IndexVector> entry :
+                    termToRandomIndex.entrySet()) {
+                stream.writeUTF(entry.getKey());
+                IndexVector v = entry.getValue();
+
+                // Write the positive dimensions.
+                int[] pos = v.positiveDimensions();
+                stream.writeInt(pos.length);
+                for (int p : pos)
+                    stream.writeInt(p);
+
+                // Write the negative dimensions.
+                int[] neg = v.negativeDimensions();
+                stream.writeInt(neg.length);
+                for (int n : neg)
+                    stream.write(n);
+            }
+            stream.close();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
@@ -231,7 +323,7 @@ public class RandomIndexGenerator implements IndexGenerator {
             return null;
 
         // Check that an index vector does not already exist.
-        Vector v = termToRandomIndex.get(term);
+        IndexVector v = termToRandomIndex.get(term);
         if (v == null) {
             synchronized (this) {
                 // Confirm that some other thread has not created an index

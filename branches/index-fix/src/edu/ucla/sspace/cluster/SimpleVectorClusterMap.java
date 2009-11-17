@@ -95,18 +95,22 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
     private final double clusterWeight;
 
     /**
-     * Create a new {@code SimpleVectorClusterMap} with the given threshold
-     * size.
+     * Create a new {@code SimpleVectorClusterMap} using the system wide {@code
+     * Properties}.
      */
     public SimpleVectorClusterMap() {
         this(System.getProperties());
     }
 
+    /**
+     * Create a new {@code SimpleVectorClusterMap} using the given {@code
+     * Properties} instance.
+     */
     public SimpleVectorClusterMap(Properties props) {
         vectorClusters = new HashMap<String, List<Cluster>>();
 
         clusterThreshold = Double.parseDouble(props.getProperty(
-                    BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".75"));
+                    BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".15"));
         maxNumClusters = Integer.parseInt(props.getProperty(
                     BottomUpVectorClusterMap.MAX_CLUSTERS_PROPERTY, "2"));
         clusterWeight =
@@ -121,7 +125,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         // far.
         List<Cluster> termClusters = vectorClusters.get(key);
         if (termClusters == null) {
-            synchronized (this) {
+            synchronized (vectorClusters) {
                 termClusters = vectorClusters.get(key);
                 if (termClusters == null) {
                     termClusters = new ArrayList<Cluster>();
@@ -131,24 +135,27 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         }
 
         // Update the set of centriods.
+        int clusterSize;
         synchronized (termClusters) {
-            Cluster bestMatch = null;
-            int bestIndex = termClusters.size();
-            double bestScore = -1;
-            double similarity = -1;
-            
-            // Find the centriod with the best similarity.
-            int i = 0;
-            for (Cluster cluster : termClusters) {
-                similarity = cluster.compareWithVector(value);
-                if (similarity > bestScore) {
-                    bestScore = similarity;
-                    bestMatch = cluster;
-                    bestIndex = i;
-                }
-                ++i;
+            clusterSize = termClusters.size();
+        }
+        Cluster bestMatch = null;
+        int bestIndex = termClusters.size();
+        double bestScore = -1;
+        double similarity = -1;
+        
+        // Find the centriod with the best similarity.
+        for (int i = 0; i < clusterSize; ++i) {
+            Cluster cluster = termClusters.get(i);
+            similarity = cluster.compareWithVector(value);
+            if (similarity > bestScore) {
+                bestScore = similarity;
+                bestMatch = cluster;
+                bestIndex = i;
             }
+        }
 
+        synchronized (termClusters) {
             // Add the current term vector if the similarity is high enough,
             // or set it as a new centroid.
             if (similarity >= clusterThreshold ||
@@ -330,9 +337,13 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
             dropped++; 
         }
 
+        // Compute which clusters were merged and provide a mapping from merged
+        // cluster to result cluster index.
         Map<Integer, Integer> resultMergeMap = new IntegerMap<Integer>();
-        for (Map.Entry<Integer, Integer> merges : mergeMap.entrySet())
-            resultMergeMap.put(merges.getValue(), merges.getKey());
+        if (mergeMap.size() != 0) {
+            for (Map.Entry<Integer, Integer> merges : mergeMap.entrySet())
+                resultMergeMap.put(merges.getValue(), merges.getKey());
+        }
         return resultMergeMap;
     }
 

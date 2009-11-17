@@ -41,7 +41,7 @@ public class Cluster {
     protected double newValueWeight;
 
     public Cluster(Vector firstVector) {
-        this(firstVector, 1, 1);
+        this(firstVector, 0, 0);
     }
 
     public Cluster(Vector firstVector, double oldWeight, double newWeight) {
@@ -52,7 +52,7 @@ public class Cluster {
     }
 
     public synchronized void addVector(Vector vector) {
-        if (oldValueWeight == 1 && newValueWeight == 1)
+        if (oldValueWeight == 0 || newValueWeight == 0)
             Vectors.add(centroid, vector);
         else 
             Vectors.addWithScalars(centroid, oldValueWeight,
