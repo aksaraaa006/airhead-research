@@ -258,6 +258,11 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         while (!nextWords.isEmpty()) {
             focusWord = nextWords.remove();
             String replacement = nextReplacements.remove();
+
+            // Ensure that the index vectors exists for all interesting words in
+            // the corpus.
+            indexGenerator.getIndexVector(focusWord);
+
             if (it.hasNext())
                 addNextWord(it, nextWords, nextReplacements);
 

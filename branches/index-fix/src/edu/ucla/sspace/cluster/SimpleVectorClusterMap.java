@@ -34,6 +34,7 @@ import edu.ucla.sspace.util.IntegerMap;
 import edu.ucla.sspace.util.MultiMap;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -128,36 +129,44 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
             synchronized (vectorClusters) {
                 termClusters = vectorClusters.get(key);
                 if (termClusters == null) {
-                    termClusters = new ArrayList<Cluster>();
+                    termClusters = 
+                        Collections.synchronizedList(new ArrayList<Cluster>());
                     vectorClusters.put(key, termClusters);
                 }
             }
         }
 
         // Update the set of centriods.
-        int clusterSize;
+
+        // First make a shallow copy of the cluster list to work on.  Note that
+        // by making this shallow copy, if new clusters are added while assigning
+        // this instance, the new cluster will be skipped.
+        List<Cluster> copiedList = null;
         synchronized (termClusters) {
-            clusterSize = termClusters.size();
+            copiedList = new ArrayList<Cluster>(termClusters.size());
+            for (Cluster c : termClusters)
+                copiedList.add(c);
         }
+
+        // Find the centriod with the best similarity.
         Cluster bestMatch = null;
-        int bestIndex = termClusters.size();
+        int bestIndex = copiedList.size();
         double bestScore = -1;
         double similarity = -1;
-        
-        // Find the centriod with the best similarity.
-        for (int i = 0; i < clusterSize; ++i) {
-            Cluster cluster = termClusters.get(i);
+        int i = 0;
+        for (Cluster cluster : copiedList) {
             similarity = cluster.compareWithVector(value);
             if (similarity > bestScore) {
                 bestScore = similarity;
                 bestMatch = cluster;
                 bestIndex = i;
             }
+            ++i;
         }
 
+        // Add the current term vector if the similarity is high enough, or set
+        // it as a new centroid.
         synchronized (termClusters) {
-            // Add the current term vector if the similarity is high enough,
-            // or set it as a new centroid.
             if (similarity >= clusterThreshold ||
                 termClusters.size() >= maxNumClusters)
                 bestMatch.addVector(value);
