@@ -104,7 +104,7 @@ public class CompactSparseVector implements Vector, SparseVector {
     }
 
     /** 
-     * @{inheritDoc}
+     * {@inheritDoc}
      */
     public int[] getNonZeroIndices() {
         return vector.getElementIndices();

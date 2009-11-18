@@ -33,7 +33,7 @@ import edu.ucla.sspace.matrix.Transform;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.SparseArray;
-import edu.ucla.sspace.util.SparseIntHashArray;
+import edu.ucla.sspace.util.SparseHashArray;
 
 import edu.ucla.sspace.vector.Vector;
 
@@ -317,7 +317,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
         // Convert the Map count to a SparseArray
         SparseArray<Integer> documentColumn = 
-            new SparseIntHashArray(totalNumberOfUniqueWords);
+            new SparseHashArray<Integer>(totalNumberOfUniqueWords);
         for (Map.Entry<String,Integer> e : termCounts.entrySet())
             documentColumn.set(termToIndex.get(e.getKey()), e.getValue());
 
