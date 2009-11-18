@@ -29,6 +29,7 @@ import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.matrix.Matrix;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,12 +59,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
 
+    public enum ClusterLinkage {
+        SINGLE_LINKAGE,
+        COMPLETE_LINKAGE,
+        MEAN_LINKAGE,
+        MEDIAN_LINKAGE,
+    }
+
+    public static final String LINKAGE_PROPERTY = 
+        BottomUpVectorClusterMap.PROPERTY_PREFIX + ".linkage";
+
+    private static final String DEFAULT_LINKAGE = "SINGLE_LINKAGE";
+
     /**
      * A mapping from Strings to cluster centroids.
      */
     private Map<String, List<ExemplarCluster>> vectorClusters;
-
-    private ConcurrentMap<String, AtomicInteger> overflowCounts;
 
     /**
      * The threshold for clustering
@@ -75,6 +86,8 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      */
     private final int maxNumClusters;
 
+    private final ClusterLinkage linkage;
+
     public ExemplarVectorClusterMap() {
         this(System.getProperties());
     }
@@ -85,12 +98,14 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
      */
     public ExemplarVectorClusterMap(Properties props) {
         vectorClusters = new HashMap<String, List<ExemplarCluster>>();
-        overflowCounts = new ConcurrentHashMap<String, AtomicInteger>();
 
         clusterThreshold = Double.parseDouble(props.getProperty(
                     BottomUpVectorClusterMap.THRESHOLD_PROPERTY, ".75"));
         maxNumClusters = Integer.parseInt(props.getProperty(
                     BottomUpVectorClusterMap.MAX_CLUSTERS_PROPERTY, "2"));
+
+        String linkageStr = props.getProperty(LINKAGE_PROPERTY, DEFAULT_LINKAGE);
+        linkage = ClusterLinkage.valueOf(linkageStr.toUpperCase());
     }
 
     /**
@@ -110,47 +125,42 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
             }
         }
 
-        // Update the set of clusters.
+        // Update the set of centriods.
+
+        // First make a shallow copy of the cluster list to work on.  Note that
+        // by making this shallow copy, if new clusters are added while assigning
+        // this instance, the new cluster will be skipped.
+        List<ExemplarCluster> copiedList = null;
         synchronized (termClusters) {
-            double[] scores = new double[termClusters.size()];
-            double totalScore = 0;
-            // Compute the similarity of value with each of the clusters.
-            int i = 0;
-            for (ExemplarCluster cluster : termClusters) {
-                scores[i] = cluster.compareWithVector(value);
-                totalScore += scores[i];
-                ++i;
-            }
+            copiedList = new ArrayList<ExemplarCluster>(termClusters.size());
+            for (ExemplarCluster c : termClusters)
+                copiedList.add(c);
+        }
 
-            // Find the cluster which had the highest normalized similarity.
-            for (i = 0; i < scores.length; ++i)
-                scores[i] /= totalScore;
-            double bestScore = -1;
-            int bestIndex = termClusters.size();
-            for (i = 0; i < scores.length; ++i) {
-                if (scores[i] > bestScore) {
-                    bestScore = scores[i];
-                    bestIndex = i;
-                }
+        // Find the centriod with the best similarity.
+        Cluster bestMatch = null;
+        int bestIndex = copiedList.size();
+        double bestScore = -1;
+        double similarity = -1;
+        int i = 0;
+        for (ExemplarCluster cluster : copiedList) {
+            similarity = cluster.compareWithVector(value);
+            if (similarity > bestScore) {
+                bestScore = similarity;
+                bestMatch = cluster;
+                bestIndex = i;
             }
+            ++i;
+        }
 
-            // Store the value in the cluster with the highest similarity as
-            // long as that score is higher than the threshold, or we have
-            // reached the maximum number of clusters.
-            if (bestScore > clusterThreshold ||
-                termClusters.size() > maxNumClusters) {
-                termClusters.get(bestIndex).addVector(value);
-                if (bestScore < clusterThreshold) {
-                    AtomicInteger count = overflowCounts.get(key);
-                    if (count != null)
-                        count.incrementAndGet();
-                }
-            } else  {
-                // If there are not the maximum number of clusters, and the
-                // similarity to all known clusters was too weak, add the value
-                // into a new cluster.
+        // Add the current term vector if the similarity is high enough, or set
+        // it as a new centroid.
+        synchronized (termClusters) {
+            if (similarity >= clusterThreshold ||
+                termClusters.size() >= maxNumClusters)
+                bestMatch.addVector(value);
+            else
                 termClusters.add(new ExemplarCluster(value));
-            }
             return bestIndex;
         }
     }
@@ -228,8 +238,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     }
 
     public synchronized int getOverflowCount(String key) {
-        AtomicInteger count = overflowCounts.get(key);
-        return (count != null) ? count.get() : 0;
+        return 0;
     }
 
     /**
@@ -260,12 +269,79 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
          *         in this cluster.
          */
         public synchronized double compareWithVector(Vector vector) {
-            double similarity = 0;
-            for (Vector exemplar : exemplars)
-                similarity += Similarity.cosineSimilarity(vector, exemplar);
-            similarity += super.compareWithVector(vector);
-            similarity /= (exemplars.size() + 1);
-            return similarity;
+            List<Vector> vList = new ArrayList<Vector>();
+            vList.add(vector);
+            return computeSimilarity(getMembers(), vList);
+        }
+
+        private double computeSimilarity(List<Vector> cluster,
+                                         List<Vector> toCompare) {
+            double finalSimilarity = 0;
+            switch (linkage) {
+                case SINGLE_LINKAGE: {
+                    double highestSimilarity = -1;
+                    for (Vector c : cluster) {
+                        for (Vector t : toCompare) {
+                            double sim = Similarity.cosineSimilarity(c, t);
+                            if (sim > highestSimilarity)
+                                highestSimilarity = sim;
+                        }
+                    }
+                    finalSimilarity = highestSimilarity;
+                    break;
+                }
+                case COMPLETE_LINKAGE: {
+                    double lowestSimilarity = 2;
+                    for (Vector c : cluster) {
+                        for (Vector t : toCompare) {
+                            double sim = Similarity.cosineSimilarity(c, t);
+                            if (sim < lowestSimilarity)
+                                lowestSimilarity = sim;
+                        }
+                    }
+                    finalSimilarity = lowestSimilarity;
+                    break;
+                }
+                case MEAN_LINKAGE: {
+                    double similarity = 2;
+                    for (Vector c : cluster)
+                        for (Vector t : toCompare)
+                            similarity += Similarity.cosineSimilarity(c, t);
+                    finalSimilarity =
+                        similarity / (cluster.size() * toCompare.size());
+                    break;
+                }
+                case MEDIAN_LINKAGE: {
+                    double[] similarity =
+                        new double[cluster.size() * toCompare.size()];
+                    int index = 0;
+                    for (Vector c : cluster)
+                        for (Vector t : toCompare)
+                            similarity[index++] =
+                                Similarity.cosineSimilarity(c,t);
+                    Arrays.sort(similarity);
+                    finalSimilarity = similarity[similarity.length / 2];
+                    break;
+                }
+            }
+            return finalSimilarity;
+        }
+
+        public synchronized void addCluster(Cluster cluster) {
+            ExemplarCluster eCluster = (ExemplarCluster) cluster;
+
+            // Push half of the exemplars in each cluster into the centroid.
+            for (int i = 0; i < MAX_EXEMPLARS / 2; ++i) {
+                super.addVector(this.exemplars.remove());
+                super.addVector(eCluster.exemplars.remove());
+            }
+
+            // Store the rest from the other cluster to this set of exemplars.
+            for (Vector otherExemplar : eCluster.exemplars)
+                exemplars.offer(otherExemplar);
+
+            // Merge the two centroids.
+            super.addCluster(cluster);
         }
 
         /**
@@ -283,13 +359,22 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
         }
 
         public synchronized List<Vector> getMembers() {
-            return new ArrayList<Vector>(exemplars);
+            // Return a shallow copy.
+            List<Vector> members = super.getMembers();
+            for (Vector v : exemplars)
+                members.add(Vectors.immutableVector(v));
+            return members;
         }
 
         public synchronized int getTotalMemberCount() {
             return super.getTotalMemberCount() + exemplars.size();
         }
+
+        public synchronized double clusterSimilarity(Cluster otherCluster) {
+            return computeSimilarity(getMembers(), otherCluster.getMembers());
+        }
     }
+
     public synchronized Map<Integer, Integer> mergeOrDropClusters(
             String term, double minPercentage) {
         List<ExemplarCluster> clusters = vectorClusters.get(term);

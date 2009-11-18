@@ -310,14 +310,13 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
                         continue;
 
                     // Compute the similarity between these two clusters.
-                    double similarity = Similarity.cosineSimilarity(
-                            clusters.get(i).getVector(),
-                            clusters.get(j).getVector());
+                    double similarity =
+                        clusters.get(i).clusterSimilarity(clusters.get(j));
+
                     // If the similarity is high enough, add cluster j to
                     // cluster i.
                     if (similarity >= mergeThreshold) {
-                        clusters.get(i).addVector(
-                                clusters.get(j).getVector());
+                        clusters.get(i).addCluster(clusters.get(j));
 
                         // Mark cluster j as merged so that it gets skipped.
                         skipList.add(j);

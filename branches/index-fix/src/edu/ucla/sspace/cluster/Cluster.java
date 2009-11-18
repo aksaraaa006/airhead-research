@@ -60,6 +60,10 @@ public class Cluster {
         ++itemCount;
     }
 
+    public synchronized void addCluster(Cluster cluster) {
+        addVector(cluster.centroid);
+    }
+
     public synchronized double compareWithVector(Vector vector) {
         return Similarity.cosineSimilarity(centroid, vector);
     }
@@ -76,5 +80,9 @@ public class Cluster {
 
     public synchronized Vector getVector() {
         return Vectors.immutableVector(centroid);
+    }
+
+    public synchronized double clusterSimilarity(Cluster cluster) {
+        return Similarity.cosineSimilarity(centroid, cluster.centroid);
     }
 }
