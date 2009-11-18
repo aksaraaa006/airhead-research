@@ -26,24 +26,24 @@ import java.util.Map;
 
 
 /**
- * A sparse {@code int} array.  This class offers amortized constant time
- * access to array indices at the expense of space.<p>
+ * A sparse array backed by a {@link HashMap}.  This class offers amortized
+ * constant time access to array indices at the expense of space.<p>
  *
  * Instance offer a space savings of retaining only the non-zero indices and
  * values.  For large array with only a few values set, this offers a huge
  * savings.  However, as the cardinality of the array grows in relation to its
- * size, a dense {@code int[]} array will offer better performance in both space
- * and time.  This is especially true if the sparse array instance approaches a
- * cardinality to size ratio of {@code .5}.<p>
+ * size, a dense array will offer better performance in both space and time.
+ * This is especially true if the sparse array instance approaches a cardinality
+ * to size ratio of {@code .5}.<p>
  *
- * This class offers much better performance than {@link SparseIntArray}, but
- * will use significantly more space as the cardinality increases.  In addition,
- * this class will marshall {@code int} primitives into {@code Integer} objects.
+ * This class offers much better performance than {@link IntegerMap}, but will
+ * use significantly more space as the cardinality increases.  In addition, this
+ * class will marshall primitive types into their reified object forms.
  *
  * @see SparseArray
- * @see SparseIntArray
+ * @see IntegerMap
  */
-public class SparseIntHashArray implements SparseArray<Integer> {
+public class SparseHashArray<T> implements SparseArray<T> {
 
     /**
      * The maximum length of this array
@@ -53,25 +53,25 @@ public class SparseIntHashArray implements SparseArray<Integer> {
     /**
      * A mapping from an array index to its value
      */
-    private Map<Integer,Integer> indexToValue;
+    private Map<Integer,T> indexToValue;
 
     /**
-     * Creates a sparse {@code int} array that grows to the maximum size set by
-     * {@link Integer#MAX_VALUE}.
+     * Creates a sparse array that grows to the maximum size set by {@link
+     * Integer#MAX_VALUE}.
      */
-    public SparseIntHashArray() {
+    public SparseHashArray() {
 	this(Integer.MAX_VALUE);
     }
 
     /**
-     * Creates a sparse {@code int} array with a fixed length
+     * Creates a sparse array with a fixed length
      */
-    public SparseIntHashArray(int length) {
+    public SparseHashArray(int length) {
 	if (length < 0)
 	    throw new IllegalArgumentException("length must be non-negative");
 	maxLength = length;
 	
-        indexToValue = new HashMap<Integer,Integer>();
+        indexToValue = new HashMap<Integer,T>();
     }
 
     /**
@@ -79,14 +79,14 @@ public class SparseIntHashArray implements SparseArray<Integer> {
      * non-zero values.  The length of the provided array is used to set the
      * maximum size of this sparse array.
      */
-    public SparseIntHashArray(int[] array) {
+    public SparseHashArray(T[] array) {
 
 	maxLength = array.length;
 
 	// Find how many non-zero elements there are
 	int nonZero = 0;
 	for (int i = 0; i < array.length; ++i) {
-	    if (array[i] != 0)
+	    if (array[i] != null)
 		indexToValue.put(i, array[i]);
 	}
     }
@@ -101,9 +101,8 @@ public class SparseIntHashArray implements SparseArray<Integer> {
     /**
      * {@inheritDoc}
      */ 
-    public Integer get(int index) {
-	Integer i = indexToValue.get(index);
-        return (i == null) ? 0 : i;
+    public T get(int index) {
+	return indexToValue.get(index);
     }
 
     /**
@@ -129,7 +128,7 @@ public class SparseIntHashArray implements SparseArray<Integer> {
     /**
      * {@inheritDoc}
      */
-    public void set(int index, Integer value) {
+    public void set(int index, T value) {
 	indexToValue.put(index, value);
     }
 
@@ -139,7 +138,7 @@ public class SparseIntHashArray implements SparseArray<Integer> {
     @SuppressWarnings("unchecked")
     public <E> E[] toArray(E[] array) {
 	for (int i = 0; i < array.length; ++i) {
-            Integer j = indexToValue.get(i);
+            T j = indexToValue.get(i);
             if (j != null)
                 array[i] = (E)j;
 	}

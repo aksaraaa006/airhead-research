@@ -26,7 +26,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 
-import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseHashVector;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -272,7 +272,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @return the vector for the word or {@code null} if the word does not
      *         exist in the semantic space
      */
-    private double[] loadTextVector(String word) throws IOException {
+    private Vector loadTextVector(String word) throws IOException {
         Long lineNumber = termToOffset.get(word);
         if (lineNumber == null)
             return null;
@@ -293,7 +293,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
             double d = Double.parseDouble(values[c]);
             row[c] = d;
         }
-        return row;
+        return new DenseVector(row);
     }
 
     /**
@@ -341,7 +341,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @return the vector for the word or {@code null} if the word does not
      *         exist in the semantic space
      */
-    private double[] loadSparseTextVector(String word) throws IOException {
+    private Vector loadSparseTextVector(String word) throws IOException {
         Long lineNumber = termToOffset.get(word);
         if (lineNumber == null)
             return null;
@@ -349,9 +349,8 @@ public class OnDiskSemanticSpace implements SemanticSpace {
         // skip to the line where the word's vector is found
         textSSpace.moveToLine(lineNumber.intValue());
         String line = textSSpace.readLine();
-        if (line == null)
-            System.out.printf("%s -> null row %d%n", word, lineNumber);
-        double[] row = new double[dimensions];
+        //double[] row = new double[dimensions];
+        Vector row = new SparseHashVector(dimensions);
             
         String[] termVectorPair = line.split("\\|");
         String[] values = termVectorPair[1].split(",");
@@ -360,7 +359,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
         for (int i = 0; i < values.length; i +=2 ) {
             int col = Integer.parseInt(values[i]);
             double val = Double.parseDouble(values[i+1]);
-            row[col] = val;
+            row.set(col, val);
         }
         return row;
     }
@@ -401,17 +400,17 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @return the vector for the word or {@code null} if the word does not
      *         exist in the semantic space
      */
-    private double[] loadBinaryVector(String word) throws IOException {
+    private Vector loadBinaryVector(String word) throws IOException {
         Long byteOffset = termToOffset.get(word);
         if (byteOffset == null)
             return null;
 
         binarySSpace.seek(byteOffset);
 
-        double[] vector = new double[dimensions];
+        Vector vector = new DenseVector(dimensions);
         
         for (int col = 0; col < dimensions; ++col) {
-            vector[col] = binarySSpace.readDouble();
+            vector.set(col, binarySSpace.readDouble());
         }
 
         return vector;
@@ -455,7 +454,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      * @return the vector for the word or {@code null} if the word does not
      *         exist in the semantic space
      */
-    private double[] loadSparseBinaryVector(String word) throws IOException {
+    private Vector loadSparseBinaryVector(String word) throws IOException {
         Long byteOffset = termToOffset.get(word);
         if (byteOffset == null)
             return null;
@@ -463,11 +462,11 @@ public class OnDiskSemanticSpace implements SemanticSpace {
         binarySSpace.seek(byteOffset);
                 
         int nonZero = binarySSpace.readInt();
-        double[] vector = new double[dimensions];
+        Vector vector = new SparseHashVector(dimensions);
         for (int i = 0; i < nonZero; ++i) {
             int col = binarySSpace.readInt();
             double val = binarySSpace.readDouble();
-            vector[col] = val;
+            vector.set(col, val);
         }
 
         return vector;
@@ -487,16 +486,16 @@ public class OnDiskSemanticSpace implements SemanticSpace {
      *         from the underlying semantic space file.
      */
     public synchronized Vector getVector(String word) {
-        try {
+        try {            
             switch (format) {
             case TEXT:
-                return new DenseVector(loadTextVector(word));
+                return loadTextVector(word);
             case BINARY:
-                return new DenseVector(loadBinaryVector(word));
+                return loadBinaryVector(word);
             case SPARSE_TEXT:
-                return new CompactSparseVector(loadSparseTextVector(word));
+                return loadSparseTextVector(word);
             case SPARSE_BINARY:
-                return new CompactSparseVector(loadSparseBinaryVector(word));
+                return loadSparseBinaryVector(word);
             }
         } catch (IOException ioe) {
             // rethrow as something catastrophic must have happened to the
