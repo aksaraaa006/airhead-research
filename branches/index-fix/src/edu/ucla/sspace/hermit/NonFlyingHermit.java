@@ -26,8 +26,10 @@ import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
+import edu.ucla.sspace.hermit.HierarchicalAgglomerativeClustering.ClusterLinkage;
 import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
+import edu.ucla.sspace.index.SparseRandomIndexVector;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -132,8 +134,8 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
     private final Class indexUserClazz;
 
     /**
-     * A fixed String describing the {@code IndexUser} that {@code NonFlyingHermit}
-     * uses.
+     * A fixed String describing the {@code IndexUser} that {@code
+     * NonFlyingHermit} uses.
      */
     private final String indexUserDescription;
 
@@ -154,6 +156,9 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     private Map<String, String> replacementMap;
 
+    /**
+     * A simple map containing conflation information and storage of contexts.
+     */
     private ConflationMap conflationMap;
 
     /**
@@ -304,9 +309,7 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
 
                 // Count the accuracy of the current cluster assignment for
                 // words which have a replacement different from themselves.
-                if (!focusWord.equals(replacement)) {
-                    conflationMap.addInstance(replacement, focusWord, meaning);
-                }
+                conflationMap.addInstance(replacement, focusWord, meaning);
             }
 
             // Push the focus word into previous word set for the next focus
@@ -338,11 +341,11 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
                              Queue<String> nextWords,
                              Queue<String> nextReplacements) {
         String term = it.next();
-        String replacement = term;
+        String replacement = EMPTY_TOKEN;
         if (replacementMap != null) {
             replacement = replacementMap.get(term);
             replacement = (replacement != null) ? replacement : EMPTY_TOKEN;
-        } 
+        }
 
         nextWords.offer(term.intern());
         nextReplacements.offer(replacement.intern());
@@ -356,7 +359,57 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
             properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
-        Set<String> terms = new TreeSet<String>(clusterMap.keySet());
+        for (Map.Entry<String, File> entry :
+                conflationMap.fileNameMap.entrySet()) {
+            Duple<int[], Vector[]> vectorAssignments = 
+                HierarchicalAgglomerativeClustering.cluster(
+                        entry.getValue(), .13, ClusterLinkage.SINGLE_LINKAGE);
+            // Find the number of clusters generated.
+            int numClusters = 0;
+            for (int clusterNum : vectorAssignments.x)
+                if (clusterNum > numClusters)
+                    numClusters = clusterNum;
+
+            // Compute the real occurance counts.  For the list of original
+            // terms, and the context indexes they map to, count how many times
+            // each original term occurs in a particular cluster.
+            for (Map.Entry<String, List<Integer>> contextIndexes :
+                    conflationMap.wordMap.get(entry.getKey()).entrySet()) {
+                int[] occuranceCounts = new int[numClusters];
+                for (int contextIndex : contextIndexes.getValue())
+                    occuranceCounts[vectorAssignments.x[contextIndex]]++;
+
+                // Output the occurance counts for a particular original sense
+                // for each of the infered senses.
+                for (int i = 0; i < numClusters; ++i) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(entry.getKey()).append("-");
+                    sb.append(i).append("-");
+                    sb.append(contextIndexes.getKey()).append("|");
+                    sb.append(occuranceCounts[i]);
+                    System.out.println(sb.toString());
+                }
+            }
+
+            // Sum up the instances for each of the cluster to compute the
+            // centroid.
+            Vector[] centroids = new Vector[numClusters];
+            for (int i = 0; i < numClusters; ++i)
+                centroids[i] = new SparseRandomIndexVector(indexVectorSize);
+
+            for (int i = 0; i < vectorAssignments.x.length; ++i)
+                Vectors.add(centroids[vectorAssignments.x[i]],
+                            vectorAssignments.y[i]);
+
+            // Store the centorids as the semantic vectors stored in this
+            // semantic space.
+            for (int i = 0; i < numClusters; ++i) {
+                String key = entry.getKey();
+                if (i != 0)
+                    key += "-" + i;
+                splitSenses.put(key, centroids[i]);
+            }
+        }
     }
 
     /**
@@ -366,15 +419,28 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
     private static class ConflationMap {
 
         /**
-         * A mapping from conflated senses to a list of infered senses.  Each  
+         * A mapping from conflated senses to a list of infered senses.  Each
          * infered sense has a mapping from original terms to the number of
          * times the instance of that word was mapped to the given sense of this
          * conflated term.
          */
         private Map<String, Map<String, List<Integer>>> wordMap;
 
+        /**
+         * A mapping from conflated senses to an output stream.
+         */
         private Map<String, ObjectOutputStream> fileMap;
 
+        /**
+         * A mapping from conflated seneses to the temporary file storing it's
+         * contexts.
+         */
+        private Map<String, File> fileNameMap;
+
+        /**
+         * A mapping from conflated senses to the number of times the sense has
+         * occured.  This allows for giving each context a unique identifier.
+         */
         private ConcurrentMap<String, Integer> countMap;
 
         /**
@@ -383,14 +449,17 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
         public ConflationMap(Collection<String> conflations) {
             countMap = new ConcurrentHashMap<String, Integer>();
             fileMap = new HashMap<String, ObjectOutputStream>();
+            fileNameMap = new HashMap<String, File>();
             wordMap = new HashMap<String, Map<String, List<Integer>>>();
 
             try {
                 for (String conflation : conflations) {
                     File f = File.createTempFile(conflation, ".tmp");
+                    f.deleteOnExit();
                     ObjectOutputStream stream = new ObjectOutputStream(
                             new BufferedOutputStream(new FileOutputStream(f)));
                     fileMap.put(conflation, stream);
+                    fileNameMap.put(conflation, f);
                 }
             } catch (IOException ioe) {
                 throw new IOError(ioe);

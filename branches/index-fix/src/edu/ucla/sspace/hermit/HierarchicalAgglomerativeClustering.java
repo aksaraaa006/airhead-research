@@ -1,3 +1,24 @@
+/*
+ * Copyright 2009 David Jurgens 
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.common.Similarity;
@@ -17,6 +38,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintWriter;
@@ -41,6 +63,8 @@ import java.util.logging.Logger;
  * A utility class for performing <a
  * href="http://en.wikipedia.org/wiki/Cluster_analysis#Agglomerative_hierarchical_clustering">Hierarchical
  * Agglomerative Clustering</a> on matrix data in a file.
+ *
+ * @author David Jurgens
  */
 public class HierarchicalAgglomerativeClustering {
 
@@ -49,7 +73,8 @@ public class HierarchicalAgglomerativeClustering {
      */
     public enum ClusterLinkage { 
         /**
-         * Clusters will be compared based on the most similar link between them.
+         * Clusters will be compared based on the most similar link between
+         * them.
          */
         SINGLE_LINKAGE, 
 
@@ -98,34 +123,35 @@ public class HierarchicalAgglomerativeClustering {
      *         numbers will start at 0 and increase.
      */
     @SuppressWarnings("unchecked")
-    public static List<List<Vector>> clusterMatrixRows(
+    public static Duple<int[], Vector[]> cluster(
             File contextFile, 
             double clusterSimilarityThreshold,
-            ClusterLinkage linkage) throws IOException {
+            ClusterLinkage linkage) {
         LOGGER.info("Reading in data points from file");
-        ObjectInputStream inStream = new ObjectInputStream(
-                new BufferedInputStream(new FileInputStream(contextFile)));
-        List<Duple<Integer, Vector>> contextInstances =
-            new ArrayList<Duple<Integer, Vector>>();
-        Object obj = null;
-        try {
-            while ((obj = inStream.readObject()) != null)
-                contextInstances.add((Duple<Integer, Vector>) obj);
-        } catch (ClassNotFoundException cnfe) {
-            throw new IllegalArgumentException("The class does not exist");
-        }
+        List<Duple<Integer, Vector>> contextInstances = null;
 
-        if (contextInstances.size() == 1) {
-            List<List<Vector>> result = new ArrayList<List<Vector>>(1);
-            List<Vector> r = new ArrayList<Vector>(1);
-            r.add(contextInstances.get(0).y);
-            result.add(r);
-            return result;
+        try {
+            ObjectInputStream inStream = new ObjectInputStream(
+                    new BufferedInputStream(new FileInputStream(contextFile)));
+            contextInstances = new ArrayList<Duple<Integer, Vector>>();
+            Object obj = null;
+            try {
+                while ((obj = inStream.readObject()) != null)
+                    contextInstances.add((Duple<Integer, Vector>) obj);
+            } catch (ClassNotFoundException cnfe) {
+                throw new IllegalArgumentException("The class does not exist");
+            }
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
         }
 
         Vector[] contexts = new Vector[contextInstances.size()];
         for (Duple<Integer, Vector> d : contextInstances) 
             contexts[d.x] = d.y;
+
+        if (contextInstances.size() == 1)
+            return new Duple<int[], Vector[]>(new int[]{0}, contexts);
+
         contextInstances = null;
 
         int rows = contextInstances.size();
@@ -314,17 +340,8 @@ public class HierarchicalAgglomerativeClustering {
             clusterIndex++;
         }
 
-        List<List<Vector>> clusterList =
-            new ArrayList<List<Vector>>(clusterIndex);
-        for (int i = 0; i < clusterIndex; ++i)
-            clusterList.add(new LinkedList<Vector>());
-
-        int index = 0;
-        for (int c : clusters)
-            clusterList.get(c).add(contexts[index++]);
-
         LOGGER.info("total number of clusters: " + clusterIndex);
-        return clusterList;
+        return new Duple<int[], Vector[]>(clusters, contexts);
     }
 
     /**
