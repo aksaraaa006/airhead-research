@@ -31,6 +31,7 @@ import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
 import edu.ucla.sspace.index.RandomIndexUser;
 
+import edu.ucla.sspace.hermit.NonFlyingHermit;
 import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
@@ -81,6 +82,7 @@ public class HermitMain extends GenericMain {
     private int prevWordsSize;
     private int nextWordsSize;
     private boolean useSecondOrder;
+    private boolean useNonFlying;
     private IndexGenerator generator;
     private Class indexUserClazz;
     private BottomUpVectorClusterMap clusterMap;
@@ -117,6 +119,9 @@ public class HermitMain extends GenericMain {
         options.addOption('O', "useSecondOrder",
                           "Use second order co-occurances is set",
                            false, null, "Process Properties");
+        options.addOption('N', "useNonFlyingHermit",
+                          "Use the non flying hermit code, this overrides -O",
+                          false, null, "Process Properties");
         
         // Add more tokenizing options.
         options.addOption('m', "replacementMap",
@@ -186,7 +191,9 @@ public class HermitMain extends GenericMain {
     public void handleExtraOptions() {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
-        useSecondOrder = argOptions.hasOption("useSecondOrder");
+        useNonFlying = argOptions.hasOption("useNonFlyingHermit");
+        useSecondOrder = !useNonFlying &&
+                         argOptions.hasOption("useSecondOrder");
 
         // Process the window size arguments;
         String windowValue = argOptions.getStringOption('w', "5,5");
@@ -262,6 +269,11 @@ public class HermitMain extends GenericMain {
     }
 
     public SemanticSpace getSpace() {
+        if (useNonFlying)
+            return new NonFlyingHermit(
+                    generator, indexUserClazz, replacementMap,
+                    dimension, prevWordsSize, nextWordsSize);
+
         return (useSecondOrder)
             ? new SecondOrderFlyingHermit(
                     generator, indexUserClazz, clusterMap, replacementMap,

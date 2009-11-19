@@ -115,7 +115,7 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
      * The Semantic Space name for NonFlyingHermit
      */
     public static final String FLYING_HERMIT_SSPACE_NAME = 
-        "flying-hermit-semantic-space";
+        "non-flying-hermit-semantic-space";
 
     /**
      * The logger used to record all output
@@ -162,12 +162,6 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
     private ConflationMap conflationMap;
 
     /**
-     * The type of clustering used for {@code NonFlyingHermit}.  This specifies
-     * how hermit will merge it's context vectors into different senses.
-     */
-    private BottomUpVectorClusterMap clusterMap;
-
-    /**
      * The size of each index vector, as set when the sspace is created.
      */
     private final int indexVectorSize;
@@ -187,7 +181,6 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     public NonFlyingHermit(IndexGenerator generator,
                         Class userClazz,
-                        BottomUpVectorClusterMap cluster,
                         Map<String, String> remap,
                         int vectorSize,
                         int prevWordsSize,
@@ -195,7 +188,6 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
         indexVectorSize = vectorSize;
         indexGenerator = generator;
         indexUserClazz = userClazz;
-        clusterMap = cluster;
         replacementMap = remap;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
@@ -230,8 +222,7 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
     public String getSpaceName() {
         return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize + 
                "-w" + prevSize + "_" + nextSize +
-               "-" + indexUserDescription.toString() +
-               "-" + clusterMap.toString();
+               "-" + indexUserDescription.toString();
     }
 
     /**
@@ -341,7 +332,7 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
                              Queue<String> nextWords,
                              Queue<String> nextReplacements) {
         String term = it.next();
-        String replacement = EMPTY_TOKEN;
+        String replacement = term;
         if (replacementMap != null) {
             replacement = replacementMap.get(term);
             replacement = (replacement != null) ? replacement : EMPTY_TOKEN;
@@ -473,6 +464,8 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
         public void addInstance(String conflatedTerm,
                                 String originalSense,
                                 Vector conflationVector) {
+            HERMIT_LOGGER.fine("Writing conflated sense: " + conflatedTerm);
+
             ObjectOutputStream conflationStream = fileMap.get(conflatedTerm);
             int vectorIndex = 0;
             synchronized (countMap) {
@@ -484,11 +477,14 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
             Duple<Integer, Vector> v = new Duple<Integer, Vector>(
                     vectorIndex, conflationVector);
             try {
-                conflationStream.writeObject(v);
+                synchronized (conflationStream) {
+                    conflationStream.writeObject(v);
+                }
             } catch (IOException ioe) {
                 throw new IOError(ioe);
             }
 
+            HERMIT_LOGGER.fine("Writing the sense count: " + conflatedTerm);
             // Get the list of senses known for this conflated term.
             Map<String, List<Integer>> senseCounts = null;
             synchronized (wordMap) {
