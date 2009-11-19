@@ -27,8 +27,6 @@ import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.File;

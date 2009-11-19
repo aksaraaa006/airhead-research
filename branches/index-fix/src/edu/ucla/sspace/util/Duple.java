@@ -21,10 +21,15 @@
 
 package edu.ucla.sspace.util;
 
+import java.io.Serializable;
+
+
 /**
  * A wrapper for containing two objects of different types.
  */
-public class Duple<T, U> {
+public class Duple<T, U> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public final T x;
     
