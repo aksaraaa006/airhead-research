@@ -23,6 +23,8 @@ package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.hermit.HierarchicalAgglomerativeClustering.ClusterLinkage;
+
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
@@ -118,6 +120,14 @@ public class HermitRedux implements SemanticSpace {
         PROPERTY_PREFIX + ".dimensions";
 
     /**
+     * The property to set the minimum similarity between context distributions.
+     * Similarity values are drawn from a range of [-1, 1] where 1 indicates the
+     * distributions are identical.
+     */
+    public static final String MIN_CONTEXT_SIMILARITY_PROPERTY =
+        PROPERTY_PREFIX + ".minContextSimilarity";
+
+    /**
      * The property to set the size of the context for determining first-order
      * co-occurrence statistics.  The size specifies the number of terms to
      * include in each direction as co-occurring.
@@ -185,6 +195,8 @@ public class HermitRedux implements SemanticSpace {
 
     private final List<AtomicInteger> termDocFrequency;
 
+    private final double minContextSimilarity;
+
     /**
      * The counter for recording the current, largest word index in the
      * word-document matrix.
@@ -244,14 +256,29 @@ public class HermitRedux implements SemanticSpace {
         if (!contextFileDir.exists() || !contextFileDir.isDirectory())
             throw new IllegalStateException("cannot write context files "
                 + "to non-existent or non-directory file");
-                        
+
+        String minContextSimProp = 
+            properties.getProperty(MIN_CONTEXT_SIMILARITY_PROPERTY);
+        minContextSimilarity = (minContextSimProp != null)
+            ? Double.parseDouble(minContextSimProp)
+            : .9;
+        if (minContextSimilarity > 1 || minContextSimilarity < -1)
+            throw new IllegalArgumentException(
+                MIN_CONTEXT_SIMILARITY_PROPERTY + " property must be within " +
+                "the range [-1, 1]");
+
         firstOrderCoOccurrences = new RandomIndexing(properties);
         
 	wordSpace = null;        
     }    
 
     /**
-     * Parses the document.
+     * {@inheritDoc}
+     *
+     * <p>
+     *
+     * This method is thread-safe and may be called in parallel with separate
+     * documents to speed up overall processing time.
      *
      * @param document {@inheritDoc}
      */
@@ -382,11 +409,6 @@ public class HermitRedux implements SemanticSpace {
     /**
      * {@inheritDoc}
      *
-     * <p>
-     *
-     * This method is thread-safe and may be called in parallel with separate
-     * documents to speed up overall processing time.
-     *
      * @param properties {@inheritDoc} See this class's {@link HermitRedux
      *        javadoc} for the full list of supported properties.
      */
@@ -463,7 +485,7 @@ public class HermitRedux implements SemanticSpace {
                         // being written, then mark the value
                         if (clusterAssignment[context] == sense) {
                             termSenseVector.set(occurrenceIndex,
-                                                (int)originalRow[occurrenceIndex]);
+                                (int)originalRow[occurrenceIndex]);
                         }
                     }
                     // Write the sense-specific vector to the matrix
@@ -479,6 +501,12 @@ public class HermitRedux implements SemanticSpace {
         }
     }
 
+    /**
+     * Reads in the finalized term document matrix as a memory mapped file and
+     * converts it to a {@code Matrix} instance.
+     *
+     * @return the term-document matrix
+     */
     private Matrix getTermDocMatrix() throws IOException {
         FileInputStream fis = new FileInputStream(documentContexts);
         FileChannel fc = fis.getChannel();
@@ -503,341 +531,7 @@ public class HermitRedux implements SemanticSpace {
         fis.close();
         fc.close();
         return termDocMatrix;
-        /*
-        DataInputStream contextReader = new DataInputStream(
-            new BufferedInputStream(new FileInputStream(documentContexts)));
-
-        int numDocs = documentCounter.get();
-        Matrix termDocMatrix = Matrices.create(termIndexCounter, numDocs, 
-                                               Matrix.Type.SPARSE_ON_DISK);
-        for (int doc = 0; doc < numDocs; ++doc) {
-            // Find out how many different words appeared in the document
-            int documentContextSize = contextReader.readInt();
-            for (int i = 0; i < documentContextSize; ++i) {
-                int termIndex = contextReader.readInt();
-                int occurrences = contextReader.readInt();
-                termDocMatrix.set(termIndex, doc, occurrences);
-            }
-        }
-        contextReader.close();
-        return termDocMatrix;
-        */
     }
-
-    private void generateWordContexts(Properties properties) 
-        throws IOException {
-
-        DataInputStream contextReader = new DataInputStream(
-            new BufferedInputStream(new FileInputStream(documentContexts)));
-        
-        String[] indexToTerm = new String[termToIndex.size()];
-        File[] indexToContextFile = new File[termToIndex.size()];
-        for (Map.Entry<String,Integer> e : termToIndex.entrySet()) {
-            String term = e.getKey();
-            indexToTerm[e.getValue()] = term;
-            indexToContextFile[e.getValue()] = (term.matches("[a-zA-Z]+"))
-                ? File.createTempFile("ht_" + e.getKey(), ".contexts")
-                : null;
-        }
-        
-        // Keep track of how many different contexts have been seen for each
-        // word.  This value will be used to construct the second-order context
-        // matrix, where each context is a separate row.
-        int[] indexToContextsSeen = new int[termToIndex.size()];
-        
-        int documentsSeen = 0;
-        // Because we do not know the actual size of the context stream,
-        // read/loop until we hit the EOF.  The file should still be well
-        // formatted, but will end abrubptly after the last context.
-        while (true) {
-            documentsSeen++;
-            try {
-                // Find out how many different words appeared in the document
-                int documentContextSize = contextReader.readInt();
-
-                LOGGER.fine("generating second order co-occurence vector for " +
-                            "document #" + documentsSeen + ", with "
-                            + documentContextSize + " unique terms");
-
-                // Record which ones did occur so that after the second-order
-                // context is built, we can update their context matrices.
-                int[] termsInDoc = new int[documentContextSize];
-
-                // Create a vector for the second order co-occurrences
-                int[] documentContext = 
-                    new int[firstOrderCoOccurrences.getVectorLength()];
-            
-                for (int i = 0; i < documentContextSize; ++i) {
-                    int termIndex = contextReader.readInt();
-                    termsInDoc[i] = termIndex;
-                    int occurrences = contextReader.readInt();
-                    String term = indexToTerm[termIndex];
-                    Vector firstOrder = 
-                        firstOrderCoOccurrences.getVector(term);
-                    // Sum the first-order co-occurrences, weighting each by the
-                    // number of times that word occurred in the document
-                    if (firstOrder instanceof SparseVector) {
-                        SparseVector sv = (SparseVector)firstOrder;
-                        for (int j : sv.getNonZeroIndices()) {
-                            documentContext[j] += (int)(firstOrder.get(j)) 
-                                * occurrences;
-                        }
-                    }
-                    else {
-                        for (int j = 0; j < firstOrder.length(); ++j) {
-                            documentContext[j] += (int)(firstOrder.get(j)) 
-                                * occurrences;
-                        }
-                    }
-                }
-            
-                // For each of the terms in the document, add the context to the
-                // list of contexts for it.
-                for (int termIndex : termsInDoc) {
-                    File termContexts = indexToContextFile[termIndex];
-                    // If the term did not have an associated file, it was
-                    // likely a non-alpha token and so should be skipped.
-                    if (termContexts == null)
-                        continue; 
-
-                    PrintWriter pw = new PrintWriter(
-                        new BufferedOutputStream(
-                            new FileOutputStream(termContexts, true)));
-                
-                    int row = indexToContextsSeen[termIndex]++;
-                    for (int col = 0; col < documentContext.length; ++col) {
-                        int val = documentContext[col];
-                        pw.println((row + 1) + " " + (col + 1) + " " + val);
-                    }
-                    pw.close();
-                }
-
-            } catch (EOFException eofe) {
-                // expected
-                break;
-            }
-        }
-    }
-
-
-    private Map<String,File> generateWordContexts2(Properties properties) 
-            throws IOException {
-        
-        Map<String,File> termToContextMatrix = new HashMap<String,File>();
-        String[] indexToTerm = new String[termToIndex.size()];
-        for (Map.Entry<String,Integer> e : termToIndex.entrySet()) {
-            String term = e.getKey();
-            indexToTerm[e.getValue()] = term;
-        }
-        
-        // Keep track of how many different contexts have been seen for each
-        // word.  This value will be used to construct the second-order context
-        // matrix, where each context is a separate row.
-        int[] indexToContextsSeen = new int[termToIndex.size()];
-
-        for (int curTermIndex = 0; curTermIndex < termToIndex.size(); ++curTermIndex) {
-        
-            DataInputStream contextReader = new DataInputStream(
-                new BufferedInputStream(new FileInputStream(documentContexts)));
-            
-            String curTerm = indexToTerm[curTermIndex];
-            // Skip terms that are not words
-            if (!curTerm.matches("[a-zA-Z]+"))
-                continue;            
-            
-            File termContexts = 
-                File.createTempFile("ht_" + curTerm, ".contexts");
-            termToContextMatrix.put(curTerm, termContexts);
-            
-            LOGGER.fine(String.format(
-                        "generating second-order context file for %s (%d/%d)",
-                        curTerm, curTermIndex, termToIndex.size()));
-
-            PrintWriter pw = new PrintWriter(
-                new BufferedOutputStream(
-                    new FileOutputStream(termContexts, true)));
-            
-            int documentsSeen = 0;
-            // Because we do not know the actual size of the context stream,
-            // read/loop until we hit the EOF.  The file should still be well
-            // formatted, but will end abrubptly after the last context.
-            while (true) {
-                documentsSeen++;
-                try {
-                    // Find out how many different words appeared in the document
-                    int documentContextSize = contextReader.readInt();
-                    
-                    LOGGER.finer("generating second order co-occurence vector for " +
-                                 "document #" + documentsSeen + ", with "
-                                 + documentContextSize + " unique terms");
-
-
-                    boolean curTermSeen = false;
-                    SparseArray<Integer> context = new SparseIntHashArray();
-                    for (int i = 0; i < documentContextSize; ++i) {
-                        int termIndex = contextReader.readInt();
-                        curTermSeen = curTermSeen || termIndex == curTermIndex;
-                        int occurrences = contextReader.readInt();
-                        context.set(termIndex, occurrences);
-                    }
-
-                    // Don't bother building the context vector if the current
-                    // term was not in the document
-                    if (!curTermSeen)
-                        continue;
-
-                    // Create a vector for the second order co-occurrences
-                    int[] documentContext = 
-                        new int[firstOrderCoOccurrences.getVectorLength()];
-
-                    for (int termIndex : context.getElementIndices()) {
-                        String term = indexToTerm[termIndex];
-                        int occurrences = context.get(termIndex);
-                        
-                        Vector firstOrder = 
-                            firstOrderCoOccurrences.getVector(term);
-                        // Sum the first-order co-occurrences, weighting each by the
-                        // number of times that word occurred in the document
-                        if (firstOrder instanceof SparseVector) {
-                            SparseVector sv = (SparseVector)firstOrder;
-                            for (int j : sv.getNonZeroIndices()) {
-                                documentContext[j] += (int)(firstOrder.get(j)) 
-                                    * occurrences;
-                            }
-                        }
-                        else {
-                            for (int j = 0; j < firstOrder.length(); ++j) {
-                                documentContext[j] += (int)(firstOrder.get(j)) 
-                                    * occurrences;
-                            }
-                        }
-                    }                
-
-                    // Since the current term was in this document, update its
-                    // context file with the second-order distribution
-                    int row = indexToContextsSeen[curTermIndex]++;
-                    StringBuilder sb = 
-                        new StringBuilder(documentContext.length * 4);
-                    for (int col = 0; col < documentContext.length; ++col) {
-                        int val = documentContext[col];
-                        sb.append(val);
-                        if (col + 1 < documentContext.length)
-                            sb.append(" ");
-                    }
-                    pw.println(sb.toString());
-                } catch (EOFException eofe) {
-                    // expected
-                    break;
-                }
-            }
-            LOGGER.fine(curTerm + " was seen in " + 
-                        indexToContextsSeen[curTermIndex] + " contexts");
-            pw.close();
-            contextReader.close();
-        }
-
-        return termToContextMatrix;
-    }
-
-    /**
-     * multiple open files; buffering
-     */
-    private Map<String,File> generateWordContexts3(Properties properties) 
-        throws IOException {
-
-        Map<String,File> termToContextMatrix = new HashMap<String,File>();
-        DataInputStream contextReader = new DataInputStream(
-            new BufferedInputStream(new FileInputStream(documentContexts)));
-        
-        String[] indexToTerm = new String[termToIndex.size()];
-        ContextWriter[] indexToContextWriter = 
-            new ContextWriter[termToIndex.size()];
-        for (Map.Entry<String,Integer> e : termToIndex.entrySet()) {
-            String term = e.getKey();
-            indexToTerm[e.getValue()] = term;
-            indexToContextWriter[e.getValue()] = (term.matches("[a-zA-Z]+"))
-                ? new ContextWriter(term)
-                : null;
-        }
-        
-        // Keep track of how many different contexts have been seen for each
-        // word.  This value will be used to construct the second-order context
-        // matrix, where each context is a separate row.
-        int[] indexToContextsSeen = new int[termToIndex.size()];
-        
-        int documentsSeen = 0;
-        // Because we do not know the actual size of the context stream,
-        // read/loop until we hit the EOF.  The file should still be well
-        // formatted, but will end abrubptly after the last context.
-        while (true) {
-            documentsSeen++;
-            try {
-                // Find out how many different words appeared in the document
-                int documentContextSize = contextReader.readInt();
-
-                LOGGER.fine("generating second order co-occurence vector for " +
-                            "document #" + documentsSeen + ", with "
-                            + documentContextSize + " unique terms");
-
-                // Record which ones did occur so that after the second-order
-                // context is built, we can update their context matrices.
-                int[] termsInDoc = new int[documentContextSize];
-
-                // Create a vector for the second order co-occurrences
-                int[] documentContext = 
-                    new int[firstOrderCoOccurrences.getVectorLength()];
-            
-                for (int i = 0; i < documentContextSize; ++i) {
-                    int termIndex = contextReader.readInt();
-                    termsInDoc[i] = termIndex;
-                    int occurrences = contextReader.readInt();
-                    String term = indexToTerm[termIndex];
-                    Vector firstOrder = 
-                        firstOrderCoOccurrences.getVector(term);
-                    // Sum the first-order co-occurrences, weighting each by the
-                    // number of times that word occurred in the document
-                    if (firstOrder instanceof SparseVector) {
-                        SparseVector sv = (SparseVector)firstOrder;
-                        for (int j : sv.getNonZeroIndices()) {
-                            documentContext[j] += (int)(firstOrder.get(j)) 
-                                * occurrences;
-                        }
-                    }
-                    else {
-                        for (int j = 0; j < firstOrder.length(); ++j) {
-                            documentContext[j] += (int)(firstOrder.get(j)) 
-                                * occurrences;
-                        }
-                    }
-                }
-            
-                // For each of the terms in the document, add the context to the
-                // list of contexts for it.
-                for (int termIndex : termsInDoc) {
-                    ContextWriter writer = indexToContextWriter[termIndex];
-                    // If the term did not have an associated writer, it was
-                    // likely a non-alpha token and so should be skipped.
-                    if (writer == null)
-                        continue; 
-                    
-                    writer.addContext(documentContext);
-                }
-
-            } catch (EOFException eofe) {
-                // expected
-                break;
-            }
-        }
-
-        for (int i = 0; i < indexToContextWriter.length; ++i) {
-            ContextWriter writer = indexToContextWriter[i];
-            if (writer != null)
-                termToContextMatrix.put(indexToTerm[i], writer.finish());
-        }
-
-        return termToContextMatrix;
-    }
-
 
     /**
      * multiple open files; buffering
@@ -980,7 +674,8 @@ public class HermitRedux implements SemanticSpace {
                             }
                             else {
                                 for (int j = 0; j < firstOrder.length(); ++j) {
-                                    documentContext[j] += (int)(firstOrder.get(j)) 
+                                    documentContext[j] += 
+                                        (int)(firstOrder.get(j)) 
                                         * occurrences
                                         * indexToGfIdf[j];
                                 }
@@ -998,7 +693,8 @@ public class HermitRedux implements SemanticSpace {
         
         while (true) {
             try {
-                System.out.println("waiting to process " + termsToProcess + " terms");
+                System.out.println("waiting to process " + termsToProcess 
+                                   + " terms");
                 termWithCompeteContexts.acquire(termsToProcess);
                 break;
             } catch (InterruptedException ie) { }
@@ -1010,7 +706,10 @@ public class HermitRedux implements SemanticSpace {
 
 
     private int[] clusterContexts(File termContexts) throws IOException {
-        return SpectralClusterUtil.clusterMatrixRows(termContexts);
+        return HierarchicalAgglomerativeClustering.
+            clusterMatrixRows(termContexts, MatrixIO.Format.DENSE_TEXT,
+                              minContextSimilarity, 
+                              ClusterLinkage.MEAN_LINKAGE);
     }
 
     private class ContextWriter {

@@ -1,3 +1,24 @@
+/*
+ * Copyright 2009 David Jurgens
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.common.Similarity;
@@ -32,15 +53,20 @@ import java.util.logging.Logger;
  * A utility class for performing <a
  * href="http://en.wikipedia.org/wiki/Cluster_analysis#Agglomerative_hierarchical_clustering">Hierarchical
  * Agglomerative Clustering</a> on matrix data in a file.
+ *
+ * @author David Jurgens
  */
 public class HierarchicalAgglomerativeClustering {
 
     /**
-     * The method to use when comparing the similarity of two clusters.
+     * The method to use when comparing the similarity of two clusters.  See <a
+     * href="http://home.dei.polimi.it/matteucc/Clustering/tutorial_html/hierarchical.html">
+     * here </a> for an example of how the different linkages operate.
      */
     public enum ClusterLinkage { 
         /**
-         * Clusters will be compared based on the most similar link between them.
+         * Clusters will be compared based on the most similar link between
+         * them.
          */
         SINGLE_LINKAGE, 
 
@@ -77,6 +103,7 @@ public class HierarchicalAgglomerativeClustering {
      *
      * @param matrixFile a file containing matrix data where each row is a data
      *        point
+     * @param matrixFormat the format that the matrix data is in
      * @param clusterSimilarityThreshold the threshold to use when deciding
      *        whether two clusters should be merged.  If the similarity of the
      *        clusters is below this threshold, they will not be merged and the
@@ -90,43 +117,42 @@ public class HierarchicalAgglomerativeClustering {
      */
     @SuppressWarnings("unchecked")
     public static int[] clusterMatrixRows(File matrixFile, 
+                                          Format matrixFormat,
                                           double clusterSimilarityThreshold,
                                           ClusterLinkage linkage)
-            throws IOException {
+            throws IOException {    
+        Matrix m = MatrixIO.readMatrix(matrixFile, matrixFormat, 
+                                       Type.DENSE_ON_DISK);
+        return clusterMatrixRows(m, clusterSimilarityThreshold, linkage);
+    }
 
-        // REMINDER: This should really be replaced with MatrixIO code
 
-        LOGGER.info("Determining data matrix dimensions");
-        // Identify the size of the matrix in the file
-        int rows = 0;
-        int cols = -1;
-        BufferedReader br = new BufferedReader(new FileReader(matrixFile));        
-        for (String line = null; (line = br.readLine()) != null; ) {
-            rows++;
-            if (cols == -1)
-                cols = line.split("\\s+").length;
-        }
-        br.close();
-
-        // Short circuit case for where there is only one data point to cluster
-        if (rows == 1)
-            return new int[] { 1 };
-        
-        LOGGER.info("Loading matrix of size " + rows + " x " + cols);
-        // Recreate the matrix in memory to build the similarity matrix
-        Matrix m = Matrices.create(rows, cols, Matrix.Type.DENSE_ON_DISK);
-        Scanner scanner = new Scanner(
-            new BufferedReader(new FileReader(matrixFile)));
-        for (int row = 0; row < rows; ++row) {
-            for (int col = 0; col < cols; ++col) {
-                m.set(row, col, scanner.nextInt());
-            }
-        }
-        scanner.close();
-
+    /**
+     * Identifies each row in the matrix file as a data point, and then clusters
+     * all rows using the specified cluster similarity measure for comparison
+     * and threshold to stop clustering.  Clusters will be repeatedly merged
+     * until the highest cluster similarity is below the threshold.
+     *
+     * @param m a matrix whose rows are to be clustered
+     * @param clusterSimilarityThreshold the threshold to use when deciding
+     *        whether two clusters should be merged.  If the similarity of the
+     *        clusters is below this threshold, they will not be merged and the
+     *        clustering process will be stopped.
+     * @param linkage the method to use for computing the similarity of two
+     *        clusters
+     *
+     * @return an array where each element corresponds to a row and the value is
+     *         the cluster number to which that row was assigned.  Cluster
+     *         numbers will start at 0 and increase.
+     */
+    @SuppressWarnings("unchecked")
+    public static int[] clusterMatrixRows(Matrix m,
+                                          double clusterSimilarityThreshold,
+                                          ClusterLinkage linkage) {
+        int rows = m.rows();
         LOGGER.info("Generating similarity matrix");
         Matrix similarityMatrix = 
-            Matrices.create(rows, cols, Matrix.Type.DENSE_ON_DISK);
+            Matrices.create(rows, rows, Matrix.Type.DENSE_ON_DISK);
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < rows; ++j) {
                 if (i == j)
@@ -156,7 +182,6 @@ public class HierarchicalAgglomerativeClustering {
             cluster.add(i);
             clusterAssignment.put(i, cluster);
         }
-
 
         LOGGER.info("Calculating initial inter-cluster similarity using " 
                     + linkage);
@@ -188,8 +213,7 @@ public class HierarchicalAgglomerativeClustering {
 
         int nextClusterId = rows;
         double closestClusterSimilarity = -1;
-        do {
-        
+        do {        
             // Find a row that has yet to be clustered by searching for the pair
             // that is most similar
             int cluster1index = 0;
@@ -235,7 +259,7 @@ public class HierarchicalAgglomerativeClustering {
             clusterSimilarities.remove(cluster1index);
             clusterSimilarities.remove(cluster2index);
 
-
+            // Local state variables to use while recalculating the similarities
             double mostSimilarToMerged = -1;
             Integer msId = null;
 
@@ -417,8 +441,6 @@ public class HierarchicalAgglomerativeClustering {
         
         public int hashCode() {
             return pairedIndex;
-        }
-        
+        }        
     }
-
 }
