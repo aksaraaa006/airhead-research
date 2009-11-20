@@ -10,4 +10,7 @@ public interface BottomUpHermit {
 
     public static final String DROP_PERCENTAGE =
         PROPERTY_PREFIX + ".dropPercentage";
+
+    public static final String THREADS_PROPERTY =
+        PROPERTY_PREFIX + ".numThreads";
 }

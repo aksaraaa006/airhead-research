@@ -346,60 +346,100 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        String numThreadProp =
+            properties.getProperty(BottomUpHermit.THREADS_PROPERTY, "1");
+        int numThreads = Integer.parseInt(numThreadProp);
+
+        conflationMap.flushStreams();
+
         double minPercentage = Double.parseDouble(
             properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
-        for (Map.Entry<String, File> entry :
-                conflationMap.fileNameMap.entrySet()) {
-            Duple<int[], Vector[]> vectorAssignments = 
-                HierarchicalAgglomerativeClustering.cluster(
-                        entry.getValue(), .13, ClusterLinkage.SINGLE_LINKAGE);
-            // Find the number of clusters generated.
-            int numClusters = 0;
-            for (int clusterNum : vectorAssignments.x)
-                if (clusterNum > numClusters)
-                    numClusters = clusterNum;
+        final Iterator<Map.Entry<String, File>> entryIter =
+            conflationMap.fileNameMap.entrySet().iterator();
+        
+        Collection<Thread> threads = new LinkedList<Thread>();
 
-            // Compute the real occurance counts.  For the list of original
-            // terms, and the context indexes they map to, count how many times
-            // each original term occurs in a particular cluster.
-            for (Map.Entry<String, List<Integer>> contextIndexes :
-                    conflationMap.wordMap.get(entry.getKey()).entrySet()) {
-                int[] occuranceCounts = new int[numClusters];
-                for (int contextIndex : contextIndexes.getValue())
-                    occuranceCounts[vectorAssignments.x[contextIndex]]++;
-
-                // Output the occurance counts for a particular original sense
-                // for each of the infered senses.
-                for (int i = 0; i < numClusters; ++i) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(entry.getKey()).append("-");
-                    sb.append(i).append("-");
-                    sb.append(contextIndexes.getKey()).append("|");
-                    sb.append(occuranceCounts[i]);
-                    System.out.println(sb.toString());
+        for (int i = 0; i < numThreads; ++i) {
+            Thread t = new Thread() {
+                public void run() {
+                    while (entryIter.hasNext()) {
+                        Map.Entry<String, File> entry = entryIter.next();
+                        runClustering(conflationMap.wordMap.get(entry.getKey()),
+                                      entry);
+                    }
                 }
-            }
+            };
+            threads.add(t);
+        }
 
-            // Sum up the instances for each of the cluster to compute the
-            // centroid.
-            Vector[] centroids = new Vector[numClusters];
-            for (int i = 0; i < numClusters; ++i)
-                centroids[i] = new SparseRandomIndexVector(indexVectorSize);
+        for (Thread t : threads)
+            t.start();
+        try {
+            for (Thread t : threads)
+                t.join();
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
+        }
+    }
 
-            for (int i = 0; i < vectorAssignments.x.length; ++i)
-                Vectors.add(centroids[vectorAssignments.x[i]],
-                            vectorAssignments.y[i]);
+    private void runClustering(Map<String, List<Integer>> wordMap,
+                               Map.Entry<String, File> entry) {
+        Duple<int[], Vector[]> vectorAssignments = 
+            HierarchicalAgglomerativeClustering.cluster(
+                    entry.getValue(), .13, ClusterLinkage.SINGLE_LINKAGE);
+        // Find the number of clusters generated.
+        int numClusters = 0;
+        for (int clusterNum : vectorAssignments.x)
+            if (clusterNum > numClusters)
+                numClusters = clusterNum;
+        numClusters++;
 
-            // Store the centorids as the semantic vectors stored in this
-            // semantic space.
+        // Compute the real occurance counts.  For the list of original
+        // terms, and the context indexes they map to, count how many times
+        // each original term occurs in a particular cluster.
+        for (Map.Entry<String, List<Integer>> contextIndexes :
+                wordMap.entrySet()) {
+            int[] occuranceCounts = new int[numClusters];
+            HERMIT_LOGGER.info("assingment size: " +
+                               vectorAssignments.x.length);
+
+            HERMIT_LOGGER.info("indexes size: " +
+                               contextIndexes.getValue().size());
+
+            for (int contextIndex : contextIndexes.getValue())
+                occuranceCounts[vectorAssignments.x[contextIndex]]++;
+
+            // Output the occurance counts for a particular original sense
+            // for each of the infered senses.
             for (int i = 0; i < numClusters; ++i) {
-                String key = entry.getKey();
-                if (i != 0)
-                    key += "-" + i;
-                splitSenses.put(key, centroids[i]);
+                StringBuilder sb = new StringBuilder();
+                sb.append(entry.getKey()).append("-");
+                sb.append(i).append("-");
+                sb.append(contextIndexes.getKey()).append("|");
+                sb.append(occuranceCounts[i]);
+                System.out.println(sb.toString());
             }
+        }
+
+        // Sum up the instances for each of the cluster to compute the
+        // centroid.
+        Vector[] centroids = new Vector[numClusters];
+        for (int i = 0; i < numClusters; ++i)
+            centroids[i] = new SparseRandomIndexVector(indexVectorSize);
+
+        for (int i = 0; i < vectorAssignments.x.length; ++i)
+            Vectors.add(centroids[vectorAssignments.x[i]],
+                        vectorAssignments.y[i]);
+
+        // Store the centorids as the semantic vectors stored in this
+        // semantic space.
+        for (int i = 0; i < numClusters; ++i) {
+            String key = entry.getKey();
+            if (i != 0)
+                key += "-" + i;
+            splitSenses.put(key, centroids[i]);
         }
     }
 
@@ -470,8 +510,8 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
             int vectorIndex = 0;
             synchronized (countMap) {
                 Integer conflatedCount = countMap.get(conflatedTerm);
-                vectorIndex = (conflatedCount == null) ? 0 : conflatedCount;
-                countMap.put(conflatedTerm, vectorIndex + 1);
+                vectorIndex = (conflatedCount == null) ? 0 : conflatedCount + 1;
+                countMap.put(conflatedTerm, vectorIndex);
             }
 
             Duple<Integer, Vector> v = new Duple<Integer, Vector>(
@@ -503,6 +543,17 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
                     senseCounts.put(originalSense, termCounts);
                 }
                 termCounts.add(vectorIndex);
+            }
+        }
+
+        public void flushStreams() {
+            try {
+                for (ObjectOutputStream stream : fileMap.values()) {
+                    stream.flush();
+                    stream.close();
+                }
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
             }
         }
     }

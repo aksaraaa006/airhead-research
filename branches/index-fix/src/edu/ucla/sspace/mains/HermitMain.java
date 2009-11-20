@@ -31,8 +31,9 @@ import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
 import edu.ucla.sspace.index.RandomIndexUser;
 
-import edu.ucla.sspace.hermit.NonFlyingHermit;
+import edu.ucla.sspace.hermit.BottomUpHermit;
 import edu.ucla.sspace.hermit.FlyingHermit;
+import edu.ucla.sspace.hermit.NonFlyingHermit;
 import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
 import edu.ucla.sspace.text.IteratorFactory;
@@ -292,6 +293,9 @@ public class HermitMain extends GenericMain {
             argOptions.hasOption('T'))
             props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,
                               argOptions.getStringOption("replacementMap"));
+        if (argOptions.hasOption("threads"))
+            props.setProperty(BottomUpHermit.THREADS_PROPERTY,
+                              argOptions.getStringOption("threads"));
         return props;
     }
 

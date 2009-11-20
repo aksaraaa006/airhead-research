@@ -30,6 +30,8 @@ import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import edu.ucla.sspace.util.Duple;
+
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedInputStream;
@@ -149,7 +151,7 @@ public class HierarchicalAgglomerativeClustering {
         }
 
         Vector[] contexts = new Vector[contextInstances.size()];
-        for (Duple<Integer, Vector> d : contextInstances) 
+        for (Duple<Integer, Vector> d : contextInstances)
             contexts[d.x] = d.y;
 
         if (contextInstances.size() == 1)
@@ -157,17 +159,15 @@ public class HierarchicalAgglomerativeClustering {
 
         int rows = contextInstances.size();
         
-        LOGGER.info("Generating similarity matrix");
+        LOGGER.info("Generating similarity matrix of size: " + rows);
         Matrix similarityMatrix = 
             Matrices.create(rows, rows, Matrix.Type.DENSE_IN_MEMORY);
         for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < rows; ++j) {
-                if (i == j)
-                    continue;
-                Duple<Integer, Vector> d1 = contextInstances.get(i);
-                Duple<Integer, Vector> d2 = contextInstances.get(j);
-                double similarity = Similarity.cosineSimilarity(d1.y, d2.y);
-                similarityMatrix.set(d1.x, d2.x, similarity);
+            for (int j = i + 1; j < rows; ++j) {
+                double similarity = Similarity.cosineSimilarity(
+                        contexts[i], contexts[j]);
+                similarityMatrix.set(i, j, similarity);
+                similarityMatrix.set(j, i, similarity);
             }
         }
         
