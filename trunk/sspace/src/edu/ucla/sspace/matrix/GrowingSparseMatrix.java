@@ -52,8 +52,8 @@ public class GrowingSparseMatrix implements Matrix {
     private int cols;
 
     /**
-     * Each row is defined as a {@link CompactSparseVector} which does most of the
-     * work.
+     * Each row is defined as a {@link CompactSparseVector} which does most of
+     * the work.
      */
     private final List<CompactSparseVector> sparseMatrix;
 
@@ -86,8 +86,8 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getColumn(int column) {
-        double[] values = new double[rows];
-        for (int row = 0; row < rows; ++row)
+        double[] values = new double[rows()];
+        for (int row = 0; row < rows(); ++row)
             values[row] = get(row, column);
         return values;
     }
@@ -96,8 +96,8 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getColumnVector(int column) {
-        Vector values = new CompactSparseVector(rows);
-        for (int row = 0; row < rows; ++row)
+        Vector values = new CompactSparseVector(rows());
+        for (int row = 0; row < rows(); ++row)
             values.set(row, get(row, column));
         return values;
     }
@@ -153,7 +153,7 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public void setColumn(int column, double[] values) {
-        for (int row = 0; row < rows; ++row)
+        for (int row = 0; row < rows(); ++row)
             set(row, column, values[row]);
     }
 
@@ -161,7 +161,7 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public void setColumn(int column, Vector values) {
-        for (int row = 0; row < rows; ++row)
+        for (int row = 0; row < rows(); ++row)
             set(row, column, values.get(row));
     }
 
@@ -221,9 +221,9 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-        double[][] m = new double[rows][cols];
+        double[][] m = new double[rows()][cols];
 
-        for (int r = 0; r < rows; ++r) 
+        for (int r = 0; r < rows(); ++r) 
             m[r] = sparseMatrix.get(r).toArray(cols);
         return m;
     }
