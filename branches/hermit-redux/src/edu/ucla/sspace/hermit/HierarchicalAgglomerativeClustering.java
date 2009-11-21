@@ -77,8 +77,9 @@ public class HierarchicalAgglomerativeClustering {
         COMPLETE_LINKAGE, 
 
         /**
-         * Clusters will be compared using the similarity of the computed
-         * mean data point for each cluster
+         * Clusters will be compared using the similarity of the computed mean
+         * data point (or <i>centroid</i>) for each cluster.  This comparison
+         * method is also known as UPGMA.
          */
         MEAN_LINKAGE,
         
@@ -94,6 +95,11 @@ public class HierarchicalAgglomerativeClustering {
      */
     private static final Logger LOGGER =
         Logger.getLogger(HierarchicalAgglomerativeClustering.class.getName());
+
+    /**
+     * Uninstantiable
+     */
+    private HierarchicalAgglomerativeClustering() { }
 
     /**
      * Identifies each row in the matrix file as a data point, and then clusters
@@ -126,7 +132,6 @@ public class HierarchicalAgglomerativeClustering {
         return clusterMatrixRows(m, clusterSimilarityThreshold, linkage);
     }
 
-
     /**
      * Identifies each row in the matrix file as a data point, and then clusters
      * all rows using the specified cluster similarity measure for comparison
@@ -154,19 +159,14 @@ public class HierarchicalAgglomerativeClustering {
         Matrix similarityMatrix = 
             Matrices.create(rows, rows, Matrix.Type.DENSE_ON_DISK);
         for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < rows; ++j) {
-                if (i == j)
-                    continue;
+            for (int j = i + 1; j < rows; ++j) {
                 double similarity = 
                     Similarity.cosineSimilarity(m.getRowVector(i),
                                                 m.getRowVector(j));
                 similarityMatrix.set(i, j, similarity);
+                similarityMatrix.set(j, i, similarity);
             }
         }
-        
-        // Once the similarity matrix has been generated, we can safely remove
-        // the original matrix from memory
-        m = null;
 
         // Keep track of which rows in the matrix have not been clusted
         Set<Integer> notClustered = new LinkedHashSet<Integer>();
@@ -354,9 +354,9 @@ public class HierarchicalAgglomerativeClustering {
      * @return the similarity of the two clusters
      */
     private static double getSimilarity(Matrix similarityMatrix,
-                                         Set<Integer> cluster, 
-                                         Set<Integer> toAdd,
-                                         ClusterLinkage linkage) {
+                                        Set<Integer> cluster, 
+                                        Set<Integer> toAdd,
+                                        ClusterLinkage linkage) {
         double similarity = -1;
         switch (linkage) {
         case SINGLE_LINKAGE: {
@@ -371,6 +371,7 @@ public class HierarchicalAgglomerativeClustering {
             similarity = highestSimilarity;
             break;
         }
+
         case COMPLETE_LINKAGE: {
             double lowestSimilarity = 1;
             for (int i : cluster) {
@@ -383,6 +384,7 @@ public class HierarchicalAgglomerativeClustering {
             similarity = lowestSimilarity;
             break;
         }
+
         case MEAN_LINKAGE: {
             double similaritySum = 0;
             for (int i : cluster) {
@@ -393,7 +395,8 @@ public class HierarchicalAgglomerativeClustering {
             similarity = similaritySum / (cluster.size() * toAdd.size());
             break;
         }
-        case MEDIAN_LINKAGE:
+
+        case MEDIAN_LINKAGE: {
             double[] similarities = new double[cluster.size() * toAdd.size()];
             int index = 0;
             for (int i : cluster) {
@@ -403,8 +406,12 @@ public class HierarchicalAgglomerativeClustering {
             }
             Arrays.sort(similarities);
             similarity = similarities[similarities.length / 2];
+            break;
         }
-
+        
+        default:
+            assert false : "unknown linkage method";
+        }
         return similarity;
     }
 
