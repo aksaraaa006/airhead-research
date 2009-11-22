@@ -365,9 +365,9 @@ public class PurandareFirstOrder implements SemanticSpace {
         // log-likelihood for it 
         for (int termIndex = 0; termIndex < uniqueTerms; ++termIndex) {
 
-            String term = indexToTerm[termIndex];
-            LOGGER.info("Calculating feature set for " + term + " " + 
-                        termIndex + "/" + uniqueTerms);
+            String term = indexToTerm[termIndex];            
+            LOGGER.info(String.format("Calculating feature set for %6d/%d: %s",
+                                      termIndex, uniqueTerms, term);
             Vector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
             int termCount = termCounts.get(termIndex).get();
             BitSet validFeatures = termFeatures[termIndex];
@@ -533,6 +533,9 @@ public class PurandareFirstOrder implements SemanticSpace {
         for (int i = 0; i < document.length; ++i) {
 
             int curToken = document[i];
+            // Skip processing tokens that were filtered out in the corpus
+            if (curToken < 0)
+                continue;
             // Determine the set of of valid features for the current token
             BitSet validFeatures = validFeaturesForTerm[curToken];
 
