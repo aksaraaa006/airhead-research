@@ -73,6 +73,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -352,7 +353,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         int corpusSize = 0;
         for (AtomicInteger i : termCounts)
             corpusSize += i.get();
-
+        int uniqueTerms = cooccurrenceMatrix.rows()
         // Create a set for each term that contains the term indices that are
         // determined to be features for the term, i.e. not all co-occurrences
         // will count as the features
@@ -360,15 +361,14 @@ public class PurandareFirstOrder implements SemanticSpace {
         // Initialize all the 
         for (int i = 0; i < termFeatures.length; ++i) 
             termFeatures[i] = new BitSet(wordIndexCounter);
-
+        
         // First calculate the feature set for each term by computing the
         // log-likelihood for it 
-        for (int termIndex = 0; termIndex < cooccurrenceMatrix.rows();
-                 ++termIndex) {
+        for (int termIndex = 0; termIndex < uniqueTerms; ++termIndex) {
 
             String term = indexToTerm[termIndex];
-
-            LOGGER.info("Calculating feature set for " + term);
+            LOGGER.info("Calculating feature set for " + term + " " + 
+                        termIndex + "/" + uniqueTerms);
             Vector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
             int termCount = termCounts.get(termIndex).get();
             BitSet validFeatures = termFeatures[termIndex];
@@ -398,6 +398,9 @@ public class PurandareFirstOrder implements SemanticSpace {
                 if (logLikelihood > 3.841)
                     validFeatures.set(co);
             }
+            if (LOGGER.isLoggable(Level.FINE))
+                LOGGER.fine(term + " had " + validFeatures.cardinality() 
+                            + " features");
         }
 
         LOGGER.info("reprocessing corpus to generate feature vectors");
@@ -591,7 +594,7 @@ public class PurandareFirstOrder implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-	return "purandare-petersen-semantic-space";
+	return "purandare-petersen";
     }
 
     /**
