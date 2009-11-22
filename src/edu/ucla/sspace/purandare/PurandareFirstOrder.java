@@ -353,7 +353,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         int corpusSize = 0;
         for (AtomicInteger i : termCounts)
             corpusSize += i.get();
-        int uniqueTerms = cooccurrenceMatrix.rows()
+        int uniqueTerms = cooccurrenceMatrix.rows();
         // Create a set for each term that contains the term indices that are
         // determined to be features for the term, i.e. not all co-occurrences
         // will count as the features
