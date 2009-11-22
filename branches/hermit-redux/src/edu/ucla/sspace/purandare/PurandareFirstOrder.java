@@ -545,7 +545,8 @@ public class PurandareFirstOrder implements SemanticSpace {
             SparseArray<Integer> contextCounts = new SparseIntHashArray();
         
             // Process all the tokes to the left (prior) to the current token;
-            for (int left = Math.max(i - contextWindowSize, 0); left < i; ++i) {
+            for (int left = Math.max(i - contextWindowSize, 0); 
+                     left < i; ++left) {
                 // NOTE: this token value could be -1 if the token's original
                 // text was filtered out from the corpus, i.e. was EMPTY_TOKEN
                 int token = document[left];
