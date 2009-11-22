@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.lang.reflect.Method;
@@ -268,8 +269,8 @@ public class Similarity {
             if (nzA.length < nzB.length) {
                 // Compute A's maginitude and the dot product
                 for (int nz : nzA) {
-                    int aValue = svA.get(nz);
-                    int bValue = svB.get(nz);
+                    double aValue = svA.get(nz);
+                    double bValue = svB.get(nz);
                     aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
                 }
@@ -282,8 +283,8 @@ public class Similarity {
             else {
                 // Compute B's maginitude and the dot product
                 for (int nz : nzB) {
-                    int aValue = svA.get(nz);
-                    int bValue = svB.get(nz);
+                    double aValue = svA.get(nz);
+                    double bValue = svB.get(nz);
                     bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
                 }
