@@ -444,11 +444,15 @@ public class PurandareFirstOrder implements SemanticSpace {
             for (int i = 0; i < tokensInDoc; ++i)
                 doc[i] = corpusReader.readInt();
 
-            processIntDocument(doc, filteredContexts, contextCounter,
-                               termFeatures, termContexts);
-            contextCounter += tokensInDoc;
+            // Due to filtering the number of recorded contexts may be less than
+            // the number of tokens in the document
+            int contextsInDoc =
+                processIntDocument(doc, filteredContexts, contextCounter,
+                                   termFeatures, termContexts);
+            contextCounter += contextsInDoc;
         }
         corpusReader.close();
+        assert contextCounter == corpusSize : "miscalcuated number of contexts";
 
         LOGGER.info("Finished reprocessing corpus");
 
@@ -459,7 +463,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             // Create view of the matrix that only contains this term's rows
             Matrix termRows = 
                 new RowMaskedMatrix(filteredContexts, contextRows);
-
+            
             LOGGER.info("Clustering " + termRows.rows() + 
                         " contexts for " + term);
             
@@ -523,19 +527,24 @@ public class PurandareFirstOrder implements SemanticSpace {
      * @param termToContextRows a mapping from the term to the set of rows in
      *        the {@code contextMatrix}.  This is an output paramter and is
      *        updated as new contexts for the term are seen in the document.
+     *
+     * @return the number of contexts present in this document
      */
     @SuppressWarnings("unchecked")
-    private void processIntDocument(int[] document, Matrix contextMatrix, 
+    private int processIntDocument(int[] document, Matrix contextMatrix, 
                                     int contextCount, 
                                     BitSet[] validFeaturesForTerm,
-                                    Set[] termToContextRows) {
-        
+                                    Set[] termToContextRows) {        
+        int contexts = 0;
         for (int i = 0; i < document.length; ++i) {
 
             int curToken = document[i];
             // Skip processing tokens that were filtered out in the corpus
             if (curToken < 0)
                 continue;
+            // If the current token wasn't skipped, indicate that another
+            // context was seen
+            contexts++;
             // Determine the set of of valid features for the current token
             BitSet validFeatures = validFeaturesForTerm[curToken];
 
@@ -583,6 +592,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             // matrix
             ((Set<Integer>)termToContextRows[curToken]).add(curContext);
         }
+        return contexts;
     }
 
     /**
