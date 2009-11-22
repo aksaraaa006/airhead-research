@@ -22,6 +22,7 @@
 package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.Similarity.SimType;
 
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
@@ -102,18 +103,13 @@ public class HierarchicalAgglomerativeClustering {
     private HierarchicalAgglomerativeClustering() { }
 
     /**
-     * Identifies each row in the matrix file as a data point, and then clusters
-     * all rows using the specified cluster similarity measure for comparison
-     * and threshold to stop clustering.  Clusters will be repeatedly merged
-     * until the highest cluster similarity is below the threshold.
+     * Clusters all rows in the matrix using the specified cluster similarity
+     * measure for comparison and stopping when the number of clusters is equal
+     * to the specified number.
      *
-     * @param matrixFile a file containing matrix data where each row is a data
-     *        point
-     * @param matrixFormat the format that the matrix data is in
-     * @param clusterSimilarityThreshold the threshold to use when deciding
-     *        whether two clusters should be merged.  If the similarity of the
-     *        clusters is below this threshold, they will not be merged and the
-     *        clustering process will be stopped.
+     * @param m a matrix whose rows are to be clustered
+     * @param numClusters the number of clusters into which the matrix should
+     *        divided
      * @param linkage the method to use for computing the similarity of two
      *        clusters
      *
@@ -121,21 +117,17 @@ public class HierarchicalAgglomerativeClustering {
      *         the cluster number to which that row was assigned.  Cluster
      *         numbers will start at 0 and increase.
      */
-    @SuppressWarnings("unchecked")
-    public static int[] clusterRows(File matrixFile, Format matrixFormat,
-                                    double clusterSimilarityThreshold,
-                                    ClusterLinkage linkage)
-            throws IOException {    
-        Matrix m = MatrixIO.readMatrix(matrixFile, matrixFormat, 
-                                       Type.DENSE_ON_DISK);
-        return clusterRows(m, clusterSimilarityThreshold, linkage);
+    public static int[] partitionRows(Matrix m, int numClusters,
+                                      ClusterLinkage linkage,
+                                      SimType similarityFunction) {
+        return cluster(m, -1, linkage, similarityFunction, numClusters);
     }
 
     /**
-     * Identifies each row in the matrix file as a data point, and then clusters
-     * all rows using the specified cluster similarity measure for comparison
-     * and threshold to stop clustering.  Clusters will be repeatedly merged
-     * until the highest cluster similarity is below the threshold.
+     * Clusters all rows in the matrix using the specified cluster similarity
+     * measure for comparison and threshold for when to stop clustering.
+     * Clusters will be repeatedly merged until the highest cluster similarity
+     * is below the threshold.
      *
      * @param m a matrix whose rows are to be clustered
      * @param clusterSimilarityThreshold the threshold to use when deciding
@@ -151,20 +143,43 @@ public class HierarchicalAgglomerativeClustering {
      */
     @SuppressWarnings("unchecked")
     public static int[] clusterRows(Matrix m, double clusterSimilarityThreshold,
-                                    ClusterLinkage linkage) {
+                                    ClusterLinkage linkage,
+                                    SimType similarityFunction) {
+        return cluster(m, clusterSimilarityThreshold, linkage, 
+                       similarityFunction, -1);
+    }
+
+
+    /**
+     * 
+     *
+     * @param m a matrix whose rows are to be clustered
+     * @param clusterSimilarityThreshold the optional parameter for specifying
+     *        the minimum inter-cluster similarity to use when deciding whether
+     *        two clusters should be merged.  If {@code maxNumberOfClusters} is
+     *        positive, this value is discarded in order to cluster to a fixed
+     *        number.  Otherwise all clusters will be merged until the minimum
+     *        distance is less than this threshold.
+     * @param linkage the method to use for computing the similarity of two
+     *        clusters
+     * @param maxNumberOfClusters an optional parameter to specify the maximum
+     *        number of clusters to have.  If this value is non-positive,
+     *        clusters will be merged until the inter-cluster similarity is
+     *        below the threshold, otherwise; if the value is positive, clusters
+     *        are merged until the desired number of clusters has been reached.
+     *
+     * @return an array where each element corresponds to a row and the value is
+     *         the cluster number to which that row was assigned.  Cluster
+     *         numbers will start at 0 and increase.
+     */
+    private static int[] cluster(Matrix m, double clusterSimilarityThreshold,
+                                 ClusterLinkage linkage, 
+                                 SimType similarityFunction,
+                                 int maxNumberOfClusters) {
         int rows = m.rows();
         LOGGER.info("Generating similarity matrix");
         Matrix similarityMatrix = 
-            Matrices.create(rows, rows, Matrix.Type.DENSE_ON_DISK);
-        for (int i = 0; i < rows; ++i) {
-            for (int j = i + 1; j < rows; ++j) {
-                double similarity = 
-                    Similarity.cosineSimilarity(m.getRowVector(i),
-                                                m.getRowVector(j));
-                similarityMatrix.set(i, j, similarity);
-                similarityMatrix.set(j, i, similarity);
-            }
-        }
+            computeSimilarityMatrix(m, similarityFunction);
 
         // Keep track of which rows in the matrix have not been clusted
         Set<Integer> notClustered = new LinkedHashSet<Integer>();
@@ -173,13 +188,8 @@ public class HierarchicalAgglomerativeClustering {
 
         // Create the initial set of clusters where each row is originally in
         // its own cluster
-        Map<Integer,Set<Integer>> clusterAssignment =
-            new HashMap<Integer,Set<Integer>>(rows);        
-        for (int i = 0; i < rows; ++i) {
-            HashSet<Integer> cluster= new HashSet<Integer>();
-            cluster.add(i);
-            clusterAssignment.put(i, cluster);
-        }
+        Map<Integer,Set<Integer>> clusterAssignment = 
+            generateInitialAssignment(rows);
 
         LOGGER.info("Calculating initial inter-cluster similarity using " 
                     + linkage);
@@ -190,28 +200,21 @@ public class HierarchicalAgglomerativeClustering {
         Map<Integer,Pairing> clusterSimilarities =
             new HashMap<Integer,Pairing>();
         for (Integer clusterId : clusterAssignment.keySet()) {
-            double mostSimilar = -1;
-            Integer paired = null;
-            for (Integer otherId : clusterAssignment.keySet()) {
-                if (otherId.equals(clusterId))
-                    continue;
-                double similarity = getSimilarity(
-                    similarityMatrix, clusterAssignment.get(clusterId),
-                    clusterAssignment.get(otherId), linkage);
-                if (similarity > mostSimilar) {
-                    mostSimilar = similarity;
-                    paired = otherId;
-                }
-            }
-            clusterSimilarities.put(
-                clusterId, new Pairing(mostSimilar, paired));
+            clusterSimilarities.put(clusterId,
+                 findMostSimilar(clusterAssignment, clusterId, 
+                                 linkage, similarityMatrix));
         }
 
         LOGGER.info("Assigning clusters");
 
+        // Use a keep track of which ID is available for the new, merged cluster
         int nextClusterId = rows;
-        double closestClusterSimilarity = -1;
-        do {        
+
+        // While we still have more clusters than the maximum number loop.  Note
+        // that if the maximum was set to negative, this condition will always
+        // be true and the inner loop check for inter-cluster similarity will
+        // break out of this loop
+        while (clusterAssignment.size() > maxNumberOfClusters) {
             // Find a row that has yet to be clustered by searching for the pair
             // that is most similar
             int cluster1index = 0;
@@ -235,7 +238,8 @@ public class HierarchicalAgglomerativeClustering {
             // If the similarity of the two most similar clusters falls below
             // the threshold, then the final set of clusters has been
             // determined.
-            if (highestSimilarity < clusterSimilarityThreshold)
+            if (maxNumberOfClusters < 1 &&
+                highestSimilarity < clusterSimilarityThreshold)
                 break;
             
             // Assign the merged cluster a new ID, which lets us track any
@@ -249,7 +253,8 @@ public class HierarchicalAgglomerativeClustering {
             LOGGER.log(Level.FINE, "Merged cluster {0} with {1}",
                        new Object[] { cluster1, cluster2 });
 
-            // Update the cluster assignments
+            // Update the cluster assignments, adding in the new cluster and
+            // remove all references to the two merged clusters.
             cluster1.addAll(cluster2);
             clusterAssignment.put(newClusterId, cluster1);
             clusterAssignment.remove(cluster1index);
@@ -259,7 +264,7 @@ public class HierarchicalAgglomerativeClustering {
 
             // Local state variables to use while recalculating the similarities
             double mostSimilarToMerged = -1;
-            Integer msId = null;
+            Integer mostSimilarToMergedId = null;
 
             // Check whether we have just merged the last two clusters, in which
             // case the similarity recalculation is unnecessary
@@ -277,12 +282,12 @@ public class HierarchicalAgglomerativeClustering {
 
                 // First, calculate the similarity between this cluster and the
                 // newly merged cluster
-                double sim = getSimilarity(similarityMatrix, cluster1,
-                                           clusterAssignment.get(clusterId),
-                                           linkage);
-                if (sim > mostSimilarToMerged) {
-                    mostSimilarToMerged = sim;
-                    msId = clusterId;
+                double simToNewCluster = 
+                    getSimilarity(similarityMatrix, cluster1,
+                                  clusterAssignment.get(clusterId), linkage);
+                if (simToNewCluster > mostSimilarToMerged) {
+                    mostSimilarToMerged = simToNewCluster;
+                    mostSimilarToMergedId = clusterId;
                 }
 
                 // Second, if the pair was previously paired with one of the
@@ -290,40 +295,64 @@ public class HierarchicalAgglomerativeClustering {
                 Pairing p = e.getValue();
                 if (p.pairedIndex == cluster1index 
                         || p.pairedIndex == cluster2index) {
-                    
-                    // Start with with the most similar being set to the newly
-                    // merged cluster, as this value has already been computed
-                    double mostSimilar = sim;
-                    Integer paired = newClusterId;
-                    for (Integer otherId : clusterAssignment.keySet()) {
-                        if (otherId.equals(clusterId))
-                            continue;
-                        double similarity = getSimilarity(
-                            similarityMatrix, clusterAssignment.get(clusterId),
-                            clusterAssignment.get(otherId), linkage);
-                        if (similarity > mostSimilar) {
-                            mostSimilar = similarity;
-                            paired = otherId;
-                        }
-                    }
                     // Reassign with the new most-similar
-                    clusterSimilarities.put(
-                        clusterId, new Pairing(mostSimilar, paired));
-                }                        
+                    e.setValue(findMostSimilar(clusterAssignment, clusterId, 
+                                               linkage, similarityMatrix));
+                }
             }
             
             // Update the new most similar to the newly-merged cluster
             clusterSimilarities.put(newClusterId, 
-                                    new Pairing(mostSimilarToMerged, msId));
+                                    new Pairing(mostSimilarToMerged, 
+                                                mostSimilarToMergedId));
+        }
 
-        } while (clusterAssignment.size() > 1);
+        return toAssignArray(clusterAssignment, rows);
+    }
 
-        int[] clusters = new int[rows];
-        for (int i = 0; i < rows; ++i)
+    /**
+     * For the current cluster, finds the most similar cluster using the
+     * provided linkage method and returns the pairing for it.
+     */
+    private static Pairing findMostSimilar(Map<Integer,Set<Integer>> 
+                                           curAssignment,
+                                           int curCluster, 
+                                           ClusterLinkage linkage,
+                                           Matrix similarityMatrix) {
+        // Start with with the most similar being set to the newly merged
+        // cluster, as this value has already been computed
+        double mostSimilar = -1;
+        Integer paired = -1;
+        for (Integer otherId : curAssignment.keySet()) {
+            if (otherId.equals(curCluster))
+                continue;
+            double similarity = getSimilarity(
+                similarityMatrix, curAssignment.get(curCluster),
+                    curAssignment.get(otherId), linkage);
+            if (similarity > mostSimilar) {
+                mostSimilar = similarity;
+                paired = otherId;
+            }
+        }
+        return new Pairing(mostSimilar, paired);
+    }
+
+    /**
+     *
+     * @param assignment a mapping from cluster number to the data points (rows)
+     *        that are contained in it
+     * @param p the number of initial data points
+     */
+    private static int[] toAssignArray(Map<Integer,Set<Integer>> assignment, 
+                                       int numDataPoints) {
+        int[] clusters = new int[numDataPoints];
+        for (int i = 0; i < numDataPoints; ++i)
             clusters[i] = -1;
         int clusterIndex = 0;
-        for (Set<Integer> cluster : clusterAssignment.values()) {
-            // Decide whether this cluster has already been assigned
+        for (Set<Integer> cluster : assignment.values()) {
+            // Decide whether this cluster has already been assigned by picking
+            // out the first element in the cluster and seeing if it has the
+            // dummy cluster value (-1)
             int r = cluster.iterator().next();
             if (clusters[r] != -1)
                 continue;
@@ -336,6 +365,42 @@ public class HierarchicalAgglomerativeClustering {
         }
         LOGGER.info("total number of clusters: " + clusterIndex);
         return clusters;
+    }
+
+    /**
+     *
+     * @param numDataPoints the number of initial data points
+     */
+    private static Map<Integer,Set<Integer>> generateInitialAssignment(
+        int numDataPoints) {
+        Map<Integer,Set<Integer>> clusterAssignment = 
+            new HashMap<Integer,Set<Integer>>(numDataPoints);
+        for (int i = 0; i < numDataPoints; ++i) {
+            HashSet<Integer> cluster=  new HashSet<Integer>();
+            cluster.add(i);
+            clusterAssignment.put(i, cluster);
+        }
+        return clusterAssignment;
+    }
+
+    /**
+     *
+     */
+    private static Matrix computeSimilarityMatrix(Matrix m, 
+                                                  SimType similarityFunction) {
+        Matrix similarityMatrix = 
+            Matrices.create(m.rows(), m.rows(), Matrix.Type.DENSE_ON_DISK);
+        for (int i = 0; i < m.rows(); ++i) {
+            for (int j = i + 1; j < m.rows(); ++j) {
+                double similarity = 
+                    Similarity.getSimilarity(similarityFunction,
+                                             m.getRowVector(i),
+                                             m.getRowVector(j));
+                similarityMatrix.set(i, j, similarity);
+                similarityMatrix.set(j, i, similarity);
+            }
+        }
+        return similarityMatrix;
     }
 
     /**

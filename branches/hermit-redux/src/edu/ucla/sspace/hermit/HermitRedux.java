@@ -25,6 +25,7 @@ import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.Similarity.SimType;
 
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;
@@ -707,10 +708,12 @@ public class HermitRedux implements SemanticSpace {
 
 
     private int[] clusterContexts(File termContexts) throws IOException {
+        Matrix contextMatrix = MatrixIO.readMatrix(
+            termContexts, MatrixIO.Format.DENSE_TEXT, 
+            Matrix.Type.DENSE_ON_DISK);
         return HierarchicalAgglomerativeClustering.
-            clusterRows(termContexts, MatrixIO.Format.DENSE_TEXT,
-                        minContextSimilarity, 
-                        ClusterLinkage.MEAN_LINKAGE);
+            clusterRows(contextMatrix, minContextSimilarity, 
+                        ClusterLinkage.MEAN_LINKAGE, SimType.COSINE);
     }
 
     private class ContextWriter {
