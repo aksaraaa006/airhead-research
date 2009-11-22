@@ -238,7 +238,12 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public Vector getRowVector(int row) {
         Vector v = getRow(row, -1, false);
-        return Vectors.viewVector(v, 0, cols.get());
+        // If no row was currently assigned in the matrix, then return an empty
+        // vector in its place.  Otherwise, return a view on top of the vector
+        // with its current length
+        return (v == null) 
+            ? new CompactSparseVector(cols.get())
+            : Vectors.viewVector(v, 0, cols.get());
     }
 
     /**

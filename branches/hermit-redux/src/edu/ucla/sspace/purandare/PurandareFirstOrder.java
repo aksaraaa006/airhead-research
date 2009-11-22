@@ -282,7 +282,6 @@ public class PurandareFirstOrder implements SemanticSpace {
      * returns that index.
      */
     private final int getIndexFor(String word) {
-
 	Integer index = termToIndex.get(word);
 	if (index == null) {	 
 	    synchronized(this) {
@@ -292,11 +291,11 @@ public class PurandareFirstOrder implements SemanticSpace {
 		// current thread was blocking waiting on the lock, then add it.
 		if (index == null) {
 		    int i = wordIndexCounter++;
-		    termToIndex.put(word, i);
                     // Add a new counter for this term.  Because the
                     // wordIndexCounter starts at zero, so the next index will
                     // be the last index in the termCounts list.
                     termCounts.add(new AtomicInteger(0));
+		    termToIndex.put(word, i);
 		    return i; // avoid the auto-boxing to assign i to index
 		}
 	    }
