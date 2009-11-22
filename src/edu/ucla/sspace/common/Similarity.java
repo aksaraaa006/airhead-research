@@ -253,12 +253,57 @@ public class Similarity {
         double dotProduct = 0.0;
         double aMagnitude = 0.0;
         double bMagnitude = 0.0;
-        for (int i = 0; i < b.length(); i++) {
-            double aValue = a.get(i);
-            double bValue = b.get(i);
-            aMagnitude += aValue * aValue;
-            bMagnitude += bValue * bValue;
-            dotProduct += aValue * bValue;
+
+        // Check whether both vectors are sparse.  If so, use only the non-zero
+        // indices to speed up the computation by avoiding zero multiplications
+        if (a instanceof SparseVector && b instanceof SparseVector) {
+            SparseVector svA = (SparseVector)a;
+            SparseVector svB = (SparseVector)b;
+            int[] nzA = svA.getNonZeroIndices();
+            int[] nzB = svB.getNonZeroIndices();
+            // Choose the smaller of the two to use in computing the dot
+            // product.  Because it would be more expensive to compute the
+            // intersection of the two sets, we assume that any potential
+            // misses would be less of a performance hit.
+            if (nzA.length < nzB.length) {
+                // Compute A's maginitude and the dot product
+                for (int nz : nzA) {
+                    int aValue = svA.get(nz);
+                    int bValue = svB.get(nz);
+                    aMagnitude += aValue * aValue;
+                    dotProduct += aValue * bValue;
+                }
+                // Then compute B's magnitude
+                for (int nz : nzB) {
+                    double bValue = b.get(nz);
+                    bMagnitude += bValue * bValue;                                
+                }
+            }
+            else {
+                // Compute B's maginitude and the dot product
+                for (int nz : nzB) {
+                    int aValue = svA.get(nz);
+                    int bValue = svB.get(nz);
+                    bMagnitude += bValue * bValue;
+                    dotProduct += aValue * bValue;
+                }
+                // Then compute A's magnitude
+                for (int nz : nzA) {
+                    double aValue = a.get(nz);
+                    aMagnitude += aValue * aValue;                                
+                }
+            }
+        }
+
+        // Otherwise, just assume both are dense and compute the full amount
+        else {
+            for (int i = 0; i < b.length(); i++) {
+                double aValue = a.get(i);
+                double bValue = b.get(i);
+                aMagnitude += aValue * aValue;
+                bMagnitude += bValue * bValue;
+                dotProduct += aValue * bValue;
+            }
         }
         aMagnitude = Math.sqrt(aMagnitude);
         bMagnitude = Math.sqrt(bMagnitude);
