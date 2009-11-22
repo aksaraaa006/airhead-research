@@ -227,13 +227,7 @@ public class OnDiskMatrix implements Matrix {
     public void set(int row, int col, double val) {
         int region = getMatrixRegion(row, col);
         int regionOffset = getRegionOffset(row, col);
-        try {
-            matrixRegions[region].put(regionOffset, val);
-        } catch (Throwable t) {
-            System.out.printf("row,col: %d,%d; region %d; offset: %d; max elements: %d%n",
-                              row, col, region, regionOffset, MAX_ELEMENTS_PER_REGION);
-            throw new Error(t);
-        }
+        matrixRegions[region].put(regionOffset, val);
     }
     
     /**
