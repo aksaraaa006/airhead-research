@@ -31,9 +31,9 @@ import edu.ucla.sspace.common.Statistics;
 import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
 import edu.ucla.sspace.matrix.AtomicMatrix;
 import edu.ucla.sspace.matrix.Matrix;
-import edu.ucla.sspace.matrix.OnDiskMatrix;
 import edu.ucla.sspace.matrix.RowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -417,8 +417,8 @@ public class PurandareFirstOrder implements SemanticSpace {
         // Create a new matrix where each row is a context and the columns
         // indicate which elements appeared in that context.  This will be the
         // cleaned version of the contexts that will be used for clustering.
-        Matrix filteredContexts = new OnDiskMatrix(numContexts, 
-                                                   wordIndexCounter);
+        Matrix filteredContexts = new SparseOnDiskMatrix(numContexts, 
+                                                         wordIndexCounter);
 
         // Each of the terms will have an associated set of integers that
         // indicates the contexts in which it is the central word.  As the
