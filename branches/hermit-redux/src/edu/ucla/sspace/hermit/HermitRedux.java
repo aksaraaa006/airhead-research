@@ -21,9 +21,10 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
+import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 
-import edu.ucla.sspace.hermit.HierarchicalAgglomerativeClustering.ClusterLinkage;
+import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;

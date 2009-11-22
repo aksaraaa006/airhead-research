@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.hermit;
+package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.common.Similarity;
 
