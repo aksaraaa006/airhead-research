@@ -707,9 +707,9 @@ public class HermitRedux implements SemanticSpace {
 
     private int[] clusterContexts(File termContexts) throws IOException {
         return HierarchicalAgglomerativeClustering.
-            clusterMatrixRows(termContexts, MatrixIO.Format.DENSE_TEXT,
-                              minContextSimilarity, 
-                              ClusterLinkage.MEAN_LINKAGE);
+            clusterRows(termContexts, MatrixIO.Format.DENSE_TEXT,
+                        minContextSimilarity, 
+                        ClusterLinkage.MEAN_LINKAGE);
     }
 
     private class ContextWriter {
