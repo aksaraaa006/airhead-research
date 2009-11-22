@@ -122,14 +122,13 @@ public class HierarchicalAgglomerativeClustering {
      *         numbers will start at 0 and increase.
      */
     @SuppressWarnings("unchecked")
-    public static int[] clusterMatrixRows(File matrixFile, 
-                                          Format matrixFormat,
-                                          double clusterSimilarityThreshold,
-                                          ClusterLinkage linkage)
+    public static int[] clusterRows(File matrixFile, Format matrixFormat,
+                                    double clusterSimilarityThreshold,
+                                    ClusterLinkage linkage)
             throws IOException {    
         Matrix m = MatrixIO.readMatrix(matrixFile, matrixFormat, 
                                        Type.DENSE_ON_DISK);
-        return clusterMatrixRows(m, clusterSimilarityThreshold, linkage);
+        return clusterRows(m, clusterSimilarityThreshold, linkage);
     }
 
     /**
@@ -151,9 +150,8 @@ public class HierarchicalAgglomerativeClustering {
      *         numbers will start at 0 and increase.
      */
     @SuppressWarnings("unchecked")
-    public static int[] clusterMatrixRows(Matrix m,
-                                          double clusterSimilarityThreshold,
-                                          ClusterLinkage linkage) {
+    public static int[] clusterRows(Matrix m, double clusterSimilarityThreshold,
+                                    ClusterLinkage linkage) {
         int rows = m.rows();
         LOGGER.info("Generating similarity matrix");
         Matrix similarityMatrix = 
