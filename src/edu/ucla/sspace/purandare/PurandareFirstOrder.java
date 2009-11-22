@@ -367,7 +367,7 @@ public class PurandareFirstOrder implements SemanticSpace {
 
             String term = indexToTerm[termIndex];            
             LOGGER.info(String.format("Calculating feature set for %6d/%d: %s",
-                                      termIndex, uniqueTerms, term);
+                                      termIndex, uniqueTerms, term));
             Vector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
             int termCount = termCounts.get(termIndex).get();
             BitSet validFeatures = termFeatures[termIndex];
