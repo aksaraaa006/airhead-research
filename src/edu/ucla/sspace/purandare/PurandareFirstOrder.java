@@ -40,6 +40,7 @@ import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
+import edu.ucla.sspace.util.WorkerThread;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -75,8 +76,11 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -200,7 +204,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             new ByteArrayOutputStream(4096);
         DataOutputStream dos = new DataOutputStream(compressedDocument);
         int tokens = 0; // count how many are in this document
-
+        int unfilteredTokens = 0; 
 	//Load the first windowSize words into the Queue		
 	for(int i = 0;  i < windowSize && documentTokens.hasNext(); i++)
 	    nextWords.offer(documentTokens.next());
@@ -236,7 +240,8 @@ public class PurandareFirstOrder implements SemanticSpace {
             dos.writeInt(focusIndex);
             // Update the occurrences of this token
             termCounts.get(focusIndex).incrementAndGet();
-	    
+            unfilteredTokens++;
+            
 	    // Iterate through the words occurring after and add values
 	    for (String after : nextWords) {
 		// skip adding co-occurence values for words that are not
@@ -271,6 +276,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         synchronized(compressedDocumentsWriter) {
             // Write how many terms were in this document
             compressedDocumentsWriter.writeInt(tokens);
+            compressedDocumentsWriter.writeInt(unfilteredTokens);
             compressedDocumentsWriter.write(docAsBytes, 0, docAsBytes.length);
         }
     } 
@@ -355,7 +361,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         // Create a set for each term that contains the term indices that are
         // determined to be features for the term, i.e. not all co-occurrences
         // will count as the features
-        BitSet[] termFeatures = new BitSet[wordIndexCounter];        
+        final BitSet[] termFeatures = new BitSet[wordIndexCounter];        
         // Initialize all the 
         for (int i = 0; i < termFeatures.length; ++i) 
             termFeatures[i] = new BitSet(wordIndexCounter);
@@ -416,8 +422,8 @@ public class PurandareFirstOrder implements SemanticSpace {
         // Create a new matrix where each row is a context and the columns
         // indicate which elements appeared in that context.  This will be the
         // cleaned version of the contexts that will be used for clustering.
-        Matrix filteredContexts = new SparseOnDiskMatrix(numContexts, 
-                                                         wordIndexCounter);
+        final Matrix filteredContexts = 
+            new SparseOnDiskMatrix(numContexts, wordIndexCounter);
 
         // Each of the terms will have an associated set of integers that
         // indicates the contexts in which it is the central word.  As the
@@ -426,31 +432,58 @@ public class PurandareFirstOrder implements SemanticSpace {
         // NOTE: originally these were BitMap instances, but the Set seemed to
         //       use less space, since the BitMaps were overly sparse based on
         //       the huge number of total contexts
-        Set[] termContexts = new Set[wordIndexCounter];
+        final Set[] termContexts = new Set[wordIndexCounter];
         
         // Initialize all the contexts 
         for (int i = 0; i < termContexts.length; ++i) 
             termContexts[i] = new HashSet<Integer>();
         
+        // Set up the concurrent data structures so we can process the documents
+        // concurrently
+        final BlockingQueue<Runnable> documentProcessingQueue =
+            new LinkedBlockingQueue<Runnable>();
+        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i)
+            new WorkerThread(documentProcessingQueue);
+        final Semaphore documentsProcessed = new Semaphore(0); 
+        
         int documents = documentCounter.get();
-        // Keep track of how many contexts (tokens) were seen so far
+        // Keep track of how many unfiltered tokens were counted as contexts in
+        // each document so we can assign the proper row offset in the context
+        // array for the runnables
         int contextCounter = 0;
         for (int d = 0; d < documents; ++d) {
-            LOGGER.info("reprocessing document " + d);
+            final int docId = d;
+
             int tokensInDoc = corpusReader.readInt();
+            int unfilteredTokens = corpusReader.readInt();
             // Read in the document
-            int[] doc = new int[tokensInDoc];
+            final int[] doc = new int[tokensInDoc];
             for (int i = 0; i < tokensInDoc; ++i)
                 doc[i] = corpusReader.readInt();
 
-            // Due to filtering the number of recorded contexts may be less than
-            // the number of tokens in the document
-            int contextsInDoc =
-                processIntDocument(doc, filteredContexts, contextCounter,
-                                   termFeatures, termContexts);
-            contextCounter += contextsInDoc;
+            // This document should set its rows in the context matrix starting
+            // at this offset
+            final int contextOffset = contextCounter;
+
+            documentProcessingQueue.offer(new Runnable() {
+                    public void run() {
+                        LOGGER.info("reprocessing document " + docId);
+                        processIntDocument(doc, filteredContexts, contextOffset,
+                                           termFeatures, termContexts);
+                        documentsProcessed.release();
+                    }
+                });
+            contextCounter += unfilteredTokens;
         }
         corpusReader.close();
+        // Wait until all the documents have been processed
+        try {
+            documentsProcessed.acquire(documents);
+        } catch (InterruptedException ie) {
+            throw new Error("interrupted while waiting for documents to " +
+                            "finish reprocessing", ie);
+        }
+
         assert contextCounter == corpusSize : "miscalcuated number of contexts";
 
         LOGGER.info("Finished reprocessing corpus");
@@ -637,7 +670,6 @@ public class PurandareFirstOrder implements SemanticSpace {
         double cVal = (c == 0) ? 0 : c * Math.log(c / cExp);
         double dVal = (d == 0) ? 0 : d * Math.log(d / dExp);
 
-        return 2 * (aVal + bVal + cVal + dVal);
-            
+        return 2 * (aVal + bVal + cVal + dVal);            
     }
 }
