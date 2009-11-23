@@ -170,6 +170,26 @@ public class MatrixIO {
          * full details.
          */
         SVDLIBC_DENSE_BINARY,
+
+        /**
+         * The sparse text format supported by <a
+         * href="http://glaros.dtc.umn.edu/gkhome/cluto/cluto/overview">
+         * CLUTO</a>.  See more details in the <a
+         * href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf">
+         * CLUTO manual</a>.  For all practical purposes, this format is treated
+         * as the equivalent of {@link SVDLIBC_DENSE_TEXT}.
+         */
+        CLUTO_DENSE,
+
+        /**
+         * The sparse text format supported by <a
+         * href="http://glaros.dtc.umn.edu/gkhome/cluto/cluto/overview">
+         * CLUTO</a>.  See more details in the <a
+         * href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf">
+         * CLUTO manual</a>.  For all practical purposes, this format is treated
+         * as the equivalent of {@link SVDLIBC_SPARSE_TEXT}.
+         */
+        CLUTO_SPARSE
     }
 
     /**
@@ -444,6 +464,8 @@ public class MatrixIO {
                 return array;
             }
 
+            // These two formats are equivalent
+            case CLUTO_SPARSE:
             case SVDLIBC_SPARSE_TEXT: {
                 String line = br.readLine();
                 if (line == null)
@@ -485,6 +507,8 @@ public class MatrixIO {
                 return array;
             }
 
+            // These two formats are equivalent
+            case CLUTO_DENSE:
             case SVDLIBC_DENSE_TEXT:
                 // TODO IMPLEMENT ME.
                 break;
@@ -570,9 +594,14 @@ public class MatrixIO {
 	    
 	case MATLAB_SPARSE:
 	    break;
+
+        // These two formats are equivalent
+        case CLUTO_SPARSE:
 	case SVDLIBC_SPARSE_TEXT:
 	    break;
 
+        // These two formats are equivalent
+        case CLUTO_DENSE:
 	case SVDLIBC_DENSE_TEXT: 
 	    return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
 	   
@@ -791,7 +820,9 @@ public class MatrixIO {
 	    pw.close();
 	    break;
 	}
-
+            
+        // These two formats are equivalent
+        case CLUTO_DENSE:
         case SVDLIBC_DENSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);
 	    pw.println(matrix.rows() + " " + matrix.columns());
@@ -820,6 +851,8 @@ public class MatrixIO {
 	    break;
         }
 
+        // These two formats are equivalent
+        case CLUTO_SPARSE:
 	case SVDLIBC_SPARSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);
 	    // count the number of non-zero values for each column as well as
