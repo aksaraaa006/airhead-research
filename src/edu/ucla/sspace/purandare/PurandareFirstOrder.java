@@ -21,8 +21,7 @@
 
 package edu.ucla.sspace.purandare;
 
-import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
-import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
+import edu.ucla.sspace.clustering.ClutoClustering;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity.SimType;
@@ -467,19 +466,19 @@ public class PurandareFirstOrder implements SemanticSpace {
             LOGGER.info("Clustering " + termRows.rows() + 
                         " contexts for " + term);
             
+            int numClusters = Math.min(7, termRows.rows());
+
             // Cluster each of the rows into seven groups
             int[] clusterAssignment = 
-                HierarchicalAgglomerativeClustering.partitionRows(
-                    termRows, 7, ClusterLinkage.MEAN_LINKAGE, SimType.COSINE);
-
+                ClutoClustering.partitionRows(termRows, numClusters);
 
             LOGGER.info("Generative sense vectors for " + term);
 
             // For each of the clusters, compute the mean sense vector
-            int[] clusterSize = new int[7];
+            int[] clusterSize = new int[numClusters];
             // Use CompactSparseVector to conserve memory given the potentially
             // large number of sense vectors
-            SparseVector[] meanSenseVectors = new CompactSparseVector[7];
+            SparseVector[] meanSenseVectors = new CompactSparseVector[numClusters];
             for (int i = 0; i < meanSenseVectors.length; ++i)
                 meanSenseVectors[i] = 
                     new CompactSparseVector(termToIndex.size());
@@ -494,12 +493,12 @@ public class PurandareFirstOrder implements SemanticSpace {
             // generage an average sense vectors.  For those clusters with less
             // than that amount, discard them.
             int senseCounter = 0;
-            for (int i = 0; i < 7; ++i) {
+            for (int i = 0; i < numClusters; ++i) {
                 int size = clusterSize[i];
                 if (size / (double)(termRows.rows()) > 0.02) {
                     String termWithSense = (senseCounter == 0)
-                        ? term : term + "-" + ++senseCounter;
-                    
+                        ? term : term + "-" + senseCounter;
+                    senseCounter++;
                     SparseVector senseVector = meanSenseVectors[i];
                     // Normalize the values in the vector based on the number of
                     // data points
@@ -509,7 +508,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                     termToVector.put(termWithSense,senseVector);
                 }
             }
-            LOGGER.info("Discovered " + senseCounter + " sense for " + term);            
+            LOGGER.info("Discovered " + senseCounter + " senses for " + term);            
         }
         
     }

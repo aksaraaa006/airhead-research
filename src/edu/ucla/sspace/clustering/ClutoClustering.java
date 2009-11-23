@@ -72,7 +72,7 @@ public class ClutoClustering {
         File matrixFile = File.createTempFile("cluto-input",".matrix");
         matrixFile.deleteOnExit();
         MatrixIO.writeMatrix(m, matrixFile, MatrixIO.Format.CLUTO_SPARSE);
-        File outputFile = File.createTempFile("cluto-input", ".matrix");
+        File outputFile = File.createTempFile("cluto-output", ".matrix");
         outputFile.deleteOnExit();
         // NOTE: the defaults for Agglomerative clustering are cosine similarity
         // and using mean-link (UPGMA) clustering, which is what we want.
