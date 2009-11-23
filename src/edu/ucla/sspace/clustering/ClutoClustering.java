@@ -93,7 +93,7 @@ public class ClutoClustering {
         for (String line = null; (line = stderr.readLine()) != null; ) {
             output.append(line).append("\n");
         }
-        LOGGER.fine(output.toString());
+        LOGGER.info(output.toString());
 	    
         int exitStatus = 0;
         try {
@@ -103,7 +103,7 @@ public class ClutoClustering {
             LOGGER.log(Level.SEVERE, "Cluto", ie);
         }
         
-        LOGGER.info("Cluto exit status: " + exitStatus);
+        LOGGER.finer("Cluto exit status: " + exitStatus);
 
         // If Cluto was successful in generating the clustering the rows, read
         // in the results file to generate the output.
