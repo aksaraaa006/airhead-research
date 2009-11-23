@@ -29,6 +29,7 @@ import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
 import edu.ucla.sspace.matrix.AtomicMatrix;
+import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.RowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
@@ -357,195 +358,181 @@ public class PurandareFirstOrder implements SemanticSpace {
         int corpusSize = 0;
         for (AtomicInteger i : termCounts)
             corpusSize += i.get();
-        int uniqueTerms = cooccurrenceMatrix.rows();
+        final int uniqueTerms = cooccurrenceMatrix.rows();
+
         // Create a set for each term that contains the term indices that are
         // determined to be features for the term, i.e. not all co-occurrences
-        // will count as the features
+        // will count as the features.  The feature set for each term is
+        // determined by computing the log-likelihood for each co-occurrence and
+        // only keeping those terms whos l-l value is above a certain threshold.
         final BitSet[] termFeatures = new BitSet[wordIndexCounter];        
-        // Initialize all the 
-        for (int i = 0; i < termFeatures.length; ++i) 
-            termFeatures[i] = new BitSet(wordIndexCounter);
-        
-        // First calculate the feature set for each term by computing the
-        // log-likelihood for it 
         for (int termIndex = 0; termIndex < uniqueTerms; ++termIndex) {
-
             String term = indexToTerm[termIndex];            
-            LOGGER.info(String.format("Calculating feature set for %6d/%d: %s",
-                                      termIndex, uniqueTerms, term));
-            Vector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
-            int termCount = termCounts.get(termIndex).get();
-            BitSet validFeatures = termFeatures[termIndex];
-            
-            // For each of the co-occurring terms, calculate the
-            // log-likelikehood value for that term's occurrences.  Only terms
-            // whose value is above 3.841 will be counted as features
-            for (int co = 0; co < cooccurrences.length(); ++co) {
-                // Form the contingency table:
-                //  a   b
-                //  c   d
-                double count = cooccurrences.get(co);
-                // Don't include words that never co-occur as features
-                if (count == 0)
-                    continue;
-
-                // a = the number of times they both co-occur
-                double a = count;
-                // b = the number of times co occurs without term
-                double b = termCounts.get(co).get() - count;
-                // c = the number of times term occurs without co
-                double c = termCount - count;
-                // d = the number of times neither co-occurrence
-                double d = corpusSize - (a +  b + c);
-                
-                double logLikelihood = logLikelihood(a, b, c, d);
-                if (logLikelihood > 3.841)
-                    validFeatures.set(co);
-            }
-            if (LOGGER.isLoggable(Level.INFO))
-                LOGGER.info(term + " had " + validFeatures.cardinality() 
-                            + " features");
+            termFeatures[termIndex] = calculateTermFeatures(term, corpusSize);
         }
 
         LOGGER.info("reprocessing corpus to generate feature vectors");
         
+        // Set up the concurrent data structures so we can process the documents
+        // concurrently
+        final BlockingQueue<Runnable> workQueue =
+            new LinkedBlockingQueue<Runnable>();
+        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
+            Thread t = new WorkerThread(workQueue);
+            t.start();
+        }
+        final Semaphore termsProcessed = new Semaphore(0); 
+        
+        for (int termIndex = 0; termIndex < uniqueTerms; ++termIndex) {
+            
+            final String term = indexToTerm[termIndex];
+            final int i = termIndex;
+            workQueue.offer(new Runnable() {
+                    public void run() {
+                        try {
+                        LOGGER.info(String.format(
+                            "processing term %6d/%d: %s", i, uniqueTerms,term));
+                        Matrix contexts = processTerm(i, termFeatures[i]);
+                        senseInduce(term, contexts);
+                        termsProcessed.release();
+                        } catch (IOException ioe) {
+                            ioe.printStackTrace();
+                        }
+                    }
+                });
+        }
+        
+        // Wait until all the documents have been processed
+        try {
+            termsProcessed.acquire(uniqueTerms);
+        } catch (InterruptedException ie) {
+            throw new Error("interrupted while waiting for terms to " +
+                            "finish reprocessing", ie);
+        }        
+        LOGGER.info("finished reprocessing all terms");
+    }
+
+    private BitSet calculateTermFeatures(String term, int corpusSize) {
+        int termIndex = termToIndex.get(term);
+        LOGGER.info(String.format("Calculating feature set for %6d/%d: %s",
+                                  termIndex, cooccurrenceMatrix.rows(), term));
+        Vector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
+        int termCount = termCounts.get(termIndex).get();
+        BitSet validFeatures = new BitSet(wordIndexCounter);
+        
+        // For each of the co-occurring terms, calculate the log-likelikehood
+        // value for that term's occurrences.  Only terms whose value is above
+        // 3.841 will be counted as features
+        for (int co = 0; co < cooccurrences.length(); ++co) {
+            // Form the contingency table:
+            //  a   b
+            //  c   d
+            double count = cooccurrences.get(co);
+            // Don't include words that never co-occur as features
+            if (count == 0)
+                continue;
+            
+            // a = the number of times they both co-occur
+            double a = count;
+            // b = the number of times co occurs without term
+            double b = termCounts.get(co).get() - count;
+            // c = the number of times term occurs without co
+            double c = termCount - count;
+            // d = the number of times neither co-occurrence
+            double d = corpusSize - (a +  b + c);
+            
+            double logLikelihood = logLikelihood(a, b, c, d);
+            if (logLikelihood > 3.841)
+                validFeatures.set(co);
+        }
+        if (LOGGER.isLoggable(Level.INFO))
+            LOGGER.info(term + " had " + validFeatures.cardinality() 
+                        + " features");
+        return validFeatures;
+    }
+
+    /**
+     *
+     */
+    private Matrix processTerm(int termIndex, BitSet termFeatures) 
+            throws IOException {
         // Reprocess the corpus in binary format to generate the set of context
         // with the appropriate feature vectors
         DataInputStream corpusReader = new DataInputStream(
             new BufferedInputStream(new FileInputStream(compressedDocuments)));
 
-        // This value was already computed, but we just rename it here for
-        // greater clarity.  In essence, there is one context for every
-        // appearance of a term.
-        int numContexts = corpusSize;
-
-        // Create a new matrix where each row is a context and the columns
-        // indicate which elements appeared in that context.  This will be the
-        // cleaned version of the contexts that will be used for clustering.
-        final Matrix filteredContexts = 
-            new SparseOnDiskMatrix(numContexts, wordIndexCounter);
-
-        // Each of the terms will have an associated set of integers that
-        // indicates the contexts in which it is the central word.  As the
-        // unfiltered contexts are read in, these bitmaps are filled.
-        //
-        // NOTE: originally these were BitMap instances, but the Set seemed to
-        //       use less space, since the BitMaps were overly sparse based on
-        //       the huge number of total contexts
-        final Set[] termContexts = new Set[wordIndexCounter];
-        
-        // Initialize all the contexts 
-        for (int i = 0; i < termContexts.length; ++i) 
-            termContexts[i] = new HashSet<Integer>();
-        
-        // Set up the concurrent data structures so we can process the documents
-        // concurrently
-        final BlockingQueue<Runnable> documentProcessingQueue =
-            new LinkedBlockingQueue<Runnable>();
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
-            Thread t = new WorkerThread(documentProcessingQueue);
-            t.start();
-        }
-        final Semaphore documentsProcessed = new Semaphore(0); 
-        
         int documents = documentCounter.get();
-        // Keep track of how many unfiltered tokens were counted as contexts in
-        // each document so we can assign the proper row offset in the context
-        // array for the runnables
-        int contextCounter = 0;
+        Matrix contexts = new GrowingSparseMatrix();
+        int contextsSeen = 0;
         for (int d = 0; d < documents; ++d) {
             final int docId = d;
 
             int tokensInDoc = corpusReader.readInt();
             int unfilteredTokens = corpusReader.readInt();
             // Read in the document
-            final int[] doc = new int[tokensInDoc];
+            int[] doc = new int[tokensInDoc];
             for (int i = 0; i < tokensInDoc; ++i)
                 doc[i] = corpusReader.readInt();
 
-            // This document should set its rows in the context matrix starting
-            // at this offset
-            final int contextOffset = contextCounter;
-
-            documentProcessingQueue.offer(new Runnable() {
-                    public void run() {
-                        LOGGER.info("reprocessing document " + docId);
-                        processIntDocument(doc, filteredContexts, contextOffset,
-                                           termFeatures, termContexts);
-                        documentsProcessed.release();
-                    }
-                });
-            contextCounter += unfilteredTokens;
+            int contextsInDoc = 
+                processIntDocument(termIndex, doc, contexts,
+                                   contextsSeen, termFeatures);
+            contextsSeen += contextsInDoc;
         }
         corpusReader.close();
-        // Wait until all the documents have been processed
-        try {
-            documentsProcessed.acquire(documents);
-        } catch (InterruptedException ie) {
-            throw new Error("interrupted while waiting for documents to " +
-                            "finish reprocessing", ie);
-        }
+        return contexts;
+    }
 
-        assert contextCounter == corpusSize : "miscalcuated number of contexts";
+    /**
+     *
+     */
+    private void senseInduce(String term, Matrix contexts) throws IOException {
+        LOGGER.info("Clustering " + contexts.rows() + " contexts for " + term);
 
-        LOGGER.info("Finished reprocessing corpus");
-
-        // Once the corpus has been reprocessed, cluster each words contexts
-        for (int termIndex = 0; termIndex < termContexts.length; ++termIndex) {
-            String term = indexToTerm[termIndex];
-            Set<Integer> contextRows = (Set<Integer>)termContexts[termIndex];
-            // Create view of the matrix that only contains this term's rows
-            Matrix termRows = 
-                new RowMaskedMatrix(filteredContexts, contextRows);
-            
-            LOGGER.info("Clustering " + termRows.rows() + 
-                        " contexts for " + term);
-            
-            int numClusters = Math.min(7, termRows.rows());
-
-            // Cluster each of the rows into seven groups
-            int[] clusterAssignment = 
-                ClutoClustering.partitionRows(termRows, numClusters);
-
-            LOGGER.info("Generative sense vectors for " + term);
-
-            // For each of the clusters, compute the mean sense vector
-            int[] clusterSize = new int[numClusters];
-            // Use CompactSparseVector to conserve memory given the potentially
-            // large number of sense vectors
-            SparseVector[] meanSenseVectors = new CompactSparseVector[numClusters];
-            for (int i = 0; i < meanSenseVectors.length; ++i)
-                meanSenseVectors[i] = 
-                    new CompactSparseVector(termToIndex.size());
-            for (int row = 0; row < clusterAssignment.length; ++row) {
-                Vector contextVector = termRows.getRowVector(row);
-                int assignment = clusterAssignment[row];
-                clusterSize[assignment]++;
-                Vectors.add(meanSenseVectors[assignment], contextVector);
-            }
-            
-            // For each of the clusters with more than 2% of the contexts,
-            // generage an average sense vectors.  For those clusters with less
-            // than that amount, discard them.
-            int senseCounter = 0;
-            for (int i = 0; i < numClusters; ++i) {
-                int size = clusterSize[i];
-                if (size / (double)(termRows.rows()) > 0.02) {
-                    String termWithSense = (senseCounter == 0)
-                        ? term : term + "-" + senseCounter;
-                    senseCounter++;
-                    SparseVector senseVector = meanSenseVectors[i];
-                    // Normalize the values in the vector based on the number of
-                    // data points
-                    for (int nz : senseVector.getNonZeroIndices()) 
-                        senseVector.set(i, senseVector.get(nz) / size);
-                    
-                    termToVector.put(termWithSense,senseVector);
-                }
-            }
-            LOGGER.info("Discovered " + senseCounter + " senses for " + term);            
+        // For terms with fewer than seven contexts, set the number of potential
+        // clusters lower
+        int numClusters = Math.min(7, contexts.rows());
+        
+        // Cluster each of the rows into seven groups
+        int[] clusterAssignment = 
+            ClutoClustering.partitionRows(contexts, numClusters);
+        
+        LOGGER.info("Generative sense vectors for " + term);
+        
+        // For each of the clusters, compute the mean sense vector
+        int[] clusterSize = new int[numClusters];
+        // Use CompactSparseVector to conserve memory given the potentially
+        // large number of sense vectors
+        SparseVector[] meanSenseVectors = new CompactSparseVector[numClusters];
+        for (int i = 0; i < meanSenseVectors.length; ++i)
+            meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
+        for (int row = 0; row < clusterAssignment.length; ++row) {
+            Vector contextVector = contexts.getRowVector(row);
+            int assignment = clusterAssignment[row];
+            clusterSize[assignment]++;
+            Vectors.add(meanSenseVectors[assignment], contextVector);
         }
         
+        // For each of the clusters with more than 2% of the contexts, generage
+        // an average sense vectors.  For those clusters with less than that
+        // amount, discard them.
+        int senseCounter = 0;
+        for (int i = 0; i < numClusters; ++i) {
+            int size = clusterSize[i];
+            if (size / (double)(contexts.rows()) > 0.02) {
+                String termWithSense = (senseCounter == 0)
+                    ? term : term + "-" + senseCounter;
+                senseCounter++;
+                SparseVector senseVector = meanSenseVectors[i];
+                // Normalize the values in the vector based on the number of
+                // data points
+                for (int nz : senseVector.getNonZeroIndices()) 
+                    senseVector.set(i, senseVector.get(nz) / size);
+                
+                termToVector.put(termWithSense,senseVector);
+            }
+        }
+        LOGGER.info("Discovered " + senseCounter + " senses for " + term);
     }
 
     /**
@@ -554,39 +541,25 @@ public class PurandareFirstOrder implements SemanticSpace {
      *
      * @param document the document to be processed where each {@code int} is a
      *        term index
-     * @param contextMatrix the matrix to be updated with the contexts for each
-     *        term using the valid features
      * @param validFeaturesForTerm a mapping from term index to the set of
      *        other term indices that are valid feature for that term
-     * @param termToContextRows a mapping from the term to the set of rows in
-     *        the {@code contextMatrix}.  This is an output paramter and is
-     *        updated as new contexts for the term are seen in the document.
      *
      * @return the number of contexts present in this document
      */
-    @SuppressWarnings("unchecked")
-    private int processIntDocument(int[] document, Matrix contextMatrix, 
-                                    int contextCount, 
-                                    BitSet[] validFeaturesForTerm,
-                                    Set[] termToContextRows) {        
+    private int processIntDocument(int termIndex, int[] document, 
+                                   Matrix contextMatrix, 
+                                   int rowStart, 
+                                   BitSet featuresForTerm) {
         int contexts = 0;
         for (int i = 0; i < document.length; ++i) {
 
             int curToken = document[i];
-            // Skip processing tokens that were filtered out in the corpus
-            if (curToken < 0)
+            // Skip processing tokens that are not the current focus
+            if (curToken != termIndex)
                 continue;
-            // If the current token wasn't skipped, indicate that another
-            // context was seen
-            contexts++;
-            // Determine the set of of valid features for the current token
-            BitSet validFeatures = validFeaturesForTerm[curToken];
 
-            // Buffer the count of how many times each token appeared in the
-            // context.  Since the contextMatrix is on disk, we want to minimize
-            // the total number of writes.  Without buffering, a token would
-            // cause a get and a set for each occurrence.  With buffering each
-            // unique token only incurs one set to disk.
+            // Buffer the count of how many times each feature appeared in the
+            // context.
             SparseArray<Integer> contextCounts = new SparseIntHashArray();
         
             // Process all the tokes to the left (prior) to the current token;
@@ -597,7 +570,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                 int token = document[left];
                 // Only count co-occurrences that are valid features for the
                 // current token
-                if (token >= 0 && validFeatures.get(token)) {
+                if (token >= 0 && featuresForTerm.get(token)) {
                     Integer count = contextCounts.get(token);
                     contextCounts.set(token, (count == null) ? 1 : count + 1);
                 }
@@ -609,7 +582,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                 int token = document[right];
                 // Only count co-occurrences that are valid features for the
                 // current token
-                if (token >= 0 && validFeatures.get(token)) {
+                if (token >= 0 && featuresForTerm.get(token)) {
                     Integer count = contextCounts.get(token);
                     contextCounts.set(token, (count == null) ? 1 : count + 1);
                 }
@@ -618,13 +591,13 @@ public class PurandareFirstOrder implements SemanticSpace {
             // Each word in the document represents a new context, so the
             // specific context instance can be determined from the current word
             // and the number of previously process words
-            int curContext = i + contextCount;
+            int curContext = rowStart + contexts;
             for (int feat : contextCounts.getElementIndices())
                 contextMatrix.set(curContext, feat, contextCounts.get(feat));
 
-            // Mark that the current term was present in this row of the context
-            // matrix
-            ((Set<Integer>)termToContextRows[curToken]).add(curContext);
+            // If the current token wasn't skipped, indicate that another
+            // context was seen
+            contexts++;
         }
         return contexts;
     }
