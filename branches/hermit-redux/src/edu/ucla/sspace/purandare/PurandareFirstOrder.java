@@ -442,8 +442,10 @@ public class PurandareFirstOrder implements SemanticSpace {
         // concurrently
         final BlockingQueue<Runnable> documentProcessingQueue =
             new LinkedBlockingQueue<Runnable>();
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i)
-            new WorkerThread(documentProcessingQueue);
+        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
+            Thread t = new WorkerThread(documentProcessingQueue);
+            t.start();
+        }
         final Semaphore documentsProcessed = new Semaphore(0); 
         
         int documents = documentCounter.get();
