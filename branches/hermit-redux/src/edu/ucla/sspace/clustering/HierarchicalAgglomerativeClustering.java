@@ -177,7 +177,7 @@ public class HierarchicalAgglomerativeClustering {
                                  SimType similarityFunction,
                                  int maxNumberOfClusters) {
         int rows = m.rows();
-        LOGGER.info("Generating similarity matrix");
+        LOGGER.info("Generating similarity matrix for " + rows+ " data points");
         Matrix similarityMatrix = 
             computeSimilarityMatrix(m, similarityFunction);
 
