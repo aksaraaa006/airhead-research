@@ -253,7 +253,7 @@ public class PurandareFirstOrder implements SemanticSpace {
 		// accepted by the filter
 		if (!before.equals(IteratorFactory.EMPTY_TOKEN)) {
 		    int index = getIndexFor(before);
-                    cooccurrenceMatrix.addAndGet(index, focusIndex, 1);
+                    cooccurrenceMatrix.addAndGet(focusIndex, index, 1);
                 }
 	    }
 	    		            
@@ -392,13 +392,13 @@ public class PurandareFirstOrder implements SemanticSpace {
                 double c = termCount - count;
                 // d = the number of times neither co-occurrence
                 double d = corpusSize - (a +  b + c);
-
+                
                 double logLikelihood = logLikelihood(a, b, c, d);
                 if (logLikelihood > 3.841)
                     validFeatures.set(co);
             }
-            if (LOGGER.isLoggable(Level.FINE))
-                LOGGER.fine(term + " had " + validFeatures.cardinality() 
+            if (LOGGER.isLoggable(Level.INFO))
+                LOGGER.info(term + " had " + validFeatures.cardinality() 
                             + " features");
         }
 
@@ -631,10 +631,14 @@ public class PurandareFirstOrder implements SemanticSpace {
         double cExp = (row2sum / sum) * col1sum;
         double dExp = (row2sum / sum) * col2sum;
 
-        return 2 *
-            ((a * Math.log(a - aExp))  +
-             (b * Math.log(b - bExp))  +
-             (c * Math.log(c - cExp))  +
-             (d * Math.log(d - dExp)));
+        // log(0) = Infinity, which messes up the calcuation.  Therefore, check
+        // whether the value is zero before calculating its contribution.
+        double aVal = (a == 0) ? 0 : a * Math.log(a / aExp);
+        double bVal = (b == 0) ? 0 : b * Math.log(b / bExp);
+        double cVal = (c == 0) ? 0 : c * Math.log(c / cExp);
+        double dVal = (d == 0) ? 0 : d * Math.log(d / dExp);
+
+        return 2 * (aVal + bVal + cVal + dVal);
+            
     }
 }
