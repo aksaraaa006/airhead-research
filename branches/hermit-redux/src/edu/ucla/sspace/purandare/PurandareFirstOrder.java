@@ -452,7 +452,17 @@ public class PurandareFirstOrder implements SemanticSpace {
     }
 
     /**
+     * For the specified term, reprocesses the entire corpus using the term's
+     * features to construct a matrix of all the contexts in which the term
+     * appears.
      *
+     * @param termIndex the index of the term for which the context matrix
+     *        should be generated
+     * @param termFeatures the set of term indices that are valid features when
+     *        in the context of {@code termIndex}.
+     *
+     * @return a {@code Matrix} where each row is a different context for the
+     *         term in the corpus
      */
     private Matrix processTerm(int termIndex, BitSet termFeatures) 
             throws IOException {
@@ -484,7 +494,12 @@ public class PurandareFirstOrder implements SemanticSpace {
     }
 
     /**
+     * Given a matrix for the term where each row is a different context,
+     * clusters the rows to identify how many senses the word has.
      *
+     * @param term the term for which the senses will be discovered
+     * @param contexts a matrix containing all the contexts in which {@code
+     *        term} appear, with one context per row
      */
     private void senseInduce(String term, Matrix contexts) throws IOException {
         LOGGER.info("Clustering " + contexts.rows() + " contexts for " + term);
@@ -493,9 +508,13 @@ public class PurandareFirstOrder implements SemanticSpace {
         // clusters lower
         int numClusters = Math.min(7, contexts.rows());
         
-        // Cluster each of the rows into seven groups
-        int[] clusterAssignment = 
-            ClutoClustering.partitionRows(contexts, numClusters);
+        // Cluster each of the rows into seven groups.  Note that if the term is
+        // not purely alphabetic (i.e. contains number of other symbols), don't
+        // bother clustering it.  This is done to reduce the computation time,
+        // and to avoid clustering non-meaningful terms such as '.' or '''
+        int[] clusterAssignment = (term.matches("[a-zA-z]+"))
+            ? ClutoClustering.partitionRows(contexts, numClusters)
+            : new int[contexts.rows()];
         
         LOGGER.info("Generative sense vectors for " + term);
         
@@ -537,12 +556,18 @@ public class PurandareFirstOrder implements SemanticSpace {
 
     /**
      * Processes the compressed version of a document where each integer
-     * indicates that token's index.
+     * indicates that token's index and identifies all the contexts for the
+     * target word, adding them as new rows to the context matrix.
      *
+     * @param termIndex the term whose contexts should be extracted
      * @param document the document to be processed where each {@code int} is a
      *        term index
-     * @param validFeaturesForTerm a mapping from term index to the set of
-     *        other term indices that are valid feature for that term
+     * @param contextMatrix the matrix to which the context vectors should be
+     *        added as rows
+     * @param rowStart the next row index in the matrix where a new context can
+     *        be added
+     * @param featuresForTerm a mapping from term index to the set of other term
+     *        indices that are valid feature for that term
      *
      * @return the number of contexts present in this document
      */
