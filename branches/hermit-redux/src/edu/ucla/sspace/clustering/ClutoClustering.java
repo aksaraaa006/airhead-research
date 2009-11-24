@@ -90,7 +90,7 @@ public class ClutoClustering {
             new InputStreamReader(cluto.getErrorStream()));
         
         StringBuilder output = new StringBuilder("Cluto output:\n");
-        for (String line = null; (line = stderr.readLine()) != null; ) {
+        for (String line = null; (line = stdout.readLine()) != null; ) {
             output.append(line).append("\n");
         }
         LOGGER.info(output.toString());
