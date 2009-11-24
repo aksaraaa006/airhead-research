@@ -123,8 +123,8 @@ public class ClutoClustering {
                 sb.append(line).append("\n");
             }
             // warning or error?
-            LOGGER.warning("Cluto exited with error status.  " + 
-                               "stderr:\n" + sb.toString());
+            LOGGER.warning("Cluto exited with error status.  " + exitStatus +
+                               " stderr:\n" + sb.toString());
             throw new Error("Clustering failed");
         }
     }

@@ -512,7 +512,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         // not purely alphabetic (i.e. contains number of other symbols), don't
         // bother clustering it.  This is done to reduce the computation time,
         // and to avoid clustering non-meaningful terms such as '.' or '''
-        int[] clusterAssignment = (term.matches("[a-zA-z]+"))
+        int[] clusterAssignment = (term.matches("[a-zA-z]+") || numClusters > 6)
             ? ClutoClustering.partitionRows(contexts, numClusters)
             : new int[contexts.rows()];
         
