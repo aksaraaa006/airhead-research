@@ -172,7 +172,7 @@ public class PurandareFirstOrder implements SemanticSpace {
     public PurandareFirstOrder() {
 	cooccurrenceMatrix = new AtomicGrowingMatrix();
         termToIndex = new ConcurrentHashMap<String,Integer>();
-        termToVector = new HashMap<String,Vector>();
+        termToVector = new ConcurrentHashMap<String,Vector>();
         termCounts = new CopyOnWriteArrayList<AtomicInteger>();
         windowSize = 5;
         contextWindowSize = 20;
