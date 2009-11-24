@@ -21,8 +21,9 @@
 
 package edu.ucla.sspace.index;
 
-
 import edu.ucla.sspace.vector.Vector;
+
+import java.io.File;
 
 
 /**
@@ -89,4 +90,6 @@ public interface IndexUser {
      * @return a {@Vector} having the same type as the vectors used internally.
      */
     public Vector getEmptyVector();
+
+    public void saveStaticData(File filename);
 }

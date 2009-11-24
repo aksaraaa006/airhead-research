@@ -266,6 +266,14 @@ public class HermitMain extends GenericMain {
         if (argOptions.hasOption("saveVectors")) {
             String filename = argOptions.getStringOption("saveVectors");
             generator.saveIndexVectors(new File(filename));
+
+            filename += ".permuations";
+            try {
+                IndexUser user = (IndexUser) indexUserClazz.newInstance();
+                user.saveStaticData(new File(filename));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -25,6 +25,13 @@ import edu.ucla.sspace.vector.IndexVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOError;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -72,7 +79,7 @@ public class RandomIndexUser implements IndexUser {
      * running, a function which what is created during {@code init}, a null
      * function will be returned.
      */
-    private static Map<Integer,Function> permutationToReordering;
+    private static PermutationFunction permutationFactory; 
 
     /**
      * Set to true if permutations should be used when generating a meaning
@@ -119,6 +126,16 @@ public class RandomIndexUser implements IndexUser {
         init(Math.max(leftSize, rightSize), vectorLength);
     }
 
+    public void saveStaticData(File filename) {
+        try {
+            ObjectOutputStream stream = new ObjectOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(filename)));
+            stream.writeObject(permutationFactory);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -139,51 +156,8 @@ public class RandomIndexUser implements IndexUser {
         if (!usePermutations)
             return Vectors.add(focusVector, termVector);
 
-        IndexVector v = (IndexVector) termVector;
-
-        int length = v.length();
-
-        int[] oldPos = v.positiveDimensions();
-        int[] oldNeg = v.negativeDimensions();
-
-        // Create new arrays which will be permuted and hold the new locations
-        // of the vector's positive and negative values.
-        int[] positive = Arrays.copyOf(oldPos, oldPos.length);
-        int[] negative = Arrays.copyOf(oldNeg, oldNeg.length);
-
-        // Determine if the inverse ordering should be used and how many total
-        // permutations are needed.
-        boolean isInverse = distance < 0;
-        int totalPermutations = Math.abs(distance);
-
-        for (int count = 1; count <= totalPermutations; ++count) {            
-            // load the reordering funcion.
-            Function function = permutationToReordering.get(count);
-
-            // Select the backward inverse if a reverse permutation is needed.
-            // Reordering specifies a new index value for any given index.
-            int[] reordering = (isInverse) 
-                ? function.backward : function.forward;
-            
-            // Create a copy of the previous permuted values for positive and
-            // negative.
-            oldPos = Arrays.copyOf(positive, positive.length);
-            oldNeg = Arrays.copyOf(negative, negative.length);
-            
-            // Permute the positive and negative values by re-ordering the
-            // values the old positive and negative indices according to the
-            // reordering map. 
-            for (int i = 0; i < oldPos.length; ++i)
-                positive[i] = reordering[oldPos[i]];
-
-            for (int i = 0; i < oldNeg.length; ++i)
-                negative[i] = reordering[oldNeg[i]];
-        }
-
-        // Generate a new, permuted, IndexVector and add it to the given focus
-        // vector.
         IndexVector permutedVector =
-            new IndexVector(length, positive, negative);
+            permutationFactory.permute((IndexVector) termVector, distance);
         return Vectors.add(focusVector, permutedVector);
     }
 
@@ -206,9 +180,11 @@ public class RandomIndexUser implements IndexUser {
      *                     permuted.
      */
     private static void init(int exponentCount, int length) {
-        if (permutationToReordering == null) {
-            permutationToReordering = new HashMap<Integer, Function>();
-            generateFunctions(exponentCount, length);
+        if (permutationFactory == null) {
+            permutationFactory = new DefaultPermutationFunction();
+            permutationFactory.permute(
+                    new IndexVector(length, new int[] {}, new int[]{}),
+                    exponentCount);
         }
     }
 
@@ -216,71 +192,7 @@ public class RandomIndexUser implements IndexUser {
      * Remove all the function mappings.
      */
     public static void clear() {
-        permutationToReordering = null;
-    }
-
-    /**
-     * Generate and return the bijective mapping for each integer in the
-     * form of an array based on the the current exponent of the
-     * permutation.  If the mapping does not already exist, a new one will
-     * be generated and stored in {@code permutationToReordering}.
-     *
-     * @param exponent the exponent for the current permutation 
-     * @param dimensions the number of dimenensions in the index vector
-     *                   being permuted
-     *
-     * @return the mapping for each index to its new index
-     */
-    private static Function generateFunctions(int exponent,
-                                              int dimensions) {
-        // Base case: we keep the same ordering.  Create this function on
-        // the fly to save space, since the base case should rarely get
-        // called.
-        if (exponent == 0) {
-            int[] func = new int[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                func[i] = i;
-            }
-            return new Function(func, func);
-        }
-
-        exponent = Math.abs(exponent);
-
-        Function function = permutationToReordering.get(exponent);
-        
-        // Recursively create a permutation function for the given exponent.  If
-        // any required permutations are not already created, the recursive call
-        // will create and store them.
-        if (function == null) {
-            // Lookup the prior function
-            int priorExponent = exponent - 1;
-            Function priorFunc = generateFunctions(priorExponent,
-                                                   dimensions);
-            
-            // Convert to an object based array to use Collections.shuffle()
-            Integer[] objFunc = new Integer[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                objFunc[i] = Integer.valueOf(priorFunc.forward[i]);
-            }
-
-            // Then shuffle it to get a new permutation
-            List<Integer> list = Arrays.asList(objFunc);
-            Collections.shuffle(list, RandomIndexGenerator.RANDOM);
-            
-            // Convert back to a primitive array
-            int[] forwardMapping = new int[dimensions];
-            int[] backwardMapping = new int[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                forwardMapping[i] = objFunc[i].intValue();
-                backwardMapping[objFunc[i].intValue()] = i;
-            }
-            function = new Function(forwardMapping, backwardMapping);
-
-            // Store it in the function map for later usee
-            permutationToReordering.put(exponent, function);
-        }
-
-        return function;
+        permutationFactory = null;
     }
 
     /**
@@ -292,19 +204,5 @@ public class RandomIndexUser implements IndexUser {
     public String toString() {
         return "RandomIndexUser" +
                ((usePermutations) ? "-DefaultPermutation" : "-NoPermutation");
-    }
-
-    /**
-     * A bijective, invertible mapping between indices.
-     */
-    private static class Function {
-
-        public final int[] forward;
-        public final int[] backward;
-
-        public Function(int[] forward, int[] backward) {
-            this.forward = forward;
-                this.backward = backward;
-        }
     }
 }

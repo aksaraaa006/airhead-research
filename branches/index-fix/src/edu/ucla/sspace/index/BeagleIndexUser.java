@@ -28,6 +28,8 @@ import edu.ucla.sspace.vector.Vectors;
 
 import edu.ucla.sspace.fft.FastFourierTransform;
 
+import java.io.File;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -264,5 +266,8 @@ public class BeagleIndexUser implements IndexUser {
         for (int i = 0; i < indexVectorLength; i++)
             result.set(i, data.get(orderVector[i]));
         return result;
+    }
+
+    public void saveStaticData(File filename) {
     }
 }
