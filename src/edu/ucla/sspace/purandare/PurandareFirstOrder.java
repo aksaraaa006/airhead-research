@@ -528,6 +528,10 @@ public class PurandareFirstOrder implements SemanticSpace {
         for (int row = 0; row < clusterAssignment.length; ++row) {
             Vector contextVector = contexts.getRowVector(row);
             int assignment = clusterAssignment[row];
+            // CLUTO will return -1 for vectors that could not be clustered.
+            // Just skip adding these rows to a specific sense
+            if (assignment < 0) 
+                continue;
             clusterSize[assignment]++;
             Vectors.add(meanSenseVectors[assignment], contextVector);
         }
