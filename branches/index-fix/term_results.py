@@ -9,15 +9,23 @@ if __name__ == "__main__":
   result_file = sys.argv[1]
 
   results = []
+  baselines = []
   conflations = []
+
+  result_tuples = []
 
   f = open(result_file)
   for line in f:
     split_line = line.split()
-    results.append(float(split_line[-1]))
-    conflations.append(split_line[0])
+    t = (float(split_line[-2]), float(split_line[-3]), split_line[0])
+    result_tuples.append(t)
+  result_tuples.sort()
 
-  pylab.plot(conflations, results, 'ro', label="conflations")
-  pylab.legend()
+  results = [t[1] for t in result_tuples]
+  baselines = [t[0] for t in result_tuples]
+  range = range(len(results))
 
-  pylab.savefig("conflation_results.png" %title)
+  pylab.plot(range, results, 'ro')
+  pylab.plot(range, baselines, 'go')
+
+  pylab.savefig("conflation_results.png")

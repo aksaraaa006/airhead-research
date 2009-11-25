@@ -282,12 +282,15 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
      */
     public Map<Integer, Integer> mergeOrDropClusters(String term,
                                                      double minPercentage) {
-        //dropClusters(minPercentage);
-        return mergeClusters(term, minPercentage);
+        Map<Integer, Integer> mapping = mergeClusters(term, minPercentage);
+        //List<Integer> droppedList = dropClusters(term, minPercentage);
+        //for (Integer dropped : droppedList)
+        //    mapping.put(dropped, -1);
+        return mapping;
     }
 
-    private synchronized Map<Integer, Integer> mergeClusters(
-            String term, double mergeThreshold) {
+    private Map<Integer, Integer> mergeClusters(String term,
+                                                double mergeThreshold) {
         List<Cluster> clusters = vectorClusters.get(term);
         MultiMap<Integer, Integer> mergeMap =
             new HashMultiMap<Integer, Integer>();
@@ -355,23 +358,27 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         return resultMergeMap;
     }
 
-    private synchronized void dropClusters(double minPercentage) {
-        for (Map.Entry<String, List<Cluster>> entry :
-                vectorClusters.entrySet()) {
-            double[] clusterSizes = new double[entry.getValue().size()];
-            int i = 0;
-            int sum = 0;
-            for (Cluster cluster : entry.getValue()) {
-              clusterSizes[i] = cluster.getTotalMemberCount();
-              sum += clusterSizes[i];
-            }
-            int dropCount = 0;
-            for (i = 0; i < clusterSizes.length; ++i) {
-                if (clusterSizes[i]/sum < minPercentage) {
-                    entry.getValue().remove(i - dropCount);
-                    dropCount++;
-                }
+    private List<Integer> dropClusters(String, term, 
+                                       double minPercentage) {
+        List<Integer> dropped = new LinkedList<Integer>();
+
+        List<Cluster> entry = vectorClusters.get(term);
+        double[] clusterSizes = new double[entry.getValue().size()];
+        int i = 0;
+        int sum = 0;
+        for (Cluster cluster : entry.getValue()) {
+          clusterSizes[i] = cluster.getTotalMemberCount();
+          sum += clusterSizes[i];
+        }
+
+        int dropCount = 0;
+        for (i = 0; i < clusterSizes.length; ++i) {
+            if (clusterSizes[i]/sum < minPercentage) {
+                dropped.add(i);
+                entry.remove(i - dropCount);
+                dropCount++;
             }
         }
+        return dropped;
     }
 }

@@ -512,6 +512,14 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             Map<String, Integer> oldCounts = null;
             Map<String, Integer> newCounts = null;
             oldCounts = senseCounts.get(oldSenseNum);
+
+            // Mapping to a negative sense number corresponds to deleting the
+            // sense.
+            if (newSenseNum < 0) {
+                oldCounts.clear();
+                return;
+            }
+
             newCounts = senseCounts.get(newSenseNum);
 
             // Move the sense counts of the old sense to thew new sense.
