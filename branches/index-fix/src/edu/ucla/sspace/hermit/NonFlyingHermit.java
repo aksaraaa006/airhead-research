@@ -21,15 +21,17 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
+import edu.ucla.sspace.clustering.ClutoClustering;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
-import edu.ucla.sspace.hermit.HierarchicalAgglomerativeClustering.ClusterLinkage;
 import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
 import edu.ucla.sspace.index.SparseRandomIndexVector;
+
+import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
+import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -346,100 +348,66 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-        String numThreadProp =
-            properties.getProperty(BottomUpHermit.THREADS_PROPERTY, "1");
-        int numThreads = Integer.parseInt(numThreadProp);
-
-        conflationMap.flushStreams();
-
         double minPercentage = Double.parseDouble(
             properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
+        int numClusters = Integer.parseInt(
+            properties.getProperty(BottomUpHermit.NUM_CLUSTERS, "10"));
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
-        final Iterator<Map.Entry<String, File>> entryIter =
-            conflationMap.fileNameMap.entrySet().iterator();
-        
-        Collection<Thread> threads = new LinkedList<Thread>();
 
-        for (int i = 0; i < numThreads; ++i) {
-            Thread t = new Thread() {
-                public void run() {
-                    while (entryIter.hasNext()) {
-                        Map.Entry<String, File> entry = entryIter.next();
-                        runClustering(conflationMap.wordMap.get(entry.getKey()),
-                                      entry);
-                    }
-                }
-            };
-            threads.add(t);
-        }
+        for (Map.Entry<String, Matrix> entry :
+                conflationMap.termMatrixMap.entrySet()) {
+            int[] senseAssignments;
 
-        for (Thread t : threads)
-            t.start();
-        try {
-            for (Thread t : threads)
-                t.join();
-        } catch (InterruptedException ie) {
-            ie.printStackTrace();
-        }
-    }
-
-    private void runClustering(Map<String, List<Integer>> wordMap,
-                               Map.Entry<String, File> entry) {
-        Duple<int[], Vector[]> vectorAssignments = 
-            HierarchicalAgglomerativeClustering.cluster(
-                    entry.getValue(), .13, ClusterLinkage.SINGLE_LINKAGE);
-        // Find the number of clusters generated.
-        int numClusters = 0;
-        for (int clusterNum : vectorAssignments.x)
-            if (clusterNum > numClusters)
-                numClusters = clusterNum;
-        numClusters++;
-
-        // Compute the real occurance counts.  For the list of original
-        // terms, and the context indexes they map to, count how many times
-        // each original term occurs in a particular cluster.
-        for (Map.Entry<String, List<Integer>> contextIndexes :
-                wordMap.entrySet()) {
-            int[] occuranceCounts = new int[numClusters];
-            HERMIT_LOGGER.info("assingment size: " +
-                               vectorAssignments.x.length);
-
-            HERMIT_LOGGER.info("indexes size: " +
-                               contextIndexes.getValue().size());
-
-            for (int contextIndex : contextIndexes.getValue())
-                occuranceCounts[vectorAssignments.x[contextIndex]]++;
-
-            // Output the occurance counts for a particular original sense
-            // for each of the infered senses.
-            for (int i = 0; i < numClusters; ++i) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(entry.getKey()).append("-");
-                sb.append(i).append("-");
-                sb.append(contextIndexes.getKey()).append("|");
-                sb.append(occuranceCounts[i]);
-                System.out.println(sb.toString());
+            try {
+                senseAssignments = ClutoClustering.partitionRows(
+                        entry.getValue(), numClusters);
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
             }
-        }
 
-        // Sum up the instances for each of the cluster to compute the
-        // centroid.
-        Vector[] centroids = new Vector[numClusters];
-        for (int i = 0; i < numClusters; ++i)
-            centroids[i] = new SparseRandomIndexVector(indexVectorSize);
+            Map<String, List<Integer>> wordMap =
+                conflationMap.wordMap.get(entry.getKey());
+            // Compute the real occurance counts.  For the list of original
+            // terms, and the context indexes they map to, count how many times
+            // each original term occurs in a particular cluster.
+            for (Map.Entry<String, List<Integer>> contextIndexes :
+                    wordMap.entrySet()) {
+                int[] occuranceCounts = new int[numClusters];
 
-        for (int i = 0; i < vectorAssignments.x.length; ++i)
-            Vectors.add(centroids[vectorAssignments.x[i]],
-                        vectorAssignments.y[i]);
+                for (int contextIndex : contextIndexes.getValue())
+                    occuranceCounts[senseAssignments[contextIndex]]++;
 
-        // Store the centorids as the semantic vectors stored in this
-        // semantic space.
-        for (int i = 0; i < numClusters; ++i) {
-            String key = entry.getKey();
-            if (i != 0)
-                key += "-" + i;
-            splitSenses.put(key, centroids[i]);
+                // Output the occurance counts for a particular original sense
+                // for each of the infered senses.
+                for (int i = 0; i < numClusters; ++i) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(entry.getKey()).append("-");
+                    sb.append(i).append("-");
+                    sb.append(contextIndexes.getKey()).append("|");
+                    sb.append(occuranceCounts[i]);
+                    System.out.println(sb.toString());
+                }
+            }
+
+            // Sum up the instances for each of the cluster to compute the
+            // centroid.
+            Vector[] centroids = new Vector[numClusters];
+            for (int i = 0; i < numClusters; ++i)
+                centroids[i] = new SparseRandomIndexVector(indexVectorSize);
+
+            for (int i = 0; i < senseAssignments.length; ++i)
+                Vectors.add(centroids[senseAssignments[i]],
+                            entry.getValue().getRowVector(i));
+
+            // Store the centorids as the semantic vectors stored in this
+            // semantic space.
+            for (int i = 0; i < numClusters; ++i) {
+                String key = entry.getKey();
+                if (i != 0)
+                    key += "-" + i;
+                splitSenses.put(key, centroids[i]);
+            }
         }
     }
 
@@ -457,16 +425,7 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
          */
         private Map<String, Map<String, List<Integer>>> wordMap;
 
-        /**
-         * A mapping from conflated senses to an output stream.
-         */
-        private Map<String, ObjectOutputStream> fileMap;
-
-        /**
-         * A mapping from conflated seneses to the temporary file storing it's
-         * contexts.
-         */
-        private Map<String, File> fileNameMap;
+        private Map<String, Matrix> termMatrixMap;
 
         /**
          * A mapping from conflated senses to the number of times the sense has
@@ -479,22 +438,11 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
          */
         public ConflationMap(Collection<String> conflations) {
             countMap = new ConcurrentHashMap<String, Integer>();
-            fileMap = new HashMap<String, ObjectOutputStream>();
-            fileNameMap = new HashMap<String, File>();
+            termMatrixMap = new HashMap<String, Matrix>();
             wordMap = new HashMap<String, Map<String, List<Integer>>>();
 
-            try {
-                for (String conflation : conflations) {
-                    File f = File.createTempFile(conflation, ".tmp");
-                    f.deleteOnExit();
-                    ObjectOutputStream stream = new ObjectOutputStream(
-                            new BufferedOutputStream(new FileOutputStream(f)));
-                    fileMap.put(conflation, stream);
-                    fileNameMap.put(conflation, f);
-                }
-            } catch (IOException ioe) {
-                throw new IOError(ioe);
-            }
+            for (String conflation : conflations)
+                termMatrixMap.put(conflation, new AtomicGrowingMatrix());
         }
 
         /**
@@ -504,27 +452,16 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
         public void addInstance(String conflatedTerm,
                                 String originalSense,
                                 Vector conflationVector) {
-            HERMIT_LOGGER.fine("Writing conflated sense: " + conflatedTerm);
-
-            ObjectOutputStream conflationStream = fileMap.get(conflatedTerm);
+            // Add the new instance to the term's matrix of contexts.
+            Matrix termMatrix = termMatrixMap.get(conflatedTerm);
             int vectorIndex = 0;
             synchronized (countMap) {
                 Integer conflatedCount = countMap.get(conflatedTerm);
                 vectorIndex = (conflatedCount == null) ? 0 : conflatedCount + 1;
                 countMap.put(conflatedTerm, vectorIndex);
             }
+            termMatrix.setRow(vectorIndex, conflationVector);
 
-            Duple<Integer, Vector> v = new Duple<Integer, Vector>(
-                    vectorIndex, conflationVector);
-            try {
-                synchronized (conflationStream) {
-                    conflationStream.writeObject(v);
-                }
-            } catch (IOException ioe) {
-                throw new IOError(ioe);
-            }
-
-            HERMIT_LOGGER.fine("Writing the sense count: " + conflatedTerm);
             // Get the list of senses known for this conflated term.
             Map<String, List<Integer>> senseCounts = null;
             synchronized (wordMap) {
@@ -543,17 +480,6 @@ public class NonFlyingHermit implements BottomUpHermit, SemanticSpace {
                     senseCounts.put(originalSense, termCounts);
                 }
                 termCounts.add(vectorIndex);
-            }
-        }
-
-        public void flushStreams() {
-            try {
-                for (ObjectOutputStream stream : fileMap.values()) {
-                    stream.flush();
-                    stream.close();
-                }
-            } catch (IOException ioe) {
-                throw new IOError(ioe);
             }
         }
     }

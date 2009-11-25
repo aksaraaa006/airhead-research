@@ -428,7 +428,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     public void processSpace(Properties properties) {
         try {
             // first ensure that we are no longer writing to the matrix
-                termDocumentMatrixBuilder.finish();
+            termDocumentMatrixBuilder.finish();
 
             Transform transform = new LogEntropyTransform();
 

@@ -85,7 +85,7 @@
     </javac>
   </target>
 
-  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar">
+  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,hermit-jar,purandare-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
   
@@ -213,6 +213,38 @@
 	<attribute name="Implementation-Title" value="Hyperspace Analogue to Language"/>
 	<attribute name="Implementation-Version" value="${version}"/>
 	<attribute name="Main-Class" value="edu.ucla.sspace.mains.HALMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="hermit-jar" depends="compile">
+    <jar destfile="${bin.dir}/hermit.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Hermit Redux"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.HermitReduxMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="purandare-jar" depends="compile">
+    <jar destfile="${bin.dir}/purandare-petersen.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Purandare and Petersen"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.PurandareMain"/>
       </manifest>
     </jar>
   </target>

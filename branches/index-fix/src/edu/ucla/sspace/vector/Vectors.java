@@ -190,9 +190,6 @@ public class Vectors {
      *                                  than that of {@code source}.
      */
     public static Vector copy(Vector dest, Vector source) {
-        if (dest.length() != source.length())
-            throw new IllegalArgumentException("Vector lengths do not match");
-
         for (int i = 0; i < source.length(); ++i)
             dest.set(i, source.get(i));
         return dest;

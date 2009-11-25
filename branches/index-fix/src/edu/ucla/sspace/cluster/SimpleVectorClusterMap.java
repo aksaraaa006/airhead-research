@@ -35,6 +35,7 @@ import edu.ucla.sspace.util.MultiMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -168,11 +169,13 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         // it as a new centroid.
         synchronized (termClusters) {
             if (similarity >= clusterThreshold ||
-                termClusters.size() >= maxNumClusters)
+                termClusters.size() >= maxNumClusters) {
                 bestMatch.addVector(value);
-            else
+                return bestIndex;
+            } else {
                 termClusters.add(getNewCluster(value));
-            return bestIndex;
+                return termClusters.size() - 1;
+            }
         }
     }
 
@@ -358,15 +361,15 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         return resultMergeMap;
     }
 
-    private List<Integer> dropClusters(String, term, 
+    private List<Integer> dropClusters(String term, 
                                        double minPercentage) {
         List<Integer> dropped = new LinkedList<Integer>();
 
-        List<Cluster> entry = vectorClusters.get(term);
-        double[] clusterSizes = new double[entry.getValue().size()];
+        List<Cluster> termClusters = vectorClusters.get(term);
+        double[] clusterSizes = new double[termClusters.size()];
         int i = 0;
         int sum = 0;
-        for (Cluster cluster : entry.getValue()) {
+        for (Cluster cluster : termClusters) {
           clusterSizes[i] = cluster.getTotalMemberCount();
           sum += clusterSizes[i];
         }
@@ -375,7 +378,7 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         for (i = 0; i < clusterSizes.length; ++i) {
             if (clusterSizes[i]/sum < minPercentage) {
                 dropped.add(i);
-                entry.remove(i - dropCount);
+                termClusters.remove(i - dropCount);
                 dropCount++;
             }
         }

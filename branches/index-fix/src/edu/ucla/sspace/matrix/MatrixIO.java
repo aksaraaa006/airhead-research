@@ -23,6 +23,9 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
 
+import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -170,6 +173,24 @@ public class MatrixIO {
          * full details.
          */
         SVDLIBC_DENSE_BINARY,
+
+        /**
+         * The sparse text format supported by <a
+         * href="http://glaros.dtc.umn.edu/gkhome/cluto/cluto/overview">
+         * CLUTO</a>.  See more details in the <a
+         * href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf">
+         * CLUTO manual</a>.
+         */
+        CLUTO_DENSE,
+
+        /**
+         * The sparse text format supported by <a
+         * href="http://glaros.dtc.umn.edu/gkhome/cluto/cluto/overview">
+         * CLUTO</a>.  See more details in the <a
+         * href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf">
+         * CLUTO manual</a>.
+         */
+        CLUTO_SPARSE
     }
 
     /**
@@ -444,6 +465,9 @@ public class MatrixIO {
                 return array;
             }
 
+            case CLUTO_SPARSE:
+                break;
+
             case SVDLIBC_SPARSE_TEXT: {
                 String line = br.readLine();
                 if (line == null)
@@ -485,6 +509,9 @@ public class MatrixIO {
                 return array;
             }
 
+            case CLUTO_DENSE:
+                break;
+
             case SVDLIBC_DENSE_TEXT:
                 // TODO IMPLEMENT ME.
                 break;
@@ -509,7 +536,10 @@ public class MatrixIO {
             }
         }
 
-        throw new Error("implement me");
+	throw new Error("Reading matrices of " + format + " format is not "+
+                        "currently supported. Email " + 
+                        "s-space-research-dev@googlegroups.com to request its" +
+                        "inclusion and it will be quickly added");
     }
 
     /**
@@ -570,8 +600,15 @@ public class MatrixIO {
 	    
 	case MATLAB_SPARSE:
 	    break;
+
+        case CLUTO_SPARSE:
+            break;
+
 	case SVDLIBC_SPARSE_TEXT:
 	    break;
+
+        case CLUTO_DENSE:
+            break;
 
 	case SVDLIBC_DENSE_TEXT: 
 	    return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
@@ -791,6 +828,9 @@ public class MatrixIO {
 	    pw.close();
 	    break;
 	}
+            
+        case CLUTO_DENSE:
+            break;
 
         case SVDLIBC_DENSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);
@@ -818,6 +858,49 @@ public class MatrixIO {
 	    }
 	    outStream.close();
 	    break;
+        }
+
+        case CLUTO_SPARSE: {
+	    PrintWriter pw = new PrintWriter(output);
+	    // Count the number of non-zero values in the matrix
+	    int nonZero = 0;
+            int rows = matrix.rows();
+	    for (int i = 0; i < rows; ++i) {
+                Vector v = matrix.getRowVector(i);
+                if (v instanceof SparseVector) 
+                    nonZero += ((SparseVector)v).getNonZeroIndices().length;
+                else {
+                    for (int col = 0; col < v.length(); ++col) {
+                        if (v.get(col) != 0) 
+                            nonZero++;
+		    }
+		}
+	    }
+            // Write the header: rows cols non-zero
+            pw.println(matrix.rows() + " " + matrix.columns() + " " + nonZero);
+            for (int row = 0; row < rows; ++row) {
+                StringBuilder sb = new StringBuilder(nonZero / rows);
+                // NOTE: the columns in CLUTO start at 1, not 0, so increment
+                // one to each of the columns
+                Vector v = matrix.getRowVector(row);
+                if (v instanceof SparseVector) {
+                    int[] nzIndices = ((SparseVector)v).getNonZeroIndices();
+                    for (int nz : nzIndices) {
+                        sb.append(nz + 1).append(" ").
+                            append(v.get(nz)).append(" ");
+                    }
+                }
+                else {
+                    for (int col = 0; col < v.length(); ++col) {
+                        double d = v.get(col);
+                        if (d != 0) 
+                            sb.append(col+1).append(" ").append(d).append(" ");
+		    }
+		}
+                pw.println(sb.toString());
+            }
+            pw.close();
+            break;
         }
 
 	case SVDLIBC_SPARSE_TEXT: {

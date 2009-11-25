@@ -304,6 +304,9 @@ public class HermitMain extends GenericMain {
         if (argOptions.hasOption("threads"))
             props.setProperty(BottomUpHermit.THREADS_PROPERTY,
                               argOptions.getStringOption("threads"));
+        props.setProperty(BottomUpHermit.NUM_CLUSTERS,
+                          argOptions.getStringOption('c'));
+
         return props;
     }
 

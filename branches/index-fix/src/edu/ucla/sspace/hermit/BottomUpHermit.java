@@ -13,4 +13,7 @@ public interface BottomUpHermit {
 
     public static final String THREADS_PROPERTY =
         PROPERTY_PREFIX + ".numThreads";
+
+    public static final String NUM_CLUSTERS =
+        PROPERTY_PREFIX + ".numClusters";
 }

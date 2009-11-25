@@ -131,6 +131,22 @@ public class Matrices {
      *         {@link SVD} class
      */
     public static MatrixBuilder getMatrixBuilderForSVD() {
+        return getMatrixBuilderForSVD(false);
+    }
+
+    /**
+     * Returns a {@link MatrixBuilder} in the default format of the fastest
+     * available {@link SVD.Algorithm SVD algorithm} that will optionally
+     * transpose the matrix data on input
+     *
+     * @param transpose {@code true} if the input columns to the {@code
+     *        MatrixBuilder} should be transposed (i.e. become rows) in the
+     *        final matrix
+     *
+     * @return a matrix builder to be used in creating a matrix for use with the
+     *         {@link SVD} class
+     */    
+    public static MatrixBuilder getMatrixBuilderForSVD(boolean transpose) {
         Algorithm fastest = SVD.getFastestAvailableAlgorithm();
         // In the unlikely case that this is called when no SVD support is
         // available, return a default instance rather than error out.  This
@@ -139,19 +155,19 @@ public class Matrices {
         if (fastest == null) {
             LOGGER.warning("no SVD support detected.  Returning default " +
                            "matrix builder instead");
-            return new MatlabSparseMatrixBuilder();
+            return new MatlabSparseMatrixBuilder(transpose);
         }
         
         switch (fastest) {
         case SVDLIBC:
-            return new SvdlibcSparseBinaryMatrixBuilder();
+            return new SvdlibcSparseBinaryMatrixBuilder(transpose);
 
         // In all other cases, use the sparse Matlab format, as it covers both
         // Matlab and Octave.  This format doesn't matter much for Jama or Colt,
         // as both formats need to have the matrix loaded back into memory in
         // order to perform the SVD.
         default:
-            return new MatlabSparseMatrixBuilder();
+            return new MatlabSparseMatrixBuilder(transpose);
         }
     }
 
