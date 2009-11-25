@@ -30,6 +30,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
 import edu.ucla.sspace.index.RandomIndexUser;
+import edu.ucla.sspace.index.WindowedPermutationFunction;
 
 import edu.ucla.sspace.hermit.BottomUpHermit;
 import edu.ucla.sspace.hermit.FlyingHermit;
@@ -111,9 +112,12 @@ public class HermitMain extends GenericMain {
                           "The number of words before, and after the focus " +
                           "term to inspect",
                           true, "INT,INT", "Process Properties");
-        options.addOption('p', "usePermutations",
-                          "Set to true if permutations should be used",
-                          false, null, "Process Properties");
+        options.addOption('X', "windowLimit",
+                          "The bucket size to use for windows",
+                           true, "INT", "Process Properties");
+        options.addOption('p', "permutationFunction",
+                          "The class name of the permutation function to use",
+                          true, "CLASSNAME", "Process Properties");
         options.addOption('u', "useDenseSemantics",
                           "Set to true if dense vectors should be used",
                           false, null, "Process Properties");
@@ -170,9 +174,9 @@ public class HermitMain extends GenericMain {
                 String[] words = wordReplacement[0].split("\\s+");
                 StringBuffer sb = new StringBuffer();
                 for (String w : words)
-                    sb.append(w).append(" ");
+                    sb.append(w.trim()).append(" ");
                 replacementMap.put(sb.substring(0, sb.length() - 1),
-                                   wordReplacement[1]);
+                                   wordReplacement[1].trim());
             }
         } catch (IOException ioe) {
             throw new IOError(ioe);
@@ -221,9 +225,15 @@ public class HermitMain extends GenericMain {
                                Integer.toString(dimension));
             System.setProperty(IndexUser.WINDOW_SIZE_PROPERTY,
                                windowValue);
-            if (argOptions.hasOption("usePermutations"))
-                System.setProperty(RandomIndexUser.USE_PERMUTATION_PROPERTY,
-                                   "true");
+            if (argOptions.hasOption("permutationFunction"))
+                System.setProperty(
+                        RandomIndexUser.PERMUTATION_FUNCTION_PROPERTY,
+                        argOptions.getStringOption("permutationFunction"));
+            if (argOptions.hasOption("windowLimit"))
+                System.setProperty(
+                        WindowedPermutationFunction.WINDOW_LIMIT_PROPERTY,
+                        argOptions.getStringOption("windowLimit"));
+
             if (argOptions.hasOption("useDenseSemantics"))
                 System.setProperty(RandomIndexUser.USE_DENSE_SEMANTICS_PROPERTY,
                                    "true");
@@ -304,9 +314,10 @@ public class HermitMain extends GenericMain {
         if (argOptions.hasOption("threads"))
             props.setProperty(BottomUpHermit.THREADS_PROPERTY,
                               argOptions.getStringOption("threads"));
+        props.setProperty(BottomUpHermit.DROP_PERCENTAGE,
+                          argOptions.getStringOption('h'));
         props.setProperty(BottomUpHermit.NUM_CLUSTERS,
                           argOptions.getStringOption('c'));
-
         return props;
     }
 

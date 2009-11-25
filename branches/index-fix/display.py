@@ -42,4 +42,10 @@ if __name__ == "__main__":
   pylab.plot(counts, mins, 'go', label="minimums")
   pylab.legend()
 
+  f = open("%s_variation.dat" %title, 'w')
+  f.write("#dimension average std max min\n")
+  for i in range(len(counts)):
+    f.write("%d\t%f\t%f\t%f\t%f\n"
+            %(counts[i], avgs[i], stds[i], maxs[i], mins[i]))
+  f.close()
   pylab.savefig("%s_variation.eps" %title)

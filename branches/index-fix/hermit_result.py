@@ -19,6 +19,10 @@ if __name__ == "__main__":
   for line in results:
     conflated_sense, count = line.split("|")
     conflated, sense, original = conflated_sense.split("-")
+    conflated = conflated.strip()
+    sense = sense.strip()
+    original = original.strip()
+
     count = int(count)
     sense = int(sense)
 

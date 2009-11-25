@@ -10,6 +10,8 @@ CORPNAME=tasa
 WORDS=""
 MAP=replacement.map
 SAVEDVECTORS=""
+DPERM="-p edu.ucla.sspace.index.DefaultPermutationFunction"
+WPERM="-p edu.ucla.sspace.index.WindowedPermutationFunction"
 
 function h_run() {
 SIZE="-l $1"
@@ -29,15 +31,27 @@ java -server -Xmx8g edu.ucla.sspace.mains.HermitMain -d $CORPUS \
     -v $LOADSAVE $WORDS $SIZE $COUNT $THRESH $SECOND $EXTRA \
     -m $MAP /tmp 2> hermit.log > hermit.out
 
-OUT_NAME=hermit_out/${CORPNAME}_$1_$2_$3_$4_$5
+OUT_NAME=hermit_out/${CORPNAME}_$1_$2_$3_$4_$6
 echo $OUT_NAME
 sort hermit.out > $OUT_NAME.raw_results
 ./hermit_result.py hermit.out > $OUT_NAME.results
 }
 
+rm -rf hermit_out
 mkdir hermit_out
 
-for i in $(seq 05 5 95)
+for i in $(seq 2 1 50)
 do
-  h_run 50000 10 $i 05 
+  h_run 50000 $i 80 30 "$WPERM -X $i" "_wp_5"
 done
+
+mv hermit_out wp_cluster_hermit_out
+
+mkdir hermit_out
+
+for i in $(seq 2 1 50)
+do
+  h_run 50000 $i 80 30
+done
+
+mv hermit_out nop_cluster_hermit_out

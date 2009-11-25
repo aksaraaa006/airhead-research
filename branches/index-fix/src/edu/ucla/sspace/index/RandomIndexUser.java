@@ -61,7 +61,7 @@ public class RandomIndexUser implements IndexUser {
      * meaning vectors.
      * {@code RandomIndexGenerator}.
      */
-    public static final String USE_PERMUTATION_PROPERTY =
+    public static final String PERMUTATION_FUNCTION_PROPERTY =
         PROPERTY_PREFIX + ".permute";
 
     /**
@@ -71,6 +71,9 @@ public class RandomIndexUser implements IndexUser {
     public static final String USE_DENSE_SEMANTICS_PROPERTY =
         PROPERTY_PREFIX + ".dense";
 
+    private static final String DEFAUL_PERMUTATION_FUNCTION =
+        "edu.ucla.sspace.index.DefaultPermutationFuntion";
+
     /**
      * A static mapping for generating and retrieving permutation functions.
      * Uses of this map should be preceeded by a call to {@code init} before
@@ -79,13 +82,7 @@ public class RandomIndexUser implements IndexUser {
      * running, a function which what is created during {@code init}, a null
      * function will be returned.
      */
-    private static PermutationFunction permutationFactory; 
-
-    /**
-     * Set to true if permutations should be used when generating a meaning
-     * vector for two co-ocurring words.
-     */
-    private final boolean usePermutations;
+    private static PermutationFunction permutationFactory = null; 
 
     /**
      * Set to true if {@code getEmptyVector} should return a dense vector
@@ -120,10 +117,11 @@ public class RandomIndexUser implements IndexUser {
             props.getProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY);
         vectorLength = Integer.parseInt(vectorLengthProp);
 
-        usePermutations = props.getProperty(USE_PERMUTATION_PROPERTY) != null;
         useDenseVectors =
             props.getProperty(USE_DENSE_SEMANTICS_PROPERTY) != null;
-        init(Math.max(leftSize, rightSize), vectorLength);
+        String permFunction = props.getProperty(PERMUTATION_FUNCTION_PROPERTY);
+        if (permFunction != null) 
+            init(Math.max(leftSize, rightSize), vectorLength, permFunction);
     }
 
     public void saveStaticData(File filename) {
@@ -153,7 +151,7 @@ public class RandomIndexUser implements IndexUser {
             throw new IllegalArgumentException("IndexVector expected");
 
         // If no permutations are used, simply add the two vectors.
-        if (!usePermutations)
+        if (permutationFactory == null)
             return Vectors.add(focusVector, termVector);
 
         IndexVector permutedVector =
@@ -179,12 +177,20 @@ public class RandomIndexUser implements IndexUser {
      * @param vectorLength The length of each {@code Vector} that will be
      *                     permuted.
      */
-    private static void init(int exponentCount, int length) {
+    private static void init(int exponentCount,
+                             int length,
+                             String permFunction) {
         if (permutationFactory == null) {
-            permutationFactory = new DefaultPermutationFunction();
-            permutationFactory.permute(
-                    new IndexVector(length, new int[] {}, new int[]{}),
-                    exponentCount);
+            try {
+                Class permClazz = Class.forName(permFunction);
+                permutationFactory =
+                    (PermutationFunction) permClazz.newInstance();
+                permutationFactory.permute(
+                        new IndexVector(length, new int[] {}, new int[]{}),
+                        exponentCount);
+            } catch (Exception e) {
+                throw new Error(e);
+            }
         }
     }
 
@@ -202,7 +208,8 @@ public class RandomIndexUser implements IndexUser {
      * @return A string desrcribing this IndexUser.
      */
     public String toString() {
-        return "RandomIndexUser" +
-               ((usePermutations) ? "-DefaultPermutation" : "-NoPermutation");
+        return "RandomIndexUser" + ((permutationFactory != null)
+                                   ? permutationFactory.toString()
+                                   : "-NoPermutation");
     }
 }
