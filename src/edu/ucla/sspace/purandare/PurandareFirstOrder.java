@@ -31,6 +31,8 @@ import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
 import edu.ucla.sspace.matrix.AtomicMatrix;
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.RowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
@@ -105,6 +107,9 @@ public class PurandareFirstOrder implements SemanticSpace {
 
     private static final Logger LOGGER = 
         Logger.getLogger(PurandareFirstOrder.class.getName());
+
+    private static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.purandare.PurandareFirstOrder";
 
     /**
      * Map that pairs the word with it's position in the matrix
@@ -314,15 +319,14 @@ public class PurandareFirstOrder implements SemanticSpace {
      */
     public Set<String> getWords() {
 	// If no documents have been processed, it will be empty		
-	return Collections.unmodifiableSet(termToIndex.keySet());			
+	return Collections.unmodifiableSet(termToVector.keySet());
     }		
 
     /**
      * {@inheritDoc}
      */
     public Vector getVector(String word) {        
-        Integer index = termToIndex.get(word);
-        return null;
+        return termToVector.get(word);
     }
 
     /**
@@ -346,6 +350,11 @@ public class PurandareFirstOrder implements SemanticSpace {
     @SuppressWarnings("unchecked")
     private void processSpace() throws IOException {
         compressedDocumentsWriter.close();        
+
+        File coocOutput = 
+            new File("purandare-co-occurrence-matrix.cluto.sparse.txt");
+        MatrixIO.writeMatrix(cooccurrenceMatrix, coocOutput, 
+                             Format.CLUTO_SPARSE);
 
         // Generate the reverse index-to-term mapping.  We will need this for
         // assigning specific senses to each term
