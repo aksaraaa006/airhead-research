@@ -26,6 +26,8 @@ import edu.ucla.sspace.cluster.SimpleVectorClusterMap;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.index.IndexGenerator;
 import edu.ucla.sspace.index.IndexUser;
@@ -37,7 +39,13 @@ import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.NonFlyingHermit;
 import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
+import edu.ucla.sspace.text.Document;
+import edu.ucla.sspace.text.FileListDocumentIterator;
 import edu.ucla.sspace.text.IteratorFactory;
+import edu.ucla.sspace.text.OneLinePerDocumentIterator;
+
+import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -45,9 +53,20 @@ import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -97,6 +116,11 @@ public class HermitMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     public void addExtraOptions(ArgOptions options) {
+        options.addOption('D', "trainSize",
+                          "The number of documents to use as a training set, " +
+                          "All other documents will be considered a test set",
+                          true, "INT", "Required");
+
         // Add process property arguements such as the size of index vectors,
         // the generator class to use, the user class to use, the window sizes
         // that should be inspected and the set of terms to replace during
@@ -328,5 +352,166 @@ public class HermitMain extends GenericMain {
          System.out.println(
                  "usage: java HermitMain [options] <output-dir>\n" + 
                  argOptions.prettyPrint());
+    }
+
+    public void run(String[] args) throws Exception {
+        if (args.length == 0) {
+            usage();
+            System.exit(1);
+        }
+        argOptions.parseOptions(args);
+        
+        if (argOptions.numPositionalArgs() == 0) {
+            throw new IllegalArgumentException("must specify output directory");
+        }
+
+        File outputDir = new File(argOptions.getPositionalArg(0));
+        if (!outputDir.isDirectory()){
+            throw new IllegalArgumentException(
+                "output directory is not a directory: " + outputDir);
+        }
+        
+        verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+        // If verbose output is enabled, update all the loggers in the S-Space
+        // package logging tree to output at Level.FINE (normally, it is
+        // Level.INFO).  This provides a more detailed view of how the execution
+        // flow is proceeding.
+        if (verbose) {
+            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
+            Handler verboseHandler = new ConsoleHandler();
+            verboseHandler.setLevel(Level.FINE);
+            appRooLogger.addHandler(verboseHandler);
+            appRooLogger.setLevel(Level.FINE);
+            appRooLogger.setUseParentHandlers(false);
+        }
+
+        // all the documents are listed in one file, with one document per line
+        Iterator<Document> trainTestIters = getDocumentIterator();
+        
+        // Check whether this class supports mutlithreading when deciding how
+        // many threads to use by default
+        int numThreads = (isMultiThreaded)
+            ? Runtime.getRuntime().availableProcessors()
+            : 1;
+        if (argOptions.hasOption("threads")) {
+            numThreads = argOptions.getIntOption("threads");
+        }
+
+        boolean overwrite = true;
+        if (argOptions.hasOption("overwrite")) {
+            overwrite = argOptions.getBooleanOption("overwrite");
+        }
+        
+        handleExtraOptions();
+
+        Properties props = setupProperties();
+
+        // Initialize the IteratorFactory to tokenize the documents according to
+        // the specified configuration (e.g. filtering, compound words)
+        if (argOptions.hasOption("tokenFilter")) {
+            props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
+                              argOptions.getStringOption("tokenFilter"));
+        }
+
+        if (argOptions.hasOption("useStemming"))
+            props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
+
+        if (argOptions.hasOption("compoundWords")) {
+            props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
+                              argOptions.getStringOption("compoundWords"));
+        }
+        IteratorFactory.setProperties(props);
+
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
+
+        SemanticSpace space = getSpace(); 
+        
+        int trainSize = argOptions.getIntOption("trainSize", Integer.MAX_VALUE);
+        parseDocumentsMultiThreaded(space, trainTestIters,
+                                    numThreads, trainSize);
+
+        long startTime = System.currentTimeMillis();
+        space.processSpace(props);
+        long endTime = System.currentTimeMillis();
+        verbose("processed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+
+        parseDocumentsMultiThreaded(space, trainTestIters,
+                                    numThreads, Integer.MAX_VALUE);
+        
+        startTime = System.currentTimeMillis();
+        space.processSpace(props);
+        endTime = System.currentTimeMillis();
+        verbose("processed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+
+        File output = (overwrite)
+            ? new File(outputDir, space.getSpaceName() + EXT)
+            : File.createTempFile(space.getSpaceName(), EXT, outputDir);
+
+        SSpaceFormat format = (argOptions.hasOption("outputFormat"))
+            ? SSpaceFormat.valueOf(
+                argOptions.getStringOption("outputFormat").toUpperCase())
+            : getSpaceFormat();
+
+        startTime = System.currentTimeMillis();
+        SemanticSpaceIO.save(space, output, format);
+        endTime = System.currentTimeMillis();
+        verbose("printed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+
+        postProcessing();
+    }
+
+    protected void parseDocumentsMultiThreaded(final SemanticSpace sspace,
+                                               final Iterator<Document> docIter,
+                                               int numThreads,
+                                               final int numDocs)
+            throws IOException, InterruptedException {
+
+        Collection<Thread> threads = new LinkedList<Thread>();
+
+        final AtomicInteger count = new AtomicInteger(0);
+        
+        for (int i = 0; i < numThreads; ++i) {
+            Thread t = new Thread() {
+                public void run() {
+                    // repeatedly try to process documents while some still
+                    // remain
+                    while (count.get() < numDocs && docIter.hasNext()) {
+                        int docNumber = count.incrementAndGet();
+                        Document doc = docIter.next();
+                        long startTime = System.currentTimeMillis();
+                        int terms = 0;
+                        try {
+                            sspace.processDocument(doc.reader());
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                        long endTime = System.currentTimeMillis();
+                        verbose("parsed document #%d in %.3f seconds",
+                                docNumber, ((endTime - startTime) / 1000d));
+                    }
+                }
+            };
+            threads.add(t);
+        }
+
+        long threadStart = System.currentTimeMillis();
+        
+        // start all the threads processing
+        for (Thread t : threads)
+            t.start();
+
+        verbose("Beginning processing using %d threads", numThreads);
+
+        // wait until all the documents have been parsed
+        for (Thread t : threads)
+            t.join();
+
+        verbose("parsed %d document in %.3f total seconds)",
+                count.get(),
+                ((System.currentTimeMillis() - threadStart) / 1000d));
     }
 }

@@ -179,6 +179,34 @@ public class SimpleVectorClusterMap implements BottomUpVectorClusterMap {
         }
     }
 
+    public int assignVector(String key, Vector value) {
+        // Get the set of term vectors for this word that have been found so
+        // far.
+        List<Cluster> termClusters = vectorClusters.get(key);
+        if (termClusters == null) {
+            throw new IllegalArgumentException(key + " has no cluster");
+        }
+
+        // Update the set of centriods.
+
+        // Find the centriod with the best similarity.
+        Cluster bestMatch = null;
+        int bestIndex = termClusters.size();
+        double bestScore = -1;
+        double similarity = -1;
+        int i = 0;
+        for (Cluster cluster : termClusters) {
+            similarity = cluster.compareWithVector(value);
+            if (similarity > bestScore) {
+                bestScore = similarity;
+                bestMatch = cluster;
+                bestIndex = i;
+            }
+            ++i;
+        }
+        return bestIndex;
+    }
+
     private Cluster getNewCluster(Vector vector) {
         return (clusterWeight == 0d)
             ? new Cluster(vector)

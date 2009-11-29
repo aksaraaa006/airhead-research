@@ -173,6 +173,8 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     private final int nextSize;
 
+    private boolean compacted;
+
     /**
      * Create a new instance of {@code FlyingHermit} which takes ownership
      */
@@ -190,6 +192,8 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         replacementMap = remap;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
+
+        compacted = false;
 
         accuracyMap = new AccuracyMap();
 
@@ -236,6 +240,9 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
+        if (compacted)
+            System.out.println("compacted processing");
+
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
         Queue<String> nextReplacements = new ArrayDeque<String>();
@@ -297,17 +304,19 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                     ++distance;
                 }
 
-
                 // Compare the most recent vector to all the saved vectors.  If
                 // the vector with the highest similarity has a similarity over
                 // a threshold, incorporate this {@code Vector} to that winner.
                 // Otherwise add this {@code Vector} as a new vector for the
                 // term.
-                int clusterNum = clusterMap.addVector(replacement, meaning);
-
-                // Count the accuracy of the current cluster assignment for
-                // words which have a replacement different from themselves.
-                if (!focusWord.equals(replacement)) {
+                System.out.println(!focusWord.equals(replacement));
+                if (!compacted)
+                    clusterMap.addVector(replacement, meaning);
+                else if (!focusWord.equals(replacement)) {
+                    int clusterNum =
+                        clusterMap.assignVector(replacement, meaning);
+                    // Count the accuracy of the current cluster assignment for
+                    // words which have a replacement different from themselves.
                     accuracyMap.addInstance(replacement, clusterNum, focusWord);
                 }
             }
@@ -355,59 +364,54 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-        double minPercentage = Double.parseDouble(
-            properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
-
-        splitSenses = new ConcurrentHashMap<String, Vector>();
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
+        if (!compacted) {
+            double minPercentage = Double.parseDouble(
+                properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
 
-        printPairWiseSimilarities(terms);
+            splitSenses = new ConcurrentHashMap<String, Vector>();
 
-        // Merge the clusters for each of the words being tracked.
-        for (String term : terms) {
-            Map<Integer, Integer> mergedMap =
+            printPairWiseSimilarities(terms);
+
+            // Merge the clusters for each of the words being tracked.
+            for (String term : terms)
                 clusterMap.mergeOrDropClusters(term, minPercentage);
-            for (Map.Entry<Integer, Integer> mapping : mergedMap.entrySet()) {
-                accuracyMap.moveInstances(term, 
-                                          mapping.getKey(),
-                                          mapping.getValue());
-            }
-        }
 
-        printPairWiseSimilarities(terms);
-
-        // Extract the list of clusters for each word mapped in the cluster map
-        // and save it in the semantic space map.  The first sense will simply
-        // be stored as the mapped term and additional senses will have
-        // -SENSE_NUM appended to the token.  After this is done, the clusters
-        // will be removed from the map to clear up space.
-        for (String term : terms) {
-            List<List<Vector>> clusters = clusterMap.getClusters(term);
-            int i = 0;
-            for (List<Vector> cluster : clusters) {
-                Vector sense = null;
-                for (Vector v : cluster) {
-                    if (sense == null)
-                        sense = Vectors.copyOf(v);
-                    else
-                        Vectors.add(sense, v);
+            printPairWiseSimilarities(terms);
+            compacted = true;
+        } else {
+            // Extract the list of clusters for each word mapped in the cluster
+            // map and save it in the semantic space map.  The first sense will
+            // simply be stored as the mapped term and additional senses will
+            // have -SENSE_NUM appended to the token.  After this is done, the
+            // clusters will be removed from the map to clear up space.
+            for (String term : terms) {
+                List<List<Vector>> clusters = clusterMap.getClusters(term);
+                int i = 0;
+                for (List<Vector> cluster : clusters) {
+                    Vector sense = null;
+                    for (Vector v : cluster) {
+                        if (sense == null)
+                            sense = Vectors.copyOf(v);
+                        else
+                            Vectors.add(sense, v);
+                    }
+                    String senseName = term;
+                    if (i != 0)
+                        senseName += "-" + i;
+                    splitSenses.put(senseName, sense);
+                    HERMIT_LOGGER.info("There are " + cluster.size() +
+                                       " instances for sense: " + i + 
+                                       " of word " + term + 
+                                       " stored as: " + senseName);
+                    ++i;
                 }
-                String senseName = term;
-                if (i != 0)
-                    senseName += "-" + i;
-                splitSenses.put(senseName, sense);
-                HERMIT_LOGGER.info("There are " + cluster.size() +
-                                   " instances for sense: " + i + 
-                                   " of word " + term + 
-                                   " stored as: " + senseName);
-                ++i;
+                clusterMap.removeClusters(term);
             }
-            clusterMap.removeClusters(term);
+            HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
+            HERMIT_LOGGER.info("Emitting Accuracy Counts");
+            accuracyMap.printCounts();
         }
-
-	    HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
-
-        accuracyMap.printCounts();
     }
 
     private void printPairWiseSimilarities(Set<String> terms) {

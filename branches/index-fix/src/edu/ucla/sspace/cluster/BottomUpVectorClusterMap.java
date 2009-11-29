@@ -129,4 +129,6 @@ public interface BottomUpVectorClusterMap {
                                               double minPercentage);
 
     Matrix pairWiseSimilarity(String term);
+
+    int assignVector(String key, Vector vector);
 }

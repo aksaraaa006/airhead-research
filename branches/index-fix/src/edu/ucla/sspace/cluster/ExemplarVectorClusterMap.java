@@ -398,4 +398,7 @@ public class ExemplarVectorClusterMap implements BottomUpVectorClusterMap {
     public synchronized Matrix pairWiseSimilarity(String term) {
         return null;
     }
+    public int assignVector(String key, Vector vector) {
+        return 1;
+    }
 }
