@@ -17,7 +17,8 @@ if __name__ == "__main__":
   mins = []
   maxs = []
   for result_file in result_files:
-    name = result_file.split("_")
+    base, extension = result_file.split(".")
+    name = base.split("_")
     cluster_count = int(name[arg_index])
     counts.append(cluster_count)
     results = []
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     f = open(result_file)
     for line in f:
       results.append(float(line.split()[-1]))
+    print result_file
     n = numpy.array(results)
     avgs.append(numpy.average(n))
     stds.append(numpy.std(n))

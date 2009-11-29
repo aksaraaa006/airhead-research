@@ -28,4 +28,11 @@ if __name__ == "__main__":
   pylab.plot(range, results, 'ro')
   pylab.plot(range, baselines, 'go')
 
-  pylab.savefig("conflation_results.png")
+  f = open("conflation_results.dat", 'w')
+  f.write("#term_index\taccuracy\tbaseline\n")
+  for i in range:
+    f.write("%d\t%f\t%f\n" %(i, results[i], baselines[i]))
+  f.close()
+
+
+  pylab.savefig("conflation_results.eps")

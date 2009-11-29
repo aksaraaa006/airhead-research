@@ -1,14 +1,16 @@
 #!/bin/bash
 
-#CORPUS=/argos/corpora/Wacky/WaCKy-cleaned-one-line-per.txt
-#CORPUS=/argos/corpora/Wacky/WaCKy-first-100k-lines.txt
-#CORPNAME=wacky
-#WORDS="-F /argos/corpora/Wacky/wacky-test-unigrams-bigrams.txt -C top-100-wacky-bigrams.txt"
-#MAP=random-wacky-bigram.map
-CORPUS=tasa-one-doc-per-line-cleaned.txt
-CORPNAME=tasa
-WORDS=""
-MAP=replacement.map
+CORPUS=WaCKy-cleaned-one-line-per.txt
+#CORPUS=gos/corpora/Wacky/WaCKy-first-100k-lines.txt
+CORPNAME=wacky
+TSIZE=2000000
+WORDS="-F wacky-test-unigrams-bigrams.txt -C top-150-wacky-bigrams.txt"
+MAP=random-wacky-bigram.map
+#CORPUS=tasa-one-doc-per-line-cleaned.txt
+#CORPNAME=tasa
+#TSIZE=39600
+#WORDS=""
+#MAP=replacement.map
 SAVEDVECTORS=""
 DPERM="-p edu.ucla.sspace.index.DefaultPermutationFunction"
 WPERM="-p edu.ucla.sspace.index.WindowedPermutationFunction"
@@ -28,7 +30,7 @@ else
 fi
 
 java -server -Xmx8g edu.ucla.sspace.mains.HermitMain -d $CORPUS \
-    -v $LOADSAVE $WORDS $SIZE $COUNT $THRESH $SECOND $EXTRA \
+    -D $TSIZE -v $LOADSAVE $WORDS $SIZE $COUNT $THRESH $SECOND $EXTRA \
     -m $MAP /tmp 2> hermit.log > hermit.out
 
 OUT_NAME=hermit_out/${CORPNAME}_$1_$2_$3_$4_$6
@@ -40,18 +42,10 @@ sort hermit.out > $OUT_NAME.raw_results
 rm -rf hermit_out
 mkdir hermit_out
 
-for i in $(seq 2 1 50)
-do
-  h_run 50000 $i 80 30 "$WPERM -X $i" "_wp_5"
-done
+h_run 50000 10 35 30 "$DPERM" "_p"
+h_run 50000 10 35 30
 
-mv hermit_out wp_cluster_hermit_out
-
-mkdir hermit_out
-
-for i in $(seq 2 1 50)
-do
-  h_run 50000 $i 80 30
-done
-
-mv hermit_out nop_cluster_hermit_out
+#for i in $(seq 15 1 30)
+#do
+#  h_run 50000 10 85 30 "$WPERM -X $i" "_wp_${i}_"
+#done
