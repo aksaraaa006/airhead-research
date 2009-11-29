@@ -240,9 +240,6 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        if (compacted)
-            System.out.println("compacted processing");
-
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
         Queue<String> nextReplacements = new ArrayDeque<String>();
@@ -309,7 +306,6 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 // a threshold, incorporate this {@code Vector} to that winner.
                 // Otherwise add this {@code Vector} as a new vector for the
                 // term.
-                System.out.println(!focusWord.equals(replacement));
                 if (!compacted)
                     clusterMap.addVector(replacement, meaning);
                 else if (!focusWord.equals(replacement)) {
