@@ -268,7 +268,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
             // Ensure that the index vectors exists for all interesting words in
             // the corpus.
-            indexGenerator.getIndexVector(focusWord);
+            //indexGenerator.getIndexVector(focusWord);
 
             if (it.hasNext())
                 addNextWord(it, nextWords, nextReplacements);
@@ -374,8 +374,10 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             printPairWiseSimilarities(terms);
 
             // Merge the clusters for each of the words being tracked.
-            for (String term : terms)
+            for (String term : terms) {
+                HERMIT_LOGGER.info("Mering clusters for : " + term);
                 clusterMap.mergeOrDropClusters(term, minPercentage);
+            }
 
             printPairWiseSimilarities(terms);
             compacted = true;
@@ -419,7 +421,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             Matrix m = clusterMap.pairWiseSimilarity(term);
             StringBuilder sb = new StringBuilder();
             sb.append(term);
-            sb.append("term cluster similarity matrix\n");
+            sb.append(" term cluster similarity matrix\n");
             for (int r = 0; r < m.rows(); ++r) {
                 sb.append(r);
                 sb.append(":");
@@ -427,7 +429,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                     sb.append(String.format("%3f ", m.get(r, c)));
                 sb.append("\n");
             }
-            HERMIT_LOGGER.fine(sb.toString());
+            HERMIT_LOGGER.info(sb.toString());
         }
     }
 
@@ -472,10 +474,8 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             // Get the mapping for the given sense number.
             Map<String, Integer> originalCounts = null;
             synchronized (senseCounts) {
-                if (senseNum >= senseCounts.size()) {
-                    for (int i = 0; i <= senseNum; ++i)
-                        senseCounts.add(new HashMap<String, Integer>());
-                }
+                for (int i = senseCounts.size(); i <= senseNum; ++i)
+                    senseCounts.add(new HashMap<String, Integer>());
                 originalCounts = senseCounts.get(senseNum);
             }
 

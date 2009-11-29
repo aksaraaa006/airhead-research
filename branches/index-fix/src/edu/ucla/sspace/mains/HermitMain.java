@@ -335,6 +335,8 @@ public class HermitMain extends GenericMain {
             argOptions.hasOption('T'))
             props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,
                               argOptions.getStringOption("replacementMap"));
+        props.setProperty(BottomUpHermit.DROP_PERCENTAGE,
+                          argOptions.getStringOption('h'));
         if (argOptions.hasOption("threads"))
             props.setProperty(BottomUpHermit.THREADS_PROPERTY,
                               argOptions.getStringOption("threads"));
@@ -352,6 +354,10 @@ public class HermitMain extends GenericMain {
          System.out.println(
                  "usage: java HermitMain [options] <output-dir>\n" + 
                  argOptions.prettyPrint());
+    }
+
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
     }
 
     public void run(String[] args) throws Exception {
