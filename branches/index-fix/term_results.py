@@ -7,6 +7,7 @@ import pylab
 
 if __name__ == "__main__":
   result_file = sys.argv[1]
+  title = sys.argv[2]
 
   results = []
   baselines = []
@@ -28,11 +29,10 @@ if __name__ == "__main__":
   pylab.plot(range, results, 'ro')
   pylab.plot(range, baselines, 'go')
 
-  f = open("conflation_results.dat", 'w')
+  f = open("%s_conflation_results.dat" %title, 'w')
   f.write("#term_index\taccuracy\tbaseline\n")
   for i in range:
     f.write("%d\t%f\t%f\n" %(i, results[i], baselines[i]))
   f.close()
 
-
-  pylab.savefig("conflation_results.eps")
+  pylab.savefig("%s_conflation_results.eps" %title)

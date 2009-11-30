@@ -306,15 +306,16 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 // a threshold, incorporate this {@code Vector} to that winner.
                 // Otherwise add this {@code Vector} as a new vector for the
                 // term.
+                int clusterNum;
                 if (!compacted)
-                    clusterMap.addVector(replacement, meaning);
-                else if (!focusWord.equals(replacement)) {
-                    int clusterNum =
-                        clusterMap.assignVector(replacement, meaning);
-                    // Count the accuracy of the current cluster assignment for
-                    // words which have a replacement different from themselves.
+                    clusterNum = clusterMap.addVector(replacement, meaning);
+                else
+                    clusterNum = clusterMap.assignVector(replacement, meaning);
+
+                // Count the accuracy of the current cluster assignment for
+                // words which have a replacement different from themselves.
+                if (!focusWord.equals(replacement))
                     accuracyMap.addInstance(replacement, clusterNum, focusWord);
-                }
             }
 
             // Push the focus word into previous word set for the next focus
@@ -372,10 +373,24 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             // Merge the clusters for each of the words being tracked.
             for (String term : terms) {
                 HERMIT_LOGGER.info("Mering clusters for : " + term);
-                clusterMap.mergeOrDropClusters(term, minPercentage);
+                Map<Integer, Integer> mergedMap =
+                    clusterMap.mergeOrDropClusters(term, minPercentage);
+                for (Map.Entry<Integer, Integer> mapping :
+                        mergedMap.entrySet()) {
+                    accuracyMap.moveInstances(term, 
+                                              mapping.getKey(),
+                                              mapping.getValue());
+                }
+                accuracyMap.setClusterNames(term);
             }
 
             printPairWiseSimilarities(terms);
+
+            // Setup a new accuracy map which has the correct cluster names.
+            Map<String, String> clusterNames = accuracyMap.clusterTitleMap;
+            accuracyMap = new AccuracyMap();
+            accuracyMap.clusterTitleMap = clusterNames;
+
             compacted = true;
         } else {
             // Extract the list of clusters for each word mapped in the cluster
@@ -443,11 +458,14 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
          */
         private Map<String, List<Map<String, Integer>>> wordMap;
 
+        private Map<String, String> clusterTitleMap;
+
         /**
          * Creates an emtpy {@code AccuracyMap}
          */
         public AccuracyMap() {
             wordMap = new HashMap<String, List<Map<String, Integer>>>();
+            clusterTitleMap = new HashMap<String, String>();;
         }
 
         /**
@@ -554,6 +572,10 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                     if (originalMap.isEmpty()) 
                         continue;
 
+                    String title = clusterTitleMap.get(conflated + ":" + i);
+                    System.out.println("# " + conflated + " " + i + 
+                                       " " + title);
+
                     for (Map.Entry<String, Integer> e :
                             originalMap.entrySet()) {
                         String original = e.getKey();
@@ -566,6 +588,25 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                     }
                     ++i;
                 }
+            }
+        }
+
+        public void setClusterNames(String term) {
+            List<Map<String, Integer>> senseCounts = wordMap.get(term);
+            int i = 0;
+            for (Map<String, Integer> senseCount : senseCounts) {
+                if (senseCount.isEmpty())
+                    continue;
+                int maxCount = -1;
+                String bestTitle = null;
+                for (Map.Entry<String, Integer> e : senseCount.entrySet()) {
+                    if (e.getValue() > maxCount) {
+                        maxCount = e.getValue();
+                        bestTitle = e.getKey();
+                    }
+                }
+                clusterTitleMap.put(term + ":" + i, bestTitle);
+                ++i;
             }
         }
     }

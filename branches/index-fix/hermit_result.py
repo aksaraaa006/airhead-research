@@ -12,11 +12,18 @@ def all_perms(str):
 
 if __name__ == "__main__":
   results = open(sys.argv[1])
+  title_map = {}
   result_map = {}
   conflated_map = {}
   conflated_count = {}
   term_count = {}
   for line in results:
+    # update what the title for a given cluster is.
+    if line[0] == "#":
+      title = line.split()
+      title_map[(title[1], int(title[2]))] = title[3]
+      continue
+
     conflated_sense, count = line.split("|")
     conflated, sense, original = conflated_sense.split("-")
     conflated = conflated.strip()
@@ -52,21 +59,14 @@ if __name__ == "__main__":
     sense_map = conflated_map[k]
     total_count = 0
     accuracy_count = 0
-    assignments = []
     words = []
     for s in sense_map:
       term_map = sense_map[s]
-      max_count = 0
-      max_term = ""
       for o in term_map:
-        count = term_map[o]
-        if count > max_count:
-          max_count = count
-          max_term = o
-        total_count += count
+        total_count += term_map[o]
         words.append(o)
-      assignments.append(max_term)
-      accuracy_count += max_count
+      print k, s, term_map[title_map[(k, s)]]
+      accuracy_count += term_map[title_map[(k, s)]]
 
     words = list(set(words))
     max_base = 0
@@ -77,5 +77,5 @@ if __name__ == "__main__":
     baseline = max_base / float(total_count)
     accuracy = accuracy_count / float(total_count)
 
-    print k, assignments, accuracy, baseline, (accuracy - baseline)
+    print k, accuracy, baseline, (accuracy - baseline)
 
