@@ -65,8 +65,8 @@ if __name__ == "__main__":
       for o in term_map:
         total_count += term_map[o]
         words.append(o)
-      print k, s, term_map[title_map[(k, s)]]
-      accuracy_count += term_map[title_map[(k, s)]]
+      if title_map[(k, s)] in term_map:
+        accuracy_count += term_map[title_map[(k, s)]]
 
     words = list(set(words))
     max_base = 0
