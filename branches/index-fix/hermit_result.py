@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # update what the title for a given cluster is.
     if line[0] == "#":
       title = line.split()
-      title_map[(title[1], int(title[2]))] = title[3]
+      title_map[(title[1], int(title[2]))] = " ".join(title[3:])
       continue
 
     conflated_sense, count = line.split("|")
