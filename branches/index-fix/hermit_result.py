@@ -14,7 +14,7 @@ mfs_map = {}
 mfs_f = open(sys.argv[2])
 for line in mfs_f:
   bigram, conflate = line.split("-")
-  mfs_map[conflate] = bigram
+  mfs_map[conflate[:-1]] = bigram
 
 results = open(sys.argv[1])
 title_map = {}
@@ -72,7 +72,8 @@ for k in conflated_map:
       total_count += term_map[o]
     if title_map[(k, s)] in term_map:
       accuracy_count += term_map[title_map[(k, s)]]
-    base_count += term_map[mfs_map[k]]
+    if mfs_map[k] in term_map:
+      base_count += term_map[mfs_map[k]]
 
   baseline = base_count / float(total_count)
   accuracy = accuracy_count / float(total_count)

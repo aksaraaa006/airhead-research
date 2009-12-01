@@ -368,7 +368,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
             splitSenses = new ConcurrentHashMap<String, Vector>();
 
-            printPairWiseSimilarities(terms);
+            //printPairWiseSimilarities(terms);
 
             // Merge the clusters for each of the words being tracked.
             for (String term : terms) {
@@ -384,7 +384,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 accuracyMap.setClusterNames(term);
             }
 
-            printPairWiseSimilarities(terms);
+            //printPairWiseSimilarities(terms);
 
             // Setup a new accuracy map which has the correct cluster names.
             Map<String, String> clusterNames = accuracyMap.clusterTitleMap;
