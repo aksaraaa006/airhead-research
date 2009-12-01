@@ -10,72 +10,71 @@ def all_perms(str):
       for i in range(len(perm)+1):
         yield perm[:i] + str[0:1] + perm[i:]
 
-if __name__ == "__main__":
-  results = open(sys.argv[1])
-  title_map = {}
-  result_map = {}
-  conflated_map = {}
-  conflated_count = {}
-  term_count = {}
-  for line in results:
-    # update what the title for a given cluster is.
-    if line[0] == "#":
-      title = line.split()
-      title_map[(title[1], int(title[2]))] = " ".join(title[3:])
-      continue
+mfs_map = {}
+mfs_f = open(sys.argv[2])
+for line in mfs_f:
+  bigram, conflate = line.split("-")
+  mfs_map[conflate] = bigram
 
-    conflated_sense, count = line.split("|")
-    conflated, sense, original = conflated_sense.split("-")
-    conflated = conflated.strip()
-    sense = sense.strip()
-    original = original.strip()
+results = open(sys.argv[1])
+title_map = {}
+result_map = {}
+conflated_map = {}
+conflated_count = {}
+term_count = {}
+for line in results:
+  # update what the title for a given cluster is.
+  if line[0] == "#":
+    title = line.split()
+    title_map[(title[1], int(title[2]))] = " ".join(title[3:])
+    continue
 
-    count = int(count)
-    sense = int(sense)
+  conflated_sense, count = line.split("|")
+  conflated, sense, original = conflated_sense.split("-")
+  conflated = conflated.strip()
+  sense = sense.strip()
+  original = original.strip()
 
-    if conflated in conflated_map:
-      sense_map = conflated_map[conflated]
-    else:
-      sense_map = {}
-      conflated_map[conflated] = sense_map
+  count = int(count)
+  sense = int(sense)
 
-    if sense in sense_map:
-      term_map = sense_map[sense]
-    else:
-      term_map = {}
-      sense_map[sense] = term_map
+  if conflated in conflated_map:
+    sense_map = conflated_map[conflated]
+  else:
+    sense_map = {}
+    conflated_map[conflated] = sense_map
 
-    if original in term_map:
-      term_map[original] += count
-    else:
-      term_map[original] = count
+  if sense in sense_map:
+    term_map = sense_map[sense]
+  else:
+    term_map = {}
+    sense_map[sense] = term_map
 
-    if original in term_count:
-      term_count[original] += count
-    else:
-      term_count[original] = count
+  if original in term_map:
+    term_map[original] += count
+  else:
+    term_map[original] = count
 
-  for k in conflated_map:
-    sense_map = conflated_map[k]
-    total_count = 0
-    accuracy_count = 0
-    words = []
-    for s in sense_map:
-      term_map = sense_map[s]
-      for o in term_map:
-        total_count += term_map[o]
-        words.append(o)
-      if title_map[(k, s)] in term_map:
-        accuracy_count += term_map[title_map[(k, s)]]
+  if original in term_count:
+    term_count[original] += count
+  else:
+    term_count[original] = count
 
-    words = list(set(words))
-    max_base = 0
-    for word in words:
-      if term_count[word] > max_base:
-        max_base = term_count[word]
+for k in conflated_map:
+  sense_map = conflated_map[k]
+  total_count = 0
+  accuracy_count = 0
+  base_count = 0
+  words = []
+  for s in sense_map:
+    term_map = sense_map[s]
+    for o in term_map:
+      total_count += term_map[o]
+    if title_map[(k, s)] in term_map:
+      accuracy_count += term_map[title_map[(k, s)]]
+    base_count += term_map[mfs_map[k]]
 
-    baseline = max_base / float(total_count)
-    accuracy = accuracy_count / float(total_count)
+  baseline = base_count / float(total_count)
+  accuracy = accuracy_count / float(total_count)
 
-    print k, accuracy, baseline, (accuracy - baseline)
-
+  print k, accuracy, baseline, (accuracy - baseline)
