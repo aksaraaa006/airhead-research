@@ -24,11 +24,14 @@ package edu.ucla.sspace.beagle;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
-import edu.ucla.sspace.index.IndexBuilder;
-import edu.ucla.sspace.index.BeagleIndexBuilder;
+import edu.ucla.sspace.index.BeagleIndexGenerator;
+import edu.ucla.sspace.index.BeagleIndexUser;
+import edu.ucla.sspace.index.IndexGenerator;
+import edu.ucla.sspace.index.IndexUser;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -84,7 +87,7 @@ public class Beagle implements SemanticSpace {
      * The class responsible for creating index vectors, and incorporating them
      * into a semantic vector.
      */
-    private final IndexBuilder indexBuilder;
+    private final IndexGenerator indexGenerator;
 
     /**
      * A mapping for terms to their semantic vector representation. A {@code
@@ -107,11 +110,15 @@ public class Beagle implements SemanticSpace {
      */
     private int nextSize;
 
-    public Beagle(IndexBuilder builder, int vectorSize) {
+    public Beagle(int vectorSize) {
+        System.setProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY,
+                           Integer.toString(vectorSize));
+        System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
+                           Integer.toString(vectorSize));
         indexVectorSize = vectorSize;
-        indexBuilder = builder;
-        prevSize = builder.expectedSizeOfPrevWords();
-        nextSize = builder.expectedSizeOfNextWords();
+        indexGenerator = new BeagleIndexGenerator();
+        prevSize = 1;
+        nextSize = 5;
         termHolographs = new ConcurrentHashMap<String, Vector>();
     }
 
@@ -147,8 +154,8 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
+        IndexUser indexUser = new BeagleIndexUser();
 
         Iterator<String> it = IteratorFactory.tokenize(document);
         Map<String, Vector> documentVectors = new HashMap<String, Vector>();
@@ -157,10 +164,6 @@ public class Beagle implements SemanticSpace {
         // starts, the context is fully prepared.
         for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
             nextWords.offer(it.next().intern());
-        // Assume the previous words in the context are empty words. Note that
-        // this is not specified in the original paper, but makes computation
-        // much easier.
-        prevWords.offer("");
 
         String focusWord = null;
         while (!nextWords.isEmpty()) {
@@ -173,17 +176,19 @@ public class Beagle implements SemanticSpace {
             // one, as determined by the index builder.
             Vector meaning = termHolographs.get(focusWord);
             if (meaning == null) {
-                meaning = indexBuilder.getEmptyVector();
+                meaning = new DenseVector(indexVectorSize);
                 documentVectors.put(focusWord, meaning);
             }
-            indexBuilder.updateMeaningWithTerm(
-                    meaning, prevWords, nextWords);
 
-            // Push the focus word into previous word set for the next focus
-            // word.
-            prevWords.offer(focusWord);
-            if (prevWords.size() > prevSize)
-                prevWords.remove();
+            Vector focusVector = indexGenerator.getIndexVector(focusWord);
+
+            for (String term : nextWords) {
+                Vector addedMeaning = indexUser.generateMeaning(
+                        focusVector,
+                        indexGenerator.getIndexVector(term),
+                        0);
+                Vectors.add(meaning, addedMeaning);
+            }
         }
 
         for (Map.Entry<String, Vector> entry : documentVectors.entrySet()) {

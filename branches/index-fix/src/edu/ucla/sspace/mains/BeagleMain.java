@@ -26,7 +26,8 @@ import edu.ucla.sspace.beagle.Beagle;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.index.BeagleIndexBuilder;
+import edu.ucla.sspace.index.BeagleIndexGenerator;
+import edu.ucla.sspace.index.BeagleIndexUser;
 
 import java.io.IOException;
 
@@ -108,7 +109,7 @@ public class BeagleMain extends GenericMain {
      * Return a new Beagle instance with dimensionality of {@code dimension}.
      */
     public SemanticSpace getSpace() {
-        return new Beagle(new BeagleIndexBuilder(dimension), dimension);
+        return new Beagle(dimension);
     }
 
     /**

@@ -58,7 +58,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BeagleIndexUser implements IndexUser {
 
-
     /**
      * The default index vector size, used when one is not specified.
      */
