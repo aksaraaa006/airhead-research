@@ -48,7 +48,7 @@ import edu.ucla.sspace.util.WorkerThread;
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -481,7 +481,8 @@ public class PurandareFirstOrder implements SemanticSpace {
             new BufferedInputStream(new FileInputStream(compressedDocuments)));
 
         int documents = documentCounter.get();
-        Matrix contexts = new GrowingSparseMatrix();
+        Matrix contexts = 
+            new GrowingSparseMatrix(termToIndex.size(), termToIndex.size());
         int contextsSeen = 0;
         for (int d = 0; d < documents; ++d) {
             final int docId = d;
@@ -542,7 +543,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             if (assignment < 0) 
                 continue;
             clusterSize[assignment]++;
-            Vectors.add(meanSenseVectors[assignment], contextVector);
+            VectorMath.add(meanSenseVectors[assignment], contextVector);
         }
         
         // For each of the clusters with more than 2% of the contexts, generage

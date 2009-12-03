@@ -32,6 +32,7 @@ import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import edu.ucla.sspace.text.IteratorFactory;
@@ -198,7 +199,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
                                                        entry.getValue());
             if (termVector == null)
                 continue;
-            Vectors.add(documentVector, termVector);
+            VectorMath.add(documentVector, termVector);
         }
 
         return documentVector;
@@ -290,7 +291,7 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     public Vector getVector(String word) {
         Integer index = termToIndex.get(word);
         if (index != null)
-            return Vectors.immutableVector(
+            return Vectors.immutable(
                     termWikiMatrix.getRowVector(index.intValue()));
         return null;
     }

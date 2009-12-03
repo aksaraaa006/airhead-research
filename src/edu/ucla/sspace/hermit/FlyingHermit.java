@@ -28,6 +28,7 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
@@ -149,7 +150,7 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public Vector getVector(String term) {
-        return Vectors.immutableVector(splitSenses.get(term));
+        return Vectors.immutable(splitSenses.get(term));
     }
 
     /**
@@ -245,7 +246,7 @@ public class FlyingHermit implements SemanticSpace {
                 // Add the current term vector if the similarity is high enough,
                 // or set it as a new centroid.
                 if (similarity > clusterThreshold)
-                    Vectors.add(bestMatch, entry.getValue());
+                    VectorMath.add(bestMatch, entry.getValue());
                 else
                     termSenses.add(entry.getValue());
             }

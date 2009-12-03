@@ -91,7 +91,10 @@ public interface Matrix {
     double[] getColumn(int column);
 
     /**
-     * Returns the entire column.
+     * Returns the column as a vector.  Whether updates to the vector are
+     * written through to the backing matrix is left open to the specific
+     * implementation.  Implementations that maintain their data in a sparse
+     * format are encouraged to return a {@link SparseVector} instance.
      *
      * @param column The column to return a {@code Vector} for.
      *
@@ -109,8 +112,10 @@ public interface Matrix {
     double[] getRow(int row);
 
     /**
-     * Return a {@code Vector} for an entire row.  Implementations should return
-     * an approriately typed Vector.
+     * Return a {@code Vector} for an entire row.  Whether updates to the vector
+     * are written through to the backing matrix is left open to the specific
+     * implementation.  Implementations that maintain their data in a sparse
+     * format are encouraged to return a {@link SparseVector} instance.
      *
      * @param row The row to return a {@code Vector} for.
      *

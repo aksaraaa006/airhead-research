@@ -25,6 +25,7 @@ import edu.ucla.sspace.common.IndexBuilder;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import jnt.FFT.RealDoubleFFT_Radix2;
@@ -389,7 +390,7 @@ public class BeagleIndexBuilder implements IndexBuilder {
      * @param right The source vector for addition.
      */
     private void plusEquals(Vector left, Vector right) {
-        Vectors.add(left, right);
+        VectorMath.add(left, right);
     }
 
     /**

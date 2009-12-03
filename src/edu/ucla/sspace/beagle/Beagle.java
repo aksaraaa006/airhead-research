@@ -28,6 +28,7 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
@@ -124,7 +125,7 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public Vector getVector(String term) {
-        return Vectors.immutableVector(termHolographs.get(term));
+        return Vectors.immutable(termHolographs.get(term));
     }
 
     /**
@@ -190,7 +191,7 @@ public class Beagle implements SemanticSpace {
                 if (existingVector == null)
                     termHolographs.put(entry.getKey(), entry.getValue());
                 else
-                    Vectors.add(existingVector, entry.getValue());
+                    VectorMath.add(existingVector, entry.getValue());
             }
         }
     }
