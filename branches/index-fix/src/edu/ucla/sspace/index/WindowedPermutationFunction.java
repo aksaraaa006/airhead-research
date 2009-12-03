@@ -27,6 +27,10 @@ import java.util.Properties;
 
 
 /**
+ * A permutation function that provides windows of positions which are permuted
+ * using the same function.  For instance, with a window size of 2, words 1 and
+ * 2 positions away will be permuted once, words 3 and 4 positions away will be
+ * permuted twice, etc.
  */
 public class WindowedPermutationFunction implements PermutationFunction {
 
@@ -37,18 +41,33 @@ public class WindowedPermutationFunction implements PermutationFunction {
         "edu.ucla.sspace.index.WindowedPermutationFunction";
 
     /**
+     * The property to set the window size.
      */
     public static final String WINDOW_LIMIT_PROPERTY =
         PROPERTY_PREFIX + ".window";
 
+    /**
+     * The backing permutation function to use.
+     */
     private final PermutationFunction function;
 
+    /**
+     * The window size for permutations.
+     */
     private final int windowSize;
 
+    /**
+     * Creates a {@code WindowedPermutationFunction} using the default system
+     * {@code Properties}.
+     */
     public WindowedPermutationFunction() {
         this(System.getProperties());
     }
 
+    /**
+     * Creates a {@code WindowedPermutationFunction} using a passed in {@code
+     * Properties}.
+     */
     public WindowedPermutationFunction(Properties props) {
         function = new DefaultPermutationFunction();
         windowSize =
@@ -60,5 +79,16 @@ public class WindowedPermutationFunction implements PermutationFunction {
      */
     public IndexVector permute(IndexVector v, int numPermutations) {
         return function.permute(v, numPermutations/windowSize);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setupPermutations(int vectorLength,
+                                  int numPositivePermutations,
+                                  int numNegativePermutations) {
+        function.setupPermutations(vectorLength,
+                                   numPositivePermutations/windowSize,
+                                   numNegativePermutations/windowSize);
     }
 }

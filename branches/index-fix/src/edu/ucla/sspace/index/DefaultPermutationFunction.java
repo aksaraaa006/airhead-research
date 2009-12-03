@@ -25,8 +25,7 @@ import edu.ucla.sspace.vector.IndexVector;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 
 /**
@@ -39,119 +38,112 @@ import java.util.Map;
  */
 public class DefaultPermutationFunction implements PermutationFunction {
 
-    private final Map<Integer,Function> permutationToReordering;
+    /**
+     * The array of permutation functions which can be applied to an {@code
+     * IndexVector}.
+     */
+    private Function[] permutationToOrdering;
+
+    /**
+     * The length of the {@code IndexVectors} permutable by this instance.
+     */
+    private int indexVectorLength;
     
     public DefaultPermutationFunction() {
-        permutationToReordering = new HashMap<Integer,Function>();
     }
 
     /**
-     * Returns the bijective mapping for each integer in the form of an array
-     * based on the the current exponent of the permutation.
-     *
-     * @param exponent the exponent for the current permutation 
-     * @param dimensions the number of dimenensions in the index vector being
-     *        permuted
-     *
-     * @return the mapping for each index to its new index
+     * {@inheritDoc}
      */
-    private Function getFunction(int exponent, int dimensions) {
+    public void setupPermutations(int vectorLength,
+                                  int numPositivePermutations, 
+                                  int numNegativePermutations) {
+        indexVectorLength = vectorLength;
+        int largestExponent = Math.max(numPositivePermutations,
+                                       Math.abs(numNegativePermutations));
+        permutationToOrdering = new Function[largestExponent];
+        prepareFunctions(largestExponent);
+    }
 
-        // Base case: we keep the same ordering.  Create this function on the
-        // fly to save space, since the base case should rarely get called.
-        if (exponent == 0) {
-            int[] func = new int[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
-                func[i] = i;
-            }
-            return new Function(func, func);
-        }
+    /**
+     * Define each of the required permutations required by this {@code
+     * PermutationFunction}. 
+     *
+     * @param exponent The largest absolute value of an expected permutation.
+     */
+    private void prepareFunctions(int exponent) {
+        // Create the initial no-op permutation.
+        int[] func = new int[indexVectorLength];
+        for (int i = 0; i < indexVectorLength; ++i)
+            func[i] = i;
+        Function priorFunc = new Function(func, func);
 
-        exponent = Math.abs(exponent);
-
-        Function function = permutationToReordering.get(exponent);
-        
-        // If there wasn't a funcion for that exponent then created one by
-        // permuting the lower exponents value.  Use recursion to access the
-        // lower exponents value to ensure that any non-existent lower-exponent
-        // functions are created along the way.
-        if (function == null) {
-
-            // lookup the prior function
-            int priorExponent = exponent - 1;
-            Function priorFunc = getFunction(priorExponent, dimensions);
-            
-            // convert to an object based array to use Collections.shuffle()
-            Integer[] objFunc = new Integer[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
+        for (int j = 0; j < exponent; ++j) {
+            // Convert to an Integer Array to use Collections.shuffle()
+            Integer[] objFunc = new Integer[indexVectorLength];
+            for (int i = 0; i < indexVectorLength; ++i) {
                 objFunc[i] = Integer.valueOf(priorFunc.forward[i]);
             }
 
-            // then shuffle it to get a new permutation
-            java.util.List<Integer> list = Arrays.asList(objFunc);
+            // Shuffle to get a new permutation.
+            List<Integer> list = Arrays.asList(objFunc);
             Collections.shuffle(list, RandomIndexGenerator.RANDOM);
             
-            // convert back to a primitive array
-            int[] forwardMapping = new int[dimensions];
-            int[] backwardMapping = new int[dimensions];
-            for (int i = 0; i < dimensions; ++i) {
+            // Convert the List to a primitive array.
+            int[] forwardMapping = new int[indexVectorLength];
+            int[] backwardMapping = new int[indexVectorLength];
+            for (int i = 0; i < indexVectorLength; ++i) {
                 forwardMapping[i] = objFunc[i].intValue();
                 backwardMapping[objFunc[i].intValue()] = i;
             }            
-            function = new Function(forwardMapping, backwardMapping);
 
-            // store it in the function map for later usee
-            permutationToReordering.put(exponent, function);
+            // Store the ordering generated.
+            permutationToOrdering[j] =
+                new Function(forwardMapping, backwardMapping);
+            priorFunc = permutationToOrdering[j];
         }
-
-        return function;
     }
 
     /**
      * {@inheritDoc}
      */
     public IndexVector permute(IndexVector v , int numPermutations) {
-        
+        if (numPermutations == 0)
+            return new IndexVector(v.length(),
+                                   v.positiveDimensions(),
+                                   v.negativeDimensions());
+
         int length = v.length();
 
         int[] oldPos = v.positiveDimensions();
         int[] oldNeg = v.negativeDimensions();
 
-        // create new arrays to hold the permuted locations of the vectors's
+        // Create new arrays to hold the permuted locations of the vectors's
         // positive and negative values.
-        //
-        // NB: we use a copy here to ensure that the function works for the 0
-        // permutation (i.e. effectively a no-op);
-        int[] positive = Arrays.copyOf(oldPos, oldPos.length);
-        int[] negative = Arrays.copyOf(oldNeg, oldNeg.length);
+        int[] positive = oldPos;
+        int[] negative = oldNeg;
 
         boolean isInverse = numPermutations < 0;
         
-        // NB: because we use the signum and !=, this loop will work for both
-        // positive and negative numbers of permutations
         int totalPermutations = Math.abs(numPermutations);
 
-        for (int count = 1; count <= totalPermutations; ++count) {            
+        for (int count = 0; count < totalPermutations; ++count) {            
+            // load the reordering function for this iteration of the
+            // permutation
+            Function function = permutationToOrdering[count];
 
-            // load the reordering funcion for this iteration of the permutation
-            Function function = getFunction(count, length);
-
-            // based on whether this is an inverse permutation, select whether
-            // to use the forward or backwards mapping.
+            // Select the inverse mapping if this an inverted permutation.
             int[] reordering = (isInverse) 
                 ? function.backward : function.forward;
             
-            // create a copy of the previous permuted values for positive and
-            // negative.  We need this array because the permutation cannot be
-            // done in place
+            // Create a copy of the previous permuted values for positive and
+            // negative since permutations cannot be done in place.
             oldPos = Arrays.copyOf(positive, positive.length);
             oldNeg = Arrays.copyOf(negative, negative.length);
             
-            // The reordering array specifies for index i the positive of i in
-            // the permuted array.  Since the positive and negative indices are
-            // the only non-zero indicies, we can simply create new arrays for
-            // them of the same length and then set their new positions based on
-            // the values in the reordering array.
+            // Re-order the positive and negative indexVectorLength, since an
+            // IndexVector specifies all non-zero dimensions to be
+            // positive or negative.
             for (int i = 0; i < oldPos.length; ++i) {
                 positive[i] = reordering[oldPos[i]];
             }
@@ -176,6 +168,10 @@ public class DefaultPermutationFunction implements PermutationFunction {
      */
     private static class Function {
 
+        /** 
+         * The reordering arrays specify the new position for each index in a
+         * {@code Vector}.
+         */
         private final int[] forward;
         private final int[] backward;
 
@@ -183,7 +179,5 @@ public class DefaultPermutationFunction implements PermutationFunction {
             this.forward = forward;
             this.backward = backward;
         }
-
     }
-
 }

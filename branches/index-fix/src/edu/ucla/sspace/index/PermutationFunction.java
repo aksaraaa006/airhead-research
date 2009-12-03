@@ -25,9 +25,8 @@ import edu.ucla.sspace.vector.IndexVector;
 
 
 /**
- * An invertible permutation function.
- *
- * @see RandomIndexing
+ * An interface for functions that permute the ordering of {@code IndexVector}s.
+ * Implementations are expected to be thread safe when performing permutations.
  */
 public interface PermutationFunction {
 
@@ -36,9 +35,24 @@ public interface PermutationFunction {
      *
      * @param v an index vector to permute
      * @param numPermutations the number of times the permutation function
-     *        should be applied to the provided index vector.
+     *                        should be applied to the provided index vector.
      *
      * @return the original index vector permuted the specified number of times
      */
     IndexVector permute(IndexVector v, int numPermutations);
+
+    /**
+     * Initializes the {@code PermutationFunction} to generate all required
+     * functions for positive and negative positions expected.
+     *
+     * @param numPositivePermutations The maximum {code numPermutationvalue}
+     *                                value that can be passed to
+     *                                {@code permute}.
+     * @param numNegativePermutations The minimum {code numPermutationvalue}
+     *                                value that can be passed to
+     *                                {@code permute}.
+     */
+    void setupPermutations(int vectorLenght,
+                           int numPositivePermutations,
+                           int numNegativePermutations);
 }
