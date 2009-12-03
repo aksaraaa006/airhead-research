@@ -466,7 +466,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
         SemanticVector v = wordToMeaning.get(word);
         return (v == null) 
             ? null
-            : Vectors.immutableVector(v);
+            : Vectors.immutable(v);
     }
 
     /**

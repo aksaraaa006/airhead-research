@@ -23,11 +23,9 @@ package edu.ucla.sspace.vector;
 
 
 /**
- * An immutable decorator for an existing {@code Vector} which provides padding
- * before and after the actual values in a decorated {@code Vector}.  This class
- * allows a {@code SemanticSpace} or a {@code Matrix} to return a {@code Vector}
- * stored internally that has a fixed size without allowing other classes the
- * ability to alter the {@code Vector}.  If the decorated {@code Vector} is
+ * An immutable decorator on a {@link Vector} that provides facility for
+ * shifting, shortening or extending the contents of the original vector as
+ * viewed through the decorated instance.  If the decorated {@code Vector} is
  * stored at some offset, any index less than that offset will be given a value
  * of 0, and any value after the full length of the {@code Vector} will be also
  * given a value of 0.
@@ -39,6 +37,8 @@ package edu.ucla.sspace.vector;
  * cannot make modififications.
  *
  * @author Keith Stevens
+ *
+ * @see Vectors
  */
 class ViewVector implements Vector {
 
@@ -84,7 +84,7 @@ class ViewVector implements Vector {
     }
 
     /**
-     * Method not implemented.
+     * Throws {@link UnsupportedOperationException} if called.
      */
     public double add(int index, double delta) {
         throw new UnsupportedOperationException("add is not supported in an " +
@@ -92,7 +92,7 @@ class ViewVector implements Vector {
     }
 
     /**
-     * Method not implemented.
+     * Throws {@link UnsupportedOperationException} if called.
      */
     public void set(int index, double value) {
         throw new UnsupportedOperationException("set is not supported in an " +
@@ -100,7 +100,7 @@ class ViewVector implements Vector {
     }
 
     /**
-     * Method not implemented.
+     * Throws {@link UnsupportedOperationException} if called.
      */
     public void set(double[] values) {
         throw new UnsupportedOperationException("set is not supported in an " +

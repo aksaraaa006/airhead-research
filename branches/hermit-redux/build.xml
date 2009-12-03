@@ -288,7 +288,6 @@
       <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.evaluation.WordSimilarityEvalTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
