@@ -112,7 +112,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getRowVector(int row) {
-        return Vectors.immutableVector(sparseMatrix[row]);
+        return Vectors.immutable(sparseMatrix[row]);
     }
 
     /**
@@ -175,9 +175,7 @@ public class SparseMatrix implements Matrix {
             throw new IllegalArgumentException(
                 "invalid number of columns: " + values.length());
         }
-        for (int col = 0; col < cols; ++col) {
-            sparseMatrix[row].set(col, values.get(col)); 
-        }
+        Vectors.copy(sparseMatrix[row], values);
     }
 
     /**

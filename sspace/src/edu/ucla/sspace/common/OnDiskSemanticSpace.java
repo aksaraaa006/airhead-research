@@ -26,8 +26,8 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 
-import edu.ucla.sspace.vector.SparseHashVector;
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.SparseHashVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -354,7 +354,7 @@ public class OnDiskSemanticSpace implements SemanticSpace {
             
         String[] termVectorPair = line.split("\\|");
         String[] values = termVectorPair[1].split(",");
-        
+
         // even indicies are columns, odd are the values
         for (int i = 0; i < values.length; i +=2 ) {
             int col = Integer.parseInt(values[i]);
@@ -406,7 +406,6 @@ public class OnDiskSemanticSpace implements SemanticSpace {
             return null;
 
         binarySSpace.seek(byteOffset);
-
         Vector vector = new DenseVector(dimensions);
         
         for (int col = 0; col < dimensions; ++col) {

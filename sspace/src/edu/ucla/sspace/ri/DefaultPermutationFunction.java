@@ -68,37 +68,45 @@ public class DefaultPermutationFunction implements PermutationFunction {
 
 	Function function = permutationToReordering.get(exponent);
 	
-	// If there wasn't a funcion for that exponent then created one by
+	// If there wasn't a function for that exponent then created one by
 	// permuting the lower exponents value.  Use recursion to access the
 	// lower exponents value to ensure that any non-existent lower-exponent
 	// functions are created along the way.
-	if (function == null) {
+	while (function == null) {
+            synchronized (this) {
+                // Recheck whether some other thread has already created the
+                // permutation for this exponent while the current thread was
+                // blocked.  If so, break.
+                function = permutationToReordering.get(exponent);
+                if (function != null)
+                    break;
+                
+                // lookup the prior function
+                int priorExponent = exponent - 1;
+                Function priorFunc = getFunction(priorExponent, dimensions);
+            
+                // convert to an object based array to use Collections.shuffle()
+                Integer[] objFunc = new Integer[dimensions];
+                for (int i = 0; i < dimensions; ++i) {
+                    objFunc[i] = Integer.valueOf(priorFunc.forward[i]);
+                }
 
-	    // lookup the prior function
-	    int priorExponent = exponent - 1;
-	    Function priorFunc = getFunction(priorExponent, dimensions);
+                // then shuffle it to get a new permutation
+                java.util.List<Integer> list = Arrays.asList(objFunc);
+                Collections.shuffle(list, RandomIndexing.RANDOM);
 	    
-	    // convert to an object based array to use Collections.shuffle()
-	    Integer[] objFunc = new Integer[dimensions];
-	    for (int i = 0; i < dimensions; ++i) {
-		objFunc[i] = Integer.valueOf(priorFunc.forward[i]);
-	    }
+                // convert back to a primitive array
+                int[] forwardMapping = new int[dimensions];
+                int[] backwardMapping = new int[dimensions];
+                for (int i = 0; i < dimensions; ++i) {
+                    forwardMapping[i] = objFunc[i].intValue();
+                    backwardMapping[objFunc[i].intValue()] = i;
+                }	    
+                function = new Function(forwardMapping, backwardMapping);
 
-	    // then shuffle it to get a new permutation
-	    java.util.List<Integer> list = Arrays.asList(objFunc);
-	    Collections.shuffle(list, RandomIndexing.RANDOM);
-	    
-	    // convert back to a primitive array
-	    int[] forwardMapping = new int[dimensions];
-	    int[] backwardMapping = new int[dimensions];
-	    for (int i = 0; i < dimensions; ++i) {
-		forwardMapping[i] = objFunc[i].intValue();
-		backwardMapping[objFunc[i].intValue()] = i;
-	    }	    
-	    function = new Function(forwardMapping, backwardMapping);
-
-	    // store it in the function map for later usee
-	    permutationToReordering.put(exponent, function);
+                // store it in the function map for later usee
+                permutationToReordering.put(exponent, function);
+            }
 	}
 
 	return function;

@@ -25,7 +25,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedReader;
 
@@ -128,8 +128,8 @@ public class DocumentVectorBuilder {
             Vector termVector = sspace.getVector(entry.getKey());
             if (termVector == null)
                 continue;
-            Vectors.add(documentVector,
-                        new ScaledVector(termVector, entry.getValue()));
+            VectorMath.add(documentVector,
+                           new ScaledVector(termVector, entry.getValue()));
         }
 
         return documentVector;

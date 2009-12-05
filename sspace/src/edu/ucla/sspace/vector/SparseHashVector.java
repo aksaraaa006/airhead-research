@@ -23,6 +23,8 @@ package edu.ucla.sspace.vector;
 
 import edu.ucla.sspace.util.SparseHashArray;
 
+import java.io.Serializable;
+
 
 /**
  * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
@@ -34,7 +36,9 @@ import edu.ucla.sspace.util.SparseHashArray;
  *
  * @author David Jurgens
  */
-public class SparseHashVector implements Vector, SparseVector {
+public class SparseHashVector implements SparseVector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The backing array that holds the vector values

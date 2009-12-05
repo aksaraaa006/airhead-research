@@ -29,6 +29,7 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import edu.ucla.sspace.text.IteratorFactory;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -239,8 +241,9 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     public Vector getVector(String word) {
         Integer index = termToIndex.get(word);
         if (index != null)
-            return Vectors.immutableVector(
+            return Vectors.immutable(
                     termWikiMatrix.getRowVector(index.intValue()));
+
         return null;
     }
 

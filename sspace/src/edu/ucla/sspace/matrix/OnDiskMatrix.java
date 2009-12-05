@@ -24,6 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.SparseVector;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,6 +34,11 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+
+import java.nio.DoubleBuffer;
+
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 
 
 /**
@@ -51,19 +57,18 @@ import java.io.RandomAccessFile;
 public class OnDiskMatrix implements Matrix {
     
     /**
-     * The size of two ints that denote the number of rows and columns
-     */
-    private static final int HEADER_LENGTH = 8;
-
-    /**
      * The number of bytes in a double.
      */
     private static final int BYTES_PER_DOUBLE = 8;
 
+    private static final int MAX_ELEMENTS_PER_REGION = 
+        Integer.MAX_VALUE / BYTES_PER_DOUBLE;
+
     /**
      * The on-disk storage space for the matrix
      */
-    private final RandomAccessFile matrix; 
+    //private final RandomAccessFile matrix; 
+    private final DoubleBuffer[] matrixRegions;
 
     /**
      * The number of rows stored in this {@code Matrix}.
@@ -81,42 +86,46 @@ public class OnDiskMatrix implements Matrix {
      * @throws IOError if the backing file for this matrix cannot be created
      */
     public OnDiskMatrix(int rows, int cols) {
-        this(rows, cols, createTempFile());
-    }
-    
+
+        if (rows <= 0 || cols <= 0) 
+            throw new IllegalArgumentException("dimensions must be positive");
+        
+        this.rows = rows;
+        this.cols = cols;
+            
+        // Determine how big the array will need to be
+
+        // Note that to map the array into memory, we have to avoid the case
+        // where any mapped part of the array is larger than Integer.MAX_VALUE.
+        // Therefore, divide the array up into regions less than this size.
+        int numRegions = 
+            (int)(((long)rows * cols) / MAX_ELEMENTS_PER_REGION) + 1;
+        matrixRegions = new DoubleBuffer[numRegions];
+        for (int region = 0; region < numRegions; ++region) {
+            int sizeInBytes = (region + 1 == numRegions) 
+                ? (int)((((long)rows * cols) 
+                         % MAX_ELEMENTS_PER_REGION) * BYTES_PER_DOUBLE)
+                : MAX_ELEMENTS_PER_REGION * BYTES_PER_DOUBLE;
+            matrixRegions[region] = createTempBuffer(sizeInBytes);
+        }
+     }
+
     /**
      *
-     *
-     * @throws IOError if the backing file for this matrix cannot be created
+     * @param size the size of the buffer in bytes
      */
-    OnDiskMatrix(int rows, int cols, RandomAccessFile raf) {
-        if (rows <= 0 || cols <= 0) {
-            throw new IllegalArgumentException("dimensions must be positive");
-        }
+    private static DoubleBuffer createTempBuffer(int size) {
         try {
-            this.matrix = raf;
-            this.rows = rows;
-            this.cols = cols;
-            
-            // initialize the matrix in memory;
-            long length =
-                (HEADER_LENGTH + ((long)rows * (long)cols * BYTES_PER_DOUBLE));
-            matrix.setLength(length);
-            matrix.seek(0);
-            matrix.writeInt(rows);
-            matrix.writeInt(cols);
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-    }
-
-    private static RandomAccessFile createTempFile() {
-        try {
-            File f = File.createTempFile("OnDiskMatrix","matrix");
+            File f = File.createTempFile("OnDiskMatrix",".matrix");
             // Make sure the temp file goes away since it can get fairly large
             // for big matrices
             f.deleteOnExit();
-            return new RandomAccessFile(f, "rw");
+            RandomAccessFile raf = new RandomAccessFile(f, "rw");
+            FileChannel fc = raf.getChannel();
+            DoubleBuffer contextBuffer = 
+                fc.map(MapMode.READ_WRITE, 0, size).asDoubleBuffer();
+            fc.close();
+            return contextBuffer;
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
@@ -132,17 +141,14 @@ public class OnDiskMatrix implements Matrix {
         else if (col < 0 || col >= cols)
             throw new ArrayIndexOutOfBoundsException("column: " + col);
     }
-
+    
     /**
      * {@inheritDoc}
      */
     public double get(int row, int col) {
-        try {
-            seek(row, col);
-            return matrix.readDouble();
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+        int region = getMatrixRegion(row, col);
+        int regionOffset = getRegionOffset(row, col);
+        return matrixRegions[region].get(regionOffset);
     }
 
     /**
@@ -166,24 +172,29 @@ public class OnDiskMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        try {
-            double[] rowArr = new double[cols];
-            byte[] rawBytes = new byte[cols * BYTES_PER_DOUBLE];
-            seek(row, 0);
-            // read the entire row in at once, as this will have better I/O
-            // performance than multiple successive reads
-            matrix.readFully(rawBytes, 0, rawBytes.length);
-            
-            // convert the bytes into an input stream
-            DataInputStream dis = 
-            new DataInputStream(new ByteArrayInputStream(rawBytes));
-            for (int i = 0; i < cols; ++i) {
-            rowArr[i] = dis.readDouble();
+        int rowStartRegion = getMatrixRegion(row, 0);
+        int rowEndRegion = getMatrixRegion(row + 1, 0);
+        double[] rowVal = new double[cols];
+        if (rowStartRegion == rowEndRegion) {
+            int rowStartIndex = getRegionOffset(row, 0);
+            DoubleBuffer region = matrixRegions[rowStartRegion];
+            for (int col = 0; col < cols; ++col)
+                rowVal[col] = region.get(col + rowStartIndex);
         }
-            return rowArr;
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
+        else {
+            DoubleBuffer firstRegion = matrixRegions[rowStartRegion];
+            DoubleBuffer secondRegion = matrixRegions[rowEndRegion];
+            int rowStartIndex = getRegionOffset(row, 0);
+            int rowOffset = 0;
+            for (; rowStartIndex + rowOffset < MAX_ELEMENTS_PER_REGION; 
+                     ++rowOffset) {
+                rowVal[rowOffset] = firstRegion.get(rowOffset + rowStartIndex);
+            }
+            // Fill from the second region
+            for (int i = 0; rowOffset < rowVal.length; ++i, ++rowOffset)
+                rowVal[rowOffset] = secondRegion.get(i);
         }
+        return rowVal;
     }
 
     /**
@@ -200,34 +211,23 @@ public class OnDiskMatrix implements Matrix {
         return cols;
     }
 
-    /**
-     * Moves the backing file pointer to the location specified by this row and
-     * column.  The next {@code readDouble} call will return this location's
-     * value.
-     */
-    private void seek(long row, long col) {
-        try {
-            long index = (row * cols * BYTES_PER_DOUBLE)
-                         + (col * BYTES_PER_DOUBLE) 
-                         + HEADER_LENGTH;
-            if (index != matrix.getFilePointer())
-                matrix.seek(index);
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+    private int getMatrixRegion(long row, long col) {
+        long element = row * cols + col;
+        return (int)(element / MAX_ELEMENTS_PER_REGION);
+    }
+
+    private int getRegionOffset(long row, long col) {
+        long element = row * cols + col;
+        return (int)(element % MAX_ELEMENTS_PER_REGION);
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int row, int col, double val) {
-        try {
-            checkIndices(row, col);
-            seek(row, col);        
-            matrix.writeDouble(val);
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+        int region = getMatrixRegion(row, col);
+        int regionOffset = getRegionOffset(row, col);
+        matrixRegions[region].put(regionOffset, val);
     }
     
     /**
@@ -249,73 +249,46 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setRow(int row, double[] val) {
-        if (val.length != cols)
+    public void setRow(int row, double[] vals) {
+        if (vals.length != cols)
             throw new IllegalArgumentException(
                 "The number of values does not match the number of columns");
-
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(baos);
-
-            for (int i = 0; i < val.length; ++i)
-                dos.writeDouble(val[i]);
-            setRow(row, baos.toByteArray());
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+        for (int i = 0; i < vals.length; ++i)
+            set(row, i, vals[i]);
     }
 
     /**
      * {@inheritDoc}
      */
     public void setRow(int row, Vector values) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(baos);
-
-            for (int i = 0; i < values.length(); ++i)
-                dos.writeDouble(values.get(i));
-            setRow(row, baos.toByteArray());
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
-    }
-
-    /**
-     * Interpret the bytes stored in {@code valuesAsBytes} and store them as the
-     * values for {@code row}.
-     *
-     * @param row The row to set values.
-     * @param valuesAsBytes The values of {@code row} as a byte array.
-     */
-    public void setRow(int row, byte[] valuesAsBytes) {
-        if (valuesAsBytes.length != cols * BYTES_PER_DOUBLE)
+        if (values.length() != cols)
             throw new IllegalArgumentException(
                 "The number of values does not match the number of columns");
-	try {
-	    seek(row, 0);
-	    matrix.write(valuesAsBytes, 0, valuesAsBytes.length);
-	} catch (IOException ioe) {
-	    throw new IOError(ioe); // rethrow unchecked
-	}
+
+        if (values instanceof SparseVector) {
+            SparseVector sv = (SparseVector)values;
+            for (int i : sv.getNonZeroIndices())
+                set(row, i, values.get(i));
+        }
+        else {
+            for (int i = 0; i < values.length(); ++i)
+                set(row, i, values.get(i));
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-        try {
-            matrix.seek(0);
-            double[][] m = new double[rows][cols];
-            for (int row = 0; row < rows; ++row) {
-                for (int col = 0; col < cols; ++col)
-                    m[row][col] = matrix.readDouble();
-            }
-            return m;
-        } catch (IOException ioe) {
-            throw new IOError(ioe); // rethrow unchecked
-        }
+        if (matrixRegions.length > 1)
+            throw new UnsupportedOperationException(
+                "matrix is too large to fit into memory");
+        double[][] m = new double[rows][cols];
+        DoubleBuffer b = matrixRegions[0];
+        b.rewind();
+        for (int row = 0; row < rows; ++row) 
+            b.get(m[row]);
+        return m;
     }
 
     /**
