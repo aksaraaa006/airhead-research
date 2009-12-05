@@ -207,7 +207,7 @@ public class HierarchicalAgglomerativeClustering {
 
         LOGGER.info("Assigning clusters");
 
-        // Use a keep track of which ID is available for the new, merged cluster
+        // Keep track of which ID is available for the new, merged cluster
         int nextClusterId = rows;
 
         // While we still have more clusters than the maximum number loop.  Note
@@ -314,11 +314,9 @@ public class HierarchicalAgglomerativeClustering {
      * For the current cluster, finds the most similar cluster using the
      * provided linkage method and returns the pairing for it.
      */
-    private static Pairing findMostSimilar(Map<Integer,Set<Integer>> 
-                                           curAssignment,
-                                           int curCluster, 
-                                           ClusterLinkage linkage,
-                                           Matrix similarityMatrix) {
+    private static Pairing findMostSimilar(
+            Map<Integer,Set<Integer>> curAssignment, int curCluster, 
+            ClusterLinkage linkage,  Matrix similarityMatrix) {
         // Start with with the most similar being set to the newly merged
         // cluster, as this value has already been computed
         double mostSimilar = -1;
@@ -338,10 +336,15 @@ public class HierarchicalAgglomerativeClustering {
     }
 
     /**
+     * Returns the final mapping of data points as an array where each row is
+     * assigned to a single cluster value from 0 to <i>n</u>, the number of
+     * clusters.
      *
      * @param assignment a mapping from cluster number to the data points (rows)
      *        that are contained in it
      * @param p the number of initial data points
+     *
+     * @return the cluster assignment
      */
     private static int[] toAssignArray(Map<Integer,Set<Integer>> assignment, 
                                        int numDataPoints) {
@@ -384,7 +387,8 @@ public class HierarchicalAgglomerativeClustering {
     }
 
     /**
-     *
+     * Computes and returns the similarity matrix for {@code m} using the
+     * specified similarity function
      */
     private static Matrix computeSimilarityMatrix(Matrix m, 
                                                   SimType similarityFunction) {
