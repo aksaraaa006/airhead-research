@@ -241,19 +241,8 @@ public class GrowingSparseMatrix implements Matrix {
             rowVec = new CompactSparseVector();
             rowToColumns.put(row, rowVec);
         }
-
-        if (columns instanceof SparseVector) {
-            SparseVector sv = (SparseVector)columns;
-            int[] nz = sv.getNonZeroIndices();
-            for (int i : nz)
-                rowVec.set(i, sv.get(i));
-        }
-        else {
-            for (int col = 0; col < cols; ++col) {
-                double val = columns.get(col);
-                rowVec.set(col, val);
-            }
-        }
+     
+        Vectors.copy(rowVec, columns);
     }
 
     /**

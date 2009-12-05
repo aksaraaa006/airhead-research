@@ -33,7 +33,6 @@ import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
-import edu.ucla.sspace.matrix.RowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
@@ -482,7 +481,7 @@ public class PurandareFirstOrder implements SemanticSpace {
 
         int documents = documentCounter.get();
         Matrix contexts = 
-            new GrowingSparseMatrix(termToIndex.size(), termToIndex.size());
+            new SparseMatrix(termToIndex.size(), termToIndex.size());
         int contextsSeen = 0;
         for (int d = 0; d < documents; ++d) {
             final int docId = d;
@@ -523,7 +522,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         // bother clustering it.  This is done to reduce the computation time,
         // and to avoid clustering non-meaningful terms such as '.' or '''
         int[] clusterAssignment = (term.matches("[a-zA-z]+") && numClusters > 6)
-            ? ClutoClustering.partitionRows(contexts, numClusters)
+            ? ClutoClustering.agglomerativeCluster(contexts, numClusters)
             : new int[contexts.rows()];
         
         LOGGER.info("Generative sense vectors for " + term);

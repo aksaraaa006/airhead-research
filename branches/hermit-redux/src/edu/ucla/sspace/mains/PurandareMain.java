@@ -32,72 +32,12 @@ import java.io.IOException;
 
 import java.util.Properties;
 
+
 /**
  * An executable class for running {@link PurandareFirstOrder} from the command
- * line.  This class takes in several command line arguments.
- *
- * <ul>
- *
- * <li><u>Required (at least one of)</u>:
- *   <ul>
- *
- *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]} a file where each line is
- *        a document.  This is the preferred input format for large corpora
- *
- *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a list of document files
- *        where each file is specified on its own line.
- *
- *   </ul>
- * 
- * <li><u>Algorithm Options</u>:
- *   <ul>
- *
- *   <li> {@code -F}, {@code --tokenFilter=FILE[include|exclude][,FILE...]}
- *        specifies a list of one or more files to use for {@link
- *        edu.ucla.sspace.text.TokenFilter filtering} the documents.  An option
- *        flag may be added to each file to specify how the words in the filter
- *        filter should be used: {@code include} if only the words in the filter
- *        file should be retained in the document; {@code exclude} if only the
- *        words <i>not</i> in the filter file should be retained in the
- *        document.
- *
- *   </ul>
- *
- * <li><u>Program Options</u>:
- *   <ul>
- *
- *   <li> {@code -o}, {@code
- *        --outputFormat=}<tt>text|binary|sparse_text|sparse_binary</tt>
- *        Specifies the output formatting to use when generating the semantic
- *        space ({@code .sspace}) file.  See {@link
- *        edu.ucla.sspace.common.SemanticSpaceUtils SemanticSpaceUtils} for
- *        format details.
- *
- *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
- *        documents.  The default is one per core.
- * 
- *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
- *        the existing output files.  The default is {@code true}.  If set to
- *        {@code false}, a unique integer is inserted into the file name.
- *
- *   <li> {@code -v}, {@code --verbose}  specifies whether to print runtime
- *        information to standard out
- *
- *   </ul>
- *
- * </ul>
- *
- * <p>
- *
- * An invocation will produce one file as output {@code
- * purandare-petersen.sspace}.  If {@code overwrite} was set to {@code true},
- * this file will be replaced for each new semantic space.  Otherwise, a new
- * output file of the format {@code purandare-petersen<number>.sspace} will be
- * created, where {@code <number>} is a unique identifier for that program's
- * invocation.  The output file will be placed in the directory specified on the
- * command line.
- *
- * <p>
+ * line.  See the Purandare and Petersen <a
+ * href="http://code.google.com/p/airhead-research/wiki/PurandareAndPetersen">wiki
+ * page</a> for details on running this class from the command line. <p>
  *
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.

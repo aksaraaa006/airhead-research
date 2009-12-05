@@ -97,12 +97,20 @@ public class Vectors {
      * @throws IllegalArgumentException if the length of {@code dest} is less
      *                                  than that of {@code source}.
      */
-    public static Vector copy(Vector dest, Vector source) {
+    public static void copy(Vector dest, Vector source) {
         if (dest.length() < source.length())
             throw new IllegalArgumentException("Vector lengths do not match");
 
-        for (int i = 0; i < source.length(); ++i)
-            dest.set(i, source.get(i));
-        return dest;
+        if (source instanceof SparseVector) {
+            SparseVector sv = (SparseVector)source;
+            int[] nz = sv.getNonZeroIndices();
+            for (int i : nz)
+                dest.set(i, sv.get(i));
+        }
+        else {
+            int length = source.length();
+            for (int i = 0; i < length; ++i) 
+                dest.set(i, source.get(i));
+        }
     }
 }

@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.io.IOError;
 import java.io.IOException;
 
 import java.util.logging.Level;
@@ -52,10 +53,10 @@ public class ClutoClustering {
     private ClutoClustering() { }
 
     /**
-     * Partitions the rows into the specified number of clusters using a
-     * hierarchical agglomerative clustering algorithm.  Rows that have no
-     * distinguishing features will not be clustered and instead assigned to a
-     * cluster index of -1.
+     * Clusters the rows of the matrix into the specified number of clusters
+     * using a hierarchical agglomerative clustering algorithm.  Rows that have
+     * no distinguishing features will not be clustered and instead assigned to
+     * a cluster index of -1.
      *
      * @param m a matrix whose rows are to be clustered
      * @param numClusters the number of clusters into which the matrix should
@@ -65,10 +66,36 @@ public class ClutoClustering {
      *         the cluster number to which that row was assigned.  Cluster
      *         numbers will start at 0 and increase.  Rows that were not able to
      *         be clustered will be assigned a -1 value.
+     *
+     * @throws IOError if any {@link IOException} occurs when marshalling data
+     *         to and from Cluto, or during Cluto's execution.
      */
-    public static int[] partitionRows(Matrix m, int numClusters) 
-            throws IOException {
+    public static int[] agglomerativeCluster(Matrix m, int numClusters) {
+        try {
+            return cluster(m, numClusters, "agglo");
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
 
+    /**
+     * Clusters the rows of the matrix into the specified number of clusters
+     * using the string {@code method} to indicate to Cluto which type of
+     * clustering to use.
+     *
+     * @param m a matrix whose rows are to be clustered
+     * @param numClusters the number of clusters into which the matrix should
+     *        divided
+     * @param method a string recognized by Cluto that indicates which
+     *        clustering algorithm should be used
+     *
+     * @return an array where each element corresponds to a row and the value is
+     *         the cluster number to which that row was assigned.  Cluster
+     *         numbers will start at 0 and increase.  Rows that were not able to
+     *         be clustered will be assigned a -1 value.
+     */
+    private static int[] cluster(Matrix m, int numClusters, String method) 
+            throws IOException {
         File matrixFile = File.createTempFile("cluto-input",".matrix");
         matrixFile.deleteOnExit();
         MatrixIO.writeMatrix(m, matrixFile, MatrixIO.Format.CLUTO_SPARSE);
@@ -77,11 +104,11 @@ public class ClutoClustering {
         // NOTE: the defaults for Agglomerative clustering are cosine similarity
         // and using mean-link (UPGMA) clustering, which is what we want.
         String commandLine = "vcluster " +
-            "-clmethod=agglo " +
+            "-clmethod=" + method + " " +
             "-clustfile=" + outputFile  +
             " " + matrixFile +
             " " + numClusters;
-        LOGGER.info("executing: " + commandLine);
+        LOGGER.fine("executing: " + commandLine);
         Process cluto = Runtime.getRuntime().exec(commandLine);
         
         BufferedReader stdout = new BufferedReader(
@@ -89,11 +116,13 @@ public class ClutoClustering {
         BufferedReader stderr = new BufferedReader(
             new InputStreamReader(cluto.getErrorStream()));
         
-        StringBuilder output = new StringBuilder("Cluto output:\n");
-        for (String line = null; (line = stdout.readLine()) != null; ) {
-            output.append(line).append("\n");
+        if (LOGGER.isLoggable(Level.FINE)) {
+            StringBuilder output = new StringBuilder("Cluto output:\n");
+            for (String line = null; (line = stdout.readLine()) != null; ) {
+                output.append(line).append("\n");
+            }
+            LOGGER.fine(output.toString());
         }
-        LOGGER.info(output.toString());
 	    
         int exitStatus = 0;
         try {
