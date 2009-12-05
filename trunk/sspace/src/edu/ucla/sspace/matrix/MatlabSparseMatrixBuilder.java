@@ -64,6 +64,12 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     private final PrintWriter matrixWriter;
 
     /**
+     * Whether the inputted matrix columns should be transposed as rows in the
+     * final matrix data file.
+     */
+    private final boolean transposeData;
+
+    /**
      * Whether the builder has finished adding data to the matrix array
      */
     private boolean isFinished;
@@ -79,18 +85,46 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
      * temporary file.
      */
     public MatlabSparseMatrixBuilder() {
-        this(getTempMatrixFile());
+        this(getTempMatrixFile(), false);
+    }
+
+    /**
+     * Creates a builder for a matrix in the {@link
+     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format to be stored in a
+     * temporary file.
+     *
+     * @param transposeData {@code true} if the input matrix columns should be
+     *        tranposed in the backing matrix file
+     */
+    public MatlabSparseMatrixBuilder(boolean transposeData) {
+        this(getTempMatrixFile(), transposeData);
+    }
+    
+    /**
+     * Creates a builder for a matrix in the {@link
+     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format, which will be stored
+     * in the specified file.
+     *
+     * @param backingFile the file to which the matrix should be written
+     */
+    public MatlabSparseMatrixBuilder(File backingFile) {
+        this(backingFile, false);
     }
 
     /**
      * Creates a builder for a matrix in the {@link
      * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format, which will be stored
      * in the specified file.
+     *
+     * @param backingFile the file to which the matrix should be written
+     * @param transposeData {@code true} if the input matrix columns should be
+     *        tranposed in the backing matrix file
      */
-    public MatlabSparseMatrixBuilder(File backingFile) {
+    public MatlabSparseMatrixBuilder(File backingFile, boolean transposeData) {
         this.matrixFile = backingFile;
+        this.transposeData = transposeData;
         curColumn = 0;
-        isFinished = false;
+        isFinished = false;        
         try {
             matrixWriter = new PrintWriter(matrixFile);
         } catch (IOException ioe) {
@@ -127,8 +161,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
                 //
                 // NOTE: Matlab indices start at 1, not 0, so update all the
                 // row and column values to be Matlab formatted.
-                matrixWriter.println((i + 1) + " " + (curColumn + 1) 
-                                     + " " + column[i]);
+                addEntry(i + 1, curColumn + 1, column[i]);
             }
         }
         return ++curColumn;
@@ -149,8 +182,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
             //
             // NOTE: Matlab indices start at 1, not 0, so update all the row
             // and column values to be Matlab formatted.
-            matrixWriter.println((i + 1) + " " + (curColumn + 1) + " " +
-                                 column.get(i).doubleValue());
+            addEntry(i + 1, curColumn + 1, column.get(i).doubleValue());
         }
         return ++curColumn;
     }
@@ -169,8 +201,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
                 //
                 // NOTE: Matlab indices start at 1, not 0, so update all the
                 // column and column values to be Matlab formatted.
-                matrixWriter.println((i + 1) + " " + (curColumn + 1) +
-                                     " " + s.get(i));
+                addEntry(i + 1, curColumn + 1, s.get(i));
             }
         }
         else {
@@ -179,12 +210,18 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
                 if (d != 0d) {
                     // NOTE: Matlab indices start at 1, not 0, so update all
                     // the row and column values to be Matlab formatted.
-                    matrixWriter.println((i + 1) + " " + (curColumn + 1) +
-                                         " " + d);
+                    addEntry(i + 1, curColumn + 1, d);
                 }
             }
         }
         return ++curColumn;
+    }
+
+    private void addEntry(int row, int col, double value) {
+        if (!transposeData)
+            matrixWriter.println(row + " " + col + " " + value);
+        else
+            matrixWriter.println(col + " " + row + " " + value);
     }
 
     /**

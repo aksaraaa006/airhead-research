@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.util;
 
+import java.io.Serializable;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +45,9 @@ import java.util.Map;
  * @see SparseArray
  * @see IntegerMap
  */
-public class SparseHashArray<T> implements SparseArray<T> {
+public class SparseHashArray<T> implements SparseArray<T>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The maximum length of this array

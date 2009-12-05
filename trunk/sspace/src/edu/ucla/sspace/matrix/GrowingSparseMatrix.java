@@ -22,12 +22,14 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+
+import edu.ucla.sspace.vector.SparseHashVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -35,7 +37,15 @@ import java.util.List;
  * row is allocated a pair of arrays which keeps the non-zero column values in
  * column order.  Lookups are O(log n) where n is the number of non-zero values
  * for the largest row.  Calls to set and setColumn can expand the matrix by
- * both rows and columns.
+ * both rows and columns. <p>
+ *
+ * Calls to {@link #getRowVector(int) getRowVector} and {@link
+ * #getColumnVector(int) getColumnVector} return a snapshot of the matrix data
+ * at the time of the call.  Subsequent updates to the matrix will not be
+ * reflected in these vectors.  The returned vectors are immutable and any calls
+ * to mutating operations will throw an {@code UnsupportedOperationException}.
+ *
+ * This class is not thread-safe.
  *
  * @author Keith Stevens 
  */
@@ -55,15 +65,26 @@ public class GrowingSparseMatrix implements Matrix {
      * Each row is defined as a {@link CompactSparseVector} which does most of
      * the work.
      */
-    private final List<CompactSparseVector> sparseMatrix;
+    private final Map<Integer,CompactSparseVector> rowToColumns;
 
     /**
      * Create a new empty {@code GrowingSparseMatrix}.
      */
     public GrowingSparseMatrix() {
-        this.rows = 0;
-        this.cols = 0;
-        sparseMatrix = new ArrayList<CompactSparseVector>();
+        this(0,0);
+    }
+
+    /**
+     * Create a new empty {@code GrowingSparseMatrix} with the specified
+     * dimensions.
+     *
+     * @param rows the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     */
+    public GrowingSparseMatrix(int rows, int columns) {
+        this.rows = rows;
+        this.cols = columns;
+        rowToColumns = new HashMap<Integer,CompactSparseVector>();
     }
 
     /**
@@ -79,7 +100,8 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public double get(int row, int col) {
         checkIndices(row, col);
-        return sparseMatrix.get(row).get(col);
+        CompactSparseVector sv = rowToColumns.get(row);
+        return (sv == null) ? 0 : sv.get(col);
     }
 
     /**
@@ -93,11 +115,14 @@ public class GrowingSparseMatrix implements Matrix {
     }
 
     /**
-     * {@inheritDoc}
+     * Returns a {@link SparseVector} of the contents of the column.
+     *
+     * @param column {@inheritDoc}
+     * @return {@inheritDoc}
      */
     public Vector getColumnVector(int column) {
-        Vector values = new CompactSparseVector(rows());
-        for (int row = 0; row < rows(); ++row)
+        Vector values = new SparseHashVector(rows);
+        for (int row = 0; row < rows; ++row)
             values.set(row, get(row, column));
         return values;
     }
@@ -106,15 +131,20 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        return sparseMatrix.get(row).toArray(cols);
+        return rowToColumns.get(row).toArray(cols);
     }
 
     /**
-     * {@inheritDoc}
+     * Returns a {@link SparseVector} of the contents of the row.
+     *
+     * @param row {@inheritDoc}
+     * @return {@inheritDoc}
      */
     public Vector getRowVector(int row) {
-        Vector v = sparseMatrix.get(row);
-        return Vectors.viewVector(v, 0, cols);
+        Vector v = rowToColumns.get(row);
+        return (v == null)
+            ? new SparseHashVector(cols)
+            : Vectors.view(v, 0, cols);
     }
 
     /**
@@ -135,18 +165,18 @@ public class GrowingSparseMatrix implements Matrix {
     public void set(int row, int col, double val) {
         checkIndices(row, col);
 
-        // Resize the number of rows if the given row is larger than the max.
-        if (row >= sparseMatrix.size()) {
-            while (sparseMatrix.size() <= row)
-                sparseMatrix.add(new CompactSparseVector());
-        }
-
-        // Resize the number of columns if the given column is larger than the
-        // max.
-        if (col >= cols)
+        // Check whether the dimensions need to be updated
+        if (row + 1 > rows)
+            rows = row + 1;
+        if (col + 1 > cols)
             cols = col + 1;
 
-        sparseMatrix.get(row).set(col, val);
+        CompactSparseVector rowVec = rowToColumns.get(row);
+        if (rowVec == null) {
+            rowVec = new CompactSparseVector();
+            rowToColumns.put(row, rowVec);
+        }
+        rowVec.set(col, val);
     }
 
     /**
@@ -178,16 +208,16 @@ public class GrowingSparseMatrix implements Matrix {
 
         if (cols <= columns.length)
             cols = columns.length;
-
-        // Resize the number of rows if the given row is larger than the max.
-        if (row >= sparseMatrix.size())
-            while (sparseMatrix.size() <= row)
-                sparseMatrix.add(new CompactSparseVector());
+        
+        CompactSparseVector rowVec = rowToColumns.get(row);
+        if (rowVec == null) {
+            rowVec = new CompactSparseVector();
+            rowToColumns.put(row, rowVec);
+        }
 
         for (int col = 0; col < cols; ++col) {
             double val = columns[col];
-            if (val != 0)
-                sparseMatrix.get(row).set(col, val);
+            rowVec.set(col, val);
         }
     }
 
@@ -205,16 +235,13 @@ public class GrowingSparseMatrix implements Matrix {
         if (cols <= columns.length())
             cols = columns.length();
 
-        // Resize the number of rows if the given row is larger than the max.
-        if (row >= sparseMatrix.size())
-            while (sparseMatrix.size() <= row)
-                sparseMatrix.add(new CompactSparseVector());
-
-        for (int col = 0; col < cols; ++col) {
-            double val = columns.get(col);
-            if (val != 0)
-                sparseMatrix.get(row).set(col, val);
+        CompactSparseVector rowVec = rowToColumns.get(row);
+        if (rowVec == null) {
+            rowVec = new CompactSparseVector();
+            rowToColumns.put(row, rowVec);
         }
+     
+        Vectors.copy(rowVec, columns);
     }
 
     /**
@@ -222,9 +249,11 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public double[][] toDenseArray() {
         double[][] m = new double[rows()][cols];
-
-        for (int r = 0; r < rows(); ++r) 
-            m[r] = sparseMatrix.get(r).toArray(cols);
+        for (int r = 0; r < rows; ++r) {
+            CompactSparseVector v = rowToColumns.get(r);
+            if (v != null) 
+                m[r] = v.toArray(cols);
+        }
         return m;
     }
 
@@ -232,6 +261,6 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public int rows() {
-        return sparseMatrix.size();
+        return rows;
     }
 }

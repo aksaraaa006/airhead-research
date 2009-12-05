@@ -133,7 +133,7 @@ public class CachingOnDiskSemanticSpace implements SemanticSpace {
     public synchronized Vector getVector(String word) {
         Vector vector = wordToVector.get(word);
         if (vector != null)
-            return Vectors.immutableVector(vector);
+            return Vectors.immutable(vector);
 
         Vector v = backingSpace.getVector(word);
         if (v != null)

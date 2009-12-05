@@ -79,7 +79,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * Each row is defined as a {@link AtomicVector} which does most of the
      * work.
      */
-    private final Map<Integer, AtomicVector> sparseMatrix;
+    private final Map<Integer,AtomicVector> sparseMatrix;
 
     /**
      * Create an {@code AtomicGrowingMatrix} with 0 rows and 0 columns.
@@ -238,7 +238,12 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public Vector getRowVector(int row) {
         Vector v = getRow(row, -1, false);
-        return Vectors.viewVector(v, 0, cols.get());
+        // If no row was currently assigned in the matrix, then return an empty
+        // vector in its place.  Otherwise, return a view on top of the vector
+        // with its current length
+        return (v == null) 
+            ? new CompactSparseVector(cols.get())
+            : Vectors.view(v, 0, cols.get());
     }
 
     /**
