@@ -25,7 +25,7 @@ import edu.ucla.sspace.util.IntegerMap;
 
 import edu.ucla.sspace.vector.AtomicVector;
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.util.Arrays;
@@ -165,10 +165,10 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * matrix at the time of the call, which may be different from earlier calls
      * to {@link #rows()}
      */
-    public Vector getColumnVector(int column) {
+    public DoubleVector getColumnVector(int column) {
         checkIndices(0, column);
         rowReadLock.lock();
-        Vector values = new CompactSparseVector(rows.get());
+        DoubleVector values = new CompactSparseVector(rows.get());
         for (int row = 0; row < rows.get(); ++row)
             values.set(row, get(row, column));
         rowReadLock.unlock();
@@ -236,8 +236,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * matrix at the time of the call, which may be different from earlier calls
      * to {@link #columns()}
      */
-    public Vector getRowVector(int row) {
-        Vector v = getRow(row, -1, false);
+    public DoubleVector getRowVector(int row) {
+        DoubleVector v = getRow(row, -1, false);
         // If no row was currently assigned in the matrix, then return an empty
         // vector in its place.  Otherwise, return a view on top of the vector
         // with its current length
@@ -277,7 +277,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     /**
      * @{inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         checkIndices(0, column);
         for (int row = 0; row < rows.get(); ++row)
             set(row, column, values.get(row));
@@ -297,7 +297,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     /**
      * @{inheritDoc}
      */
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         checkIndices(row, 0);
         AtomicVector rowEntry = getRow(row, values.length() - 1, true);
         denseArrayReadLock.lock();

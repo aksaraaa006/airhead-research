@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.esa;
 
-import edu.ucla.sspace.common.DocumentSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
@@ -29,6 +28,7 @@ import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
@@ -73,7 +73,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens 
  */
-public class ExplicitSemanticAnalysis implements DocumentSpace {
+public class ExplicitSemanticAnalysis implements SemanticSpace {
     public static final String ESA_SSPACE_NAME =
         "esa-semantic-space";
 
@@ -179,53 +179,27 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
     }
 
     /**
-     * Represent a document as the summation of term Vectors.
-     * {@inheritDoc}
-     */
-    public Vector representDocument(BufferedReader document)
-        throws IOException {
-        Map<String, Integer> termCounts = new HashMap<String, Integer>();
-        Iterator<String> articleTokens = IteratorFactory.tokenize(document);
-        while (articleTokens.hasNext()) {
-            String term = articleTokens.next();
-            Integer count = termCounts.get(term);
-            termCounts.put(term, (count == null) ? 0 : count.intValue() + 1);
-        }
-
-        Vector documentVector = new CompactSparseVector(getVectorLength());
-        for (Map.Entry<String, Integer> entry : termCounts.entrySet()) {
-            Vector termVector = getTfIdfWeightedVector(entry.getKey(),
-                                                       entry.getValue());
-            if (termVector == null)
-                continue;
-            Vectors.add(documentVector, termVector);
-        }
-
-        return documentVector;
-    }
-
-    /**
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
         int rows = termWikiMatrix.rows();
         int cols = termWikiMatrix.columns();
-        Vector docCounts = new DenseVector(cols);
+        DoubleVector docCounts = new DenseVector(cols);
         for (int row = 0; row < rows; ++row) {
-            SparseVector vector =
-                (SparseVector) termWikiMatrix.getRowVector(row);
-            for (int index : vector.getNonZeroIndices())
-                docCounts.add(index, vector.get(index));
+            DoubleVector v = termWikiMatrix.getRowVector(row);
+            SparseVector sv = (SparseVector) v;
+            for (int index : sv.getNonZeroIndices())
+                docCounts.add(index, v.get(index));
         }
 
         for (int row = 0; row < rows; ++row) {
-            SparseVector vector =
-                (SparseVector) termWikiMatrix.getRowVector(row);
-            int[] nonZero = vector.getNonZeroIndices();
+            DoubleVector v = termWikiMatrix.getRowVector(row);
+            SparseVector sv = (SparseVector) v;
+            int[] nonZero = sv.getNonZeroIndices();
             double idf = Math.log(articleCount.get() / nonZero.length);
             for (int index : nonZero) {
-                double tf = vector.get(index) * docCounts.get(index);
-                vector.set(index, tf * idf);
+                double tf = v.get(index) * docCounts.get(index);
+                v.set(index, tf * idf);
             }
         }
     }
@@ -238,14 +212,15 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
      *
      * @return the TF-IDF of {@code word}.
      */
-    private Vector getTfIdfWeightedVector(String word, int frequency) {
-        Vector termVector = getSemanticVectorFor(word);
+    private DoubleVector getTfIdfWeightedVector(String word, int frequency) {
+        DoubleVector termVector =
+            termWikiMatrix.getRowVector(termToIndex.get(word));
         if (termVector == null)
             return null;
         SparseVector sparseTermVector = (SparseVector) termVector;
         double docCount = sparseTermVector.getNonZeroIndices().length;
         double tfidf = frequency * Math.log(articleCount.get() / docCount);
-        return new ScaledVector(sparseTermVector, tfidf);
+        return new ScaledVector(termVector, tfidf);
     }
 
     /**
@@ -292,13 +267,6 @@ public class ExplicitSemanticAnalysis implements DocumentSpace {
         if (index != null)
             return Vectors.immutableVector(
                     termWikiMatrix.getRowVector(index.intValue()));
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Vector getSemanticVectorFor(String word) {
         return null;
     }
 

@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.cluster;
+package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.common.Similarity;
 
@@ -76,10 +76,6 @@ public class Cluster {
 
     public synchronized int getTotalMemberCount() {
         return itemCount;
-    }
-
-    public synchronized Vector getVector() {
-        return Vectors.immutableVector(centroid);
     }
 
     public synchronized double clusterSimilarity(Cluster cluster) {

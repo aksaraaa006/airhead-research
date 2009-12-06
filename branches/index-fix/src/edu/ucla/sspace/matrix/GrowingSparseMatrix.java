@@ -23,7 +23,7 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.util.ArrayList;
@@ -95,8 +95,8 @@ public class GrowingSparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
-        Vector values = new CompactSparseVector(rows);
+    public DoubleVector getColumnVector(int column) {
+        DoubleVector values = new CompactSparseVector(rows);
         for (int row = 0; row < rows; ++row)
             values.set(row, get(row, column));
         return values;
@@ -112,8 +112,8 @@ public class GrowingSparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
-        Vector v = sparseMatrix.get(row);
+    public DoubleVector getRowVector(int row) {
+        DoubleVector v = sparseMatrix.get(row);
         return Vectors.viewVector(v, 0, cols);
     }
 
@@ -160,7 +160,7 @@ public class GrowingSparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         for (int row = 0; row < rows; ++row)
             set(row, column, values.get(row));
     }
@@ -199,7 +199,7 @@ public class GrowingSparseMatrix implements Matrix {
      * When the matrix is expanded by either dimension, the values for the new
      * row/column will all be assumed to be zero.
      */
-    public void setRow(int row, Vector columns) {
+    public void setRow(int row, DoubleVector columns) {
         checkIndices(row, columns.length() -1);
 
         if (cols <= columns.length())

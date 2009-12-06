@@ -22,7 +22,8 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DenseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
+
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -160,7 +161,7 @@ public class ArrayMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
+    public DoubleVector getColumnVector(int column) {
         return new DenseVector(getColumn(column));
     }
 
@@ -180,10 +181,10 @@ public class ArrayMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
+    public DoubleVector getRowVector(int row) {
         checkIndices(row, 0);
 
-        Vector rowArr = new DenseVector(cols);
+        DoubleVector rowArr = new DenseVector(cols);
         int index = getIndex(row, 0);
         for (int i = 0; i < cols; ++i)
             rowArr.set(i, matrix[index++]);
@@ -227,7 +228,7 @@ public class ArrayMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         checkIndices(values.length() - 1, column);
 
         for (int row = 0; row < rows; ++row)
@@ -247,7 +248,7 @@ public class ArrayMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         checkIndices(row, values.length() - 1);
 
         for (int col = 0; col < cols; ++col)

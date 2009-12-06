@@ -32,7 +32,7 @@ import java.util.Arrays;
  *
  * @author Keith Stevens
 */
-public class DenseVector implements Vector, Serializable {
+public class DenseVector implements DoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -67,7 +67,7 @@ public class DenseVector implements Vector, Serializable {
      *
      * @param vector The {@code Vector} to copy from.
      */
-    public DenseVector(Vector vector) {
+    public DenseVector(DoubleVector vector) {
         this.vector = new double[vector.length()];
 
         for (int i = 0; i < vector.length(); ++i)
@@ -92,6 +92,13 @@ public class DenseVector implements Vector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(double[] values) {
         vector = Arrays.copyOf(values, vector.length);
     }
@@ -101,6 +108,13 @@ public class DenseVector implements Vector, Serializable {
      */
     public double get(int index) {
         return vector[index];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Number getValue(int index) {
+        return get(index);
     }
 
     /**

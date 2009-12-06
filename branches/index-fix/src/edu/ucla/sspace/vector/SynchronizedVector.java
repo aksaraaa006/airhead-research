@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Keith Stevens
  */
-class SynchronizedVector implements Vector, Serializable {
+class SynchronizedVector implements DoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -41,7 +41,7 @@ class SynchronizedVector implements Vector, Serializable {
      * The original {@code Vector} that this {@code SynchronizedVector}
      * decorates.
      */
-    private final Vector vector;
+    private final DoubleVector vector;
 
     /**
      * Creates a new {@code SynchronizedVector} decorating an already existing
@@ -49,7 +49,7 @@ class SynchronizedVector implements Vector, Serializable {
      *
      * @param v The vector to decorate.
      */
-    public SynchronizedVector(Vector v) {
+    public SynchronizedVector(DoubleVector v) {
         vector = v;
     }
     
@@ -70,6 +70,13 @@ class SynchronizedVector implements Vector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public synchronized Number getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public synchronized void set(double[] values) {
         vector.set(values);
     }
@@ -79,6 +86,13 @@ class SynchronizedVector implements Vector, Serializable {
      */
     public synchronized void set(int index, double value) {
         vector.set(index, value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void set(int index, Number value) {
+        vector.set(index, value.doubleValue());
     }
 
     /**

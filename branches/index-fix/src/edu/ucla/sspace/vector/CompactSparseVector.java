@@ -33,7 +33,9 @@ import edu.ucla.sspace.util.SparseDoubleArray;
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector implements Vector, SparseVector, Serializable {
+public class CompactSparseVector implements DoubleVector,
+                                            SparseVector,
+                                            Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -107,6 +109,13 @@ public class CompactSparseVector implements Vector, SparseVector, Serializable {
         vector.setPrimitive(index, value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
+    }
+
     /** 
      * @{inheritDoc}
      */
@@ -132,6 +141,13 @@ public class CompactSparseVector implements Vector, SparseVector, Serializable {
         updateLength(index);
 
         return vector.getPrimitive(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Number getValue(int index) {
+        return get(index);
     }
 
     /**

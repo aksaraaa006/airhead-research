@@ -19,20 +19,26 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.vector;
+package edu.ucla.sspace.index;
+
+import edu.ucla.sspace.vector.IntegerVector;
 
 
 /**
- * An Interface for a {@code Vector} implementation indicating that it is
- * sparse and provides functionality to retrieve the non zero indices.
- *
- * @author Keith Stevens
+ * An interface for classes which will maintain and generate random {@code
+ * IntegerVector}s.  The main purpose of this of this class is to allow any
+ * algorithm that makes use of some sort of random vector, such as Random
+ * Indexing, can easily swap out the type of indexing used for experimentation
+ * purposes.
  */
-public interface SparseVector {
+public interface IntegerVectorGenerator {
 
     /**
-     * Return an array of all the non zero indices in this Sparse
-     * implementation.
+     * Creates an {@code VectorVector} with the provided length.
+     *
+     * @param length the length of the index vector
+     *
+     * @return an index vector
      */
-    int[] getNonZeroIndices();
+    public IntegerVector generateRandomVector(int length);
 }

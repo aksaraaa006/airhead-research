@@ -22,7 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -379,7 +379,7 @@ public class LogEntropyTransform implements Transform {
 
         for (int row = 0; row < rows; ++row) {
             // Each row is a word
-            Vector rowVec = matrix.getRowVector(row);
+            DoubleVector rowVec = matrix.getRowVector(row);
             
             // Get the total number of times the word occurs
             double occurrencesInCorpus = 0;

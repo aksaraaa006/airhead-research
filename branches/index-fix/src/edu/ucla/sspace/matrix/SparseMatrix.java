@@ -22,7 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
 
@@ -94,8 +94,8 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
-        Vector values = new CompactSparseVector(rows);
+    public DoubleVector getColumnVector(int column) {
+        DoubleVector values = new CompactSparseVector(rows);
         for (int row = 0; row < rows; ++row)
             values.set(row, get(row, column));
         return values;
@@ -111,7 +111,7 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
+    public DoubleVector getRowVector(int row) {
         return Vectors.immutableVector(sparseMatrix[row]);
     }
 
@@ -145,7 +145,7 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         if (values.length() != rows) {
             throw new IllegalArgumentException(
                     "invalid number of rows: " + values.length());
@@ -170,7 +170,7 @@ public class SparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         if (values.length() != cols) {
             throw new IllegalArgumentException(
                 "invalid number of columns: " + values.length());

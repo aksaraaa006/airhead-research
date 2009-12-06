@@ -21,17 +21,19 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.IndexVector;
+import edu.ucla.sspace.vector.IntegerVector;
 
 
 /**
- * An interface for functions that permute the ordering of {@code IndexVector}s.
- * Implementations are expected to be thread safe when performing permutations.
+ * An interface for functions that permute the ordering of {@code
+ * TernaryVector}s.  Implementations are expected to be thread safe when
+ * performing permutations.
  */
 public interface PermutationFunction {
 
     /**
-     * Permutes the provided {@code IndexVector} the specified number of times.
+     * Permutes the provided {@code TernaryVector} the specified number of
+     * times.
      *
      * @param v an index vector to permute
      * @param numPermutations the number of times the permutation function
@@ -39,20 +41,5 @@ public interface PermutationFunction {
      *
      * @return the original index vector permuted the specified number of times
      */
-    IndexVector permute(IndexVector v, int numPermutations);
-
-    /**
-     * Initializes the {@code PermutationFunction} to generate all required
-     * functions for positive and negative positions expected.
-     *
-     * @param numPositivePermutations The maximum {code numPermutationvalue}
-     *                                value that can be passed to
-     *                                {@code permute}.
-     * @param numNegativePermutations The minimum {code numPermutationvalue}
-     *                                value that can be passed to
-     *                                {@code permute}.
-     */
-    void setupPermutations(int vectorLenght,
-                           int numPositivePermutations,
-                           int numNegativePermutations);
+    IntegerVector permute(IntegerVector v, int numPermutations);
 }

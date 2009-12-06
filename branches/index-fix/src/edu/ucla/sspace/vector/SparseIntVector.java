@@ -19,74 +19,98 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.index;
+package edu.ucla.sspace.vector;
 
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.util.SparseIntArray;
 
 import java.io.Serializable;
 
 
-public class DenseRandomIndexVector implements Vector, Serializable {
+public class SparseIntVector implements IntegerVector,
+                                        SparseVector,
+                                        Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int[] vector;
+    private final SparseIntArray intArray;
 
-    public DenseRandomIndexVector(int length) {
-        vector = new int[length];
+    public SparseIntVector(int length) {
+        intArray = new SparseIntArray(length);
     }
 
-    public DenseRandomIndexVector(Vector v) {
-        vector = new int[v.length()];
+    public SparseIntVector(IntegerVector v) {
+        intArray = new SparseIntArray(v.length());
         for (int i = 0; i < v.length(); ++i)
-            vector[i] = (int) v.get(i);
+            intArray.set(i,  v.get(i));
     }
 
     /**
      * {@inheritDoc}
      */
-    public double add(int index, double delta) {
-        vector[index] += (int) delta;
-        return vector[index];
+    public int add(int index, int delta) {
+        int newValue = intArray.getPrimitive(index) +  delta;
+        intArray.set(index, newValue);
+        return newValue;
     }
 
     /**
      * {@inheritDoc}
      */
-    public double get(int index) {
-        return vector[index];
+    public int get(int index) {
+        return intArray.getPrimitive(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Number getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int[] getNonZeroIndices() {
+        return intArray.getElementIndices();
     }
 
     /**
      * {@inheritDoc}
      */
     public int length() {
-        return vector.length;
+        return intArray.length();
     }
 
     /**
      * {@inheritDoc}
      */
-    public void set(int index, double value) {
-        vector[index] = (int) value;
+    public void set(int index, int value) {
+        intArray.set(index,  value);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void set(double[] values) {
+    public void set(int index, Number value) {
+        set(index, value.intValue());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int[] values) {
         for (int i = 0; i < values.length; ++i)
-            vector[i] = (int) values[i];
+            intArray.set(i, values[i]);
     }
 
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        double[] array = new double[size];
+    public int[] toArray(int size) {
+        int[] array = new int[size];
         int maxSize = (size > length()) ? length() : size;
         for (int i = 0; i < maxSize; ++i)
-            array[i] = vector[i];
+            array[i] = intArray.getPrimitive(i);
         return array;
     }
 }

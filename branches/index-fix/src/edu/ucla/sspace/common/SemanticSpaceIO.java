@@ -71,7 +71,7 @@ import java.util.logging.Logger;
 public class SemanticSpaceIO {
 
     private static final Logger LOGGER =
-	Logger.getLogger(SemanticSpaceIO.class.getName());
+        Logger.getLogger(SemanticSpaceIO.class.getName());
 
     /**
      * The type of formatting to use when writing a semantic space to a file.
@@ -169,7 +169,7 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     public static SemanticSpace load(String sspaceFileName) throws IOException {
-	return load(new File(sspaceFileName));
+        return load(new File(sspaceFileName));
     }
 
     /**
@@ -252,8 +252,8 @@ public class SemanticSpaceIO {
                                               boolean manuallySpecifiedFormat) 
             throws IOException {
         if (fitsInMemory(sspaceFile.length(), format)) {
-	    LOGGER.fine(format + "-formatted .sspace file will fit into memory"
-			+ "; creating StaticSemanticSpace");
+            LOGGER.fine(format + "-formatted .sspace file will fit into memory"
+                        + "; creating StaticSemanticSpace");
             if (manuallySpecifiedFormat) {
                 @SuppressWarnings("deprecation")
                 SemanticSpace s = new StaticSemanticSpace(sspaceFile, format);
@@ -263,8 +263,8 @@ public class SemanticSpaceIO {
                 return new StaticSemanticSpace(sspaceFile);
         }
         else {
-	    LOGGER.fine(format + "-formatted .sspace file will not fit into"
-			+ "memory; creating OnDiskSemanticSpace");
+            LOGGER.fine(format + "-formatted .sspace file will not fit into"
+                        + "memory; creating OnDiskSemanticSpace");
             if (manuallySpecifiedFormat) {
                 @SuppressWarnings("deprecation")
                 SemanticSpace s = new OnDiskSemanticSpace(sspaceFile, format);
@@ -284,8 +284,8 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     public static void save(SemanticSpace sspace, String outputFileName) 
-	    throws IOException {
-	save(sspace, new File(outputFileName), SSpaceFormat.TEXT);
+            throws IOException {
+        save(sspace, new File(outputFileName), SSpaceFormat.TEXT);
     }
 
     /**
@@ -297,8 +297,8 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     public static void save(SemanticSpace sspace, File output) 
-	    throws IOException {
-	save(sspace, output, SSpaceFormat.TEXT);
+            throws IOException {
+        save(sspace, output, SSpaceFormat.TEXT);
     }
 
     /**
@@ -311,22 +311,22 @@ public class SemanticSpaceIO {
      */
     public static void save(SemanticSpace sspace, File output, 
                             SSpaceFormat format) throws IOException {
-	switch (format) {
-	case TEXT:
-	    writeText(sspace, output);
-	    break;
-	case BINARY:
-	    writeBinary(sspace, output);
-	    break;
-	case SPARSE_TEXT:
-	    writeSparseText(sspace, output);
-	    break;
-	case SPARSE_BINARY:
-	    writeSparseBinary(sspace, output);
-	    break;
-	default:
-	    assert false : format;
-	}
+        switch (format) {
+        case TEXT:
+            writeText(sspace, output);
+            break;
+        case BINARY:
+            writeBinary(sspace, output);
+            break;
+        case SPARSE_TEXT:
+            writeSparseText(sspace, output);
+            break;
+        case SPARSE_BINARY:
+            writeSparseBinary(sspace, output);
+            break;
+        default:
+            assert false : format;
+        }
     }
 
     /**
@@ -359,26 +359,26 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     private static void writeText(SemanticSpace sspace, File output) 
-	    throws IOException {
+            throws IOException {
         
         OutputStream os = new FileOutputStream(output);
-	PrintWriter pw = new PrintWriter(os);
-	Set<String> words = sspace.getWords();
-	// determine how many dimensions are used by the vectors
-	int dimensions = 0;
-	if (words.size() > 0) {
-	    dimensions = sspace.getVectorLength();
-	}
+        PrintWriter pw = new PrintWriter(os);
+        Set<String> words = sspace.getWords();
+        // determine how many dimensions are used by the vectors
+        int dimensions = 0;
+        if (words.size() > 0) {
+            dimensions = sspace.getVectorLength();
+        }
         writeHeader(os, SSpaceFormat.TEXT);
-	// write out how many vectors there are and the number of dimensions
-	pw.println(words.size() + " " + dimensions);
-	LOGGER.fine("saving text S-Space with " + words.size() + 
-		    " words with " + dimensions + "-dimensional vectors");
+        // write out how many vectors there are and the number of dimensions
+        pw.println(words.size() + " " + dimensions);
+        LOGGER.fine("saving text S-Space with " + words.size() + 
+                    " words with " + dimensions + "-dimensional vectors");
 
-	for (String word : words) {
-	    pw.println(word + "|" + VectorIO.toString(sspace.getVector(word)));
-	}
-	pw.close();
+        for (String word : words) {
+            pw.println(word + "|" + VectorIO.toString(sspace.getVector(word)));
+        }
+        pw.close();
     }
 
     /**
@@ -391,31 +391,31 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     private static void writeBinary(SemanticSpace sspace, File output) 
-	    throws IOException {
+            throws IOException {
 
-	DataOutputStream dos = new DataOutputStream(
+        DataOutputStream dos = new DataOutputStream(
             new BufferedOutputStream(new FileOutputStream(output)));
-	Set<String> words = sspace.getWords();
-	// determine how many dimensions are used by the vectors
-	int dimensions = 0;
-	if (words.size() > 0) {
-	    dimensions = sspace.getVectorLength();
-	}
+        Set<String> words = sspace.getWords();
+        // determine how many dimensions are used by the vectors
+        int dimensions = 0;
+        if (words.size() > 0) {
+            dimensions = sspace.getVectorLength();
+        }
         writeHeader(dos, SSpaceFormat.BINARY);
-	// write out how many vectors there are and the number of dimensions
-	dos.writeInt(words.size());
-	dos.writeInt(dimensions);
-	LOGGER.fine("saving binary S-Space with " + words.size() + 
-		    " words with " + dimensions + "-dimensional vectors");
+        // write out how many vectors there are and the number of dimensions
+        dos.writeInt(words.size());
+        dos.writeInt(dimensions);
+        LOGGER.fine("saving binary S-Space with " + words.size() + 
+                    " words with " + dimensions + "-dimensional vectors");
 
-	for (String word : words) {
-	    dos.writeUTF(word);
+        for (String word : words) {
+            dos.writeUTF(word);
         Vector v = sspace.getVector(word);
         for (int i = 0; i < v.length(); ++i) {
-            dos.writeDouble(v.get(i));
-	    }
-	}
-	dos.close();
+            dos.writeDouble(v.getValue(i).doubleValue());
+            }
+        }
+        dos.close();
     }
 
     /**
@@ -429,45 +429,44 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     private static void writeSparseText(SemanticSpace sspace, File output) 
-	    throws IOException {
+            throws IOException {
         OutputStream os = new FileOutputStream(output);
-	PrintWriter pw = new PrintWriter(os);
-	Set<String> words = sspace.getWords();
-	// determine how many dimensions are used by the vectors
-	int dimensions = 0;
-	if (words.size() > 0) {
-	    dimensions = sspace.getVectorLength();
-	}
+        PrintWriter pw = new PrintWriter(os);
+        Set<String> words = sspace.getWords();
+        // determine how many dimensions are used by the vectors
+        int dimensions = 0;
+        if (words.size() > 0) {
+            dimensions = sspace.getVectorLength();
+        }
 
         writeHeader(os, SSpaceFormat.SPARSE_TEXT);
-	// print out how many vectors there are and the number of dimensions
-	pw.println(words.size() + " " + dimensions);
+        // print out how many vectors there are and the number of dimensions
+        pw.println(words.size() + " " + dimensions);
 
-	LOGGER.fine("saving sparse-text S-Space with " + words.size() + 
-		    " words with " + dimensions + "-dimensional vectors");
+        LOGGER.fine("saving sparse-text S-Space with " + words.size() + 
+                    " words with " + dimensions + "-dimensional vectors");
 
-	for (String word : words) {
-	    pw.print(word + "|");
-	    // for each vector, write all the non-zero elements and their indices
-        Vector v = sspace.getVector(word);
-	    double[] vector = v.toArray(v.length());
-	    boolean first = true;
-	    StringBuilder sb = new StringBuilder(dimensions * 4);
-	    for (int i = 0; i < vector.length; ++i) {
-		double d = vector[i];
-		if (d != 0d) {
-		    if (first) {
-			sb.append(i).append(",").append(d);
-			first = false;
-		    }
-		    else {
-			sb.append(",").append(i).append(",").append(d);
-		    }
-		}
-	    }
-	    pw.println(sb.toString());
-	}
-	pw.close();
+        for (String word : words) {
+            pw.print(word + "|");
+            // for each vector, write all the non-zero elements and their indices
+        Vector vector = sspace.getVector(word);
+            boolean first = true;
+            StringBuilder sb = new StringBuilder(dimensions * 4);
+            for (int i = 0; i < vector.length(); ++i) {
+                double d = vector.getValue(i).doubleValue();
+                if (d != 0d) {
+                    if (first) {
+                        sb.append(i).append(",").append(d);
+                        first = false;
+                    }
+                    else {
+                        sb.append(",").append(i).append(",").append(d);
+                    }
+                }
+            }
+            pw.println(sb.toString());
+        }
+        pw.close();
     }
 
     /**
@@ -481,44 +480,43 @@ public class SemanticSpaceIO {
      *         space data from the file
      */
     private static void writeSparseBinary(SemanticSpace sspace, File output) 
-	    throws IOException {
+            throws IOException {
 
-	DataOutputStream dos = new DataOutputStream(
+        DataOutputStream dos = new DataOutputStream(
             new BufferedOutputStream(new FileOutputStream(output)));
-	Set<String> words = sspace.getWords();
-	// determine how many dimensions are used by the vectors
-	int dimensions = 0;
-	if (words.size() > 0) {
-	    dimensions = sspace.getVectorLength();
-	}
+        Set<String> words = sspace.getWords();
+        // determine how many dimensions are used by the vectors
+        int dimensions = 0;
+        if (words.size() > 0) {
+            dimensions = sspace.getVectorLength();
+        }
 
         writeHeader(dos, SSpaceFormat.SPARSE_BINARY);
-	// print out how many vectors there are and the number of dimensions
-	dos.writeInt(words.size());
-	dos.writeInt(dimensions);
+        // print out how many vectors there are and the number of dimensions
+        dos.writeInt(words.size());
+        dos.writeInt(dimensions);
 
-	LOGGER.fine("saving sparse-binary S-Space with " + words.size() + 
-		    " words with " + dimensions + "-dimensional vectors");
+        LOGGER.fine("saving sparse-binary S-Space with " + words.size() + 
+                    " words with " + dimensions + "-dimensional vectors");
 
-	for (String word : words) {
-	    dos.writeUTF(word);
-	    double[] vector =
-            sspace.getVector(word).toArray(sspace.getVectorLength());
-	    // count how many are non-zero
-	    int nonZero = 0;
-	    for (double d : vector) {
-		if (d != 0d)
-		    nonZero++;
-	    }
-	    dos.writeInt(nonZero);
-	    for (int i = 0; i < vector.length; ++i) {
-		double d = vector[i];
-		if (d != 0d) {
-		    dos.writeInt(i);
-		    dos.writeDouble(d);
-		}
-	    }
-	}
-	dos.close();
+        for (String word : words) {
+            dos.writeUTF(word);
+            Vector vector = sspace.getVector(word);
+            // count how many are non-zero
+            int nonZero = 0;
+            for (int i = 0; i < vector.length(); ++i) {
+                if (vector.getValue(i).doubleValue() != 0d)
+                    nonZero++;
+            }
+            dos.writeInt(nonZero);
+            for (int i = 0; i < vector.length(); ++i) {
+                double d = vector.getValue(i).doubleValue();
+                if (d != 0d) {
+                    dos.writeInt(i);
+                    dos.writeDouble(d);
+                }
+            }
+        }
+        dos.close();
     }
 }

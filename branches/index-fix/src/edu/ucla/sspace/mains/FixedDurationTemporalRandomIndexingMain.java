@@ -48,7 +48,9 @@ import edu.ucla.sspace.util.SortedMultiMap;
 import edu.ucla.sspace.util.TimeSpan;
 import edu.ucla.sspace.util.TreeMultiMap;
 
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -531,7 +533,8 @@ public class FixedDurationTemporalRandomIndexingMain {
             // update the vectors
             SortedMap<Long,double[]> temporalSemantics = 
                 wordToTemporalSemantics.get(word);
-            Vector vector = semanticPartition.getVector(word);
+            DoubleVector vector =
+                Vectors.asDouble(semanticPartition.getVector(word));
             double[] semantics = zeroVector;
             // If the word was not in the current partition, then give it the
             // zero vector

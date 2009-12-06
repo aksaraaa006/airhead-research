@@ -30,14 +30,14 @@ import java.io.Serializable;
  *
  * @author Keith Stevens
  */
-public class ScaledVector implements Vector, Serializable {
+public class ScaledVector implements DoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * The original {@code Vector} that this {@code ScaledVector} decorates.
      */
-    private final Vector vector;
+    private final DoubleVector vector;
 
     private final double scaleFactor;
     /**
@@ -47,7 +47,7 @@ public class ScaledVector implements Vector, Serializable {
      * @param v The vector to decorate.
      * @param factor The value to scale all values by.
      */
-    public ScaledVector(Vector v, double factor) {
+    public ScaledVector(DoubleVector v, double factor) {
         vector = v;
         scaleFactor = factor;
         if (factor == 0d)
@@ -71,6 +71,13 @@ public class ScaledVector implements Vector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public Number getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(double[] values) {
         for (int i = 0; i < values.length; ++i)
             set(i, values[i]);
@@ -81,6 +88,13 @@ public class ScaledVector implements Vector, Serializable {
      */
     public void set(int index, double value) {
         vector.set(index, value / scaleFactor);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
     }
 
     /**

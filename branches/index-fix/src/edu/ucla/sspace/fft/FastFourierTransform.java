@@ -1,10 +1,10 @@
 package edu.ucla.sspace.fft;
 
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 
 /**
- * Computes  FFT's of {@code Vector}s.
+ * Computes  FFT's of {@code DoubleVector}s.
   * The physical layout of the mathematical data d[i] in the array data is as
   * follows:
   *<PRE>
@@ -37,7 +37,7 @@ public class FastFourierTransform {
     /**
      * Compute the Fast Fourier Transform of data leaving the result in data.
      */
-    public static void transform(Vector data, int i0, int stride) {
+    public static void transform(DoubleVector data, int i0, int stride) {
         checkData(data,i0,stride);
         int p, p_1, q;
   
@@ -115,7 +115,7 @@ public class FastFourierTransform {
      * data must be in the same arrangement as that produced by {@link
      * #transform transform}.
      */
-    public static void backtransform(Vector data, int i0, int stride) {
+    public static void backtransform(DoubleVector data, int i0, int stride) {
         checkData(data,i0,stride);
         int n = data.length();
         int logn = checkFactor(n);
@@ -195,7 +195,7 @@ public class FastFourierTransform {
     /**
      * This is the Goldrader bit-reversal algorithm
      */
-    public static void bitreverse(Vector data, int i0, int stride) {
+    public static void bitreverse(DoubleVector data, int i0, int stride) {
         int n = data.length();
         for (int i = 0,j = 0; i < n - 1; i++) {
             int k = n / 2;
@@ -220,7 +220,7 @@ public class FastFourierTransform {
         return (n != (1<<log)) ? -1 : log;
     }
 
-    private static void checkData(Vector data, int i0, int stride){
+    private static void checkData(DoubleVector data, int i0, int stride){
         int n = data.length();
         if (i0 < 0) 
           throw new IllegalArgumentException("The offset must be >=0 : "+i0);

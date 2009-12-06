@@ -21,17 +21,20 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
+import edu.ucla.sspace.clustering.ClusterMap;
+import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
-import edu.ucla.sspace.index.IndexGenerator;
-import edu.ucla.sspace.index.IndexUser;
+import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.SparseIntVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -77,27 +80,37 @@ import java.util.logging.Logger;
  *
  * </p>
  *
- * This implementation relies heavily on a {@link IndexGenerator}, a {@link
+ * This implementation relies heavily on a {@link IntegerVectorGenerator}, a {@link
  * IndexUser}, and a {@link ClusterMap} for it's functionaltiy.  The {@link
- * IndexGenerator} provided defines how index vectors are created.  The {@link
+ * IntegerVectorGenerator} provided defines how index vectors are created.  The {@link
  * IndexUser} defines how index vectors are combined together to represent the
  * context.  The {@link ClusterMap} defines how contexts are clustered together.
  *
- * @see BeagleIndexGenerator
- * @see BeagleIndexUser
- *
- * @see RandomIndexGenerator
+ * @see RandomIndexVectorGenerator
  * @see RandomIndexUser
  *
  * @author Keith Stevens
  */
-public class FlyingHermit implements BottomUpHermit, SemanticSpace {
+public class FlyingHermit implements SemanticSpace {
 
     /**
-     * The full context size used when scanning the corpus. This is the
-     * total number of words considered in the context.
+     * The base prefix for all {@code FlyingHermit} properties.
      */
-    public static final int CONTEXT_SIZE = 6;
+    public static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.hermit.FlyingHermit";
+
+    /**
+     * The property for specifying the threshold for merging clusters.
+     */
+    public static final String MERGE_THRESHOLD_PROPERTY = 
+        PROPERTY_PREFIX + ".mergeThreshold";
+
+    /**
+     * The property for specifying the number of threads to use when processing
+     * the space.
+     */
+    public static final String THREADS_PROPERTY = 
+        PROPERTY_PREFIX + ".numThreads";
 
     /**
      * An empty token representing a lack of a valid replacement mapping.
@@ -117,20 +130,15 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         Logger.getLogger(FlyingHermit.class.getName());
 
     /**
-     * The class responsible for creating index vectors.
+     * A mapping from strings to {@code IntegerVector}s which represent an index
+     * vector.
      */
-    private final IndexGenerator indexGenerator;
+    private final Map<String, IntegerVector> indexMap;
 
     /**
-     * The class responsible for combining index vectors.
+     * The {@code PermutationFunction} to use for co-occurrances.
      */
-    private final Class indexUserClazz;
-
-    /**
-     * A fixed String describing the {@code IndexUser} that {@code FlyingHermit}
-     * uses.
-     */
-    private final String indexUserDescription;
+    private final PermutationFunction permutationFunction;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -139,7 +147,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      * representations.  This {@code Map} is used after {@code processSpace} is
      * called.
      */
-    private ConcurrentMap<String, Vector> splitSenses;
+    private ConcurrentMap<String, IntegerVector> splitSenses;
 
     /**
      * A mapping from tokens to conflated terms.  If this is null, it is assumed
@@ -149,14 +157,17 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     private Map<String, String> replacementMap;
 
-    //private ConcurrentMap<String, AtomicInteger> accuracyMap;
+    /**
+     * An accuracy map to record the frequency statistics for each word cluster.
+     * This is used to label the clusters once they have been formed.
+     */
     private AccuracyMap accuracyMap;
 
     /**
      * The type of clustering used for {@code FlyingHermit}.  This specifies how
      * hermit will merge it's context vectors into different senses.
      */
-    private BottomUpVectorClusterMap clusterMap;
+    private ClusterMap clusterMap;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -173,36 +184,32 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
      */
     private final int nextSize;
 
+    /**
+     * A flag specifying if this {@code FlyingHermit} instance has been
+     * compacted, and should enter testing mode.
+     */
     private boolean compacted;
 
     /**
      * Create a new instance of {@code FlyingHermit} which takes ownership
      */
-    public FlyingHermit(IndexGenerator generator,
-                        Class userClazz,
-                        BottomUpVectorClusterMap cluster,
+    public FlyingHermit(Map<String, IntegerVector> indexGeneratorMap,
+                        PermutationFunction permFunction,
+                        OnlineClusteringGenerator clusterGenerator,
                         Map<String, String> remap,
                         int vectorSize,
                         int prevWordsSize,
                         int nextWordsSize) {
         indexVectorSize = vectorSize;
-        indexGenerator = generator;
-        indexUserClazz = userClazz;
-        clusterMap = cluster;
+        indexMap = indexGeneratorMap;
+        permutationFunction = permFunction;
         replacementMap = remap;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
-
         compacted = false;
 
         accuracyMap = new AccuracyMap();
-
-        try {
-            IndexUser indexUser = (IndexUser) indexUserClazz.newInstance();
-            indexUserDescription = indexUser.toString();
-        } catch (Exception ie) {
-            throw new Error(ie);
-        }
+        clusterMap = new ClusterMap(clusterGenerator);
     }
 
     /**
@@ -225,8 +232,7 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
     public String getSpaceName() {
         return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize + 
                "-w" + prevSize + "_" + nextSize +
-               "-" + indexUserDescription.toString() +
-               "-" + clusterMap.toString();
+               "-" + permutationFunction.toString();
     }
 
     /**
@@ -246,13 +252,6 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
 
         Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
 
-        IndexUser indexUser = null;
-        try {
-            indexUser = (IndexUser) indexUserClazz.newInstance();
-        } catch (Exception ie) {
-            throw new Error(ie);
-        }
-
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
         for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
@@ -263,48 +262,45 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             focusWord = nextWords.remove();
             String replacement = nextReplacements.remove();
 
-            // Ensure that the index vectors exists for all interesting words in
-            // the corpus.
-            //indexGenerator.getIndexVector(focusWord);
-
             if (it.hasNext())
                 addNextWord(it, nextWords, nextReplacements);
 
+            // Only process words which have a suitable replacement.
             if (!replacement.equals(EMPTY_TOKEN)) {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
-                Vector meaning = indexUser.getEmptyVector();
+                IntegerVector meaning = new SparseIntVector(indexVectorSize);
 
                 // Process the previous words, specifying their distance from
                 // the focus word.
                 int distance = -1 * prevWords.size();
                 for (String term : prevWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        Vector termVector = indexGenerator.getIndexVector(term);
-                        indexUser.generateMeaning(meaning, termVector,
-                                                  distance);
+                        IntegerVector termVector = indexMap.get(term);
+                        Vectors.add(meaning, permutationFunction.permute(
+                                    termVector, distance));
                     }
                     ++distance;
                 }
 
                 distance = 1;
 
-                // Process the next words, specifying their distance from the
+                // Process the next words, specifying the distance from the
                 // focus word.
                 for (String term : nextWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        Vector termVector = indexGenerator.getIndexVector(term);
-                        indexUser.generateMeaning(meaning, termVector,
-                                                  distance);
+                        IntegerVector termVector = indexMap.get(term);
+                        Vectors.add(meaning, permutationFunction.permute(
+                                    termVector, distance));
                     }
                     ++distance;
                 }
 
                 // Compare the most recent vector to all the saved vectors.  If
                 // the vector with the highest similarity has a similarity over
-                // a threshold, incorporate this {@code Vector} to that winner.
-                // Otherwise add this {@code Vector} as a new vector for the
+                // a threshold, incorporate this {@code IntegerVector} to that winner.
+                // Otherwise add this {@code IntegerVector} as a new vector for the
                 // term.
                 int clusterNum;
                 if (!compacted)
@@ -328,13 +324,12 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
     
     /**
      * Extracts the next word from a token iterator and add the token, and it's
-     * replacement to the two provided queues.
-     * If the {@code replacementMap} exists, and the map contains
-     * a replacement mapping for the next token, it will store that token in
-     * {@code nextReplacements}.  If the map exists and no replacement is found
-     * the empty token will be stored in {@code nextReplacements}.  Lastly, if
-     * the map does not exist, the current token will also be stored in {@code
-     * nextReplacements}
+     * replacement to the two provided queues.  If the {@code replacementMap}
+     * exists, and the map contains a replacement mapping for the next token, it
+     * will store that token in {@code nextReplacements}.  If the map exists and
+     * no replacement is found the empty token will be stored in {@code
+     * nextReplacements}.  Lastly, if the map does not exist, the current token
+     * will also be stored in {@code nextReplacements}
      *
      * @param it The token iterator to extract a token from.
      * @param nextWords The {@code Queue} which contains the set of words to the
@@ -363,18 +358,16 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
     public void processSpace(Properties properties) {
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
         if (!compacted) {
-            double minPercentage = Double.parseDouble(
-                properties.getProperty(BottomUpHermit.DROP_PERCENTAGE, ".25"));
+            double mergeThreshold = Double.parseDouble(
+                properties.getProperty(MERGE_THRESHOLD_PROPERTY, ".25"));
 
-            splitSenses = new ConcurrentHashMap<String, Vector>();
-
-            //printPairWiseSimilarities(terms);
+            splitSenses = new ConcurrentHashMap<String, IntegerVector>();
 
             // Merge the clusters for each of the words being tracked.
             for (String term : terms) {
                 HERMIT_LOGGER.info("Mering clusters for : " + term);
                 Map<Integer, Integer> mergedMap =
-                    clusterMap.mergeOrDropClusters(term, minPercentage);
+                    clusterMap.finalizeClustering(term);
                 for (Map.Entry<Integer, Integer> mapping :
                         mergedMap.entrySet()) {
                     accuracyMap.moveInstances(term, 
@@ -383,8 +376,6 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 }
                 accuracyMap.setClusterNames(term);
             }
-
-            //printPairWiseSimilarities(terms);
 
             // Setup a new accuracy map which has the correct cluster names.
             Map<String, String> clusterNames = accuracyMap.clusterTitleMap;
@@ -402,10 +393,10 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
                 List<List<Vector>> clusters = clusterMap.getClusters(term);
                 int i = 0;
                 for (List<Vector> cluster : clusters) {
-                    Vector sense = null;
+                    IntegerVector sense = null;
                     for (Vector v : cluster) {
                         if (sense == null)
-                            sense = Vectors.copyOf(v);
+                            sense = Vectors.copyOf((IntegerVector) v);
                         else
                             Vectors.add(sense, v);
                     }
@@ -427,23 +418,6 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
         }
     }
 
-    private void printPairWiseSimilarities(Set<String> terms) {
-        for (String term : terms) {
-            Matrix m = clusterMap.pairWiseSimilarity(term);
-            StringBuilder sb = new StringBuilder();
-            sb.append(term);
-            sb.append(" term cluster similarity matrix\n");
-            for (int r = 0; r < m.rows(); ++r) {
-                sb.append(r);
-                sb.append(":");
-                for (int c = 0; c < m.columns(); ++c)
-                    sb.append(String.format("%3f ", m.get(r, c)));
-                sb.append("\n");
-            }
-            HERMIT_LOGGER.info(sb.toString());
-        }
-    }
-
     /**
      * A simple map for counting the accuracy of a sample word that is being  
      * tracked with {@code FlyingHermit}.
@@ -458,6 +432,9 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
          */
         private Map<String, List<Map<String, Integer>>> wordMap;
 
+        /**
+         * A mapping from senses to titles
+         */
         private Map<String, String> clusterTitleMap;
 
         /**
@@ -591,6 +568,13 @@ public class FlyingHermit implements BottomUpHermit, SemanticSpace {
             }
         }
 
+        /**
+         * Determines the name, i.e the original sense, for each cluster stored
+         * for {@code term} based on the most frequently occuring original sense
+         * in the cluster.
+         *
+         * @param term The term to label.
+         */
         public void setClusterNames(String term) {
             List<Map<String, Integer>> senseCounts = wordMap.get(term);
             int i = 0;

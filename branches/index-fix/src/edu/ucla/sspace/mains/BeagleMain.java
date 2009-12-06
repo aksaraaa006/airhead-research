@@ -26,12 +26,8 @@ import edu.ucla.sspace.beagle.Beagle;
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.index.BeagleIndexGenerator;
-import edu.ucla.sspace.index.BeagleIndexUser;
-
-import java.io.IOException;
-
 import java.util.Properties;
+
 
 /**
  * An executable class for running {@link Beagle} from the

@@ -60,7 +60,18 @@
 	    debug="true" debuglevel="lines,source">
        <compilerarg value="-Xlint"/>
        <compilerarg value="-g"/>
-      <include name="src/**"/>
+       <include name="**"/>
+       <include name="src/edu/ucla/sspace/beagle/**"/>
+       <include name="src/edu/ucla/sspace/text/**"/>
+       <include name="src/edu/ucla/sspace/coals/**"/>
+       <include name="src/edu/ucla/sspace/ri/**"/>
+       <include name="src/edu/ucla/sspace/vector/**"/>
+       <include name="src/edu/ucla/sspace/util/**"/>
+       <include name="src/edu/ucla/sspace/clustering/**"/>
+       <include name="src/edu/ucla/sspace/fft/**"/>
+       <include name="src/edu/ucla/sspace/common/**"/>
+       <include name="src/edu/ucla/sspace/index/**"/>
+       <include name="src/edu/ucla/sspace/matrix/**"/>
       <include name="lib/**"/>
     </javac>  
   </target>

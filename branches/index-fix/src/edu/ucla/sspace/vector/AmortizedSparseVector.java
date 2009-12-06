@@ -43,7 +43,9 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public class AmortizedSparseVector implements Vector, SparseVector, Serializable {
+public class AmortizedSparseVector implements DoubleVector,
+                                              SparseVector,
+                                              Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -100,6 +102,7 @@ public class AmortizedSparseVector implements Vector, SparseVector, Serializable
         set(index, value);
         return value;
     }
+
     /**
      * {@inheritDoc}
      */
@@ -109,6 +112,13 @@ public class AmortizedSparseVector implements Vector, SparseVector, Serializable
         IndexValue item = new IndexValue(index, 0);
         int valueIndex = Collections.binarySearch(values, item, comp);
         return (valueIndex >= 0) ? values.get(valueIndex).value : 0.0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Number getValue(int index) {
+        return get(index);
     }
 
     /**
@@ -133,6 +143,13 @@ public class AmortizedSparseVector implements Vector, SparseVector, Serializable
             // Remove the value since it's now zero.
             values.remove(valueIndex);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
     }
 
     /**

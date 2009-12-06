@@ -36,14 +36,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Keith Stevens
  */
-public class AtomicVector implements Vector, Serializable {
+public class AtomicVector implements DoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * The original {@code Vector} that this {@code AtomicVector} decorates.
      */
-    private final Vector vector;
+    private final DoubleVector vector;
 
     /**
      * Read and write locks guarding access to {@code vector}.
@@ -57,7 +57,7 @@ public class AtomicVector implements Vector, Serializable {
      *
      * @param v The vector to decorate.
      */
-    public AtomicVector(Vector v) {
+    public AtomicVector(DoubleVector v) {
         vector = v;
 
         ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -106,6 +106,13 @@ public class AtomicVector implements Vector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public Number getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(double[] values) {
         writeLock.lock();
         vector.set(values);
@@ -119,6 +126,13 @@ public class AtomicVector implements Vector, Serializable {
         writeLock.lock();
         vector.set(index, value);
         writeLock.unlock();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
     }
 
     /**

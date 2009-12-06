@@ -21,8 +21,11 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.lang.reflect.Method;
 
@@ -243,12 +246,12 @@ public class Similarity {
     }
 
     /**
-     * Returns the cosine similarity of the two {@code Vector}.
+     * Returns the cosine similarity of the two {@code DoubleVector}.
      *
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
-    public static double cosineSimilarity(Vector a, Vector b) {
+    public static double cosineSimilarity(DoubleVector a, DoubleVector b) {
         check(a,b);
 
         double dotProduct = 0.0;
@@ -269,8 +272,8 @@ public class Similarity {
             if (nzA.length < nzB.length) {
                 // Compute A's maginitude and the dot product
                 for (int nz : nzA) {
-                    double aValue = svA.get(nz);
-                    double bValue = svB.get(nz);
+                    double aValue = a.get(nz);
+                    double bValue = b.get(nz);
                     aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
                 }
@@ -283,8 +286,8 @@ public class Similarity {
             else {
                 // Compute B's maginitude and the dot product
                 for (int nz : nzB) {
-                    double aValue = svA.get(nz);
-                    double bValue = svB.get(nz);
+                    double aValue = a.get(nz);
+                    double bValue = b.get(nz);
                     bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
                 }
@@ -310,6 +313,16 @@ public class Similarity {
         bMagnitude = Math.sqrt(bMagnitude);
         return (aMagnitude == 0 || bMagnitude == 0)
             ? 0 : dotProduct / (aMagnitude * bMagnitude);
+    }
+
+    /**
+     * Returns the cosine similarity of the two {@code DoubleVector}.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double cosineSimilarity(Vector a, Vector b) {
+        return cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
     }
 
     /**
@@ -383,7 +396,7 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
-    public static double correlation(Vector arr1, Vector arr2) {
+    public static double correlation(DoubleVector arr1, DoubleVector arr2) {
         check(arr1, arr2);
 
         // REMINDER: this could be made more effecient by not looping
@@ -408,6 +421,23 @@ public class Similarity {
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
+    /**
+     * Returns the Pearson product-moment correlation coefficient of the two
+     * {@code Vector}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double correlation(Vector a, Vector b) {
+        return correlation(Vectors.asDouble(a), Vectors.asDouble(b));
+    }
+
+    /**
+     * Returns the euclidian distance between two arrays of {code double}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double euclideanDistance(double[] a, double[] b) {
         check(a, b);
 
@@ -420,6 +450,12 @@ public class Similarity {
         return Math.sqrt(sum);
     }
 
+    /**
+     * Returns the euclidian distance between two arrays of {code double}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double euclideanDistance(int[] a, int[] b) {
         check(a, b);
         
@@ -429,7 +465,13 @@ public class Similarity {
         return Math.sqrt(sum);
     }
 
-    public static double euclideanDistance(Vector a, Vector b) {
+    /**
+     * Returns the euclidian distance between two {@code DoubleVector}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double euclideanDistance(DoubleVector a, DoubleVector b) {
         check(a, b);
         
         double sum = 0;
@@ -438,14 +480,42 @@ public class Similarity {
         return Math.sqrt(sum);
     }
 
+    /**
+     * Returns the euclidian distance between two {@code Vector}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double euclideanDistance(Vector a, Vector b) {
+        return euclideanDistance(Vectors.asDouble(a), Vectors.asDouble(b));
+    }
+
+    /**
+     * Returns the euclidian similiarty between two arrays of values.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double euclideanSimilarity(int[] a, int[] b) {
         return 1 / (1 + euclideanDistance(a,b));
     }
 
+    /**
+     * Returns the euclidian similiarty between two arrays of values.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double euclideanSimilarity(double[] a, double[] b) {
         return 1 / (1 + euclideanDistance(a,b));
     }
 
+    /**
+     * Returns the euclidian similiarty between two arrays of values.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double euclideanSimilarity(Vector a, Vector b) {
         return 1 / (1 + euclideanDistance(a,b));
     }
@@ -511,12 +581,12 @@ public class Similarity {
 
     /**
      * Computes the Jaccard index comparing the similarity both {@code
-     * Vector}s when viewed as sets of samples.
+     * DoubleVector}s when viewed as sets of samples.
      *
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
-    public static double jaccardIndex(Vector a, Vector b) {
+    public static double jaccardIndex(DoubleVector a, DoubleVector b) {
         check(a, b);
         
         Set<Double> intersection = new HashSet<Double>();
@@ -535,6 +605,17 @@ public class Similarity {
 
         intersection.retainAll(tmp);
         return ((double)(intersection.size())) / union.size();
+    }
+
+    /**
+     * Computes the Jaccard index comparing the similarity both {@code
+     * Vector}s when viewed as sets of samples.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double jaccardIndex(Vector a, Vector b) {
+        return jaccardIndex(Vectors.asDouble(a), Vectors.asDouble(b));
     }
 
     /**
@@ -650,14 +731,14 @@ public class Similarity {
 
     /**
      * Computes the Spearman rank correlation coefficient for the two {@code
-     * Vector}s.  If there is a tie in the ranking of {@code a}, then Pearson's
-     * product-moment coefficient is returned instead.
+     * DoubleVector}s.  If there is a tie in the ranking of {@code a}, then
+     * Pearson's product-moment coefficient is returned instead.
      *
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
-    public static double spearmanRankCorrelationCoefficient(Vector a, 
-                                                            Vector b) {
+    public static double spearmanRankCorrelationCoefficient(DoubleVector a, 
+                                                            DoubleVector b) {
         check(a, b);
 
         SortedMap<Double,Double> ranking = new TreeMap<Double,Double>();
@@ -703,5 +784,19 @@ public class Similarity {
         }
 
         return 1 - ((6 * diff) / (a.length() * (a.length() * a.length() - 1)));
+    }
+
+    /**
+     * Computes the Spearman rank correlation coefficient for the two {@code
+     * Vector}s.  If there is a tie in the ranking of {@code a}, then Pearson's
+     * product-moment coefficient is returned instead.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double spearmanRankCorrelationCoefficient(Vector a, 
+                                                            Vector b) {
+        return spearmanRankCorrelationCoefficient(Vectors.asDouble(a),
+                                                  Vectors.asDouble(b));
     }
 }

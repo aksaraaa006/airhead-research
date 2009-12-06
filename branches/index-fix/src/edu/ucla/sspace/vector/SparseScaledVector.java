@@ -38,7 +38,9 @@ public class SparseScaledVector implements SparseVector, Serializable {
      * The original {@code Vector} that this {@code SparseScaledVector}
      * decorates.
      */
-    private final SparseVector vector;
+    private final SparseVector sVector;
+
+    private final DoubleVector vector;
 
     private final double scaleFactor;
     /**
@@ -48,9 +50,13 @@ public class SparseScaledVector implements SparseVector, Serializable {
      * @param v The vector to decorate.
      * @param factor The value to scale all values by.
      */
-    public SparseScaledVector(SparseVector v, double factor) {
+    public SparseScaledVector(DoubleVector v, double factor) {
         vector = v;
+        sVector = (SparseVector) v;
+
         scaleFactor = factor;
+        if (!(v instanceof SparseVector))
+            throw new IllegalArgumentException("Vector is not Sparse");
         if (factor == 0d)
             throw new IllegalArgumentException("A zero scaling is not allowed");
     }
@@ -73,7 +79,7 @@ public class SparseScaledVector implements SparseVector, Serializable {
      * {@inheritDoc}
      */
     public int[] getNonZeroIndices() {
-        return vector.getNonZeroIndices();
+        return sVector.getNonZeroIndices();
     }
 
     /**

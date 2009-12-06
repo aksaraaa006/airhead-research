@@ -21,23 +21,18 @@
 
 package edu.ucla.sspace.mains;
 
-import edu.ucla.sspace.cluster.BottomUpVectorClusterMap;
-import edu.ucla.sspace.cluster.SimpleVectorClusterMap;
+import edu.ucla.sspace.clustering.OnlineClusteringGenerator ;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
-import edu.ucla.sspace.index.IndexGenerator;
-import edu.ucla.sspace.index.IndexUser;
-import edu.ucla.sspace.index.RandomIndexUser;
-import edu.ucla.sspace.index.WindowedPermutationFunction;
+import edu.ucla.sspace.index.IntegerVectorGenerator;
+import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
+import edu.ucla.sspace.index.PermutationFunction;
 
-import edu.ucla.sspace.hermit.BottomUpHermit;
 import edu.ucla.sspace.hermit.FlyingHermit;
-import edu.ucla.sspace.hermit.NonFlyingHermit;
-import edu.ucla.sspace.hermit.SecondOrderFlyingHermit;
 
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.FileListDocumentIterator;
@@ -82,34 +77,56 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens 
  */
-public class HermitMain extends GenericMain {
+public class FlyingHermitMain extends GenericMain {
 
-    public static final String DEFAULT_USER = 
-        "edu.ucla.sspace.index.RandomIndexUser";
+    public static final String DEFAULT_FUNCTION = 
+        "edu.ucla.sspace.index.DefaultPermutationFunction";
 
     public static final String DEFAULT_GENERATOR =
-        "edu.ucla.sspace.index.RandomIndexGenerator";
+        "edu.ucla.sspace.index.RandomIndexVectorGenerator";
 
     public static final String DEFAULT_CLUSTER =
-        "edu.ucla.sspace.cluster.SimpleVectorClusterMap";
+        "edu.ucla.sspace.clustering.OnlineClusteringGenerator";
 
-    public static final int DEFAULT_DIMENSION = 2048;
+    public static final int DEFAULT_DIMENSION = 10000;
 
     public static final int DEFAULT_SENSE_COUNT = 2;
 
     public static final double DEFAULT_THRESHOLD = .75;
 
+    /**
+     * The number of dimensions each semantic vector will use.
+     */
     private int dimension;
+
+    /**
+     * The number of words prior to the focus word to consider part of the
+     * window.
+     */
     private int prevWordsSize;
+
+    /**
+     * The number of words after the focus word to consider part of the window.
+     */
     private int nextWordsSize;
-    private boolean useSecondOrder;
-    private boolean useNonFlying;
-    private IndexGenerator generator;
-    private Class indexUserClazz;
-    private BottomUpVectorClusterMap clusterMap;
+
+    private IntegerVectorGeneratorMap vectorMap;
+
+    private PermutationFunction permFunction;
+
+    private OnlineClusteringGenerator clusterGenerator;
+
+    /**
+     * The replacement map, mapping original terms to conflated terms, for
+     * testing {@code FlyingHermit}.  If this is not setup, {@code FlyingHermit
+     * will default to inferring senses for all words.
+     */
     private Map<String, String> replacementMap;
 
-    private HermitMain() {
+    /**
+     * Uninstantiable.
+     */
+    private FlyingHermitMain() {
     }
 
     /**
@@ -128,9 +145,8 @@ public class HermitMain extends GenericMain {
         options.addOption('l', "vectorLength",
                           "The size of the vectors",
                           true, "INT", "Process Properties");
-        options.addOption('g', "generator", "IndexGenerator to use for hermit",
-                          true, "CLASSNAME", "Process Properties");
-        options.addOption('e', "user", "IndexUser to use for hermit",
+        options.addOption('g', "generator",
+                          "IntegerVectorGenerator to use for hermit",
                           true, "CLASSNAME", "Process Properties");
         options.addOption('s', "windowSize",
                           "The number of words before, and after the focus " +
@@ -144,12 +160,6 @@ public class HermitMain extends GenericMain {
                           true, "CLASSNAME", "Process Properties");
         options.addOption('u', "useDenseSemantics",
                           "Set to true if dense vectors should be used",
-                          false, null, "Process Properties");
-        options.addOption('O', "useSecondOrder",
-                          "Use second order co-occurances is set",
-                           false, null, "Process Properties");
-        options.addOption('N', "useNonFlyingHermit",
-                          "Use the non flying hermit code, this overrides -O",
                           false, null, "Process Properties");
         
         // Add more tokenizing options.
@@ -171,9 +181,6 @@ public class HermitMain extends GenericMain {
         options.addOption('c', "senseCount",
                           "The maximum number of senses Hermit should produce",
                           true, "INT", "Cluster Properties");
-        options.addOption('M', "cluster",
-                          "Class type to use for clustering semantic vectors",
-                          true, "CLASSNAME", "Cluster Properties");
         options.addOption('W', "clusterWeight",
                           "If set, this weight will be used to expoentially " +
                           "average vectors in a cluster",
@@ -188,6 +195,13 @@ public class HermitMain extends GenericMain {
                           true, "FILE", "Pre Processing");
     }
 
+    /**
+     * Prepare the replacement map for {@code FlyingHermit} based on the
+     * contents of {@code filename}.  The expected input is:
+     *   original term | replacement
+     *
+     * @param filename The filename specifying a set of term replacement.
+     */
     private void prepareReplacementMap(String filename) {
         try {
             BufferedReader br = new BufferedReader(new FileReader(filename));
@@ -207,8 +221,11 @@ public class HermitMain extends GenericMain {
         }
     }
 
+    /**
+     * Begin processing with {@code FlyingHermit}.
+     */
     public static void main(String[] args) {
-        HermitMain hermit = new HermitMain();
+        FlyingHermitMain hermit = new FlyingHermitMain();
         try {
             hermit.run(args);
         }
@@ -217,12 +234,11 @@ public class HermitMain extends GenericMain {
         }
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public void handleExtraOptions() {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
-
-        useNonFlying = argOptions.hasOption("useNonFlyingHermit");
-        useSecondOrder = !useNonFlying &&
-                         argOptions.hasOption("useSecondOrder");
 
         // Process the window size arguments;
         String windowValue = argOptions.getStringOption('w', "5,5");
@@ -234,59 +250,51 @@ public class HermitMain extends GenericMain {
             prepareReplacementMap(argOptions.getStringOption('m'));
         }
 
-        // Create the generator.
+        // Setup the PermutationFunction.
+        String permType = argOptions.getStringOption("permutationFunction",
+                                                     DEFAULT_FUNCTION);
+        permFunction =
+            (PermutationFunction) getObjectInstance(permType);
+
+        // Setup the generator.
         String generatorType = 
             argOptions.getStringOption("generator", DEFAULT_GENERATOR);
-        System.setProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY,
-                           Integer.toString(dimension));
-        generator = (IndexGenerator) getObjectInstance(generatorType);
+        IntegerVectorGenerator generator =
+            (IntegerVectorGenerator) getObjectInstance(generatorType);
 
-        // Create the user.
-        String userType = argOptions.getStringOption("user", DEFAULT_USER);
-        try {
-            indexUserClazz = Class.forName(userType);
-            System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
-                               Integer.toString(dimension));
-            System.setProperty(IndexUser.WINDOW_SIZE_PROPERTY,
-                               windowValue);
-            if (argOptions.hasOption("permutationFunction"))
-                System.setProperty(
-                        RandomIndexUser.PERMUTATION_FUNCTION_PROPERTY,
-                        argOptions.getStringOption("permutationFunction"));
-            if (argOptions.hasOption("windowLimit"))
-                System.setProperty(
-                        WindowedPermutationFunction.WINDOW_LIMIT_PROPERTY,
-                        argOptions.getStringOption("windowLimit"));
+        // Setup the use of dense vectors.
+        boolean useDense = argOptions.hasOption("useDenseSemantics");
 
-            if (argOptions.hasOption("useDenseSemantics"))
-                System.setProperty(RandomIndexUser.USE_DENSE_SEMANTICS_PROPERTY,
-                                   "true");
-        } catch (Exception e) {
-            throw new Error(e);
-        }
-
+        // Setup the generator map.
         if (argOptions.hasOption("loadVectors"))
-            generator.loadIndexVectors(
+            vectorMap = IntegerVectorGeneratorMap.loadMap(
                     new File(argOptions.getStringOption("loadVectors")));
+        else
+            vectorMap = new IntegerVectorGeneratorMap(generator, dimension);
 
-        // Process the cluster arguments.
+        // Setup the clustering generator.
         int maxSenseCount = argOptions.getIntOption("senseCount",
                                                     DEFAULT_SENSE_COUNT);
         double threshold = argOptions.getDoubleOption("threshold",
                                                       DEFAULT_THRESHOLD);
-
         String clusterName =
             argOptions.getStringOption("cluster", DEFAULT_CLUSTER);
-        System.setProperty(BottomUpVectorClusterMap.THRESHOLD_PROPERTY,
-                           Double.toString(threshold));
-        System.setProperty(BottomUpVectorClusterMap.MAX_CLUSTERS_PROPERTY,
+        System.setProperty(OnlineClusteringGenerator.MAX_CLUSTERS_PROPERTY,
                            Integer.toString(maxSenseCount));
+        System.setProperty(OnlineClusteringGenerator.MERGE_THRESHOLD_PROPERTY,
+                           Double.toString(threshold));
         if (argOptions.hasOption('W'))
-            System.setProperty(SimpleVectorClusterMap.WEIGHTING_PROPERTY,
+            System.setProperty(OnlineClusteringGenerator.WEIGHTING_PROPERTY,
                                argOptions.getStringOption('W'));
-        clusterMap = (BottomUpVectorClusterMap) getObjectInstance(clusterName);
+        clusterGenerator =
+            (OnlineClusteringGenerator) getObjectInstance(clusterName);
     }
 
+    /**
+     * Returns an arbitrary object instance based on a class name.
+     *
+     * @param className The name of a desired class to instantiate.
+     */
     private Object getObjectInstance(String className) {
         try {
             Class clazz = Class.forName(className);
@@ -299,31 +307,14 @@ public class HermitMain extends GenericMain {
     protected void postProcessing() {
         if (argOptions.hasOption("saveVectors")) {
             String filename = argOptions.getStringOption("saveVectors");
-            generator.saveIndexVectors(new File(filename));
-
-            filename += ".permuations";
-            try {
-                IndexUser user = (IndexUser) indexUserClazz.newInstance();
-                user.saveStaticData(new File(filename));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            vectorMap.saveMap(new File(filename));
         }
     }
 
     public SemanticSpace getSpace() {
-        if (useNonFlying)
-            return new NonFlyingHermit(
-                    generator, indexUserClazz, replacementMap,
-                    dimension, prevWordsSize, nextWordsSize);
-
-        return (useSecondOrder)
-            ? new SecondOrderFlyingHermit(
-                    generator, indexUserClazz, clusterMap, replacementMap,
-                    dimension, prevWordsSize, nextWordsSize)
-            : new FlyingHermit(
-                    generator, indexUserClazz, clusterMap, replacementMap,
-                    dimension, prevWordsSize, nextWordsSize);
+        return new FlyingHermit(vectorMap, permFunction, clusterGenerator,
+                                replacementMap, dimension, prevWordsSize,
+                                nextWordsSize);
     }
 
     public Properties setupProperties() {
@@ -335,15 +326,9 @@ public class HermitMain extends GenericMain {
             argOptions.hasOption('T'))
             props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,
                               argOptions.getStringOption("replacementMap"));
-        props.setProperty(BottomUpHermit.DROP_PERCENTAGE,
-                          argOptions.getStringOption('h'));
         if (argOptions.hasOption("threads"))
-            props.setProperty(BottomUpHermit.THREADS_PROPERTY,
+            props.setProperty(FlyingHermit.THREADS_PROPERTY,
                               argOptions.getStringOption("threads"));
-        props.setProperty(BottomUpHermit.DROP_PERCENTAGE,
-                          argOptions.getStringOption('h'));
-        props.setProperty(BottomUpHermit.NUM_CLUSTERS,
-                          argOptions.getStringOption('c'));
         return props;
     }
 
@@ -352,7 +337,7 @@ public class HermitMain extends GenericMain {
      */
     public void usage() {
          System.out.println(
-                 "usage: java HermitMain [options] <output-dir>\n" + 
+                 "usage: java FlyingHermitMain [options] <output-dir>\n" + 
                  argOptions.prettyPrint());
     }
 

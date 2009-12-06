@@ -24,15 +24,16 @@ package edu.ucla.sspace.beagle;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
-import edu.ucla.sspace.index.BeagleIndexGenerator;
-import edu.ucla.sspace.index.BeagleIndexUser;
-import edu.ucla.sspace.index.IndexGenerator;
-import edu.ucla.sspace.index.IndexUser;
+import edu.ucla.sspace.fft.FastFourierTransform;
+
+import edu.ucla.sspace.index.DoubleVectorGenerator;
+import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
+import edu.ucla.sspace.index.GaussianVectorGenerator;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.DenseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
@@ -87,13 +88,13 @@ public class Beagle implements SemanticSpace {
      * The class responsible for creating index vectors, and incorporating them
      * into a semantic vector.
      */
-    private final IndexGenerator indexGenerator;
+    private final DoubleVectorGeneratorMap vectorMap;
 
     /**
      * A mapping for terms to their semantic vector representation. A {@code
-     * Vector} is used as these representations may be large.
+     * DoubleVector} is used as these representations may be large.
      */
-    private final ConcurrentMap<String, Vector> termHolographs;
+    private final ConcurrentMap<String, DoubleVector> termHolographs;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -110,16 +111,38 @@ public class Beagle implements SemanticSpace {
      */
     private int nextSize;
 
+    /**
+     * An empty place holder vector to represent the focus word when computing
+     * the circular convolution.
+     */
+    private DoubleVector placeHolder;
+
+    /**
+     * The first permutation ordering for vectors.
+     */
+    private int[] permute1;
+
+    /**
+     * The second permutation ordering for vectors.
+     */
+    private int[] permute2;
+
     public Beagle(int vectorSize) {
-        System.setProperty(IndexGenerator.INDEX_VECTOR_LENGTH_PROPERTY,
-                           Integer.toString(vectorSize));
-        System.setProperty(IndexUser.INDEX_VECTOR_LENGTH_PROPERTY,
-                           Integer.toString(vectorSize));
         indexVectorSize = vectorSize;
-        indexGenerator = new BeagleIndexGenerator();
+        termHolographs = new ConcurrentHashMap<String, DoubleVector>();
+        DoubleVectorGenerator generator = new GaussianVectorGenerator();
+        vectorMap = new DoubleVectorGeneratorMap(generator, indexVectorSize);
+
+        placeHolder = generator.generateRandomVector(indexVectorSize);
+
+        // Generate the permutation arrays.
+        permute1 = new int[indexVectorSize];
+        permute2 = new int[indexVectorSize];
+        randomPermute(permute1);
+        randomPermute(permute2);
+
         prevSize = 1;
         nextSize = 5;
-        termHolographs = new ConcurrentHashMap<String, Vector>();
     }
 
     /**
@@ -132,7 +155,7 @@ public class Beagle implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(String term) {
+    public DoubleVector getVector(String term) {
         return Vectors.immutableVector(termHolographs.get(term));
     }
 
@@ -154,11 +177,12 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
+        Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
-        IndexUser indexUser = new BeagleIndexUser();
 
         Iterator<String> it = IteratorFactory.tokenize(document);
-        Map<String, Vector> documentVectors = new HashMap<String, Vector>();
+        Map<String, DoubleVector> documentVectors =
+            new HashMap<String, DoubleVector>();
 
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
@@ -174,26 +198,21 @@ public class Beagle implements SemanticSpace {
             // Incorporate the context into the semantic vector for the focus
             // word.  If the focus word has no semantic vector yet, create a new
             // one, as determined by the index builder.
-            Vector meaning = termHolographs.get(focusWord);
+            DoubleVector meaning = termHolographs.get(focusWord);
             if (meaning == null) {
                 meaning = new DenseVector(indexVectorSize);
                 documentVectors.put(focusWord, meaning);
             }
 
-            Vector focusVector = indexGenerator.getIndexVector(focusWord);
-
-            for (String term : nextWords) {
-                Vector addedMeaning = indexUser.generateMeaning(
-                        focusVector,
-                        indexGenerator.getIndexVector(term),
-                        0);
-                Vectors.add(meaning, addedMeaning);
-            }
+            generateMeaning(meaning, prevWords, nextWords);
+            prevWords.offer(focusWord);
+            if (prevWords.size() > 1)
+                prevWords.remove();
         }
 
-        for (Map.Entry<String, Vector> entry : documentVectors.entrySet()) {
+        for (Map.Entry<String, DoubleVector> entry : documentVectors.entrySet()) {
             synchronized (entry.getKey()) {
-                Vector existingVector = termHolographs.get(entry.getKey());
+                DoubleVector existingVector = termHolographs.get(entry.getKey());
                 if (existingVector == null)
                     termHolographs.put(entry.getKey(), entry.getValue());
                 else
@@ -206,5 +225,122 @@ public class Beagle implements SemanticSpace {
      * No processing is performed on the holographs.
      */
     public void processSpace(Properties properties) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * </p>Adds a holograph encoding the co-occurance information, and the
+     * ordering information of the given context.  {@code termVector} will be
+     * added to the result {@code DoubleVector}, and then the convolution of any prior
+     * convoluted n-grams will be convoluted with the given {@code termVector}
+     * and added to the result.  When {@code focusVector} changes to be a
+     * different term, new n-gram convolutions are generated which use a
+     * placeholder in place of {@code focusVector}.
+     */
+    public void generateMeaning(DoubleVector meaning,
+                                Queue<String> prevWords,
+                                Queue<String> nextWords) {
+        // Sum the index vectors for co-occuring words into {@code meaning}.
+        for (String term: prevWords)
+            Vectors.add(meaning, vectorMap.get(term));
+        for (String term: nextWords)
+            Vectors.add(meaning, vectorMap.get(term));
+
+        // Generate the semantics of the circular convolution of n-grams.
+        Vectors.add(meaning, groupConvolution(prevWords, nextWords));
+    }
+
+    /**
+     * Generate the circular convoltion of n-grams composed of words in the
+     * given context. The result of this convolution is returned as a
+     * DoubleVector.
+     *
+     * @param prevWords The words prior to the focus word in the context.
+     * @param nextWords The Words after the focus word in the context.
+     * 
+     * @return The semantic vector generated from the circular convolution.
+     */
+    private DoubleVector groupConvolution(Queue<String> prevWords,
+                                    Queue<String> nextWords) {
+        // Generate an empty DoubleVector to hold the convolution.
+        DoubleVector result = new DenseVector(indexVectorSize);
+
+        // Do the convolutions starting at index 0.
+        DoubleVector tempConvolution =
+            convolute(vectorMap.get(prevWords.peek()), placeHolder);
+
+        Vectors.add(result, tempConvolution);
+
+        for (String term : nextWords) {
+            tempConvolution = convolute(tempConvolution, vectorMap.get(term));
+            Vectors.add(result, tempConvolution);
+        }
+
+        tempConvolution = placeHolder;
+
+        // Do the convolutions starting at index 1.
+        for (String term : nextWords) {
+            tempConvolution = convolute(tempConvolution, vectorMap.get(term));
+            Vectors.add(result, tempConvolution);
+        }
+        return result;
+    }
+
+    /**
+     * Populates the given array with values 0 to {@code indexVectorSize}, and
+     * then shuffly the values randomly.
+     */
+    private void randomPermute(int[] permute) {
+        for (int i = 0; i < indexVectorSize; i++)
+            permute[i] = i;
+        for (int i = indexVectorSize - 1; i > 0; i--) {
+            int w = (int) Math.floor(Math.random() * (i+1));
+            int temp = permute[w];
+            permute[w] = permute[i];
+            permute[i] = permute[w];
+        }
+    }
+
+    /**
+     * Perform the circular convolution of two vectors.    The resulting vector
+     * is returned.
+     *
+     * @param left The left vector.
+     * @param right The right vector.
+     *
+     * @return The circular convolution of {@code left} and {@code right}.
+     */
+    private DoubleVector convolute(DoubleVector left, DoubleVector right) {
+        // Permute both vectors.
+        left = changeVector(left, permute1);
+        right = changeVector(right, permute2);
+
+        // Use the Fast Fourier Transform on each vector.
+        FastFourierTransform.transform(left, 0, 1);
+        FastFourierTransform.transform(right, 0, 1);
+
+        // Multiply the two together.
+        DoubleVector result = Vectors.multiply(left, right);
+
+        // The inverse transform completes the convolution.
+        FastFourierTransform.backtransform(result, 0, 1);
+        return result;
+    }
+
+    /**
+     * Shuffle the given vector based on the ordering information given in
+     * {@code orderVector}.
+     *
+     * @param data The vector to be shuffled.
+     * @param orderVector The ordering of values to be used.
+     * 
+     * @return The shuffled version of {@code data}.
+     */
+    private DoubleVector changeVector(DoubleVector data, int[] orderVector) {
+        DoubleVector result = new DenseVector(indexVectorSize);
+        for (int i = 0; i < indexVectorSize; i++)
+            result.set(i, data.get(orderVector[i]));
+        return result;
     }
 }

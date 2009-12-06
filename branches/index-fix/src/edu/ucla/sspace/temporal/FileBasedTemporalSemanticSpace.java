@@ -29,6 +29,7 @@ import edu.ucla.sspace.temporal.TemporalSemanticSpaceUtils.TSSpaceFormat;
 import edu.ucla.sspace.util.IntegerMap;
 
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
@@ -524,7 +525,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
          * Returns the summed array of all the {@link IndexVector} instances in
          * the provided {@code Map}.
          */
-        private Vector computeSemantics(
+        private DoubleVector computeSemantics(
                 Map<Long,Map<Integer,Double>> timespan) {
             double[] semantics = new double[dimensions];
             for (Map<Integer,Double> vectors : timespan.values()) {
@@ -564,7 +565,7 @@ public class FileBasedTemporalSemanticSpace implements TemporalSemanticSpace {
          * Returns the semantics for this vector for all co-occurrence instances
          * regardless of when they happened.
          */
-        public Vector getVector() {
+        public DoubleVector getVector() {
             return computeSemantics(timeStampToSemantics);
         }
 

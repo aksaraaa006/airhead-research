@@ -22,8 +22,8 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -142,7 +142,7 @@ public class RowMaskedMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
+    public DoubleVector getColumnVector(int column) {
         return new DenseVector(getColumn(column));
     }
 
@@ -156,7 +156,7 @@ public class RowMaskedMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
+    public DoubleVector getRowVector(int row) {
         return backingMatrix.getRowVector(getRealRow(row));
     }
 
@@ -205,14 +205,14 @@ public class RowMaskedMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         if (values.length() != rows)
             throw new IllegalArgumentException("cannot set a column " +
                 "whose dimensions are different than the matrix");
         if (values instanceof SparseVector) {
             SparseVector sv = (SparseVector)values;
             for (int nz : sv.getNonZeroIndices())
-                backingMatrix.set(getRealRow(nz), nz, sv.get(nz));
+                backingMatrix.set(getRealRow(nz), nz, values.get(nz));
         }
         else {
             for (Map.Entry<Integer,Integer> e : rowToReal.entrySet())
@@ -231,7 +231,7 @@ public class RowMaskedMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         backingMatrix.setRow(getRealRow(row), values);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2009 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -23,16 +23,17 @@ package edu.ucla.sspace.vector;
 
 
 /**
- * An Interface for a {@code Vector} implementation indicating that it is
- * sparse and provides functionality to retrieve the non zero indices.
- *
- * @author Keith Stevens
+ * An interface for ternary (+1, 0, -1) valued vectors.  
  */
-public interface SparseVector {
+public interface TernaryVector {
 
     /**
-     * Return an array of all the non zero indices in this Sparse
-     * implementation.
+     * Returns the indices at which this vector is valued {@code -1}.
      */
-    int[] getNonZeroIndices();
+    int[] negativeDimensions();
+    
+    /**
+     * Returns the indices at which this vector is valued {@code +1}.
+     */
+    int[] positiveDimensions();
 }

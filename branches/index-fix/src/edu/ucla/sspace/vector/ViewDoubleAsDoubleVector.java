@@ -36,20 +36,21 @@ import java.io.Serializable;
  *
  * </p>
  *
- * Note that the original {@code Vector} can still be
- * alterned by the object owning it, but classes given a {@code ViewVector}
- * cannot make modififications.
+ * Note that the original {@code Vector} can still be alterned by the object
+ * owning it, but classes given a {@code ViewDoubleAsDoubleVector} cannot make
+ * modififications.
  *
  * @author Keith Stevens
  */
-class ViewVector implements Vector, Serializable  {
+class ViewDoubleAsDoubleVector extends ViewAbstractDoubleVector
+                               implements Serializable  {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The actual vector this {@code ViewVector} is decorating.
+     * The actual vector this {@code ViewDoubleAsDoubleVector} is decorating.
      */
-    private final Vector vector;
+    private final DoubleVector vector;
 
     /**
      * The index at which the values {@code vector} are stored.
@@ -63,25 +64,26 @@ class ViewVector implements Vector, Serializable  {
     private final int vectorLength;
 
     /**
-     * Create a new {@code ViewVector} around an already existing {@code
-     * Vector} providing read only access.
+     * Create a new {@code ViewDoubleAsDoubleVector} around an already existing
+     * {@code Vector} providing read only access.
      *
      * @param v The {@code Vector} to decorate.
      */
-    public ViewVector(Vector v) {
+    public ViewDoubleAsDoubleVector(DoubleVector v) {
         this(v, 0, v.length());
     }
 
     /**
-     * Create a new {@code ViewVector} around an already existing {@code Vector}
-     * with a given offset, and a given total length.
+     * Create a new {@code ViewDoubleAsDoubleVector} around an already existing
+     * {@code Vector} with a given offset, and a given total length.
      *
      * @param v The {@code Vector} to decorate.
      * @param offset The index at which values of {@code v} are stored in this
-     *               {@code ViewVector}.
-     * @param length The maximum length of this {@code ViewVector}.
+     *               {@code ViewDoubleAsDoubleVector}.
+     * @param length The maximum length of this {@code ViewDoubleAsDoubleVector}.
      */
-    public ViewVector(Vector v, int offset, int length) {
+    public ViewDoubleAsDoubleVector(DoubleVector v, int offset, int length) {
+        super(v);
         vector = v;
         vectorOffset = offset;
         vectorLength = length;
@@ -92,7 +94,7 @@ class ViewVector implements Vector, Serializable  {
      */
     public double add(int index, double delta) {
         throw new UnsupportedOperationException("add is not supported in an " +
-                "ViewVector");
+                "ViewDoubleAsDoubleVector");
     }
 
     /**
@@ -100,7 +102,7 @@ class ViewVector implements Vector, Serializable  {
      */
     public void set(int index, double value) {
         throw new UnsupportedOperationException("set is not supported in an " +
-                "ViewVector");
+                "ViewDoubleAsDoubleVector");
     }
 
     /**
@@ -108,7 +110,7 @@ class ViewVector implements Vector, Serializable  {
      */
     public void set(double[] values) {
         throw new UnsupportedOperationException("set is not supported in an " +
-                "ViewVector");
+                "ViewDoubleAsDoubleVector");
     }
 
     /**
@@ -129,16 +131,5 @@ class ViewVector implements Vector, Serializable  {
      */
     public double[] toArray(int size) {
         return vector.toArray(size);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int length() {
-        return vectorLength;
-    }
-
-    public String toString() {
-        return vector.toString();
     }
 }

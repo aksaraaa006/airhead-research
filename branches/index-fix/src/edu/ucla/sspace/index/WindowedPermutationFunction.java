@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.IndexVector;
+import edu.ucla.sspace.vector.IntegerVector;
 
 import java.util.Properties;
 
@@ -77,18 +77,7 @@ public class WindowedPermutationFunction implements PermutationFunction {
     /**
      * {@inheritDoc}
      */
-    public IndexVector permute(IndexVector v, int numPermutations) {
+    public IntegerVector permute(IntegerVector v, int numPermutations) {
         return function.permute(v, numPermutations/windowSize);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void setupPermutations(int vectorLength,
-                                  int numPositivePermutations,
-                                  int numNegativePermutations) {
-        function.setupPermutations(vectorLength,
-                                   numPositivePermutations/windowSize,
-                                   numNegativePermutations/windowSize);
     }
 }

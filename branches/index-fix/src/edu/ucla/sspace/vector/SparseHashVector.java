@@ -34,7 +34,7 @@ import edu.ucla.sspace.util.SparseHashArray;
  *
  * @author David Jurgens
  */
-public class SparseHashVector implements Vector, SparseVector {
+public class SparseHashVector implements DoubleVector, SparseVector {
 
     /**
      * The backing array that holds the vector values
@@ -103,6 +103,13 @@ public class SparseHashVector implements Vector, SparseVector {
         vector.set(index, value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
+    }
+
     /** 
      * {@inheritDoc}
      */
@@ -130,6 +137,13 @@ public class SparseHashVector implements Vector, SparseVector {
     public double get(int index) {
         Double d = vector.get(index);
         return (d == null) ? 0 : d;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Number getValue(int index) {
+        return get(index);
     }
 
     /**
