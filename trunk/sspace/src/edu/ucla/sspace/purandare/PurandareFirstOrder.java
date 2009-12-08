@@ -89,11 +89,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * An implementation of the word sense induction algorithm described by
- * Purandare and Petersen.  This implementation is based on the following
+ * Purandare and Pedersen.  This implementation is based on the following
  * paper: <ul>
  *
  *   <li style="font-family:Garamond, Georgia, serif"> Amruta Purandare and Ted
- *   Petersen.  (2004) Word Sense Discrimination by Clustering Contexts in
+ *   Pedersen.  (2004) Word Sense Discrimination by Clustering Contexts in
  *   Vector and Similarity Spaces.  <i>Proceedings of Conference on
  *   Computational Natural Language Learning (CoNLL)</i>, pp. 41-48, May 6-7,
  *   2004, Boston, MA.</li>
