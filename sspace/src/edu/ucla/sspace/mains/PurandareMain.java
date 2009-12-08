@@ -35,8 +35,8 @@ import java.util.Properties;
 
 /**
  * An executable class for running {@link PurandareFirstOrder} from the command
- * line.  See the Purandare and Petersen <a
- * href="http://code.google.com/p/airhead-research/wiki/PurandareAndPetersen">wiki
+ * line.  See the Purandare and Pedersen <a
+ * href="http://code.google.com/p/airhead-research/wiki/PurandareAndPedersen">wiki
  * page</a> for details on running this class from the command line. <p>
  *
  * This class is desgined to run multi-threaded and performs well with one
