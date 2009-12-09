@@ -22,7 +22,6 @@
 package edu.ucla.sspace.index;
 
 import edu.ucla.sspace.vector.TernaryVector;
-import edu.ucla.sspace.vector.FixedTernaryVector;
 import edu.ucla.sspace.vector.IntegerVector;
 
 import java.util.Arrays;
@@ -186,6 +185,6 @@ public class RandomIndexVectorGenerator implements IntegerVectorGenerator {
         // sort so we can use a binary search in getValue()
         Arrays.sort(positive);
         Arrays.sort(negative);
-        return new FixedTernaryVector(indexVectorLength, positive, negative);
+        return new TernaryVector(indexVectorLength, positive, negative);
     }
 }

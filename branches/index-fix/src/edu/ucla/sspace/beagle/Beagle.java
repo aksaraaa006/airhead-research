@@ -204,15 +204,17 @@ public class Beagle implements SemanticSpace {
                 documentVectors.put(focusWord, meaning);
             }
 
-            generateMeaning(meaning, prevWords, nextWords);
+            updateMeaning(meaning, prevWords, nextWords);
             prevWords.offer(focusWord);
             if (prevWords.size() > 1)
                 prevWords.remove();
         }
 
-        for (Map.Entry<String, DoubleVector> entry : documentVectors.entrySet()) {
+        for (Map.Entry<String, DoubleVector> entry :
+                documentVectors.entrySet()) {
             synchronized (entry.getKey()) {
-                DoubleVector existingVector = termHolographs.get(entry.getKey());
+                DoubleVector existingVector =
+                    termHolographs.get(entry.getKey());
                 if (existingVector == null)
                     termHolographs.put(entry.getKey(), entry.getValue());
                 else
@@ -228,19 +230,17 @@ public class Beagle implements SemanticSpace {
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * </p>Adds a holograph encoding the co-occurance information, and the
+     * Adds a holograph encoding the co-occurance information, and the
      * ordering information of the given context.  {@code termVector} will be
-     * added to the result {@code DoubleVector}, and then the convolution of any prior
-     * convoluted n-grams will be convoluted with the given {@code termVector}
-     * and added to the result.  When {@code focusVector} changes to be a
-     * different term, new n-gram convolutions are generated which use a
+     * added to the result {@code DoubleVector}, and then the convolution of any
+     * prior convoluted n-grams will be convoluted with the given {@code
+     * termVector} and added to the result.  When {@code focusVector} changes to
+     * be a different term, new n-gram convolutions are generated which use a
      * placeholder in place of {@code focusVector}.
      */
-    public void generateMeaning(DoubleVector meaning,
-                                Queue<String> prevWords,
-                                Queue<String> nextWords) {
+    private void updateMeaning(DoubleVector meaning,
+                               Queue<String> prevWords,
+                               Queue<String> nextWords) {
         // Sum the index vectors for co-occuring words into {@code meaning}.
         for (String term: prevWords)
             Vectors.add(meaning, vectorMap.get(term));

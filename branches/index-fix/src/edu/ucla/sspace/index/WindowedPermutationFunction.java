@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.util.Properties;
 
@@ -30,7 +30,20 @@ import java.util.Properties;
  * A permutation function that provides windows of positions which are permuted
  * using the same function.  For instance, with a window size of 2, words 1 and
  * 2 positions away will be permuted once, words 3 and 4 positions away will be
- * permuted twice, etc.
+ * permuted twice, etc.  This class supports the following properties:
+ *
+ * <dl style="margin-left: 1em">
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #WINDOW_LIMIT_PROPERTY }
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_WINDOW_LIMIT}
+ *
+ * <dd style="padding-top: .5em">This variable sets the size of a permutation
+ * window.</p>
+ *
+ * </dl>
+ *
+ * @author Keith Stevens
  */
 public class WindowedPermutationFunction implements PermutationFunction {
 
@@ -45,6 +58,11 @@ public class WindowedPermutationFunction implements PermutationFunction {
      */
     public static final String WINDOW_LIMIT_PROPERTY =
         PROPERTY_PREFIX + ".window";
+
+    /**
+     * The default window limit to place on permutations.
+     */
+    public static final String DEFAULT_WINDOW_LIMIT = "1";
 
     /**
      * The backing permutation function to use.
@@ -70,14 +88,14 @@ public class WindowedPermutationFunction implements PermutationFunction {
      */
     public WindowedPermutationFunction(Properties props) {
         function = new DefaultPermutationFunction();
-        windowSize =
-            Integer.parseInt(props.getProperty(WINDOW_LIMIT_PROPERTY, "5"));
+        windowSize = Integer.parseInt(props.getProperty(
+                    WINDOW_LIMIT_PROPERTY, DEFAULT_WINDOW_LIMIT));
     }
     
     /**
      * {@inheritDoc}
      */
-    public IntegerVector permute(IntegerVector v, int numPermutations) {
+    public Vector permute(Vector v, int numPermutations) {
         return function.permute(v, numPermutations/windowSize);
     }
 }

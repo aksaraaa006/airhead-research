@@ -321,6 +321,76 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
+    public static double cosineSimilarity(IntegerVector a, IntegerVector b) {
+        check(a,b);
+
+        double dotProduct = 0.0;
+        double aMagnitude = 0.0;
+        double bMagnitude = 0.0;
+
+        // Check whether both vectors are sparse.  If so, use only the non-zero
+        // indices to speed up the computation by avoiding zero multiplications
+        if (a instanceof SparseVector && b instanceof SparseVector) {
+            SparseVector svA = (SparseVector)a;
+            SparseVector svB = (SparseVector)b;
+            int[] nzA = svA.getNonZeroIndices();
+            int[] nzB = svB.getNonZeroIndices();
+            // Choose the smaller of the two to use in computing the dot
+            // product.  Because it would be more expensive to compute the
+            // intersection of the two sets, we assume that any potential
+            // misses would be less of a performance hit.
+            if (nzA.length < nzB.length) {
+                // Compute A's maginitude and the dot product
+                for (int nz : nzA) {
+                    double aValue = a.get(nz);
+                    double bValue = b.get(nz);
+                    aMagnitude += aValue * aValue;
+                    dotProduct += aValue * bValue;
+                }
+                // Then compute B's magnitude
+                for (int nz : nzB) {
+                    double bValue = b.get(nz);
+                    bMagnitude += bValue * bValue;                                
+                }
+            }
+            else {
+                // Compute B's maginitude and the dot product
+                for (int nz : nzB) {
+                    double aValue = a.get(nz);
+                    double bValue = b.get(nz);
+                    bMagnitude += bValue * bValue;
+                    dotProduct += aValue * bValue;
+                }
+                // Then compute A's magnitude
+                for (int nz : nzA) {
+                    double aValue = a.get(nz);
+                    aMagnitude += aValue * aValue;                                
+                }
+            }
+        }
+
+        // Otherwise, just assume both are dense and compute the full amount
+        else {
+            for (int i = 0; i < b.length(); i++) {
+                double aValue = a.get(i);
+                double bValue = b.get(i);
+                aMagnitude += aValue * aValue;
+                bMagnitude += bValue * bValue;
+                dotProduct += aValue * bValue;
+            }
+        }
+        aMagnitude = Math.sqrt(aMagnitude);
+        bMagnitude = Math.sqrt(bMagnitude);
+        return (aMagnitude == 0 || bMagnitude == 0)
+            ? 0 : dotProduct / (aMagnitude * bMagnitude);
+    }
+
+    /**
+     * Returns the cosine similarity of the two {@code DoubleVector}.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double cosineSimilarity(Vector a, Vector b) {
         return cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
     }
@@ -428,6 +498,38 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
+    public static double correlation(IntegerVector arr1, DoubleVector arr2) {
+        check(arr1, arr2);
+
+        // REMINDER: this could be made more effecient by not looping
+        double xSum = 0;
+        double ySum = 0;
+        for (int i = 0; i < arr1.length(); ++i) {
+            xSum += arr1.get(i);
+            ySum += arr2.get(i);
+        }
+        
+        double xMean = xSum / arr1.length();
+        double yMean = ySum / arr1.length();
+    
+        double numerator = 0, xSqSum = 0, ySqSum = 0;
+        for (int i = 0; i < arr1.length(); ++i) {
+            double x = arr1.get(i) - xMean;
+            double y = arr2.get(i) - yMean;
+            numerator += x * y;
+            xSqSum += (x * x);
+            ySqSum += (y * y);
+        }
+        return numerator / Math.sqrt(xSqSum * ySqSum);
+    }
+
+    /**
+     * Returns the Pearson product-moment correlation coefficient of the two
+     * {@code Vector}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
     public static double correlation(Vector a, Vector b) {
         return correlation(Vectors.asDouble(a), Vectors.asDouble(b));
     }
@@ -472,6 +574,21 @@ public class Similarity {
      *                                   not the same.
      */
     public static double euclideanDistance(DoubleVector a, DoubleVector b) {
+        check(a, b);
+        
+        double sum = 0;
+        for (int i = 0; i < a.length(); ++i)
+            sum += Math.pow((a.get(i) - b.get(i)), 2);
+        return Math.sqrt(sum);
+    }
+
+    /**
+     * Returns the euclidian distance between two {@code DoubleVector}s.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double euclideanDistance(IntegerVector a, IntegerVector b) {
         check(a, b);
         
         double sum = 0;
@@ -599,6 +716,34 @@ public class Similarity {
         Set<Double> tmp = new HashSet<Double>();
         for (int i = 0; i < b.length(); ++i) {
             double d = b.get(i);
+            tmp.add(d);
+            union.add(d);
+        }
+
+        intersection.retainAll(tmp);
+        return ((double)(intersection.size())) / union.size();
+    }
+
+    /**
+     * Computes the Jaccard index comparing the similarity both {@code
+     * DoubleVector}s when viewed as sets of samples.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double jaccardIndex(IntegerVector a, IntegerVector b) {
+        check(a, b);
+        
+        Set<Integer> intersection = new HashSet<Integer>();
+        Set<Integer> union = new HashSet<Integer>();
+        for (int i = 0; i < a.length(); ++i) {
+            int d = a.get(i);
+            intersection.add(d);
+            union.add(d);
+        }
+        Set<Integer> tmp = new HashSet<Integer>();
+        for (int i = 0; i < b.length(); ++i) {
+            int d = b.get(i);
             tmp.add(d);
             union.add(d);
         }
@@ -767,6 +912,63 @@ public class Similarity {
         for (Map.Entry<Double,Double> e : ranking.entrySet()) {
             Double x = e.getKey();
             Double y = e.getValue();
+            // check that there are no tied rankings
+            if (last == null)
+                last = x;
+            else if (last.equals(x))
+                // if there was a tie, return the correlation instead.
+                return correlation(a,b);
+            else 
+                last = x;
+
+            // determine the difference in the ranks for both values
+            int rankDiff = curRank - otherRanking.get(y).intValue();
+            diff += rankDiff * rankDiff;
+
+            curRank++;
+        }
+
+        return 1 - ((6 * diff) / (a.length() * (a.length() * a.length() - 1)));
+    }
+
+    /**
+     * Computes the Spearman rank correlation coefficient for the two {@code
+     * DoubleVector}s.  If there is a tie in the ranking of {@code a}, then
+     * Pearson's product-moment coefficient is returned instead.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double spearmanRankCorrelationCoefficient(IntegerVector a, 
+                                                            IntegerVector b) {
+        check(a, b);
+
+        SortedMap<Integer,Integer> ranking = new TreeMap<Integer,Integer>();
+        for (int i = 0; i < a.length(); ++i) {
+            ranking.put(a.get(i), b.get(i));
+        }
+        
+        int[] sortedB = b.toArray();
+        Arrays.sort(sortedB);
+        Map<Integer,Integer> otherRanking = new HashMap<Integer,Integer>();
+        for (int i = 0; i < b.length(); ++i) {
+            otherRanking.put(sortedB[i], i);
+        }
+        
+        // keep track of the last value we saw in the key set so we can check
+        // for ties.  If there are ties then the Pearson's product-moment
+        // coefficient should be returned instead.
+        Integer last = null;
+
+        // sum of the differences in rank
+        double diff = 0d;
+
+        // the current rank of the element in a that we are looking at
+        int curRank = 0;
+
+        for (Map.Entry<Integer,Integer> e : ranking.entrySet()) {
+            Integer x = e.getKey();
+            Integer y = e.getValue();
             // check that there are no tied rankings
             if (last == null)
                 last = x;

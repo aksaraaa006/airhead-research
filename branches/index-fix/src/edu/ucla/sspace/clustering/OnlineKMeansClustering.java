@@ -136,6 +136,9 @@ public class OnlineKMeansClustering implements OnlineClustering {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int assignVector(Vector value) {
         // First make a shallow copy of the cluster list to work on.  Note that
         // by making this shallow copy, if new clusters are added while
@@ -165,6 +168,9 @@ public class OnlineKMeansClustering implements OnlineClustering {
         return bestIndex;
     }
 
+    /**
+     * Generates a new {@code Cluster} for the given {@code Vector}.
+     */
     private Cluster getNewCluster(Vector vector) {
         return (clusterWeight == 0d)
             ? new Cluster(vector)
@@ -180,6 +186,9 @@ public class OnlineKMeansClustering implements OnlineClustering {
         return elements.get(clusterIndex).getMembers();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public synchronized List<List<Vector>> getClusters() {
         List<List<Vector>> clusters =
             new ArrayList<List<Vector>>(elements.size());
@@ -223,6 +232,14 @@ public class OnlineKMeansClustering implements OnlineClustering {
         return mapping;
     }
 
+    /**
+     * Merges all existing clusters using the average link criteria
+     * Agglomerative Clustering algorithm.  A mapping representing how clusters
+     * were merged is returned.
+     *
+     * @return The a mapping from merged cluster to the new destination cluster
+     *         index.
+     */
     private Map<Integer, Integer> mergeClusters() {
         MultiMap<Integer, Integer> mergeMap =
             new HashMultiMap<Integer, Integer>();
@@ -290,6 +307,11 @@ public class OnlineKMeansClustering implements OnlineClustering {
         return resultMergeMap;
     }
 
+    /**
+     * Drops any clusters that do not meet a size threshold.
+     *
+     * @return The list of cluster indexes dropped.
+     */
     private List<Integer> dropClusters() {
         List<Integer> dropped = new LinkedList<Integer>();
 
@@ -310,5 +332,110 @@ public class OnlineKMeansClustering implements OnlineClustering {
             }
         }
         return dropped;
+    }
+
+    /**
+     * A simple class representing a single cluster of {@code Vector}s.
+     */
+    private class Cluster {
+
+        /**
+         * The centroid of the {@code Cluster}.
+         */
+        protected Vector centroid;
+
+        /**
+         * The number of items stored in this {@code Cluster}
+         */
+        protected int itemCount;
+
+        /**
+         * The weight given to the current centroid when computing an average
+         * centroid.
+         */
+        protected double oldValueWeight;
+
+        /**
+         * The weight given to new {@code Vector}s when computing an average
+         * centroid.
+         */
+        protected double newValueWeight;
+
+        /**
+         * Creates a new {@code Cluster} with {@code firstVector} as the
+         * centroid, and no weighting.
+         */
+        public Cluster(Vector firstVector) {
+            this(firstVector, 0, 0);
+        }
+
+        /**
+         * Creates a new {@code Cluster} with {@code firstVector} as the
+         * centroid, and the given weights.
+         */
+        public Cluster(Vector firstVector, double oldWeight, double newWeight) {
+            centroid = firstVector; 
+            oldValueWeight = oldWeight;
+            newValueWeight = newWeight;
+            itemCount = 1;
+        }
+
+        /**
+         * Adds a {@code Vector} to the {@code Cluster}.
+         *
+         * @param vector The vector to add.
+         */
+        public synchronized void addVector(Vector vector) {
+            if (oldValueWeight == 0 || newValueWeight == 0)
+                Vectors.add(centroid, vector);
+            else 
+                Vectors.addWithScalars(centroid, oldValueWeight,
+                                       vector, newValueWeight);
+            ++itemCount;
+        }
+
+        /**
+         * Adds all the elements in a given cluster to the current {@code
+         * Cluster}.
+         *
+         * @param cluster The cluster to add into the current cluster.
+         */
+        public synchronized void addCluster(Cluster cluster) {
+            addVector(cluster.centroid);
+        }
+
+        /**
+         * Computes the similarity of this {@code Cluster} to a provided {@code
+         * Vector}.
+         */
+        public synchronized double compareWithVector(Vector vector) {
+            return Similarity.cosineSimilarity(centroid, vector);
+        }
+
+        /**
+         * Returns a list of members in this {@code Cluster} as a list of {@code
+         * Vector}s.
+         */
+        public synchronized List<Vector> getMembers() {
+            List<Vector> members = new ArrayList<Vector>(1);
+            members.add(Vectors.immutableVector(centroid));
+            return members;
+        }
+
+        /**
+         * Returns the total number of items represented by this {@code
+         * Cluster}.
+         */
+        public synchronized int getTotalMemberCount() {
+            return itemCount;
+        }
+
+        /**
+         * Returns the cosine similarity of the given cluster to the current
+         * {@code Cluster}
+         */
+        public synchronized double clusterSimilarity(Cluster cluster) {
+            return Similarity.cosineSimilarity(centroid, cluster.centroid);
+        }
     }
 }

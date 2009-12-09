@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.Vector;
 
 
 /**
@@ -41,5 +41,5 @@ public interface PermutationFunction {
      *
      * @return the original index vector permuted the specified number of times
      */
-    IntegerVector permute(IntegerVector v, int numPermutations);
+    Vector permute(Vector v, int numPermutations);
 }

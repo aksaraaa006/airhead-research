@@ -30,7 +30,21 @@ import java.util.Random;
 
 
 /**
- * Generate guassian index vectors.
+ * Generate guassian index vectors.  This class supports the following
+ * properties:
+ *
+ * <dl style="margin-left: 1em">
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #STANDARD_DEVIATION_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_STANDARD_DEVIATION }
+ *
+ * <dd style="padding-top: .5em">This variable is the standard deviation used
+ * when generating random numbers from a gaussian distribution</p>
+ *
+ * </dl>
+ *
+ * @author Keith Stevens
  */
 public class GaussianVectorGenerator implements DoubleVectorGenerator {
 

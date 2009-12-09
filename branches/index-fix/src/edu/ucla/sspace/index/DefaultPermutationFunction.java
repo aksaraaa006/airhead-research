@@ -21,12 +21,10 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.DenseIntVector;
-import edu.ucla.sspace.vector.FixedTernaryVector;
-import edu.ucla.sspace.vector.IntegerVector;
-import edu.ucla.sspace.vector.SparseIntVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.TernaryVector;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,8 +46,14 @@ public class DefaultPermutationFunction implements PermutationFunction {
 
     private static final Random RANDOM = RandomIndexVectorGenerator.RANDOM;
 
+    /**
+     * A mapping from a distance to a corresponding permutation.
+     */
     private final Map<Integer, Function> permutationToReordering;
     
+    /**
+     * Creates an empty {@code DefaultPermutationFunction}.
+     */
     public DefaultPermutationFunction() {
         permutationToReordering = new HashMap<Integer,Function>();
     }
@@ -123,22 +127,20 @@ public class DefaultPermutationFunction implements PermutationFunction {
     /**
      * {@inheritDoc}
      */
-    public IntegerVector permute(IntegerVector v , int numPermutations) {
+    public Vector permute(Vector v , int numPermutations) {
         if (v instanceof TernaryVector)
             return permute((TernaryVector) v, numPermutations, v.length());
 
-        IntegerVector result = null;
+        Vector result = Vectors.instanceOf(v);
         int[] dimensions = null;
         int[] oldDims = null;
         if (v instanceof SparseVector) {
             oldDims = ((SparseVector) v).getNonZeroIndices();
             dimensions = Arrays.copyOf(oldDims, oldDims.length);
-            result = new SparseIntVector(v.length());
         } else {
             dimensions = new int[v.length()];
             for (int i = 0; i < v.length(); ++i)
                 dimensions[i] = i;
-            result = new DenseIntVector(v.length());
         }
 
         boolean isInverse = numPermutations < 0;
@@ -164,17 +166,17 @@ public class DefaultPermutationFunction implements PermutationFunction {
         }
 
         for (int d : dimensions)
-            result.set(d, v.get(d));
+            result.set(d, v.getValue(d).intValue());
 
         return result;
     }
 
     /**
-     * An optimized instance of permutation for TernaryVectors.
+     * An optimized instance of permute for TernaryVectors.  In this case, only
+     * the positive and negative values are permuted, and a {@code
+     * TernaryVector} is returned.
      */
-    private IntegerVector permute(TernaryVector v,
-                                  int numPermutations,
-                                  int length) {
+    private Vector permute(TernaryVector v, int numPermutations, int length) {
         int[] oldPos = v.positiveDimensions();
         int[] oldNeg = v.negativeDimensions();
 
@@ -222,7 +224,7 @@ public class DefaultPermutationFunction implements PermutationFunction {
             }
         }
 
-        return new FixedTernaryVector(length, positive, negative);
+        return new TernaryVector(length, positive, negative);
     }
 
     /**

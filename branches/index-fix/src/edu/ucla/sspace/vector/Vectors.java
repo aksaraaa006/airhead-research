@@ -483,9 +483,9 @@ public class Vectors {
             TernaryVector v = (TernaryVector) source;
             int[] pos = v.positiveDimensions();
             int[] neg = v.negativeDimensions();
-            result = new FixedTernaryVector(source.length(),
-                                            Arrays.copyOf(pos, pos.length),
-                                            Arrays.copyOf(neg, neg.length));
+            result = new TernaryVector(source.length(),
+                                       Arrays.copyOf(pos, pos.length),
+                                       Arrays.copyOf(neg, neg.length));
         } else if (source instanceof SparseVector) {
             result = new SparseIntVector(source.length());
             copyFromSparseVector(result, source);

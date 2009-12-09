@@ -24,6 +24,44 @@ package edu.ucla.sspace.clustering;
 import java.util.Properties;
 
 
+/**
+ * A utility class for generating a new {@code OnlineKMeansClustering}
+ * instance. This class supports the following properties:
+ *
+ * <dl style="margin-left: 1em">
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #WEIGHTING_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_WEIGHT}
+ *
+ * <dd style="padding-top: .5em">This variable sets the weight given to the mean
+ * vector in a rolling average of vectors.</p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #MERGE_THRESHOLD_PROPERTY }
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_MERGE_THRESHOLD}
+ *
+ * <dd style="padding-top: .5em">This variable sets the threshold for merging
+ * two clusters. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #DROP_THRESHOLD_PROPERTY }
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_DROP_THREHSHOLD}
+ *
+ * <dd style="padding-top: .5em">This variable sets the size requirement, as a
+ * precentage, for dropping a cluster.</p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #MAX_CLUSTERS_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_MAX_CLUSTERS}
+ *
+ * <dd style="padding-top: .5em">This variable sets the maximum number of
+ * clusters used.</p>
+ *
+ * </dl>
+ *
+ * @author Keith Stevens
+ */
 public class OnlineClusteringGenerator {
 
     /**
@@ -40,14 +78,43 @@ public class OnlineClusteringGenerator {
     public static final String WEIGHTING_PROPERTY =
         PROPERTY_PREFIX + ".weights";
 
+    /**
+     * The property for setting the threshold for merging two clusters.
+     */
     public static final String MERGE_THRESHOLD_PROPERTY =
         PROPERTY_PREFIX + ".merge";
 
+    /**
+     * The property size threshold, as a percentage, for dropping a cluster.
+     */
     public static final String DROP_THRESHOLD_PROPERTY =
         PROPERTY_PREFIX + ".drop";
 
+    /**
+     * The property for the maximum number of clusters.
+     */
     public static final String MAX_CLUSTERS_PROPERTY =
         PROPERTY_PREFIX + ".maxClusters";
+
+    /**
+     * The default weight, which will use no weighted average.
+     */
+    public static final String DEFAULT_WEIGHT = "0";
+
+    /**
+     * The default merge threshold.
+     */
+    public static final String DEFAULT_MERGE_THRESHOLD = "1";
+
+    /**
+     * The default drop threshold, where no clusters will be dropped.
+     */
+    public static final String DEFAULT_DROP_THREHSHOLD = "0";
+
+    /**
+     * The default number of clusters.
+     */
+    public static final String DEFAULT_MAX_CLUSTERS = "2";
 
     /**
      * The threshold for clustering
@@ -70,17 +137,31 @@ public class OnlineClusteringGenerator {
      */
     private final double clusterWeight;
 
-    public OnlineClusteringGenerator(Properties props) {
-        clusterThreshold = Double.parseDouble(props.getProperty(
-                    MERGE_THRESHOLD_PROPERTY, "1"));
-        dropThreshold = Double.parseDouble(props.getProperty(
-                    DROP_THRESHOLD_PROPERTY, "0"));
-        maxNumClusters = Integer.parseInt(props.getProperty(
-                    MAX_CLUSTERS_PROPERTY, "2"));
-        clusterWeight = Double.parseDouble(props.getProperty(
-                    WEIGHTING_PROPERTY, "0"));
+    /**
+     * Creates a new generator using the system properties.
+     */
+    public OnlineClusteringGenerator() {
+        this(System.getProperties());
     }
 
+    /**
+     * Creates a new generator using the given properties.
+     */
+    public OnlineClusteringGenerator(Properties props) {
+        clusterThreshold = Double.parseDouble(props.getProperty(
+                    MERGE_THRESHOLD_PROPERTY, DEFAULT_MERGE_THRESHOLD));
+        dropThreshold = Double.parseDouble(props.getProperty(
+                    DROP_THRESHOLD_PROPERTY, DEFAULT_DROP_THREHSHOLD));
+        maxNumClusters = Integer.parseInt(props.getProperty(
+                    MAX_CLUSTERS_PROPERTY, DEFAULT_MAX_CLUSTERS));
+        clusterWeight = Double.parseDouble(props.getProperty(
+                    WEIGHTING_PROPERTY, DEFAULT_WEIGHT));
+    }
+
+    /**
+     * Generates a new instance of a {@code OnlineClustering} based on the
+     * values used to construct this generator.
+     */
     public OnlineClustering getNewClusteringInstance() {
         return new OnlineKMeansClustering(clusterThreshold, dropThreshold,
                                           maxNumClusters, clusterWeight);

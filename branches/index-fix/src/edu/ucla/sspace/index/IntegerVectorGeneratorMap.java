@@ -39,8 +39,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
+/**
+ * A Mapping from Strings to {@code IntegerVector}s.  If a value does not exist
+ * for a given string, one will be automatically generated using a {@code
+ * IntegerVectorGenerator}.
+ *
+ * @author Keith Stevens
+ */
 public class IntegerVectorGeneratorMap implements Map<String, IntegerVector> {
 
+    /**
+     * The {@code IntegerVectorGenerator} for generating new vectors.
+     */
     private final IntegerVectorGenerator generator;
 
     /**
@@ -54,12 +64,20 @@ public class IntegerVectorGeneratorMap implements Map<String, IntegerVector> {
      */
     private final Map<String, IntegerVector> termToVector;
 
+    /**
+     * Creates a new Map using a {@code ConcurrentHashMap}.  Vectors will be
+     * generated of lenght {@code vectorLength}.
+     */
     public IntegerVectorGeneratorMap(IntegerVectorGenerator generator, 
                                      int vectorLength) {
         this(generator, vectorLength,
              new ConcurrentHashMap<String, IntegerVector>());
     }
 
+    /**
+     * Creates a new Map with the given Map.  Vectors will be generated of
+     * lenght {@code vectorLength}.
+     */
     public IntegerVectorGeneratorMap(IntegerVectorGenerator generator, 
                                      int vectorLength,
                                      Map<String, IntegerVector> map) {
@@ -68,29 +86,44 @@ public class IntegerVectorGeneratorMap implements Map<String, IntegerVector> {
         this.generator = generator;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void clear() {
         termToVector.clear();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean containsKey(Object key) {
         return termToVector.containsKey(key);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean containsValue(Object value) {
         return termToVector.containsValue(value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Set<Map.Entry<String, IntegerVector>> entrySet() {
         return termToVector.entrySet();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(Object o) {
         return termToVector.equals(o);
     }
 
     /**
-     * Return a {@code Vector} for the given term, if no {@code Vector} exists
-     * for {@code term}, then generate a new one. 
+     * Returns a {@code IntegerVector} for the given term, if no mapping for
+     * {@code term} then a new vaue is generated, stored, and returned.
      *
      * @param term The term specifying the index {@code Vector} to return.
      *
@@ -114,40 +147,67 @@ public class IntegerVectorGeneratorMap implements Map<String, IntegerVector> {
         return v;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode() {
         return termToVector.hashCode();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isEmpty() {
         return termToVector.isEmpty();
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public Set<String> keySet() {
         return termToVector.keySet();
     }
 
+    /**
+     * Unsupported.
+     */
     public IntegerVector put(String key, IntegerVector vector) {
         throw new UnsupportedOperationException(
                 "Vectors may not be inserted into this VectorGeneratorMap.");
     }
 
+    /**
+     * Unsupported.
+     */
     public void putAll(Map<? extends String, ? extends IntegerVector> m) {
         throw new UnsupportedOperationException(
                 "Vectors may not be inserted into this VectorGeneratorMap.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int size() {
         return termToVector.size();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Collection<IntegerVector> values() {
         return termToVector.values();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public IntegerVector remove(Object key) {
         return termToVector.remove(key);
     }
 
+    /**
+     * Serializes a given map to a file.
+     */
     public void saveMap(File file) {
         try {
             FileOutputStream fos = new FileOutputStream(file);
@@ -159,6 +219,9 @@ public class IntegerVectorGeneratorMap implements Map<String, IntegerVector> {
         }
     }
 
+    /**
+     * Returns a serialized map stored in the given file.
+     */
     public static IntegerVectorGeneratorMap loadMap(File file) {
         try {
             FileInputStream fis = new FileInputStream(file);
