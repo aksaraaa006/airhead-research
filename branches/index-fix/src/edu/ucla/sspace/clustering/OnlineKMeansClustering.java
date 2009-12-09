@@ -25,6 +25,7 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.IntegerMap;
@@ -387,9 +388,9 @@ public class OnlineKMeansClustering implements OnlineClustering {
          */
         public synchronized void addVector(Vector vector) {
             if (oldValueWeight == 0 || newValueWeight == 0)
-                Vectors.add(centroid, vector);
+                VectorMath.add(centroid, vector);
             else 
-                Vectors.addWithScalars(centroid, oldValueWeight,
+                VectorMath.addWithScalars(centroid, oldValueWeight,
                                        vector, newValueWeight);
             ++itemCount;
         }

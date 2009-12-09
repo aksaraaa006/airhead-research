@@ -37,6 +37,7 @@ import edu.ucla.sspace.vector.SparseIntVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import edu.ucla.sspace.matrix.Matrix;
 
@@ -278,8 +279,8 @@ public class FlyingHermit implements SemanticSpace {
                 for (String term : prevWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
                         IntegerVector termVector = indexMap.get(term);
-                        Vectors.add(meaning, permutationFunction.permute(
-                                    termVector, distance));
+                        VectorMath.add(meaning, permutationFunction.permute(
+                                       termVector, distance));
                     }
                     ++distance;
                 }
@@ -291,8 +292,8 @@ public class FlyingHermit implements SemanticSpace {
                 for (String term : nextWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
                         IntegerVector termVector = indexMap.get(term);
-                        Vectors.add(meaning, permutationFunction.permute(
-                                    termVector, distance));
+                        VectorMath.add(meaning, permutationFunction.permute(
+                                       termVector, distance));
                     }
                     ++distance;
                 }
@@ -398,7 +399,7 @@ public class FlyingHermit implements SemanticSpace {
                         if (sense == null)
                             sense = Vectors.copyOf((IntegerVector) v);
                         else
-                            Vectors.add(sense, v);
+                            VectorMath.add(sense, v);
                     }
                     String senseName = term;
                     if (i != 0)

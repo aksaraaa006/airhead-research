@@ -34,6 +34,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
@@ -218,7 +219,7 @@ public class Beagle implements SemanticSpace {
                 if (existingVector == null)
                     termHolographs.put(entry.getKey(), entry.getValue());
                 else
-                    Vectors.add(existingVector, entry.getValue());
+                    VectorMath.add(existingVector, entry.getValue());
             }
         }
     }
@@ -243,12 +244,12 @@ public class Beagle implements SemanticSpace {
                                Queue<String> nextWords) {
         // Sum the index vectors for co-occuring words into {@code meaning}.
         for (String term: prevWords)
-            Vectors.add(meaning, vectorMap.get(term));
+            VectorMath.add(meaning, vectorMap.get(term));
         for (String term: nextWords)
-            Vectors.add(meaning, vectorMap.get(term));
+            VectorMath.add(meaning, vectorMap.get(term));
 
         // Generate the semantics of the circular convolution of n-grams.
-        Vectors.add(meaning, groupConvolution(prevWords, nextWords));
+        VectorMath.add(meaning, groupConvolution(prevWords, nextWords));
     }
 
     /**
@@ -270,11 +271,11 @@ public class Beagle implements SemanticSpace {
         DoubleVector tempConvolution =
             convolute(vectorMap.get(prevWords.peek()), placeHolder);
 
-        Vectors.add(result, tempConvolution);
+        VectorMath.add(result, tempConvolution);
 
         for (String term : nextWords) {
             tempConvolution = convolute(tempConvolution, vectorMap.get(term));
-            Vectors.add(result, tempConvolution);
+            VectorMath.add(result, tempConvolution);
         }
 
         tempConvolution = placeHolder;
@@ -282,7 +283,7 @@ public class Beagle implements SemanticSpace {
         // Do the convolutions starting at index 1.
         for (String term : nextWords) {
             tempConvolution = convolute(tempConvolution, vectorMap.get(term));
-            Vectors.add(result, tempConvolution);
+            VectorMath.add(result, tempConvolution);
         }
         return result;
     }
@@ -321,7 +322,7 @@ public class Beagle implements SemanticSpace {
         FastFourierTransform.transform(right, 0, 1);
 
         // Multiply the two together.
-        DoubleVector result = Vectors.multiply(left, right);
+        DoubleVector result = VectorMath.multiply(left, right);
 
         // The inverse transform completes the convolution.
         FastFourierTransform.backtransform(result, 0, 1);
