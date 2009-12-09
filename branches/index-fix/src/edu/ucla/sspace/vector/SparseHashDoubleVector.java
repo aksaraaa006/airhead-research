@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.vector;
 
-import edu.ucla.sspace.util.SparseHashArray;
-
 
 /**
  * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
@@ -34,62 +32,80 @@ import edu.ucla.sspace.util.SparseHashArray;
  *
  * @author David Jurgens
  */
-public class SparseHashVector<T extends Number>
-    implements SparseVector<T>, java.io.Serializable {
+public class SparseHashDoubleVector extends SparseHashVector<Double>
+        implements DoubleVector {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The backing array that holds the vector values
-     */
-    protected SparseHashArray<Number> vector;
-
-    /** 
-     * Create a {@code SparseHashVector} with the given size, having no
-     * non-zero values.
+     * Creates a new vector of the specified length
      *
-     * @param length The length of this {@code Vector}
+     * @param length the length of this vector
      */
-    public SparseHashVector(int length) {
-        vector = new SparseHashArray<Number>(length);
+    public SparseHashDoubleVector(int length) {
+        super(length);
     }
 
     /**
-     * Create a {@code SparseHashVector} from an array, saving only the non
-     * zero entries.
+     * Creates a new vector using the non-zero values of the specified array.
+     * The created vector contains no references to the provided array, so
+     * changes to either will not be reflected in the other.
      *
-     * @param array the values of this vector
+     * @param values the intial values for this vector to have
      */
-    public SparseHashVector(T[] array) {
-        vector = new SparseHashArray<Number>(array);
-    }
-
-    /** 
-     * {@inheritDoc}
-     */
-    public int[] getNonZeroIndices() {
-        return vector.getElementIndices();
+    public SparseHashDoubleVector(double[] values) {
+        super(values.length);
+        for (int i = 0; i < values.length; ++i)
+            if (values[i] != 0)
+                vector.set(i, values[i]);
     }
 
     /**
      * {@inheritDoc}
      */
-    public Number getValue(int index) {
-        Number val = vector.get(index);
-        return (val == null) ? 0 : val;
+    public double add(int index, double delta) {
+        double val = get(index);
+        set(index, val + delta);
+        return val + delta;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int length() {
-        return vector.length();
+    public double get(int index) {
+        Number d = vector.get(index);
+        return (d == null) ? 0 : d.doubleValue();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Double getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, double value) {
+        vector.set(index, value);
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
-        vector.set(index, value);
+        vector.set(index, value.doubleValue());
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] toArray() {
+        double[] array = new double[length()];
+        for (int i : vector.getElementIndices())
+            array[i] = vector.get(i).doubleValue();
+        return array;
+    }
+
 }

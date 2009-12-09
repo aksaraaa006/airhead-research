@@ -46,13 +46,17 @@ public class AtomicVector implements DoubleVector, Serializable {
     private final DoubleVector vector;
 
     /**
-     * Read and write locks guarding access to {@code vector}.
+     * Read lock for non-mutating access to the backing {@code vector}.
      */
     private final Lock readLock;
+
+    /**
+     * Write lock for mutating access to the backing {@code vector}.
+     */
     private final Lock writeLock;
 
     /**
-     * Create a new {@code AtomicVector} decorating an already existing {@code
+     * Creates a new {@code AtomicVector} decorating an already existing {@code
      * Vector}.
      *
      * @param v The vector to decorate.
@@ -106,17 +110,8 @@ public class AtomicVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public Number getValue(int index) {
+    public Double getValue(int index) {
         return get(index);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(double[] values) {
-        writeLock.lock();
-        vector.set(values);
-        writeLock.unlock();
     }
 
     /**
@@ -138,9 +133,9 @@ public class AtomicVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
+    public double[] toArray() {
         readLock.lock();
-        double[] array = vector.toArray(size);
+        double[] array = vector.toArray();
         readLock.lock();
         return array;
     }

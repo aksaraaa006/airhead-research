@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 
 
 /**
- * A collection of unit tests for {@link IntegerMap} 
+ * A collection of unit tests for {@link SparseDoubleArray} 
  */
 public class SparseDoubleArrayTests {
 

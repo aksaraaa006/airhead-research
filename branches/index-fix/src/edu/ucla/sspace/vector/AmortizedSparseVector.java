@@ -44,7 +44,7 @@ import java.util.Map;
  * @author Keith Stevens
  */
 public class AmortizedSparseVector implements DoubleVector,
-                                              SparseVector,
+                                              SparseVector<Double>,
                                               Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -117,7 +117,7 @@ public class AmortizedSparseVector implements DoubleVector,
     /**
      * {@inheritDoc}
      */
-    public Number getValue(int index) {
+    public Double getValue(int index) {
         return get(index);
     }
 
@@ -169,10 +169,8 @@ public class AmortizedSparseVector implements DoubleVector,
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        checkIndex(size);
-
-        double[] dense = new double[size];
+    public double[] toArray() {
+        double[] dense = new double[length()];
         for (IndexValue item : values) {
             dense[item.index] = item.value;
         }

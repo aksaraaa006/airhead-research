@@ -30,7 +30,6 @@ import java.util.Arrays;
  * A fixed {@code TernaryVector}.
  */
 public class FixedTernaryVector implements IntegerVector,
-                                           TernaryVector,
                                            Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -59,8 +58,8 @@ public class FixedTernaryVector implements IntegerVector,
      * @param negativeIndices All indices which are pre-set to -1.
      */
     public FixedTernaryVector(int length,
-                                    int[] positiveIndices,
-                                    int[] negativeIndices) {
+                              int[] positiveIndices,
+                              int[] negativeIndices) {
         indexVectorLength = length;
         positiveDimensions = positiveIndices;
         negativeDimensions = negativeIndices;
@@ -88,7 +87,7 @@ public class FixedTernaryVector implements IntegerVector,
     /**
      * {@inheritDoc}.
      */
-    public Number getValue(int index) {
+    public Integer getValue(int index) {
         return get(index);
     }
 
@@ -144,8 +143,8 @@ public class FixedTernaryVector implements IntegerVector,
     /**
      * {@inheritDoc}.
      */
-    public int[] toArray(int size) {
-        int[] array = new int[size];
+    public int[] toArray() {
+        int[] array = new int[indexVectorLength];
         for (int p : positiveDimensions)
             array[p] = 1;
         for (int n : negativeDimensions)

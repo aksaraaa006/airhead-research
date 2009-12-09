@@ -539,7 +539,7 @@ public class FixedDurationTemporalRandomIndexingMain {
             // If the word was not in the current partition, then give it the
             // zero vector
             if (semantics != null)
-                semantics = vector.toArray(semanticPartition.getVectorLength());
+                semantics = vector.toArray();
 
             temporalSemantics.put(currentSemanticPartitionStartTime,
                                   semantics);

@@ -23,55 +23,47 @@ package edu.ucla.sspace.vector;
 
 import java.io.Serializable;
 
-import java.util.Arrays;
 
 /**
- * A view of a sparse {@link DoubleVector} that that allows the backing data to
- * be resized and also viewed from an offset.  Furthermore, this class allows
- * the viewed data to be immutable, where all mutating operations throw {@link
- * UnsupportedOperationException}.
- * 
+ *
  * @author Keith Stevens
- * @authod David Jurgens
+ * @author David Jurgens
  */
-class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
-        implements SparseVector<Double> {
+class IntAsDoubleVector extends VectorView<Double>
+         implements DoubleVector, Serializable  {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * A {@link SparseVector} reference to the {@link DoubleVector} data backing
-     * this view.
+     * An {@link IntegerVector} reference to the backing vector
      */
-    private final SparseVector sparseVector;
+    private final IntegerVector intVector;
 
     /**
      * Creates a new {@link DoubleVector} view of the data in the provided
-     * {@link DoubleVector}.
+     * {@link IntegerVector}.
      *
-     * @param v the {@code DoubleVector} to view as containing double data.
+     * @param v the {@code IntegerVector} to view as containing double data.
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v) {
+    public IntAsDoubleVector(IntegerVector v) {
         this(v, 0, v.length(), false);
     }
 
     /**
      * Creates a new, optionally immutable {@link DoubleVector} view of the data
-     * in the provided {@link DoubleVector}.
+     * in the provided {@link IntegerVector}.
      *
-     * @param v the {@code DoubleVector} to view as containing double data.
+     * @param v the {@code IntegerVector} to view as containing double data.
      * @param isImmutable {@code true} if this view should not allow mutating
      *        operations to change the state of the backing vector
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v, boolean isImmutable) {
+    public IntAsDoubleVector(IntegerVector v, boolean isImmutable) {
         this(v, 0, v.length(), isImmutable);
     }
 
     /**
      * Creates a new {@link DoubleVector} sub-view of the data in the provided
-     * {@link DoubleVector} using the offset and length to specify a viewing
+     * {@link IntegerVector} using the offset and length to specify a viewing
      * region.
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -79,14 +71,13 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      *               view starts
      * @param length the length of this view.
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v, int offset, int length) {
+    public IntAsDoubleVector(IntegerVector v, int offset, int length) {
         this(v, offset, length, false);
     }
 
     /**
      * Creates a new, optionally immutable {@link DoubleVector} sub-view of the
-     * data in the provided {@link DoubleVector} using the offset and length to
+     * data in the provided {@link IntegerVector} using the offset and length to
      * specify a viewing region.
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -96,39 +87,53 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      * @param isImmutable {@code true} if this view should not allow mutating
      *        operations to change the state of the backing vector.
      */
-    public <T extends DoubleVector & SparseVector<Double>>
-           ViewDoubleAsDoubleSparseVector(T v, int offset, int length, 
-                                          boolean isImmutable) {
+    public IntAsDoubleVector(IntegerVector v, int offset, int length, 
+                             boolean isImmutable) {
         super(v, offset, length, isImmutable);
-        sparseVector = v;
+        intVector = v;
     }
 
     /**
      * {@inheritDoc}
      */
-    public int[] getNonZeroIndices() {
-        if (vectorOffset == 0)
-            return sparseVector.getNonZeroIndices();
-        // If the sparse vector is a sub-view, calculate which indices are
-        // reflected in this view
-        else {
-            int[] full = sparseVector.getNonZeroIndices();
-            Arrays.sort(full);
-            int startIndex = 0;
-            int endIndex = full.length;
-            for (int i = 0; i < full.length; ++i) {
-                if (full[i] < vectorOffset)
-                    startIndex++;
-                else if (full[i] > vectorOffset + vectorLength) {
-                    endIndex = i - 1;
-                    break;
-                }
-            }
-            if (startIndex == endIndex)
-                return new int[0];
-            int[] range = new int[endIndex - startIndex];
-            System.arraycopy(full, startIndex, range, 0, range.length);
-            return range;
-        }
+    public double add(int index, double delta) {
+        if (isImmutable) 
+            throw new UnsupportedOperationException(
+                "Cannot modify an immutable vector");
+        return intVector.add(getIndex(index), (int)delta);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, double value) {
+        if (isImmutable) 
+            throw new UnsupportedOperationException(
+                "Cannot modify an immutable vector");
+        intVector.set(getIndex(index), (int)value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double get(int index) {
+        return intVector.get(getIndex(index));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Double getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] toArray() {
+        double[] r = new double[vectorLength - vectorOffset];
+        for (int i = vectorOffset; i < vectorLength; ++i)
+            r[i] = intVector.get(i);
+        return r;
     }
 }

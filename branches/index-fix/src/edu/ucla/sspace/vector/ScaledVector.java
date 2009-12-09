@@ -25,10 +25,15 @@ import java.io.Serializable;
 
 
 /**
- * A decorator of a {@code Vector} which provides scales all values in the
- * vectors in constant time.
+ * A decorator for a {@link Vector} that scales all values in the backing vector
+ * in constant time.
+ *
+ * <p> Should the backing vector be a {@link SparseVector}, users are encouraged
+ * to use {@link SparseScaledVector}.
  *
  * @author Keith Stevens
+ *
+ * @see SparseScaledVector
  */
 public class ScaledVector implements DoubleVector, Serializable {
 
@@ -39,13 +44,17 @@ public class ScaledVector implements DoubleVector, Serializable {
      */
     private final DoubleVector vector;
 
-    private final double scaleFactor;
     /**
-     * Create a new {@code ScaledVector} decorating an already existing {@code
-     * Vector}.
+     * The scalar used to adjust the values in the backing vector
+     */
+    private final double scaleFactor;
+
+    /**
+     * Create a new {@code ScaledVector} that scales the values in the provided
+     * {@code Vector}.
      *
-     * @param v The vector to decorate.
-     * @param factor The value to scale all values by.
+     * @param v the vector to decorate
+     * @param factor the value used to scale all values
      */
     public ScaledVector(DoubleVector v, double factor) {
         vector = v;
@@ -59,7 +68,7 @@ public class ScaledVector implements DoubleVector, Serializable {
      */
     public double add(int index, double delta) {
         return vector.add(index, delta / scaleFactor);
-    }
+    } 
 
     /**
      * {@inheritDoc}
@@ -71,7 +80,7 @@ public class ScaledVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public Number getValue(int index) {
+    public Double getValue(int index) {
         return get(index);
     }
 
@@ -100,9 +109,9 @@ public class ScaledVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        double[] array = vector.toArray(size);
-        for (int i = 0; i < size; ++i)
+    public double[] toArray() {
+        double[] array = vector.toArray();
+        for (int i = 0; i < array.length; ++i)
             array[i] *= scaleFactor;
         return array;
     }
@@ -111,7 +120,6 @@ public class ScaledVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public int length() {
-        int length = vector.length();
-        return length;
+        return vector.length();
     }
 }

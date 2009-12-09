@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2009 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -22,16 +22,24 @@
 package edu.ucla.sspace.vector;
 
 
-/**
- * An interface for {@code Vector} implementations whose values are sparse and
- * that support access to only those indices with non-zero values.
- *
- * @author Keith Stevens
- */
-public interface SparseVector<T extends Number> extends Vector<T> {
+import org.junit.Ignore;
+import org.junit.Test;
 
-    /**
-     * Returns all the indices whose values are non-zero
-     */
-    int[] getNonZeroIndices();
+import static org.junit.Assert.*;
+
+
+/**
+ * A collection of tests for the {@link Vectors} class
+ */
+public class VectorsTest {
+
+    @Test public void testInstanceOf() {
+        SparseIntVector siv = new SparseIntVector(100);
+        SparseIntVector sivCopy = Vectors.instanceOf(siv);
+        assertEquals(siv.length(), sivCopy.length());
+
+        CompactSparseVector csv = new CompactSparseVector(100);
+        CompactSparseVector csvCopy = Vectors.instanceOf(csv);
+        assertEquals(csv.length(), csvCopy.length());
+    }
 }

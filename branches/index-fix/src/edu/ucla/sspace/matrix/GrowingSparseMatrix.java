@@ -106,7 +106,7 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        return sparseMatrix.get(row).toArray(cols);
+        return toArray(sparseMatrix.get(row) ,cols);
     }
 
     /**
@@ -224,7 +224,7 @@ public class GrowingSparseMatrix implements Matrix {
         double[][] m = new double[rows][cols];
 
         for (int r = 0; r < rows; ++r) 
-            m[r] = sparseMatrix.get(r).toArray(cols);
+            m[r] = toArray(sparseMatrix.get(r), cols);
         return m;
     }
 
@@ -233,5 +233,19 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public int rows() {
         return sparseMatrix.size();
+    }
+
+    /**
+     * Returns an array of the specified length using the data in the provided
+     * vector.  This method allows row vectors to be converted to arrays based
+     * on the size of the matrix at the time of the call, thereby prevent
+     * changes in length due to external vector modifications.
+     */
+    private static double[] toArray(DoubleVector v, int length) {
+        double[] arr = new double[length];
+        for (int i = 0; i < arr.length; ++i) {
+            arr[i] = v.get(i);
+        }
+        return arr;
     }
 }

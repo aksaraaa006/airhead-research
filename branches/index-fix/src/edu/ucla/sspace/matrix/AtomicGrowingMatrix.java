@@ -185,7 +185,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         AtomicVector rowEntry = getRow(row, -1, false);
         return (rowEntry == null)
             ? new double[cols.get()]
-            : rowEntry.toArray(cols.get());
+            : toArray(rowEntry, cols.get());
     }
 
     /**
@@ -290,7 +290,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         checkIndices(row, 0);
         AtomicVector rowEntry = getRow(row, columns.length - 1, true);
         denseArrayReadLock.lock();
-        rowEntry.set(columns);
+        for (int i = 0; i < columns.length; ++i)
+            rowEntry.set(i, columns[i]);
         denseArrayReadLock.unlock();
     }
 
@@ -317,10 +318,24 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         int c = cols.get();
         double[][] m = new double[rows.get()][c];
         for (Map.Entry<Integer, AtomicVector> e : sparseMatrix.entrySet()) {
-            m[e.getKey()] = e.getValue().toArray(c);
+            m[e.getKey()] = toArray(e.getValue(), c);
         }
         denseArrayWriteLock.unlock();
         rowWriteLock.unlock();
         return m;
+    }
+
+    /**
+     * Returns an array of the specified length using the data in the provided
+     * vector.  This method allows row vectors to be converted to arrays based
+     * on the size of the matrix at the time of the call, thereby prevent
+     * changes in length due to external vector modifications.
+     */
+    private static double[] toArray(DoubleVector v, int length) {
+        double[] arr = new double[length];
+        for (int i = 0; i < arr.length; ++i) {
+            arr[i] = v.get(i);
+        }
+        return arr;
     }
 }

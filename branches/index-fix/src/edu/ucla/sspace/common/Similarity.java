@@ -746,7 +746,7 @@ public class Similarity {
             ranking.put(a.get(i), b.get(i));
         }
         
-        double[] sortedB = b.toArray(b.length());
+        double[] sortedB = b.toArray();
         Arrays.sort(sortedB);
         Map<Double,Integer> otherRanking = new HashMap<Double,Integer>();
         for (int i = 0; i < b.length(); ++i) {

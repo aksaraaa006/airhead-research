@@ -105,7 +105,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        return sparseMatrix[row].toArray(cols);
+        return sparseMatrix[row].toArray();
     }
 
     /**
@@ -186,7 +186,7 @@ public class SparseMatrix implements Matrix {
     public double[][] toDenseArray() {
         double[][] m = new double[rows][cols];
         for (int r = 0; r < rows; ++r) {
-            m[r] = sparseMatrix[r].toArray(cols);
+            m[r] = sparseMatrix[r].toArray();
         }
         return m;
     }

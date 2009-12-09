@@ -25,112 +25,130 @@ import java.io.Serializable;
 
 
 /**
- * An immutable decorator for an existing {@code Vector} which provides padding
- * before and after the actual values in a decorated {@code Vector}.  This class
- * allows a {@code SemanticSpace} or a {@code Matrix} to return a {@code Vector}
- * stored internally that has a fixed size without allowing other classes the
- * ability to alter the {@code Vector}.  If the decorated {@code Vector} is
- * stored at some offset, any index less than that offset will be given a value
- * of 0, and any value after the full length of the {@code Vector} will be also
- * given a value of 0.
+ * An decorator for a {@code Vector} that lets the backing data be viewed as a
+ * {@link DoubleVector}.  In addition, the backing vector may be resized and
+ * also viewed from an offset.  Furthermore, this class allows the viewed data
+ * to be immutable, where all mutating operations throw {@link
+ * UnsupportedOperationException}.  
  *
  * </p>
  *
- * Note that the original {@code Vector} can still be alterned by the object
- * owning it, but classes given a {@code ViewVectorAsDoubleVector} cannot make
- * modififications.
+ * The data-type of the backing vectors values is still preserved if mututaions
+ * are allowed.  This class relies upon the {@link Vector#set(Number)
+ * set(Number)} method of the backing vector to correctly convert a {@code
+ * double} argument into the appropriate.  Note that in the event that the
+ * backing data-type does not support {@code double} precision, this may result
+ * in data loss.
+ *
+ * </p>
+ *
+ * Note that the original {@code Vector} may still be alterned even if this view
+ * is marked as immutable. 
  *
  * @author Keith Stevens
+ * @author David Jurgens
  */
-class ViewVectorAsDoubleVector extends ViewAbstractDoubleVector
-                               implements Serializable  {
+class ViewVectorAsDoubleVector extends VectorView<Double> implements DoubleVector {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The actual vector this {@code ViewVectorAsDoubleVector} is decorating.
-     */
-    private final Vector vector;
-
-    /**
-     * The index at which the values {@code vector} are stored.
-     */
-    private final int vectorOffset;
-
-    /**
-     * A fixed length for this {@code Vector}.  This length may be longer or
-     * less than that of {@code vector}.
-     */
-    private final int vectorLength;
-
-    /**
-     * Create a new {@code ViewVectorAsDoubleVector} around an already existing
-     * {@code Vector} providing read only access.
+     * Creates a new {@link DoubleVector} view of the data in the provided
+     * {@link Vector}.
      *
-     * @param v The {@code Vector} to decorate.
+     * @param v the {@code Vector} to view as containing double data.
      */
     public ViewVectorAsDoubleVector(Vector v) {
-        this(v, 0, v.length());
+        super(v);
     }
 
     /**
-     * Create a new {@code ViewVectorAsDoubleVector} around an already existing
-     * {@code Vector} with a given offset, and a given total length.
+     * Creates a new, optionally immutable {@link DoubleVector} view of the data
+     * in the provided {@link IntegerVector}.
      *
-     * @param v The {@code Vector} to decorate.
-     * @param offset The index at which values of {@code v} are stored in this
-     *               {@code ViewVectorAsDoubleVector}.
-     * @param length The maximum length of this {@code ViewVectorAsDoubleVector}.
+     * @param v the {@code IntegerVector} to view as containing double data.
+     * @param isImmutable {@code true} if this view should not allow mutating
+     *        operations to change the state of the backing vector
+     */
+    public ViewVectorAsDoubleVector(Vector v, boolean isImmutable) {
+        super(v, isImmutable);
+    }
+
+    /**
+     * Creates a new {@link DoubleVector} sub-view of the data in the provided
+     * {@link Vector} using the offset and length to specify a viewing
+     * region.
+     *
+     * @param v the {@code Vector} whose data is reflected in this view.
+     * @param offset the index of {@code v} at which the first index of this
+     *               view starts
+     * @param length the length of this view.
      */
     public ViewVectorAsDoubleVector(Vector v, int offset, int length) {
-        super(v);
-        vector = v;
-        vectorOffset = offset;
-        vectorLength = length;
+        super(v, offset, length);
     }
 
     /**
-     * Method not implemented.
+     * Creates a new, optionally immutable {@link DoubleVector} sub-view of the
+     * data in the provided {@link Vector} using the offset and length to
+     * specify a viewing region.
+     *
+     * @param v the {@code Vector} whose data is reflected in this view.
+     * @param offset the index of {@code v} at which the first index of this
+     *               view starts
+     * @param length the length of this view.
+     * @param isImmutable {@code true} if this view should not allow mutating
+     *        operations to change the state of the backing vector.
+     */
+    public ViewVectorAsDoubleVector(Vector v, int offset, int length,
+                                    boolean isImmutable) {
+        super(v, offset, length, isImmutable);
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        throw new UnsupportedOperationException("add is not supported in an " +
-                "ViewVectorAsDoubleVector");
+        if (isImmutable) 
+            throw new UnsupportedOperationException(
+                "Cannot modify an immutable vector");
+        int mapped = getIndex(index);
+        double value = vector.getValue(mapped).doubleValue();
+        vector.set(mapped, value + delta);
+        return value + delta;
     }
 
     /**
-     * Method not implemented.
+     * {@inheritDoc}
      */
     public void set(int index, double value) {
-        throw new UnsupportedOperationException("set is not supported in an " +
-                "ViewVectorAsDoubleVector");
-    }
-
-    /**
-     * Method not implemented.
-     */
-    public void set(double[] values) {
-        throw new UnsupportedOperationException("set is not supported in an " +
-                "ViewVectorAsDoubleVector");
+        if (isImmutable) 
+            throw new UnsupportedOperationException(
+                "Cannot modify an immutable vector");
+        vector.set(getIndex(index), value);
     }
 
     /**
      * {@inheritDoc}
      */
     public double get(int index) {
-        if (index < 0 || index > vectorLength)
-            throw new IllegalArgumentException("Invalid index: " + index);
-
-        if (index < vectorOffset || index > vectorOffset + vector.length())
-            return 0;
-
-        return vector.getValue(index-vectorOffset).doubleValue();
+        return vector.getValue(getIndex(index)).doubleValue();
     }
 
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        throw new UnsupportedOperationException(
-                "toArray is not supported in an ViewVectorAsDoubleVector");
+    public Double getValue(int index) {
+        return vector.getValue(getIndex(index)).doubleValue();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] toArray() {
+        double[] r = new double[vectorLength - vectorOffset];
+        for (int i = vectorOffset; i < vectorLength; ++i)
+            r[i] = vector.getValue(i).doubleValue();
+        return r;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2009 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,53 +21,29 @@
 
 package edu.ucla.sspace.vector;
 
-import edu.ucla.sspace.util.SparseIntArray;
-
-import java.io.Serializable;
 
 /**
- * An {@code IntegerVector} class whose data is back by an array.
+ * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
+ * provides amoritized constant time access to all get and set operations, while
+ * using more space than the {@link CompactSparseVector} or {@link
+ * AmortizedSparseVector} classes.
  *
- * @author Keith Stevens
+ * <p> See {@see SparseHashArray} for implementation details.
+ *
  * @author David Jurgens
  */
-public class SparseIntVector
-    implements IntegerVector, SparseVector<Integer>, Serializable {
+public class SparseHashIntegerVector extends SparseHashVector<Integer>
+        implements IntegerVector {
 
     private static final long serialVersionUID = 1L;
-
-    /**
-     * The sparse array whose data backs this vector
-     */
-    private final SparseIntArray intArray;
 
     /**
      * Creates a new vector of the specified length
      *
      * @param length the length of this vector
      */
-    public SparseIntVector(int length) {
-        intArray = new SparseIntArray(length);
-    }
-
-    /**
-     * Creates a new vector using the values of the specified vector.  The
-     * created vector contains no references to the provided vector, so changes
-     * to either will not be reflected in the other.
-     *
-     * @param v the intial values for this vector to have
-     */
-    public SparseIntVector(IntegerVector v) {
-        intArray = new SparseIntArray(v.length());
-        if (v instanceof SparseVector) {
-            SparseVector sv = (SparseVector)v;
-            for (int i : sv.getNonZeroIndices())
-                intArray.set(i, v.get(i));
-        }
-        else {
-            for (int i = 0; i < v.length(); ++i)
-                intArray.set(i, v.get(i));
-        }
+    public SparseHashIntegerVector(int length) {
+        super(length);
     }
 
     /**
@@ -77,24 +53,28 @@ public class SparseIntVector
      *
      * @param values the intial values for this vector to have
      */
-    public SparseIntVector(int[] values) {
-        intArray = new SparseIntArray(values);
+    public SparseHashIntegerVector(int[] values) {
+        super(values.length);
+        for (int i = 0; i < values.length; ++i)
+            if (values[i] != 0)
+                vector.set(i, values[i]);
     }
 
     /**
      * {@inheritDoc}
      */
     public int add(int index, int delta) {
-        int newValue = intArray.getPrimitive(index) +  delta;
-        intArray.set(index, newValue);
-        return newValue;
+        int val = get(index);
+        set(index, val + delta);
+        return val + delta;
     }
 
     /**
      * {@inheritDoc}
      */
     public int get(int index) {
-        return intArray.getPrimitive(index);
+        Number i = vector.get(index);
+        return (i == null) ? 0 : i.intValue();
     }
 
     /**
@@ -107,38 +87,24 @@ public class SparseIntVector
     /**
      * {@inheritDoc}
      */
-    public int[] getNonZeroIndices() {
-        return intArray.getElementIndices();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int length() {
-        return intArray.length();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public void set(int index, int value) {
-        intArray.set(index,  value);
+        vector.set(index, value);
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
-        set(index, value.intValue());
+        vector.set(index, value.intValue());
     }
 
     /**
      * {@inheritDoc}
      */
     public int[] toArray() {
-        int[] array = new int[intArray.length()];
-        for (int i : intArray.getElementIndices())
-            array[i] = intArray.getPrimitive(i);
+        int[] array = new int[length()];
+        for (int i : vector.getElementIndices())
+            array[i] = vector.get(i).intValue();
         return array;
     }
 }

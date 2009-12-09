@@ -23,7 +23,7 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.SparseHashVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -192,12 +192,13 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
 
     /**
      * A {@code DoubleVector} instance that keeps track of a versioned state.
-     * This
-     * class is intended to mark when the instance was created to enable checked
-     * whether its data might be inconsistent with the matrix from which it was
-     * generated.
+     * This class is intended to mark when the instance was created to enable
+     * checked whether its data might be inconsistent with the matrix from which
+     * it was generated.
      */
-    private static class VersionedVector extends SparseHashVector {
+    private static class VersionedVector extends SparseHashDoubleVector {
+
+        private static final long serialVersionUID = 1L;
 
         private final int version;
 

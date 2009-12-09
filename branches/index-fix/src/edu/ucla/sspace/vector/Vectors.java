@@ -32,7 +32,11 @@ import java.lang.reflect.Constructor;
  * decoratored {@code Vector}s to be generated, along with basis algabraic
  * methods.
  *
+ * <p>Unless otherwise noted, all returned {@link Vector} instances implement
+ * {@code Serializable}.
+ *
  * @author Keith Stevens
+ * @author David Jurgens
  */
 public class Vectors {
 
@@ -42,22 +46,51 @@ public class Vectors {
     private Vectors() { }
 
     /**
-     * Returns a view over a given {@code Vector}, upcasting it to a {@code
-     * DoubleVector} if needed.
+     * Returns a view over the given {@code Vector} as a {@code DoubleVector}.
+     * The returned vector is mutable but any changes will be converted into its
+     * internal data-type, e.g. {@code int}, which may result in information
+     * loss.
      *
      * @param v The {@code Vector} to return as a {@code DoubleVector}.
      *
-     * @return a {@code DoubleVector} view of {@code v}
+     * @return a mutable {@code DoubleVector} view of {@code v}
      */
     public static DoubleVector asDouble(Vector v) {
         if (v instanceof IntegerVector) {
-            if (v instanceof SparseVector)
-                return new ViewIntAsDoubleSparseVector((IntegerVector) v);
-            return new ViewIntAsDoubleVector((IntegerVector) v);
-        } else if (v instanceof DoubleVector)
-            return (DoubleVector) v;
-        else
-            return new ViewVectorAsDoubleVector(v);
+            return (v instanceof SparseVector)
+                ? new IntAsSparseDoubleVector((SparseIntegerVector)v)
+                : new IntAsDoubleVector((IntegerVector)v);
+        } 
+        else 
+            return (v instanceof DoubleVector)
+                ? (DoubleVector)v
+                : new ViewVectorAsDoubleVector(v);
+    }
+
+    /**
+     * Returns a vector backed by the specified array.  Any changes to the
+     * vector are written through to the array.  This method acts a bridge
+     * between array-based and {@code Vector}-based computation.  
+     *
+     * @param array the array backing the vector
+     *
+     * @return a {@code Vector} view of the array
+     */
+    public static DoubleVector asVector(double[] array) {
+        return new DoubleArrayAsVector(array);
+    }
+
+    /**
+     * Returns a vector backed by the specified array.  Any changes to the
+     * vector are written through to the array.  This method acts a bridge
+     * between array-based and {@code Vector}-based computation.  
+     *
+     * @param array the array backing the vector
+     *
+     * @return a {@code Vector} view of the array
+     */
+    public static IntegerVector asVector(int[] array) {
+        return new IntArrayAsVector(array);
     }
 
     /**
@@ -67,7 +100,7 @@ public class Vectors {
      * @return An immutable version of {@code vector}.
      */
     public static DoubleVector immutableVector(DoubleVector vector) {
-        return (vector != null) ? new ViewDoubleAsDoubleVector(vector) : null;
+        return (vector != null) ? new DoubleVectorView(vector, true) : null;
     }
 
     /**
@@ -77,17 +110,17 @@ public class Vectors {
      * @return An immutable version of {@code vector}.
      */
     public static Vector immutableVector(Vector vector) {
-        return Vectors.asDouble(vector);
+        return new VectorView(vector, true);
     }
 
     /**
-     * Returnsthread safe version of a {@code DoubleVector} that guarantees
+     * Returns a thread-safe version of a {@code DoubleVector} that guarantees
      * atomic access to all operations.
      *
      * @param vector The {@code DoubleVector} to decorate as atomic.
      * @return An atomic version of {@code vector}.
      */
-    public static AtomicVector atomicVector(DoubleVector vector) {
+    public static DoubleVector atomicVector(DoubleVector vector) {
         return (vector != null) ? new AtomicVector(vector) : null;
     }
 
@@ -99,25 +132,29 @@ public class Vectors {
      * @param vector The {@code DoubleVector} to decorate as synchronized.
      * @return An atomic version of {@code vector}.
      */
-    public static SynchronizedVector synchronizedVector(DoubleVector vector) {
+    public static DoubleVector synchronizedVector(DoubleVector vector) {
         return (vector != null) ? new SynchronizedVector(vector) : null;
     }
 
     /**
-     * Returns a view for the given {@code DoubleVector} with a specified offset
-     * and length.
+     * Returns a subview for the given {@code DoubleVector} with a specified
+     * offset and length.
      *
-     * @param vector The {@code Vector} to decorate as embedded within a
-     *               View.
-     * @param offset The offset at which values in {@code Vector} should be
-     *               mapped.
-     * @param length The length of {@code vector}.
+     * @param vector the {@code Vector} whose values will be shown in the view
+     * @param offset the index of {@code v} at which the first index of this
+     *               view starts
+     * @param length the length of this view.
+     *
+     * @throws IllegalArgumentException if <ul><li>{@code offset} is
+     *         negative<li>{@code length} is less than zero<li>the sum of {@code
+     *         offset} plus {@code length} is greater than the length of {@code
+     *         vector}</ul>
      */
     public static DoubleVector viewVector(DoubleVector vector,
                                           int offset,
                                           int length) {
         return (vector != null)
-            ? new ViewDoubleAsDoubleVector(vector, offset, length)
+            ? new DoubleVectorView(vector, offset, length)
             : null;
     }
 
@@ -166,8 +203,6 @@ public class Vectors {
         // add them to this instance.
         if (vector2 instanceof SparseVector)
             addSparseValues(vector1, vector2);
-        if (vector2 instanceof TernaryVector)
-            addTernaryValues(vector1, vector2);
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -199,7 +234,7 @@ public class Vectors {
         if (vector2 instanceof SparseVector) 
             addSparseValues(vector1, vector2);
         if (vector2 instanceof TernaryVector)
-            addTernaryValues(vector1, vector2);
+            addTernaryValues(vector1, (TernaryVector)vector2);
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -247,8 +282,6 @@ public class Vectors {
         // add them to this instance.
         if (vector2 instanceof SparseVector)
             addSparseValues(finalVector, vector2);
-        else if (vector2 instanceof TernaryVector)
-            addTernaryValues(finalVector, vector2);
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -280,7 +313,7 @@ public class Vectors {
         if (vector2 instanceof SparseVector)
             addSparseValues(finalVector, vector2);
         else if (vector2 instanceof TernaryVector)
-            addTernaryValues(finalVector, vector2);
+            addTernaryValues(finalVector, (TernaryVector)vector2);
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
@@ -465,6 +498,41 @@ public class Vectors {
     }
 
     /**
+     * Creates a {@code Vector} instance of the same type and length of the
+     * provided vector.
+     *
+     * @param vector a vector whose type and length should be used when creating
+     *        a new vector with the same properties
+     *
+     * @return a vector with the same type and length as the provided vector
+     *
+     * @throw IllegalArgumentException if <ul><li>the class of the provided
+     *        vector does not have a constructor that takes in an {@code int} to
+     *        specify the length <li>the class of the provided vector cannot be
+     *        instantiated</ul>
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends Vector> T instanceOf(T vector) {
+        // Check for known vector types to avoid reflection overhead
+        if (vector instanceof SparseIntVector) {
+            return (T)(new SparseIntVector(vector.length()));
+        }
+        // Remaining cases of vector types is being left unfinished until the
+        // vector name refactoring is finished.  -jurgens 12/7/09
+        else {
+            try {
+                Class<T> clazz = (Class<T>)vector.getClass();
+                Constructor<T> c = clazz.getConstructor(Integer.TYPE);
+                T copy = c.newInstance(new Object[] { vector.length() });
+                return copy;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Cannot instantiate a vector"
+                    + " of type " + vector.getClass(), e);
+            }
+        }
+    }
+
+    /**
      * Multiply the values in {@code left} and {@code right} and store the
      * product in {@code left}.  This is an element by element multiplication.
      *
@@ -603,11 +671,10 @@ public class Vectors {
      * @param source The vector to read values from.
      */
     private static void addTernaryValues(IntegerVector destination,
-                                         IntegerVector source) {
-        TernaryVector v = (TernaryVector) source;
-        for (int p : v.positiveDimensions())
+                                         TernaryVector source) {
+        for (int p : source.positiveDimensions())
             destination.add(p, 1);
-        for (int n : v.negativeDimensions())
+        for (int n : source.negativeDimensions())
             destination.add(n, -1);
     }
 
@@ -619,11 +686,10 @@ public class Vectors {
      * @param source The vector to read values from.
      */
     private static void addTernaryValues(DoubleVector destination,
-                                         DoubleVector source) {
-        TernaryVector v = (TernaryVector) source;
-        for (int p : v.positiveDimensions())
+                                         TernaryVector source) {
+        for (int p : source.positiveDimensions())
             destination.add(p, 1);
-        for (int n : v.negativeDimensions())
+        for (int n : source.negativeDimensions())
             destination.add(n, -1);
     }
 
@@ -635,11 +701,10 @@ public class Vectors {
      * @param source The vector to read values from.
      */
     private static void addTernaryValues(Vector destination,
-                                         Vector source) {
-        TernaryVector v = (TernaryVector) source;
-        for (int p : v.positiveDimensions())
+                                         TernaryVector source) {
+        for (int p : source.positiveDimensions())
             destination.set(p, 1 + destination.getValue(p).doubleValue());
-        for (int n : v.negativeDimensions())
+        for (int n : source.negativeDimensions())
             destination.set(n, -1 + destination.getValue(n).doubleValue());
     }
 
@@ -668,4 +733,20 @@ public class Vectors {
         for (int i = 0; i < nonZeroIndices.length; ++i)
             destination.set(i, source.get(i));
     }
+
+
+    /**
+     * A utility interface for joining the {@link SparseVector} and {@link
+     * IntegerVector} interfaces into a castable type.
+     */
+    static interface SparseIntegerVector 
+        extends SparseVector<Integer>, IntegerVector { }
+
+    /**
+     * A utility interface for joining the {@link SparseVector} and {@link
+     * DoubleVector} interfaces into a castable type.
+     */
+    static interface SparseDoubleVector 
+        extends SparseVector<Double>, DoubleVector { }
+
 }

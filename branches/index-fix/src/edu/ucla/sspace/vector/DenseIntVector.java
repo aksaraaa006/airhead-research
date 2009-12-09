@@ -23,21 +23,54 @@ package edu.ucla.sspace.vector;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
 
+/**
+ * An {@code IntegerVector} class whose data is back by an array.
+ *
+ * @author Keith Stevens
+ * @author David Jurgens
+ */
 public class DenseIntVector implements IntegerVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int[] vector;
+    /**
+     * The array that contains the values of this vector
+     */
+    private final int[] vector;
 
+    /**
+     * Creates a new vector of the specified length
+     *
+     * @param length the length of this vector
+     */
     public DenseIntVector(int length) {
         vector = new int[length];
     }
 
+    /**
+     * Creates a new vector using the values of the specified vector.  The
+     * created vector contains no references to the provided vector, so changes
+     * to either will not be reflected in the other.
+     *
+     * @param v the intial values for this vector to have
+     */
     public DenseIntVector(IntegerVector v) {
         vector = new int[v.length()];
         for (int i = 0; i < v.length(); ++i)
             vector[i] = v.get(i);
+    }
+
+    /**
+     * Creates a new vector using the values of the specified array.  The
+     * created vector contains no references to the provided array, so changes
+     * to either will not be reflected in the other.
+     *
+     * @param values the intial values for this vector to have
+     */
+    public DenseIntVector(int[] values) {
+        vector = Arrays.copyOf(values, values.length);
     }
 
     /**
@@ -58,7 +91,7 @@ public class DenseIntVector implements IntegerVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public Number getValue(int index) {
+    public Integer getValue(int index) {
         return get(index);
     }
 
@@ -86,19 +119,7 @@ public class DenseIntVector implements IntegerVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public void set(int[] values) {
-        for (int i = 0; i < values.length; ++i)
-            vector[i] = values[i];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int[] toArray(int size) {
-        int[] array = new int[size];
-        int maxSize = (size > length()) ? length() : size;
-        for (int i = 0; i < maxSize; ++i)
-            array[i] = vector[i];
-        return array;
+    public int[] toArray() {
+        return Arrays.copyOf(vector, vector.length);
     }
 }

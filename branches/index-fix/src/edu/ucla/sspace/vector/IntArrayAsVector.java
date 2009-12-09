@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2009 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -23,82 +23,81 @@ package edu.ucla.sspace.vector;
 
 import java.io.Serializable;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.Arrays;
 
 
 /**
- * A decorator of a {@code Vector} which provides synchronized access to
- * a {@code Vector}.
+ * A {@code Vector} backed by an {@code int} array.  Any changes to the vector
+ * are reflected in the backing array.  This class provides a link between
+ * array-based and {@code Vector}-based computation.
  *
- * @author Keith Stevens
- */
-class SynchronizedVector implements DoubleVector, Serializable {
+ * @author David Jurgens
+*/
+class IntArrayAsVector implements IntegerVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The original {@code Vector} that this {@code SynchronizedVector}
-     * decorates.
+     * The array whose values back this vector
      */
-    private final DoubleVector vector;
+    private final int[] array;
 
     /**
-     * Creates a new {@code SynchronizedVector} decorating an already existing
-     * {@code Vector}.
+     * Creates a new vector back by the provided array
      *
-     * @param v The vector to decorate.
+     * @param vector the values of this vector
      */
-    public SynchronizedVector(DoubleVector v) {
-        vector = v;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized double add(int index, double delta) {
-        return vector.add(index, delta);
+    public IntArrayAsVector(int[] array) {
+        assert array != null : "wrapped array cannot be null";
+        this.array = array;
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized double get(int index) {
-        return vector.get(index);
+    public int add(int index, int delta) {
+        return (array[index] += delta);
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized Double getValue(int index) {
-        return get(index);
+    public void set(int index, int value) {
+        array[index] = value;
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized void set(int index, double value) {
-        vector.set(index, value);
+    public void set(int index, Number value) {
+        array[index] = value.intValue();
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized void set(int index, Number value) {
-        vector.set(index, value.doubleValue());
+    public int get(int index) {
+        return array[index];
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized double[] toArray() {
-        return vector.toArray();
+    public Integer getValue(int index) {
+        return array[index];
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized int length() {
-        return vector.length();
+    public int[] toArray() {
+        return Arrays.copyOf(array, array.length);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int length() {
+        return array.length;
     }
 }

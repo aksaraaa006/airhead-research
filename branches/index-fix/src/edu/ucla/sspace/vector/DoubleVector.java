@@ -37,7 +37,7 @@ package edu.ucla.sspace.vector;
 public interface DoubleVector extends Vector<Double> {
 
     /**
-     * Change the value in the vector by a specified amount (optional
+     * Changes the value in this vector by a specified amount (optional
      * operation).  If there is not a value set at index, delta should be set to
      * the actual value.
      *
@@ -48,7 +48,7 @@ public interface DoubleVector extends Vector<Double> {
     double add(int index, double delta);
 
     /**
-     * Return the value of the vector at the given index.
+     * Returns the value of this vector at the given index.
      *
      * @param index index to retrieve.
      * @return value at index.
@@ -56,22 +56,15 @@ public interface DoubleVector extends Vector<Double> {
     double get(int index);
 
     /**
-     * Return the value of the vector at the given index.
+     * Returns the value of the vector at the given index as a {@code Double}.
      *
-     * @param index index to retrieve.
-     * @return value at index.
+     * @param {@inheritDoc}
+     * @return {@inheritDoc}
      */
-    Number getValue(int index);
+    Double getValue(int index);
 
     /**
-     * Return the size of the {@code Vector}.
-     *
-     * @return size of the vector.
-     */
-    int length();
-
-    /**
-     * Set the value in the vector (optional operation).
+     * Sets the length in this vector (optional operation).
      *
      * @param index index to set.
      * @param value value to set in the vector.
@@ -79,25 +72,12 @@ public interface DoubleVector extends Vector<Double> {
     void set(int index, double value);
 
     /**
-     * Set the value in the vector (optional operation).
+     * Returns a double array representing this vector.  The returned array will
+     * be "safe" in that no changes to the array will be reflected in the
+     * vector, and likewise for changes to to the vector.  The caller is thus
+     * free to modify the returned array.
      *
-     * @param index index to set.
-     * @param value value to set in the vector.
+     * @return a {@code double} array of this vector.
      */
-    void set(int index, Number value);
-
-    /**
-     * Set all the values in the vector (optional operation).
-     *
-     * @param values Values to set for this vector.
-     */
-    void set(double[] values);
-    
-    /**
-     * Return a double array representing this vector.
-     *
-     * @param size The maximum size of the array returned.
-     * @return A double array of this vector.
-     */
-    double[] toArray(int size);
+    double[] toArray();
 }

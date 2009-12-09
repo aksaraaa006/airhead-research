@@ -26,52 +26,49 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * A view of a sparse {@link DoubleVector} that that allows the backing data to
- * be resized and also viewed from an offset.  Furthermore, this class allows
- * the viewed data to be immutable, where all mutating operations throw {@link
- * UnsupportedOperationException}.
- * 
+ * A view of a sparse {@link IntegerVector} as a sparse {@link DoubleVector}.
+ *
  * @author Keith Stevens
- * @authod David Jurgens
+ * @author David Jurgens
  */
-class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
+class IntAsSparseDoubleVector extends ViewIntAsDoubleVector
         implements SparseVector<Double> {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * A {@link SparseVector} reference to the {@link DoubleVector} data backing
-     * this view.
+     * A {@link SparseVector} reference to the {@link IntegerVector} data
+     * backing this view.
      */
     private final SparseVector sparseVector;
 
     /**
      * Creates a new {@link DoubleVector} view of the data in the provided
-     * {@link DoubleVector}.
+     * {@link IntegerVector}.
      *
-     * @param v the {@code DoubleVector} to view as containing double data.
+     * @param v the {@code IntegerVector} to view as containing double data.
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v) {
+    public <T extends IntegerVector & SparseVector<Integer>> 
+            IntAsSparseDoubleVector(T v) {
         this(v, 0, v.length(), false);
     }
 
     /**
      * Creates a new, optionally immutable {@link DoubleVector} view of the data
-     * in the provided {@link DoubleVector}.
+     * in the provided {@link IntegerVector}.
      *
-     * @param v the {@code DoubleVector} to view as containing double data.
+     * @param v the {@code IntegerVector} to view as containing double data.
      * @param isImmutable {@code true} if this view should not allow mutating
      *        operations to change the state of the backing vector
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v, boolean isImmutable) {
+    public <T extends IntegerVector & SparseVector<Integer>> 
+            IntAsSparseDoubleVector(T v, boolean isImmutable) {
         this(v, 0, v.length(), isImmutable);
     }
 
     /**
      * Creates a new {@link DoubleVector} sub-view of the data in the provided
-     * {@link DoubleVector} using the offset and length to specify a viewing
+     * {@link IntegerVector} using the offset and length to specify a viewing
      * region.
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -79,14 +76,14 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      *               view starts
      * @param length the length of this view.
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v, int offset, int length) {
+    public <T extends IntegerVector & SparseVector<Integer>> 
+            IntAsSparseDoubleVector(T v, int offset, int length) {
         this(v, offset, length, false);
     }
 
     /**
      * Creates a new, optionally immutable {@link DoubleVector} sub-view of the
-     * data in the provided {@link DoubleVector} using the offset and length to
+     * data in the provided {@link IntegerVector} using the offset and length to
      * specify a viewing region.
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -96,9 +93,9 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      * @param isImmutable {@code true} if this view should not allow mutating
      *        operations to change the state of the backing vector.
      */
-    public <T extends DoubleVector & SparseVector<Double>>
-           ViewDoubleAsDoubleSparseVector(T v, int offset, int length, 
-                                          boolean isImmutable) {
+    public <T extends IntegerVector & SparseVector<Integer>>
+           IntAsSparseDoubleVector(T v, int offset, int length, 
+                                   boolean isImmutable) {
         super(v, offset, length, isImmutable);
         sparseVector = v;
     }

@@ -25,12 +25,15 @@ import java.io.Serializable;
 
 
 /**
- * A decorator of a {@code Vector} which provides scales all values in the
- * vectors in constant time.
+ * A decorator for a {@link SparseVector} that scales all the values in the
+ * backing vector in constant time.
  *
  * @author Keith Stevens
+ *
+ * @see ScaledVector
  */
-public class SparseScaledVector implements SparseVector, Serializable {
+public class SparseScaledVector extends ScaledVector
+        implements SparseVector<Double>, Serializable  {
 
     private static final long serialVersionUID = 1L;
 
@@ -40,78 +43,23 @@ public class SparseScaledVector implements SparseVector, Serializable {
      */
     private final SparseVector sVector;
 
-    private final DoubleVector vector;
-
-    private final double scaleFactor;
     /**
-     * Creates a new {@code SparseScaledVector} decorating an already existing
-     * {@code Vector}.
+     * Creates a new {@code SparseScaledVector} that scales all the values in
+     * the provided {@code Vector}.
      *
      * @param v The vector to decorate.
      * @param factor The value to scale all values by.
      */
-    public SparseScaledVector(DoubleVector v, double factor) {
-        vector = v;
-        sVector = (SparseVector) v;
-
-        scaleFactor = factor;
-        if (!(v instanceof SparseVector))
-            throw new IllegalArgumentException("Vector is not Sparse");
-        if (factor == 0d)
-            throw new IllegalArgumentException("A zero scaling is not allowed");
+    public <T extends DoubleVector & SparseVector<Double>> 
+                      SparseScaledVector(T v, double factor) {        
+        super(v, factor);
+        sVector = v;
     }
     
     /**
      * {@inheritDoc}
      */
-    public double add(int index, double delta) {
-        return vector.add(index, delta / scaleFactor);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double get(int index) {
-        return scaleFactor * vector.get(index);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public int[] getNonZeroIndices() {
         return sVector.getNonZeroIndices();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(double[] values) {
-        for (int i = 0; i < values.length; ++i)
-            set(i, values[i]);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(int index, double value) {
-        vector.set(index, value / scaleFactor);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double[] toArray(int size) {
-        double[] array = vector.toArray(size);
-        for (int i = 0; i < size; ++i)
-            array[i] *= scaleFactor;
-        return array;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int length() {
-        int length = vector.length();
-        return length;
     }
 }

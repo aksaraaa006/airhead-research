@@ -33,7 +33,7 @@ package edu.ucla.sspace.vector;
 public interface IntegerVector extends Vector<Integer> {
 
     /**
-     * Change the value in the vector by a specified amount (optional
+     * Changes the value in the vector by a specified amount (optional
      * operation).  If there is not a value set at index, delta should be set to
      * the actual value.
      *
@@ -44,7 +44,7 @@ public interface IntegerVector extends Vector<Integer> {
     int add(int index, int delta);
 
     /**
-     * Return the value of the vector at the given index.
+     * Returns the value of this vector at the given index.
      *
      * @param index index to retrieve.
      * @return value at index.
@@ -52,41 +52,28 @@ public interface IntegerVector extends Vector<Integer> {
     int get(int index);
 
     /**
-     * Return the value of the vector at the given index.
+     * Returns the value of the vector at the given index as a {@code Integer}.
      *
-     * @param index index to retrieve.
-     * @return value at index.
+     * @param {@inheritDoc}
+     * @return {@inheritDoc}
      */
-    Number getValue(int index);
+    Integer getValue(int index);
 
     /**
-     * Set the value in the vector (optional operation).
+     * Sets the value in this vector (optional operation).
      *
      * @param index index to set.
      * @param value value to set in the vector.
      */
     void set(int index, int value);
-
-    /**
-     * Set the value in the vector (optional operation).
-     *
-     * @param index index to set.
-     * @param value value to set in the vector.
-     */
-    void set(int index, Number value);
-
-    /**
-     * Set all the values in the vector (optional operation).
-     *
-     * @param values Values to set for this vector.
-     */
-    void set(int[] values);
     
     /**
-     * Return a int array representing this vector.
+     * Returns an {@code int} array representing this vector.  The returned
+     * array will be "safe" in that no changes to the array will be reflected in
+     * the vector, and likewise for changes to to the vector.  The caller is
+     * thus free to modify the returned array.
      *
-     * @param size The maximum size of the array returned.
-     * @return A int array of this vector.
+     * @return an {@code int} array of this vector.
      */
-    int[] toArray(int size);
+    int[] toArray();
 }
