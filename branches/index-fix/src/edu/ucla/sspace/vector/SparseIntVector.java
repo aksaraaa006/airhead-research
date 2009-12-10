@@ -26,7 +26,7 @@ import edu.ucla.sspace.util.SparseIntArray;
 import java.io.Serializable;
 
 /**
- * An {@code IntegerVector} class whose data is back by an array.
+ * An sparse {@code IntegerVector} class whose data is back by a sparse array.
  *
  * @author Keith Stevens
  * @author David Jurgens

@@ -181,6 +181,9 @@ public class FlyingHermitMain extends GenericMain {
         options.addOption('c', "senseCount",
                           "The maximum number of senses Hermit should produce",
                           true, "INT", "Cluster Properties");
+        options.addOption('G', "clusterGenerator",
+                          "The cluster generator to use",
+                          true, "CLASSNAME", "Cluster Properties");
         options.addOption('W', "clusterWeight",
                           "If set, this weight will be used to expoentially " +
                           "average vectors in a cluster",
@@ -278,7 +281,7 @@ public class FlyingHermitMain extends GenericMain {
         double threshold = argOptions.getDoubleOption("threshold",
                                                       DEFAULT_THRESHOLD);
         String clusterName =
-            argOptions.getStringOption("cluster", DEFAULT_CLUSTER);
+            argOptions.getStringOption("clusterGenerator", DEFAULT_CLUSTER);
         System.setProperty(OnlineClusteringGenerator.MAX_CLUSTERS_PROPERTY,
                            Integer.toString(maxSenseCount));
         System.setProperty(OnlineClusteringGenerator.MERGE_THRESHOLD_PROPERTY,
