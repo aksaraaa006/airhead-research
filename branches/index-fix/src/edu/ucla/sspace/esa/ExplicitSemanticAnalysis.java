@@ -265,7 +265,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     public Vector getVector(String word) {
         Integer index = termToIndex.get(word);
         if (index != null)
-            return Vectors.immutableVector(
+            return Vectors.immutable(
                     termWikiMatrix.getRowVector(index.intValue()));
         return null;
     }

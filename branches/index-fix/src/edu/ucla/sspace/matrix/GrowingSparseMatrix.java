@@ -42,7 +42,8 @@ import java.util.Map;
  * #getColumnVector(int) getColumnVector} return a snapshot of the matrix data
  * at the time of the call.  Subsequent updates to the matrix will not be
  * reflected in these vectors.  The returned vectors are immutable and any calls
- * to mutating operations will throw an {@code UnsupportedOperationException}.
+ * to mutating operations will throw an {@code
+ * UnsupportedOperationException}. <p>
  *
  * This class is not thread-safe.
  *
@@ -134,14 +135,16 @@ public class GrowingSparseMatrix implements Matrix {
     }
 
     /**
-     * Returns a {@link DoubleVector} of the contents of the row.
+     * Returns a {@link DoubleVector} of the contents of the row.  The length of
+     * the returned row vector reflects the size of matrix at the time of the
+     * call, which may be different from earlier calls to {@link #columns()}.
      *
      * @param row {@inheritDoc}
      * @return {@inheritDoc}
      */
     public DoubleVector getRowVector(int row) {
         DoubleVector v = rowToColumns.get(row);
-        return Vectors.viewVector(v, 0, cols);
+        return Vectors.subview(v, 0, cols);
     }
 
     /**

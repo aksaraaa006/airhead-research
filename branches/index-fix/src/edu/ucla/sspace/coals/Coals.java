@@ -149,7 +149,7 @@ public class Coals implements SemanticSpace {
         Integer index = wordToIndex.get(term);
         if (index == null) 
             return null;
-        return Vectors.immutableVector(
+        return Vectors.immutable(
                 finalCorrelation.getRowVector(index.intValue()));
     }
 

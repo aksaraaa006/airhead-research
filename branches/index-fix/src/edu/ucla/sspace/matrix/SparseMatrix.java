@@ -112,7 +112,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public DoubleVector getRowVector(int row) {
-        return Vectors.immutableVector(sparseMatrix[row]);
+        return Vectors.immutable(sparseMatrix[row]);
     }
 
     /**

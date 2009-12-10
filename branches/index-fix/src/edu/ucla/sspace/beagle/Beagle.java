@@ -157,7 +157,7 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public DoubleVector getVector(String term) {
-        return Vectors.immutableVector(termHolographs.get(term));
+        return Vectors.immutable(termHolographs.get(term));
     }
 
     /**

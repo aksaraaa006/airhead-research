@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.index;
 
-import edu.ucla.sspace.vector.SparseIntVector;
 import edu.ucla.sspace.vector.IntegerVector;
 
 import java.io.File;

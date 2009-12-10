@@ -33,7 +33,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.IntegerVector;
-import edu.ucla.sspace.vector.SparseIntVector;
+import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -224,7 +224,7 @@ public class FlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public Vector getVector(String term) {
-        return Vectors.immutableVector(splitSenses.get(term));
+        return Vectors.immutable(splitSenses.get(term));
     }
 
     /**
@@ -271,7 +271,8 @@ public class FlyingHermit implements SemanticSpace {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
-                IntegerVector meaning = new SparseIntVector(indexVectorSize);
+                IntegerVector meaning = 
+                    new CompactSparseIntegerVector(indexVectorSize);
 
                 // Process the previous words, specifying their distance from
                 // the focus word.

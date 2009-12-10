@@ -234,7 +234,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     /**
      * {@inheritDoc} The length of the returned row vector reflects the size of
      * matrix at the time of the call, which may be different from earlier calls
-     * to {@link #columns()}
+     * to {@link #columns()}.
      */
     public DoubleVector getRowVector(int row) {
         DoubleVector v = getRow(row, -1, false);
@@ -243,7 +243,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         // with its current length
         return (v == null) 
             ? new CompactSparseVector(cols.get())
-            : Vectors.viewVector(v, 0, cols.get());
+            : Vectors.subview(v, 0, cols.get());
     }
 
     /**

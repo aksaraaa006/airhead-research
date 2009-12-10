@@ -35,8 +35,8 @@ public class SimilarityTest {
 
     @Test public void testCosineSimSparseIntSame() {
         int[] v = new int[] { 0, 1, 1, 1, 1, 1, 1, 1, 0, 0};
-        Vector a = new SparseIntVector(10);
-        Vector b = new SparseIntVector(10);
+        Vector a = new CompactSparseIntegerVector(10);
+        Vector b = new CompactSparseIntegerVector(10);
         for (int i = 0; i < v.length; ++i) {
             if (v[i] != 0) {
                 a.set(i, v[i]);

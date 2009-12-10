@@ -26,13 +26,14 @@ import edu.ucla.sspace.util.SparseIntArray;
 import java.io.Serializable;
 
 /**
- * An sparse {@code IntegerVector} class whose data is back by a sparse array.
+ * A sparse {@code IntegerVector} class whose data is back by a compact sparse
+ * array.  Access to the elements of this vector is {@code O(log(n))}.
  *
  * @author Keith Stevens
  * @author David Jurgens
  */
-public class SparseIntVector
-    implements IntegerVector, SparseVector<Integer>, Serializable {
+public class CompactSparseIntegerVector
+    implements SparseIntegerVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -46,7 +47,7 @@ public class SparseIntVector
      *
      * @param length the length of this vector
      */
-    public SparseIntVector(int length) {
+    public CompactSparseIntegerVector(int length) {
         intArray = new SparseIntArray(length);
     }
 
@@ -57,7 +58,7 @@ public class SparseIntVector
      *
      * @param v the intial values for this vector to have
      */
-    public SparseIntVector(IntegerVector v) {
+    public CompactSparseIntegerVector(IntegerVector v) {
         intArray = new SparseIntArray(v.length());
         if (v instanceof SparseVector) {
             SparseVector sv = (SparseVector)v;
@@ -77,7 +78,7 @@ public class SparseIntVector
      *
      * @param values the intial values for this vector to have
      */
-    public SparseIntVector(int[] values) {
+    public CompactSparseIntegerVector(int[] values) {
         intArray = new SparseIntArray(values);
     }
 

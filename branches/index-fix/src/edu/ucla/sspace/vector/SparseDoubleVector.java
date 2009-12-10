@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2009 David Jurgens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -22,24 +22,8 @@
 package edu.ucla.sspace.vector;
 
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
-
-
 /**
- * A collection of tests for the {@link Vectors} class
+ * An interface for sparse {@link DoubleVector} instances.
  */
-public class VectorsTest {
-
-    @Test public void testInstanceOf() {
-        CompactSparseIntegerVector siv = new CompactSparseIntegerVector(100);
-        CompactSparseIntegerVector sivCopy = Vectors.instanceOf(siv);
-        assertEquals(siv.length(), sivCopy.length());
-
-        CompactSparseVector csv = new CompactSparseVector(100);
-        CompactSparseVector csvCopy = Vectors.instanceOf(csv);
-        assertEquals(csv.length(), csvCopy.length());
-    }
-}
+public interface SparseDoubleVector 
+    extends SparseVector<Double>, DoubleVector { }

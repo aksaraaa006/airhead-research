@@ -55,15 +55,18 @@ public class Vectors {
      * @return a mutable {@code DoubleVector} view of {@code v}
      */
     public static DoubleVector asDouble(Vector v) {
-        if (v instanceof IntegerVector) {
-            return (v instanceof SparseVector)
-                ? new IntAsSparseDoubleVector((SparseIntegerVector)v)
-                : new IntAsDoubleVector((IntegerVector)v);
-        } 
-        else 
-            return (v instanceof DoubleVector)
-                ? (DoubleVector)v
-                : new ViewVectorAsDoubleVector(v);
+        // NOTE: Special case the the sparse class first to becase the
+        // base interface of IntegerVectors matches as well.
+        if (v instanceof SparseIntegerVector)
+            return new IntAsSparseDoubleVector((SparseIntegerVector)v);
+        else if (v instanceof IntegerVector)
+            return new IntAsDoubleVector((IntegerVector)v);
+        else if (v instanceof DoubleVector)
+            return (DoubleVector)v;
+        // Base case: the vector is either of some unknown type or only
+        // implements Vector.  Therefore, wrap its contents using Vector's API.
+        else
+            return new ViewVectorAsDoubleVector(v);
     }
 
     /**
@@ -98,8 +101,24 @@ public class Vectors {
      * @param vector The {@code DoubleVector} to decorate as immutable.
      * @return An immutable version of {@code vector}.
      */
-    public static DoubleVector immutableVector(DoubleVector vector) {
-        return (vector != null) ? new DoubleVectorView(vector, true) : null;
+    public static DoubleVector immutable(DoubleVector vector) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create an immutable " +
+                                           "null vector");
+        return new DoubleVectorView(vector, true);
+    }
+
+    /**
+     * Returns an immutable view of the given {@code DoubleVector}.
+     *
+     * @param vector The {@code DoubleVector} to decorate as immutable.
+     * @return An immutable version of {@code vector}.
+     */
+    public static IntegerVector immutable(IntegerVector vector) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create an immutable " +
+                                           "null vector");
+        return new IntegerVectorView(vector, true);
     }
 
     /**
@@ -108,19 +127,26 @@ public class Vectors {
      * @param vector The {@code DoubleVector} to decorate as immutable.
      * @return An immutable version of {@code vector}.
      */
-    public static Vector immutableVector(Vector vector) {
+    public static Vector immutable(Vector vector) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create an immutable " +
+                                           "null vector");
         return new VectorView(vector, true);
     }
 
     /**
      * Returns a thread-safe version of a {@code DoubleVector} that guarantees
-     * atomic access to all operations.
+     * atomic access to all operations.  The returned vector allows concurrent
+     * read access.
      *
      * @param vector The {@code DoubleVector} to decorate as atomic.
      * @return An atomic version of {@code vector}.
      */
-    public static DoubleVector atomicVector(DoubleVector vector) {
-        return (vector != null) ? new AtomicVector(vector) : null;
+    public static DoubleVector atomic(DoubleVector vector) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create an atomic " +
+                                           "null vector");
+        return new AtomicVector(vector);
     }
 
     /**
@@ -132,7 +158,10 @@ public class Vectors {
      * @return An atomic version of {@code vector}.
      */
     public static DoubleVector synchronizedVector(DoubleVector vector) {
-        return (vector != null) ? new SynchronizedVector(vector) : null;
+        if (vector == null)
+            throw new NullPointerException("Cannot create an synchronized " +
+                                           "null vector");
+        return new SynchronizedVector(vector);
     }
 
     /**
@@ -149,16 +178,38 @@ public class Vectors {
      *         offset} plus {@code length} is greater than the length of {@code
      *         vector}</ul>
      */
-    public static DoubleVector viewVector(DoubleVector vector,
-                                          int offset,
-                                          int length) {
-        return (vector != null)
-            ? new DoubleVectorView(vector, offset, length)
-            : null;
+    public static DoubleVector subview(DoubleVector vector, int offset,
+                                       int length) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create view of a " +
+                                           "null vector");
+        return new DoubleVectorView(vector, offset, length);
     }
 
     /**
-     * Copy all of the values from one {@code Vector} into another.  After the
+     * Returns a subview for the given {@code IntegerVector} with a specified
+     * offset and length.
+     *
+     * @param vector the {@code Vector} whose values will be shown in the view
+     * @param offset the index of {@code v} at which the first index of this
+     *               view starts
+     * @param length the length of this view.
+     *
+     * @throws IllegalArgumentException if <ul><li>{@code offset} is
+     *         negative<li>{@code length} is less than zero<li>the sum of {@code
+     *         offset} plus {@code length} is greater than the length of {@code
+     *         vector}</ul>
+     */
+    public static IntegerVector subview(IntegerVector vector, int offset,
+                                       int length) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create view of a " +
+                                           "null vector");
+        return new IntegerVectorView(vector, offset, length);
+    }
+
+    /**
+     * Copies all of the values from one {@code Vector} into another.  After the
      * operation, all of the values in {@code dest} will be the same as that of
      * {@code source}.  The legnth of {@code dest} must be as long as the length
      * of {@code source}.  Once completed {@code dest} is returned.
@@ -178,7 +229,7 @@ public class Vectors {
     }
 
     /**
-     * Create a copy of a given {@code DoubleVector} with the same type as the
+     * Creates a copy of a given {@code DoubleVector} with the same type as the
      * original.
      *
      * @param source The {@code Vector} to copy.
@@ -215,7 +266,7 @@ public class Vectors {
     }
 
     /**
-     * Create a copy of a given {@code Vector}.
+     * Creates a copy of a given {@code Vector}.
      *
      * @param source The {@code Vector} to copy.
      *
@@ -229,7 +280,7 @@ public class Vectors {
     }
 
     /**
-     * Create a copy of a given {@code IntegerVector} with the same type as the
+     * Creates a copy of a given {@code IntegerVector} with the same type as the
      * original.
      *
      * @param source The {@code Vector} to copy.
@@ -247,7 +298,7 @@ public class Vectors {
                                        Arrays.copyOf(pos, pos.length),
                                        Arrays.copyOf(neg, neg.length));
         } else if (source instanceof SparseVector) {
-            result = new SparseIntVector(source.length());
+            result = new SparseHashIntegerVector(source.length());
             copyFromSparseVector(result, source);
         } else {
             result = new DenseIntVector(source.length());
@@ -274,8 +325,8 @@ public class Vectors {
     @SuppressWarnings("unchecked")
     public static <T extends Vector> T instanceOf(T vector) {
         // Check for known vector types to avoid reflection overhead
-        if (vector instanceof SparseIntVector) {
-            return (T)(new SparseIntVector(vector.length()));
+        if (vector instanceof CompactSparseIntegerVector) {
+            return (T)(new CompactSparseIntegerVector(vector.length()));
         }
         // Remaining cases of vector types is being left unfinished until the
         // vector name refactoring is finished.  -jurgens 12/7/09
@@ -293,7 +344,7 @@ public class Vectors {
     }
 
     /**
-     * Copy values from a {@code SparseVector} into another vector
+     * Copies values from a {@code SparseVector} into another vector
      *
      * @param destination The {@code Vector to copy values into.
      * @param source The {@code @SparseVector} to copy values from.
@@ -306,7 +357,7 @@ public class Vectors {
     }
 
     /**
-     * Copy values from a {@code SparseVector} into another vector
+     * Copies values from a {@code SparseVector} into another vector
      *
      * @param destination The {@code Vector to copy values into.
      * @param source The {@code @SparseVector} to copy values from.
@@ -317,20 +368,4 @@ public class Vectors {
         for (int i = 0; i < nonZeroIndices.length; ++i)
             destination.set(i, source.get(i));
     }
-
-
-    /**
-     * A utility interface for joining the {@link SparseVector} and {@link
-     * IntegerVector} interfaces into a castable type.
-     */
-    static interface SparseIntegerVector 
-        extends SparseVector<Integer>, IntegerVector { }
-
-    /**
-     * A utility interface for joining the {@link SparseVector} and {@link
-     * DoubleVector} interfaces into a castable type.
-     */
-    static interface SparseDoubleVector 
-        extends SparseVector<Double>, DoubleVector { }
-
 }

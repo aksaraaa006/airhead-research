@@ -419,7 +419,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
          */
         public synchronized List<Vector> getMembers() {
             List<Vector> members = new ArrayList<Vector>(1);
-            members.add(Vectors.immutableVector(centroid));
+            members.add(Vectors.immutable(centroid));
             return members;
         }
 

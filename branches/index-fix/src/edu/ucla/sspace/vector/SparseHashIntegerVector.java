@@ -33,7 +33,7 @@ package edu.ucla.sspace.vector;
  * @author David Jurgens
  */
 public class SparseHashIntegerVector extends SparseHashVector<Integer>
-        implements IntegerVector {
+        implements SparseIntegerVector {
 
     private static final long serialVersionUID = 1L;
 
