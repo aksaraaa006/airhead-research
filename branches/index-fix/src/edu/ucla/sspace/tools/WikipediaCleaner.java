@@ -83,7 +83,7 @@ public class WikipediaCleaner {
      * A {@code Map} tracking how many incoming links each wikipedia article
      * contains.
      */
-    private Map<String,Integer> articleToIncomingLinkCount;
+    //private Map<String,Integer> articleToIncomingLinkCount;
 
     /**
      * The minimum number of incoming links each article should have.  Articles
@@ -108,19 +108,19 @@ public class WikipediaCleaner {
 
         try {
             // Create the file pointers needed.
-            tempFile = File.createTempFile(outputFile, "tmp");
-            tempFile.deleteOnExit();
-            articleTitleFile = File.createTempFile(outputFile, "articles");
+            //tempFile = File.createTempFile(outputFile, "tmp");
+            //tempFile.deleteOnExit();
+            //articleTitleFile = File.createTempFile(outputFile, "articles");
 
             // Create the PrintWriters needed.
-            tmpOutput = new PrintWriter(tempFile);
-            output = new PrintWriter(outputFile);
-            articleOutput = new PrintWriter(articleTitleFile);
+            tmpOutput = new PrintWriter(outputFileName);
+            //output = new PrintWriter(outputFile);
+            //articleOutput = new PrintWriter(articleTitleFile);
 
             // Create the map to track incoming links.  NOTE: For this map to
             // work, .intern() must be called on all strings used as keys.
-            articleToIncomingLinkCount =
-                new IdentityHashMap<String, Integer>(8000000);                
+            //articleToIncomingLinkCount =
+            //    new IdentityHashMap<String, Integer>(8000000);                
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -159,24 +159,27 @@ public class WikipediaCleaner {
             return true;
         } else if (doc.text.contains("#REDIRECT")) {
             System.out.printf("skipping redirect %s\n", articleName);
+            return true;
         }
+        System.out.println("Processing article: "  + articleName +
+                           " of size: " + doc.text.length());
 
         // intern the article name since it will be around a while
-        articleName = articleName.intern();
+        //articleName = articleName.intern();
     
         // Clean article content.
         String rawArticleText = extractArticle(doc.text);
-        // TODO Add html removal.
-        String wikiFreeText = removeWikiStuff(rawArticleText);
+        rawArticleText = removeWikiStuff(rawArticleText);
+
+            String wikiFreeText = removeWikiStuff(rawArticleText);
         Duple<String, Integer> tagFreeAndLinkCount = 
             replaceAndCountLinks(wikiFreeText);
         String scrubbed = removeRedirect(tagFreeAndLinkCount.x);
+        tmpOutput.println(articleName //+ "|" + tagFreeAndLinkCount.y.intValue() 
+                          + "|" + scrubbed);
+        tmpOutput.flush();
 
         // Print article content and meta data to the temporary file.
-        tmpOutput.println(articleName //+ "|" + tagFreeAndLinkCount.y.intValue() 
-                          + "|" + scrubbed);         
-        tmpOutput.flush();
-        tmpOutput.close();
 
         return true;
     }
@@ -214,16 +217,22 @@ public class WikipediaCleaner {
             // itself and possibly introduce non-html < characters
             for (int i = 0; (i = text.indexOf("{{", i)) >= 0; ) {
                 String s = text.substring(lastGoodIndex,i);
+                System.out.println(i);
+                System.out.println("{{:" + text.indexOf("}}", i));
                 tagCleanBuilder.append(s);
                 lastGoodIndex = text.indexOf("}}", i) + 2;
-                i = lastGoodIndex;
-                // REMINDER: this is doing extra work, this loop
-                // should be rewritten
-                if (text.indexOf("{{", i) == -1) {
-                    tagCleanBuilder.append(text.substring(lastGoodIndex));
+                
+                // Some articles have no ending }}, indicating that {{ was
+                // somehow part of the text, so cut out early.
+                if (lastGoodIndex == 1) {
+                    tagCleanBuilder.append("OMGFWDF").append(text.substring(i));
                     break;
                 }
+
+                i = lastGoodIndex;
             }
+            if (lastGoodIndex != 1)
+                tagCleanBuilder.append(text.substring(lastGoodIndex));
             return tagCleanBuilder.toString();
         }
 
@@ -243,7 +252,7 @@ public class WikipediaCleaner {
         StringBuilder linkCleanBuilder = new StringBuilder(text.length());
         int lastGoodIndex = 0;
         int outgoingLinks = 0;
-        int prevTotalIncomingLinks = articleToIncomingLinkCount.size();
+        //int prevTotalIncomingLinks = articleToIncomingLinkCount.size();
         for (int i = 0; (i = text.indexOf("[[", i)) > 0; ) {
             linkCleanBuilder.append(text.substring(lastGoodIndex,i));
             
@@ -360,8 +369,8 @@ public class WikipediaCleaner {
                     continue;
                 */
 
-                articleOutput.println(title);
-                articleOutput.flush();
+                //articleOutput.println(title);
+                //articleOutput.flush();
 
                 output.println(title + // "|" + incoming + "|" + 
                               // outgoing + 
@@ -423,103 +432,7 @@ public class WikipediaCleaner {
                 break;
         }
 
-        cleaner.finalizeCorpus();
-    }
-
-    public static class FileCache {
-    
-        public static final int CACHE_SIZE = 32;
-
-        /**
-         * The set of known files which need to be processed.
-         */
-        private final Queue<String> fileNames;
-
-        /**
-         * The set of open files which can be immediately processed.
-         */
-        private final BlockingQueue<OpenedFile> cachedFiles;
-
-        /**
-         * Create a new {@code FileCache} given a queue of filenames.  Up to
-         * {@code CACHE_SIZE} files will be put on the to be processed queue.
-         *
-         * @param fileNamesP The files to process.
-         */
-        public FileCache(Queue<String> fileNamesP) {
-            this.fileNames = fileNamesP;
-            cachedFiles = new LinkedBlockingQueue<OpenedFile>();
-        
-            // Add new threads onto the queue of files to process.
-            for (int i = 0; i < CACHE_SIZE; ++i)
-                addFileToQueue().start();
-        }
-
-        /**
-         * Create a new thread which will push a file from {@code fileNames}
-         * onto {@code cachedFiles}.
-         */
-        private Thread addFileToQueue() {
-            return new Thread() {
-                public void run() {
-                    String fileName = fileNames.poll();
-                    if (fileName != null) {
-                        try {
-                            cachedFiles.offer(new OpenedFile(fileName));
-                        }
-                        catch (Throwable t) {
-                            t.printStackTrace();
-                        }
-                    }
-                }
-            };
-        }
-
-        /**
-         * Check that there are still files to be processed.
-         */
-        public boolean hasNext() {
-            return !cachedFiles.isEmpty() || !fileNames.isEmpty();
-        }
-        
-        /**
-         * Return the next {@code OpenedFile} that needs to be processed.
-         * If there are files which still need to be pushed onto the file cache,
-         * append one to the set of opened files. Returns {@code null} if there
-         * are no more files to process.
-         */
-        public OpenedFile next() throws InterruptedException {
-            if (cachedFiles.isEmpty() && fileNames.isEmpty())
-                return null;
-
-            addFileToQueue().start();        
-            return cachedFiles.poll(10000L, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    /**
-     * A simple struct representing an opened file.
-     */
-    private static final class OpenedFile {
-
-        /**
-         * The files name.
-         */
-        public final String fileName;
-
-        /**
-         * A reader for accessing the file.
-         */
-        public final FileReader reader;
-
-        /**
-         * Create a new {@code OpenedFile} given a filename and reader.
-         */
-        public OpenedFile(String fileName) throws FileNotFoundException {
-            this.fileName = fileName;
-            this.reader = new FileReader(fileName);
-        }
-
+        //cleaner.finalizeCorpus();
     }
 
     /**
@@ -723,7 +636,7 @@ public class WikipediaCleaner {
     }
 
     /**
-     * Check if the artile is actually a reasonable.
+     * Check if the artile is actually reasonable.
      */
     public static boolean shouldProcessArticle(String linkedArticleTitle) {
         return !(linkedArticleTitle.startsWith("image:") ||
