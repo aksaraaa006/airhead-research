@@ -152,7 +152,6 @@ public class WikipediaCleaner {
             unescapeHTML(rawArticleName,0).replaceAll("/"," ");
         articleName = articleName.toLowerCase().trim();
 
-
         // skip articles that are not text-based or are
         // wikipedia-specific
         if (!shouldProcessArticle(articleName)) {
@@ -174,7 +173,7 @@ public class WikipediaCleaner {
         String scrubbed = removeRedirect(tagFreeAndLinkCount.x);
 
         // Print article content and meta data to the temporary file.
-        tmpOutput.println(articleName + "|" + tagFreeAndLinkCount.y.intValue() 
+        tmpOutput.println(articleName //+ "|" + tagFreeAndLinkCount.y.intValue() 
                           + "|" + scrubbed);         
         tmpOutput.flush();
         tmpOutput.close();
@@ -264,6 +263,7 @@ public class WikipediaCleaner {
             linkedArticleTitle =
                 unescapeHTML(linkedArticleTitle.toLowerCase(), 0);
             
+            /*
             // don't include Image, foreign language or
             // disambiguation links
             if (shouldProcessArticle(linkedArticleTitle)) {
@@ -290,6 +290,7 @@ public class WikipediaCleaner {
                         : Integer.valueOf(1 + incomingLinks));
                 ++outgoingLinks;
             }
+            */
 
             lastGoodIndex = text.indexOf("]]", i) + 2;
             i = lastGoodIndex;
@@ -337,29 +338,34 @@ public class WikipediaCleaner {
                 String[] titleCountDoc = line.split("\\|");
                 String title = titleCountDoc[0].intern();
 
+                /*
                 // Reject articles with fewer than the minimum outgoing link
                 // count.
                 int outgoing = Integer.parseInt(titleCountDoc[1]);
                 if (outgoing < minOutgoingCount)
                     continue;
+                */
                 
                 // Reject articles with no content.
                 if (titleCountDoc.length != 3)
                     continue;
                 String doc = titleCountDoc[2];
 
+                /*
                 // Reject articles with fewer than the minimum incoming link
                 // count.
                 Integer incoming = articleToIncomingLinkCount.get(title);
                 if (incoming == null ||
                     incoming.intValue() < minIncomingCount)
                     continue;
+                */
 
                 articleOutput.println(title);
                 articleOutput.flush();
 
-                output.println(title + "|" + incoming + "|" + 
-                               outgoing + "|" + doc);
+                output.println(title + // "|" + incoming + "|" + 
+                              // outgoing + 
+                               "|" + doc);
                 output.flush();
             }
         } catch (IOException ioe) {
