@@ -22,6 +22,9 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
+
+import edu.ucla.sspace.text.DocumentPreprocessor;
+
 import edu.ucla.sspace.util.Duple;
 
 import java.io.BufferedReader;
@@ -79,6 +82,7 @@ public class WikipediaCleaner {
      */
     private PrintWriter articleOutput;
 
+    private DocumentPreprocessor processor;
     /**
      * A {@code Map} tracking how many incoming links each wikipedia article
      * contains.
@@ -105,6 +109,7 @@ public class WikipediaCleaner {
                             int minIncoming,
                             int minOutgoing) {
         String outputFile = outputFileName;
+        processor = new DocumentPreprocessor();
 
         try {
             // Create the file pointers needed.
@@ -175,6 +180,7 @@ public class WikipediaCleaner {
         Duple<String, Integer> tagFreeAndLinkCount = 
             replaceAndCountLinks(wikiFreeText);
         String scrubbed = removeRedirect(tagFreeAndLinkCount.x);
+        scrubbed = processor.process(scrubbed);
         tmpOutput.println(articleName //+ "|" + tagFreeAndLinkCount.y.intValue() 
                           + "|" + scrubbed);
         tmpOutput.flush();
@@ -389,12 +395,9 @@ public class WikipediaCleaner {
         ArgOptions options = new ArgOptions();
         options.addOption('w', "wikiDump", "The wikipedia snapshot to process",
                           true, "FILE", "Required");
-        options.addOption('v', "validTerms", "The set of valid terms",
-                          true, "FILE", "Required");
         options.parseOptions(args);
 
         if (options.numPositionalArgs() != 1 ||
-            !options.hasOption('v') ||
             !options.hasOption('w')) {
             System.out.println("usage java [OPTIONS] <output-file>\n"+ 
                                options.prettyPrint());
