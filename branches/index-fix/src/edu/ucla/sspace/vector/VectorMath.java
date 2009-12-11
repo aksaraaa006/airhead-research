@@ -384,8 +384,6 @@ public class VectorMath {
                                         IntegerVector source) {
         int[] otherIndices = ((SparseVector) source).getNonZeroIndices();
         for (int index : otherIndices) {
-            System.out.println(index);
-            System.out.println(destination.get(index));
             destination.add(index, source.get(index));
         }
     }
