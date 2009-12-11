@@ -73,8 +73,8 @@ public class VectorMath {
      * @param vector2 The source vector to sum from.
      * @return The summation of {code vector1} and {@code vector2}.
      */
-    private static DoubleVector add(DoubleVector vector1,
-                                    DoubleVector vector2) {
+    public static DoubleVector add(DoubleVector vector1,
+                                   DoubleVector vector2) {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
@@ -103,8 +103,8 @@ public class VectorMath {
      * @param vector2 The source vector to sum from.
      * @return The summation of {code vector1} and {@code vector2}.
      */
-    private static IntegerVector add(IntegerVector vector1,
-                                     IntegerVector vector2) {
+    public static IntegerVector add(IntegerVector vector1,
+                                    IntegerVector vector2) {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
@@ -112,7 +112,7 @@ public class VectorMath {
         // add them to this instance.
         if (vector2 instanceof SparseVector) 
             addSparseValues(vector1, vector2);
-        if (vector2 instanceof TernaryVector)
+        else if (vector2 instanceof TernaryVector)
             addTernaryValues(vector1, (TernaryVector)vector2);
         else {
             // Otherwise, inspect all values of vector, and only add the non
@@ -151,8 +151,8 @@ public class VectorMath {
      * @param vector2 The second vector to be used in a summation.
      * @return The summation of {code vector1} and {@code vector2}.
      */
-    private static DoubleVector addUnmodified(DoubleVector vector1,
-                                              DoubleVector vector2) {
+    public static DoubleVector addUnmodified(DoubleVector vector1,
+                                             DoubleVector vector2) {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
@@ -165,9 +165,8 @@ public class VectorMath {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
             for (int i = 0; i < vector2.length(); ++i) {
-                double value = vector2.get(i) + vector1.get(i);
-                if (value != 0d)
-                    finalVector.add(i, value);
+                double value = vector2.get(i);
+                finalVector.add(i, value);
             }
         }
         return finalVector;
@@ -181,8 +180,8 @@ public class VectorMath {
      * @param vector2 The second vector to be used in a summation.
      * @return The summation of {code vector1} and {@code vector2}.
      */
-    private static IntegerVector addUnmodified(IntegerVector vector1,
-                                               IntegerVector vector2) {
+    public static IntegerVector addUnmodified(IntegerVector vector1,
+                                              IntegerVector vector2) {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
@@ -197,9 +196,8 @@ public class VectorMath {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
             for (int i = 0; i < vector2.length(); ++i) {
-                int value = vector2.get(i) + vector1.get(i);
-                if (value != 0d)
-                    finalVector.add(i, value);
+                int value = vector2.get(i);
+                finalVector.add(i, value);
             }
         }
         return finalVector;
@@ -385,8 +383,11 @@ public class VectorMath {
     private static void addSparseValues(IntegerVector destination,
                                         IntegerVector source) {
         int[] otherIndices = ((SparseVector) source).getNonZeroIndices();
-        for (int index : otherIndices)
+        for (int index : otherIndices) {
+            System.out.println(index);
+            System.out.println(destination.get(index));
             destination.add(index, source.get(index));
+        }
     }
 
     /**

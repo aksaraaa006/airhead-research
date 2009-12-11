@@ -31,9 +31,8 @@ import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.IntegerVector;
-import edu.ucla.sspace.vector.CompactSparseIntegerVector;
+import edu.ucla.sspace.vector.SparseHashIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -272,7 +271,7 @@ public class FlyingHermit implements SemanticSpace {
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
                 IntegerVector meaning = 
-                    new CompactSparseIntegerVector(indexVectorSize);
+                    new SparseHashIntegerVector(indexVectorSize);
 
                 // Process the previous words, specifying their distance from
                 // the focus word.

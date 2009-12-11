@@ -42,4 +42,50 @@ public class VectorsTest {
         CompactSparseVector csvCopy = Vectors.instanceOf(csv);
         assertEquals(csv.length(), csvCopy.length());
     }
+
+    @Test public void testIntegerCopyOf() {
+        IntegerVector a = new CompactSparseIntegerVector(5);
+        a.set(1, -123);
+        IntegerVector b = Vectors.copyOf(a);
+        assertTrue(b instanceof SparseIntegerVector);
+        assertEquals(a.length(), b.length());
+        assertEquals(-123, b.get(1));
+        assertNotSame(a, b);
+
+        a = new DenseIntVector(new int[] {1, 2, 4, 5});
+        b = Vectors.copyOf(a);
+        assertTrue(b instanceof DenseIntVector);
+        assertEquals(a.length(), b.length());
+        for (int i = 0; i < b.length(); ++i)
+            assertEquals(a.get(i), b.get(i));
+        assertNotSame(a, b);
+
+    }
+
+    @Test public void testDoubleCopyOf() {
+        DoubleVector a = new CompactSparseVector(5);
+        a.set(1, -123);
+        DoubleVector b = Vectors.copyOf(a);
+        assertTrue(b instanceof CompactSparseVector);
+        assertEquals(a.length(), b.length());
+        assertEquals(-123, b.get(1), 0);
+        assertNotSame(a, b);
+
+        a = new DenseVector(new double[] {1, 2, 4, 5});
+        b = Vectors.copyOf(a);
+        assertTrue(b instanceof DenseVector);
+        assertEquals(a.length(), b.length());
+        for (int i = 0; i < b.length(); ++i)
+            assertEquals(a.get(i), b.get(i), 0);
+        assertNotSame(a, b);
+    }
+
+    @Test public void testGenericCopyOf() {
+        Vector a = new CompactSparseVector(5);
+        a.set(1, -123);
+        Vector b = Vectors.copyOf(a);
+        assertEquals(a.length(), b.length());
+        assertEquals(-123, b.getValue(1).doubleValue(), 0);
+        assertNotSame(a, b);
+    }
 }

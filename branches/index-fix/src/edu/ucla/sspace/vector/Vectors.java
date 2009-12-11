@@ -273,6 +273,11 @@ public class Vectors {
      * @return A copy of {@code source} with the same type.
      */
     public static Vector copyOf(Vector source) {
+        if (source instanceof DoubleVector)
+            return copyOf((DoubleVector) source);
+        if (source instanceof IntegerVector)
+            return copyOf((IntegerVector) source);
+
         Vector result = new DenseVector(source.length());
         for (int i = 0; i < source.length(); ++i) 
             result.set(i, result.getValue(i));
@@ -352,8 +357,8 @@ public class Vectors {
     private static void copyFromSparseVector(DoubleVector destination,
                                              DoubleVector source) {
         int[] nonZeroIndices = ((SparseVector) source).getNonZeroIndices();
-        for (int i = 0; i < nonZeroIndices.length; ++i)
-            destination.set(i, source.get(i));
+        for (int index : nonZeroIndices) 
+            destination.set(index, source.get(index));
     }
 
     /**
@@ -365,7 +370,7 @@ public class Vectors {
     private static void copyFromSparseVector(IntegerVector destination,
                                              IntegerVector source) {
         int[] nonZeroIndices = ((SparseVector) source).getNonZeroIndices();
-        for (int i = 0; i < nonZeroIndices.length; ++i)
-            destination.set(i, source.get(i));
+        for (int index : nonZeroIndices) 
+            destination.set(index, source.get(index));
     }
 }
