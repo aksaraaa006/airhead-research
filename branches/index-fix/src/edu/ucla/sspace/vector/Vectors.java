@@ -96,6 +96,63 @@ public class Vectors {
     }
 
     /**
+     * Returns {@code true} if the two vectors are equal to one another.  Two
+     * {@code Vector} insances are considered equal if they contain the same
+     * number of elements and all corresponding pairs of {@code double} values
+     * are equal.
+     */
+    public static boolean equals(DoubleVector v1, DoubleVector v2) {
+        if (v1.length() == v2.length()) {
+            int length = v1.length();
+            for (int i = 0; i < length; ++i) {
+                if (v1.get(i) != v2.get(i))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if the two integer vectors are equal to one another.
+     * Two {@code Vector} insances are considered equal if they contain the same
+     * number of elements and all corresponding pairs of {@code int} values
+     * are equal.
+     */
+    public static boolean equals(IntegerVector v1, IntegerVector v2) {
+        if (v1.length() == v2.length()) {
+            int length = v1.length();
+            for (int i = 0; i < length; ++i) {
+                if (v1.get(i) != v2.get(i))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if the two vectors are equal to one another.  Two
+     * {@code Vector} insances are considered equal if they contain the same
+     * number of elements and all corresponding pairs of {@code Number} values
+     * are equal.  Two values {@code n1} and {@code n2} are considered equal if
+     * {@code n1.equals(n2)}.
+     */
+    public static boolean equals(Vector v1, Vector v2) {
+        if (v1.length() == v2.length()) {
+            int length = v1.length();
+            for (int i = 0; i < length; ++i) {
+                Number n1 = v1.getValue(i);
+                Number n2 = v2.getValue(i);
+                if (!n1.equals(n2))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Returns an immutable view of the given {@code DoubleVector}.
      *
      * @param vector The {@code DoubleVector} to decorate as immutable.

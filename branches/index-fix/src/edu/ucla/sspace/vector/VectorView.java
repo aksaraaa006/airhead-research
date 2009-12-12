@@ -151,7 +151,7 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
         if (index < 0 || index > vectorLength)
             throw new IllegalArgumentException("Invalid index: " + index);
 
-        return index - vectorOffset;
+        return index + vectorOffset;
     }
 
     /**

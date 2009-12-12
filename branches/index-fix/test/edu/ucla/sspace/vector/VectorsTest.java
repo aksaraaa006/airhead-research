@@ -88,4 +88,68 @@ public class VectorsTest {
         assertEquals(-123, b.getValue(1).doubleValue(), 0);
         assertNotSame(a, b);
     }
+
+    @Test public void testIntegerEquals() {
+        IntegerVector v1 = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        IntegerVector v2 = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        IntegerVector v3 = new DenseIntVector(new int[] {1, 1, 2, 3, 4 });
+
+        assertTrue(Vectors.equals(v1, v2));
+        assertFalse(Vectors.equals(v1, v3));
+    }
+
+    @Test public void testIntegerSubview() {
+        IntegerVector v = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        IntegerVector sub = Vectors.subview(v, 1, 3);
+        assertEquals(1, sub.get(0));
+        assertEquals(2, sub.get(1));
+        assertEquals(3, sub.get(2));
+        assertEquals(3, sub.length());
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+        public void testIntegerSubviewLength() {
+        IntegerVector v = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        Vectors.subview(v, 0, 10);
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+        public void testIntegerSubviewOffset() {
+        IntegerVector v = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        Vectors.subview(v, -10, 10);
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+        public void testIntegerSubviewOffsetAndLength() {
+        IntegerVector v = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        Vectors.subview(v, 3, 3);
+    }
+
+    @Test public void testDoubleSubview() {
+        DoubleVector v = new DenseVector(new double[] {0, 1, 2, 3, 4 });
+        DoubleVector sub = Vectors.subview(v, 1, 3);
+        assertEquals(1, sub.get(0), .1);
+        assertEquals(2, sub.get(1), .1);
+        assertEquals(3, sub.get(2), .1);
+        assertEquals(3, sub.length());
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+        public void testDoubleSubviewLength() {
+        DoubleVector v = new DenseVector(new double[] {0, 1, 2, 3, 4 });
+        Vectors.subview(v, 0, 10);
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+        public void testDoubleSubviewOffset() {
+        DoubleVector v = new DenseVector(new double[] {0, 1, 2, 3, 4 });
+        Vectors.subview(v, -10, 10);
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+        public void testDoubleSubviewOffsetAndLength() {
+        DoubleVector v = new DenseVector(new double[] {0, 1, 2, 3, 4 });
+        Vectors.subview(v, 3, 3);
+    }
+    
 }
