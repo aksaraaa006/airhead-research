@@ -1,0 +1,53 @@
+#summary A listing of relevant publications to the algorithms implemented in the S-Space Package
+
+= Algorithms =
+
+We are actively working on supporting the following algorithms.  As additional time and resources allow, we will add further algorithms.  See the [http://code.google.com/p/airhead-research/downloads/list downloads] page for the current list of algorithms available in command-line executable form.
+
+== [LatentSemanticAnalysis Latent Semantic Analysis] (LSA) ==
+
+T. K. Landauer and S. T. Dumais, "A solution to Plato’s problem: The 
+Latent Semantic Analysis theory of the acquisition, induction, and representation of knowledge," _Psychological Review_, vol. 104, pp. 211–240, 1997. 
+
+T. K. Landauer, P. W. Foltz, and D. Laham, "Introduction to Latent Semantic Analysis," _Discourse Processes_, no. 25, pp. 259–284, 1998. 
+
+
+
+== [RandomIndexing Random Indexing] (also, with permutations) ==
+
+P. Kanerva, J. Kristoferson, and A. Holst, “Random indexing of text samples for latent semantic analysis,” in _Proceedings of the 22nd Annual Conference of the Cognitive Science Society_, L. R. Gleitman and A. K. Josh, Eds., 2000, p. 1036. 
+
+M. Sahlgren, “Vector-based semantic analysis: Representing word meanings based on random labels,” in _Proceedings of the ESSLLI 2001 Workshop on Semantic Knowledge Acquisition and Categorisation_, Helsinki, Finland, 2001. 
+
+M. Sahlgren, A. Holst, and P. Kanerva, “Permutations as a means to encode order in word space,” in _Proceedings of the 30th Annual Meeting of the Cognitive Science Society (CogSci’08)_, 2008. 
+
+== [Coals Correlated Occurrence Analogue to Lexical Semantic] (COALS) ==
+
+D. L. T. Rohde, L. M. Gonnerman, and D. C. Plaut, “An improved model of semantic similarity based on lexical co-occurrence,” Cognitive Science, 2009, submitted. Online. Available: [http://www.cnbc.cmu.edu/plaut/papers/abstracts/RohdeGonnermanPlautSUB-CogSci.COALS.html]
+
+== [HyperspaceAnalogueToLanguage Hyperspace Analogue to Language] (HAL) ==
+
+C. Burgess and P. Conley, “Developing semantic representations for proper 
+names,” in _Cognitive Science Proceedings_, LEA, 1998, pp. 185–190. 
+
+C. Burgess and K. Lund, “Modelling parsing constraints with high- 
+dimensional context space,” _Language and Cognitive Processes_, vol. 12, 
+pp. 177–210, 1997. 
+
+
+== [LatentRelationalAnalysis Latent Relational Analysis] (LRA) ==
+
+P. D. Turney, “Similarity of semantic relations,” _Computational Linguistics_, vol. 32, no. 3, pp. 379–416, 2006. 
+
+
+== Bound Encoding of the Aggregate Language Environment (BEAGLE) ==
+
+M. N. Jones, W. Kintsch, and D. J. K. Mewhort, “High-dimensional semantic space accounts of priming,” _Journal of Memory and Language_, vol. 55, pp. 534–552, 2006. 
+
+M. N. Jones and D. J. K. Mewhort, “Representing word meaning and order information in a composite holographic lexicon,” _Psychology Review_, vol. 114, pp. 1–37, 2007. 
+
+
+== Syntactic Co-occurrence (by Greffenstette) ==
+
+G. Grefenstette, _Explorations in Automatic Thesaurus Discovery_. Indiana University 
+Press, 1994. 
