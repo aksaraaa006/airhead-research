@@ -166,9 +166,9 @@ public class Vectors {
     }
 
     /**
-     * Returns an immutable view of the given {@code DoubleVector}.
+     * Returns an immutable view of the given {@code IntegerVector}.
      *
-     * @param vector The {@code DoubleVector} to decorate as immutable.
+     * @param vector The {@code IntegerVector} to decorate as immutable.
      * @return An immutable version of {@code vector}.
      */
     public static IntegerVector immutable(IntegerVector vector) {
@@ -337,7 +337,7 @@ public class Vectors {
 
         Vector result = new DenseVector(source.length());
         for (int i = 0; i < source.length(); ++i) 
-            result.set(i, result.getValue(i));
+            result.set(i, source.getValue(i));
         return result;
     }
 
@@ -360,6 +360,7 @@ public class Vectors {
                                        Arrays.copyOf(pos, pos.length),
                                        Arrays.copyOf(neg, neg.length));
         } else if (source instanceof SparseVector) {
+            System.out.println("copying sparse!");
             result = new SparseHashIntegerVector(source.length());
             copyFromSparseVector(result, source);
         } else {

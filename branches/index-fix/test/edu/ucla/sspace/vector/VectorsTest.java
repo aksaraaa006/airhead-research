@@ -87,6 +87,13 @@ public class VectorsTest {
         assertEquals(a.length(), b.length());
         assertEquals(-123, b.getValue(1).doubleValue(), 0);
         assertNotSame(a, b);
+
+        a = new CompactSparseIntegerVector(5);
+        a.set(1, -123);
+        b = Vectors.copyOf(a);
+        assertEquals(a.length(), b.length());
+        assertEquals(-123, b.getValue(1).doubleValue(), 0);
+        assertNotSame(a, b);
     }
 
     @Test public void testIntegerEquals() {

@@ -35,6 +35,7 @@ import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseHashIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorIO;
 import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
 
@@ -147,7 +148,7 @@ public class FlyingHermit implements SemanticSpace {
      * representations.  This {@code Map} is used after {@code processSpace} is
      * called.
      */
-    private ConcurrentMap<String, IntegerVector> splitSenses;
+    private ConcurrentMap<String, Vector> splitSenses;
 
     /**
      * A mapping from tokens to conflated terms.  If this is null, it is assumed
@@ -300,9 +301,9 @@ public class FlyingHermit implements SemanticSpace {
 
                 // Compare the most recent vector to all the saved vectors.  If
                 // the vector with the highest similarity has a similarity over
-                // a threshold, incorporate this {@code IntegerVector} to that winner.
-                // Otherwise add this {@code IntegerVector} as a new vector for the
-                // term.
+                // a threshold, incorporate this {@code IntegerVector} to that
+                // winner.  Otherwise add this {@code IntegerVector} as a new
+                // vector for the term.
                 int clusterNum;
                 if (!compacted)
                     clusterNum = clusterMap.addVector(replacement, meaning);
@@ -362,7 +363,7 @@ public class FlyingHermit implements SemanticSpace {
             double mergeThreshold = Double.parseDouble(
                 properties.getProperty(MERGE_THRESHOLD_PROPERTY, ".25"));
 
-            splitSenses = new ConcurrentHashMap<String, IntegerVector>();
+            splitSenses = new ConcurrentHashMap<String, Vector>();
 
             // Merge the clusters for each of the words being tracked.
             for (String term : terms) {
@@ -394,10 +395,10 @@ public class FlyingHermit implements SemanticSpace {
                 List<List<Vector>> clusters = clusterMap.getClusters(term);
                 int i = 0;
                 for (List<Vector> cluster : clusters) {
-                    IntegerVector sense = null;
+                    Vector sense = null;
                     for (Vector v : cluster) {
                         if (sense == null)
-                            sense = Vectors.copyOf((IntegerVector) v);
+                            sense = Vectors.copyOf(v);
                         else
                             VectorMath.add(sense, v);
                     }
@@ -499,10 +500,8 @@ public class FlyingHermit implements SemanticSpace {
             // Get the list of senses for the conflated term.
             List<Map<String, Integer>> senseCounts = null;
             senseCounts = wordMap.get(conflatedTerm);
-            if (senseCounts == null) {
-                senseCounts = new ArrayList<Map<String, Integer>>();
-                wordMap.put(conflatedTerm, senseCounts);
-            }
+            if (senseCounts == null)
+                return;
 
             // Get the two maps for the required senses.
             Map<String, Integer> oldCounts = null;
@@ -578,6 +577,9 @@ public class FlyingHermit implements SemanticSpace {
          */
         public void setClusterNames(String term) {
             List<Map<String, Integer>> senseCounts = wordMap.get(term);
+            if (senseCounts == null)
+                return;
+
             int i = 0;
             for (Map<String, Integer> senseCount : senseCounts) {
                 if (senseCount.isEmpty())
