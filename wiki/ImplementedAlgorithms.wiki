@@ -1,0 +1,29 @@
+#summary A list of the currently implemented and supported algorithms offered in the S-Space package
+
+= Overview = 
+
+The S-Space Package contains a wide variety of different semantic space algorithms.  However, many of the algorithms are in different stages of development.  In an effort to make it clear on the current status, all algorithms have been divided into three broad categories.  Our goal is to eventually have all algorithms in the top tier (i.e. most stable and tested).
+
+= Tier 1 Algorithms =
+
+Tier 1 algorithms are mature algorithms whose implementation is not likely to change except by virtue of updates to the underlying libraries.  These algorithms have been experimentally tested and validated.  In addition, the algorithms have sufficient documentation for developers and executables to run the respective algorithms.
+
+  * [LatentSemanticAnalysis LSA]
+  * [RandomIndexing Random Indexing]
+  * [HyperspaceAnalogueToLanguage HAL]
+  * [Coals]
+  * [TemporalRandomIndexing Temporal Random Indexing]
+
+= Tier 2 Algorithms =
+
+Tier 2 algorithms are in the later stages of development and are suitable to run, but may still contain bugs.  The algorithms have some documentation, but need more to adequately use the algorithm.  These algorithms should have associated executables with which testing can be done.
+
+  * [Beagle]
+  * [PurandareAndPedersen Purandare and Petersen]'s context-sensitive space
+
+= Tier 3 Algorithms =
+
+Tier 3 algorithms are the least developed, but still are implemented within the repository.  They are likely to contain multiple bugs, and are not yet configurable for development.  These algorithms should not have executables, partially in order to discourage their use until correct performance is more guaranteed.  These algorithms have the least documentation.
+
+  * Greffenstette
+  * [LatentRelationalAnalysis Latent Relational Analysis (LRA)]
