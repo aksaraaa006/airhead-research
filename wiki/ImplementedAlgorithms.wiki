@@ -19,6 +19,8 @@ Tier 1 algorithms are mature algorithms whose implementation is not likely to ch
 Tier 2 algorithms are in the later stages of development and are suitable to run, but may still contain bugs.  The algorithms have some documentation, but need more to adequately use the algorithm.  These algorithms should have associated executables with which testing can be done.
 
   * [Beagle]
+  * [IncrementalSemanticAnalysis Incremental Semantic Analysis] (ISA)
+  * [ExplicitSemanticAnalysis Explicit Semantic Analysis] (ESA)
   * [PurandareAndPedersen Purandare and Petersen]'s context-sensitive space
 
 = Tier 3 Algorithms =
