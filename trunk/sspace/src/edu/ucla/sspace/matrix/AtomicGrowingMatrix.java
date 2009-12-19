@@ -169,8 +169,11 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         checkIndices(0, column);
         rowReadLock.lock();
         Vector values = new CompactSparseVector(rows.get());
-        for (int row = 0; row < rows.get(); ++row)
-            values.set(row, get(row, column));
+        for (int row = 0; row < rows.get(); ++row) {
+            double d = get(row, column);
+            if (d != 0)
+                values.set(row,d);
+        }
         rowReadLock.unlock();
         return values;
     }
