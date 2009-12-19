@@ -121,10 +121,7 @@ public class GrowingSparseMatrix implements Matrix {
      * @return {@inheritDoc}
      */
     public Vector getColumnVector(int column) {
-        Vector values = new SparseHashVector(rows);
-        for (int row = 0; row < rows; ++row)
-            values.set(row, get(row, column));
-        return values;
+        return new SparseHashVector(getColumn(column));
     }
 
     /**

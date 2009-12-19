@@ -110,7 +110,7 @@ public class SparseHashArray<T> implements SparseArray<T>, Serializable {
     }
 
     /**
-     * Returns the indices of the array that contain non-{@code 0} values.
+     * Returns the indices of the array that contain non-{@code null} values.
      *
      * @return the indices that contain values
      */
@@ -133,7 +133,10 @@ public class SparseHashArray<T> implements SparseArray<T>, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, T value) {
-	indexToValue.put(index, value);
+        if (value == null)
+            indexToValue.remove(index);
+        else
+            indexToValue.put(index, value);
     }
 
     /**

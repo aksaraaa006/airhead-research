@@ -22,17 +22,18 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseHashVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
 
 /**
  * A sparse {@code Matrix} based on the Yale Sparse Matrix Format, as
- * implemented in {@link CompactSparseVector}.  Each row is allocated a pair of arrays
- * which keeps the non-zero column values in column order.  Lookups are O(log n)
- * where n is the number of non-zero values for the largest row.   The size of
- * this matrix is fixed, and attempts to access rows or columns beyond the size
- * will throw an exception.
+ * implemented in {@link CompactSparseVector}.  Each row is allocated a pair of
+ * arrays which keeps the non-zero column values in column order.  Lookups are
+ * O(log n) where n is the number of non-zero values for the largest row.  The
+ * size of this matrix is fixed, and attempts to access rows or columns beyond
+ * the size will throw an exception.
  *
  * @author David Jurgens
  */
@@ -95,10 +96,7 @@ public class SparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public Vector getColumnVector(int column) {
-        Vector values = new CompactSparseVector(rows);
-        for (int row = 0; row < rows; ++row)
-            values.set(row, get(row, column));
-        return values;
+        return new SparseHashVector(getColumn(column));
     }
 
     /**

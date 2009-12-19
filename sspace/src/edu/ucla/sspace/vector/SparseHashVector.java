@@ -79,15 +79,22 @@ public class SparseHashVector implements SparseVector, Serializable {
     public SparseHashVector(double[] array) {
         vector = new SparseHashArray<Double>();
         this.length = array.length;
-        set(array);
+        // Manually iterate over since we know the backing array is already all
+        // zero values.
+        for (int i = 0; i < array.length; ++i) {
+            double d = array[i];
+            if (d != 0)
+                vector.set(i, d);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        set(index, get(index) + delta);
-        return get(index) + delta;
+        double result = get(index) + delta;
+        set(index, result);
+        return result;
     }
 
     /**
@@ -96,15 +103,17 @@ public class SparseHashVector implements SparseVector, Serializable {
     public void set(double[] values) {
         vector = new SparseHashArray<Double>();
         for (int i = 0; i < values.length; ++i)
-            if (values[i] != 0)
-                vector.set(i, values[i]);
+            set(i, values[i]);
     }
 
     /**
      * {@inheritDoc}
      */
     public void set(int index, double value) {
-        vector.set(index, value);
+        if (value == 0)
+            vector.set(index, null);
+        else
+            vector.set(index, value);
     }
 
     /** 
