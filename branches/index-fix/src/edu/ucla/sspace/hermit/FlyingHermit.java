@@ -158,6 +158,7 @@ public class FlyingHermit implements SemanticSpace {
      */
     private Map<String, String> replacementMap;
 
+    private Set<String> acceptedWords; 
     /**
      * An accuracy map to record the frequency statistics for each word cluster.
      * This is used to label the clusters once they have been formed.
@@ -198,6 +199,7 @@ public class FlyingHermit implements SemanticSpace {
                         PermutationFunction permFunction,
                         OnlineClusteringGenerator clusterGenerator,
                         Map<String, String> remap,
+                        Set<String> accepted,
                         int vectorSize,
                         int prevWordsSize,
                         int nextWordsSize) {
@@ -205,6 +207,7 @@ public class FlyingHermit implements SemanticSpace {
         indexMap = indexGeneratorMap;
         permutationFunction = permFunction;
         replacementMap = remap;
+        acceptedWords = accepted;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
         compacted = false;
@@ -267,7 +270,7 @@ public class FlyingHermit implements SemanticSpace {
                 addNextWord(it, nextWords, nextReplacements);
 
             // Only process words which have a suitable replacement.
-            if (!replacement.equals(EMPTY_TOKEN)) {
+            if (acceptedWords.contains(replacement)) {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.

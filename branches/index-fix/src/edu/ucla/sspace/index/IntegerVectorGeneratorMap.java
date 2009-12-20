@@ -30,6 +30,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -45,7 +46,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Keith Stevens
  */
-public class IntegerVectorGeneratorMap implements Map<String, IntegerVector> {
+public class IntegerVectorGeneratorMap
+        implements Map<String, IntegerVector>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The {@code IntegerVectorGenerator} for generating new vectors.

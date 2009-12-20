@@ -44,16 +44,22 @@ import edu.ucla.sspace.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Properties;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,6 +129,8 @@ public class FlyingHermitMain extends GenericMain {
      */
     private Map<String, String> replacementMap;
 
+    private Set<String> acceptedWords;
+
     /**
      * Uninstantiable.
      */
@@ -167,6 +175,12 @@ public class FlyingHermitMain extends GenericMain {
                           "A file which specifies mappings between terms " + 
                           "and their replacements",
                           true, "FILE", "Tokenizing Options");
+        options.addOption('A', "acceptanceList",
+                          "A File with one word per line listing terms to " +
+                          "generate semantics for.  This is separate from " + 
+                          "filtering and will override the replacementMap " +
+                          "option",
+                          true, "FILE", "Tokenizing Options");
         options.addOption('T', "tokenizeWithReplacementMap",
                           "If true, the replacement map will be used when " +
                           "tokenizing",
@@ -190,11 +204,13 @@ public class FlyingHermitMain extends GenericMain {
                           true, "DOUBLE", "Cluster Properties");
 
         // Additional processing steps.
-        options.addOption('S', "saveVectors",
-                          "Save index vectors to a binary file",
+        options.addOption('S', "saveIndexes",
+                          "Save index vectors and permutation function to a " +
+                          "binary file",
                           true, "FILE", "Post Processing");
-        options.addOption('L', "loadVectors",
-                          "Load index vectors from a binary file",
+        options.addOption('L', "loadIndexes",
+                          "Load index vectors and permutation function from " +
+                          "binary files",
                           true, "FILE", "Pre Processing");
     }
 
@@ -224,6 +240,20 @@ public class FlyingHermitMain extends GenericMain {
         }
     }
 
+    private void prepareAcceptanceList(String filename) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            String line = null;
+            acceptedWords = new HashSet<String>();
+            while ((line = br.readLine()) != null) {
+                String word = line.trim();
+                acceptedWords.add(word);
+            }
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
+        
     /**
      * Begin processing with {@code FlyingHermit}.
      */
@@ -252,6 +282,8 @@ public class FlyingHermitMain extends GenericMain {
         if (!argOptions.hasOption('T') && argOptions.hasOption('m')) {
             prepareReplacementMap(argOptions.getStringOption('m'));
         }
+        if (argOptions.hasOption('A'))
+            prepareAcceptanceList(argOptions.getStringOption('A'));
 
         // Setup the PermutationFunction.
         String permType = argOptions.getStringOption("permutationFunction",
@@ -269,10 +301,22 @@ public class FlyingHermitMain extends GenericMain {
         boolean useDense = argOptions.hasOption("useDenseSemantics");
 
         // Setup the generator map.
-        if (argOptions.hasOption("loadVectors"))
+        if (argOptions.hasOption("loadIndexes")) {
+            String savedIndexName = argOptions.getStringOption("loadVectors");
             vectorMap = IntegerVectorGeneratorMap.loadMap(
-                    new File(argOptions.getStringOption("loadVectors")));
-        else
+                    new File(savedIndexName + ".index"));
+            try {
+                FileInputStream fis =
+                    new FileInputStream(savedIndexName + ".permutation");
+                ObjectInputStream inStream = new ObjectInputStream(fis);
+                permFunction = (PermutationFunction) inStream.readObject();
+                inStream.close();
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
+            } catch (ClassNotFoundException cnfe) {
+                throw new Error(cnfe);
+            }
+        } else
             vectorMap = new IntegerVectorGeneratorMap(generator, dimension);
 
         // Setup the clustering generator.
@@ -308,16 +352,25 @@ public class FlyingHermitMain extends GenericMain {
     }
 
     protected void postProcessing() {
-        if (argOptions.hasOption("saveVectors")) {
-            String filename = argOptions.getStringOption("saveVectors");
-            vectorMap.saveMap(new File(filename));
+        if (argOptions.hasOption("saveIndexes")) {
+            String filename = argOptions.getStringOption("saveIndexes");
+            vectorMap.saveMap(new File(filename + ".index"));
+            try {
+                FileOutputStream fos = new FileOutputStream(new File(
+                            filename + ".permutation"));
+                ObjectOutputStream outStream = new ObjectOutputStream(fos);
+                outStream.writeObject(permFunction);
+                outStream.close();
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
+            }
         }
     }
 
     public SemanticSpace getSpace() {
         return new FlyingHermit(vectorMap, permFunction, clusterGenerator,
-                                replacementMap, dimension, prevWordsSize,
-                                nextWordsSize);
+                                replacementMap, acceptedWords, dimension,
+                                prevWordsSize, nextWordsSize);
     }
 
     public Properties setupProperties() {

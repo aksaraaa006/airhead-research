@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
 
 /**
  * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
@@ -33,7 +34,7 @@ package edu.ucla.sspace.vector;
  * @author David Jurgens
  */
 public class SparseHashDoubleVector extends SparseHashVector<Double>
-        implements DoubleVector {
+        implements DoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 

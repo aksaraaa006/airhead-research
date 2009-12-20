@@ -24,6 +24,8 @@ package edu.ucla.sspace.index;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.IntegerVector;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -58,7 +60,10 @@ import java.util.Set;
  *
  * </dl>
  */
-public class RandomIndexVectorGenerator implements IntegerVectorGenerator {
+public class RandomIndexVectorGenerator
+        implements IntegerVectorGenerator, Serializable  {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * A random number generator that can be accessed to other classes which

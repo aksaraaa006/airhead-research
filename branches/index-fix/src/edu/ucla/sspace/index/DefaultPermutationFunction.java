@@ -26,6 +26,8 @@ import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +44,10 @@ import java.util.Random;
  *
  * @author David Jurgens
  */
-public class DefaultPermutationFunction implements PermutationFunction {
+public class DefaultPermutationFunction
+        implements PermutationFunction, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private static final Random RANDOM = RandomIndexVectorGenerator.RANDOM;
 
@@ -237,7 +242,9 @@ public class DefaultPermutationFunction implements PermutationFunction {
     /**
      * A bijective, invertible mapping between indices.
      */
-    private static class Function {
+    private static class Function implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final int[] forward;
         private final int[] backward;
