@@ -34,7 +34,7 @@ import java.io.Serializable;
  * @author David Jurgens
  */
 public class SparseHashDoubleVector extends SparseHashVector<Double>
-        implements DoubleVector, Serializable {
+        implements SparseDoubleVector {
 
     private static final long serialVersionUID = 1L;
 

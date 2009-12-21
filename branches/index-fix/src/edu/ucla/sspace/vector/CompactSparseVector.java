@@ -34,8 +34,7 @@ import edu.ucla.sspace.util.SparseDoubleArray;
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector 
-        implements SparseVector<Double>, DoubleVector, Serializable {
+public class CompactSparseVector implements SparseDoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 

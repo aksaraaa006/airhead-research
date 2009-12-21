@@ -105,6 +105,18 @@ public class VectorsTest {
         assertFalse(Vectors.equals(v1, v3));
     }
 
+    @Test public void testDoubleEquals() {
+        DoubleVector v1 = new DenseVector(new double[] {0, 1, 2, 3, 4 });
+        DoubleVector v2 = new DenseVector(new double[] {0, 1, 2, 3, 4 });
+        DoubleVector v3 = new DenseVector(new double[] {1, 1, 2, 3, 4 });
+        IntegerVector iv1 = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
+        DoubleVector v4 = Vectors.asDouble(iv1);
+
+        assertTrue(Vectors.equals(v1, v2));
+        assertFalse(Vectors.equals(v1, v3));
+        assertTrue(Vectors.equals(v1, v4));
+    }
+
     @Test public void testIntegerSubview() {
         IntegerVector v = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
         IntegerVector sub = Vectors.subview(v, 1, 3);

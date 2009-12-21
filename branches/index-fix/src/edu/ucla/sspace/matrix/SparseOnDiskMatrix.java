@@ -22,8 +22,9 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseHashDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -67,7 +68,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author David Jurgens
  */
-public class SparseOnDiskMatrix extends OnDiskMatrix {
+public class SparseOnDiskMatrix extends OnDiskMatrix implements SparseMatrix {
 
     /**
      * A weak mapping from the row index to a {@link SparseVector} that was
@@ -105,7 +106,7 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
      * {@inheritDoc}
      */
     @Override
-    public DoubleVector getColumnVector(int column) {
+    public SparseDoubleVector getColumnVector(int column) {
         // Check whether we have this column cached
         VersionedVector cachedCol = colToVectorCache.get(column);
         // If the cache was empty or if the matrix has been updated since this
@@ -127,7 +128,7 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
      * {@inheritDoc}
      */
     @Override
-    public DoubleVector getRowVector(int row) {
+    public SparseDoubleVector getRowVector(int row) {
         // Check whether we have this row cached
         VersionedVector cachedRow = colToVectorCache.get(row);
         // If the cache was empty or if the matrix has been updated since this

@@ -22,6 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 
 import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.DoubleVector;
@@ -120,10 +121,13 @@ public class GrowingSparseMatrix implements Matrix {
      * @param column {@inheritDoc}
      * @return {@inheritDoc}
      */
-    public DoubleVector getColumnVector(int column) {
-        DoubleVector values = new SparseHashDoubleVector(rows);
-        for (int row = 0; row < rows; ++row)
-            values.set(row, get(row, column));
+    public SparseDoubleVector getColumnVector(int column) {
+        SparseDoubleVector values = new SparseHashDoubleVector(rows);
+        for (int row = 0; row < rows; ++row) {
+            double d = get(row, column);
+            if (d != 0)
+                values.set(row, d);
+        }
         return values;
     }
 
@@ -143,7 +147,7 @@ public class GrowingSparseMatrix implements Matrix {
      * @return {@inheritDoc}
      */
     public DoubleVector getRowVector(int row) {
-        DoubleVector v = rowToColumns.get(row);
+        SparseDoubleVector v = rowToColumns.get(row);
         return Vectors.subview(v, 0, cols);
     }
 

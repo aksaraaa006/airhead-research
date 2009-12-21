@@ -166,6 +166,19 @@ public class Vectors {
     }
 
     /**
+     * Returns an immutable view of the given {@code SparseDoubleVector}.
+     *
+     * @param vector The {@code DoubleVector} to decorate as immutable.
+     * @return An immutable version of {@code vector}.
+     */
+    public static SparseDoubleVector immutable(SparseDoubleVector vector) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create an immutable " +
+                                           "null vector");
+         return new ViewDoubleAsDoubleSparseVector(vector, true);
+    }
+
+    /**
      * Returns an immutable view of the given {@code IntegerVector}.
      *
      * @param vector The {@code IntegerVector} to decorate as immutable.
@@ -241,6 +254,28 @@ public class Vectors {
             throw new NullPointerException("Cannot create view of a " +
                                            "null vector");
         return new DoubleVectorView(vector, offset, length);
+    }
+
+    /**
+     * Returns a subview for the given {@code SparseDoubleVector} with a
+     * specified offset and length.
+     *
+     * @param vector the {@code Vector} whose values will be shown in the view
+     * @param offset the index of {@code v} at which the first index of this
+     *               view starts
+     * @param length the length of this view.
+     *
+     * @throws IllegalArgumentException if <ul><li>{@code offset} is
+     *         negative<li>{@code length} is less than zero<li>the sum of {@code
+     *         offset} plus {@code length} is greater than the length of {@code
+     *         vector}</ul>
+     */
+    public static DoubleVector subview(SparseDoubleVector vector, int offset,
+                                       int length) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create view of a " +
+                                           "null vector");
+        return new ViewDoubleAsDoubleSparseVector(vector, offset, length);
     }
 
     /**

@@ -35,7 +35,7 @@ import java.util.Arrays;
  * @authod David Jurgens
  */
 class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
-        implements SparseVector<Double> {
+        implements SparseDoubleVector {
 
     private static final long serialVersionUID = 1L;
 

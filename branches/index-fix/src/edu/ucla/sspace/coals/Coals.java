@@ -29,8 +29,8 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Normalize;
-import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SVD;
+import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -295,7 +295,7 @@ public class Coals implements SemanticSpace {
             BufferedReader br =
                 new BufferedReader(new FileReader(rawOccurances));
             String line = null;
-            Matrix correl = new SparseMatrix(wordCountList.size(), wordCount);
+            Matrix correl = new YaleSparseMatrix(wordCountList.size(), wordCount);
             while ((line = br.readLine()) != null) {
                 String[] splitLine = line.split("\\|");
                 if (splitLine[0].equals(IteratorFactory.EMPTY_TOKEN) ||

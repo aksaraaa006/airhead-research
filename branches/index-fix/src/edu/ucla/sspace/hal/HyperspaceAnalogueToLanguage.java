@@ -27,7 +27,7 @@ import edu.ucla.sspace.common.Statistics;
 import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
 import edu.ucla.sspace.matrix.AtomicMatrix;
 import edu.ucla.sspace.matrix.Matrix;
-import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -514,7 +514,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         LOGGER.info("reducing to " + columns + " columns");
 
         // create the next matrix that will contain the fixed number of columns
-        reduced = new SparseMatrix(words, columns);
+        reduced = new YaleSparseMatrix(words, columns);
 
         Set<Integer> indicesToKeep = 
             new HashSet<Integer>(entropyToIndex.values());
@@ -577,7 +577,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         
         // create the next matrix that will contain only those columns with
         // enough entropy to pass the threshold
-        reduced = new SparseMatrix(words, (words*2)-colsToDrop.cardinality());
+        reduced = new YaleSparseMatrix(words, (words*2)-colsToDrop.cardinality());
 
         for (int word = 0; word < words; ++word) {
             int newColIndex = 0;
