@@ -46,6 +46,19 @@ public class VectorMathTest {
         assertSame(a, c);
     }
 
+    @Test public void testTernaryVectorAdd() {
+        IntegerVector a = new CompactSparseIntegerVector(100);
+        a.set(1, 20);
+        a.set(5, -1);
+        IntegerVector b =
+            new TernaryVector(100, new int[] {1, 2, 3, 4}, new int[] {7, 8, 9});
+        IntegerVector c = VectorMath.add(a, b);
+        assertEquals(21, c.get(1));
+        assertEquals(-1, c.get(7));
+        assertEquals(-1, c.get(5));
+        assertSame(a, c);
+    }
+
     @Test public void testDoubleVectorAdd() {
         DoubleVector a = new CompactSparseVector(100);
         a.set(1, 20);

@@ -33,7 +33,7 @@ public class SparseMatrixTest {
                            {0, 0, 0, 0},
                            {1, 2, 4, 5},
                            {0, 0, 1, 0}};
-    SparseMatrix testMatrix = new SparseMatrix(5, 4);
+    YaleSparseMatrix testMatrix = new YaleSparseMatrix(5, 4);
     for (int i = 0; i < 5; ++i) {
       for (int j = 0; j < 4; ++j) {
         testMatrix.set(i, j, testData[i][j]);
@@ -56,7 +56,7 @@ public class SparseMatrixTest {
                            {0, 0, 0, 0},
                            {1, 2, 4, 5},
                            {0, 0, 1, 0}};
-    SparseMatrix testMatrix = new SparseMatrix(5, 4);
+    YaleSparseMatrix testMatrix = new YaleSparseMatrix(5, 4);
     for (int i = 0; i < 5; ++i) {
       for (int j = 0; j < 4; ++j) {
         testMatrix.set(i, j, testData[i][j]);

@@ -126,6 +126,36 @@ public class VectorsTest {
         assertEquals(3, sub.length());
     }
 
+    @Test(expected=UnsupportedOperationException.class)
+    public void testDoubleVectorImmutable() {
+        DoubleVector v = new DenseVector(new double[] {1, 2, 3, 4, 5});
+        DoubleVector r = Vectors.immutable(v);
+        r.set(1, 10);
+    }
+
+    @Test(expected=UnsupportedOperationException.class)
+    public void testIntegerVectorImmutable() {
+        IntegerVector v = new DenseIntVector(new int[] {1, 2, 3, 4, 5});
+        IntegerVector r = Vectors.immutable(v);
+        r.set(1, 10);
+    }
+
+    @Test(expected=UnsupportedOperationException.class)
+    public void testSparseDoubleVectorImmutable() {
+        SparseDoubleVector v = new CompactSparseVector(10);
+        v.set(8, 10);
+        SparseDoubleVector r = Vectors.immutable(v);
+        r.set(1, 10);
+    }
+
+    @Test(expected=UnsupportedOperationException.class)
+    public void testSparseIntegerVectorImmutable() {
+        SparseIntegerVector v = new CompactSparseIntegerVector(10);
+        v.set(8, 10);
+        SparseIntegerVector r = Vectors.immutable(v);
+        r.set(1, 10);
+    }
+
     @Test(expected=IllegalArgumentException.class)
         public void testIntegerSubviewLength() {
         IntegerVector v = new DenseIntVector(new int[] {0, 1, 2, 3, 4 });
