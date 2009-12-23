@@ -26,12 +26,10 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.isa.IncrementalSemanticAnalysis;
 
-import edu.ucla.sspace.ri.IndexVector;
+import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.ri.IndexVectorUtil;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.IOError;
 
 import java.util.Map;
 import java.util.Properties;
@@ -93,12 +91,12 @@ import java.util.logging.Logger;
  *   <ul>
  *
  *   <li> {@code -i}, {@code --vectorGenerator=CLASSNAME} the {@link
- *        edu.ucla.sspace.ri.IndexVectorGenerator IndexVectorGenerator} class to
- *        use for generating the index functions.
+ *        edu.ucla.sspace.index.IntegerVectorGenerator IntegerVectorGenerator}
+ *        class to use for generating the index functions.
  *  
  *   <li> {@code -n}, {@code --permutationFunction=CLASSNAME} the {@link
- *        edu.ucla.sspace.ri.PermutationFunction PermutationFunction} class to
- *        use for permuting index vectors, if permutation is enabled.
+ *        edu.ucla.sspace.index.PermutationFunction PermutationFunction} class
+ *        to use for permuting index vectors, if permutation is enabled.
  *
  *   </ul>
  *
@@ -132,7 +130,6 @@ import java.util.logging.Logger;
  * invocation.  The output file will be placed in the directory specified on the
  * command line.
  *
- *
  * @see IncrementalSemanticAnalysis
  *
  * @author David Jurgens
@@ -140,7 +137,7 @@ import java.util.logging.Logger;
 public class IsaMain extends GenericMain {
 
     private static final Logger LOGGER 
-	= Logger.getLogger(IsaMain.class.getName());
+        = Logger.getLogger(IsaMain.class.getName());
     
     /**
      * The properties that were used to configure the {@link
@@ -165,111 +162,113 @@ public class IsaMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-	options.addOption('g', "vectorGenerator", "IndexVectorGenerator "
-			  + "class to use", true,
-			  "CLASSNAME", "Advanced Algorithm Options");
+        options.addOption('g', "vectorGenerator", "IndexVectorGenerator "
+                          + "class to use", true,
+                          "CLASSNAME", "Advanced Algorithm Options");
         options.addOption('h', "historyDecayRate", "the decay rate for history "
                           + "effects of co-occurring words", true,
                           "DOUBLE", "Algorithm Options");
         options.addOption('i', "impactRate", "the rate at which co-occurrence" +
                           " affects semantics", true, "DOUBLE", 
                           "Algorithm Options");
-	options.addOption('l', "vectorLength", "length of semantic vectors",
-			  true, "INT", "Algorithm Options");
-	options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
-			  + " before processing", true,
-			  "FILE", "Algorithm Options");
-	options.addOption('n', "permutationFunction", "permutation function "
-			  + "to use", true,
-			  "CLASSNAME", "Advanced Algorithm Options");
-	options.addOption('p', "usePermutations", "whether to permute " +
-			  "index vectors based on word order", true,
-			  "BOOL", "Algorithm Options");
-	options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
-			  + "semantics to save memory", true,
-			  "BOOL", "Algorithm Options");
-	options.addOption('s', "windowSize", "how many words to consider " +
-			  "in each direction", true,
-			  "INT", "Algorithm Options");
-	options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
-			  + " after processing", true,
-			  "FILE", "Algorithm Options");
+        options.addOption('l', "vectorLength", "length of semantic vectors",
+                          true, "INT", "Algorithm Options");
+        options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
+                          + " before processing", true,
+                          "FILE", "Algorithm Options");
+        options.addOption('n', "permutationFunction", "permutation function "
+                          + "to use", true,
+                          "CLASSNAME", "Advanced Algorithm Options");
+        options.addOption('p', "usePermutations", "whether to permute " +
+                          "index vectors based on word order", true,
+                          "BOOL", "Algorithm Options");
+        options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
+                          + "semantics to save memory", true,
+                          "BOOL", "Algorithm Options");
+        options.addOption('s', "windowSize", "how many words to consider " +
+                          "in each direction", true,
+                          "INT", "Algorithm Options");
+        options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
+                          + " after processing", true,
+                          "FILE", "Algorithm Options");
     }
 
     public static void main(String[] args) {
         IsaMain isa = new IsaMain();
-	try {
-	    isa.run(args);
-	}
-	catch (Throwable t) {
-	    t.printStackTrace();
-	}
+        try {
+            isa.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
     
     protected SemanticSpace getSpace() {
-	isa = new IncrementalSemanticAnalysis();
+        isa = new IncrementalSemanticAnalysis();
 
-	// note that getSpace() is called after the arg options have been
-	// parsed, so this call is safe.
-	if (argOptions.hasOption("loadVectors")) {
-	    String fileName = argOptions.getStringOption("loadVectors");
-	    LOGGER.info("loading index vectors from " + fileName);
-	    try {
-		Map<String,IndexVector> wordToIndexVector = 
-		    IndexVectorUtil.load(new File(fileName));
-		isa.setWordToIndexVector(wordToIndexVector);
-	    } catch (IOException ioe) {
-		// rethrow since this step 
-		throw new IOError(ioe);
-	    }
-	}
+        // note that getSpace() is called after the arg options have been
+        // parsed, so this call is safe.
+        if (argOptions.hasOption("loadVectors")) {
+            String fileName = argOptions.getStringOption("loadVectors");
+            LOGGER.info("loading index vectors from " + fileName);
+            Map<String,IntegerVector> wordToIndexVector = 
+                IndexVectorUtil.load(new File(fileName));
+            isa.setWordToIndexVector(wordToIndexVector);
+        }
         return isa;
     }
 
     protected Properties setupProperties() {
-	// use the System properties in case the user specified them as
-	// -Dprop=<val> to the JVM directly.
-	props = System.getProperties();
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
+        props = System.getProperties();
 
-	// Use the command line options to set the desired properites in the
-	// constructor.  Use the system properties in case these properties were
-	// set using -Dprop=<value>
-	if (argOptions.hasOption("usePermutations")) {
-	    props.setProperty(IncrementalSemanticAnalysis.USE_PERMUTATIONS_PROPERTY,
-			      argOptions.getStringOption("usePermutations"));
-	}
+        // Use the command line options to set the desired properites in the
+        // constructor.  Use the system properties in case these properties were
+        // set using -Dprop=<value>
+        if (argOptions.hasOption("usePermutations")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.USE_PERMUTATIONS_PROPERTY,
+                    argOptions.getStringOption("usePermutations"));
+        }
 
-	if (argOptions.hasOption("permutationFunction")) {
-	    props.setProperty(IncrementalSemanticAnalysis.PERMUTATION_FUNCTION_PROPERTY,
-			     argOptions.getStringOption("permutationFunction"));
-	}
+        if (argOptions.hasOption("permutationFunction")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.PERMUTATION_FUNCTION_PROPERTY,
+                    argOptions.getStringOption("permutationFunction"));
+        }
 
-	if (argOptions.hasOption("windowSize")) {
-	    props.setProperty(IncrementalSemanticAnalysis.WINDOW_SIZE_PROPERTY,
-			     argOptions.getStringOption("windowSize"));
-	}
+        if (argOptions.hasOption("windowSize")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.WINDOW_SIZE_PROPERTY,
+                    argOptions.getStringOption("windowSize"));
+        }
 
-	if (argOptions.hasOption("vectorLength")) {
-	    props.setProperty(IncrementalSemanticAnalysis.VECTOR_LENGTH_PROPERTY,
-			     argOptions.getStringOption("vectorLength"));
-	}
+        if (argOptions.hasOption("vectorLength")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.VECTOR_LENGTH_PROPERTY,
+                    argOptions.getStringOption("vectorLength"));
+        }
 
-	if (argOptions.hasOption("useSparseSemantics")) {
-	    props.setProperty(IncrementalSemanticAnalysis.USE_SPARSE_SEMANTICS_PROPERTY,
-			      argOptions.getStringOption("useSparseSemantics"));
-	}
+        if (argOptions.hasOption("useSparseSemantics")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.USE_SPARSE_SEMANTICS_PROPERTY,
+                    argOptions.getStringOption("useSparseSemantics"));
+        }
 
-	if (argOptions.hasOption("impactRate")) {
-	    props.setProperty(IncrementalSemanticAnalysis.IMPACT_RATE_PROPERTY,
-			      argOptions.getStringOption("impactRate"));
-	}
+        if (argOptions.hasOption("impactRate")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.IMPACT_RATE_PROPERTY,
+                    argOptions.getStringOption("impactRate"));
+        }
 
-	if (argOptions.hasOption("historyDecayRate")) {
-	    props.setProperty(IncrementalSemanticAnalysis.HISTORY_DECAY_RATE_PROPERTY,
-			      argOptions.getStringOption("historyDecayRate"));
-	}
+        if (argOptions.hasOption("historyDecayRate")) {
+            props.setProperty(
+                    IncrementalSemanticAnalysis.HISTORY_DECAY_RATE_PROPERTY,
+                    argOptions.getStringOption("historyDecayRate"));
+        }
 
-	return props;
+        return props;
     }
 
 
@@ -278,26 +277,21 @@ public class IsaMain extends GenericMain {
      * word-to-index vector mapping to file.
      */
     @Override protected void postProcessing() {
-	if (argOptions.hasOption("saveVectors")) {
-	    String fileName = argOptions.getStringOption("saveVectors");
-	    LOGGER.info("saving index vectors to " + fileName);
-	    try {
-		IndexVectorUtil.save(isa.getWordToIndexVector(), 
-				     new File(fileName));
-	    } catch (IOException ioe) {
-		ioe.printStackTrace();
-	    }
-	}	
+        if (argOptions.hasOption("saveVectors")) {
+            String fileName = argOptions.getStringOption("saveVectors");
+            LOGGER.info("saving index vectors to " + fileName);
+            IndexVectorUtil.save(isa.getWordToIndexVector(), 
+                                 new File(fileName));
+        }        
     }
 
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
     public void usage() {
- 	System.out.println(
- 	    "usage: java IsaMain [options] <output-dir>\n\n" + 
-	    argOptions.prettyPrint() + "\n" +
-
+         System.out.println(
+             "usage: java IsaMain [options] <output-dir>\n\n" + 
+            argOptions.prettyPrint() + "\n" +
 
             // description of ISA Options
             "ISA is an incremental algorithm where the semantics is based " +
@@ -319,19 +313,19 @@ public class IsaMain extends GenericMain {
             "quickly.  The default rate is 100.\n\n" +
 
             // Token Filter Description
-	    "Token filter configurations are specified as a comman-separated " +
-	    "list of file\nnames, where each file name has an optional string" +
-	    " with values:inclusive or\nexclusive, which species whether the" +
-	    " token are to be used for an exclusive\nfilter. The default " +
-	    "value is include. An example configuration might look like:\n" +
-	    "  --tokenFilter=english-dictionary.txt=include," +
-	    "stop-list.txt=exclude" +
+            "Token filter configurations are specified as a comman-separated " +
+            "list of file\nnames, where each file name has an optional string" +
+            " with values:inclusive or\nexclusive, which species whether the" +
+            " token are to be used for an exclusive\nfilter. The default " +
+            "value is include. An example configuration might look like:\n" +
+            "  --tokenFilter=english-dictionary.txt=include," +
+            "stop-list.txt=exclude" +
             
             // Compound Token Description
-	    "\n\nThe -C, --compoundWords option specifies a file name of " +
-	    "multiple tokens that\nshould be counted as a single word, e.g." +
-	    " \"white house\".  Each compound\ntoken should be specified on " +
-	    "its own line.\n\n" +
+            "\n\nThe -C, --compoundWords option specifies a file name of " +
+            "multiple tokens that\nshould be counted as a single word, e.g." +
+            " \"white house\".  Each compound\ntoken should be specified on " +
+            "its own line.\n\n" +
 
             // S-Space Format
             "The output of the program is a semantic space stored in the " +
@@ -339,6 +333,6 @@ public class IsaMain extends GenericMain {
             "and sparse_binary." +
 
             // Tag
-	    "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
+            "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
     }
 }

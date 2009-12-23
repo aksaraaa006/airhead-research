@@ -24,12 +24,21 @@ package edu.ucla.sspace.ri;
 import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.index.PermutationFunction;
+import edu.ucla.sspace.index.DefaultPermutationFunction;
+import edu.ucla.sspace.index.IntegerVectorGenerator;
+import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
+import edu.ucla.sspace.index.RandomIndexVectorGenerator;
+
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.util.SparseIntArray;
-
-import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.CompactSparseIntegerVector;
+import edu.ucla.sspace.vector.DenseIntVector;
+import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -135,7 +144,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link edu.ucla.sspace.ri.DefaultPermutationFunction 
+ *      <i>Default:</i> {@link edu.ucla.sspace.index.DefaultPermutationFunction 
  *      DefaultPermutationFunction} 
  *
  * <dd style="padding-top: .5em">This property specifies the fully qualified
@@ -145,13 +154,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <dt> <i>Property:</i> <code><b>{@value #INDEX_VECTOR_GENERATOR_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link RandomIndexVectorGenerator} 
+ *      <i>Default:</i> {@link edu.ucla.sspace.index.RandomIndexVectorGenerator
+ *      RandomIndexVectorGenerator} 
  *
  * <dd style="padding-top: .5em">This property specifies the source of {@link
- *       IndexVector} instances.  Users who want to provide more fine-grain
- *       control over the number of and distribution of values in the index
- *       vectors can provide their own {@link IndexVectorGenerator} instance by
- *       setting this value to the fully qualified class name.<p>
+ *       IntegerVector}, to be used as IndexVectors instances.  Users who want
+ *       to provide more fine-grain control over the number of and distribution
+ *       of values in the index vectors can provide their own
+ *       {@link edu.ucla.sspace.index.IntegerVectorGenerator
+ *       IntegerVectorGenerator} instance by setting this value to the fully
+ *       qualified class name.<p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #USE_SPARSE_SEMANTICS_PROPERTY}
  *      </b></code> <br>
@@ -183,7 +195,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * getVectorFor}.
  *
  * @see PermutationFunction
- * @see IndexVector
  * @see IndexVectorGenerator
  * 
  * @author David Jurgens
@@ -265,12 +276,12 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     /**
      * A mapping from each word to its associated index vector
      */
-    private final Map<String,IndexVector> wordToIndexVector;
+    private final Map<String,IntegerVector> wordToIndexVector;
 
     /**
      * A mapping from each word to the vector the represents its semantics
      */
-    private final Map<String,SemanticVector> wordToMeaning;
+    private final Map<String,IntegerVector> wordToMeaning;
 
     /**
      * The number of dimensions for the semantic and index vectors.
@@ -278,7 +289,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     private final int vectorLength;
 
     /**
-     * How many words to view before and after each word in focus.
+     * The number of words to view before and after each focus word in a window.
      */
     private final int windowSize;
 
@@ -289,18 +300,13 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     private final boolean usePermutations;
 
     /**
-     * If permutations are enabled, what permutation function to use on the
+     * If permutations are enabled, the permutation function to use on the
      * index vectors.
      */
     private final PermutationFunction permutationFunc;
 
     /**
-     * The source of {@link IndexVector} instances.
-     */
-    private final IndexVectorGenerator indexVectorGenerator;
-
-    /**
-     * A flag for whether this instance should use {@code SparseSemanticVector}
+     * A flag for whether this instance should use {@code SparseIntegerVector}
      * instances for representic a word's semantics, which saves space but
      * requires more computation.
      */
@@ -350,7 +356,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
 
         String ivgProp = 
             properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
-        indexVectorGenerator = (ivgProp != null) 
+        IntegerVectorGenerator indexVectorGenerator = (ivgProp != null) 
             ? loadIndexVectorGenerator(ivgProp, properties)
             : new RandomIndexVectorGenerator(properties);
 
@@ -360,8 +366,9 @@ public class RandomIndexing implements SemanticSpace, Filterable {
             ? Boolean.parseBoolean(useSparseProp)
             : true;
 
-        wordToIndexVector = new ConcurrentHashMap<String,IndexVector>();
-        wordToMeaning = new ConcurrentHashMap<String,SemanticVector>();
+        wordToIndexVector = new IntegerVectorGeneratorMap(indexVectorGenerator,
+                                                          vectorLength);
+        wordToMeaning = new ConcurrentHashMap<String,IntegerVector>();
         semanticFilter = new HashSet<String>();
     }
 
@@ -383,13 +390,13 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     @SuppressWarnings("unchecked")
-    private static IndexVectorGenerator loadIndexVectorGenerator(
+    private static IntegerVectorGenerator loadIndexVectorGenerator(
             String className, Properties properties) {
         try {
             Class clazz = Class.forName(className);
             Constructor c = clazz.getConstructor(Properties.class);
-            IndexVectorGenerator ivg = (IndexVectorGenerator)
-            c.newInstance(new Object[] {properties});
+            IntegerVectorGenerator ivg = (IntegerVectorGenerator) 
+                c.newInstance(new Object[] {properties});
             return ivg;
         } catch (Exception e) {
             // rethrow
@@ -408,27 +415,6 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     /**
-     * Returns the index vector for the provided word.
-     */
-    IndexVector getIndexVector(String word) {
-        IndexVector v = wordToIndexVector.get(word);
-        if (v == null) {
-            // lock on th word in case multiple threads attempt to add it at
-            // once
-            synchronized(word) {
-                // recheck in case another thread added it while we were waiting
-                // for the lock
-                v = wordToIndexVector.get(word);
-                if (v == null) {
-                    v = indexVectorGenerator.create(vectorLength);
-                    wordToIndexVector.put(word, v);
-                }
-            }
-        }
-        return v;
-    }  
-
-    /**
      * Returns the current semantic vector for the provided word, or if the word
      * is not currently in the semantic space, a vector is added for it and
      * returned.
@@ -437,8 +423,8 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      *
      * @return the {@code SemanticVector} for the provide word.
      */
-    private SemanticVector getSemanticVector(String word) {
-        SemanticVector v = wordToMeaning.get(word);
+    private IntegerVector getSemanticVector(String word) {
+        IntegerVector v = wordToMeaning.get(word);
         if (v == null) {
             // lock on the word in case multiple threads attempt to add it at
             // once
@@ -448,8 +434,8 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                 v = wordToMeaning.get(word);
                 if (v == null) {
                     v = (useSparseSemantics) 
-                        ? new SparseSemanticVector()
-                        : new DenseSemanticVector();
+                        ? new CompactSparseIntegerVector(vectorLength)
+                        : new DenseIntVector(vectorLength);
                     wordToMeaning.put(word, v);
                 }
             }
@@ -457,20 +443,15 @@ public class RandomIndexing implements SemanticSpace, Filterable {
         return v;
     }
 
-        /**
+   /**
      * {@inheritDoc}
      */ 
     public Vector getVector(String word) {
-        SemanticVector v = wordToMeaning.get(word);
+        IntegerVector v = wordToMeaning.get(word);
         if (v == null) {
             return null;
         }
-        int[] vec = v.getVector();
-        Vector vector = new CompactSparseVector(vec.length);
-        for (int i = 0; i < vec.length; ++i) {
-            vector.set(i, vec[i]);
-        }
-        return vector;
+        return Vectors.immutable(v);
     }
 
     /**
@@ -498,14 +479,15 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     /**
-     * Returns an unmodifiable view on the token to {@link IndexVector} mapping
-     * used by this instance.  Any further changes made by this instance to its
-     * token to {@code IndexVector} mapping will be reflected in the return map.
+     * Returns an unmodifiable view on the token to {@link IntegerVector}
+     * mapping used by this instance.  Any further changes made by this instance
+     * to its token to {@code IntegerVector} mapping will be reflected in the
+     * returned map.
      *
      * @return a mapping from the current set of tokens to the index vector used
      *         to represent them
      */
-    public Map<String,IndexVector> getWordToIndexVector() {
+    public Map<String,IntegerVector> getWordToIndexVector() {
         return Collections.unmodifiableMap(wordToIndexVector);
     }
     
@@ -545,7 +527,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                 && !focusWord.equals(IteratorFactory.EMPTY_TOKEN);
             
             if (calculateSemantics) {
-                SemanticVector focusMeaning = getSemanticVector(focusWord);
+                IntegerVector focusMeaning = getSemanticVector(focusWord);
 
                 // Sum up the index vector for all the surrounding words.  If
                 // permutations are enabled, permute the index vector based on
@@ -562,13 +544,15 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                         continue;
                     }
                     
-                    IndexVector iv = getIndexVector(word);
+                    IntegerVector iv = wordToIndexVector.get(word);
                     if (usePermutations) {
-                        iv = permutationFunc.permute(iv, permutations);
+                        permutationFunc.permute(iv, permutations);
                         ++permutations;
                     }
                 
-                    focusMeaning.add(iv);
+                    synchronized (focusMeaning) {
+                        VectorMath.add(focusMeaning, iv);
+                    }
                 }
             
                 // Repeat for the words in the forward window.
@@ -584,13 +568,15 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                         continue;
                     }
                 
-                    IndexVector iv = getIndexVector(word);
+                    IntegerVector iv = wordToIndexVector.get(word);
                     if (usePermutations) {
-                        iv = permutationFunc.permute(iv, permutations);
+                        permutationFunc.permute(iv, permutations);
                         ++permutations;
                     }
                     
-                    focusMeaning.add(iv);
+                    synchronized (focusMeaning) {
+                        VectorMath.add(focusMeaning, iv);
+                    }
                 }
             }
 
@@ -615,15 +601,15 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     }
 
     /**
-     * Assigns the token to {@link IndexVector} mapping to be used by this
+     * Assigns the token to {@link IntegerVector} mapping to be used by this
      * instance.  The contents of the map are copied, so any additions of new
      * index words by this instance will not be reflected in the parameter's
      * mapping.
      *
-     * @param m a mapping from token to the {@code IndexVector} that should be
+     * @param m a mapping from token to the {@code IntegerVector} that should be
      *        used represent it when calculating other word's semantics
      */
-    public void setWordToIndexVector(Map<String,IndexVector> m) {
+    public void setWordToIndexVector(Map<String,IntegerVector> m) {
         wordToIndexVector.clear();
         wordToIndexVector.putAll(m);
     }
@@ -638,89 +624,5 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     public void setSemanticFilter(Set<String> semanticsToRetain) {
         semanticFilter.clear();
         semanticFilter.addAll(semanticsToRetain);
-    }
-
-    /**
-     * A vector for storing the semantics of a word.
-     */
-    interface SemanticVector {
-
-        /**
-         * Adds the bits specified for the {@code IndexVector} to this
-         * semantic representation.
-         */
-        void add(IndexVector v);
-
-        /**
-         * Returns the full vector representing these semantics.
-         */
-        int[] getVector();
-    }
-
-    /**
-     * A {@code SemanticVector} where all values are held in memory. <p>
-     *
-     * This class is thread-safe.
-     */
-    class DenseSemanticVector implements SemanticVector {
-
-        private final int[] vector;
-
-        public DenseSemanticVector() {
-            vector = new int[vectorLength];
-        }
-    
-        /**
-         * {@inheritDoc}
-         */
-        public synchronized void add(IndexVector v) {
-            for (int p : v.positiveDimensions())
-            vector[p]++;
-                
-            for (int n : v.negativeDimensions()) 
-            vector[n]--;
-        }
-
-    
-        /**
-         * {@inheritDoc}
-         */
-        public synchronized int[] getVector() {
-            return vector;
-        }
-    }
-
-    /**
-     * A {@code SemanticVector} instance that keeps only the non-zero values of
-     * the semantics in memory, thereby saving space at the expense of time. <p>
-     *
-     * This class is thread-safe.
-     */
-    class SparseSemanticVector implements SemanticVector {
-        private final SparseIntArray intArray;
-
-        public SparseSemanticVector() {
-            intArray = new SparseIntArray();
-        }
-    
-        /**
-         * {@inheritDoc}
-         */
-        public synchronized void add(IndexVector v) {
-            for (int p : v.positiveDimensions()) {
-                intArray.set(p, intArray.getPrimitive(p) + 1);
-            }
-            
-            for (int n : v.negativeDimensions()) {
-                intArray.set(n, intArray.getPrimitive(n) - 1);
-            }        
-        }
-    
-        /**
-         * {@inheritDoc}
-         */
-        public synchronized int[] getVector() {
-            return intArray.toPrimitiveArray(new int[vectorLength]);
-        }
     }
 }

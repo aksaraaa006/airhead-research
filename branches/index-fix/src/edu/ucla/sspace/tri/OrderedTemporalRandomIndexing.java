@@ -23,11 +23,11 @@ package edu.ucla.sspace.tri;
 
 import edu.ucla.sspace.common.Filterable;
 
-import edu.ucla.sspace.ri.IndexVector;
 import edu.ucla.sspace.ri.RandomIndexing;
 
 import edu.ucla.sspace.temporal.TemporalSemanticSpace;
 
+import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
@@ -440,14 +440,15 @@ public abstract class OrderedTemporalRandomIndexing
     }
 
     /**
-     * Returns an unmodifiable view on the token to {@link IndexVector} mapping
-     * used by this instance.  Any further changes made by this instance to its
-     * token to {@code IndexVector} mapping will be reflected in the return map.
+     * Returns an unmodifiable view on the token to {@link IntegerVector}
+     * mapping used by this instance.  Any further changes made by this instance
+     * to its token to {@code IntegerVector} mapping will be reflected in the
+     * return map.
      *
      * @return a mapping from the current set of tokens to the index vector used
      *         to represent them
      */
-    public Map<String,IndexVector> getWordToIndexVector() {
+    public Map<String,IntegerVector> getWordToIndexVector() {
         return currentSlice.getWordToIndexVector();
     }
 
@@ -459,15 +460,15 @@ public abstract class OrderedTemporalRandomIndexing
     public void processSpace(Properties props) { }
 
     /**
-     * Assigns the token to {@link IndexVector} mapping to be used by this
+     * Assigns the token to {@link IntegerVector} mapping to be used by this
      * instance.  The contents of the map are copied, so any additions of new
      * index words by this instance will not be reflected in the parameter's
      * mapping.
      *
-     * @param m a mapping from token to the {@code IndexVector} that should be
+     * @param m a mapping from token to the {@code IntegerVector} that should be
      *        used represent it when calculating other word's semantics
      */
-    public void setWordToIndexVector(Map<String,IndexVector> m) {
+    public void setWordToIndexVector(Map<String,IntegerVector> m) {
         currentSlice.setWordToIndexVector(m);
     }
 
