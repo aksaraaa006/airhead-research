@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.ri;
 
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,10 +35,10 @@ import java.io.ObjectOutputStream;
 import java.util.Map;
 
 /**
- * A utility class for loading and saving word-to-{@link IntegerVector}
+ * A utility class for loading and saving word-to-{@link TernaryVector}
  * mappings.  This class is intended to provide the ability to preseve the same
  * mapping between corpora, or between algorithms that both use {@code
- * IntegerVectors}s as index vectors.
+ * TernaryVectors}s as index vectors.
  */
 public class IndexVectorUtil {
 
@@ -48,10 +48,10 @@ public class IndexVectorUtil {
     private IndexVectorUtil() { }
 
     /**
-     * Saves the mapping from word to {@link IntegerVector} to the specified
+     * Saves the mapping from word to {@link TernaryVector} to the specified
      * file.
      */
-    public static void save(Map<String,IntegerVector> wordToIndexVector, 
+    public static void save(Map<String,TernaryVector> wordToIndexVector, 
                             File output) {
         try {
             FileOutputStream fos = new FileOutputStream(output);
@@ -64,15 +64,15 @@ public class IndexVectorUtil {
     }
 
     /**
-     * Loads a mapping from word to {@link IntegerVector} from the file
+     * Loads a mapping from word to {@link TernaryVector} from the file
      */
     @SuppressWarnings("unchecked")
-    public static Map<String,IntegerVector> load(File indexVectorFile) {
+    public static Map<String,TernaryVector> load(File indexVectorFile) {
         try {
             FileInputStream fis = new FileInputStream(indexVectorFile);
             ObjectInputStream inStream = new ObjectInputStream(fis);
-            Map<String, IntegerVector> vectorMap = 
-                (Map<String, IntegerVector>) inStream.readObject();
+            Map<String, TernaryVector> vectorMap = 
+                (Map<String, TernaryVector>) inStream.readObject();
             inStream.close();
             return vectorMap;
         } catch (IOException ioe) {

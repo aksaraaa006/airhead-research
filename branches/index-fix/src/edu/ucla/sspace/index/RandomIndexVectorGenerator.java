@@ -61,7 +61,7 @@ import java.util.Set;
  * </dl>
  */
 public class RandomIndexVectorGenerator
-        implements IntegerVectorGenerator, Serializable  {
+        implements IntegerVectorGenerator<TernaryVector>, Serializable  {
 
     private static final long serialVersionUID = 1L;
 
@@ -149,7 +149,7 @@ public class RandomIndexVectorGenerator
      *
      * @return an index vector
      */
-    public IntegerVector generateRandomVector(int indexVectorLength) {
+    public TernaryVector generateRandomVector(int indexVectorLength) {
         HashSet<Integer> pos = new HashSet<Integer>();
         HashSet<Integer> neg = new HashSet<Integer>();
         

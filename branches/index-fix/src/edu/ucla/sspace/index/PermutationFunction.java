@@ -29,7 +29,7 @@ import edu.ucla.sspace.vector.Vector;
  * TernaryVector}s.  Implementations are expected to be thread safe when
  * performing permutations.
  */
-public interface PermutationFunction {
+public interface PermutationFunction <T extends Vector> {
 
     /**
      * Permutes the provided {@code TernaryVector} the specified number of
@@ -41,5 +41,5 @@ public interface PermutationFunction {
      *
      * @return the original index vector permuted the specified number of times
      */
-    Vector permute(Vector v, int numPermutations);
+    T permute(T v, int numPermutations);
 }

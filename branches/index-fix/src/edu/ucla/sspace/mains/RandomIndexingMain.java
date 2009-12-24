@@ -28,7 +28,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.ri.IndexVectorUtil;
 import edu.ucla.sspace.ri.RandomIndexing;
 
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 
 import java.io.File;
 import java.io.IOException;
@@ -91,13 +91,10 @@ import java.util.logging.Logger;
  * <li><u>Advanced Algorithm Options</u>:
  *   <ul>
  *
- *   <li> {@code -i}, {@code --vectorGenerator=CLASSNAME} the {@link
- *        edu.ucla.sspace.index.IntegerVectorGenerator IntegerVectorGenerator}
- *        class to use for generating the index functions.
- *  
  *   <li> {@code -n}, {@code --permutationFunction=CLASSNAME} the {@link
  *        edu.ucla.sspace.index.PermutationFunction PermutationFunction} class
- *        to use for permuting index vectors, if permutation is enabled.
+ *        to use for permuting {@code TernaryVector}s, if permutation is
+ *        enabled.
  *
  *   </ul>
  *
@@ -151,87 +148,86 @@ public class RandomIndexingMain extends GenericMain {
     private RandomIndexing ri;
 
     private RandomIndexingMain() {
-       ri = null;
+        ri = null;
     }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-       options.addOption('i', "vectorGenerator", "IndexVectorGenerator "
-                       + "class to use", true,
-                       "CLASSNAME", "Advanced Algorithm Options");
-       options.addOption('l', "vectorLength", "length of semantic vectors",
-                       true, "INT", "Algorithm Options");
-       options.addOption('n', "permutationFunction", "permutation function "
-                       + "to use", true,
-                       "CLASSNAME", "Advanced Algorithm Options");
-       options.addOption('p', "usePermutations", "whether to permute " +
-                       "index vectors based on word order", true,
-                       "BOOL", "Algorithm Options");
-       options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
-                       + "semantics to save memory", true,
-                       "BOOL", "Algorithm Options");
-       options.addOption('s', "windowSize", "how many words to consider " +
-                       "in each direction", true,
-                       "INT", "Algorithm Options");
-       options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
-                       + " after processing", true,
-                       "FILE", "Algorithm Options");
-       options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
-                       + " before processing", true,
-                       "FILE", "Algorithm Options");
+        options.addOption('l', "vectorLength", "length of semantic vectors",
+                          true, "INT", "Algorithm Options");
+        options.addOption('n', "permutationFunction",
+                          "permutation function to use.  This should be " +
+                          "genric for TernaryVectors",
+                          true, "CLASSNAME", "Advanced Algorithm Options");
+        options.addOption('p', "usePermutations", "whether to permute " +
+                        "index vectors based on word order", true,
+                        "BOOL", "Algorithm Options");
+        options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
+                          + "semantics to save memory", true,
+                         "BOOL", "Algorithm Options");
+        options.addOption('s', "windowSize", "how many words to consider " +
+                         "in each direction", true,
+                         "INT", "Algorithm Options");
+        options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
+                          + " after processing", true,
+                          "FILE", "Algorithm Options");
+        options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
+                          + " before processing", true,
+                          "FILE", "Algorithm Options");
     }
 
     public static void main(String[] args) {
-       try {
-           RandomIndexingMain main = new RandomIndexingMain();
-           main.run(args);
-       } catch (Throwable t) {
-           t.printStackTrace();
-       }
+        try {
+            RandomIndexingMain main = new RandomIndexingMain();
+            main.run(args);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     protected Properties setupProperties() {
-       props = System.getProperties();
-       // Use the command line options to set the desired properites in the
-       // constructor.  Use the system properties in case these properties were
-       // set using -Dprop=<value>
-       if (argOptions.hasOption("usePermutations")) {
-           props.setProperty(RandomIndexing.USE_PERMUTATIONS_PROPERTY,
-                           argOptions.getStringOption("usePermutations"));
-       }
+        props = System.getProperties();
+        // Use the command line options to set the desired properites in the
+        // constructor.  Use the system properties in case these properties were
+        // set using -Dprop=<value>
+        if (argOptions.hasOption("usePermutations")) {
+            props.setProperty(RandomIndexing.USE_PERMUTATIONS_PROPERTY,
+                              argOptions.getStringOption("usePermutations"));
+        }
 
-       if (argOptions.hasOption("permutationFunction")) {
-           props.setProperty(RandomIndexing.PERMUTATION_FUNCTION_PROPERTY,
-                          argOptions.getStringOption("permutationFunction"));
-       }
+        if (argOptions.hasOption("permutationFunction")) {
+            props.setProperty(
+                    RandomIndexing.PERMUTATION_FUNCTION_PROPERTY,
+                    argOptions.getStringOption("permutationFunction"));
+        }
 
-       if (argOptions.hasOption("windowSize")) {
-           props.setProperty(RandomIndexing.WINDOW_SIZE_PROPERTY,
-                          argOptions.getStringOption("windowSize"));
-       }
+        if (argOptions.hasOption("windowSize")) {
+            props.setProperty(RandomIndexing.WINDOW_SIZE_PROPERTY,
+                              argOptions.getStringOption("windowSize"));
+        }
 
-       if (argOptions.hasOption("vectorLength")) {
-           props.setProperty(RandomIndexing.VECTOR_LENGTH_PROPERTY,
-                          argOptions.getStringOption("vectorLength"));
-       }
+        if (argOptions.hasOption("vectorLength")) {
+            props.setProperty(RandomIndexing.VECTOR_LENGTH_PROPERTY,
+                              argOptions.getStringOption("vectorLength"));
+        }
 
-       if (argOptions.hasOption("useSparseSemantics")) {
-           props.setProperty(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY,
-                           argOptions.getStringOption("useSparseSemantics"));
-       }
+        if (argOptions.hasOption("useSparseSemantics")) {
+            props.setProperty(RandomIndexing.USE_SPARSE_SEMANTICS_PROPERTY,
+                              argOptions.getStringOption("useSparseSemantics"));
+        }
 
-       return props;
+        return props;
     }
 
     /**
      * Returns an instance of {@link RandomIndexing}.  If {@code loadVectors} is
      * specified in the command line options, this method will also initialize
-     * the word-to-{@link IntegerVector} mapping.
+     * the word-to-{@link TernaryVector} mapping.
      */
     protected SemanticSpace getSpace() {
         // Once all the optional properties are known and set, create the
@@ -243,7 +239,7 @@ public class RandomIndexingMain extends GenericMain {
         if (argOptions.hasOption("loadVectors")) {
             String fileName = argOptions.getStringOption("loadVectors");
             LOGGER.info("loading index vectors from " + fileName);
-            Map<String,IntegerVector> wordToIndexVector = 
+            Map<String,TernaryVector> wordToIndexVector = 
                 IndexVectorUtil.load(new File(fileName));
             ri.setWordToIndexVector(wordToIndexVector);
         }

@@ -26,7 +26,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.isa.IncrementalSemanticAnalysis;
 
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.ri.IndexVectorUtil;
 
 import java.io.File;
@@ -90,13 +90,9 @@ import java.util.logging.Logger;
  * <li><u>Advanced Algorithm Options</u>:
  *   <ul>
  *
- *   <li> {@code -i}, {@code --vectorGenerator=CLASSNAME} the {@link
- *        edu.ucla.sspace.index.IntegerVectorGenerator IntegerVectorGenerator}
- *        class to use for generating the index functions.
- *  
  *   <li> {@code -n}, {@code --permutationFunction=CLASSNAME} the {@link
  *        edu.ucla.sspace.index.PermutationFunction PermutationFunction} class
- *        to use for permuting index vectors, if permutation is enabled.
+ *        to use for permuting {@code TernarVector}s, if permutation is enabled.
  *
  *   </ul>
  *
@@ -162,9 +158,6 @@ public class IsaMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-        options.addOption('g', "vectorGenerator", "IndexVectorGenerator "
-                          + "class to use", true,
-                          "CLASSNAME", "Advanced Algorithm Options");
         options.addOption('h', "historyDecayRate", "the decay rate for history "
                           + "effects of co-occurring words", true,
                           "DOUBLE", "Algorithm Options");
@@ -173,11 +166,12 @@ public class IsaMain extends GenericMain {
                           "Algorithm Options");
         options.addOption('l', "vectorLength", "length of semantic vectors",
                           true, "INT", "Algorithm Options");
-        options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
-                          + " before processing", true,
-                          "FILE", "Algorithm Options");
-        options.addOption('n', "permutationFunction", "permutation function "
-                          + "to use", true,
+        options.addOption('L', "loadVectors",
+                          "load word-to-TernaryVector mapping before " +
+                          "processing", true, "FILE", "Algorithm Options");
+        options.addOption('n', "permutationFunction",
+                          "permutation function to use.  This should be " +
+                          "generic for TernaryVectors", true,
                           "CLASSNAME", "Advanced Algorithm Options");
         options.addOption('p', "usePermutations", "whether to permute " +
                           "index vectors based on word order", true,
@@ -211,7 +205,7 @@ public class IsaMain extends GenericMain {
         if (argOptions.hasOption("loadVectors")) {
             String fileName = argOptions.getStringOption("loadVectors");
             LOGGER.info("loading index vectors from " + fileName);
-            Map<String,IntegerVector> wordToIndexVector = 
+            Map<String,TernaryVector> wordToIndexVector = 
                 IndexVectorUtil.load(new File(fileName));
             isa.setWordToIndexVector(wordToIndexVector);
         }

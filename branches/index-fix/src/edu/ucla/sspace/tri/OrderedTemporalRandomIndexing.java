@@ -27,7 +27,7 @@ import edu.ucla.sspace.ri.RandomIndexing;
 
 import edu.ucla.sspace.temporal.TemporalSemanticSpace;
 
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
@@ -440,15 +440,15 @@ public abstract class OrderedTemporalRandomIndexing
     }
 
     /**
-     * Returns an unmodifiable view on the token to {@link IntegerVector}
+     * Returns an unmodifiable view on the token to {@link TernaryVector}
      * mapping used by this instance.  Any further changes made by this instance
-     * to its token to {@code IntegerVector} mapping will be reflected in the
+     * to its token to {@code TernaryVector} mapping will be reflected in the
      * return map.
      *
      * @return a mapping from the current set of tokens to the index vector used
      *         to represent them
      */
-    public Map<String,IntegerVector> getWordToIndexVector() {
+    public Map<String,TernaryVector> getWordToIndexVector() {
         return currentSlice.getWordToIndexVector();
     }
 
@@ -460,15 +460,15 @@ public abstract class OrderedTemporalRandomIndexing
     public void processSpace(Properties props) { }
 
     /**
-     * Assigns the token to {@link IntegerVector} mapping to be used by this
+     * Assigns the token to {@link TernaryVector} mapping to be used by this
      * instance.  The contents of the map are copied, so any additions of new
      * index words by this instance will not be reflected in the parameter's
      * mapping.
      *
-     * @param m a mapping from token to the {@code IntegerVector} that should be
+     * @param m a mapping from token to the {@code TernaryVector} that should be
      *        used represent it when calculating other word's semantics
      */
-    public void setWordToIndexVector(Map<String,IntegerVector> m) {
+    public void setWordToIndexVector(Map<String,TernaryVector> m) {
         currentSlice.setWordToIndexVector(m);
     }
 

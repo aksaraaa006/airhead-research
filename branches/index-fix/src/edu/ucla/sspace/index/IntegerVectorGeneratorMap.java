@@ -46,15 +46,15 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Keith Stevens
  */
-public class IntegerVectorGeneratorMap
-        implements Map<String, IntegerVector>, Serializable {
+public class IntegerVectorGeneratorMap<T extends IntegerVector>
+        implements Map<String, T>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * The {@code IntegerVectorGenerator} for generating new vectors.
      */
-    private final IntegerVectorGenerator generator;
+    private final IntegerVectorGenerator<T> generator;
 
     /**
      * The number of dimensions created in each {@code Vector}.
@@ -65,25 +65,25 @@ public class IntegerVectorGeneratorMap
      * A mapping from terms to their Index Vector, stored as a {@code
      * Vector}.
      */
-    private final Map<String, IntegerVector> termToVector;
+    private final Map<String, T> termToVector;
 
     /**
      * Creates a new Map using a {@code ConcurrentHashMap}.  Vectors will be
      * generated of lenght {@code vectorLength}.
      */
-    public IntegerVectorGeneratorMap(IntegerVectorGenerator generator, 
+    public IntegerVectorGeneratorMap(IntegerVectorGenerator<T> generator, 
                                      int vectorLength) {
         this(generator, vectorLength,
-             new ConcurrentHashMap<String, IntegerVector>());
+             new ConcurrentHashMap<String, T>());
     }
 
     /**
      * Creates a new Map with the given Map.  Vectors will be generated of
      * lenght {@code vectorLength}.
      */
-    public IntegerVectorGeneratorMap(IntegerVectorGenerator generator, 
+    public IntegerVectorGeneratorMap(IntegerVectorGenerator<T> generator, 
                                      int vectorLength,
-                                     Map<String, IntegerVector> map) {
+                                     Map<String, T> map) {
         termToVector = map;
         indexVectorLength = vectorLength;
         this.generator = generator;
@@ -113,7 +113,7 @@ public class IntegerVectorGeneratorMap
     /**
      * {@inheritDoc}
      */
-    public Set<Map.Entry<String, IntegerVector>> entrySet() {
+    public Set<Map.Entry<String, T>> entrySet() {
         return termToVector.entrySet();
     }
 
@@ -132,9 +132,9 @@ public class IntegerVectorGeneratorMap
      *
      * @return A {@code Vector} corresponding to {@code term}.
      */
-    public IntegerVector get(Object term) {
+    public T get(Object term) {
         // Check that an index vector does not already exist.
-        IntegerVector v = termToVector.get(term);
+        T v = termToVector.get(term);
         if (v == null) {
             synchronized (this) {
                 // Confirm that some other thread has not created an index
@@ -174,7 +174,7 @@ public class IntegerVectorGeneratorMap
     /**
      * Unsupported.
      */
-    public IntegerVector put(String key, IntegerVector vector) {
+    public T put(String key, T vector) {
         throw new UnsupportedOperationException(
                 "Vectors may not be inserted into this VectorGeneratorMap.");
     }
@@ -182,7 +182,7 @@ public class IntegerVectorGeneratorMap
     /**
      * Unsupported.
      */
-    public void putAll(Map<? extends String, ? extends IntegerVector> m) {
+    public void putAll(Map<? extends String, ? extends T> m) {
         throw new UnsupportedOperationException(
                 "Vectors may not be inserted into this VectorGeneratorMap.");
     }
@@ -197,46 +197,14 @@ public class IntegerVectorGeneratorMap
     /**
      * {@inheritDoc}
      */
-    public Collection<IntegerVector> values() {
+    public Collection<T> values() {
         return termToVector.values();
     }
 
     /**
      * {@inheritDoc}
      */
-    public IntegerVector remove(Object key) {
+    public T remove(Object key) {
         return termToVector.remove(key);
-    }
-
-    /**
-     * Serializes a given map to a file.
-     */
-    public void saveMap(File file) {
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            ObjectOutputStream outStream = new ObjectOutputStream(fos);
-            outStream.writeObject(this);
-            outStream.close();
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-    }
-
-    /**
-     * Returns a serialized map stored in the given file.
-     */
-    public static IntegerVectorGeneratorMap loadMap(File file) {
-        try {
-            FileInputStream fis = new FileInputStream(file);
-            ObjectInputStream inStream = new ObjectInputStream(fis);
-            IntegerVectorGeneratorMap vectorMap = 
-                (IntegerVectorGeneratorMap) inStream.readObject();
-            inStream.close();
-            return vectorMap;
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        } catch (ClassNotFoundException cnfe) {
-            throw new Error(cnfe);
-        }
     }
 }

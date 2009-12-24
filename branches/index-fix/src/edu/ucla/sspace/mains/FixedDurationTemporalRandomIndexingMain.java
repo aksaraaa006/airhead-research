@@ -48,7 +48,7 @@ import edu.ucla.sspace.util.TimeSpan;
 import edu.ucla.sspace.util.TreeMultiMap;
 
 import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -455,7 +455,7 @@ public class FixedDurationTemporalRandomIndexingMain {
         if (argOptions.hasOption("loadVectors")) {
             String fileName = argOptions.getStringOption("loadVectors");
             LOGGER.info("loading index vectors from " + fileName);
-            Map<String,IntegerVector> wordToIndexVector = 
+            Map<String,TernaryVector> wordToIndexVector = 
                 IndexVectorUtil.load(new File(fileName));
             fdTri.setWordToIndexVector(wordToIndexVector);
         }

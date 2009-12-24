@@ -45,7 +45,8 @@ import java.util.Properties;
  *
  * @author Keith Stevens
  */
-public class WindowedPermutationFunction implements PermutationFunction {
+public class WindowedPermutationFunction
+        implements PermutationFunction<Vector> {
 
     /**
      * The prefix for naming public properties.
@@ -67,7 +68,7 @@ public class WindowedPermutationFunction implements PermutationFunction {
     /**
      * The backing permutation function to use.
      */
-    private final PermutationFunction function;
+    private final PermutationFunction<Vector> function;
 
     /**
      * The window size for permutations.

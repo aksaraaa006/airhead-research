@@ -139,7 +139,7 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * The {@code PermutationFunction} to use for co-occurrances.
      */
-    private final PermutationFunction permutationFunction;
+    private final PermutationFunction<IntegerVector> permutationFunction;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -196,7 +196,7 @@ public class FlyingHermit implements SemanticSpace {
      * Create a new instance of {@code FlyingHermit} which takes ownership
      */
     public FlyingHermit(Map<String, IntegerVector> indexGeneratorMap,
-                        PermutationFunction permFunction,
+                        PermutationFunction<IntegerVector> permFunction,
                         OnlineClusteringGenerator clusterGenerator,
                         Map<String, String> remap,
                         Set<String> accepted,
@@ -270,7 +270,7 @@ public class FlyingHermit implements SemanticSpace {
                 addNextWord(it, nextWords, nextReplacements);
 
             // Only process words which have a suitable replacement.
-            if (acceptedWords.contains(replacement)) {
+            if (acceptedWords == null || acceptedWords.contains(replacement)) {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.

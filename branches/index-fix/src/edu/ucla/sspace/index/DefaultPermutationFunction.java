@@ -37,15 +37,15 @@ import java.util.Random;
 
 
 /**
- * A permutation function that is optimized for {@link IntegerVector} instances.
- * This class precomputes the permutations as necessary and only requires {@code
- * O(k)} time to compute a single permutation, where {@code k} is the number of
- * non-zero elements in the {@code IntegerVector}.
+ * A generic permutation function.  This class precomputes the permutations as
+ * necessary and only requires {@code O(k)} time to compute a single
+ * permutation, where {@code k} is the number of non-zero elements in the {@code
+ * Vector}.
  *
  * @author David Jurgens
  */
 public class DefaultPermutationFunction
-        implements PermutationFunction, Serializable {
+        implements PermutationFunction<Vector>, Serializable {
 
     private static final long serialVersionUID = 1L;
 

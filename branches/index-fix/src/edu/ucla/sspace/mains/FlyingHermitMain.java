@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.mains;
 
-import edu.ucla.sspace.clustering.OnlineClusteringGenerator ;
+import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -30,6 +30,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
+import edu.ucla.sspace.index.IntegerVectorMapUtil;
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
@@ -41,6 +42,8 @@ import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Pair;
+
+import edu.ucla.sspace.vector.IntegerVector;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -116,9 +119,9 @@ public class FlyingHermitMain extends GenericMain {
      */
     private int nextWordsSize;
 
-    private IntegerVectorGeneratorMap vectorMap;
+    private IntegerVectorGeneratorMap<IntegerVector> vectorMap;
 
-    private PermutationFunction permFunction;
+    private PermutationFunction<IntegerVector> permFunction;
 
     private OnlineClusteringGenerator clusterGenerator;
 
@@ -154,7 +157,9 @@ public class FlyingHermitMain extends GenericMain {
                           "The size of the vectors",
                           true, "INT", "Process Properties");
         options.addOption('g', "generator",
-                          "IntegerVectorGenerator to use for hermit",
+                          "IntegerVectorGenerator to use for hermit.  Note " +
+                          "that this generator should be genric for " +
+                          "IntegerVectors",
                           true, "CLASSNAME", "Process Properties");
         options.addOption('s', "windowSize",
                           "The number of words before, and after the focus " +
@@ -164,7 +169,9 @@ public class FlyingHermitMain extends GenericMain {
                           "The bucket size to use for windows",
                            true, "INT", "Process Properties");
         options.addOption('p', "permutationFunction",
-                          "The class name of the permutation function to use",
+                          "The class name of the permutation function to use." +
+                          "  Note that this permutation function should be " +
+                          "for IntegerVectors",
                           true, "CLASSNAME", "Process Properties");
         options.addOption('u', "useDenseSemantics",
                           "Set to true if dense vectors should be used",
@@ -270,6 +277,7 @@ public class FlyingHermitMain extends GenericMain {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     public void handleExtraOptions() {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
@@ -289,13 +297,14 @@ public class FlyingHermitMain extends GenericMain {
         String permType = argOptions.getStringOption("permutationFunction",
                                                      DEFAULT_FUNCTION);
         permFunction =
-            (PermutationFunction) getObjectInstance(permType);
+            (PermutationFunction<IntegerVector>) getObjectInstance(permType);
 
         // Setup the generator.
         String generatorType = 
             argOptions.getStringOption("generator", DEFAULT_GENERATOR);
-        IntegerVectorGenerator generator =
-            (IntegerVectorGenerator) getObjectInstance(generatorType);
+        IntegerVectorGenerator<IntegerVector> generator =
+            (IntegerVectorGenerator<IntegerVector>) getObjectInstance(
+                    generatorType);
 
         // Setup the use of dense vectors.
         boolean useDense = argOptions.hasOption("useDenseSemantics");
@@ -303,13 +312,14 @@ public class FlyingHermitMain extends GenericMain {
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadVectors");
-            vectorMap = IntegerVectorGeneratorMap.loadMap(
+            vectorMap = IntegerVectorMapUtil.load(
                     new File(savedIndexName + ".index"));
             try {
                 FileInputStream fis =
                     new FileInputStream(savedIndexName + ".permutation");
                 ObjectInputStream inStream = new ObjectInputStream(fis);
-                permFunction = (PermutationFunction) inStream.readObject();
+                permFunction =
+                    (PermutationFunction<IntegerVector>) inStream.readObject();
                 inStream.close();
             } catch (IOException ioe) {
                 throw new IOError(ioe);
@@ -317,7 +327,8 @@ public class FlyingHermitMain extends GenericMain {
                 throw new Error(cnfe);
             }
         } else
-            vectorMap = new IntegerVectorGeneratorMap(generator, dimension);
+            vectorMap = new IntegerVectorGeneratorMap<IntegerVector>(
+                    generator, dimension);
 
         // Setup the clustering generator.
         int maxSenseCount = argOptions.getIntOption("senseCount",
@@ -354,7 +365,7 @@ public class FlyingHermitMain extends GenericMain {
     protected void postProcessing() {
         if (argOptions.hasOption("saveIndexes")) {
             String filename = argOptions.getStringOption("saveIndexes");
-            vectorMap.saveMap(new File(filename + ".index"));
+            IntegerVectorMapUtil.save(vectorMap, new File(filename + ".index"));
             try {
                 FileOutputStream fos = new FileOutputStream(new File(
                             filename + ".permutation"));
