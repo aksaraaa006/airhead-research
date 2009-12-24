@@ -638,15 +638,33 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         toUpdate.addVector(prevWordSemantics, impactRate * semanticWeight);
     }
 
+    /**
+     * Adds the index vector to the semantic vector using the percentage to
+     * specify how much of each dimesion is added.
+     *
+     * @param semantics the semantic vector whose values will be modified by the
+     *        index vector
+     * @param index the index vector that will be added to the semantic vector
+     * @param the percentage of the index vector's values that will be added to
+     *        the semantic vector
+     */
     private static void add(DoubleVector semantics,
                             TernaryVector index,
                             double percentage) {
         for (int p : index.positiveDimensions())
             semantics.add(p, percentage);
         for (int n : index.negativeDimensions())
-            semantics.add(n, percentage);
+            semantics.add(n, -percentage);
     }
 
+    /**
+     * A utility extension of {@link DoubleVector} that supports adding entire
+     * vectors of the same type using a percentage of their values.  Instances
+     * of this class are used rather than {@link VectorMath#add(Vector, Vector)}
+     * with a {@link edu.ucla.sspace.vector.ScaledVector ScaledVector} to
+     * improve the addition performance since the type of vector is known and
+     * can be better optimized.
+     */
     private interface SemanticVector<T extends DoubleVector>
             extends DoubleVector {
         public void addVector(T v, double percentage);

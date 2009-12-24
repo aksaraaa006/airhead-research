@@ -511,10 +511,8 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                         iv = permutationFunc.permute(iv, permutations);
                         ++permutations;
                     }
-                
-                    synchronized (focusMeaning) {
-                        add(focusMeaning, iv);
-                    }
+                    
+                    add(focusMeaning, iv);
                 }
             
                 // Repeat for the words in the forward window.
@@ -535,10 +533,8 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                         iv = permutationFunc.permute(iv, permutations);
                         ++permutations;
                     }
-                    
-                    synchronized (focusMeaning) {
-                        add(focusMeaning, iv);
-                    }
+
+                    add(focusMeaning, iv);
                 }
             }
 
@@ -588,10 +584,20 @@ public class RandomIndexing implements SemanticSpace, Filterable {
         semanticFilter.addAll(semanticsToRetain);
     }
 
+    /**
+     * Atomically adds the values of the index vector to the semantic vector.
+     * This is a special case addition operation that only iterates over the
+     * non-zero values of the index vector.
+     */
     private static void add(IntegerVector semantics, TernaryVector index) {
-        for (int p : index.positiveDimensions())
-            semantics.add(p, 1);
-        for (int n : index.negativeDimensions())
-            semantics.add(n, 1);
+        // Lock on the semantic vector to avoid a race condition with another
+        // thread updating its semantics.  Use the vector to avoid a class-level
+        // lock, which would limit the concurrency.
+        synchronized(semantics) {
+            for (int p : index.positiveDimensions())
+                semantics.add(p, 1);
+            for (int n : index.negativeDimensions())
+                semantics.add(n, -1);
+        }
     }
 }
