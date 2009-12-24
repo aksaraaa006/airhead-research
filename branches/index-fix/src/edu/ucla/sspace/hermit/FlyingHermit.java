@@ -24,6 +24,7 @@ package edu.ucla.sspace.hermit;
 import edu.ucla.sspace.clustering.ClusterMap;
 import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
 
+import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -81,18 +83,39 @@ import java.util.logging.Logger;
  *
  * </p>
  *
- * This implementation relies heavily on a {@link IntegerVectorGenerator}, a {@link
- * IndexUser}, and a {@link ClusterMap} for it's functionaltiy.  The {@link
- * IntegerVectorGenerator} provided defines how index vectors are created.  The {@link
- * IndexUser} defines how index vectors are combined together to represent the
- * context.  The {@link ClusterMap} defines how contexts are clustered together.
+ * This implementation relies heavily on a {@link IntegerVectorGenerator} and a
+ * {@link ClusterMap} for it's functionaltiy.  The {@link
+ * IntegerVectorGenerator} provided defines how index vectors are created.  The
+ * {@link ClusterMap} defines how contexts are clustered together.
  *
- * @see RandomIndexVectorGenerator
- * @see RandomIndexUser
+ * </p>
+ *
+ * This class implements {@link Filterable}, which allows for fine-grained
+ * control of which semantics are retained.  The {@link #setSemanticFilter(Set)}
+ * method can be used to speficy which words should have their semantics
+ * retained.  Note that the words that are filtered out will still be used in
+ * computing the semantics of <i>other</i> words.  This behavior is intended for
+ * use with a large corpora where retaining the semantics of all words in memory
+ * is infeasible.
+ *
+ * </p>
+ *
+ * This class is thread-safe for concurrent calls of {@link
+ * #processDocument(BufferedReader) processDocument}.  At any given point in
+ * processing, the {@link #getVectorFor(String) getVector} method may be used
+ * to access the current semantics of a word.  This allows callers to track
+ * incremental changes to the semantics as the corpus is processed.  <p>
+ *
+ * The {@link #processSpace(Properties) processSpace} method does nothing for
+ * This class is thread-safe for concurrent calls of {@link
+ * #processDocument(BufferedReader) processDocument}.  At any given point in
+ * processing, the {@link #getVectorFor(String) getVector} method may be used
+ * to access the current semantics of a word.  This allows callers to track
+ * incremental changes to the semantics as the corpus is processed.  
  *
  * @author Keith Stevens
  */
-public class FlyingHermit implements SemanticSpace {
+public class FlyingHermit implements SemanticSpace, Filterable {
 
     /**
      * The base prefix for all {@code FlyingHermit} properties.
@@ -139,7 +162,7 @@ public class FlyingHermit implements SemanticSpace {
     /**
      * The {@code PermutationFunction} to use for co-occurrances.
      */
-    private final PermutationFunction<IntegerVector> permutationFunction;
+    private final PermutationFunction<IntegerVector> permFunc;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -158,7 +181,11 @@ public class FlyingHermit implements SemanticSpace {
      */
     private Map<String, String> replacementMap;
 
+    /**
+     * The set of words to produce semantics for.
+     */
     private Set<String> acceptedWords; 
+
     /**
      * An accuracy map to record the frequency statistics for each word cluster.
      * This is used to label the clusters once they have been formed.
@@ -205,7 +232,7 @@ public class FlyingHermit implements SemanticSpace {
                         int nextWordsSize) {
         indexVectorSize = vectorSize;
         indexMap = indexGeneratorMap;
-        permutationFunction = permFunction;
+        permFunc = permFunction;
         replacementMap = remap;
         acceptedWords = accepted;
         prevSize = prevWordsSize;
@@ -236,7 +263,7 @@ public class FlyingHermit implements SemanticSpace {
     public String getSpaceName() {
         return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize + 
                "-w" + prevSize + "_" + nextSize +
-               "-" + permutationFunction.toString();
+               "-" + permFunc.toString();
     }
 
     /**
@@ -252,25 +279,25 @@ public class FlyingHermit implements SemanticSpace {
     public void processDocument(BufferedReader document) throws IOException {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
-        Queue<String> nextReplacements = new ArrayDeque<String>();
+        Queue<String> nextOriginals = new ArrayDeque<String>();
 
         Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
 
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
         for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
-            addNextWord(it, nextWords, nextReplacements);
+            addNextWord(it, nextWords, nextOriginals);
 
         String focusWord = null;
         while (!nextWords.isEmpty()) {
             focusWord = nextWords.remove();
-            String replacement = nextReplacements.remove();
+            String original = nextOriginals.remove();
 
             if (it.hasNext())
-                addNextWord(it, nextWords, nextReplacements);
+                addNextWord(it, nextWords, nextOriginals);
 
             // Only process words which have a suitable replacement.
-            if (acceptedWords == null || acceptedWords.contains(replacement)) {
+            if (acceptedWords == null || acceptedWords.contains(focusWord)) {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
@@ -283,8 +310,9 @@ public class FlyingHermit implements SemanticSpace {
                 for (String term : prevWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
                         IntegerVector termVector = indexMap.get(term);
-                        VectorMath.add(meaning, permutationFunction.permute(
-                                       termVector, distance));
+                        if (permFunc != null)
+                            termVector = permFunc.permute(termVector, distance);
+                        VectorMath.add(meaning, termVector);
                     }
                     ++distance;
                 }
@@ -296,8 +324,9 @@ public class FlyingHermit implements SemanticSpace {
                 for (String term : nextWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
                         IntegerVector termVector = indexMap.get(term);
-                        VectorMath.add(meaning, permutationFunction.permute(
-                                       termVector, distance));
+                        if (permFunc != null)
+                            termVector = permFunc.permute(termVector, distance);
+                        VectorMath.add(meaning, termVector);
                     }
                     ++distance;
                 }
@@ -309,14 +338,14 @@ public class FlyingHermit implements SemanticSpace {
                 // vector for the term.
                 int clusterNum;
                 if (!compacted)
-                    clusterNum = clusterMap.addVector(replacement, meaning);
+                    clusterNum = clusterMap.addVector(focusWord, meaning);
                 else
-                    clusterNum = clusterMap.assignVector(replacement, meaning);
+                    clusterNum = clusterMap.assignVector(focusWord, meaning);
 
                 // Count the accuracy of the current cluster assignment for
                 // words which have a replacement different from themselves.
-                if (!focusWord.equals(replacement))
-                    accuracyMap.addInstance(replacement, clusterNum, focusWord);
+                if (!focusWord.equals(original))
+                    accuracyMap.addInstance(focusWord, clusterNum, original);
             }
 
             // Push the focus word into previous word set for the next focus
@@ -331,21 +360,21 @@ public class FlyingHermit implements SemanticSpace {
      * Extracts the next word from a token iterator and add the token, and it's
      * replacement to the two provided queues.  If the {@code replacementMap}
      * exists, and the map contains a replacement mapping for the next token, it
-     * will store that token in {@code nextReplacements}.  If the map exists and
+     * will store that token in {@code nextOriginals}.  If the map exists and
      * no replacement is found the empty token will be stored in {@code
-     * nextReplacements}.  Lastly, if the map does not exist, the current token
-     * will also be stored in {@code nextReplacements}
+     * nextOriginals}.  Lastly, if the map does not exist, the current token
+     * will also be stored in {@code nextOriginals}
      *
      * @param it The token iterator to extract a token from.
      * @param nextWords The {@code Queue} which contains the set of words to the
      *                  right of the focus word.
-     * @param nextReplacements The {@code Queue} which contains replacement
+     * @param nextOriginals The {@code Queue} which contains replacement
      *                         tokens for the set of words to the right of 
      *                         the focus word.
      */
     private void addNextWord(Iterator<String> it,
                              Queue<String> nextWords,
-                             Queue<String> nextReplacements) {
+                             Queue<String> nextOriginals) {
         String term = it.next();
         String replacement = term;
         if (replacementMap != null) {
@@ -353,8 +382,8 @@ public class FlyingHermit implements SemanticSpace {
             replacement = (replacement != null) ? replacement : EMPTY_TOKEN;
         } 
 
-        nextWords.offer(term.intern());
-        nextReplacements.offer(replacement.intern());
+        nextWords.offer(replacement.intern());
+        nextOriginals.offer(term.intern());
     }
 
     /**
@@ -421,6 +450,14 @@ public class FlyingHermit implements SemanticSpace {
             HERMIT_LOGGER.info("Emitting Accuracy Counts");
             accuracyMap.printCounts();
         }
+    }
+
+    public void setSemanticFilter(Set<String> wordsToProcess) {
+        if (acceptedWords == null)
+            acceptedWords = new HashSet<String>();
+
+        acceptedWords.clear();
+        acceptedWords.addAll(wordsToProcess);
     }
 
     /**

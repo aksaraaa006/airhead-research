@@ -172,7 +172,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * This class is thread-safe for concurrent calls of {@link
  * #processDocument(BufferedReader) processDocument}.  At any given point in
- * processing, the {@link #getVectorFor(String) getVectorFor} method may be used
+ * processing, the {@link #getVectorFor(String) getVector} method may be used
  * to access the current semantics of a word.  This allows callers to track
  * incremental changes to the semantics as the corpus is processed.  <p>
  *

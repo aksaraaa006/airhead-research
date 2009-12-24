@@ -173,6 +173,9 @@ public class FlyingHermitMain extends GenericMain {
                           "  Note that this permutation function should be " +
                           "for IntegerVectors",
                           true, "CLASSNAME", "Process Properties");
+        options.addOption('P', "usePermutations",
+                          "Set if permutations should be used",
+                          false, null, "Process Properties");
         options.addOption('u', "useDenseSemantics",
                           "Set to true if dense vectors should be used",
                           false, null, "Process Properties");
@@ -296,8 +299,9 @@ public class FlyingHermitMain extends GenericMain {
         // Setup the PermutationFunction.
         String permType = argOptions.getStringOption("permutationFunction",
                                                      DEFAULT_FUNCTION);
-        permFunction =
-            (PermutationFunction<IntegerVector>) getObjectInstance(permType);
+        permFunction = (argOptions.hasOption("usePermutations"))
+            ? (PermutationFunction<IntegerVector>) getObjectInstance(permType)
+            : null;
 
         // Setup the generator.
         String generatorType = 
@@ -318,8 +322,10 @@ public class FlyingHermitMain extends GenericMain {
                 FileInputStream fis =
                     new FileInputStream(savedIndexName + ".permutation");
                 ObjectInputStream inStream = new ObjectInputStream(fis);
-                permFunction =
-                    (PermutationFunction<IntegerVector>) inStream.readObject();
+                permFunction = (argOptions.hasOption("usePermutations"))
+                    ? (PermutationFunction<IntegerVector>) inStream.readObject()
+                    : null;
+
                 inStream.close();
             } catch (IOException ioe) {
                 throw new IOError(ioe);
