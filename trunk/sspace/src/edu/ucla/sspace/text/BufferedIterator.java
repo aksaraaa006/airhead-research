@@ -52,12 +52,29 @@ public class BufferedIterator implements Iterator<String> {
      */
     private final List<String> buffer;
 
+    /**
+     * Tokenizes the string and buffers to the tokens to allow arbitrary
+     * look-ahead.
+     */
     public BufferedIterator(String str) {
 	this(new BufferedReader(new StringReader(str)));
     }
 
+    /**
+     * Tokenizes the string contents on the reader and buffers to the tokens to
+     * allow arbitrary look-ahead.
+     */
     public BufferedIterator(BufferedReader br) {
-	tokenizer = new WordIterator(br);
+	this(new WordIterator(br));
+    }
+
+    /**
+     * Buffers the tokens in the provided iterator to allow arbitrarily
+     * look-ahead.  The state of the provided iterator is updated by calls to
+     * this iterator.
+     */
+    public BufferedIterator(Iterator<String> tokens) {
+        this.tokenizer = tokens;
 	buffer = new LinkedList<String>();
     }
     
@@ -116,5 +133,4 @@ public class BufferedIterator implements Iterator<String> {
     public void remove() {
 	throw new UnsupportedOperationException("remove is not supported");
     }
-
 }
