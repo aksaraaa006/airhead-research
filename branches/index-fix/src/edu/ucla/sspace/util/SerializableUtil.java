@@ -32,20 +32,31 @@ import java.io.IOError;
 import java.io.IOException;
 
 
-public class IntegerVectorMapUtil {
+/**
+ * A utility class for loading and saving typed {@link Serializable} objects
+ * from a file.  This class encapsulates all the common serializing code and
+ * type casting to allow a clean interface for classes that need to interact
+ * with serialized objects.  All checked {@link IOException} cases are rethrown
+ * as {@link IOError}.
+ */
+public class SerializableUtil {
 
     /**
-     * Serialize a {@code IntegerVectorGeneratorMap} to a file.
-     *
-     * @param map The map to serialize
-     * @param file The file to store the map in
+     * Uninstantiable
      */
-    public static void save(IntegerVectorGeneratorMap map,
-                            File file) {
+    private SerializableUtil() { }
+
+    /**
+     * Serializes the object to the provided file.
+     *
+     * @param o the object to be stored in the file
+     * @param file the file in which the object should be stored
+     */
+    public static void save(Object o, File file) {
         try {
             FileOutputStream fos = new FileOutputStream(file);
             ObjectOutputStream outStream = new ObjectOutputStream(fos);
-            outStream.writeObject(map);
+            outStream.writeObject(o);
             outStream.close();
         } catch (IOException ioe) {
             throw new IOError(ioe);
@@ -53,27 +64,25 @@ public class IntegerVectorMapUtil {
     }
 
     /**
-     * Loads a serialized {@code IntegerVector} mapping from a file.
+     * Loads a serialized object of the specifed type from the file.
      *
-     * @param file The file from which a mapping should be loaded
+     * @param file the file from which a mapping should be loaded
+     * @param type the type of the object being deserialized
      *
-     * @return A {@code IntegerVectorGeneratorMap} that returns the specified 
-     *         IntegerVector subtype
+     * @return the object that was serialized in the file
      */
     @SuppressWarnings("unchecked")
-    public static <T extends IntegerVector> IntegerVectorGeneratorMap<T> load(
-            File file) {
+    public static <T> T load(File file, Class<T> type) {
         try {
             FileInputStream fis = new FileInputStream(file);
             ObjectInputStream inStream = new ObjectInputStream(fis);
-            IntegerVectorGeneratorMap<T> vectorMap = 
-                (IntegerVectorGeneratorMap<T>) inStream.readObject();
+            T object = (T) inStream.readObject();
             inStream.close();
-            return vectorMap;
+            return object;
         } catch (IOException ioe) {
             throw new IOError(ioe);
         } catch (ClassNotFoundException cnfe) {
-            throw new Error(cnfe);
+            throw new IOError(cnfe);
         }
     }
 }

@@ -30,7 +30,6 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
-import edu.ucla.sspace.index.IntegerVectorMapUtil;
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
@@ -42,6 +41,7 @@ import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Pair;
+import edu.ucla.sspace.index.SerializableUtil;
 
 import edu.ucla.sspace.vector.IntegerVector;
 
@@ -316,8 +316,10 @@ public class FlyingHermitMain extends GenericMain {
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadVectors");
-            vectorMap = IntegerVectorMapUtil.load(
-                    new File(savedIndexName + ".index"));
+            vectorMap = (IntegerVectorGeneratorMap<IntegerVector>)
+                SerializableUtil.load(
+                new File(savedIndexName + ".index"),
+                IntegerVectorGeneratorMap.class);
             try {
                 FileInputStream fis =
                     new FileInputStream(savedIndexName + ".permutation");
@@ -371,7 +373,7 @@ public class FlyingHermitMain extends GenericMain {
     protected void postProcessing() {
         if (argOptions.hasOption("saveIndexes")) {
             String filename = argOptions.getStringOption("saveIndexes");
-            IntegerVectorMapUtil.save(vectorMap, new File(filename + ".index"));
+            SerializableUtil.save(vectorMap, new File(filename + ".index"));
             try {
                 FileOutputStream fos = new FileOutputStream(new File(
                             filename + ".permutation"));
