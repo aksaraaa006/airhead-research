@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.index;
+package edu.ucla.sspace.util;
 
 import edu.ucla.sspace.vector.IntegerVector;
 

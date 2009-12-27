@@ -29,34 +29,22 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class TestRandomIndexing {
 
+public class TestRandomIndexing {
 
     private static final long SEED = 42L;
 
     @Test public void test() throws IOException {
+        RandomIndexing ri = new RandomIndexing(new Properties());
+        ri.RANDOM.setSeed(SEED);
 
-	
-	RandomIndexing ri = new RandomIndexing(new Properties());
-	ri.RANDOM.setSeed(SEED);
+        String text = "the quick brown fox jumps over the lazy dog";
+        ri.processDocument(new BufferedReader(new StringReader(text)));
 
-	String text = "the quick brown fox jumps over the lazy dog";
-	ri.processDocument(new BufferedReader(new StringReader(text)));
+        Set<String> words = new LinkedHashSet<String>();
+        for (String s : text.split("\\s+")) 
+            words.add(s);
 
-	Set<String> words = new LinkedHashSet<String>();
-	for (String s : text.split("\\s+")) 
-	    words.add(s);
-
-	assertEquals(words, ri.getWords());
-
-	for (String word : words) {
-	    //System.out.printf("%s -> %s%n", word, Arrays.toString(ri.getVectorFor(word)));
-	}
-
-	for (String word : words) {
-	    System.out.printf("%s -> %s%n", word, ri.getIndexVector(word));
-	}
-
+        assertEquals(words, ri.getWords());
     }
-
 }

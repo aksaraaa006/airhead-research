@@ -41,7 +41,7 @@ import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Pair;
-import edu.ucla.sspace.index.SerializableUtil;
+import edu.ucla.sspace.util.SerializableUtil;
 
 import edu.ucla.sspace.vector.IntegerVector;
 
@@ -317,23 +317,13 @@ public class FlyingHermitMain extends GenericMain {
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadVectors");
             vectorMap = (IntegerVectorGeneratorMap<IntegerVector>)
-                SerializableUtil.load(
-                new File(savedIndexName + ".index"),
-                IntegerVectorGeneratorMap.class);
-            try {
-                FileInputStream fis =
-                    new FileInputStream(savedIndexName + ".permutation");
-                ObjectInputStream inStream = new ObjectInputStream(fis);
-                permFunction = (argOptions.hasOption("usePermutations"))
-                    ? (PermutationFunction<IntegerVector>) inStream.readObject()
-                    : null;
-
-                inStream.close();
-            } catch (IOException ioe) {
-                throw new IOError(ioe);
-            } catch (ClassNotFoundException cnfe) {
-                throw new Error(cnfe);
-            }
+                SerializableUtil.load(new File(savedIndexName + ".index"),
+                                      IntegerVectorGeneratorMap.class);
+            if (argOptions.hasOption("usePermutations"))
+                permFunction = (PermutationFunction<IntegerVector>) 
+                    SerializableUtil.load(
+                            new File(savedIndexName + ".permutation"),
+                            PermutationFunction.class);
         } else
             vectorMap = new IntegerVectorGeneratorMap<IntegerVector>(
                     generator, dimension);
@@ -374,15 +364,8 @@ public class FlyingHermitMain extends GenericMain {
         if (argOptions.hasOption("saveIndexes")) {
             String filename = argOptions.getStringOption("saveIndexes");
             SerializableUtil.save(vectorMap, new File(filename + ".index"));
-            try {
-                FileOutputStream fos = new FileOutputStream(new File(
-                            filename + ".permutation"));
-                ObjectOutputStream outStream = new ObjectOutputStream(fos);
-                outStream.writeObject(permFunction);
-                outStream.close();
-            } catch (IOException ioe) {
-                throw new IOError(ioe);
-            }
+            SerializableUtil.save(permFunction,
+                                  new File(filename + ".permutation"));
         }
     }
 
