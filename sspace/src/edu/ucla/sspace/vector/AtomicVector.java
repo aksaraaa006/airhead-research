@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -34,26 +36,32 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Keith Stevens
  */
-public class AtomicVector implements Vector {
+public class AtomicVector implements DoubleVector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The original {@code Vector} that this {@code AtomicVector} decorates.
      */
-    private final Vector vector;
+    private final DoubleVector vector;
 
     /**
-     * Read and write locks guarding access to {@code vector}.
+     * Read lock for non-mutating access to the backing {@code vector}.
      */
     private final Lock readLock;
+
+    /**
+     * Write lock for mutating access to the backing {@code vector}.
+     */
     private final Lock writeLock;
 
     /**
-     * Create a new {@code AtomicVector} decorating an already existing {@code
+     * Creates a new {@code AtomicVector} decorating an already existing {@code
      * Vector}.
      *
      * @param v The vector to decorate.
      */
-    public AtomicVector(Vector v) {
+    public AtomicVector(DoubleVector v) {
         vector = v;
 
         ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -102,10 +110,8 @@ public class AtomicVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public void set(double[] values) {
-        writeLock.lock();
-        vector.set(values);
-        writeLock.unlock();
+    public Double getValue(int index) {
+        return get(index);
     }
 
     /**
@@ -120,9 +126,16 @@ public class AtomicVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] toArray() {
         readLock.lock();
-        double[] array = vector.toArray(size);
+        double[] array = vector.toArray();
         readLock.lock();
         return array;
     }

@@ -24,8 +24,9 @@ package edu.ucla.sspace.matrix;
 import java.io.File;
 import java.io.IOException;
 
-/**
 
+/**
+ * David needs to put javadoc here.
  */
 public interface Transform {
 

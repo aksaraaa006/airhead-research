@@ -23,11 +23,11 @@ package edu.ucla.sspace.isa;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.ri.DefaultPermutationFunction;
-import edu.ucla.sspace.ri.IndexVector;
-import edu.ucla.sspace.ri.IndexVectorGenerator;
-import edu.ucla.sspace.ri.PermutationFunction;
-import edu.ucla.sspace.ri.RandomIndexVectorGenerator;
+import edu.ucla.sspace.index.IntegerVectorGenerator;
+import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
+import edu.ucla.sspace.index.PermutationFunction;
+import edu.ucla.sspace.index.RandomIndexVectorGenerator;
+import edu.ucla.sspace.index.TernaryPermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -35,10 +35,16 @@ import edu.ucla.sspace.util.SparseDoubleArray;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.lang.reflect.Constructor;
 
@@ -152,23 +158,13 @@ import java.util.logging.Logger;
  *
  * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link edu.ucla.sspace.ri.DefaultPermutationFunction 
+ *      <i>Default:</i> {@link edu.ucla.sspace.index.DefaultPermutationFunction 
  *      DefaultPermutationFunction} 
  *
  * <dd style="padding-top: .5em">This property specifies the fully qualified
  *      class name of a {@link PermutationFunction} instance that will be used
  *      to permute index vectors.  If the {@value #USE_PERMUTATIONS_PROPERTY} is
  *      set to {@code false}, the value of this property has no effect.<p>
- *
- * <dt> <i>Property:</i> <code><b>{@value #INDEX_VECTOR_GENERATOR_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@link RandomIndexVectorGenerator} 
- *
- * <dd style="padding-top: .5em">This property specifies the source of {@link
- *       IndexVector} instances.  Users who want to provide more fine-grain
- *       control over the number of and distribution of values in the index
- *       vectors can provide their own {@link IndexVectorGenerator} instance by
- *       setting this value to the fully qualified class name.<p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #USE_SPARSE_SEMANTICS_PROPERTY}
  *      </b></code> <br>
@@ -209,13 +205,6 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      */
     public static final String IMPACT_RATE_PROPERTY =
         PROPERTY_PREFIX + ".impactRate";
-
-    /**
-     * The property to specify the {@link IndexVectorGenerator} class to use for
-     * generating {@code IndexVector} instances.
-     */
-    public static final String INDEX_VECTOR_GENERATOR_PROPERTY = 
-        PROPERTY_PREFIX + ".indexVectorGenerator";
 
     /**
      * The property to specify the fully qualified named of a {@link
@@ -283,11 +272,6 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     private final double historyDecayRate;
 
     /**
-     * The source of {@link IndexVector} instances.
-     */
-    private final IndexVectorGenerator indexVectorGenerator;
-
-    /**
      * The degree to which the co-occurrence of a word affects the semantics of
      * a second word.
      */
@@ -297,7 +281,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * If permutations are enabled, what permutation function to use on the
      * index vectors.
      */
-    private final PermutationFunction permutationFunc;
+    private final PermutationFunction<TernaryVector> permutationFunc;
 
     /**
      * Whether the index vectors for co-occurrent words should be permuted based
@@ -306,8 +290,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     private final boolean usePermutations;
 
     /**
-     * A flag for whether this instance should use {@code SparseSemanticVector}
-     * instances for representic a word's semantics, which saves space but
+     * A flag for whether this instance should use {@code SparseDoubleVector}
+     * instances for representic a word's semantics, these save space but
      * requires more computation.
      */
     private final boolean useSparseSemantics;
@@ -318,14 +302,15 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     private final int vectorLength;
 
     /**
-     * How many words to view before and after each word in focus.
+     * The number of words to view before and after each word the focus word in
+     * a window.
      */
     private final int windowSize;
 
     /**
      * A mapping from each word to its associated index vector
      */
-    private final Map<String,IndexVector> wordToIndexVector;
+    private final Map<String,TernaryVector> wordToIndexVector;
 
     /**
      * A mapping from each word to the vector the represents its semantics
@@ -372,17 +357,14 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             ? Boolean.parseBoolean(usePermutationsProp)
             : false;
 
-	String permutationFuncProp =
-	    properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
-	permutationFunc = (permutationFuncProp != null)
-	    ? loadPermutationFunction(permutationFuncProp)
-	    : new DefaultPermutationFunction();
+        String permutationFuncProp =
+            properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
+        permutationFunc = (permutationFuncProp != null)
+            ? loadPermutationFunction(permutationFuncProp)
+            : new TernaryPermutationFunction();
 
-        String ivgProp = 
-            properties.getProperty(INDEX_VECTOR_GENERATOR_PROPERTY);
-        indexVectorGenerator = (ivgProp != null) 
-            ? loadIndexVectorGenerator(ivgProp, properties)
-            : new RandomIndexVectorGenerator(properties);
+        RandomIndexVectorGenerator indexVectorGenerator = 
+            new RandomIndexVectorGenerator(properties);
 
         String useSparseProp = 
             properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -402,9 +384,10 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             ? Double.parseDouble(impactRateProp)
             : DEFAULT_IMPACT_RATE;
             
-        wordToIndexVector = new HashMap<String,IndexVector>();
+        wordToIndexVector = new IntegerVectorGeneratorMap<TernaryVector>(
+                indexVectorGenerator, vectorLength);
         wordToMeaning = new HashMap<String,SemanticVector>();
-            wordToOccurrences = new HashMap<String,Integer>();
+        wordToOccurrences = new HashMap<String,Integer>();
     }
 
 
@@ -416,40 +399,14 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      *
      * @return a permutation function of the specified class name
      */ 
-    private static PermutationFunction loadPermutationFunction(
+    @SuppressWarnings("unchecked")
+    private static PermutationFunction<TernaryVector> loadPermutationFunction(
             String className) {
         try {
             Class clazz = Class.forName(className);
-            return (PermutationFunction)(clazz.newInstance());
+            return (PermutationFunction<TernaryVector>)(clazz.newInstance());
         } catch (Exception e) {
             // catch all of the exception and rethrow them as an error
-            throw new Error(e);
-        }
-    }
-
-    /**
-     * Reflectively instantiates an {@code IndexVectorGenerator} using the
-     * specified class name and passing in the {@code Properties} into its
-     * constructor.
-     *
-     * @param className the name of the {@code IndexVectorGenerator} to
-     *        instantiate
-     * @param properties the set of properties to use in initializing the
-     *        generator
-     *
-     * @return the index vector generator
-     */
-    @SuppressWarnings("unchecked")
-    private static IndexVectorGenerator loadIndexVectorGenerator(
-            String className, Properties properties) {
-        try {
-            Class clazz = Class.forName(className);
-            Constructor c = clazz.getConstructor(Properties.class);
-            IndexVectorGenerator ivg = (IndexVectorGenerator)
-            c.newInstance(new Object[] {properties});
-            return ivg;
-        } catch (Exception e) {
-            // rethrow
             throw new Error(e);
         }
     }
@@ -464,20 +421,6 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     }
 
     /**
-     * Returns the index vector for the provided word.
-     *
-     * @param the index vector for a word
-     */
-    private IndexVector getIndexVector(String word) {
-        IndexVector v = wordToIndexVector.get(word);
-        if (v == null) {
-            v = indexVectorGenerator.create(vectorLength);
-            wordToIndexVector.put(word, v);
-        }
-        return v;
-    }  
-
-    /**
      * Returns the current semantic vector for the provided word, or if the word
      * is not currently in the semantic space, a vector is added for it and
      * returned.
@@ -490,8 +433,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         SemanticVector v = wordToMeaning.get(word);
         if (v == null) {
             v = (useSparseSemantics) 
-                ? new SparseSemanticVector()
-                : new DenseSemanticVector();
+                ? new SparseSemanticVector(vectorLength)
+                : new DenseSemanticVector(vectorLength);
             wordToMeaning.put(word, v);
         }
         return v;
@@ -516,10 +459,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         if (v == null) {
             return null;
         }
-        double[] vec = v.toArray();
-        return (useSparseSemantics)
-            ? new CompactSparseVector(vec)
-            : new DenseVector(vec);
+        return Vectors.immutable(v);
     }
 
     /**
@@ -530,14 +470,15 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     }
 
     /**
-     * Returns an unmodifiable view on the token to {@link IndexVector} mapping
-     * used by this instance.  Any further changes made by this instance to its
-     * token to {@code IndexVector} mapping will be reflected in the return map.
+     * Returns an unmodifiable view on the token to {@link IntegerVector}
+     * mapping used by this instance.  Any further changes made by this instance
+     * to its token to {@code IntegerVector} mapping will be reflected in the
+     * return map.
      *
      * @return a mapping from the current set of tokens to the index vector used
      *         to represent them
      */
-    public Map<String,IndexVector> getWordToIndexVector() {
+    public Map<String,TernaryVector> getWordToIndexVector() {
         return Collections.unmodifiableMap(wordToIndexVector);
     }
 
@@ -595,7 +536,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
                         continue;
                     }
                     
-                    IndexVector iv = getIndexVector(word);
+                    TernaryVector iv = wordToIndexVector.get(word);
                     if (usePermutations) {
                         iv = permutationFunc.permute(iv, permutations);
                         ++permutations;
@@ -617,7 +558,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
                         continue;
                     }
                     
-                    IndexVector iv = getIndexVector(word);
+                    TernaryVector iv = wordToIndexVector.get(word);
                     if (usePermutations) {
                         iv = permutationFunc.permute(iv, permutations);
                         ++permutations;
@@ -654,15 +595,15 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     public void processSpace(Properties properties) { }
 
     /**
-     * Assigns the token to {@link IndexVector} mapping to be used by this
+     * Assigns the token to {@link IntegerVector} mapping to be used by this
      * instance.  The contents of the map are copied, so any additions of new
      * index words by this instance will not be reflected in the parameter's
      * mapping.
      *
-     * @param m a mapping from token to the {@code IndexVector} that should be
+     * @param m a mapping from token to the {@code IntegerVector} that should be
      *        used represent it when calculating other word's semantics
      */
-    public void setWordToIndexVector(Map<String,IndexVector> m) {
+    public void setWordToIndexVector(Map<String,TernaryVector> m) {
         wordToIndexVector.clear();
         wordToIndexVector.putAll(m);
     }
@@ -677,9 +618,10 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
      * @param iv the index vector for the co-occurring word, which has be
      *        permuted as necessary
      */    
+    @SuppressWarnings("unchecked")
     private void updateSemantics(SemanticVector toUpdate,
                                  String cooccurringWord,
-                                 IndexVector iv) {
+                                 TernaryVector iv) {
         SemanticVector prevWordSemantics = getSemanticVector(cooccurringWord);
         
         Integer occurrences = wordToOccurrences.get(cooccurringWord);
@@ -692,105 +634,69 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         // semantics, which is weighted by how many times the co-occurring word
         // has been seen.  The semantics of frequently co-occurring words
         // receive less weight, i.e. the index vector is weighted more.
-        toUpdate.add(iv, impactRate * (1 - semanticWeight));
-        toUpdate.add(prevWordSemantics, impactRate * semanticWeight);
+        add(toUpdate, iv, impactRate * (1 - semanticWeight));
+        toUpdate.addVector(prevWordSemantics, impactRate * semanticWeight);
     }
 
     /**
-     * An abstraction for the vector that stores the semantics of a word.
+     * Adds the index vector to the semantic vector using the percentage to
+     * specify how much of each dimesion is added.
+     *
+     * @param semantics the semantic vector whose values will be modified by the
+     *        index vector
+     * @param index the index vector that will be added to the semantic vector
+     * @param the percentage of the index vector's values that will be added to
+     *        the semantic vector
      */
-    interface SemanticVector {
-
-        /**
-         * Adds the bits specified for the {@code IndexVector} to this
-         * semantic representation.
-         */
-        void add(IndexVector v, double percentage);
-
-        /**
-         * Adds the bits specified for the {@code SemanticVector} to this
-         * semantic representation.
-         */
-        void add(SemanticVector v, double percentage);
-
-        /**
-         * Returns the full vector representing these semantics.
-         */
-        double[] toArray();
+    private static void add(DoubleVector semantics,
+                            TernaryVector index,
+                            double percentage) {
+        for (int p : index.positiveDimensions())
+            semantics.add(p, percentage);
+        for (int n : index.negativeDimensions())
+            semantics.add(n, -percentage);
     }
-    
-    class SparseSemanticVector implements SemanticVector {
-        
-        private final SparseDoubleArray semantics;
 
-        public SparseSemanticVector() {
-            semantics = new SparseDoubleArray(vectorLength);
+    /**
+     * A utility extension of {@link DoubleVector} that supports adding entire
+     * vectors of the same type using a percentage of their values.  Instances
+     * of this class are used rather than {@link VectorMath#add(Vector, Vector)}
+     * with a {@link edu.ucla.sspace.vector.ScaledVector ScaledVector} to
+     * improve the addition performance since the type of vector is known and
+     * can be better optimized.
+     */
+    private interface SemanticVector<T extends DoubleVector>
+            extends DoubleVector {
+        public void addVector(T v, double percentage);
+    }
+
+    private class DenseSemanticVector extends DenseVector
+            implements SemanticVector<DenseVector> {
+
+        private static final long serialVersionUID = 1L;
+
+        public DenseSemanticVector(int vectorLength) {
+            super(vectorLength);
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        public void add(IndexVector v, double percentage) {
-            for (int p : v.positiveDimensions())
-                semantics.setPrimitive(p, 
-                    semantics.getPrimitive(p) + percentage);
-                
-            for (int n : v.negativeDimensions()) 
-                semantics.setPrimitive(n,
-                    semantics.getPrimitive(n) - percentage);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public void add(SemanticVector v, double percentage) {
-            double[] vec = v.toArray();
-            for (int i = 0; i < vec.length; ++i) 
-                semantics.setPrimitive(
-                    i, semantics.getPrimitive(i) + percentage * vec[i]);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public double[] toArray() {
-            return semantics.toPrimitiveArray(new double[vectorLength]);
+        public void addVector(DenseVector v, double percentage) {
+            for (int i = 0; i < v.length(); ++i) 
+                add(i, percentage * v.get(i));
         }
     }
-        
-    class DenseSemanticVector implements SemanticVector {
+   
+    private class SparseSemanticVector extends CompactSparseVector
+            implements SemanticVector<SparseDoubleVector> {
 
-        private final double[] semantics;
+        private static final long serialVersionUID = 1L;
 
-        public DenseSemanticVector() {
-            semantics = new double[vectorLength];
+        public SparseSemanticVector(int vectorLength) {
+            super(vectorLength);
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        public void add(IndexVector v, double percentage) {
-            for (int p : v.positiveDimensions())
-                semantics[p] += percentage;
-            
-            for (int n : v.negativeDimensions()) 
-                semantics[n] -= percentage;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public void add(SemanticVector v, double percentage) {
-            double[] vec = v.toArray();
-            for (int i = 0; i < vec.length; ++i) 
-                semantics[i] += percentage * vec[i];
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public double[] toArray() {
-            return semantics;
+        public void addVector(SparseDoubleVector v, double percentage) {
+            for (int n : v.getNonZeroIndices())
+                add(n, percentage * v.get(n));
         }
     }
 }

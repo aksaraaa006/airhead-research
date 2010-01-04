@@ -24,20 +24,21 @@ package edu.ucla.sspace.esa;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
-import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.SparseMatrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.Vectors;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
 import java.io.BufferedReader;
-import java.io.IOError;
 import java.io.IOException;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -85,7 +86,7 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
      * The term by wiki article occurrence matrix.  This field is set in
      * {@link processDocument(BufferedReader) processDocument}.
      */
-    private Matrix termWikiMatrix;
+    private SparseMatrix termWikiMatrix;
 
     /**
      * A mapping from a term to it's row index in {@code termWikiMatrix}.
@@ -145,14 +146,13 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
         article.close();
 
         // check that we actually loaded in some terms before we increase the
-        // articleCount.  This could possibly save some dimensions in the
-        // final array for articles that were essentially blank.  If we didn't
-        // see any terms, just return.
+        // articleCount.    This could possibly save some dimensions in the
+        // final array for articles that were essentially blank.    If we didn't
+        // see any terms, just return 0
         if (termCounts.isEmpty())
             return;
 
-        int articleIndex = 0;
-        articleIndex = articleCount.incrementAndGet();
+        int articleIndex = articleCount.getAndIncrement();
 
         // Once the article has been fully parsed, output all of the sparse
         // data points using the writer.    Synchronize on the writer to prevent
@@ -169,32 +169,26 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
 
     /**
      * {@inheritDoc}
-     * Processes the space using a simple in place TfIdf transform.
      */
     public void processSpace(Properties properties) {
+        // Compute the TF-IDf score for each entry in the matrix.
         int rows = termWikiMatrix.rows();
         int cols = termWikiMatrix.columns();
-        int[] docCounts = new int[rows];
-        // Calculate how frequently each word occurs in the corpus overall.
+        DoubleVector docCounts = new DenseVector(cols);
         for (int row = 0; row < rows; ++row) {
-            SparseVector vector =
-                (SparseVector) termWikiMatrix.getRowVector(row);
-            for (int index : vector.getNonZeroIndices())
-                docCounts[row] += vector.get(index);
+            SparseDoubleVector v = termWikiMatrix.getRowVector(row);
+            for (int index : v.getNonZeroIndices())
+                docCounts.add(index, v.get(index));
         }
 
-        // Compute the TF-IDF value for each entry in the matrix.  The document
-        // frequency is simply the number of nonzero elements for each row
-        // (term).
-        int docs = articleCount.get();
         for (int row = 0; row < rows; ++row) {
-            SparseVector vector =
-                (SparseVector) termWikiMatrix.getRowVector(row);
-            int[] nonZero = vector.getNonZeroIndices();
-            double idf = Math.log(docs / 1 + nonZero.length);
+            SparseDoubleVector v = termWikiMatrix.getRowVector(row);
+            int[] nonZero = v.getNonZeroIndices();
+
+            double idf = Math.log(articleCount.get() / nonZero.length);
             for (int index : nonZero) {
-                double tf = vector.get(index) / docCounts[row];
-                termWikiMatrix.set(row, index, tf*idf*idf);
+                double tf = v.get(index) * docCounts.get(index);
+                v.set(index, tf * idf);
             }
         }
     }
@@ -206,21 +200,19 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     private void addTerm(String term) {
         Integer index = termToIndex.get(term);
         if (index == null) {
-            synchronized(termToIndex) {
+            synchronized(this) {
                 // recheck to see if the term was added while blocking
                 index = termToIndex.get(term);
 
                 // if some other thread has not already added this term while
                 // the current thread was blocking waiting on the lock, then add
                 // it.
-                if (index == null) {
-                    index = Integer.valueOf(termCounter.incrementAndGet());
-                    termToIndex.put(term, index);
-                }
+                if (index == null)
+                    termToIndex.put(term, termCounter.getAndIncrement());
             }
         }
     }
-        
+
     /**
      * {@inheritDoc}
      */
@@ -243,7 +235,6 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
         if (index != null)
             return Vectors.immutable(
                     termWikiMatrix.getRowVector(index.intValue()));
-
         return null;
     }
 

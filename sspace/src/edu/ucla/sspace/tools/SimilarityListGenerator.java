@@ -59,13 +59,13 @@ public class SimilarityListGenerator {
     public static final int DEFAULT_SIMILAR_ITEMS = 10;
 
     private static final Logger LOGGER = 
-	Logger.getLogger(SimilarityListGenerator.class.getName());
+        Logger.getLogger(SimilarityListGenerator.class.getName());
 
     private final ArgOptions argOptions;
     
     public SimilarityListGenerator() { 
-	argOptions = new ArgOptions();
-	addOptions();
+        argOptions = new ArgOptions();
+        addOptions();
     }
 
     /**
@@ -73,112 +73,112 @@ public class SimilarityListGenerator {
      */
     private void addOptions() {
 
-	argOptions.addOption('p', "printSimilarity", "whether to print the " +
-			     "similarity score (default: false)", true, "int", 
-			     "Program Options");
-	argOptions.addOption('s', "similarityFunction", "name of a similarity " +
-			     "function (default: cosine)", true, "String", 
-			     "Program Options");
-	argOptions.addOption('n', "numSimilar", "the number of similar words " +
-			     "to print (default: 10)", true, "String", 
-			     "Program Options");
-	argOptions.addOption('t', "threads", "the number of threads to use" +
-			     " (default: #procesors)", true, "int", 
-			     "Program Options");
-	argOptions.addOption('w', "overwrite", "specifies whether to " +
-			     "overwrite the existing output (default: true)",
-			     true, "boolean", "Program Options");
-	argOptions.addOption('v', "verbose", "prints verbose output "+ 
-			     "(default: false)", false, null, 
-			     "Program Options");
+        argOptions.addOption('p', "printSimilarity",
+                             "whether to print the similarity score " +
+                             "(default: false)",
+                             false, null, "Program Options");
+        argOptions.addOption('s', "similarityFunction",
+                             "name of a similarity function (default: cosine)",
+                             true, "String", "Program Options");
+        argOptions.addOption('n', "numSimilar", "the number of similar words " +
+                             "to print (default: 10)", true, "String", 
+                             "Program Options");
+        argOptions.addOption('t', "threads", "the number of threads to use" +
+                             " (default: #procesors)", true, "int", 
+                             "Program Options");
+        argOptions.addOption('w', "overwrite", "specifies whether to " +
+                             "overwrite the existing output (default: true)",
+                             true, "boolean", "Program Options");
+        argOptions.addOption('v', "verbose", "prints verbose output "+ 
+                             "(default: false)", false, null, 
+                             "Program Options");
     }
 
 
     private void usage() {
-	System.out.println("usage: java SimilarityListGenerator [options] " +
-			   "<sspace-file> <output-dir>\n"  + 
-			   argOptions.prettyPrint());
+        System.out.println("usage: java SimilarityListGenerator [options] " +
+                           "<sspace-file> <output-dir>\n"  + 
+                           argOptions.prettyPrint());
     }
 
     public static void main(String[] args) {
-	try {
-	    SimilarityListGenerator generator = new SimilarityListGenerator();
-	    if (args.length == 0) {
-		generator.usage();
-		return;
-	    }
+        try {
+            SimilarityListGenerator generator = new SimilarityListGenerator();
+            if (args.length == 0) {
+                generator.usage();
+                return;
+            }
 
-	    generator.run(args);
+            generator.run(args);
 
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
-    }	
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }        
 
     public void run(String[] args) throws Exception {
 
-	// process command line args
-	argOptions.parseOptions(args);
+        // process command line args
+        argOptions.parseOptions(args);
 
-	if (argOptions.numPositionalArgs() < 2) {
-	    throw new IllegalArgumentException("must specify input and output");
-	}
+        if (argOptions.numPositionalArgs() < 2) {
+            throw new IllegalArgumentException("must specify input and output");
+        }
 
-	final File sspaceFile = new File(argOptions.getPositionalArg(0));
-	final File outputDir = new File(argOptions.getPositionalArg(1));
+        final File sspaceFile = new File(argOptions.getPositionalArg(0));
+        final File outputDir = new File(argOptions.getPositionalArg(1));
 
-	if (!outputDir.isDirectory()) {
-	    throw new IllegalArgumentException(
-		"output directory is not a directory: " + outputDir);
-	}
-	    	
-	// Load the program-specific options next.
-	int numThreads = Runtime.getRuntime().availableProcessors();
-	if (argOptions.hasOption("threads")) {
-	    numThreads = argOptions.getIntOption("threads");
-	}
+        if (!outputDir.isDirectory()) {
+            throw new IllegalArgumentException(
+                "output directory is not a directory: " + outputDir);
+        }
+                    
+        // Load the program-specific options next.
+        int numThreads = Runtime.getRuntime().availableProcessors();
+        if (argOptions.hasOption("threads")) {
+            numThreads = argOptions.getIntOption("threads");
+        }
 
-	boolean overwrite = true;
-	if (argOptions.hasOption("overwrite")) {
-	    overwrite = argOptions.getBooleanOption("overwrite");
-	}
+        boolean overwrite = true;
+        if (argOptions.hasOption("overwrite")) {
+            overwrite = argOptions.getBooleanOption("overwrite");
+        }
 
-	if (argOptions.hasOption('v')) {
-	    // update the loggers to print FINE messages as well as INFO
-	    // messages
-	    Logger.getLogger("edu.ucla.sspace").setLevel(Level.FINE);
-	}
+        if (argOptions.hasOption('v')) {
+            // update the loggers to print FINE messages as well as INFO
+            // messages
+            Logger.getLogger("edu.ucla.sspace").setLevel(Level.FINE);
+        }
 
-	// load the behavior options
-	final boolean printSimilarity = (argOptions.hasOption('p'))
-	    ? argOptions.getBooleanOption('p') : false;
+        // load the behavior options
+        final boolean printSimilarity = argOptions.hasOption('p');
 
-	String similarityTypeName = (argOptions.hasOption('s'))
-	    ? argOptions.getStringOption('s').toUpperCase() : "COSINE";
+        String similarityTypeName = (argOptions.hasOption('s'))
+            ? argOptions.getStringOption('s').toUpperCase() : "COSINE";
 
-	SimType similarityType = SimType.valueOf(similarityTypeName);
-	
-	LOGGER.fine("using similarity measure: " + similarityType);
-	
-	final int numSimilar = (argOptions.hasOption('n'))
-	    ? argOptions.getIntOption('n') : 10;
+        SimType similarityType = SimType.valueOf(similarityTypeName);
+        
+        LOGGER.fine("using similarity measure: " + similarityType);
+        
+        final int numSimilar = (argOptions.hasOption('n'))
+            ? argOptions.getIntOption('n') : 10;
 
-	LOGGER.fine("loading .sspace file: " + sspaceFile.getName());
-	
-	final SemanticSpace sspace = SemanticSpaceIO.load(sspaceFile);
+        LOGGER.fine("loading .sspace file: " + sspaceFile.getName());
+        
+        final SemanticSpace sspace = SemanticSpaceIO.load(sspaceFile);
 
-	File output = (overwrite)
-	    ? new File(outputDir, sspaceFile.getName() + ".similarityList")
-	    : File.createTempFile(sspaceFile.getName(), "similarityList",
-				  outputDir);
+        File output = (overwrite)
+            ? new File(outputDir, sspaceFile.getName() + ".similarityList")
+            : File.createTempFile(sspaceFile.getName(), "similarityList",
+                                  outputDir);
 
-	final PrintWriter outputWriter = new PrintWriter(output);
-	    
-	final Set<String> words = sspace.getWords();
-	WordComparator comparator = new WordComparator(numThreads);
+        final PrintWriter outputWriter = new PrintWriter(output);
+            
+        final Set<String> words = sspace.getWords();
+        WordComparator comparator = new WordComparator(numThreads);
 
 
-	for (String word : words) {            
+        for (String word : words) {            
             // compute the k most-similar words to this word
             SortedMultiMap<Double,String> mostSimilar =
                 comparator.getMostSimilar(word, sspace, numSimilar,
@@ -199,9 +199,9 @@ public class SimilarityListGenerator {
                 }
                 sb.append("|");
                 
-                outputWriter.println(sb.toString());
-                outputWriter.flush();
             }
-	}
+            outputWriter.println(sb.toString());
+            outputWriter.flush();
+        }
     }
 }

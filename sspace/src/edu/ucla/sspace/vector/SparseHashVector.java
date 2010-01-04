@@ -23,8 +23,6 @@ package edu.ucla.sspace.vector;
 
 import edu.ucla.sspace.util.SparseHashArray;
 
-import java.io.Serializable;
-
 
 /**
  * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
@@ -36,28 +34,15 @@ import java.io.Serializable;
  *
  * @author David Jurgens
  */
-public class SparseHashVector implements SparseVector, Serializable {
+public class SparseHashVector<T extends Number>
+    implements SparseVector<T>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * The backing array that holds the vector values
      */
-    private SparseHashArray<Double> vector;
-
-    /**
-     * The length of this {@code Vector}
-     */
-    private int length;
-
-    /**
-     * Creates a {@code SparseHashVector} with a maximum size of {@link
-     * Integer#MAX_VALUE}.
-     */
-    public SparseHashVector() {
-        vector = new SparseHashArray<Double>();
-        length = Integer.MAX_VALUE;
-    }
+    protected SparseHashArray<Number> vector;
 
     /** 
      * Create a {@code SparseHashVector} with the given size, having no
@@ -66,8 +51,7 @@ public class SparseHashVector implements SparseVector, Serializable {
      * @param length The length of this {@code Vector}
      */
     public SparseHashVector(int length) {
-        vector = new SparseHashArray<Double>(length);
-        this.length = length;
+        vector = new SparseHashArray<Number>(length);
     }
 
     /**
@@ -76,44 +60,8 @@ public class SparseHashVector implements SparseVector, Serializable {
      *
      * @param array the values of this vector
      */
-    public SparseHashVector(double[] array) {
-        vector = new SparseHashArray<Double>();
-        this.length = array.length;
-        // Manually iterate over since we know the backing array is already all
-        // zero values.
-        for (int i = 0; i < array.length; ++i) {
-            double d = array[i];
-            if (d != 0)
-                vector.set(i, d);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double add(int index, double delta) {
-        double result = get(index) + delta;
-        set(index, result);
-        return result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(double[] values) {
-        vector = new SparseHashArray<Double>();
-        for (int i = 0; i < values.length; ++i)
-            set(i, values[i]);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void set(int index, double value) {
-        if (value == 0)
-            vector.set(index, null);
-        else
-            vector.set(index, value);
+    public SparseHashVector(T[] array) {
+        vector = new SparseHashArray<Number>(array);
     }
 
     /** 
@@ -126,29 +74,22 @@ public class SparseHashVector implements SparseVector, Serializable {
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        double[] array = new double[size];
-        Double[] objArray = new Double[size];
-        vector.toArray(objArray);
-        for (int i = 0; i < size; ++i) {
-            Double d = objArray[i];
-            array[i] = (d == null) ? 0 : d;
-        }
-        return array;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public double get(int index) {
-        Double d = vector.get(index);
-        return (d == null) ? 0 : d;
+    public Number getValue(int index) {
+        Number val = vector.get(index);
+        return (val == null) ? 0 : val;
     }
 
     /**
      * {@inheritDoc}
      */
     public int length() {
-        return length;
+        return vector.length();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        vector.set(index, value);
     }
 }

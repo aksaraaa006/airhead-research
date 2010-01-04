@@ -23,7 +23,8 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.vector.ScaledVector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorMath;
 
@@ -109,8 +110,8 @@ public class DocumentVectorBuilder {
      * @return {@code documentVector} after it has been modified to represent
      *         the terms in {@code document}.
      */
-    public Vector buildVector(BufferedReader document,
-                              Vector documentVector) {
+    public DoubleVector buildVector(BufferedReader document,
+                              DoubleVector documentVector) {
         // Tokenize and determine what words exist in the document, along with
         // the requested meta information, such as a term frequency.
         Map<String, Integer> termCounts = new HashMap<String, Integer>();
@@ -128,10 +129,20 @@ public class DocumentVectorBuilder {
             Vector termVector = sspace.getVector(entry.getKey());
             if (termVector == null)
                 continue;
-            VectorMath.add(documentVector,
-                           new ScaledVector(termVector, entry.getValue()));
+            add(documentVector, termVector, entry.getValue());
         }
 
         return documentVector;
+    }
+
+    public void add(DoubleVector dest, Vector src, int factor) {
+        if (src instanceof SparseVector) {
+            int[] nonZeros = ((SparseVector) src). getNonZeroIndices();
+            for (int i : nonZeros)
+                dest.add(i, src.getValue(i).doubleValue());
+        } else {
+            for (int i = 0; i < src.length(); ++i)
+                dest.add(i, src.getValue(i).doubleValue());
+        }
     }
 }

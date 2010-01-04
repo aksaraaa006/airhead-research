@@ -235,7 +235,7 @@ public class TemporalSemanticSpaceUtils {
                     // count the non-zero
                     int nonZero = 0;
                     for (int i = 0; i < timeSlice.length(); ++i) {
-                        if (timeSlice.get(i) != 0d) {
+                        if (timeSlice.getValue(i).doubleValue() != 0d) {
                             nonZero++;
                         }
                     }
@@ -243,7 +243,7 @@ public class TemporalSemanticSpaceUtils {
                     pw.print(timestep + " " + nonZero + "%");
                     StringBuilder sb = new StringBuilder(nonZero * 4);
                     for (int i = 0; i < timeSlice.length(); ++i) {
-                        double d = timeSlice.get(i);
+                        double d = timeSlice.getValue(i).doubleValue();
                         if (d != 0d) {
                             sb.append(i).append(",").append(d);
                         }
@@ -294,7 +294,7 @@ public class TemporalSemanticSpaceUtils {
                 if (timeSlice != null) {
                     dos.writeLong(timestep);
                     for (int i = 0; i < timeSlice.length(); ++i) {
-                        dos.writeDouble(timeSlice.get(i));
+                        dos.writeDouble(timeSlice.getValue(i).doubleValue());
                     }
                 }
             }
@@ -341,7 +341,7 @@ public class TemporalSemanticSpaceUtils {
                     // count the non-zero
                     int nonZero = 0;
                     for (int i = 0; i < timeSlice.length(); ++i) {
-                        if (timeSlice.get(i)  != 0d) {
+                        if (timeSlice.getValue(i).doubleValue()  != 0d) {
                             nonZero++;
                         }
                     }
@@ -349,7 +349,7 @@ public class TemporalSemanticSpaceUtils {
                     dos.writeLong(timestep);
                     dos.writeInt(nonZero);
                     for (int i = 0; i < timeSlice.length(); ++i) {
-                        double d = timeSlice.get(i);
+                        double d = timeSlice.getValue(i).doubleValue();
                         if (d != 0d) {
                             dos.writeInt(i);
                             dos.writeDouble(d);

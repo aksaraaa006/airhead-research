@@ -23,7 +23,7 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceIO;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.esa.ExplicitSemanticAnalysis;
 
@@ -37,8 +37,20 @@ import java.util.Properties;
 
 /**
  * An executable class for running {@link ExplicitSemanticAnalysis} (ESA) from
- * the command line.  This class takes in the standard command line arguments
- * found in {@code GenericMain}.
+ * the command line.  This class takes in several command line arguments.
+ *
+ * <ul>
+ *
+ * <li> {@code --overwrite=<boolean>} specifies whether to overwrite the
+ *      existing output files.  The default is {@code true}.  If set to {@code
+ *      false}, a unique integer is inserted into the file name.
+ *
+ * <li> {@code --verbose | -v} specifies whether to print runtime
+ *      information to standard out
+ *
+ * </ul>
+ *
+ * <p>
  *
  * @see ExplicitSemanticAnalysis
  *
@@ -50,9 +62,10 @@ public class ESAMain extends GenericMain {
     }
 
     /**
-     * Adds all of the options to the {@link ArgOptions}.
+     * {@inheritDoc} 
      */
     protected void addExtraOptions(ArgOptions options) {
+
     }
 
     public static void main(String[] args) {
@@ -73,11 +86,28 @@ public class ESAMain extends GenericMain {
     }
 
     /**
+     * {@inheritDoc} 
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
+    }
+
+    /**
+     * {@inheritDoc} 
+     */
+    public Properties setupProperties() {
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
+        Properties props = System.getProperties();
+        return props;
+    }
+
+    /**
      * Prints the instructions on how to execute this program to standard out.
      */
     public void usage() {
          System.out.println(
-             "usage: java ESAMain [options] <output-dir>\n"
+             "usage: java ESAMain [options] <wikipedia-snapshot> <output-dir>\n"
             + argOptions.prettyPrint());
     }
 }

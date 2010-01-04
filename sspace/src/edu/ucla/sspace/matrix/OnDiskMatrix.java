@@ -22,7 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DenseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.SparseVector;
 
@@ -164,7 +164,7 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
+    public DoubleVector getColumnVector(int column) {
         return new DenseVector(getColumn(column));
     }
 
@@ -200,7 +200,7 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
+    public DoubleVector getRowVector(int row) {
         return new DenseVector(getRow(row));
     }
 
@@ -241,7 +241,7 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         for (int row = 0; row < rows; ++row)
             set(row, column, values.get(row));
     }
@@ -260,7 +260,7 @@ public class OnDiskMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         if (values.length() != cols)
             throw new IllegalArgumentException(
                 "The number of values does not match the number of columns");

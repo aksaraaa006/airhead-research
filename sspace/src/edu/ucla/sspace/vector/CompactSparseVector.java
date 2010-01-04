@@ -21,17 +21,22 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import edu.ucla.sspace.util.SparseDoubleArray;
 
 /**
- * A {@code Vector} instance that keeps only the non-zero values of
- * the semantics in memory, thereby saving space at the expense of time.
+ * A {@code Vector} instance that keeps only the non-zero values in memory,
+ * thereby saving space at the expense of time.
  *
- * {@see SparseDoubleArray} for an implementation of the functionality.
+ * <p> See {@link SparseDoubleArray} for details on how the sparse
+ * representation is implemented
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector implements Vector, SparseVector {
+public class CompactSparseVector implements SparseDoubleVector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The {@code SparseDoubleArray} which provides most of the functionality in
@@ -40,17 +45,11 @@ public class CompactSparseVector implements Vector, SparseVector {
     private SparseDoubleArray vector;
 
     /**
-     * The maximum known length of this {@code Vector}.
-     */
-    private int knownLength;
-
-    /**
      * Creates a {@code CompactSparseVector} that grows to the maximum size set
      * by {@link Double#MAX_VALUE}.
      */
     public CompactSparseVector() {
         vector = new SparseDoubleArray();
-        knownLength = 0;
     }
 
     /** 
@@ -61,7 +60,6 @@ public class CompactSparseVector implements Vector, SparseVector {
      */
     public CompactSparseVector(int length) {
         vector = new SparseDoubleArray(length);
-        knownLength = length;
     }
 
     /**
@@ -72,15 +70,12 @@ public class CompactSparseVector implements Vector, SparseVector {
      */
     public CompactSparseVector(double[] array) {
         vector = new SparseDoubleArray(array);
-        knownLength = array.length;
     }
 
     /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        updateLength(index);
-
         set(index, get(index) + delta);
         return get(index) + delta;
     }
@@ -89,8 +84,6 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public void set(double[] values) {
-        updateLength(values.length);
-
         vector = new SparseDoubleArray(values);
     }
 
@@ -98,9 +91,14 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public void set(int index, double value) {
-        updateLength(index);
-
         vector.setPrimitive(index, value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
     }
 
     /** 
@@ -113,11 +111,8 @@ public class CompactSparseVector implements Vector, SparseVector {
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("unchecked")
-    public double[] toArray(int size) {
-        updateLength(size);
-
-        double[] array = new double[size];
+    public double[] toArray() {
+        double[] array = new double[vector.length()];
         return vector.toPrimitiveArray(array);
     }
 
@@ -125,26 +120,21 @@ public class CompactSparseVector implements Vector, SparseVector {
      * {@inheritDoc}
      */
     public double get(int index) {
-        updateLength(index);
-
         return vector.getPrimitive(index);
     }
 
     /**
      * {@inheritDoc}
      */
-    public int length() {
-        return knownLength;
+    public Double getValue(int index) {
+        return get(index);
     }
 
     /**
-     * Extend the known length of this {@code Vector} if the given length is
-     * longer than any previously seen length.
-     *
-     * @param length The new possible length of the {@code Vector}.
+     * {@inheritDoc}
      */
-    private void updateLength(int length) {
-        if (knownLength <= length)
-            knownLength = length;
+    public int length() {
+        return vector.length();
     }
+
 }

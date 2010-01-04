@@ -24,7 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
 
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -866,7 +866,7 @@ public class MatrixIO {
 	    int nonZero = 0;
             int rows = matrix.rows();
 	    for (int i = 0; i < rows; ++i) {
-                Vector v = matrix.getRowVector(i);
+                DoubleVector v = matrix.getRowVector(i);
                 if (v instanceof SparseVector) 
                     nonZero += ((SparseVector)v).getNonZeroIndices().length;
                 else {
@@ -882,7 +882,7 @@ public class MatrixIO {
                 StringBuilder sb = new StringBuilder(nonZero / rows);
                 // NOTE: the columns in CLUTO start at 1, not 0, so increment
                 // one to each of the columns
-                Vector v = matrix.getRowVector(row);
+                DoubleVector v = matrix.getRowVector(row);
                 if (v instanceof SparseVector) {
                     int[] nzIndices = ((SparseVector)v).getNonZeroIndices();
                     for (int nz : nzIndices) {

@@ -21,23 +21,24 @@
 
 package edu.ucla.sspace.ri;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import edu.ucla.sspace.vector.TernaryVector;
 
-import java.util.HashMap;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOError;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import java.util.Map;
 
 /**
- * A utility class for loading and saving word-to-{@link IndexVector} mappings.
- * This class is intended to provide the ability to preseve the same mapping
- * between corpora, or between algorithms that both use {@code IndexVector}s.
- * 
- * @see RandomIndexing
- * @see IndexVector
- * @see IndexVectorGenerator
+ * A utility class for loading and saving word-to-{@link TernaryVector}
+ * mappings.  This class is intended to provide the ability to preseve the same
+ * mapping between corpora, or between algorithms that both use {@code
+ * TernaryVectors}s as index vectors.
  */
 public class IndexVectorUtil {
 
@@ -47,76 +48,37 @@ public class IndexVectorUtil {
     private IndexVectorUtil() { }
 
     /**
-     * Saves the mapping from word to {@link IndexVector} to the specified file.
+     * Saves the mapping from word to {@link TernaryVector} to the specified
+     * file.
      */
-    public static void save(Map<String,IndexVector> wordToIndexVector, 
-			    File output) throws IOException {
-	
-	PrintWriter pw = new PrintWriter(output);
-
-	// On the first output, write out how long the vectors will be
-	boolean writtenLength = false;
-
-	for (Map.Entry<String,IndexVector> e : wordToIndexVector.entrySet()) {
-	    String s = e.getKey();
-	    IndexVector iv = e.getValue();
-	    if (!writtenLength) {
-		pw.println(iv.length());
-		writtenLength = true;
-	    }
-
-	    int[] pos = iv.positiveDimensions();
-	    int[] neg = iv.negativeDimensions();
-	    StringBuffer sb = new StringBuffer(s.length() + 20);
-	    sb.append(s).append(" ").append(pos.length);
-	    for (int p : pos) {
-		sb.append(" ").append(p);
-	    }
-	    for (int n : neg) {
-		sb.append(" ").append(n);
-	    }
-	    pw.println(sb.toString());
-	}
-	pw.close();
+    public static void save(Map<String,TernaryVector> wordToIndexVector, 
+                            File output) {
+        try {
+            FileOutputStream fos = new FileOutputStream(output);
+            ObjectOutputStream outStream = new ObjectOutputStream(fos);
+            outStream.writeObject(wordToIndexVector);
+            outStream.close();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
-     * Loads a mapping from word to {@link IndexVector} from the file
+     * Loads a mapping from word to {@link TernaryVector} from the file
      */
-    public static Map<String,IndexVector> load(File indexVectorFile) 
-	    throws IOException {
-	Map<String,IndexVector> wordToIndexVector 
-	    = new HashMap<String,IndexVector>();
-	BufferedReader br = new BufferedReader(new FileReader(indexVectorFile));
-
-	// first line is the length of all the vectors
-	int vectorLength = Integer.parseInt(br.readLine().trim());
-
-	// loop through each line creating the vector for it
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] arr = line.split(" ");
-	    String word = arr[0];
-
-	    int numPos = Integer.parseInt(arr[1]);
-	    int[] pos = new int[numPos];
-
-	    // subtract an additional 2 for the word and size indices
-	    int numNeg = arr.length - (numPos + 2);
-	    int[] neg = new int[numNeg];
-
-	    // index is the position in arr for determining the indices for the
-	    // IndexVector
-	    int index = 2;
-	    for (int i = 0; i < numPos; ++i, ++index) {
-		pos[i] = Integer.parseInt(arr[index]);
-	    }
-	    for (int i = 0; i < numNeg; ++i, ++index) {
-		neg[i] = Integer.parseInt(arr[index]);
-	    }
-
-	    IndexVector iv = new PresetIndexVector(vectorLength, pos, neg);
-	    wordToIndexVector.put(word, iv);
-	}
-	return wordToIndexVector;
+    @SuppressWarnings("unchecked")
+    public static Map<String,TernaryVector> load(File indexVectorFile) {
+        try {
+            FileInputStream fis = new FileInputStream(indexVectorFile);
+            ObjectInputStream inStream = new ObjectInputStream(fis);
+            Map<String, TernaryVector> vectorMap = 
+                (Map<String, TernaryVector>) inStream.readObject();
+            inStream.close();
+            return vectorMap;
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        } catch (ClassNotFoundException cnfe) {
+            throw new Error(cnfe);
+        }
     }
 }

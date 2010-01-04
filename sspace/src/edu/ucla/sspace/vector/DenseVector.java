@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 
 
@@ -30,7 +32,9 @@ import java.util.Arrays;
  *
  * @author Keith Stevens
 */
-public class DenseVector implements Vector {
+public class DenseVector implements DoubleVector, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The values of this {@code DenseVector}.
@@ -48,13 +52,14 @@ public class DenseVector implements Vector {
     }
 
     /**
-     * Create a {@code DenseVector} taking the values given by {@code
-     * vector}.
+     * Create a {@code DenseVector} taking the values given by {@code vector}.
+     * The created vector contains no references to the provided array, so
+     * changes to either will not be reflected in the other.
      *
      * @param vector The vector values to start with.
      */
     public DenseVector(double[] vector) {
-        this.vector = vector;
+        this.vector = Arrays.copyOf(vector, vector.length);
     }
 	
     /**
@@ -63,7 +68,7 @@ public class DenseVector implements Vector {
      *
      * @param vector The {@code Vector} to copy from.
      */
-    public DenseVector(Vector vector) {
+    public DenseVector(DoubleVector vector) {
         this.vector = new double[vector.length()];
 
         for (int i = 0; i < vector.length(); ++i)
@@ -88,8 +93,8 @@ public class DenseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public void set(double[] values) {
-        vector = Arrays.copyOf(values, vector.length);
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
     }
 
     /**
@@ -102,11 +107,15 @@ public class DenseVector implements Vector {
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        double[] array = new double[size];
-        for (int i = 0; i < size && i < vector.length; ++i)
-            array[i] = vector[i];
-        return array;
+    public Double getValue(int index) {
+        return get(index);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double[] toArray() {
+        return Arrays.copyOf(vector, vector.length);
     }
 
     /**

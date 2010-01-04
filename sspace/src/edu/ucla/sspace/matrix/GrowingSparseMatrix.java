@@ -22,10 +22,10 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 
-import edu.ucla.sspace.vector.SparseHashVector;
-import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.util.HashMap;
@@ -43,13 +43,14 @@ import java.util.Map;
  * #getColumnVector(int) getColumnVector} return a snapshot of the matrix data
  * at the time of the call.  Subsequent updates to the matrix will not be
  * reflected in these vectors.  The returned vectors are immutable and any calls
- * to mutating operations will throw an {@code UnsupportedOperationException}.
+ * to mutating operations will throw an {@code
+ * UnsupportedOperationException}. <p>
  *
  * This class is not thread-safe.
  *
  * @author Keith Stevens 
  */
-public class GrowingSparseMatrix implements Matrix {
+public class GrowingSparseMatrix implements SparseMatrix {
 
     /**
      * The current number of rows in this {@code GrowingSparseMatrix}.
@@ -115,33 +116,41 @@ public class GrowingSparseMatrix implements Matrix {
     }
 
     /**
-     * Returns a {@link SparseVector} of the contents of the column.
+     * Returns a {@link DoubleVector} of the contents of the column.
      *
      * @param column {@inheritDoc}
      * @return {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
-        return new SparseHashVector(getColumn(column));
+    public SparseDoubleVector getColumnVector(int column) {
+        SparseDoubleVector values = new SparseHashDoubleVector(rows);
+        for (int row = 0; row < rows; ++row) {
+            double d = get(row, column);
+            if (d != 0)
+                values.set(row, d);
+        }
+        return values;
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        return rowToColumns.get(row).toArray(cols);
+        return toArray(rowToColumns.get(row) ,cols);
     }
 
     /**
-     * Returns a {@link SparseVector} of the contents of the row.
+     * Returns a {@link DoubleVector} of the contents of the row.  The length of
+     * the returned row vector reflects the size of matrix at the time of the
+     * call, which may be different from earlier calls to {@link #columns()}.
      *
      * @param row {@inheritDoc}
      * @return {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
-        Vector v = rowToColumns.get(row);
-        return (v == null)
-            ? new SparseHashVector(cols)
-            : Vectors.view(v, 0, cols);
+    public SparseDoubleVector getRowVector(int row) {
+        SparseDoubleVector v = rowToColumns.get(row);
+        return (v != null)
+            ? Vectors.subview(v, 0, cols)
+            : new CompactSparseVector(cols);
     }
 
     /**
@@ -187,7 +196,7 @@ public class GrowingSparseMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         for (int row = 0; row < rows(); ++row)
             set(row, column, values.get(row));
     }
@@ -226,7 +235,7 @@ public class GrowingSparseMatrix implements Matrix {
      * When the matrix is expanded by either dimension, the values for the new
      * row/column will all be assumed to be zero.
      */
-    public void setRow(int row, Vector columns) {
+    public void setRow(int row, DoubleVector columns) {
         checkIndices(row, columns.length() -1);
 
         if (cols <= columns.length())
@@ -245,12 +254,10 @@ public class GrowingSparseMatrix implements Matrix {
      * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-        double[][] m = new double[rows()][cols];
-        for (int r = 0; r < rows; ++r) {
-            CompactSparseVector v = rowToColumns.get(r);
-            if (v != null) 
-                m[r] = v.toArray(cols);
-        }
+        double[][] m = new double[rows][cols];
+
+        for (int r = 0; r < rows; ++r) 
+            m[r] = toArray(rowToColumns.get(r), cols);
         return m;
     }
 
@@ -259,5 +266,19 @@ public class GrowingSparseMatrix implements Matrix {
      */
     public int rows() {
         return rows;
+    }
+
+    /**
+     * Returns an array of the specified length using the data in the provided
+     * vector.  This method allows row vectors to be converted to arrays based
+     * on the size of the matrix at the time of the call, thereby prevent
+     * changes in length due to external vector modifications.
+     */
+    private static double[] toArray(DoubleVector v, int length) {
+        double[] arr = new double[length];
+        for (int i = 0; i < arr.length; ++i) {
+            arr[i] = v.get(i);
+        }
+        return arr;
     }
 }

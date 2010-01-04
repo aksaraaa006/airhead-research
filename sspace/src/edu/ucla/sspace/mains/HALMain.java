@@ -23,6 +23,7 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.hal.HyperspaceAnalogueToLanguage;
 
@@ -90,8 +91,8 @@ import java.util.Properties;
  *        .sspace}) file.  See {@link edu.ucla.sspace.common.SemanticSpaceUtils
  *        SemanticSpaceUtils} for format details.
  *
- *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
- *        documents.  The default is one per core.
+ *   <li> {@code -t}, {@code --threads=INT} how many threads to use when
+ *        processing the documents.  The default is one per core.
  * 
  *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
  *        the existing output files.  The default is {@code true}.  If set to
@@ -128,94 +129,110 @@ public class HALMain extends GenericMain {
     private HALMain() { }
 
     /**
-     * Adds all of the options to the {@link ArgOptions}.
+     * {@inheritDoc}
      */
     protected void addExtraOptions(ArgOptions options) {
-	options.addOption('F', "tokenFilter", "filters to apply to the input " +
-			  "token stream", true, "FILTER_SPEC", 
-			  "Algorithm Options");
-	options.addOption('h', "threshold", "minimum entropy for semantic " +
-			  "dimensions (default: disabled)", true,
-			  "DOUBLE", "Algorithm Options");
-	options.addOption('r', "retain", "maximum number of dimensions " +
-			  "(default: disabled)", true,
-			  "INT", "Algorithm Options");
-	options.addOption('s', "windowSize", "how many words to consider " +
-			  "in each direction (default: 5)", true,
-			  "INT", "Algorithm Options");
-	options.addOption('W', "weighting", "WeightingFunction class name"
-			  + "(default: LinearWeighting)", true,
-			  "CLASSNAME", "Algorithm Options");
+        options.addOption('h', "threshold", "minimum entropy for semantic " +
+                          "dimensions (default: disabled)", true,
+                          "DOUBLE", "Algorithm Options");
+        options.addOption('r', "retain",
+                          "maximum number of dimensions to retain" +
+                          "(default: disabled)", true,
+                          "INT", "Algorithm Options");
+        options.addOption('s', "windowSize",
+                          "The number of words to inspect to the left and " +
+                          "right of a focus word (default: 5)",
+                          true, "INT", "Algorithm Options");
+        options.addOption('W', "weighting", "WeightingFunction class name"
+                          + "(default: LinearWeighting)", true,
+                          "CLASSNAME", "Algorithm Options");
     }
 
     public static void main(String[] args) {
-	HALMain hal = new HALMain();
-	try {
-	    hal.run(args);
-	}
-	catch (Throwable t) {
-	    t.printStackTrace();
-	}
+        HALMain hal = new HALMain();
+        try {
+            hal.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
     
-    protected SemanticSpace getSpace() {
-	return new HyperspaceAnalogueToLanguage();
+    /**
+     * {@inheritDoc}
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    protected SemanticSpace getSpace() {
+        return new HyperspaceAnalogueToLanguage();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     protected Properties setupProperties() {
-	// use the System properties in case the user specified them as
-	// -Dprop=<val> to the JVM directly.
-	Properties props = System.getProperties();
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
+        Properties props = System.getProperties();
 
- 	if (argOptions.hasOption("windowSize")) {
- 	    props.setProperty(HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
- 			      argOptions.getStringOption("windowSize"));
- 	}
+         if (argOptions.hasOption("windowSize")) {
+             props.setProperty(
+                     HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
+                     argOptions.getStringOption("windowSize"));
+         }
 
- 	if (argOptions.hasOption("threshold")) {
- 	    props.setProperty(HyperspaceAnalogueToLanguage.ENTROPY_THRESHOLD_PROPERTY,
- 			      argOptions.getStringOption("threshold"));
- 	}
+         if (argOptions.hasOption("threshold")) {
+             props.setProperty(
+                     HyperspaceAnalogueToLanguage.ENTROPY_THRESHOLD_PROPERTY,
+                     argOptions.getStringOption("threshold"));
+         }
 
- 	if (argOptions.hasOption("retain")) {
- 	    props.setProperty(HyperspaceAnalogueToLanguage.RETAIN_PROPERTY,
- 			      argOptions.getStringOption("retain"));
- 	}
+         if (argOptions.hasOption("retain")) {
+             props.setProperty(
+                     HyperspaceAnalogueToLanguage.RETAIN_PROPERTY,
+                     argOptions.getStringOption("retain"));
+         }
 
- 	if (argOptions.hasOption("weighting")) {
- 	    props.setProperty(HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
- 			      argOptions.getStringOption("weighting"));
- 	}	
+         if (argOptions.hasOption("weighting")) {
+             props.setProperty(
+                     HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
+                     argOptions.getStringOption("weighting"));
+         }        
 
-	return props;
+        return props;
     }
 
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
     public void usage() {
- 	System.out.println(
- 	    "usage: java HALMain [options] <output-dir>\n" + 
-	    argOptions.prettyPrint() + "\n" +
+         System.out.println(
+             "usage: java HALMain [options] <output-dir>\n" + 
+            argOptions.prettyPrint() + "\n" +
 
             // HAL specifics
-	    "Note that the --retain and --threshold properties are mutually " + 
-	    "exclusive;\nusing both will cause an exception\n\n" + 
+            "Note that the --retain and --threshold properties are mutually " + 
+            "exclusive;\nusing both will cause an exception\n\n" + 
 
             // Token Filter Description
-	    "Token filter configurations are specified as a comman-separated " +
-	    "list of file\nnames, where each file name has an optional string" +
-	    " with values:inclusive or\nexclusive, which species whether the" +
-	    " token are to be used for an exclusive\nfilter. The default " +
-	    "value is include. An example configuration might look like:\n" +
-	    "  --tokenFilter=english-dictionary.txt=include," +
-	    "stop-list.txt=exclude" +
+            "Token filter configurations are specified as a comman-separated " +
+            "list of file\nnames, where each file name has an optional string" +
+            " with values:inclusive or\nexclusive, which species whether the" +
+            " token are to be used for an exclusive\nfilter. The default " +
+            "value is include. An example configuration might look like:\n" +
+            "  --tokenFilter=english-dictionary.txt=include," +
+            "stop-list.txt=exclude" +
 
             // Compound Token Description
-	    "\n\nThe -C, --compoundWords option specifies a file name of " +
-	    "multiple tokens that\nshould be counted as a single word, e.g." +
-	    " \"white house\".  Each compound\ntoken should be specified on " +
-	    "its own line." +
+            "\n\nThe -C, --compoundWords option specifies a file name of " +
+            "multiple tokens that\nshould be counted as a single word, e.g." +
+            " \"white house\".  Each compound\ntoken should be specified on " +
+            "its own line." +
 
             // S-Space Format
             "\n\nThe output of the program is a semantic space stored in the " +
@@ -223,6 +240,6 @@ public class HALMain extends GenericMain {
             "and sparse_binary." +
 
             // Tag
-	    "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
+            "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
     }
 }

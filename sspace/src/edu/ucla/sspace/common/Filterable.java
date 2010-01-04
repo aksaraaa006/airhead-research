@@ -27,9 +27,9 @@ import java.util.Set;
 /**
  * A marker interface that indicates that this class supports selectively
  * filtering which words have their semantics retained.  The {@link
- * #setSemanticFilter(Set)} method can be used to speficy which words should have
- * their semantics retained.  Note that the words that are filtered out will
- * still be used in computing the semantics of <i>other</i> words.  This
+ * #setSemanticFilter(Set)} method can be used to speficy which words should
+ * have their semantics retained.  Note that the words that are filtered out
+ * will still be used in computing the semantics of <i>other</i> words.  This
  * behavior is intended for use with a large corpora where retaining the
  * semantics of all words in memory is infeasible.<p>
  *

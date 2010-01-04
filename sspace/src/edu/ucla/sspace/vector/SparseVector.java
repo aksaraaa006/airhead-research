@@ -21,17 +21,17 @@
 
 package edu.ucla.sspace.vector;
 
+
 /**
- * Interface for a {@code Vector} implementation indicating that it is
- * sparse, and providing functionality to retrieve the non zero indices.
+ * An interface for {@code Vector} implementations whose values are sparse and
+ * that support access to only those indices with non-zero values.
  *
  * @author Keith Stevens
  */
-public interface SparseVector extends Vector {
+public interface SparseVector<T extends Number> extends Vector<T> {
 
     /**
-     * Return an array of all the non zero indices in this Sparse
-     * implementation.
+     * Returns all the indices whose values are non-zero
      */
     int[] getNonZeroIndices();
 }

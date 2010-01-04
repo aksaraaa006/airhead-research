@@ -84,7 +84,7 @@ public class StaticSemanticSpace implements SemanticSpace {
      * A mapping of terms to row indexes.  Also serves as a quick means of
      * retrieving the words known by this {@link SemanticSpace}.
      */
-    private Map<String, Integer> termToIndex;
+    private Map<String, Integer> termToIndex ;
 
     /**
      * The name of this semantic space.

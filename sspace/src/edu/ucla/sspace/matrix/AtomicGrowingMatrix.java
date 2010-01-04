@@ -25,7 +25,7 @@ import edu.ucla.sspace.util.IntegerMap;
 
 import edu.ucla.sspace.vector.AtomicVector;
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.util.Arrays;
@@ -79,7 +79,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * Each row is defined as a {@link AtomicVector} which does most of the
      * work.
      */
-    private final Map<Integer,AtomicVector> sparseMatrix;
+    private final Map<Integer, AtomicVector> sparseMatrix;
 
     /**
      * Create an {@code AtomicGrowingMatrix} with 0 rows and 0 columns.
@@ -165,15 +165,12 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * matrix at the time of the call, which may be different from earlier calls
      * to {@link #rows()}
      */
-    public Vector getColumnVector(int column) {
+    public DoubleVector getColumnVector(int column) {
         checkIndices(0, column);
         rowReadLock.lock();
-        Vector values = new CompactSparseVector(rows.get());
-        for (int row = 0; row < rows.get(); ++row) {
-            double d = get(row, column);
-            if (d != 0)
-                values.set(row,d);
-        }
+        DoubleVector values = new CompactSparseVector(rows.get());
+        for (int row = 0; row < rows.get(); ++row)
+            values.set(row, get(row, column));
         rowReadLock.unlock();
         return values;
     }
@@ -188,7 +185,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         AtomicVector rowEntry = getRow(row, -1, false);
         return (rowEntry == null)
             ? new double[cols.get()]
-            : rowEntry.toArray(cols.get());
+            : toArray(rowEntry, cols.get());
     }
 
     /**
@@ -237,16 +234,16 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     /**
      * {@inheritDoc} The length of the returned row vector reflects the size of
      * matrix at the time of the call, which may be different from earlier calls
-     * to {@link #columns()}
+     * to {@link #columns()}.
      */
-    public Vector getRowVector(int row) {
-        Vector v = getRow(row, -1, false);
+    public DoubleVector getRowVector(int row) {
+        DoubleVector v = getRow(row, -1, false);
         // If no row was currently assigned in the matrix, then return an empty
         // vector in its place.  Otherwise, return a view on top of the vector
         // with its current length
         return (v == null) 
             ? new CompactSparseVector(cols.get())
-            : Vectors.view(v, 0, cols.get());
+            : Vectors.subview(v, 0, cols.get());
     }
 
     /**
@@ -280,7 +277,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     /**
      * @{inheritDoc}
      */
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         checkIndices(0, column);
         for (int row = 0; row < rows.get(); ++row)
             set(row, column, values.get(row));
@@ -293,14 +290,15 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         checkIndices(row, 0);
         AtomicVector rowEntry = getRow(row, columns.length - 1, true);
         denseArrayReadLock.lock();
-        rowEntry.set(columns);
+        for (int i = 0; i < columns.length; ++i)
+            rowEntry.set(i, columns[i]);
         denseArrayReadLock.unlock();
     }
 
     /**
      * @{inheritDoc}
      */
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         checkIndices(row, 0);
         AtomicVector rowEntry = getRow(row, values.length() - 1, true);
         denseArrayReadLock.lock();
@@ -320,10 +318,24 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         int c = cols.get();
         double[][] m = new double[rows.get()][c];
         for (Map.Entry<Integer, AtomicVector> e : sparseMatrix.entrySet()) {
-            m[e.getKey()] = e.getValue().toArray(c);
+            m[e.getKey()] = toArray(e.getValue(), c);
         }
         denseArrayWriteLock.unlock();
         rowWriteLock.unlock();
         return m;
+    }
+
+    /**
+     * Returns an array of the specified length using the data in the provided
+     * vector.  This method allows row vectors to be converted to arrays based
+     * on the size of the matrix at the time of the call, thereby prevent
+     * changes in length due to external vector modifications.
+     */
+    private static double[] toArray(DoubleVector v, int length) {
+        double[] arr = new double[length];
+        for (int i = 0; i < arr.length; ++i) {
+            arr[i] = v.get(i);
+        }
+        return arr;
     }
 }

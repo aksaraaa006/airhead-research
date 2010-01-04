@@ -60,8 +60,8 @@
 	    debug="true" debuglevel="lines,source">
        <compilerarg value="-Xlint"/>
        <compilerarg value="-g"/>
-      <include name="src/**"/>
-      <include name="lib/**"/>
+       <include name="src/**"/>
+       <include name="lib/**"/>
     </javac>  
   </target>
 
@@ -90,7 +90,7 @@
   </target>
   
   <target name="sspace-jar" depends="compile">
-    <jar destfile="${lib.dir}/sspace-lib.jar" basedir="classes">
+    <jar destfile="${bin.dir}/sspace-lib.jar" basedir="classes">
       <include name="edu/**/*.class"/>
       <exclude name="jnt/*"/>
       <manifest>
@@ -106,7 +106,7 @@
   </target>
 
   <target name="sspace-src-jar" depends="compile">
-    <jar destfile="${lib.dir}/sspace-src.jar" basedir="src">
+    <jar destfile="${bin.dir}/sspace-src.jar" basedir="src">
       <include name="edu/**/*.java"/>
       <manifest>
         <!-- Who is building this jar? -->
@@ -255,6 +255,8 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
+      <!-- Comment block for excluding the testing a specific set of files.
+      -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
@@ -262,6 +264,8 @@
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
@@ -273,9 +277,13 @@
       <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.text.DocumentPreprocessorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.IteratorFactoryTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.StringUtilsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.PatPhoTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.PorterStemmerTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestCompoundWordIterator" todir="${report.dir}"/>
 
@@ -286,12 +294,8 @@
       <test name="edu.ucla.sspace.util.TreeMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
-
-      <test name="edu.ucla.sspace.evaluation.WordSelectionEvalTest" todir="${report.dir}"/>
-
-      <test name="edu.ucla.sspace.ri.TestPermutation" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
-
+      <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
     </junit>
   </target>
 

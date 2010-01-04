@@ -133,8 +133,8 @@ public abstract class GenericMain {
 
     public GenericMain(boolean isMultiThreaded) {
         this.isMultiThreaded = isMultiThreaded;
-	argOptions = setupOptions();
-	verbose = false;
+        argOptions = setupOptions();
+        verbose = false;
     }
 
     /**
@@ -150,10 +150,11 @@ public abstract class GenericMain {
     abstract public void usage();
 
     /**
-     * Returns the {@link SemanticSpaceIO.SSpaceFormat format} in which the finished
-     * {@code SemanticSpace} should be saved.  Subclasses should override this
-     * function if they want to specify a specific format that is most suited
-     * for their space, when one is not manually specified by the user.
+     * Returns the {@link SemanticSpaceIO.SSpaceFormat format} in which the
+     * finished {@code SemanticSpace} should be saved.  Subclasses should
+     * override this function if they want to specify a specific format that is
+     * most suited for their space, when one is not manually specified by the
+     * user.
      *
      * @return the format in which the semantic space will be saved
      */
@@ -197,8 +198,8 @@ public abstract class GenericMain {
      * @return the {@code Properties} used for processing the semantic space.
      */
     protected Properties setupProperties() {
-	Properties props = System.getProperties();
-	return props;
+        Properties props = System.getProperties();
+        return props;
     }
 
     /**
@@ -207,35 +208,38 @@ public abstract class GenericMain {
      * different instance if the default options need to be different.
      */
     protected ArgOptions setupOptions() {
-	ArgOptions options = new ArgOptions();
-	options.addOption('f', "fileList", "a list of document files", 
-			  true, "FILE[,FILE...]", "Required (at least one of)");
-	options.addOption('d', "docFile", 
-			  "a file where each line is a document", true,
-			  "FILE[,FILE...]", "Required (at least one of)");
+        ArgOptions options = new ArgOptions();
+        options.addOption('f', "fileList", "a list of document files", 
+                          true, "FILE[,FILE...]", "Required (at least one of)");
+        options.addOption('d', "docFile", 
+                          "a file where each line is a document", true,
+                          "FILE[,FILE...]", "Required (at least one of)");
 
-	options.addOption('o', "outputFormat", "the .sspace format to use",
-			  true, "FORMAT", 
-			  "Program Options");
+        options.addOption('o', "outputFormat", "the .sspace format to use",
+                          true, "FORMAT", 
+                          "Program Options");
         if (isMultiThreaded) {
             options.addOption('t', "threads", "the number of threads to use",
                               true, "INT", "Program Options");
         }
-	options.addOption('w', "overwrite", "specifies whether to " +
-			  "overwrite the existing output", true, "BOOL",
-			  "Program Options");
-	options.addOption('v', "verbose", "prints verbose output",
-			  false, null, "Program Options");
+        options.addOption('w', "overwrite", "specifies whether to " +
+                          "overwrite the existing output", true, "BOOL",
+                          "Program Options");
+        options.addOption('v', "verbose", "prints verbose output",
+                          false, null, "Program Options");
 
-	options.addOption('F', "tokenFilter", "filters to apply to the input " +
-			  "token stream", true, "FILTER_SPEC", 
-			  "Tokenizing Options");
-	options.addOption('C', "compoundWords", "a file where each line is a " +
-			  "recognized compound word", true, "FILE", 
-			  "Tokenizing Options");
+        options.addOption('Z', "useStemming", "Set to true if words should " + 
+                          "be stemmed using the Porter Stemming algorithm",
+                          false, null, "Tokenizing Options");
+        options.addOption('F', "tokenFilter", "filters to apply to the input " +
+                          "token stream", true, "FILTER_SPEC", 
+                          "Tokenizing Options");
+        options.addOption('C', "compoundWords", "a file where each line is a " +
+                          "recognized compound word", true, "FILE", 
+                          "Tokenizing Options");
 
-	addExtraOptions(options);
-	return options;
+        addExtraOptions(options);
+        return options;
     }
 
     /**
@@ -248,44 +252,44 @@ public abstract class GenericMain {
      */
 
     protected Iterator<Document> getDocumentIterator() throws IOException {
-	Iterator<Document> docIter = null;
+        Iterator<Document> docIter = null;
 
-	String fileList = (argOptions.hasOption("fileList"))
-	    ? argOptions.getStringOption("fileList")
-	    : null;
+        String fileList = (argOptions.hasOption("fileList"))
+            ? argOptions.getStringOption("fileList")
+            : null;
 
-	String docFile = (argOptions.hasOption("docFile"))
-	    ? argOptions.getStringOption("docFile")
-	    : null;
-	if (fileList == null && docFile == null) {
-	    throw new Error("must specify document sources");
-	}
+        String docFile = (argOptions.hasOption("docFile"))
+            ? argOptions.getStringOption("docFile")
+            : null;
+        if (fileList == null && docFile == null) {
+            throw new Error("must specify document sources");
+        }
 
-	// Second, determine where the document input sources will be coming
-	// from.
-	Collection<Iterator<Document>> docIters = 
-	    new LinkedList<Iterator<Document>>();
+        // Second, determine where the document input sources will be coming
+        // from.
+        Collection<Iterator<Document>> docIters = 
+            new LinkedList<Iterator<Document>>();
 
-	if (fileList != null) {
-	    String[] fileNames = fileList.split(",");
-	    // we have a file that contains the list of all document files we
-	    // are to process
-	    for (String s : fileNames) {
-		docIters.add(new FileListDocumentIterator(s));
-	    }
-	}
-	if (docFile != null) {
-	    String[] fileNames = docFile.split(",");
-	    // all the documents are listed in one file, with one document per
-	    // line
-	    for (String s : fileNames) {
-		docIters.add(new OneLinePerDocumentIterator(s));
-	    }
-	}
+        if (fileList != null) {
+            String[] fileNames = fileList.split(",");
+            // we have a file that contains the list of all document files we
+            // are to process
+            for (String s : fileNames) {
+                docIters.add(new FileListDocumentIterator(s));
+            }
+        }
+        if (docFile != null) {
+            String[] fileNames = docFile.split(",");
+            // all the documents are listed in one file, with one document per
+            // line
+            for (String s : fileNames) {
+                docIters.add(new OneLinePerDocumentIterator(s));
+            }
+        }
 
-	// combine all of the document iterators into one iterator.
-	docIter = new CombinedIterator<Document>(docIters);
-	return docIter;
+        // combine all of the document iterators into one iterator.
+        docIter = new CombinedIterator<Document>(docIters);
+        return docIter;
     }
 
     /**
@@ -296,23 +300,23 @@ public abstract class GenericMain {
      *        SemanticSpace}
      */
     public void run(String[] args) throws Exception {
-	if (args.length == 0) {
-	    usage();
-	    System.exit(1);
-	}
-	argOptions.parseOptions(args);
-	
-	if (argOptions.numPositionalArgs() == 0) {
-	    throw new IllegalArgumentException("must specify output directory");
-	}
-
-	File outputDir = new File(argOptions.getPositionalArg(0));
-	if (!outputDir.isDirectory()){
-	    throw new IllegalArgumentException(
-		"output directory is not a directory: " + outputDir);
-	}
+        if (args.length == 0) {
+            usage();
+            System.exit(1);
+        }
+        argOptions.parseOptions(args);
         
-	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+        if (argOptions.numPositionalArgs() == 0) {
+            throw new IllegalArgumentException("must specify output directory");
+        }
+
+        File outputDir = new File(argOptions.getPositionalArg(0));
+        if (!outputDir.isDirectory()){
+            throw new IllegalArgumentException(
+                "output directory is not a directory: " + outputDir);
+        }
+        
+        verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
         // If verbose output is enabled, update all the loggers in the S-Space
         // package logging tree to output at Level.FINE (normally, it is
         // Level.INFO).  This provides a more detailed view of how the execution
@@ -326,69 +330,72 @@ public abstract class GenericMain {
             appRooLogger.setUseParentHandlers(false);
         }
 
-	// all the documents are listed in one file, with one document per line
-	Iterator<Document> docIter = getDocumentIterator();
-	
+        // all the documents are listed in one file, with one document per line
+        Iterator<Document> docIter = getDocumentIterator();
+        
         // Check whether this class supports mutlithreading when deciding how
         // many threads to use by default
-	int numThreads = (isMultiThreaded)
+        int numThreads = (isMultiThreaded)
             ? Runtime.getRuntime().availableProcessors()
             : 1;
-	if (argOptions.hasOption("threads")) {
-	    numThreads = argOptions.getIntOption("threads");
-	}
+        if (argOptions.hasOption("threads")) {
+            numThreads = argOptions.getIntOption("threads");
+        }
 
-	boolean overwrite = true;
-	if (argOptions.hasOption("overwrite")) {
-	    overwrite = argOptions.getBooleanOption("overwrite");
-	}
-	
-	handleExtraOptions();
+        boolean overwrite = true;
+        if (argOptions.hasOption("overwrite")) {
+            overwrite = argOptions.getBooleanOption("overwrite");
+        }
+        
+        handleExtraOptions();
 
-	Properties props = setupProperties();
+        Properties props = setupProperties();
 
-	// Initialize the IteratorFactory to tokenize the documents according to
-	// the specified configuration (e.g. filtering, compound words)
-	if (argOptions.hasOption("tokenFilter")) {
-	    props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
-			      argOptions.getStringOption("tokenFilter"));	    
-	}
+        // Initialize the IteratorFactory to tokenize the documents according to
+        // the specified configuration (e.g. filtering, compound words)
+        if (argOptions.hasOption("tokenFilter")) {
+            props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
+                              argOptions.getStringOption("tokenFilter"));            
+        }
 
-	if (argOptions.hasOption("compoundWords")) {
-	    props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
-			      argOptions.getStringOption("compoundWords"));
-	}
-	IteratorFactory.setProperties(props);
+        if (argOptions.hasOption("useStemming"))
+            props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
 
-	// use the System properties in case the user specified them as
-	// -Dprop=<val> to the JVM directly.
+        if (argOptions.hasOption("compoundWords")) {
+            props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
+                              argOptions.getStringOption("compoundWords"));
+        }
+        IteratorFactory.setProperties(props);
 
-	SemanticSpace space = getSpace(); 
-	
-	parseDocumentsMultiThreaded(space, docIter, numThreads);
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
 
-	long startTime = System.currentTimeMillis();
-	space.processSpace(props);
-	long endTime = System.currentTimeMillis();
-	verbose("processed space in %.3f seconds",
-		((endTime - startTime) / 1000d));
-	
-	File output = (overwrite)
-	    ? new File(outputDir, space.getSpaceName() + EXT)
-	    : File.createTempFile(space.getSpaceName(), EXT, outputDir);
+        SemanticSpace space = getSpace(); 
+        
+        parseDocumentsMultiThreaded(space, docIter, numThreads);
 
-	SSpaceFormat format = (argOptions.hasOption("outputFormat"))
-	    ? SSpaceFormat.valueOf(
-	        argOptions.getStringOption("outputFormat").toUpperCase())
-	    : getSpaceFormat();
+        long startTime = System.currentTimeMillis();
+        space.processSpace(props);
+        long endTime = System.currentTimeMillis();
+        verbose("processed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+        
+        File output = (overwrite)
+            ? new File(outputDir, space.getSpaceName() + EXT)
+            : File.createTempFile(space.getSpaceName(), EXT, outputDir);
 
-	startTime = System.currentTimeMillis();
-	SemanticSpaceIO.save(space, output, format);
-	endTime = System.currentTimeMillis();
-	verbose("printed space in %.3f seconds",
-		((endTime - startTime) / 1000d));
+        SSpaceFormat format = (argOptions.hasOption("outputFormat"))
+            ? SSpaceFormat.valueOf(
+                argOptions.getStringOption("outputFormat").toUpperCase())
+            : getSpaceFormat();
 
-	postProcessing();
+        startTime = System.currentTimeMillis();
+        SemanticSpaceIO.save(space, output, format);
+        endTime = System.currentTimeMillis();
+        verbose("printed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+
+        postProcessing();
     }
 
     /**
@@ -400,26 +407,26 @@ public abstract class GenericMain {
      * @param docIter an iterator over all the documents to process
      */
     protected void parseDocumentsSingleThreaded(SemanticSpace sspace,
-						Iterator<Document> docIter)
-	throws IOException {
+                                                Iterator<Document> docIter)
+        throws IOException {
 
-	long processStart = System.currentTimeMillis();
-	int count = 0;
+        long processStart = System.currentTimeMillis();
+        int count = 0;
 
-	while (docIter.hasNext()) {
-	    long startTime = System.currentTimeMillis();
-	    Document doc = docIter.next();
-	    int docNumber = ++count;
-	    int terms = 0;
-	    sspace.processDocument(doc.reader());
-	    long endTime = System.currentTimeMillis();
-	    verbose("processed document #%d in %.3f seconds",
-		    docNumber, ((endTime - startTime) / 1000d));
-	}
+        while (docIter.hasNext()) {
+            long startTime = System.currentTimeMillis();
+            Document doc = docIter.next();
+            int docNumber = ++count;
+            int terms = 0;
+            sspace.processDocument(doc.reader());
+            long endTime = System.currentTimeMillis();
+            verbose("processed document #%d in %.3f seconds",
+                    docNumber, ((endTime - startTime) / 1000d));
+        }
 
-	verbose("processed %d document in %.3f total seconds)",
-		count,
-		((System.currentTimeMillis() - processStart) / 1000d));	    
+        verbose("processed %d document in %.3f total seconds)",
+                count,
+                ((System.currentTimeMillis() - processStart) / 1000d));            
     }
 
     /**
@@ -433,54 +440,54 @@ public abstract class GenericMain {
      * @param numThreads the number of threads to use
      */
     protected void parseDocumentsMultiThreaded(final SemanticSpace sspace,
-					       final Iterator<Document> docIter,
-					       int numThreads)	
-	throws IOException, InterruptedException {
+                                               final Iterator<Document> docIter,
+                                               int numThreads)        
+        throws IOException, InterruptedException {
 
-	Collection<Thread> threads = new LinkedList<Thread>();
+        Collection<Thread> threads = new LinkedList<Thread>();
 
-	final AtomicInteger count = new AtomicInteger(0);
+        final AtomicInteger count = new AtomicInteger(0);
 
-	
-	for (int i = 0; i < numThreads; ++i) {
-	    Thread t = new Thread() {
-		    public void run() {
-			// repeatedly try to process documents while some still
-			// remain
-			while (docIter.hasNext()) {
-			    long startTime = System.currentTimeMillis();
-			    Document doc = docIter.next();
-			    int docNumber = count.incrementAndGet();
-			    int terms = 0;
-			    try {
-				sspace.processDocument(doc.reader());
-			    } catch (Throwable t) {
-				t.printStackTrace();
-			    }
-			    long endTime = System.currentTimeMillis();
-			    verbose("parsed document #%d in %.3f seconds",
-				    docNumber, ((endTime - startTime) / 1000d));
-			}
-		    }
-		};
-	    threads.add(t);
-	}
+        
+        for (int i = 0; i < numThreads; ++i) {
+            Thread t = new Thread() {
+                public void run() {
+                    // repeatedly try to process documents while some still
+                    // remain
+                    while (docIter.hasNext()) {
+                        long startTime = System.currentTimeMillis();
+                        Document doc = docIter.next();
+                        int docNumber = count.incrementAndGet();
+                        int terms = 0;
+                        try {
+                            sspace.processDocument(doc.reader());
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                        long endTime = System.currentTimeMillis();
+                        verbose("parsed document #%d in %.3f seconds",
+                                docNumber, ((endTime - startTime) / 1000d));
+                    }
+                }
+            };
+            threads.add(t);
+        }
 
-	long threadStart = System.currentTimeMillis();
-	
-	// start all the threads processing
-	for (Thread t : threads)
-	    t.start();
+        long threadStart = System.currentTimeMillis();
+        
+        // start all the threads processing
+        for (Thread t : threads)
+            t.start();
 
-	verbose("Beginning processing using %d threads", numThreads);
+        verbose("Beginning processing using %d threads", numThreads);
 
-	// wait until all the documents have been parsed
-	for (Thread t : threads)
-	    t.join();
+        // wait until all the documents have been parsed
+        for (Thread t : threads)
+            t.join();
 
-	verbose("parsed %d document in %.3f total seconds)",
-		count.get(),
-		((System.currentTimeMillis() - threadStart) / 1000d));
+        verbose("parsed %d document in %.3f total seconds)",
+                count.get(),
+                ((System.currentTimeMillis() - threadStart) / 1000d));
     }
 
     /**
@@ -488,19 +495,19 @@ public abstract class GenericMain {
      * word is expected to be on its own line.
      */
     protected static Set<String> loadValidTermSet(String validTermsFileName) 
-	throws IOException {
+        throws IOException {
 
-	Set<String> validTerms = new HashSet<String>();
-	BufferedReader br = new BufferedReader(
-	    new FileReader(validTermsFileName));
-	
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    validTerms.add(line);
-	}
-	 
-	br.close();
+        Set<String> validTerms = new HashSet<String>();
+        BufferedReader br = new BufferedReader(
+            new FileReader(validTermsFileName));
+        
+        for (String line = null; (line = br.readLine()) != null; ) {
+            validTerms.add(line);
+        }
+         
+        br.close();
 
-	return validTerms;
+        return validTerms;
     }
 
     protected void verbose(String msg) {
@@ -509,6 +516,6 @@ public abstract class GenericMain {
 
     protected void verbose(String format, Object... args) {
         if (LOGGER.isLoggable(Level.FINE))
-            LOGGER.fine(String.format(format, args));	
+            LOGGER.fine(String.format(format, args));        
     }
 }
