@@ -95,8 +95,8 @@ public class VectorIO {
         StringBuilder sb = new StringBuilder(vector.length() * 5);
         
         for (int i = 0; i < vector.length() - 1; ++i)
-            sb.append(vector.get(i)).append(" ");
-        sb.append(vector.get(vector.length() - 1));
+            sb.append(vector.getValue(i).doubleValue()).append(" ");
+        sb.append(vector.getValue(vector.length() - 1).doubleValue());
         
         return sb.toString();
     }

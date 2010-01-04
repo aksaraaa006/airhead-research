@@ -158,6 +158,76 @@ public class SVD {
     }
 
     /**
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix using the
+     * fastest available SVD algorithm to generate the specified number of singular
+     * values.
+     *
+     * @param m the matrix on which the SVD should be computed
+     * @param dimensions the number of singular values to calculate
+     *
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
+     *
+     * @throws UnsupportedOperationException if no SVD algorithm is available
+     */
+    public static Matrix[] svd(Matrix m, int dimensions) {
+        // Determine which algorithm is the fastest in order to decide which
+        // format the matrix file should be written
+        return svd(m, getFastestAvailableAlgorithm(), dimensions);
+    }
+
+    /**
+     * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix using the
+     * specified SVD algorithm to generate the specified number of singular
+     * values.
+     *
+     * @param m the matrix on which the SVD should be computed
+     * @param algorithm the algorithm to use in computing the SVD
+     * @param dimensions the number of singular values to calculate
+     *
+     * @return an array of {@code Matrix} objects for the U, S, and
+     *         V<sup>T</sup> matrices in that order
+     *
+     * @throws UnsupportedOperationException if no SVD algorithm is available
+     */
+    public static Matrix[] svd(Matrix m, Algorithm algorithm, int dimensions) {
+        // Determine which algorithm is the fastest in order to decide which
+        // format the matrix file should be written
+        Algorithm fastest = getFastestAvailableAlgorithm();
+        if (fastest == null)
+            throw new UnsupportedOperationException(
+                "No SVD algorithm is available on this system");
+        Format fmt = null;
+        switch (fastest) {
+        case SVDLIBC:
+            fmt = Format.SVDLIBC_SPARSE_BINARY;
+            break;
+        // In the case of COLT or JAMA, avoid writing the matrix to disk
+        // altogether, and just pass it in directly.  This avoids the I/O
+        // overhead, althought both methods require that the matrix be converted
+        // into arrays first.
+        case COLT:
+            return coltSVD(m.toDenseArray(), !(m instanceof SparseMatrix), 
+                           dimensions);
+        case JAMA:
+            return jamaSVD(m.toDenseArray(), dimensions);
+        default:
+            fmt = Format.MATLAB_SPARSE;
+        }
+        try {
+            File tmpFile = File.createTempFile("matrix-svd", ".dat");
+            tmpFile.deleteOnExit();
+            MatrixIO.writeMatrix(m, tmpFile, fmt);
+            return svd(tmpFile, fastest, fmt, dimensions);	
+        }
+        catch (IOException ioe) {
+  	    SVD_LOGGER.log(Level.SEVERE, "convertFormat", ioe);
+  	}
+         throw new UnsupportedOperationException(
+              "SVD algorithm failed in writing matrix to disk");
+    }
+
+    /**
      * Returns U, S, V<sup>T</sup> matrices for the SVD of the matrix file in
      * {@link Format#MATLAB_SPARSE Matlab sparse} format using the specified SVD
      * algorithm to generate the specified number of singular values.
@@ -254,8 +324,11 @@ public class SVD {
                 }
 		return svdlibc(converted, dimensions, format);
             }
-	    case JAMA:
-		return jamaSVD(matrix, format, dimensions);
+	    case JAMA: {
+                double[][] inputMatrix = 
+                    MatrixIO.readMatrixArray(matrix, format);
+		return jamaSVD(inputMatrix, dimensions);
+            }
 	    case MATLAB:
                 // If the format of the input matrix isn't immediately useable
                 // by Matlab convert it
@@ -272,8 +345,10 @@ public class SVD {
                         matrix, format, Format.MATLAB_SPARSE);
                 }
 		return octaveSVDS(matrix, dimensions);
-	    case COLT:
-		return coltSVD(matrix, format, dimensions);
+	    case COLT: {
+                double[][] m = MatrixIO.readMatrixArray(matrix, format);
+		return coltSVD(m, Matrices.isDense(format), dimensions);
+            }
 	    case ANY:
 
 		// Keep copies of these around in case they are MATLAB and we
@@ -334,13 +409,16 @@ public class SVD {
 
 		if (isColtAvailable()) {
 		    try {
-			return coltSVD(matrix, format, dimensions);
+                        double[][] m = MatrixIO.readMatrixArray(matrix, format);
+			return coltSVD(m, Matrices.isDense(format), dimensions);
 		    } catch (UnsupportedOperationException uoe) { }
 		}
 		
 		if (isJAMAavailable()) {
 		    try {
-			return jamaSVD(matrix, format, dimensions);
+                        double[][] inputMatrix = 
+                            MatrixIO.readMatrixArray(matrix, format);
+			return jamaSVD(inputMatrix, dimensions);
 		    } catch (UnsupportedOperationException uoe) { }
 		}
 
@@ -559,7 +637,8 @@ public class SVD {
     /**
      *
      *
-     * @param matrix a file containing a matrix
+     * @param inputMatrix a 2D double array representation of the matrix for
+     *        which the SVD should be computed
      * @param dimensions the number of singular values to calculate
      *
      * @return an array of {@code Matrix} objects for the U, S, and V matrices
@@ -568,15 +647,13 @@ public class SVD {
      * @throws UnsupportedOperationException if the JAMA SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
-    static Matrix[] jamaSVD(File matrix, Format format, int dimensions) {
+    static Matrix[] jamaSVD(double[][] inputMatrix, int dimensions) {
 	// Use reflection to load the JAMA classes and perform all the
 	// operation in order to avoid any compile-time dependencies on the
 	// package.
 	try {
 	    SVD_LOGGER.fine("attempting JAMA");
 	    isJAMAavailable();
-	    double[][] inputMatrix = MatrixIO.readMatrixArray(
-		matrix, format);
 
 	    int rows = inputMatrix.length;
 	    int cols = inputMatrix[0].length; // assume at least one row
@@ -663,18 +740,20 @@ public class SVD {
 	    SVD_LOGGER.log(Level.SEVERE, "JAMA", iae);
 	} catch (InvocationTargetException ite) {
 	    SVD_LOGGER.log(Level.SEVERE, "JAMA", ite);
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "JAMA", ioe);
 	}
-	
-	throw new UnsupportedOperationException(
+         
+        throw new UnsupportedOperationException(
 	    "JAMA-based SVD is not available on this system");
     }
 
     /**
      *
      *
-     * @param matrix a file containing a matrix
+     * @param inputMatrix a 2D double array representation of the matrix for
+     *        which the SVD should be computed
+     * @param isDense {@code true} if the data contained in the double array is
+     *        mostly non-zero.  This paramater affects how COLT performs the SVD
+     *        calcuation internally
      * @param dimensions the number of singular values to calculate
      *
      * @return an array of {@code Matrix} objects for the U, S, and V matrices
@@ -683,15 +762,13 @@ public class SVD {
      * @throws UnsupportedOperationException if the COLT SVD algorithm is
      *         unavailable or if any error occurs during the process
      */
-    static Matrix[] coltSVD(File matrix, Format format, int dimensions) {
+    static Matrix[] coltSVD(double[][] inputMatrix, boolean isDense,
+                            int dimensions) {
 	// Use reflection to load the COLT classes and perform all the
 	// operation in order to avoid any compile-time dependencies on the
 	// package.
 	try {
 	    SVD_LOGGER.fine("attempting COLT");
-	    isColtAvailable();
-	    double[][] inputMatrix = MatrixIO.readMatrixArray(
-		matrix, format);
 
 	    int rows = inputMatrix.length;
 	    int cols = inputMatrix[0].length; // assume at least one row
@@ -699,7 +776,6 @@ public class SVD {
 	    // COLT provides both a sparse and dense Matrix implementation.
 	    // Estimate which one would be more efficient based on the format
 	    // type.
-	    boolean isDense =  Matrices.isDense(format);
 	    Class<?> clazz = (isDense)
 		? loadColtDenseMatrixClass()
 		: loadColtSparseMatrixClass();
@@ -719,6 +795,9 @@ public class SVD {
 	    // performance bottleneck for COLT users.  --jurgens 7/7/09
 	    Object coltMatrix = 
 		c.newInstance(new Object[] { inputMatrix } );
+            // One we are done with the inputMatrix, null it out to free up
+            // memory if this method was the only thread referencing it
+            inputMatrix = null;            
 
 	    Class<?> svdClass = loadColtSVDClass();
 
@@ -828,9 +907,7 @@ public class SVD {
 	    SVD_LOGGER.log(Level.SEVERE, "COLT", iae);
 	} catch (InvocationTargetException ite) {
 	    SVD_LOGGER.log(Level.SEVERE, "COLT", ite);
-	} catch (IOException ioe) {
-	    SVD_LOGGER.log(Level.SEVERE, "COLT", ioe);
-	}
+        }
 	
 	throw new UnsupportedOperationException(
 	    "COLT-based SVD is not available on this system");

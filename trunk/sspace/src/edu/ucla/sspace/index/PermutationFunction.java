@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2009 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,35 +19,27 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.index;
 
 import edu.ucla.sspace.vector.Vector;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 
 /**
- * A common interface for interacting with document space models of meaning.
- * Implementations should expect the sequence of processing steps declared in
- * SemanticSpace, with the addition of a new method primarily for developing a 
- * representation of a document.
- *
- * <ol>
-
- * <li> {@link #representDocument(BufferedReader) representDocument} is called
- *      when a document needs a semantic representation.
- *
- * </ol>
- *
+ * An interface for functions that permute the ordering of {@code
+ * TernaryVector}s.  Implementations are expected to be thread safe when
+ * performing permutations.
  */
-public interface DocumentSpace extends SemanticSpace {
+public interface PermutationFunction <T extends Vector> {
 
-  /**
-   * Processes the contents of the provided file as a document.
-   *
-   * @param document a reader that allows access to the text of the document
-   *
-   * @throws IOException if any error occurs while reading the document
-   */
-  Vector representDocument(BufferedReader document) throws IOException;
+    /**
+     * Permutes the provided {@code TernaryVector} the specified number of
+     * times.
+     *
+     * @param v an index vector to permute
+     * @param numPermutations the number of times the permutation function
+     *                        should be applied to the provided index vector.
+     *
+     * @return the original index vector permuted the specified number of times
+     */
+    T permute(T v, int numPermutations);
 }

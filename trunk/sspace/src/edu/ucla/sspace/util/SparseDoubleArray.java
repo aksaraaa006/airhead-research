@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.util;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 
 /**
@@ -45,7 +47,9 @@ import java.util.Arrays;
  *
  * @see SparseArray
  */
-public class SparseDoubleArray implements SparseArray<Double> {
+public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The maximum length of this array

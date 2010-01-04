@@ -21,9 +21,10 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.SparseHashVector;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,7 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * intended for large matrices that need to be on disk due to their dimensions,
  * but whose data is mostly sparse <p>
  * 
- * The {@link Vector} representations returned reflect a snapshot of the state
+ * The {@link DoubleVector} representations returned reflect a snapshot of the state
  * of the matrix at the time of access.  Subsequent updates to the matrix will
  * not be reflected in these vectors, nor will changes to the vector be
  * propagated to the matrix.
@@ -67,7 +68,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author David Jurgens
  */
-public class SparseOnDiskMatrix extends OnDiskMatrix {
+public class SparseOnDiskMatrix extends OnDiskMatrix implements SparseMatrix {
 
     /**
      * A weak mapping from the row index to a {@link SparseVector} that was
@@ -105,7 +106,7 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
      * {@inheritDoc}
      */
     @Override
-    public Vector getColumnVector(int column) {
+    public SparseDoubleVector getColumnVector(int column) {
         // Check whether we have this column cached
         VersionedVector cachedCol = colToVectorCache.get(column);
         // If the cache was empty or if the matrix has been updated since this
@@ -127,7 +128,7 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
      * {@inheritDoc}
      */
     @Override
-    public Vector getRowVector(int row) {
+    public SparseDoubleVector getRowVector(int row) {
         // Check whether we have this row cached
         VersionedVector cachedRow = colToVectorCache.get(row);
         // If the cache was empty or if the matrix has been updated since this
@@ -167,7 +168,7 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
      * {@inheritDoc}
      */
     @Override
-    public void setColumn(int column, Vector values) {
+    public void setColumn(int column, DoubleVector values) {
         super.setColumn(column, values);
         version.incrementAndGet();        
     }
@@ -185,18 +186,18 @@ public class SparseOnDiskMatrix extends OnDiskMatrix {
      * {@inheritDoc}
      */
     @Override
-    public void setRow(int row, Vector values) {
+    public void setRow(int row, DoubleVector values) {
         super.setRow(row, values);
         version.incrementAndGet();
     }
 
     /**
-     * A {@code Vector} instance that keeps track of a versioned state.  This
-     * class is intended to mark when the instance was created to enable checked
-     * whether its data might be inconsistent with the matrix from which it was
-     * generated.
+     * A {@code DoubleVector} instance that keeps track of a versioned state.
+     * This class is intended to mark when the instance was created to enable
+     * checked whether its data might be inconsistent with the matrix from which
+     * it was generated.
      */
-    private static class VersionedVector extends SparseHashVector {
+    private static class VersionedVector extends SparseHashDoubleVector {
 
         private static final long serialVersionUID = 1L;
 

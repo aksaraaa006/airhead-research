@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.util;
 
-import java.io.Serializable;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,9 +43,7 @@ import java.util.Map;
  * @see SparseArray
  * @see IntegerMap
  */
-public class SparseHashArray<T> implements SparseArray<T>, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SparseHashArray<T> implements SparseArray<T> {
 
     /**
      * The maximum length of this array
@@ -110,7 +106,7 @@ public class SparseHashArray<T> implements SparseArray<T>, Serializable {
     }
 
     /**
-     * Returns the indices of the array that contain non-{@code null} values.
+     * Returns the indices of the array that contain non-{@code 0} values.
      *
      * @return the indices that contain values
      */
@@ -133,10 +129,7 @@ public class SparseHashArray<T> implements SparseArray<T>, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, T value) {
-        if (value == null)
-            indexToValue.remove(index);
-        else
-            indexToValue.put(index, value);
+	indexToValue.put(index, value);
     }
 
     /**

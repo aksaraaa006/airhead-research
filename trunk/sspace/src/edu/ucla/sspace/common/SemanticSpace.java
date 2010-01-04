@@ -31,7 +31,7 @@ import java.util.Set;
 
 /**
  * A common interface for interacting with semantic space models of meaning.
- * Implementations should expect the following sequence  of processing.
+ * Implementations should expect the following sequence of processing.
  *
  * <ol>
 
@@ -42,8 +42,8 @@ import java.util.Set;
  *      the documents have been used.  Once this method has been called, no
  *      further calls to {@code processDocument} should be made
  *
- * <li> {@link #getVectorFor(String) getVectorFor} may be called after the space
- *      has been processed.  Implementations may optionally support this method
+ * <li> {@link #getVector(String) getVector} may be called after the space has
+ *      been processed.  Implementations may optionally support this method
  *      being called prior to {@code processSpace} but this is not required.
  *
  * </ol>
@@ -106,7 +106,9 @@ public interface SemanticSpace {
     String getSpaceName();
 
     /**
-     * Returns the length of vectors in this semantic space.
+     * Returns the length of vectors in this semantic space.  Implementations
+     * are left free to define whether the returned value is valid before {@link
+     * #processSpace(Properties) processSpace} is called.
      */
     int getVectorLength();
 }

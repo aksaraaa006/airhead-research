@@ -32,6 +32,7 @@ import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 /**
  * An iterator over all of the tokens present in a {@link BufferedReader} that
  * are separated by any amount of white space.
@@ -64,10 +65,19 @@ public class WordIterator implements Iterator<String> {
     private String curLine;
 
     /**
+     * True if tokens should be stemmed using the Porter Stemmer algorithm.
+     */
+    private boolean stemWords;
+
+    /**
      * Constructs an iterator for all the tokens contained in the string
      */
     public WordIterator(String str) {
-	this(new BufferedReader(new StringReader(str)));
+        this(new BufferedReader(new StringReader(str)));
+    }
+
+    public WordIterator(String str, boolean useStemming) {
+        this(new BufferedReader(new StringReader(str)), useStemming);
     }
 
     /**
@@ -75,73 +85,79 @@ public class WordIterator implements Iterator<String> {
      * provided reader.
      */
     public WordIterator(BufferedReader br) {
-	this.br = br;
-	curLine = null;
-	advance();
+        this(br, false);
+    }
+
+    public WordIterator(BufferedReader br, boolean useStemming) {
+        this.br = br;
+        curLine = null;
+        stemWords = useStemming;
+        advance();
     }
 
     /**
      * Advances to the next word in the buffer.
      */
     private void advance() {
-	try {
-	    // loop until we find a word in the reader, or there are no more
-	    // words
-	    while (true) {
-		// if we haven't looked at any lines yet, or if the index into
-		// the current line is already at the end 
-		if (curLine == null || !matcher.find()) {
+        try {
+            // loop until we find a word in the reader, or there are no more
+            // words
+            while (true) {
+                // if we haven't looked at any lines yet, or if the index into
+                // the current line is already at the end 
+                if (curLine == null || !matcher.find()) {
 
-		    String line = br.readLine();
-		    
-		    // if there aren't any more lines in the reader, then mark
-		    // next as null to indicate that there are no more words
-		    if (line == null) {
-			next = null;
-			return;
-		    }
-		    
-		    // create a new matcher to find all the tokens in this line
-		    matcher = notWhiteSpace.matcher(line);
-		    curLine = line;
-		    
-		    // skip lines with no matches
-		    if (!matcher.find())
-			continue;		    
-		}
+                    String line = br.readLine();
+                    
+                    // if there aren't any more lines in the reader, then mark
+                    // next as null to indicate that there are no more words
+                    if (line == null) {
+                        next = null;
+                        return;
+                    }
+                    
+                    // create a new matcher to find all the tokens in this line
+                    matcher = notWhiteSpace.matcher(line);
+                    curLine = line;
+                    
+                    // skip lines with no matches
+                    if (!matcher.find())
+                        continue;                    
+                }
 
-		next = curLine.substring(matcher.start(), matcher.end());
-		break;
-	    }
-	} catch (IOException ioe) {
-	    throw new IOError(ioe);
-	}
+                next = curLine.substring(matcher.start(), matcher.end());
+                break;
+            }
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
      * Returns {@code true} if there is another word to return.
      */
     public boolean hasNext() {
-	return next != null;
+        return next != null;
     }
 
     /**
      * Returns the next word from the reader.
      */
     public String next() {
-	if (next == null) {
-	    throw new NoSuchElementException();
-	}
-	String s = next;
-	advance();
-	return s;
+        if (next == null) {
+            throw new NoSuchElementException();
+        }
+        String s = next;
+        advance();
+        if (stemWords)
+            return PorterStemmer.stem(s);
+        return s;
     }
 
     /**
      * Throws an {@link UnsupportedOperationException} if called.
      */ 
     public void remove() {
-	throw new UnsupportedOperationException("remove is not supported");
+        throw new UnsupportedOperationException("remove is not supported");
     }
-
 }

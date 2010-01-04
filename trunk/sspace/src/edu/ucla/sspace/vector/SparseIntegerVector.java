@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2009 David Jurgens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,39 +19,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.ri;
+package edu.ucla.sspace.vector;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.Set;
 
 /**
- * An interface for ternary (+1, 0, -1) valued index vectors.  
- *
- * @see RandomIndexing
+ * An interface for sparse {@link IntegerVector} instances.
  */
-public interface IndexVector {
-
-    /**
-     * Returns the value of this vector at the provided index.
-     */
-    int getValue(int index);
-
-    /**
-     * Returns the length of this index vector
-     */
-    int length();
-
-    /**
-     * Returns the indices at which this vector is valued {@code -1}.
-     */
-    int[] negativeDimensions();
-    
-    /**
-     * Returns the indices at which this vector is valued {@code +1}.
-     */
-    int[] positiveDimensions();
-
-}
+public interface SparseIntegerVector 
+    extends SparseVector<Integer>, IntegerVector { }

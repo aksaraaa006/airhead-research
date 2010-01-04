@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 
 /**
@@ -86,7 +86,7 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized Vector getColumnVector(int column) {
+    public synchronized DoubleVector getColumnVector(int column) {
         return m.getColumnVector(column);
     }
 
@@ -100,7 +100,7 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized Vector getRowVector(int row) {
+    public synchronized DoubleVector getRowVector(int row) {
         return m.getRowVector(row);
     }
 
@@ -128,7 +128,7 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized void setColumn(int column, Vector values) {
+    public synchronized void setColumn(int column, DoubleVector values) {
         m.setColumn(column, values);
     }
 
@@ -142,7 +142,7 @@ public class SynchronizedMatrix implements Matrix, AtomicMatrix {
     /**
      * {@inheritDoc}
      */
-    public synchronized void setRow(int row, Vector values) {
+    public synchronized void setRow(int row, DoubleVector values) {
         m.setRow(row, values);
     }
      

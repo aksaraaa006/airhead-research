@@ -33,7 +33,7 @@ import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
-import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.YaleSparseMatrix;
 import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
@@ -45,8 +45,8 @@ import edu.ucla.sspace.util.SparseHashArray;
 import edu.ucla.sspace.util.WorkerThread;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedInputStream;
@@ -120,7 +120,7 @@ public class PurandareFirstOrder implements SemanticSpace {
      * sense of the term will be the token itself, while addition senses will be
      * denoted with a "-" and a sense number appended to the token.
      */
-    private final Map<String,Vector> termToVector;
+    private final Map<String,DoubleVector> termToVector;
 
     /**
      * The window size for identifying co-occurence words that have the
@@ -176,7 +176,7 @@ public class PurandareFirstOrder implements SemanticSpace {
     public PurandareFirstOrder() {
 	cooccurrenceMatrix = new AtomicGrowingMatrix();
         termToIndex = new ConcurrentHashMap<String,Integer>();
-        termToVector = new ConcurrentHashMap<String,Vector>();
+        termToVector = new ConcurrentHashMap<String,DoubleVector>();
         termCounts = new CopyOnWriteArrayList<AtomicInteger>();
         windowSize = 5;
         contextWindowSize = 20;
@@ -324,7 +324,7 @@ public class PurandareFirstOrder implements SemanticSpace {
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(String word) {        
+    public DoubleVector getVector(String word) {        
         return termToVector.get(word);
     }
 
@@ -424,7 +424,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         int termIndex = termToIndex.get(term);
         LOGGER.info(String.format("Calculating feature set for %6d/%d: %s",
                                   termIndex, cooccurrenceMatrix.rows(), term));
-        Vector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
+        DoubleVector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
         int termCount = termCounts.get(termIndex).get();
         BitSet validFeatures = new BitSet(wordIndexCounter);
         
@@ -481,7 +481,7 @@ public class PurandareFirstOrder implements SemanticSpace {
 
         int documents = documentCounter.get();
         Matrix contexts = 
-            new SparseMatrix(termToIndex.size(), termToIndex.size());
+            new YaleSparseMatrix(termToIndex.size(), termToIndex.size());
         int contextsSeen = 0;
         for (int d = 0; d < documents; ++d) {
             final int docId = d;
@@ -531,11 +531,12 @@ public class PurandareFirstOrder implements SemanticSpace {
         int[] clusterSize = new int[numClusters];
         // Use CompactSparseVector to conserve memory given the potentially
         // large number of sense vectors
-        SparseVector[] meanSenseVectors = new CompactSparseVector[numClusters];
+        SparseDoubleVector[] meanSenseVectors =
+            new CompactSparseVector[numClusters];
         for (int i = 0; i < meanSenseVectors.length; ++i)
             meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
         for (int row = 0; row < clusterAssignment.length; ++row) {
-            Vector contextVector = contexts.getRowVector(row);
+            DoubleVector contextVector = contexts.getRowVector(row);
             int assignment = clusterAssignment[row];
             // CLUTO will return -1 for vectors that could not be clustered.
             // Just skip adding these rows to a specific sense
@@ -555,7 +556,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                 String termWithSense = (senseCounter == 0)
                     ? term : term + "-" + senseCounter;
                 senseCounter++;
-                SparseVector senseVector = meanSenseVectors[i];
+                SparseDoubleVector senseVector = meanSenseVectors[i];
                 // Normalize the values in the vector based on the number of
                 // data points
                 for (int nz : senseVector.getNonZeroIndices()) 

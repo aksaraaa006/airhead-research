@@ -27,10 +27,10 @@ import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.WordComparator;
 
+import edu.ucla.sspace.text.WordIterator;
+
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
-
-import edu.ucla.sspace.text.WordIterator;
 
 import edu.ucla.sspace.util.SortedMultiMap;
 
@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -74,7 +75,8 @@ public class SemanticSpaceExplorer {
         SET_CURRENT_SSPACE,
         GET_CURRENT_SSPACE,
         PRINT_VECTOR,
-        ALIAS
+        ALIAS,
+        GET_WORDS    
     }
     
     /**
@@ -522,6 +524,21 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Prints out the words in the semantic space
+        case GET_WORDS: {            
+            String prefix = null;
+            if (commandTokens.hasNext())
+                prefix  = commandTokens.next();
+            Set<String> words = current.getWords();
+            for (String word : words) {
+                if (prefix == null)
+                    out.println(word);
+                else if (word.startsWith(prefix))
+                    out.println(word);
+            }
+            break;
+        }
+
         default: // should never get executed
             assert false : command;
         }
@@ -549,7 +566,8 @@ public class SemanticSpaceExplorer {
             "  get-current-sspace\n" +
             "  alias filename.sspace name\n" + 
             "  write-command-results output-file command...\n" +
-            "  print-vector word\n";
+            "  print-vector word\n" +
+        "  print-words [string-prefix]\n";
     }
 
     /**

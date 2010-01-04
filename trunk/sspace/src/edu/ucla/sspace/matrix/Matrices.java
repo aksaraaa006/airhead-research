@@ -87,7 +87,7 @@ public class Matrices {
             } else {
                 LOGGER.finer("can fit sparse in memory; creating " + 
                          "new SparseMatrix");
-                return new SparseMatrix(rows, cols);
+                return new YaleSparseMatrix(rows, cols);
             }
         } else { 
             // won't fit into memory
@@ -107,7 +107,7 @@ public class Matrices {
     public static Matrix create(int rows, int cols, Type matrixType) {
         switch (matrixType) {
             case SPARSE_IN_MEMORY:
-                return new SparseMatrix(rows, cols);
+                return new YaleSparseMatrix(rows, cols);
             case DENSE_IN_MEMORY:
                 return new ArrayMatrix(rows, cols);
             case DIAGONAL_IN_MEMORY:
@@ -323,7 +323,7 @@ public class Matrices {
         // MAJOR HACK: need to use reflection or some other hint
         Matrix transpose = null;
         if (matrix instanceof SparseMatrix) 
-            transpose = new SparseMatrix(cols, rows);
+            transpose = new YaleSparseMatrix(cols, rows);
         else if (matrix instanceof ArrayMatrix) 
             transpose = new ArrayMatrix(cols, rows);
         else

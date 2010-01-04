@@ -25,7 +25,7 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import edu.ucla.sspace.util.SparseArray;
 
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.io.File;
 
@@ -37,12 +37,12 @@ import java.io.File;
  * <p> Columns may be added via the {@code
  * addColumn} method until the matrix has the desired data.  The underlying
  * matrix structure will expand to match the dimensions of the input data.
- * Great care should be taken when using {@link SparseArray} and {@link Vector}
- * instances to ensure that the values returned by their respective {@code
- * length} methods are fixed to the actual data structure size, rather than the
- * a possible maximum size of the struture.  This is necessary to determine this
- * matrix's dimension; passing in an array or vector with a maximum size bound
- * will greatly distort the matrix's size.
+ * Great care should be taken when using {@link SparseArray} and {@link
+ * DoubleVector} instances to ensure that the values returned by their
+ * respective {@code length} methods are fixed to the actual data structure
+ * size, rather than the a possible maximum size of the struture.  This is
+ * necessary to determine this matrix's dimension; passing in an array or vector
+ * with a maximum size bound will greatly distort the matrix's size.
  *
  * <p> After all the data has been added, the {@code finish} method should be
  * invoked.  Instances should use this as a signal to finish any last remaining
@@ -99,7 +99,7 @@ public interface MatrixBuilder {
      * @throws IllegalStateException if {@code finish} has been called, thereby
      *         signaling that no further data will be added to the matrix
      */
-    int addColumn(Vector column);
+    int addColumn(DoubleVector column);
 
     /**
      * Indicates that no further data will be added to the matrix and any

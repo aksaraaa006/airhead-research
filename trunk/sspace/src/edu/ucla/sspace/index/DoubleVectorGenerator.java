@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,24 +19,26 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.ri;
+package edu.ucla.sspace.index;
+
+import edu.ucla.sspace.vector.DoubleVector;
+
 
 /**
- * An invertible permutation function.
- *
- * @see RandomIndexing
+ * An interface for classes which will maintain and generate random {@code
+ * DoubleVector}s.  The main purpose of this of this class is to allow any
+ * algorithm that makes use of some sort of random vector, such as Random
+ * Indexing, can easily swap out the type of indexing used for experimentation
+ * purposes.
  */
-public interface PermutationFunction {
+public interface DoubleVectorGenerator {
 
     /**
-     * Permutes the provided {@code IndexVector} the specified number of times.
+     * Creates an {@code VectorVector} with the provided length.
      *
-     * @param v an index vector to permute
-     * @param numPermutations the number of times the permutation function
-     *        should be applied to the provided index vector.
+     * @param length the length of the index vector
      *
-     * @return the original index vector permuted the specified number of times
+     * @return an index vector
      */
-    IndexVector permute(IndexVector v, int numPermutations);
-
+    public DoubleVector generateRandomVector(int length);
 }

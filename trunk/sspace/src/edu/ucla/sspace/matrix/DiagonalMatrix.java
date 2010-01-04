@@ -21,8 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 
 
 /**
@@ -32,7 +33,7 @@ import edu.ucla.sspace.vector.Vector;
  *
  * @author Keith Stevens 
  */
-public class DiagonalMatrix implements Matrix {
+public class DiagonalMatrix implements SparseMatrix {
         
     /**
      * The number diagonal values in this {@code Matrix}.
@@ -40,7 +41,7 @@ public class DiagonalMatrix implements Matrix {
     private double[] values;
     
     /**
-     * Create a new {@code DiagonalMatrix with {@code numValues} rows and
+     * Creates a new {@code DiagonalMatrix} with {@code numValues} rows and
      * columns.
      *
      * @param numValues The number of rows, columns, and diagonals in this
@@ -51,8 +52,8 @@ public class DiagonalMatrix implements Matrix {
     }
 
     /**
-     * Create a new {@code DiagonalMatrix with {@code newValues} as the diagonal
-     * values.
+     * Creates a new {@code DiagonalMatrix} with {@code newValues} as the
+     * diagonal values.
      *
      * @param newValues The values to use as the diagonals of this {@code
      *                  Matrix}.
@@ -64,7 +65,7 @@ public class DiagonalMatrix implements Matrix {
     }
 
     /**
-     * Check that the given row and column values are non-negative, and less
+     * Checks that the given row and column values are non-negative, and less
      * than the number of diagonals in this {@code DiagonalMatrix}.
      *
      * @param row The row index to check.
@@ -102,10 +103,10 @@ public class DiagonalMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getColumnVector(int column) {
+    public SparseDoubleVector getColumnVector(int column) {
         checkIndices(0, column);
-
-        Vector columnValues = new CompactSparseVector(values.length);
+        SparseDoubleVector columnValues =
+            new SparseHashDoubleVector(values.length);
         columnValues.set(column, values[column]);
         return columnValues;
     }
@@ -124,10 +125,9 @@ public class DiagonalMatrix implements Matrix {
     /**
      * {@inheritDoc}
      */
-    public Vector getRowVector(int row) {
+    public SparseDoubleVector getRowVector(int row) {
         checkIndices(row, 0);
-
-        Vector vector = new CompactSparseVector(values.length);
+        SparseDoubleVector vector = new SparseHashDoubleVector(values.length);
         vector.set(row, values[row]);
         return vector;
     }
@@ -170,7 +170,7 @@ public class DiagonalMatrix implements Matrix {
      *
      * Note that any values are not on the diagonal are ignored.
      */
-    public void setColumn(int column, Vector vector) {
+    public void setColumn(int column, DoubleVector vector) {
         checkIndices(vector.length() - 1, column);
 
         values[column] = vector.get(column);
@@ -192,7 +192,7 @@ public class DiagonalMatrix implements Matrix {
      *
      * Note that any values are not on the diagonal are ignored.
      */
-    public void setRow(int row, Vector vector) {
+    public void setRow(int row, DoubleVector vector) {
         checkIndices(row, vector.length() - 1);
 
         values[row] = vector.get(row);

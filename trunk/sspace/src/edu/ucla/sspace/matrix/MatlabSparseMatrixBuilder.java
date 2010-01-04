@@ -26,7 +26,7 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.util.SparseArray;
 
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.io.File;
 import java.io.IOError;
@@ -190,7 +190,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     /**
      * {@inheritDoc}
      */
-    public synchronized int addColumn(Vector column) {
+    public synchronized int addColumn(DoubleVector column) {
         if (isFinished)
             throw new IllegalStateException(
                 "Cannot add columns to a MatrixBuilder that is finished");
@@ -201,7 +201,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
                 //
                 // NOTE: Matlab indices start at 1, not 0, so update all the
                 // column and column values to be Matlab formatted.
-                addEntry(i + 1, curColumn + 1, s.get(i));
+                addEntry(i + 1, curColumn + 1, column.get(i));
             }
         }
         else {

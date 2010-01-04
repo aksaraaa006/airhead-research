@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,7 +43,11 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public class AmortizedSparseVector implements Vector, SparseVector {
+public class AmortizedSparseVector implements DoubleVector,
+                                              SparseVector<Double>,
+                                              Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * An arraylist of non zero values for this row, stored in the correct
@@ -96,6 +102,7 @@ public class AmortizedSparseVector implements Vector, SparseVector {
         set(index, value);
         return value;
     }
+
     /**
      * {@inheritDoc}
      */
@@ -105,6 +112,13 @@ public class AmortizedSparseVector implements Vector, SparseVector {
         IndexValue item = new IndexValue(index, 0);
         int valueIndex = Collections.binarySearch(values, item, comp);
         return (valueIndex >= 0) ? values.get(valueIndex).value : 0.0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Double getValue(int index) {
+        return get(index);
     }
 
     /**
@@ -133,6 +147,13 @@ public class AmortizedSparseVector implements Vector, SparseVector {
 
     /**
      * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        set(index, value.doubleValue());
+    }
+
+    /**
+     * {@inheritDoc}
      *
      * Note that any values which are 0 are left out of the vector.
      */
@@ -148,10 +169,8 @@ public class AmortizedSparseVector implements Vector, SparseVector {
     /**
      * {@inheritDoc}
      */
-    public double[] toArray(int size) {
-        checkIndex(size);
-
-        double[] dense = new double[size];
+    public double[] toArray() {
+        double[] dense = new double[length()];
         for (IndexValue item : values) {
             dense[item.index] = item.value;
         }

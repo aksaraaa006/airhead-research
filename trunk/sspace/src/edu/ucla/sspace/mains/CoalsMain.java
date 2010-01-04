@@ -21,14 +21,16 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
+
+import edu.ucla.sspace.coals.Coals;
+
 import java.io.IOException;
 
 import java.util.Properties;
 
-import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.SemanticSpace;
-
-import edu.ucla.sspace.coals.Coals;
 
 /**
  * An executable class for running {@link Coals} from the
@@ -39,7 +41,7 @@ import edu.ucla.sspace.coals.Coals;
  *      word vectors. See {@link Coals} for a default value
  *
  * <li> {@code --reduce} If present, the word-word matrix will be reduced using
- * Singular Valued Decomposition, otherwise no reduction will be performed.
+ *      Singular Valued Decomposition, otherwise no reduction will be performed.
  *
  * <li> {code --svddimension=<int>} size of the reduced svd vectors. See {@link
  *      Coals} for a default value.
@@ -55,64 +57,81 @@ import edu.ucla.sspace.coals.Coals;
  */
 public class CoalsMain extends GenericMain {
 
-  private int dimensions; 
+    private int dimensions; 
+
     private CoalsMain() {
     }
 
     /**
-     * Adds all of the options to the {@link ArgOptions}.
+     * {@inheritDoc}
      */
     public void addExtraOptions(ArgOptions options) {
-      options.addOption('n', "dimensions", 
-                        "the number of dimensions in the semantic space",
-                        true, "INT"); 
-      options.addOption('s', "svddimension", 
-                        "the number of dimensions in the reduced space, " +
-                        "only used if --reduce is also given",
-                        true, "INT"); 
-      options.addOption('r', "reduce", 
-                        "reduce the semantic space using SVD");
+          options.addOption('n', "dimensions", 
+                            "the number of dimensions in the semantic space",
+                            true, "INT"); 
+          options.addOption('s', "svddimension", 
+                            "the number of dimensions in the reduced space, " +
+                            "only used if --reduce is also given",
+                            true, "INT"); 
+          options.addOption('r', "reduce", 
+                            "reduce the semantic space using SVD");
     }
 
     public static void main(String[] args) {
-	CoalsMain coals = new CoalsMain();
-	try {
-	    coals.run(args);
-	}
-	catch (Throwable t) {
-	    t.printStackTrace();
-	}
+        CoalsMain coals = new CoalsMain();
+        try {
+            coals.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public SemanticSpace getSpace() {
-      return (dimensions > 0) ? new Coals(dimensions) : new Coals();
+        return (dimensions > 0) ? new Coals(dimensions) : new Coals();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void handleExtraOptions() {
-      dimensions = argOptions.hasOption("dimensions")
-          ? argOptions.getIntOption("dimensions")
-          : 0;
+        dimensions = argOptions.hasOption("dimensions")
+            ? argOptions.getIntOption("dimensions")
+            : 0;
     }
 
-    public Properties setupProperties() {
-      Properties props = System.getProperties();
-      if (argOptions.hasOption("svddimension")) {
-        props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY,
-                          argOptions.getStringOption("svddimension"));
-      }
+    /**
+     * {@inheritDoc}
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
+    }
 
-      if (argOptions.hasOption("reduce")) {
-        props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "true");
-      }
-      return props;
+    /**
+     * {@inheritDoc}
+     */
+    public Properties setupProperties() {
+          Properties props = System.getProperties();
+          if (argOptions.hasOption("svddimension")) {
+                props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY,
+                                  argOptions.getStringOption("svddimension"));
+          }
+
+          if (argOptions.hasOption("reduce")) {
+                props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "true");
+          }
+          return props;
     }
 
     /**
      * Prints the instructions on how to execute this program to standard out.
      */
     public void usage() {
- 	System.out.println(
- 	    "usage: java CoalsMain [options] <output-dir>\n" + 
-	    argOptions.prettyPrint());
+         System.out.println(
+                 "usage: java CoalsMain [options] <output-dir>\n" + 
+                 argOptions.prettyPrint());
     }
 }

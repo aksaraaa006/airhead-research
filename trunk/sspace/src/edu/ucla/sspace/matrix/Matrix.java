@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 
 /**
@@ -96,11 +96,11 @@ public interface Matrix {
      * implementation.  Implementations that maintain their data in a sparse
      * format are encouraged to return a {@link SparseVector} instance.
      *
-     * @param column The column to return a {@code Vector} for.
+     * @param column The column to return a {@code DoubleVector} for.
      *
-     * @return A {@code Vector} representing the column at {@code column}.
+     * @return A {@code DoubleVector} representing the column at {@code column}.
      */
-    Vector getColumnVector(int column);
+    DoubleVector getColumnVector(int column);
 
     /**
      * Returns the entire row.
@@ -112,16 +112,17 @@ public interface Matrix {
     double[] getRow(int row);
 
     /**
-     * Return a {@code Vector} for an entire row.  Whether updates to the vector
+     * Returns a {@code DoubleVector} for an entire row.  Implementations should
+     * return an approriately typed DoubleVector.  Whether updates to the vector
      * are written through to the backing matrix is left open to the specific
      * implementation.  Implementations that maintain their data in a sparse
      * format are encouraged to return a {@link SparseVector} instance.
      *
-     * @param row The row to return a {@code Vector} for.
+     * @param row the index of the row to return.
      *
-     * @return A {@code Vector} representing the row at {@code row}.
+     * @return A {@code DoubleVector} representing the row at {@code row}.
      */
-    Vector getRowVector(int row);
+    DoubleVector getRowVector(int row);
 
     /**
      * Returns the number of columns in this {@code Matrix}.
@@ -166,13 +167,13 @@ public interface Matrix {
 
     /**
      * Sets the values for the column of this {@code Matrix} using the provided
-     * {@code Vector}.  Note that the {@code Vector} itself is not made internal
+     * {@code DoubleVector}.  Note that the {@code DoubleVector} itself is not made internal
      * to the instance itself.
      *
      * @param column The column to update.
      * @param values The values to update into {@code column}.
      */
-    void setColumn(int column, Vector values);
+    void setColumn(int column, DoubleVector values);
 
     /**
      * Sets the values for the row of this {@code Matrix} using the provided
@@ -186,11 +187,11 @@ public interface Matrix {
 
     /**
      * Sets the values for the row of this {@code Matrix} using the provided
-     * {@code Vector}.  Note that the {@code Vector} itself is not made internal
+     * {@code DoubleVector}.  Note that the {@code DoubleVector} itself is not made internal
      * to the instance itself.
      *
      * @param row The row to update.
      * @param values The values to update into {@code row}.
      */
-    void setRow(int row, Vector values);
+    void setRow(int row, DoubleVector values);
 }

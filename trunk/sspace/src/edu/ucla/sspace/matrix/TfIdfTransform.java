@@ -24,7 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.vector.SparseVector;
-import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -309,14 +309,14 @@ public class TfIdfTransform implements Transform {
         int[] termToDocCount = new int[terms];
 
         for (int term = 0; term < terms; ++term) {
-            Vector termVec = matrix.getRowVector(term);
+            DoubleVector termVec = matrix.getRowVector(term);
             
             if (termVec instanceof SparseVector) {
                 SparseVector sv = (SparseVector)termVec;
                 int[] docsWithWord = sv.getNonZeroIndices();
                 termToDocCount[term] = docsWithWord.length;
                 for (int doc : docsWithWord) {
-                    termToOccurrencesInCorpus[term] += sv.get(doc);
+                    termToOccurrencesInCorpus[term] += termVec.get(doc);
                 }
             }
             else {
@@ -333,14 +333,14 @@ public class TfIdfTransform implements Transform {
         // Once the necessary corpus frequency have been computed, write the
         // transformed matrix using the original values
         for (int term = 0; term < terms; ++term) {
-            Vector termVec = matrix.getRowVector(term);
+            DoubleVector termVec = matrix.getRowVector(term);
             
             if (termVec instanceof SparseVector) {
                 SparseVector sv = (SparseVector)termVec;
                 int[] docsWithWord = sv.getNonZeroIndices();
 
                 for (int doc : docsWithWord) {
-                    double occurrences = sv.get(doc);
+                    double occurrences = termVec.get(doc);
                     double termFreq =
                         occurrences / termToOccurrencesInCorpus[term];
                     double invDocFreq = 
