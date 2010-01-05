@@ -103,11 +103,19 @@ public class ESAMain extends GenericMain {
     }
 
     /**
-     * Prints the instructions on how to execute this program to standard out.
+     * {@inheritDoc}
      */
-    public void usage() {
-         System.out.println(
-             "usage: java ESAMain [options] <wikipedia-snapshot> <output-dir>\n"
-            + argOptions.prettyPrint());
+    @Override
+    protected void usage() {
+        System.out.println(
+            "usage: java " 
+            + this.getClass().getName()
+            + " [options] <wikipedia-snapshot> <output-dir>\n"
+            + argOptions.prettyPrint() 
+            + "\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
+            + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION
+            + "\n\n" + OptionDescriptions.FILE_FORMAT_DESCRIPTION
+            + "\n\n" + OptionDescriptions.HELP_DESCRIPTION);
     }
+
 }

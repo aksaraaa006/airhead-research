@@ -125,13 +125,4 @@ public class CoalsMain extends GenericMain {
           }
           return props;
     }
-
-    /**
-     * Prints the instructions on how to execute this program to standard out.
-     */
-    public void usage() {
-         System.out.println(
-                 "usage: java CoalsMain [options] <output-dir>\n" + 
-                 argOptions.prettyPrint());
-    }
 }

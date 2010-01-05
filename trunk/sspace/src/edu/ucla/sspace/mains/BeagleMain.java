@@ -114,13 +114,4 @@ public class BeagleMain extends GenericMain {
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.BINARY;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void usage() {
-        System.out.println(
-            "usage: java BeagleMain [options] <output-dir>\n" + 
-            argOptions.prettyPrint());
-    }
 }

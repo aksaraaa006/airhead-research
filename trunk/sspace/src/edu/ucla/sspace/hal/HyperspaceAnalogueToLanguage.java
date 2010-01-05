@@ -24,8 +24,7 @@ package edu.ucla.sspace.hal;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
-import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
-import edu.ucla.sspace.matrix.AtomicMatrix;
+import edu.ucla.sspace.matrix.AtomicGrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
@@ -228,7 +227,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The matrix used for storing weight co-occurrence statistics of those
      * words that occur both before and after.
      */
-    private AtomicMatrix cooccurrenceMatrix;
+    private AtomicGrowingSparseMatrix cooccurrenceMatrix;
 
     /**
      * The reduced matrix, if columns are to be dropped.
@@ -247,7 +246,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * configuration.
      */
     public HyperspaceAnalogueToLanguage(Properties properties) {
-        cooccurrenceMatrix = new AtomicGrowingMatrix();
+        cooccurrenceMatrix = new AtomicGrowingSparseMatrix();
         reduced = null;
         termToIndex = new ConcurrentHashMap<String,Integer>();
         
@@ -404,25 +403,9 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         // If the matrix hasn't had columns dropped then the returned vector
         // will be the combination of the word's row and column
         else if (reduced == null) {
-            Vector vector =
-                new CompactSparseVector(cooccurrenceMatrix.columns() * 2);
-                    
-            double[] row = cooccurrenceMatrix.getRow(index);
-            double[] col = getColumn(index);
-            
-            // Puts the semantic values of the following words for the focus
-            // into the array to be returned
-            for (int i = 0; i < row.length; ++i) {
-                if (row[i] != 0d)
-                    vector.set(i, row[i]);
-            }
-            // Puts the semantic values of the words preceding the focus into
-            // the array to be returned
-            for (int i = 0; i < col.length; ++i) {
-                if (col[i] != 0d)
-                    vector.set(i, col[i]);
-            }
-            return vector;
+            return new ConcatenatedSparseDoubleVector(
+                cooccurrenceMatrix.getRowVectorUnsafe(index),
+                cooccurrenceMatrix.getColumnVector(index));
         }
         // The co-occurrence matrix has had columns dropped so the vector is
         // just the word's row

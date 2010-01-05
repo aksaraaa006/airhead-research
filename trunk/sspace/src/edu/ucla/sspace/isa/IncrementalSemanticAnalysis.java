@@ -38,6 +38,7 @@ import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -168,7 +169,7 @@ import java.util.logging.Logger;
  *
  * <dt> <i>Property:</i> <code><b>{@value #USE_SPARSE_SEMANTICS_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@code true} 
+ *      <i>Default:</i> {@code false} 
  *
  * <dd style="padding-top: .5em">This property specifies whether to use a sparse
  *       encoding for each word's semantics.  Using a sparse encoding can result
@@ -370,7 +371,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
         useSparseSemantics = (useSparseProp != null)
             ? Boolean.parseBoolean(useSparseProp)
-            : true;
+            : false;
 
         String decayRateProp = 
             properties.getProperty(HISTORY_DECAY_RATE_PROPERTY);
@@ -680,12 +681,13 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
         }
 
         public void addVector(DenseVector v, double percentage) {
-            for (int i = 0; i < v.length(); ++i) 
+            int length = v.length();
+            for (int i = 0; i < length; ++i) 
                 add(i, percentage * v.get(i));
         }
     }
    
-    private class SparseSemanticVector extends CompactSparseVector
+    private class SparseSemanticVector extends SparseHashDoubleVector
             implements SemanticVector<SparseDoubleVector> {
 
         private static final long serialVersionUID = 1L;

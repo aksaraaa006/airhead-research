@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
 
@@ -449,18 +452,45 @@ public class SemanticSpaceIO {
         for (String word : words) {
             pw.print(word + "|");
             // for each vector, write all the non-zero elements and their indices
-        Vector vector = sspace.getVector(word);
-            boolean first = true;
-            StringBuilder sb = new StringBuilder(dimensions * 4);
-            for (int i = 0; i < vector.length(); ++i) {
-                double d = vector.getValue(i).doubleValue();
-                if (d != 0d) {
-                    if (first) {
-                        sb.append(i).append(",").append(d);
-                        first = false;
-                    }
-                    else {
-                        sb.append(",").append(i).append(",").append(d);
+            Vector vector = sspace.getVector(word);
+            StringBuilder sb = null;
+            if (vector instanceof SparseVector) {
+                if (vector instanceof DoubleVector) {
+                    SparseDoubleVector sdv = (SparseDoubleVector)vector;
+                    int[] nz = sdv.getNonZeroIndices();
+                    new StringBuilder(nz.length * 4);
+                    // special case the first
+                    for (int i = 0; i < nz.length; ++i)
+                        sb.append(i).append(",").append(sdv.get(i));
+                    for (int i = 1; i < nz.length; ++i)
+                        sb.append(",").append(i).append(",").append(sdv.get(i));
+                }
+                else {
+                    SparseVector sv = (SparseVector)vector;
+                    int[] nz = sv.getNonZeroIndices();                    
+                    new StringBuilder(nz.length * 4);
+                    for (int i = 0; i < nz.length; ++i)
+                        sb.append(i).append(",").
+                            append(sv.getValue(i).doubleValue());
+                    for (int i = 1; i < nz.length; ++i)
+                        sb.append(",").append(i).append(",").
+                            append(sv.getValue(i).doubleValue());
+                }
+            }
+            
+            else {
+                boolean first = true;
+                sb = new StringBuilder(dimensions / 2);
+                for (int i = 0; i < vector.length(); ++i) {
+                    double d = vector.getValue(i).doubleValue();
+                    if (d != 0d) {
+                        if (first) {
+                            sb.append(i).append(",").append(d);
+                            first = false;
+                        }
+                        else {
+                            sb.append(",").append(i).append(",").append(d);
+                        }
                     }
                 }
             }
@@ -502,18 +532,40 @@ public class SemanticSpaceIO {
         for (String word : words) {
             dos.writeUTF(word);
             Vector vector = sspace.getVector(word);
-            // count how many are non-zero
-            int nonZero = 0;
-            for (int i = 0; i < vector.length(); ++i) {
-                if (vector.getValue(i).doubleValue() != 0d)
-                    nonZero++;
+            if (vector instanceof SparseVector) {
+                if (vector instanceof DoubleVector) {
+                    SparseDoubleVector sdv = (SparseDoubleVector)vector;
+                    int[] nz = sdv.getNonZeroIndices();
+                    dos.writeInt(nz.length);
+                    for (int i : nz) {
+                        dos.writeInt(i);
+                        dos.writeDouble(sdv.get(i));
+                    }
+                }
+                else {
+                    SparseVector sv = (SparseVector)vector;
+                    int[] nz = sv.getNonZeroIndices();
+                    dos.writeInt(nz.length);
+                    for (int i : nz) {
+                        dos.writeInt(i);
+                        dos.writeDouble(sv.getValue(i).doubleValue());
+                    }
+                }
             }
-            dos.writeInt(nonZero);
-            for (int i = 0; i < vector.length(); ++i) {
-                double d = vector.getValue(i).doubleValue();
-                if (d != 0d) {
-                    dos.writeInt(i);
-                    dos.writeDouble(d);
+            else {
+                // count how many are non-zero
+                int nonZero = 0;
+                for (int i = 0; i < vector.length(); ++i) {
+                    if (vector.getValue(i).doubleValue() != 0d)
+                        nonZero++;
+                }
+                dos.writeInt(nonZero);
+                for (int i = 0; i < vector.length(); ++i) {
+                    double d = vector.getValue(i).doubleValue();
+                    if (d != 0d) {
+                        dos.writeInt(i);
+                        dos.writeDouble(d);
+                    }
                 }
             }
         }

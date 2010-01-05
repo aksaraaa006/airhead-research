@@ -128,7 +128,8 @@ public class LRAMain {
      */
     public void usage() {
  	System.out.println(
- 	    "usage: java LRAMain [options] <corpusDir> <analogyFile> <testAnalogies> <outputFile>\n" + 
+ 	    "usage: java LRAMain [options] <corpusDir> <analogyFile> " +
+            "<testAnalogies> <outputFile>\n" + 
 	    argOptions.prettyPrint());
     }
 

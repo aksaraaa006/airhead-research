@@ -145,9 +145,33 @@ public abstract class GenericMain {
     abstract protected SemanticSpace getSpace();
 
     /**
-     * Prints out information on how to run the program to {@code stdout}.
+     * Returns a string describing algorithm-specific options and behaviods.
+     * This string will be printed before the default option details
      */
-    abstract public void usage();
+    protected String getAlgorithmSpecifics() {
+        return "";
+    }
+    
+    /**
+     * Prints out information on how to run the program to {@code stdout} using
+     * the option descriptions for compound words, tokenization, .sspace formats
+     * and help.
+     *
+     * @param algorithmSpecifics
+     */
+    protected void usage() {
+        String specifics = getAlgorithmSpecifics();
+        System.out.println(
+            "usage: java " 
+            + this.getClass().getName()
+            + " [options] <output-dir>\n"
+            + argOptions.prettyPrint() 
+            + ((specifics.length() == 0) ? "" : "\n" + specifics)
+            + "\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
+            + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION
+            + "\n\n" + OptionDescriptions.FILE_FORMAT_DESCRIPTION
+            + "\n\n" + OptionDescriptions.HELP_DESCRIPTION);
+    }
 
     /**
      * Returns the {@link SemanticSpaceIO.SSpaceFormat format} in which the

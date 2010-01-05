@@ -172,15 +172,6 @@ public class GrefenstetteMain extends GenericMain {
 	return new Grefenstette();
     }
 
-    /**
-     * Prints the instructions on how to execute this program to standard out.
-     */
-    public void usage() {
- 	System.out.println(
- 	    "usage: java Grefenstette [options] <output-dir>\n" + 
-	    argOptions.prettyPrint());
-    }
-
     public static void main(String[] args) {
 	try {
 	    GrefenstetteMain main = new GrefenstetteMain();

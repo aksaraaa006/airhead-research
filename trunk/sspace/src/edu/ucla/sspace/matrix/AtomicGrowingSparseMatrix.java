@@ -23,9 +23,12 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.util.IntegerMap;
 
-import edu.ucla.sspace.vector.AtomicVector;
+import edu.ucla.sspace.vector.AtomicSparseVector;
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vectors;
 
 import java.util.Arrays;
@@ -37,21 +40,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
- * A concurrent, thread-safe, growable {@code Matrix} class.  This class allows
- * multiple threads to operate on the same matrix where all methods are
+ * A concurrent, thread-safe, growable {@code SparseMatrix} class.  This class
+ * allows multiple threads to operate on the same matrix where all methods are
  * concurrent to the fullest extent possible.
  *
  * @author David Jurgens
  */
-public class AtomicGrowingMatrix implements AtomicMatrix {
+public class AtomicGrowingSparseMatrix implements AtomicMatrix, SparseMatrix {
     
     /**
-     * The read lock for reading rows from this {@code AtomicGrowingMatrix}.
+     * The read lock for reading rows from this {@code AtomicGrowingSparseMatrix}.
      */
     private Lock rowReadLock;
 
     /**
-     * The write lock for adding rows to this {@code AtomicGrowingMatrix}.
+     * The write lock for adding rows to this {@code AtomicGrowingSparseMatrix}.
      */
     private Lock rowWriteLock;
 
@@ -66,28 +69,28 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     private Lock denseArrayWriteLock;
 
     /**
-     * The number of rows represented in this {@code AtomicGrowingMatrix}.
+     * The number of rows represented in this {@code AtomicGrowingSparseMatrix}.
      */
     private AtomicInteger rows;
 
     /**
-     * The number of columns represented in this {@code AtomicGrowingMatrix}.
+     * The number of columns represented in this {@code AtomicGrowingSparseMatrix}.
      */
     private AtomicInteger cols;
   
     /**
-     * Each row is defined as a {@link AtomicVector} which does most of the
+     * Each row is defined as a {@link AtomicSparseVector} which does most of the
      * work.
      */
-    private final Map<Integer, AtomicVector> sparseMatrix;
+    private final Map<Integer,AtomicSparseVector> sparseMatrix;
 
     /**
-     * Create an {@code AtomicGrowingMatrix} with 0 rows and 0 columns.
+     * Create an {@code AtomicGrowingSparseMatrix} with 0 rows and 0 columns.
      */
-    public AtomicGrowingMatrix() {
+    public AtomicGrowingSparseMatrix() {
         this.rows = new AtomicInteger(0);
         this.cols = new AtomicInteger(0);
-        sparseMatrix = new IntegerMap<AtomicVector>();
+        sparseMatrix = new IntegerMap<AtomicSparseVector>();
         
         ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
         rowReadLock = rwLock.readLock();
@@ -103,7 +106,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public double addAndGet(int row, int col, double delta) {
         checkIndices(row, col);
-        AtomicVector rowEntry = getRow(row, col, true);
+        AtomicSparseVector rowEntry = getRow(row, col, true);
         return rowEntry.addAndGet(col, delta);    
     }
 
@@ -131,7 +134,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public double get(int row, int col) {
         checkIndices(row, col);
-        AtomicVector rowEntry = getRow(row, col, false);
+        AtomicSparseVector rowEntry = getRow(row, col, false);
         return (rowEntry == null) ? 0d : rowEntry.get(col);
     }
 
@@ -140,7 +143,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public double getAndAdd(int row, int col, double delta) {
         checkIndices(row, col);
-        AtomicVector rowEntry = getRow(row, col, true);
+        AtomicSparseVector rowEntry = getRow(row, col, true);
         return rowEntry.getAndAdd(col, delta);
     }
 
@@ -165,10 +168,10 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * matrix at the time of the call, which may be different from earlier calls
      * to {@link #rows()}
      */
-    public DoubleVector getColumnVector(int column) {
+    public SparseDoubleVector getColumnVector(int column) {
         checkIndices(0, column);
         rowReadLock.lock();
-        DoubleVector values = new CompactSparseVector(rows.get());
+        SparseDoubleVector values = new SparseHashDoubleVector(rows.get());
         for (int row = 0; row < rows.get(); ++row)
             values.set(row, get(row, column));
         rowReadLock.unlock();
@@ -182,14 +185,14 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public double[] getRow(int row) {
         checkIndices(row, 0);
-        AtomicVector rowEntry = getRow(row, -1, false);
+        AtomicSparseVector rowEntry = getRow(row, -1, false);
         return (rowEntry == null)
             ? new double[cols.get()]
             : toArray(rowEntry, cols.get());
     }
 
     /**
-     * Gets the {@code AtomicVector} associated with the index, or {@code null}
+     * Gets the {@code AtomicSparseVector} associated with the index, or {@code null}
      * if no row entry is present, or if {@code createIfAbsent} is {@code true},
      * creates the missing row and returns that.
      *
@@ -203,9 +206,9 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * @return the row at the entry or {@code null} if the row is not present
      *         and it was not to be created if absent
      */
-    private AtomicVector getRow(int row, int col, boolean createIfAbsent) {
+    private AtomicSparseVector getRow(int row, int col, boolean createIfAbsent) {
         rowReadLock.lock();
-        AtomicVector rowEntry = sparseMatrix.get(row);
+        AtomicSparseVector rowEntry = sparseMatrix.get(row);
         rowReadLock.unlock();
          
         // If no row existed, create one
@@ -215,7 +218,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
             // this thread was waiting on the lock
             rowEntry = sparseMatrix.get(row);
             if (rowEntry == null) {
-                rowEntry = new AtomicVector(new CompactSparseVector());
+                rowEntry = new AtomicSparseVector(new CompactSparseVector());
 
                 // update the bounds as necessary
                 if (row >= rows.get()) {
@@ -236,8 +239,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * matrix at the time of the call, which may be different from earlier calls
      * to {@link #columns()}.
      */
-    public DoubleVector getRowVector(int row) {
-        DoubleVector v = getRow(row, -1, false);
+    public SparseDoubleVector getRowVector(int row) {
+        SparseDoubleVector v = getRow(row, -1, false);
         // If no row was currently assigned in the matrix, then return an empty
         // vector in its place.  Otherwise, return a view on top of the vector
         // with its current length
@@ -257,9 +260,9 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      *
      * @return an unsafe, non-atomic view of the row's data
      */
-    public DoubleVector getRowVectorUnsafe(int row) {
+    public SparseDoubleVector getRowVectorUnsafe(int row) {
         int colsAtCall = cols.get();
-        AtomicVector rowEntry = sparseMatrix.get(row);
+        AtomicSparseVector rowEntry = sparseMatrix.get(row);
         return Vectors.immutable(Vectors.subview(rowEntry.getVector(), 
                                                  0, colsAtCall));
     }
@@ -277,7 +280,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
     public void set(int row, int col, double val) {
         checkIndices(row, col);
 
-        AtomicVector rowEntry = getRow(row, col, true);
+        AtomicSparseVector rowEntry = getRow(row, col, true);
         denseArrayReadLock.lock();
         rowEntry.set(col, val);
         denseArrayReadLock.unlock();
@@ -306,7 +309,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public void setRow(int row, double[] columns) {
         checkIndices(row, 0);
-        AtomicVector rowEntry = getRow(row, columns.length - 1, true);
+        AtomicSparseVector rowEntry = getRow(row, columns.length - 1, true);
         denseArrayReadLock.lock();
         for (int i = 0; i < columns.length; ++i)
             rowEntry.set(i, columns[i]);
@@ -318,7 +321,7 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      */
     public void setRow(int row, DoubleVector values) {
         checkIndices(row, 0);
-        AtomicVector rowEntry = getRow(row, values.length() - 1, true);
+        AtomicSparseVector rowEntry = getRow(row, values.length() - 1, true);
         denseArrayReadLock.lock();
         Vectors.copy(rowEntry, values);
         denseArrayReadLock.unlock();
@@ -335,7 +338,8 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
         denseArrayWriteLock.lock();
         int c = cols.get();
         double[][] m = new double[rows.get()][c];
-        for (Map.Entry<Integer, AtomicVector> e : sparseMatrix.entrySet()) {
+        for (Map.Entry<Integer, AtomicSparseVector> e 
+                 : sparseMatrix.entrySet()) {
             m[e.getKey()] = toArray(e.getValue(), c);
         }
         denseArrayWriteLock.unlock();
