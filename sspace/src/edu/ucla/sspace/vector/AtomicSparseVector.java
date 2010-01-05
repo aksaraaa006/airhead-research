@@ -34,16 +34,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * specific implementation of a {@code Vector}, allowing any {@code Vector}
  * implementation to be made atomic.
  *
+ * @author David Jurgens
  * @author Keith Stevens
  */
-public class AtomicVector implements DoubleVector, Serializable {
+public class AtomicSparseVector implements SparseDoubleVector, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The original {@code Vector} that this {@code AtomicVector} decorates.
+     * The original {@code SparseDoubleVector} that this {@code AtomicSparseVector}
+     * decorates.
      */
-    private final DoubleVector vector;
+    private final SparseDoubleVector vector;
 
     /**
      * Read lock for non-mutating access to the backing {@code vector}.
@@ -56,12 +58,12 @@ public class AtomicVector implements DoubleVector, Serializable {
     private final Lock writeLock;
 
     /**
-     * Creates a new {@code AtomicVector} decorating an already existing {@code
-     * Vector}.
+     * Creates a new {@code AtomicSparseVector} decorating an already existing
+     * {@code Vector}.
      *
      * @param v The vector to decorate.
      */
-    public AtomicVector(DoubleVector v) {
+    public AtomicSparseVector(SparseDoubleVector v) {
         vector = v;
 
         ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -110,14 +112,21 @@ public class AtomicVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public int[] getNonZeroIndices() {
+        return vector.getNonZeroIndices();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Double getValue(int index) {
         return get(index);
     }
 
     /**
-     * Returns the {@link DoubleVector} that backs this instance.
+     * Returns the {@link SparseDoubleVector} that backs this instance.
      */
-    public DoubleVector getVector() {
+    public SparseDoubleVector getVector() {
         return vector;
     }
 

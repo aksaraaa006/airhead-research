@@ -154,12 +154,10 @@ public class LogEntropyTransform implements Transform {
 
         // Open the input matrix as a random access file to allow for us to
         // travel backwards as multiple passes are needed
-        //RandomAccessFile raf = new RandomAccessFile(inputMatrixFile, "r");
         DataInputStream dis = new DataInputStream(
             new BufferedInputStream(new FileInputStream(inputMatrixFile)));
 
         // Make one pass through the matrix to calculate the global statistics
-
 	int numUniqueWords = dis.readInt();
 	int numDocs = dis.readInt(); // equal to the number of rows
         int numMatrixEntries = dis.readInt();
@@ -167,6 +165,7 @@ public class LogEntropyTransform implements Transform {
         // Also keep track of how many times a word was seen throughout the
         // entire corpus (i.e. matrix)
         int[] termToGlobalCount = new int[numUniqueWords];
+        int[] docToTermCount = new int[numDocs];
         
         // SVDLIBC sparse binary is organized as column data.  Columns are how
         // many times each word (row) as it appears in that columns's document.
@@ -180,6 +179,7 @@ public class LogEntropyTransform implements Transform {
                 // occurrence is specified as a float, rather than an int
                 int occurrences = (int)(dis.readFloat());
                 termToGlobalCount[termIndex] += occurrences; 
+                docToTermCount[docIndex] += occurrences;
             }
 	}
 
@@ -189,32 +189,27 @@ public class LogEntropyTransform implements Transform {
             new BufferedInputStream(new FileInputStream(inputMatrixFile)));
         dis.skip(12); // 3 integers
 
-        // Keep track of the sum of all the entropy measures a term in each
-        // document
-        double[] termToEntropySum = new double[numUniqueWords];
-        
-	// Find the probability that the term appears in the document given how
-	// many terms it has to begin with.  This probability is used to
-	// determine the information (entropy) for a word in the document
-	// itself.  These entropy values are summed for the whole corpus.
+        double[] termEntropy = new double[numUniqueWords];
+
         docIndex = 0;
         entriesSeen = 0;
-        for (; entriesSeen < numMatrixEntries; docIndex++) {
+        for (; entriesSeen < numMatrixEntries; ++docIndex) {
             int numUniqueWordsInDoc = dis.readInt();
 
-            for (int i = 0; i < numUniqueWordsInDoc; ++entriesSeen, ++i) {
+            for (int i = 0; i < numUniqueWordsInDoc; ++i, ++entriesSeen) {
                 int termIndex = dis.readInt();
                 // occurrence is specified as a float, rather than an int
                 float occurrences = dis.readFloat();
-
-                double probabilityOfWordInDoc = 
-                    occurrences / termToGlobalCount[termIndex];
-                double wordEntropyInDoc = probabilityOfWordInDoc * 
-                    log2(probabilityOfWordInDoc);
-                
-                termToEntropySum[termIndex] += wordEntropyInDoc;
+                // tf = term frequency in that document
+                double tf = occurrences;
+                // gf = global frequency of the term
+                double gf = termToGlobalCount[termIndex];
+                double p = tf / gf;
+                termEntropy[termIndex] += (p * log2(p)) / log2(numDocs);
             }
 	}
+
+        dis.close();
 
         DataOutputStream dos = new DataOutputStream(
             new BufferedOutputStream(new FileOutputStream(outputMatrixFile)));
@@ -242,10 +237,10 @@ public class LogEntropyTransform implements Transform {
                 int termIndex = dis.readInt();
                 // occurrence is specified as a float, rather than an int
                 float occurrences = dis.readFloat();
-                
-                double entropySum = termToEntropySum[termIndex];
-                double entropy = 1 + (entropySum / log2(numDocs));                
-                double log = log2_1p(occurrences);
+                // tf = term frequency in that document
+                double tf = occurrences;
+                double log = log2_1p(tf);
+                double entropy = 1 - termEntropy[termIndex];
                 dos.writeInt(termIndex);
                 dos.writeFloat((float)(log * entropy));
             }
@@ -267,8 +262,11 @@ public class LogEntropyTransform implements Transform {
             throws IOException {
 
 	Map<Integer,Integer> docToNumTerms = new HashMap<Integer,Integer>();
-	int numDocs = 0;
-	Map<Integer,Integer> termToGlobalCount = new HashMap<Integer,Integer>();
+	Map<Integer,Integer> termToGlobalCountMap = 
+            new HashMap<Integer,Integer>();
+	Map<Integer,Integer> docToTermCountMap = 
+            new HashMap<Integer,Integer>();
+
 	int tokensSeenInCorpus = 0;
 	
 	// calculate how many terms were in each document for the original
@@ -279,46 +277,54 @@ public class LogEntropyTransform implements Transform {
 	    String[] termDocCount = line.split("\\s+");
 	    
 	    Integer term  = Integer.valueOf(termDocCount[0]);
-	    int doc   = Integer.parseInt(termDocCount[1]);
+	    Integer doc   = Integer.valueOf(termDocCount[1]);
 	    Integer count = Double.valueOf(termDocCount[2]).intValue();
-	    
-	    if (doc > numDocs)
-		numDocs = doc;
-	    
-	    Integer termGlobalCount = termToGlobalCount.get(term);
-	    termToGlobalCount.put(term, (termGlobalCount == null)
-				  ? count
-				  : termGlobalCount + count);
+	    	    
+	    Integer termGlobalCount = termToGlobalCountMap.get(term);
+	    termToGlobalCountMap.put(term, (termGlobalCount == null)
+                                     ? count  : termGlobalCount + count);
+            Integer docTermCount = docToTermCountMap.get(doc);
+            docToTermCountMap.put(doc, (docTermCount == null)
+                                  ? count : docTermCount + count);
 	}
 
 	br.close();
+        
+        int numDocs = docToTermCountMap.size();
+        int numUniqueWords = termToGlobalCountMap.size();
 
-	LOGGER.fine("calculating term entropy");
+        // Recalculate the values as arrays to speed up the computation in the
+        // next step
+        int[] termToGlobalCount = new int[numUniqueWords];
+        int[] docToTermCount = new int[numDocs];
+        
+        for (Map.Entry<Integer,Integer> e : docToTermCountMap.entrySet())
+            docToTermCount[e.getKey()] = e.getValue();
 
-	Map<Integer,Double> termToEntropySum = new HashMap<Integer,Double>();
+        for (Map.Entry<Integer,Integer> e : termToGlobalCountMap.entrySet())
+            termToGlobalCount[e.getKey()] = e.getValue();
 
-	// now go through and find the probability that the term appears in the
-	// document given how many terms it has to begin with
-	br = new BufferedReader(new FileReader(inputMatrixFile));
+        double[] termEntropy = new double[numUniqueWords];
+
+	// calculate how many terms were in each document for the original
+	// term-document matrix
+        br = new BufferedReader(new FileReader(inputMatrixFile));
 	for (String line = null; (line = br.readLine()) != null; ) {
+
 	    String[] termDocCount = line.split("\\s+");
 	    
 	    Integer term  = Integer.valueOf(termDocCount[0]);
 	    Integer doc   = Integer.valueOf(termDocCount[1]);
 	    Integer count = Double.valueOf(termDocCount[2]).intValue();
-	    
-	    double probability = count.doubleValue() / 
-		termToGlobalCount.get(term).doubleValue();
-	    
-	    double d = (probability * log2(probability));
-	    
-	    // NOTE: keep the entropy sum a positive value
-	    Double entropySum = termToEntropySum.get(term);
-	    termToEntropySum.put(term, (entropySum == null)
-				 ? d : entropySum + d);
+
+            // tf = term frequency in that document
+            double tf = count;
+            // gf = global frequency of the term
+            double gf = termToGlobalCount[term];
+            double p = tf / gf;
+            termEntropy[term] += (p * log2(p)) / log2(numDocs);
 	}
 	br.close();
-	   
 
 	LOGGER.fine("generating new matrix");
 	    	    
@@ -335,10 +341,12 @@ public class LogEntropyTransform implements Transform {
 	    Integer doc   = Integer.valueOf(termDocCount[1]);
 	    Integer count = Double.valueOf(termDocCount[2]).intValue();
 	    
-	    double log = log2_1p(count);
-	    
-	    double entropySum = termToEntropySum.get(term).doubleValue();
-	    double entropy = 1 + (entropySum / log2(numDocs));
+            // tf = term frequency in that document
+            double tf = count;
+            double log = log2_1p(tf);
+            // gf = global frequency of the term
+            double gf = termToGlobalCount[term];
+            double entropy = 1 - termEntropy[term];
 	    
 	    // now print out the noralized values
 	    pw.println(term + "\t" +
@@ -371,69 +379,84 @@ public class LogEntropyTransform implements Transform {
         // Count how many total words are in each document.  We need this value
         // when calculating the entropy of each word in the next step.
         int[] docToNumWords = new int[cols];
-        for (int doc = 0; doc < cols; ++doc) {
-            // sum how many time each term appears the doc
-            for (int term = 0; term < rows; ++term)
-                docToNumWords[doc] += matrix.get(term, doc);
-        }
+        int[] termToGlobalCount = new int[rows];
 
-        for (int row = 0; row < rows; ++row) {
+        for (int term = 0; term < rows; ++term) {
+
             // Each row is a word
-            DoubleVector rowVec = matrix.getRowVector(row);
+            DoubleVector rowVec = matrix.getRowVector(term);
             
-            // Get the total number of times the word occurs
-            double occurrencesInCorpus = 0;
-
             // Special case for sparse vectors
             if (rowVec instanceof SparseVector) {
                 SparseVector sv = (SparseVector)rowVec;
-                for (int nonZeroCol : sv.getNonZeroIndices())
-                    occurrencesInCorpus += rowVec.get(nonZeroCol);
+                int[] docsWithTerm = sv.getNonZeroIndices();                
+                for (int doc : docsWithTerm) {
+                    int count = (int)rowVec.get(doc);
+                    termToGlobalCount[term] += count;
+                    docToNumWords[doc] += count;
+                }
             }
             else {
-                for (int col = 0; col < cols; ++col)
-                    occurrencesInCorpus += rowVec.get(col);
+                for (int doc = 0; doc < cols; ++doc) {
+                    int count = (int)rowVec.get(doc);
+                    termToGlobalCount[term] += count;
+                    docToNumWords[doc] += count;
+                }
             }
+        }
+         
+        // Then calculate the entropy (information gain) for the occurrence
+        // of the word in each document
+        double[] termEntropy = new double[rows];
 
-            double wordEntropy = 0;
+        for (int term = 0; term < rows; ++term) {
+            DoubleVector rowVec = matrix.getRowVector(term);
 
-            // Then calculate the entropy (information gain) for the occurrence
-            // of the word in each document
             if (rowVec instanceof SparseVector) {
                 SparseVector sv = (SparseVector)rowVec;
                 for (int doc : sv.getNonZeroIndices()) {                    
-                    double occurrences = rowVec.get(doc);
-                    double probabilityOfWord = 
-                        occurrences / docToNumWords[doc];
-                    wordEntropy += probabilityOfWord * log2(probabilityOfWord);
+                    double occurrences = rowVec.get(doc);                    
+                    double tf = occurrences;
+                    // gf = global frequency of the term
+                    double gf = termToGlobalCount[term];
+                    double p = tf / gf;
+                    termEntropy[term] += (p * log2(p)) / log2(cols);
                 }
             }
             else {
                 for (int doc = 0; doc < cols; ++doc) {
                     double occurrences = rowVec.get(doc);
-                    double probabilityOfWord = 
-                        occurrences / docToNumWords[doc];
-                    wordEntropy += probabilityOfWord * log2(probabilityOfWord);
-
+                    double tf = occurrences;
+                    // gf = global frequency of the term
+                    double gf = termToGlobalCount[term];
+                    double p = tf / gf;
+                    termEntropy[term] += (p * log2(p)) / log2(cols);
                 }
             }
+        }
 
-            // log2(cols) = log of the number of documents
-            double entropy = 1 + (wordEntropy / log2(cols));
+        // Last, take the log value of each occurrence and multiply by the
+        // entropy to get the new value in the transformed matrix
+        for (int term = 0; term < rows; ++term) {
+            DoubleVector rowVec = matrix.getRowVector(term);
 
-            // Last, take the log value of each occurrence and multiply by the
-            // entropy to get the new value in the transformed matrix
             if (rowVec instanceof SparseVector) {
                 SparseVector sv = (SparseVector)rowVec;
                 for (int doc : sv.getNonZeroIndices()) {                    
                     double occurrences = rowVec.get(doc);
-                    transformed.set(row, doc, log2_1p(occurrences) * entropy);
+                    double tf = occurrences;
+                    double log = log2_1p(tf);
+                    double entropy = 1 - termEntropy[term];
+                    transformed.set(term, doc, log * entropy);
                 }
             }
             else {
                 for (int doc = 0; doc < cols; ++doc) {
                     double occurrences = rowVec.get(doc);
-                    transformed.set(row, doc, log2_1p(occurrences) * entropy);
+                    double tf = occurrences;
+                    double log = log2_1p(tf);
+                    double entropy = 1 - termEntropy[term];
+                    transformed.set(term, doc, log * entropy);
                 }
             }
         }

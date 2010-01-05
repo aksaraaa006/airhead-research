@@ -1056,22 +1056,12 @@ public class FixedDurationTemporalRandomIndexingMain {
 
             "Semantic filters limit the set of tokens for which the " +
             "semantics are kept.\nThis limits the potential memory overhead " +
-            "for calculating semantics for a\nlarge set of words." +
+            "for calculating semantics for a\nlarge set of words."
 
-            "\n\nThe -C, --compoundWords option specifies a file name of " +
-            "multiple tokens that\nshould be counted as a single word, e.g." +
-            " \"white house\".  Each compound\ntoken should be specified on " +
-            "its own line.\n\n" +
-
-            "Token filter configurations are specified as a comma-separated " +
-            "list of file\nnames, where each file name has an optional string" +
-            " with values:inclusive or\nexclusive, which species whether the" +
-            " token are to be used for an exclusive\nfilter. The default " +
-            "value is include. An example configuration might look like:\n" +
-            "  --tokenFilter=english-dictionary.txt=include," +
-            "stop-list.txt=exclude" +
-            
-            "\n\nReport bugs to <s-space-research-dev@googlegroups.com>");
+            + "\n\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
+            + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION
+            + "\n\n" + OptionDescriptions.FILE_FORMAT_DESCRIPTION
+            + "\n\n" + OptionDescriptions.HELP_DESCRIPTION);            
     }
 
     protected void verbose(String msg) {        

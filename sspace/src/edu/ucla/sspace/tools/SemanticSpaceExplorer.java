@@ -78,6 +78,25 @@ public class SemanticSpaceExplorer {
         ALIAS,
         GET_WORDS    
     }
+
+    /**
+     * A mapping from the abbreviation for a command to its {@link Command}
+     * instance.
+     */
+    private static final Map<String,Command> abbreviatedCommands 
+        = new HashMap<String,Command>();
+
+    // For each of the commands, take the first letter of each word in its name
+    // to form the abbreviated command string.
+    static {
+        for (Command c : Command.values()) {
+            String[] commandWords = c.toString().split("_");
+            StringBuilder abbv = new StringBuilder();
+            for (String w : commandWords)
+                abbv.append(w.charAt(0));
+            abbreviatedCommands.put(abbv.toString().toLowerCase(), c);
+        }
+    }
     
     /**
      * The comparator to be used when identifying the nearest neighbors to words
@@ -183,8 +202,11 @@ public class SemanticSpaceExplorer {
             command = 
                 Command.valueOf(commandStr.replaceAll("-", "_").toUpperCase());
         } catch (IllegalArgumentException iae) {
-            out.println("Unknown command: " + commandStr);
-            return false;
+            command = abbreviatedCommands.get(commandStr);
+            if (command == null) {
+                out.println("Unknown command: " + commandStr);
+                return false;
+            }
         }
 
         // A giant switch statement for all of the commands 
