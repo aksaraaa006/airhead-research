@@ -61,15 +61,15 @@ public class ESLSynonymEvaluation implements WordChoiceEvaluation {
      * to by the provided name.
      */
     public ESLSynonymEvaluation(String eslQuestionsFileName) {
-	this(new File(eslQuestionsFileName));
+        this(new File(eslQuestionsFileName));
     }
     
     /**
      * Constructs this evaluation test using the ESL test question file.
      */
     public ESLSynonymEvaluation(File eslQuestionsFile) {
-	questions = parseTestFile(eslQuestionsFile);
-	dataFileName = eslQuestionsFile.getName();
+        questions = parseTestFile(eslQuestionsFile);
+        dataFileName = eslQuestionsFile.getName();
     }
 
     /**
@@ -77,51 +77,51 @@ public class ESLSynonymEvaluation implements WordChoiceEvaluation {
      * therein.
      */
     private static Collection<MultipleChoiceQuestion> parseTestFile(File f) {
-	try {
-	    BufferedReader br = new BufferedReader(new FileReader(f));
-	    Collection<MultipleChoiceQuestion> questions = 
-		new LinkedList<MultipleChoiceQuestion>();
-	    for (String line = null; (line = br.readLine()) != null; ) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            Collection<MultipleChoiceQuestion> questions = 
+                new LinkedList<MultipleChoiceQuestion>();
+            for (String line = null; (line = br.readLine()) != null; ) {
 
-		// skip comments and blank lines
-		if (line.startsWith("#") || line.length() == 0) {
-		    continue;
-		}
+                // skip comments and blank lines
+                if (line.startsWith("#") || line.length() == 0) {
+                    continue;
+                }
 
-		// Expect 5 words, | delimited, where the first is the prompt,
-		// the correct answer is in index 1, and the other 3 words
-		// follow
-		String[] promptAndOptions = line.split("\\|");
+                // Expect 5 words, | delimited, where the first is the prompt,
+                // the correct answer is in index 1, and the other 3 words
+                // follow
+                String[] promptAndOptions = line.split("\\|");
 
-		// each of the strings has extra white space padding, so trim it
-		// off
-		for (int i = 0; i < promptAndOptions.length; ++i) {
-		    promptAndOptions[i] = promptAndOptions[i].trim();
-		}
+                // each of the strings has extra white space padding, so trim it
+                // off
+                for (int i = 0; i < promptAndOptions.length; ++i) {
+                    promptAndOptions[i] = promptAndOptions[i].trim();
+                }
 
-		String prompt = promptAndOptions[0];
-		String[] options = new String[4];
-		List<String> optionsAsList = Arrays.asList(Arrays.copyOfRange(
-		    promptAndOptions, 1, promptAndOptions.length - 1));
-		questions.add(
-		    new SimpleMultipleChoiceQuestion(prompt, optionsAsList, 0));
-	    }
+                String prompt = promptAndOptions[0];
+                String[] options = new String[4];
+                List<String> optionsAsList = Arrays.asList(Arrays.copyOfRange(
+                    promptAndOptions, 1, promptAndOptions.length - 1));
+                questions.add(
+                    new SimpleMultipleChoiceQuestion(prompt, optionsAsList, 0));
+            }
 
-	    return questions;
-	} catch (IOException ioe) {
-	    // rethrow, as any IOException is fatal to evaluation
-	    throw new IOError(ioe);
-	}
+            return questions;
+        } catch (IOException ioe) {
+            // rethrow, as any IOException is fatal to evaluation
+            throw new IOError(ioe);
+        }
     }
     
     /**
      * {@inheritDoc}
      */
     public Collection<MultipleChoiceQuestion> getQuestions() {
-	return questions;
+        return questions;
     }
 
     public String toString() {
-	return "Word Choice [" + dataFileName + "]";
+        return "Word Choice [" + dataFileName + "]";
     }
 }

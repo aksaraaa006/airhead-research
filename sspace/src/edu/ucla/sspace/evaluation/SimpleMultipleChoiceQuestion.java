@@ -47,49 +47,50 @@ public class SimpleMultipleChoiceQuestion implements MultipleChoiceQuestion {
     /**
      * Constructs this question with the provided prompt, options and answer.
      */
-    public SimpleMultipleChoiceQuestion(String prompt, List<String> options,
-					int correctAnswer) {
-	this.prompt = prompt;
-	this.options = options;
-	this.correctAnswer = correctAnswer;
+    public SimpleMultipleChoiceQuestion(String prompt,
+                                        List<String> options,
+                                        int correctAnswer) {
+        this.prompt = prompt;
+        this.options = options;
+        this.correctAnswer = correctAnswer;
     }
 
     /**
      * {@inheritDoc}
      */
     public String getPrompt() {
-	return prompt;
+        return prompt;
     }
 
     /**
      * {@inheritDoc}
      */
     public List<String> getOptions() {
-	return options;
+        return options;
     }
 
     /**
      * {@inheritDoc}
      */
     public int getCorrectAnswer() {
-	return correctAnswer;
+        return correctAnswer;
     }
 
     /**
      * Returns a human-readable form of the question.
      */
     public String toString() {
-	StringBuffer sb = new StringBuffer(100);
-	sb.append(prompt).append(":\n");
-	int i = 0;
-	for (String option : options) {
-	    sb.append(i).append(" - ").append(option);
-	    if (i == correctAnswer) {
-		sb.append("\t(correct)");
-	    }
-	    sb.append("\n");
-	    i++;
-	}
-	return sb.toString();
+        StringBuffer sb = new StringBuffer(100);
+        sb.append(prompt).append(":\n");
+        int i = 0;
+        for (String option : options) {
+            sb.append(i).append(" - ").append(option);
+            if (i == correctAnswer) {
+                sb.append("\t(correct)");
+            }
+            sb.append("\n");
+            i++;
+        }
+        return sb.toString();
     }
 }

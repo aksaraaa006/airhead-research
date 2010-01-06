@@ -37,15 +37,29 @@ import java.util.List;
 /**
  * A test-runner for evaluating the performance of a {@link SemanticSpace} on a
  * {@link WordSimilarityEvaluation} test.
+ *
+ * @authro David Jurgens
  */ 
 public class WordSimilarityEvaluationRunner {
 
     /**
+     * Evaluates the performance of a given {@code SemanticSpace} on a given
+     * {@code WordSimilarityEvaluation} using the provided similarity metric.
+     * Returns a {@link WordSimilarityReport} detailing the performance, with
+     * similarity scores scaled by the lowest and highest human based similarity
+     * ratings.
      *
+     * @param sspace The {@link SemanticSpace} to test against
+     * @param test The {@link WordSimilarityEvaluation} providing human
+     *             similarity scores
+     * @param vectorComparisonType The similarity measture to use
+     *
+     * @return A {@link WordSimilarityReport} detailing the performance
      */
-    public static Report evaluate(SemanticSpace sspace,
-                  WordSimilarityEvaluation test,
-                  Similarity.SimType vectorComparisonType) {
+    public static WordSimilarityReport evaluate(
+            SemanticSpace sspace,
+            WordSimilarityEvaluation test,
+            Similarity.SimType vectorComparisonType) {
         Collection<WordSimilarity> wordPairs = test.getPairs();
         int unanswerable = 0;
 
@@ -58,9 +72,9 @@ public class WordSimilarityEvaluationRunner {
         
         double testRange = test.getMostSimilarValue() - 
             test.getLeastSimilarValue();
-        
 
-        question_loop:
+        // Compute the word pair similarity using the given Semantic Space for
+        // each word.
         for (WordSimilarity pair : wordPairs) {
             // get the vector for each word
             Vector firstVector = sspace.getVector(pair.getFirstWord());
@@ -84,7 +98,8 @@ public class WordSimilarityEvaluationRunner {
             sspaceJudgements.add(scaled);
         }
         
-        // create arrays to to calculate the correlation
+        // Calculate the correlation between the human judgements and the
+        // semantic space judgements.
         double[] humanArr = new double[humanJudgements.size()];
         double[] sspaceArr = new double[humanJudgements.size()];
 
@@ -99,39 +114,33 @@ public class WordSimilarityEvaluationRunner {
     }
 
     /**
-     * A report of the performance of a {@link SemanticSpace} on a particular
-     * {@link WordSimilarityEvaluation} test.
+     * A simple implementation of a {@code Report} that just returns values
+     * provided at the time of construction.
      */
-    public interface Report {
-
-        /**
-         * Returns the total number of word pairs.
-         */
-        int numberOfWordPairs();
-
-        /**
-         * Returns the correlation between the {@link SemanticSpace} similarity
-         * judgements and the provided human similarity judgements.
-         */
-        double correlation();
-
-        /**
-         * Returns the number of questions for which the {@link SemanticSpace}
-         * could not give an answer due to missing word vectors.
-         */
-        int unanswerableQuestions();
-    }
-
-    private static class SimpleReport implements Report {
+    private static class SimpleReport implements WordSimilarityReport {
         
+        /**
+         * The total number of word pairs
+         */
         private final int numWordPairs;
 
+        /**
+         * The correlation between the {@link SemanticSpace} judgements and the
+         * human similarity judgements
+         */
         private final double correlation;
 
+        /**
+         * The number of unaswnserable pairs.
+         */
         private final int unanswerable;
 
-        public SimpleReport(int numWordPairs, double correlation, 
-                    int unanswerable) {
+        /**
+         * Creates a simple report
+         */
+        public SimpleReport(int numWordPairs,
+                            double correlation, 
+                            int unanswerable) {
             this.numWordPairs = numWordPairs;
             this.correlation = correlation;
             this.unanswerable = unanswerable;
@@ -158,6 +167,10 @@ public class WordSimilarityEvaluationRunner {
             return unanswerable;
         }
 
+        /**
+         * Returns a string describing the three values represented by this
+         * {@link report}
+         */
         public String toString() {
             return String.format("%.4f correlation; %d/%d unanswered",
                      correlation, unanswerable, numWordPairs);

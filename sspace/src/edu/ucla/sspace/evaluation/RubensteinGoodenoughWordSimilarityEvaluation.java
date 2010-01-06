@@ -63,7 +63,7 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
      * refered to by the provided name.
      */
     public RubensteinGoodenoughWordSimilarityEvaluation(String rbSimFileName) {
-	this(new File(rbSimFileName));
+        this(new File(rbSimFileName));
     }
 
     /**
@@ -71,8 +71,8 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
      * data file.
      */
     public RubensteinGoodenoughWordSimilarityEvaluation(File rbSimFile) {
-	pairs = parse(rbSimFile);
-	dataFileName = rbSimFile.getName();
+        pairs = parse(rbSimFile);
+        dataFileName = rbSimFile.getName();
     }
 
     /**
@@ -80,59 +80,59 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
      */
     private Collection<WordSimilarity> parse(File word353file) {
 
-	Collection<WordSimilarity> pairs = new LinkedList<WordSimilarity>();
-		
-	try {
-	    BufferedReader br = new BufferedReader(new FileReader(word353file));
-	    // skip the first line
-	    br.readLine();
-	    for (String line = null; (line = br.readLine()) != null; ) {
-		
-		// skip comments and blank lines
-		if (line.startsWith("#") || line.length() == 0) {
-		    continue;
-		}
+        Collection<WordSimilarity> pairs = new LinkedList<WordSimilarity>();
+                
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(word353file));
+            // skip the first line
+            br.readLine();
+            for (String line = null; (line = br.readLine()) != null; ) {
+                
+                // skip comments and blank lines
+                if (line.startsWith("#") || line.length() == 0) {
+                    continue;
+                }
 
-		String[] wordsAndNum = line.split("\t");
-		if (wordsAndNum.length != 3) {
-		    throw new Error("Unexpected line formatting: " + line);
-		}
-		pairs.add(new SimpleWordSimilarity(
-			  wordsAndNum[0], wordsAndNum[1], 
-			  Double.parseDouble(wordsAndNum[2])));
-	    }
-	} catch (IOException ioe) {
-	    // rethrow as an IOE is fatal evaluation
-	    throw new IOError(ioe);
-	}
-	    
-	return pairs;
+                String[] wordsAndNum = line.split("\t");
+                if (wordsAndNum.length != 3) {
+                    throw new Error("Unexpected line formatting: " + line);
+                }
+                pairs.add(new SimpleWordSimilarity(
+                          wordsAndNum[0], wordsAndNum[1], 
+                          Double.parseDouble(wordsAndNum[2])));
+            }
+        } catch (IOException ioe) {
+            // rethrow as an IOE is fatal evaluation
+            throw new IOError(ioe);
+        }
+            
+        return pairs;
     }
 
     /**
      * {@inheritDoc}
      */
     public Collection<WordSimilarity> getPairs() {
-	return pairs;
+        return pairs;
     }
 
     /**
      * {@inheritDoc}
      */
     public double getMostSimilarValue() {
-	return 10d;
+        return 10d;
     }
     
     /**
      * {@inheritDoc}
      */
     public double  getLeastSimilarValue() {
-	return 0d;
+        return 0d;
     }
 
     public String toString() {
-	return "Rubenstein & Goodenough Word Similarity Test [" 
-	    + dataFileName + "]";
+        return "Rubenstein & Goodenough Word Similarity Test [" 
+            + dataFileName + "]";
     }
 }
 

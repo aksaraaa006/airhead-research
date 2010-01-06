@@ -21,33 +21,30 @@
 
 package edu.ucla.sspace.evaluation;
 
-import java.util.Collection;
-
-import edu.ucla.sspace.common.SemanticSpace;
 
 /**
- * An evaluation metric that compares the human-judged similarity of word pairs
- * against the similarity judgements from a {@link SemanticSpace}.
+ * A report of the performance of a {@link SemanticSpace} on a particular
+ * {@link WordChoiceEvaluation} test.
  *
  * @author David Jurgens
  */
-public interface WordSimilarityEvaluation {
+public interface WordChoiceReport {
 
     /**
-     * Returns a collection of human similarity judgements for word pairs.
+     * Returns the total number of questions on the test.
      */
-    Collection<WordSimilarity> getPairs();
+    int numberOfQuestions();
 
     /**
-     * Returns the numeric similarity judgement that is equivalent to two words
-     * being completely similar (i.e. identical).
+     * Returns the number of questions that were answered correctly.
      */
-    double getMostSimilarValue();
-    
-    /**
-     * Returns the numeric similarity judgement that is equivalent to two words
-     * being completely dissimilar (i.e. identical).
-     */
-    double getLeastSimilarValue();
+    int correctAnswers();
 
+    /**
+     * Returns the number of questions for which the {@link SemanticSpace}
+     * could not give an answer due to missing word vectors in either the
+     * prompt or the options.
+     */
+    int unanswerableQuestions();
 }
+
