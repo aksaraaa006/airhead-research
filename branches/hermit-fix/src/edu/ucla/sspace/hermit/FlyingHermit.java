@@ -34,6 +34,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseHashIntegerVector;
+import edu.ucla.sspace.vector.SparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
@@ -157,12 +158,12 @@ public class FlyingHermit implements SemanticSpace, Filterable {
      * A mapping from strings to {@code IntegerVector}s which represent an index
      * vector.
      */
-    private final Map<String, IntegerVector> indexMap;
+    private final Map<String, TernaryVector> indexMap;
 
     /**
      * The {@code PermutationFunction} to use for co-occurrances.
      */
-    private final PermutationFunction<IntegerVector> permFunc;
+    private final PermutationFunction<TernaryVector> permFunc;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -196,7 +197,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
      * The type of clustering used for {@code FlyingHermit}.  This specifies how
      * hermit will merge it's context vectors into different senses.
      */
-    private ClusterMap clusterMap;
+    private ClusterMap<SparseIntegerVector> clusterMap;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -222,9 +223,9 @@ public class FlyingHermit implements SemanticSpace, Filterable {
     /**
      * Create a new instance of {@code FlyingHermit} which takes ownership
      */
-    public FlyingHermit(Map<String, IntegerVector> indexGeneratorMap,
-                        PermutationFunction<IntegerVector> permFunction,
-                        OnlineClusteringGenerator clusterGenerator,
+    public FlyingHermit(Map<String, TernaryVector> indexGeneratorMap,
+                        PermutationFunction<TernaryVector> permFunction,
+                        OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator,
                         Map<String, String> remap,
                         Set<String> accepted,
                         int vectorSize,
@@ -240,7 +241,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
         compacted = false;
 
         accuracyMap = new AccuracyMap();
-        clusterMap = new ClusterMap(clusterGenerator);
+        clusterMap = new ClusterMap<SparseIntegerVector>(clusterGenerator);
     }
 
     /**
@@ -301,7 +302,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
-                IntegerVector meaning = 
+                SparseIntegerVector meaning = 
                     new SparseHashIntegerVector(indexVectorSize);
 
                 // Process the previous words, specifying their distance from
@@ -309,10 +310,10 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 int distance = -1 * prevWords.size();
                 for (String term : prevWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        IntegerVector termVector = indexMap.get(term);
+                        TernaryVector termVector = indexMap.get(term);
                         if (permFunc != null)
                             termVector = permFunc.permute(termVector, distance);
-                        VectorMath.add(meaning, termVector);
+                        add(meaning, termVector);
                     }
                     ++distance;
                 }
@@ -323,10 +324,10 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 // focus word.
                 for (String term : nextWords) {
                     if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        IntegerVector termVector = indexMap.get(term);
+                        TernaryVector termVector = indexMap.get(term);
                         if (permFunc != null)
                             termVector = permFunc.permute(termVector, distance);
-                        VectorMath.add(meaning, termVector);
+                        add(meaning, termVector);
                     }
                     ++distance;
                 }
@@ -424,13 +425,14 @@ public class FlyingHermit implements SemanticSpace, Filterable {
             // have -SENSE_NUM appended to the token.  After this is done, the
             // clusters will be removed from the map to clear up space.
             for (String term : terms) {
-                List<List<Vector>> clusters = clusterMap.getClusters(term);
+                List<List<SparseIntegerVector>> clusters =
+                    clusterMap.getClusters(term);
                 int i = 0;
-                for (List<Vector> cluster : clusters) {
-                    Vector sense = null;
-                    for (Vector v : cluster) {
+                for (List<SparseIntegerVector> cluster : clusters) {
+                    SparseIntegerVector sense = null;
+                    for (SparseIntegerVector v : cluster) {
                         if (sense == null)
-                            sense = Vectors.copyOf(v);
+                            sense = (SparseIntegerVector) Vectors.copyOf(v);
                         else
                             VectorMath.add(sense, v);
                     }
@@ -636,5 +638,12 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 ++i;
             }
         }
+    }
+    
+    private void add(IntegerVector dest, TernaryVector src) {
+        for (int p : src.positiveDimensions())
+            dest.add(p, 1);
+        for (int n : src.negativeDimensions())
+            dest.add(n, -1);
     }
 }

@@ -44,6 +44,8 @@ import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 
 import edu.ucla.sspace.vector.IntegerVector;
+import edu.ucla.sspace.vector.SparseIntegerVector;
+import edu.ucla.sspace.vector.TernaryVector;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -119,11 +121,11 @@ public class FlyingHermitMain extends GenericMain {
      */
     private int nextWordsSize;
 
-    private IntegerVectorGeneratorMap<IntegerVector> vectorMap;
+    private IntegerVectorGeneratorMap<TernaryVector> vectorMap;
 
-    private PermutationFunction<IntegerVector> permFunction;
+    private PermutationFunction<TernaryVector> permFunction;
 
-    private OnlineClusteringGenerator clusterGenerator;
+    private OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator;
 
     /**
      * The replacement map, mapping original terms to conflated terms, for
@@ -300,14 +302,14 @@ public class FlyingHermitMain extends GenericMain {
         String permType = argOptions.getStringOption("permutationFunction",
                                                      DEFAULT_FUNCTION);
         permFunction = (argOptions.hasOption("usePermutations"))
-            ? (PermutationFunction<IntegerVector>) getObjectInstance(permType)
+            ? (PermutationFunction<TernaryVector>) getObjectInstance(permType)
             : null;
 
         // Setup the generator.
         String generatorType = 
             argOptions.getStringOption("generator", DEFAULT_GENERATOR);
-        IntegerVectorGenerator<IntegerVector> generator =
-            (IntegerVectorGenerator<IntegerVector>) getObjectInstance(
+        IntegerVectorGenerator<TernaryVector> generator =
+            (IntegerVectorGenerator<TernaryVector>) getObjectInstance(
                     generatorType);
 
         // Setup the use of dense vectors.
@@ -316,16 +318,16 @@ public class FlyingHermitMain extends GenericMain {
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadVectors");
-            vectorMap = (IntegerVectorGeneratorMap<IntegerVector>)
+            vectorMap = (IntegerVectorGeneratorMap<TernaryVector>)
                 SerializableUtil.load(new File(savedIndexName + ".index"),
                                       IntegerVectorGeneratorMap.class);
             if (argOptions.hasOption("usePermutations"))
-                permFunction = (PermutationFunction<IntegerVector>) 
+                permFunction = (PermutationFunction<TernaryVector>) 
                     SerializableUtil.load(
                             new File(savedIndexName + ".permutation"),
                             PermutationFunction.class);
         } else
-            vectorMap = new IntegerVectorGeneratorMap<IntegerVector>(
+            vectorMap = new IntegerVectorGeneratorMap<TernaryVector>(
                     generator, dimension);
 
         // Setup the clustering generator.
@@ -343,7 +345,7 @@ public class FlyingHermitMain extends GenericMain {
             System.setProperty(OnlineClusteringGenerator.WEIGHTING_PROPERTY,
                                argOptions.getStringOption('W'));
         clusterGenerator =
-            (OnlineClusteringGenerator) getObjectInstance(clusterName);
+            (OnlineClusteringGenerator<SparseIntegerVector>) getObjectInstance(clusterName);
     }
 
     /**

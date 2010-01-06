@@ -49,7 +49,8 @@ import java.util.TreeSet;
  *
  * @author Keith Stevens
  */
-public class OnlineKMeansClustering implements OnlineClustering {
+public class OnlineKMeansClustering<T extends Vector>
+        implements OnlineClustering<T> {
 
     /**
      * The threshold for clustering
@@ -94,7 +95,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
     /**
      * {@inheritDoc}
      */
-    public int addVector(Vector value) {
+    public int addVector(T value) {
         // Update the set of centriods.
 
         // First make a shallow copy of the cluster list to work on.  Note that
@@ -140,7 +141,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
     /**
      * {@inheritDoc}
      */
-    public int assignVector(Vector value) {
+    public int assignVector(T value) {
         // First make a shallow copy of the cluster list to work on.  Note that
         // by making this shallow copy, if new clusters are added while
         // assigning this instance, the new cluster will be skipped.
@@ -172,7 +173,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
     /**
      * Generates a new {@code Cluster} for the given {@code Vector}.
      */
-    private Cluster getNewCluster(Vector vector) {
+    private Cluster getNewCluster(T vector) {
         return (clusterWeight == 0d)
             ? new Cluster(vector)
             : new Cluster(vector, clusterWeight, 1-clusterWeight);
@@ -181,7 +182,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
     /**
      * {@inheritDoc}
      */
-    public synchronized List<Vector> getCluster(int clusterIndex) {
+    public synchronized List<T> getCluster(int clusterIndex) {
         if (elements.size() <= clusterIndex)
             return null;
         return elements.get(clusterIndex).getMembers();
@@ -190,9 +191,9 @@ public class OnlineKMeansClustering implements OnlineClustering {
     /**
      * {@inheritDoc}
      */
-    public synchronized List<List<Vector>> getClusters() {
-        List<List<Vector>> clusters =
-            new ArrayList<List<Vector>>(elements.size());
+    public synchronized List<List<T>> getClusters() {
+        List<List<T>> clusters =
+            new ArrayList<List<T>>(elements.size());
         for (Cluster cluster : elements) {
             clusters.add(cluster.getMembers());
         }
@@ -343,7 +344,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
         /**
          * The centroid of the {@code Cluster}.
          */
-        protected Vector centroid;
+        protected T centroid;
 
         /**
          * The number of items stored in this {@code Cluster}
@@ -366,7 +367,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
          * Creates a new {@code Cluster} with {@code firstVector} as the
          * centroid, and no weighting.
          */
-        public Cluster(Vector firstVector) {
+        public Cluster(T firstVector) {
             this(firstVector, 0, 0);
         }
 
@@ -374,7 +375,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
          * Creates a new {@code Cluster} with {@code firstVector} as the
          * centroid, and the given weights.
          */
-        public Cluster(Vector firstVector, double oldWeight, double newWeight) {
+        public Cluster(T firstVector, double oldWeight, double newWeight) {
             centroid = firstVector; 
             oldValueWeight = oldWeight;
             newValueWeight = newWeight;
@@ -386,7 +387,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
          *
          * @param vector The vector to add.
          */
-        public synchronized void addVector(Vector vector) {
+        public synchronized void addVector(T vector) {
             if (oldValueWeight == 0 || newValueWeight == 0)
                 VectorMath.add(centroid, vector);
             else 
@@ -409,7 +410,7 @@ public class OnlineKMeansClustering implements OnlineClustering {
          * Computes the similarity of this {@code Cluster} to a provided {@code
          * Vector}.
          */
-        public synchronized double compareWithVector(Vector vector) {
+        public synchronized double compareWithVector(T vector) {
             return Similarity.cosineSimilarity(centroid, vector);
         }
 
@@ -417,9 +418,9 @@ public class OnlineKMeansClustering implements OnlineClustering {
          * Returns a list of members in this {@code Cluster} as a list of {@code
          * Vector}s.
          */
-        public synchronized List<Vector> getMembers() {
-            List<Vector> members = new ArrayList<Vector>(1);
-            members.add(Vectors.immutable(centroid));
+        public synchronized List<T> getMembers() {
+            List<T> members = new ArrayList<T>(1);
+            members.add(centroid);
             return members;
         }
 

@@ -53,32 +53,32 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Keith Stevens
  */
-public class ClusterMap {
+public class ClusterMap<T extends Vector> {
 
     /**
      * A mapping from Strings to a clustering implementation.
      */
-    private Map<String, OnlineClustering> vectorClusters;
+    private Map<String, OnlineClustering<T>> vectorClusters;
 
     /**
      * A generator for clustering implementations.
      */
-    private final OnlineClusteringGenerator generator;
+    private final OnlineClusteringGenerator<T> generator;
 
     /**
      * Generates a new {@code OnlineClusterMap} using the given {@code
      * OnlineClusteringGenerator} and a {@code HashMap}.
      */
-    public ClusterMap(OnlineClusteringGenerator generator) {
-        this(generator, new HashMap<String, OnlineClustering>());
+    public ClusterMap(OnlineClusteringGenerator<T> generator) {
+        this(generator, new HashMap<String, OnlineClustering<T>>());
     }
 
     /**
      * Generates a new {@code OnlineClusterMap} using the given {@code
      * OnlineClusteringGenerator} and the given {@code Map} type.
      */
-    public ClusterMap(OnlineClusteringGenerator generator,
-                      Map<String, OnlineClustering> map) {
+    public ClusterMap(OnlineClusteringGenerator<T> generator,
+                      Map<String, OnlineClustering<T>> map) {
         this.generator = generator;
         vectorClusters = map;
     }
@@ -92,10 +92,10 @@ public class ClusterMap {
      *
      * @return The cluster id {@code value} was assigned to.
      */
-    public int addVector(String key, Vector value) {
+    public int addVector(String key, T value) {
         // Get the set of term vectors for this word that have been found so
         // far.
-        OnlineClustering clustering = vectorClusters.get(key);
+        OnlineClustering<T> clustering = vectorClusters.get(key);
         if (clustering == null) {
             synchronized (vectorClusters) {
                 clustering = vectorClusters.get(key);
@@ -112,8 +112,8 @@ public class ClusterMap {
      * Returns the cluster index of {@code key} that {@code value} is most
      * similar to.
      */
-    public int assignVector(String key, Vector value) {
-        OnlineClustering clustering = vectorClusters.get(key);
+    public int assignVector(String key, T value) {
+        OnlineClustering<T> clustering = vectorClusters.get(key);
         return (clustering == null) ? -1 : clustering.assignVector(value);
     }
 
@@ -127,8 +127,8 @@ public class ClusterMap {
     /**
      * Returns the set of clustered {@code Vector}s that {@code key} maps to.
      */
-    public synchronized List<List<Vector>> getClusters(String key) {
-        OnlineClustering clustering = vectorClusters.get(key);
+    public synchronized List<List<T>> getClusters(String key) {
+        OnlineClustering<T> clustering = vectorClusters.get(key);
         return (clustering == null) ? null : clustering.getClusters();
     }
 
@@ -143,7 +143,7 @@ public class ClusterMap {
      * Returns the number of clusters {@code key} maps to.
      */
     public synchronized int getNumClusters(String key) {
-        OnlineClustering clustering = vectorClusters.get(key);
+        OnlineClustering<T> clustering = vectorClusters.get(key);
         return (clustering == null) ? 0 : clustering.size();
     }
 
@@ -169,7 +169,7 @@ public class ClusterMap {
      * the new cluster index values stored at the key index are stored at.
      */
     public Map<Integer, Integer> finalizeClustering(String term) {
-        OnlineClustering clustering = vectorClusters.get(term);
+        OnlineClustering<T> clustering = vectorClusters.get(term);
         return clustering.finalizeClustering();
     }
 }

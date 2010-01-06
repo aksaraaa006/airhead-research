@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.clustering;
 
+import edu.ucla.sspace.vector.Vector;
+
 import java.util.Properties;
 
 
@@ -62,7 +64,7 @@ import java.util.Properties;
  *
  * @author Keith Stevens
  */
-public class OnlineClusteringGenerator {
+public class OnlineClusteringGenerator<T extends Vector> {
 
     /**
      * A property prefix.
@@ -162,8 +164,8 @@ public class OnlineClusteringGenerator {
      * Generates a new instance of a {@code OnlineClustering} based on the
      * values used to construct this generator.
      */
-    public OnlineClustering getNewClusteringInstance() {
-        return new OnlineKMeansClustering(clusterThreshold, dropThreshold,
-                                          maxNumClusters, clusterWeight);
+    public OnlineClustering<T> getNewClusteringInstance() {
+        return new OnlineKMeansClustering<T>(clusterThreshold, dropThreshold,
+                                             maxNumClusters, clusterWeight);
     }
 }

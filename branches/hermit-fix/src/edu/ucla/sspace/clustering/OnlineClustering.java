@@ -34,18 +34,18 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public interface OnlineClustering {
+public interface OnlineClustering<T extends Vector> {
 
     /**
      * Adds {@code value} to one of the clusters.  Returns the unique index of
      * the designated cluster.
      */
-    int addVector(Vector value);
+    int addVector(T value);
 
     /**
      * Returns the unique index of the cluster {@code value} is most similar to.
      */
-    int assignVector(Vector value);
+    int assignVector(T value);
 
     /**
      * Finalizes any clustering.  Returns a mapping that describes any cluster
@@ -59,12 +59,12 @@ public interface OnlineClustering {
     /**
      * Returns the list of {@code Vector}s in the given cluster.
      */
-    List<Vector> getCluster(int clusterIndex);
+    List<T> getCluster(int clusterIndex);
 
     /**
      * Returns the list of all clustered {@code Vector}s.
      */
-    List<List<Vector>> getClusters();
+    List<List<T>> getClusters();
 
     /**
      * Returns the numeber of clusters.
