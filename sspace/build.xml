@@ -234,6 +234,9 @@
   </target>
 
   <target name="test" depends="compile-tests">
+    <delete dir="reports"/>
+    <mkdir dir="reports"/>
+
     <junit printsummary="yes" fork="yes" haltonfailure="no">
       <jvmarg value="-Xmx1g"/>
       <jvmarg value="-debug"/>
