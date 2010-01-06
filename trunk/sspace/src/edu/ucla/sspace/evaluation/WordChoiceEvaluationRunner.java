@@ -36,28 +36,42 @@ import java.util.LinkedList;
 /**
  * A test-runner for evaluating the performance of a {@link SemanticSpace} on a
  * {@link WordChoiceEvaluation} test.
+ *
+ * @author David Jurgens
  */ 
 public class WordChoiceEvaluationRunner {
 
     /**
+     * Evaluates the performance of a given {@code SemanticSpace} on a given
+     * {@code WordChoiceEvaluation} using the provided similarity metric.
+     * Returns a {@link WordChoiceReport} detailing the performance.
      *
+     * @param sspace The {@link SemanticSpace} to test against
+     * @param test The {@link WordChoiceEvaluation} providing a set of multiple
+     *             choice options
+     * @param vectorComparisonType The similarity measture to use
+     *
+     * @return A {@link WordChoiceReport} detailing the performance
      */
-    public static Report evaluate(SemanticSpace sspace,
-                  WordChoiceEvaluation test,
-                  Similarity.SimType vectorComparisonType) {
+    public static WordChoiceReport evaluate(
+            SemanticSpace sspace,
+            WordChoiceEvaluation test,
+            Similarity.SimType vectorComparisonType) {
         Collection<MultipleChoiceQuestion> questions = test.getQuestions();
         int correct = 0;
         int unanswerable = 0;
         
         question_loop:
+        // Answer each question by using the vectors from the provided Semantic
+        // Space
         for (MultipleChoiceQuestion question : questions) {
             String promptWord = question.getPrompt();
-            Collection<String> promptSenses = 
-            getSenses(promptWord, sspace);
 
-            
+            // get the vector for the prompt
+            Vector promptVector = sspace.getVector(promptWord);
+
             // check that the s-space had the prompt word
-            if (promptSenses.isEmpty()) {
+            if (promptVector == null) {
                 unanswerable++;
                 continue;
             }
@@ -65,44 +79,33 @@ public class WordChoiceEvaluationRunner {
             int answerIndex = 0;
             double closestOption = Double.MIN_VALUE;
 
-            // get all the sense for the prompt
-            for (String prompt : promptSenses) {
-                // get the vector for the prompt
-                Vector promptVector = sspace.getVector(prompt);
-
-                // find the options whose vector has the highest similarity (or
-                // equivalent comparison measure) to the prompt word.  The
-                // running assumption hear is that for the value returned by the
-                // comparison method, a high value implies more similar vectors.
-                int optionIndex = 0;
-                for (String optionWord : question.getOptions()) {
-                    
-                    Collection<String> optionSenses = 
-                    getSenses(optionWord, sspace);
-
-                    for (String option : optionSenses) {
-                        Vector optionVector = sspace.getVector(option);
+            // find the options whose vector has the highest similarity (or
+            // equivalent comparison measure) to the prompt word.  The
+            // running assumption hear is that for the value returned by the
+            // comparison method, a high value implies more similar vectors.
+            int optionIndex = 0;
+            for (String optionWord : question.getOptions()) {
                 
-                        // check that the s-space had the option word
-                        if (optionVector == null) {
-                            unanswerable++;
-                            continue question_loop;
-                        }
-                    
-                        double similarity = Similarity.getSimilarity(
-                                vectorComparisonType, 
-                                promptVector, optionVector);
-                    
-                        if (similarity > closestOption) {
-                            answerIndex = optionIndex;
-                            closestOption = similarity;
-                        }
-                    }
-                
-                optionIndex++;
-                }
-            }
+                // Get the vector for the option
+                Vector optionVector = sspace.getVector(optionWord);
         
+                // check that the s-space had the option word
+                if (optionVector == null) {
+                    unanswerable++;
+                    continue question_loop;
+                }
+            
+                double similarity = Similarity.getSimilarity(
+                        vectorComparisonType, 
+                        promptVector, optionVector);
+            
+                if (similarity > closestOption) {
+                    answerIndex = optionIndex;
+                    closestOption = similarity;
+                }
+                optionIndex++;
+            }
+
             // see whether our guess matched with the correct index
             if (answerIndex == question.getCorrectAnswer()) {
                 correct++;
@@ -112,51 +115,31 @@ public class WordChoiceEvaluationRunner {
         return new SimpleReport(questions.size(), correct, unanswerable);
     }
 
-    private static Collection<String> getSenses(String word, 
-                        SemanticSpace sspace) {
-        Collection<String> senses = new LinkedList<String>();
-        for (int i = 0; i < Integer.MAX_VALUE; ++i) {
-            String sense = (i == 0) ? word : word + "^" + i;
-            if (sspace.getVector(sense) == null) {
-                break;
-            }
-            senses.add(sense);
-        }
-        return senses;
-    }
-
     /**
-     * A report of the performance of a {@link SemanticSpace} on a particular
-     * {@link WordChoiceEvaluation} test.
+     * A simple implementation of a {@code Report} that just returns values
+     * provided at the time of construction.
      */
-    public interface Report {
-
-        /**
-         * Returns the total number of questions on the test.
-         */
-        int numberOfQuestions();
-
-        /**
-         * Returns the number of questions that were answered correctly.
-         */
-        int correctAnswers();
-
-        /**
-         * Returns the number of questions for which the {@link SemanticSpace}
-         * could not give an answer due to missing word vectors in either the
-         * prompt or the options.
-         */
-        int unanswerableQuestions();
-    }
-
-    private static class SimpleReport implements Report {
+    private static class SimpleReport implements WordChoiceReport {
     
+        /**
+         * The total number of questions 
+         */
         private final int numQuestions;
 
+        /**
+         * The number of questions accurately answered by the {@link
+         * SemanticSpace}
+         */
         private final int correct;
 
+        /**
+         * The number of unaswnserable pairs.
+         */
         private final int unanswerable;
 
+        /**
+         * Creates a simple report
+         */
         public SimpleReport(int numQuestions, int correct, int unanswerable) {
             this.numQuestions = numQuestions;
             this.correct = correct;
@@ -184,6 +167,10 @@ public class WordChoiceEvaluationRunner {
             return unanswerable;
         }
 
+        /**
+         * Returns a string describing the three values represented by this
+         * {@link report}, with the accuracy reported as a percentage
+         */
         public String toString() {
             return String.format("%.2f correct; %d/%d unanswered",
                     ((unanswerable == numQuestions) 

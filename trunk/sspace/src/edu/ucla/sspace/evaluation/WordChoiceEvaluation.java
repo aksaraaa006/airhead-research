@@ -27,6 +27,8 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 /**
  * A evaluation metric that uses a selection of a word from multiple choices.
+ *
+ * @author David Jurgens
  */
 public interface WordChoiceEvaluation {
 

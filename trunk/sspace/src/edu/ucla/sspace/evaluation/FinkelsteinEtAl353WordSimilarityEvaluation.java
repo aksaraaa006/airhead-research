@@ -68,7 +68,7 @@ public class FinkelsteinEtAl353WordSimilarityEvaluation
      * refered to by the provided name.
      */
     public FinkelsteinEtAl353WordSimilarityEvaluation(String word353fileName) {
-	this(new File(word353fileName));
+        this(new File(word353fileName));
     }
 
     /**
@@ -76,67 +76,67 @@ public class FinkelsteinEtAl353WordSimilarityEvaluation
      * data file.
      */
     public FinkelsteinEtAl353WordSimilarityEvaluation(File word353file) {
-	pairs = parse(word353file);
-	dataFileName = word353file.getName();
+        pairs = parse(word353file);
+        dataFileName = word353file.getName();
     }
 
     /**
      * Parses the WordSimilarity353 file and returns the set of judgements.
      */
     private Collection<WordSimilarity> parse(File word353file) {
-	// the ws353 data set comes in two formats, a comma-separated format and
-	// a tab-separated format.  Support both by checking the file name
-	// suffix.
-	String delimeter = (word353file.getName().endsWith(".csv"))
-	    ? "," : "\t";
+        // the ws353 data set comes in two formats, a comma-separated format and
+        // a tab-separated format.  Support both by checking the file name
+        // suffix.
+        String delimeter = (word353file.getName().endsWith(".csv"))
+            ? "," : "\t";
 
-	Collection<WordSimilarity> pairs = new LinkedList<WordSimilarity>();
-		
-	try {
-	    BufferedReader br = new BufferedReader(new FileReader(word353file));
-	    // skip the first line
-	    br.readLine();
-	    for (String line = null; (line = br.readLine()) != null; ) {
+        Collection<WordSimilarity> pairs = new LinkedList<WordSimilarity>();
+                
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(word353file));
+            // skip the first line
+            br.readLine();
+            for (String line = null; (line = br.readLine()) != null; ) {
 
-		String[] wordsAndNum = line.split(delimeter);
-		if (wordsAndNum.length != 3) {
-		    throw new Error("Unexpected line formatting: " + line);
-		}
-		pairs.add(new SimpleWordSimilarity(
-			  wordsAndNum[0], wordsAndNum[1], 
-			  Double.parseDouble(wordsAndNum[2])));
-	    }
-	} catch (IOException ioe) {
-	    // rethrow as an IOE is fatal evaluation
-	    throw new IOError(ioe);
-	}
-	    
-	return pairs;
+                String[] wordsAndNum = line.split(delimeter);
+                if (wordsAndNum.length != 3) {
+                    throw new Error("Unexpected line formatting: " + line);
+                }
+                pairs.add(new SimpleWordSimilarity(
+                          wordsAndNum[0], wordsAndNum[1], 
+                          Double.parseDouble(wordsAndNum[2])));
+            }
+        } catch (IOException ioe) {
+            // rethrow as an IOE is fatal evaluation
+            throw new IOError(ioe);
+        }
+            
+        return pairs;
     }
 
     /**
      * {@inheritDoc}
      */
     public Collection<WordSimilarity> getPairs() {
-	return pairs;
+        return pairs;
     }
 
     /**
      * {@inheritDoc}
      */
     public double getMostSimilarValue() {
-	return 10d;
+        return 10d;
     }
     
     /**
      * {@inheritDoc}
      */
     public double  getLeastSimilarValue() {
-	return 0d;
+        return 0d;
     }
 
     public String toString() {
-	return "Finkelstein et al. Word Similarity Test [" + dataFileName + "]";
+        return "Finkelstein et al. Word Similarity Test [" + dataFileName + "]";
     }
 
 }

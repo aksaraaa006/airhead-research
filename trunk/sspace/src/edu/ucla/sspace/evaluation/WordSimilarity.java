@@ -25,6 +25,8 @@ package edu.ucla.sspace.evaluation;
  * A human-based similarity judgement for two words.  Note that the ordering
  * from the orginal question is preserved, which allows users to consider
  * possible asymmetric evalutions based on word ordering.
+ *
+ * @author David Jurgens
  */
 public interface WordSimilarity {
 
