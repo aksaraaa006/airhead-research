@@ -36,8 +36,10 @@ import edu.ucla.sspace.util.MultiMap;
 
 import edu.ucla.sspace.evaluation.WordChoiceEvaluation;
 import edu.ucla.sspace.evaluation.WordChoiceEvaluationRunner;
+import edu.ucla.sspace.evaluation.WordChoiceReport;
 import edu.ucla.sspace.evaluation.WordSimilarityEvaluation;
 import edu.ucla.sspace.evaluation.WordSimilarityEvaluationRunner;
+import edu.ucla.sspace.evaluation.WordSimilarityReport;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -62,261 +64,307 @@ import java.util.Set;
  */
 public class EvaluatorMain {
 
+    /**
+     * The options available to this main
+     */
     private final ArgOptions argOptions;
 
+    /**
+     * If true, this main will emit verbose messages
+     */
     private boolean verbose;
 
+    private Collection<WordChoiceEvaluation> wordChoiceTests;
+
+    private Collection<WordSimilarityEvaluation> wordSimilarityTests;
+
+    /**
+     * Creates the {@code EvaluatorMain}.
+     */
     public EvaluatorMain() {
-	argOptions = new ArgOptions();
-	verbose = false;
-	addOptions();
+        argOptions = new ArgOptions();
+        verbose = false;
+        addOptions();
     }
 
+    /**
+     * Adds the options available to this main.
+     */
     protected void addOptions() {
-	
-	// input options
- 	argOptions.addOption('c', "wordChoice", "a list of WordChoiceEvaluation " +
-			  "class names and their data files", 
- 			  true, "CLASS=FILE[,CLASS=FILE...]", 
-			  "Required (at least one of)");
- 	argOptions.addOption('s', "wordSimlarity", "a list of " + 
-			  "WordSimilarityEvaluation class names", 
- 			  true, "CLASS=FILE[,CLASS=FILE...]", 
-			  "Required (at least one of)");	
- 	argOptions.addOption('g', "testConfiguration", "a file containing a list " +
-			  "of test configurations to run", 
- 			  true, "FILE", "Required (at least one of)");
-
-	
-	// program options
-	argOptions.addOption('o', "outputFile", "writes the results to this file",
-			  true, "FILE", "Program Options");
-	argOptions.addOption('t', "threads", "the number of threads to use",
-			  true, "INT", "Program Options");
-	argOptions.addOption('v', "verbose", "prints verbose output",
-			  false, null, "Program Options");
+        // input options
+         argOptions.addOption('c', "wordChoice",
+                              "a list of WordChoiceEvaluation " +
+                              "class names and their data files", 
+                              true, "CLASS=FILE[,CLASS=FILE...]", 
+                              "Required (at least one of)");
+         argOptions.addOption('s', "wordSimlarity",
+                              "a list of WordSimilarityEvaluation class names", 
+                              true, "CLASS=FILE[,CLASS=FILE...]", 
+                              "Required (at least one of)");        
+         argOptions.addOption('g', "testConfiguration",
+                              "a file containing a list of test " +
+                              "configurations to run", 
+                              true, "FILE", "Required (at least one of)");
+        
+        // program options
+        argOptions.addOption('o', "outputFile",
+                             "writes the results to this file",
+                             true, "FILE", "Program Options");
+        argOptions.addOption('t', "threads",
+                             "the number of threads to use",
+                             true, "INT", "Program Options");
+        argOptions.addOption('v', "verbose",
+                             "prints verbose output",
+                             false, null, "Program Options");
     }
 
     public void run(String[] args) throws Exception {
-	if (args.length == 0) {
-	    usage();
-	    System.exit(1);
-	}
-	argOptions.parseOptions(args);
+        if (args.length == 0) {
+            usage();
+            System.exit(1);
+        }
+        argOptions.parseOptions(args);
 
-	Collection<WordChoiceEvaluation> wordChoiceTests = 
-	    new LinkedList<WordChoiceEvaluation>();
+        verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
 
-	Collection<WordSimilarityEvaluation> wordSimilarityTests = 
-	    new LinkedList<WordSimilarityEvaluation>();
+        // load in the arguments specificing which tests that will be run 
+        String wcTests = (argOptions.hasOption("wordChoice"))
+            ? argOptions.getStringOption("wordChoice")
+            : null;
 
-	verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+        String wsTests = (argOptions.hasOption("wordSimilarity"))
+            ? argOptions.getStringOption("wordSimilarity")
+            : null;
 
-	// load in the tests that we will be running
-	String wcTests = (argOptions.hasOption("wordChoice"))
-	    ? argOptions.getStringOption("wordChoice")
-	    : null;
+        String configFile = (argOptions.hasOption("testConfiguration"))
+            ? argOptions.getStringOption("testConfiguration")
+            : null;
 
-	String wsTests = (argOptions.hasOption("wordSimilarity"))
-	    ? argOptions.getStringOption("wordSimilarity")
-	    : null;
+        // check that the user provided some input
+        if (wcTests == null && wsTests == null && configFile == null) {
+            usage();
+            System.out.println("no tests specified");
+            System.exit(1);
+        }
 
-	String configFile = (argOptions.hasOption("testConfiguration"))
-	    ? argOptions.getStringOption("testConfiguration")
-	    : null;
+        // Load the word choice tests.
+        wordChoiceTests = (wcTests == null)
+            ? new LinkedList<WordChoiceEvaluation>()
+            : loadWordChoiceEvaluations(wcTests);
 
-	// check that the user provided some input
-	if (wcTests == null && wsTests == null && configFile == null) {
-	    System.out.println("no tests specified");
-	    System.exit(1);
-	}
+        // Load the word similarity tests.
+        wordSimilarityTests = (wsTests == null)
+            ? new LinkedList<WordSimilarityEvaluation>()
+            : loadWordSimilarityEvaluations(wcTests);
 
-	// load the word choice tests
-	if (wcTests != null) {
-	    String[] testsAndFiles = wcTests.split(",");
-	    for (String s : testsAndFiles) {
-		String[] testAndFile = s.split("=");
-		if (testAndFile.length != 2) {
-		    throw new IllegalArgumentException(
-			"unexpected token: " + wcTests);
-		}
-		Class<?> clazz = Class.forName(testAndFile[0]);
-		Constructor<?> c = clazz.getConstructor(new Class[]{String.class});
-		WordChoiceEvaluation eval = (WordChoiceEvaluation)
-		    (c.newInstance(new Object[]{testAndFile[1]}));
-		verbose("Loaded word choice test %s%n", testAndFile[0]);
-		wordChoiceTests.add(eval);
-	    }
-	}
+        // Load any Parse the config file for test types.  The configuration
+        // file formatted as pairs of evaluations paired with data
+        // files with everything separated by spaces.
+        if (configFile != null) {
+            WordIterator it = new WordIterator(new BufferedReader(
+                                                   new FileReader(configFile)));
+            while (it.hasNext()) {
+                String className = it.next();
+                if (!it.hasNext()) {
+                    throw new Error("test is not matched with data file: " + 
+                                    className);
+                }
+                String dataFile = it.next();
+                Class<?> clazz = Class.forName(className);
+                Constructor<?> c =
+                    clazz.getConstructor(new Class[]{String.class});
+                Object o = c.newInstance(new Object[] {dataFile});
+                
+                // once the test has been created, determine what kind it is
+                if (o instanceof WordChoiceEvaluation) {
+                    wordChoiceTests.add((WordChoiceEvaluation)o);
+                    verbose("Loaded word choice test %s%n", className);
+                }
+                else if (o instanceof WordSimilarityEvaluation) {
+                    wordSimilarityTests.add((WordSimilarityEvaluation)o);
+                    verbose("Loaded word similarity test %s%n", className);
+                }
+                else {
+                    throw new IllegalStateException(
+                        "provided class is not an known Evaluation class type: "
+                        + className);
+                }
+            }
+        }
 
-	// load the word similarity tests
-	if (wsTests != null) {
-	    String[] testsAndFiles = wsTests.split(",");
-	    for (String s : testsAndFiles) {
-		String[] testAndFile = s.split("=");
-		if (testAndFile.length != 2) {
-		    throw new IllegalArgumentException(
-			"unexpected token: " + wcTests);
-		}
-		Class<?> clazz = Class.forName(testAndFile[0]);
-		Constructor<?> c = 
-		    clazz.getConstructor(new Class[]{String.class});
-		WordSimilarityEvaluation eval = (WordSimilarityEvaluation)
-		    (c.newInstance(new Object[]{testAndFile[1]}));
-		verbose("Loaded word similarity test %s%n", testAndFile[0]);
-		wordSimilarityTests.add(eval);
-	    }
-	}
+        // Load the semantic spaces one by one, evaluating each one as it's
+        // loaded.
+        Set<String> loadedSSpaces = new HashSet<String>();
+        int spaces = argOptions.numPositionalArgs();
+        for (int i = 0; i < spaces; ++i) {
+            SemanticSpace sspace = null;
+            String[] sspaceConfig = argOptions.getPositionalArg(i).split(",");
+            String sspaceFileName = sspaceConfig[0];
+            SimType comparisonFunction = SimType.COSINE;
+            if (sspaceConfig.length > 1) {
+                for (int j = 1; j < sspaceConfig.length; ++j) {
+                    String setting = sspaceConfig[j];
+                    if (j > 2) {
+                        throw new IllegalStateException(
+                            "too may .sspace file arguments:" + 
+                            argOptions.getPositionalArg(i));
+                    }
+                    else if (setting.startsWith("function")) {
+                        comparisonFunction = 
+                            SimType.valueOf(setting.substring(10));
+                    }
+                    else {
+                        throw new IllegalArgumentException(
+                            "unknown sspace parameter: " + setting);
+                    }
+                }
+            }
+            
+            // Load and evaluate the .sspace file if it hasn't been loaded
+            // already
+            if (!loadedSSpaces.contains(sspace)) {
+                verbose("Loading semantic space: %s.", sspaceFileName);
+                sspace = SemanticSpaceIO.load(sspaceFileName);
+                loadedSSpaces.add(sspaceFileName);
+                verbose("Done loading.");
 
-	// last, parse the config file for test types
-	if (configFile != null) {
-	    WordIterator it = new WordIterator(new BufferedReader(
-					           new FileReader(configFile)));
-	    while (it.hasNext()) {
-		String className = it.next();
-		if (!it.hasNext()) {
-		    throw new Error("test is not matched with data file: " + 
-				    className);
-		}
-		String dataFile = it.next();
-		Class<?> clazz = Class.forName(className);
-		Constructor<?> c = clazz.getConstructor(new Class[]{String.class});
-		Object o = c.newInstance(new Object[] {dataFile});
-		
-		// once the test has been created, determine what kind it is
-		if (o instanceof WordChoiceEvaluation) {
-		    wordChoiceTests.add((WordChoiceEvaluation)o);
-		    verbose("Loaded word choice test %s%n", className);
-		}
-		else if (o instanceof WordSimilarityEvaluation) {
-		    wordSimilarityTests.add((WordSimilarityEvaluation)o);
-		    verbose("Loaded word similarity test %s%n", className);
-		}
-		else {
-		    throw new IllegalStateException(
-			"provided class is not an known Evaluation class type: "
-			+ className);
-		}
-	    }
-	}
-
-	// Once all the evaluations have been loaded, load the semantic spaces.
-	// Use a mapping from file name to the semantic space to avoid loading
-	// the same semantic space more than once
-	Map<String,SemanticSpace> fileToSSpace = 
-	    new HashMap<String,SemanticSpace>();
-
-	MultiMap<SemanticSpace,SimType> sspaceToVectorComparator = 
-	    new HashMultiMap<SemanticSpace,SimType>();
-	
-	int spaces = argOptions.numPositionalArgs();
-	for (int i = 0; i < spaces; ++i) {
-	    String[] sspaceConfig = argOptions.getPositionalArg(i).split(",");
-	    String sspaceFileName = sspaceConfig[0];
-	    SSpaceFormat format = SSpaceFormat.TEXT;
-	    SimType comparisonFunction = SimType.COSINE;
-	    if (sspaceConfig.length > 1) {
-		for (int j = 1; j < sspaceConfig.length; ++j) {
-		    String setting = sspaceConfig[j];
-		    if (j > 3) {
-			throw new IllegalStateException(
-			    "too may .sspace file arguments:" + 
-			    argOptions.getPositionalArg(i));
-		    }
-		    if (setting.startsWith("format")) {
-			format = SSpaceFormat.valueOf(setting.substring(8));
-		    }
-		    else if (setting.startsWith("function")) {
-			comparisonFunction = 
-			    SimType.valueOf(setting.substring(10));
-		    }
-		    else {
-			throw new IllegalArgumentException(
-			    "unknown sspace parameter: " + setting);
-		    }
-		}
-	    }
-	    
-	    // load the .sspace file if it hasn't been loaded already
-	    SemanticSpace sspace = fileToSSpace.get(sspaceFileName);
-	    if (sspace == null) {
-		verbose("loading semantic space %s...", sspaceFileName);
-		sspace = SemanticSpaceIO.load(sspaceFileName);
-		fileToSSpace.put(sspaceFileName, sspace);
-		verbose("done");
-	    }
-	    sspaceToVectorComparator.put(sspace, comparisonFunction);
-	}
-
-	// Once all the SemanticSpaces have been loaded, run each one with each
-	// vector comparison function on each test
-	for (Map.Entry<SemanticSpace,SimType> e :
-		 sspaceToVectorComparator.entrySet()) {
-	    
-	    SemanticSpace sspace = e.getKey();
-	    SimType vectorComparisonType = e.getValue();
-
-	    // run each of the word choice test
-	    for (WordChoiceEvaluation wordChoice : wordChoiceTests) {
-		WordChoiceEvaluationRunner.Report report =
-		    WordChoiceEvaluationRunner.
-		    evaluate(sspace, wordChoice, vectorComparisonType);
-		System.out.printf("Results for %s:%n%s%n", 
-				  wordChoice, report);
-	    }
-
-	    // run each of the word similarity test
-	    for (WordSimilarityEvaluation wordSimilarity : 
-		     wordSimilarityTests) {
-		WordSimilarityEvaluationRunner.Report report = 
-		    WordSimilarityEvaluationRunner.
-		    evaluate(sspace, wordSimilarity, vectorComparisonType);
-		System.out.printf("Results for %s:%n%s%n", 
-				  wordSimilarity, report);
-	    }
-	}     
+                verbose("Evaluating semantic space: %s." , sspaceFileName);
+                evaluateSemanticSpace(sspace, comparisonFunction);
+                verbose("Done evaluating.");
+            }
+        }
     }
     
+    /**
+     * Runs the loaded evaluations on the given {@link SemanticSpace} using the
+     * provided {@code SimType}.  Results are printed to the standard out.
+     */
+    private void evaluateSemanticSpace(SemanticSpace sspace,
+                                       SimType similarity) {
+        for (WordChoiceEvaluation wordChoice : wordChoiceTests) {
+            WordChoiceReport report = WordChoiceEvaluationRunner.evaluate(
+                        sspace, wordChoice, similarity);
+            System.out.printf("Results for %s:%n%s%n", wordChoice, report);
+        }
+        for (WordSimilarityEvaluation wordSimilarity : 
+                 wordSimilarityTests) {
+            WordSimilarityReport report =
+                WordSimilarityEvaluationRunner.evaluate(
+                        sspace, wordSimilarity, similarity);
+            System.out.printf("Results for %s:%n%s%n", wordSimilarity, report);
+        }
+    }
+
+    /**
+     * Prints verbose strings.
+     */
     protected void verbose(String msg) {
-	if (verbose) {
-	    System.out.println(msg);
-	}
+        if (verbose) {
+            System.out.println(msg);
+        }
     }
 
+    /**
+     * Prints verbose strings with formatting.
+     */
     protected void verbose(String format, Object... args) {
-	if (verbose) {
-	    System.out.printf(format, args);
-	}
+        if (verbose) {
+            System.out.printf(format, args);
+        }
     }
 
+    /**
+     * Prints out the usage for the {@code EvaluatorMain}
+     */
     public void usage() {
-	System.out.println(
-	    "java EvaluatorMain " +
-	    argOptions.prettyPrint() +
-	    "<sspace-file>[,format=SSpaceFormat[,function=SimType]] " +
-	    "[<sspace-file>...]\n\n" +
-	    "The .sspace file arguments may have option specifications that " +
-	    "indicate\n" +
-	    "what format the file is (default TEXT), and what vector " + 
-	    "comparison method\n" + 
-	    "should be used (default COSINE).  Users should specify the name " +
-	    "of a\n" +
-	    "Similarity.SimType.  A single .sspace can be evaluated with " + 
-	    "multiple\n" +
-	    "comparison functions by specifying the file multiple times on " + 
-	    "the command\n" +
-	    "line.  The .sspace file will be loaded only once.\n\n" +
-	    "A test configuration file is a series of fully qualified class " +
-	    "names of evaluations\nthat should be run followed by the data" +
-	    "file that contains\nthe test information");
+        System.out.println(
+            "java EvaluatorMain " +
+            argOptions.prettyPrint() +
+            "<sspace-file>[,format=SSpaceFormat[,function=SimType]] " +
+            "[<sspace-file>...]\n\n" +
+            "The .sspace file arguments may have option specifications that " +
+            "indicate\n what vector " + 
+            "comparison method\n" + 
+            "should be used (default COSINE).  Users should specify the name " +
+            "of a\n" +
+            "Similarity.SimType.  A single .sspace can be evaluated with " + 
+            "multiple\n" +
+            "comparison functions by specifying the file multiple times on " + 
+            "the command\n" +
+            "line.  The .sspace file will be loaded only once.\n\n" +
+            "A test configuration file is a series of fully qualified class " +
+            "names of evaluations\nthat should be run followed by the data" +
+            "file that contains\nthe test information");
     }
 
+    /**
+     * Starts up the evaluation.
+     */
     public static void main(String[] args) {
-	try {
-	    new EvaluatorMain().run(args);
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
+        try {
+            new EvaluatorMain().run(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
+    /**
+     * Dynamically loads the set of specified {@link WordChoiceEvaluation}s
+     * and returns them as a {@link Collection}.
+     */
+    private Collection<WordChoiceEvaluation> loadWordChoiceEvaluations(
+            String wcTests) {
+        String[] testsAndFiles = wcTests.split(",");
+        Collection<WordChoiceEvaluation> wordChoiceTests = 
+            new LinkedList<WordChoiceEvaluation>();
+        try {
+            for (String s : testsAndFiles) {
+                String[] testAndFile = s.split("=");
+                if (testAndFile.length != 2) {
+                    throw new IllegalArgumentException(
+                        "unexpected token: " + wcTests);
+                }
+                Class<?> clazz = Class.forName(testAndFile[0]);
+                Constructor<?> c =
+                    clazz.getConstructor(new Class[]{String.class});
+                WordChoiceEvaluation eval = (WordChoiceEvaluation)
+                (c.newInstance(new Object[]{testAndFile[1]}));
+                verbose("Loaded word choice test %s%n", testAndFile[0]);
+                wordChoiceTests.add(eval);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return wordChoiceTests;
+    }
+
+    /**
+     * Dynamically loads the set of specified {@link WordSimilarityEvaluation}s
+     * and returns them as a {@link Collection}.
+     */
+    private Collection<WordSimilarityEvaluation> loadWordSimilarityEvaluations(
+            String wcTests) {
+        String[] testsAndFiles = wcTests.split(",");
+        Collection<WordSimilarityEvaluation> wordSimTests = 
+            new LinkedList<WordSimilarityEvaluation>();
+        try { 
+            for (String s : testsAndFiles) {
+                String[] testAndFile = s.split("=");
+                if (testAndFile.length != 2) {
+                    throw new IllegalArgumentException(
+                        "unexpected token: " + wcTests);
+                }
+                Class<?> clazz = Class.forName(testAndFile[0]);
+                Constructor<?> c =
+                    clazz.getConstructor(new Class[]{String.class});
+                WordSimilarityEvaluation eval = (WordSimilarityEvaluation)
+                    (c.newInstance(new Object[]{testAndFile[1]}));
+                verbose("Loaded word choice test %s%n", testAndFile[0]);
+                wordSimTests.add(eval);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return wordSimTests;
+    }
 }
