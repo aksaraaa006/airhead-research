@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import java.util.Random;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -99,5 +101,25 @@ public class VectorMathTest {
         assertEquals(20, c.get(2), 0);
         assertEquals(0, c.get(5), 0);
         assertNotSame(a, c);
+    }
+
+    @Test public void testCompactAdd() {
+        DoubleVector a = new CompactSparseVector(10000);
+        SparseDoubleVector b = new CompactSparseVector(10000);
+        Random r = new Random(5);
+        for (int i = 0; i < 200; ++i)
+            b.set(r.nextInt(10000), 1);
+        VectorMath.add(a, b);
+    }
+
+    @Test public void testCompactAdd2() {
+        DoubleVector a = new CompactSparseVector(10000);
+        SparseDoubleVector b = new CompactSparseVector(10000);
+        Random r = new Random(5);
+        for (int i = 0; i < 200; ++i)
+            b.set(r.nextInt(10000), 1);
+        int[] nonZeros = b.getNonZeroIndices();
+        for (int i : nonZeros)
+            a.add(i, b.get(i));
     }
 }
