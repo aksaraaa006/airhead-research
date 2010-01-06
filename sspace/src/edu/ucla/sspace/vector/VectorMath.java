@@ -55,7 +55,8 @@ public class VectorMath {
         if (vector2 instanceof SparseVector)
             addSparseValues(vector1, vector2);
         else {
-            for (int i = 0; i < vector2.length(); ++i) {
+            int length = vector2.length();
+            for (int i = 0; i < length; ++i) {
                 double value = vector2.getValue(i).doubleValue() +
                                vector1.getValue(i).doubleValue();
                 vector1.set(i, value);
@@ -85,7 +86,8 @@ public class VectorMath {
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
-            for (int i = 0; i < vector2.length(); ++i) {
+            int length = vector2.length();
+            for (int i = 0; i < length; ++i) {
                 double value = vector2.get(i);
                 // In the case that vector1 is sparse, only add non zero values.
                 if (value != 0d)
@@ -117,7 +119,8 @@ public class VectorMath {
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
-            for (int i = 0; i < vector2.length(); ++i) {
+            int length = vector2.length();
+            for (int i = 0; i < length; ++i) {
                 int value = vector2.get(i);
                 // In the case that vector1 is sparse, only add non zero values.
                 if (value != 0d)
@@ -164,7 +167,8 @@ public class VectorMath {
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
-            for (int i = 0; i < vector2.length(); ++i) {
+            int length = vector2.length();
+            for (int i = 0; i < length; ++i) {
                 double value = vector2.get(i);
                 finalVector.add(i, value);
             }
@@ -195,7 +199,8 @@ public class VectorMath {
         else {
             // Otherwise, inspect all values of vector, and only add the non
             // zero values.
-            for (int i = 0; i < vector2.length(); ++i) {
+            int length = vector2.length();
+            for (int i = 0; i < length; ++i) {
                 int value = vector2.get(i);
                 finalVector.add(i, value);
             }
@@ -218,7 +223,8 @@ public class VectorMath {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
-        for (int i = 0; i < vector2.length(); ++i) {
+        int length = vector2.length();
+        for (int i = 0; i < length; ++i) {
             double value = vector1.getValue(i).doubleValue() * weight1 +
                            vector2.getValue(i).doubleValue()  * weight2;
             vector1.set(i, value);
@@ -242,7 +248,8 @@ public class VectorMath {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
-        for (int i = 0; i < vector2.length(); ++i) {
+        int length = vector2.length();
+        for (int i = 0; i < length; ++i) {
             double value = vector1.get(i) * weight1 +
                            vector2.get(i) * weight2;
             vector1.set(i, value);
@@ -266,7 +273,8 @@ public class VectorMath {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be added");
-        for (int i = 0; i < vector2.length(); ++i) {
+        int length = vector2.length();
+        for (int i = 0; i < length; ++i) {
             double value = vector1.get(i) * weight1 +
                            vector2.get(i) * weight2;
             vector1.set(i, value);
@@ -287,7 +295,8 @@ public class VectorMath {
         if (left.length() != right.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be multiplied");
-        for (int i = 0; i < left.length(); ++i)
+        int length = left.length();
+        for (int i = 0; i < length; ++i)
             left.set(i, left.getValue(i).doubleValue() *
                         right.getValue(i).doubleValue());
         return left;
@@ -307,7 +316,8 @@ public class VectorMath {
         if (left.length() != right.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be multiplied");
-        for (int i = 0; i < left.length(); ++i)
+        int length = left.length();
+        for (int i = 0; i < length; ++i)
             left.set(i, left.get(i) * right.get(i));
         return left;
     }
@@ -327,7 +337,8 @@ public class VectorMath {
         if (left.length() != right.length())
             throw new IllegalArgumentException(
                     "Vectors of different sizes cannot be multiplied");
-        for (int i = 0; i < left.length(); ++i)
+        int length = left.length();
+        for (int i = 0; i < length; ++i)
             left.set(i, left.get(i) * right.get(i));
         return left;
     }
@@ -354,7 +365,8 @@ public class VectorMath {
         else
             result = new DenseVector(left.length());
 
-        for (int i = 0; i < left.length(); ++i)
+        int length = left.length();
+        for (int i = 0; i < length; ++i)
             result.set(i, left.get(i) * right.get(i));
         return result;
     }

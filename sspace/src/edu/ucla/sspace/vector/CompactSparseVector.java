@@ -76,8 +76,9 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        set(index, get(index) + delta);
-        return get(index) + delta;
+        double value = get(index) + delta;
+        set(index, value);
+        return value;
     }
 
     /**

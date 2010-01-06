@@ -43,8 +43,7 @@ import java.util.Map;
  *
  * @author Keith Stevens
  */
-public class AmortizedSparseVector implements DoubleVector,
-                                              SparseVector<Double>,
+public class AmortizedSparseVector implements SparseDoubleVector,
                                               Serializable {
 
     private static final long serialVersionUID = 1L;
