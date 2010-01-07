@@ -21,15 +21,22 @@
 
 package edu.ucla.sspace.evaluation;
 
+import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
 
+import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
+import edu.ucla.sspace.index.PermutationFunction;
+
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.SerializableUtil;
+
 import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -40,8 +47,10 @@ import java.io.ObjectInputStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 
+import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Queue;
 
 
 /**
@@ -54,31 +63,62 @@ import java.util.Map;
  */
 public class SenseEvalTester {
 
+    private ArgOptions options;
+
+    public SenseEvalTester() {
+        options = new ArgOptions();
+        options.addOption('s', "sspaceFile",
+                          "The SSpace file to test against",
+                          true, "FILE", "Required");
+        options.addOption('p', "permutationFunctionFile",
+                          "A file specifying a serialized PermutationFunction",
+                          true, "FILE", "Optional");
+        options.addOption('m', "indexVectorMap",
+                          "A file specifying a serialized index vector map",
+                          true, "FILE", "Required");
+        options.addOption('S', "senseEvalFile",
+                         "The SenseEval xml file to test against",
+                         true, "FILE", "Required");
+    }
+
     public static void main(String[] args) {
-        if (args.length != 4) {
-            System.out.println("usage: java SenseEvalTester <.sspace> " +
-                               "<index-vectors> <senseEval.xml> <output>");
-            return;
-        }
         try {
-            run(args);
+            SenseEvalTester tester = new SenseEvalTester();
+            tester.run(args);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
        
-    static void run(String[] args) throws Exception {
+    @SuppressWarnings("unchecked")
+    private void run(String[] args) throws Exception {
+        options.parseOptions(args);
 
-        SemanticSpace senseInducedSpace = SemanticSpaceIO.load(args[0]);
-        ObjectInputStream ois 
-            = new ObjectInputStream(new FileInputStream(args[1]));
-        @SuppressWarnings("unchecked")
-        Map<String,Vector> wordToIndexVector = 
-            (Map<String,Vector>)(ois.readObject());
-        ois.close();            
+        if (!options.hasOption("sspaceFile") ||
+            !options.hasOption("indexVectorMap") ||
+            !options.hasOption("senseEvalFile") ||
+            options.numPositionalArgs() != 1) {
+            System.out.println(
+                    "usage: java SenseEvalTester [options] <outfile>\n" +
+                    options.prettyPrint());
+            System.exit(1);
+        }
+
+        SemanticSpace senseInducedSpace =
+            SemanticSpaceIO.load(options.getStringOption('s'));
+        Map<String, TernaryVector> wordToIndexVector =
+            (Map<String, TernaryVector>) SerializableUtil.load(
+                    new File(options.getStringOption('m')), Map.class);
+        PermutationFunction<TernaryVector> permFunc = null;
+        if (options.hasOption('p'))
+            permFunc =
+                (PermutationFunction<TernaryVector>) SerializableUtil.load(
+                        new File(options.getStringOption('p')),
+                        PermutationFunction.class);
         
-        BufferedReader br = new BufferedReader(new FileReader(args[2]));
-        PrintWriter answers = new PrintWriter(args[3]);
+        BufferedReader br =
+            new BufferedReader(new FileReader(options.getStringOption('S')));
+        PrintWriter answers = new PrintWriter(options.getPositionalArg(0));
         
         for (String line = null; (line = br.readLine()) != null; ) {
             
@@ -107,12 +147,9 @@ public class SenseEvalTester {
                 Iterator<String> contextTokens = IteratorFactory.tokenize(
                     new BufferedReader(new StringReader(context)));
 
-                // Create a new Vector that will contain the sum of all the
-                // index vectors for the context.  This will compared with each
-                // sense of the target word.
-                Vector contextVector = 
-                    new DenseVector(senseInducedSpace.getVectorLength());
-                
+                Queue<String> prevWords = new ArrayDeque<String>();
+                Queue<String> nextWords = new ArrayDeque<String>();
+                boolean headSeen = false;
                 while (contextTokens.hasNext()) {
                     String token = contextTokens.next();
                     // The context contains two XML tags to indicate where the
@@ -124,13 +161,45 @@ public class SenseEvalTester {
                     if (token.equals("<head>")) {
                         contextTokens.next();
                         contextTokens.next();
+                        headSeen = true;
                         continue;
                     }
+                    if (headSeen)
+                        nextWords.offer(token);
+                    else
+                        prevWords.offer(token);
+                }
 
-                    Vector indexVector = wordToIndexVector.get(token);
-                    if (indexVector != null)
-                        VectorMath.add(contextVector, indexVector);
-                }                
+                // Create a new Vector that will contain the sum of all the
+                // index vectors for the context.  This will compared with each
+                // sense of the target word.
+                DoubleVector contextVector = 
+                    new DenseVector(senseInducedSpace.getVectorLength());
+
+                // Extract the TernaryVector and permute in the same way that
+                // FlyingHermit would for the words before and after the head
+                // token.
+                int distance = -1 * prevWords.size();
+                for (String term : prevWords) {
+                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        TernaryVector termVector = wordToIndexVector.get(term);
+                        if (permFunc != null)
+                            termVector = permFunc.permute(termVector, distance);
+                        add(contextVector, termVector);
+                    }
+                    ++distance;
+                }
+
+                distance = 1;
+                for (String term : nextWords) {
+                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        TernaryVector termVector = wordToIndexVector.get(term);
+                        if (permFunc != null)
+                            termVector = permFunc.permute(termVector, distance);
+                        add(contextVector, termVector);
+                    }
+                    ++distance;
+                }
 
                 // Once the context vector has been build, determine which sense
                 // of the word is most similar to the context
@@ -155,5 +224,12 @@ public class SenseEvalTester {
                 answers.println(wordPlusPos + " " + instance + " "+clusterName);
             }
         }        
+    }
+
+    private void add(DoubleVector dest, TernaryVector src) {
+        for (int p : src.positiveDimensions())
+            dest.add(p, 1);
+        for (int n : src.negativeDimensions())
+            dest.add(n, -1);
     }
 }
