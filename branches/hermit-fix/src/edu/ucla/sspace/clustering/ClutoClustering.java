@@ -23,6 +23,7 @@ package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.SparseMatrix;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,6 +31,8 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.IOError;
 import java.io.IOException;
+
+import java.util.Properties;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,25 +45,96 @@ import java.util.logging.Logger;
  *
  * @author David Jurgens
  */
-public class ClutoClustering {
+public class ClutoClustering implements OfflineClustering {
 
+    /**
+     * A property prefix for specifiying options when using Cluto.
+     */
+    public static String PROPERTY_PREFIX = 
+        "edu.ucla.sspace.clustering.ClutoClustering";
+
+    /**
+     * The property to set the number of clusters.
+     */
+    public static String NUM_CLUSTERS_PROPERTY = 
+        PROPERTY_PREFIX + ".numClusters";
+
+    /**
+     * The property to set the clustering method used by Cluto.
+     */
+    public static String CLUSTER_METHOD_PROPERTY = 
+        PROPERTY_PREFIX + ".clusterMethod";
+
+    /**
+     * The property to set the similarity measurement used by Cluto.
+     */
+    public static String CLUSTER_SIMILARITY_PROPERTY = 
+        PROPERTY_PREFIX + ".clusterSimilarity";
+
+    /**
+     * The default number of clusters to be created by Cluto.
+     */
+    private static String DEFAULT_NUM_CLUSTERS = "10";
+
+    /**
+     * The default clustering method to be used by Cluto.
+     */
+    private static String DEFAULT_CLUSTER_METHOD = "agglo";
+
+    /**
+     * The default similarity measure to be used by Cluto.
+     */
+    private static String DEFAULT_CLUSTER_SIMILARITY = "";
+
+    /**
+     * A logger to track the status of Cluto.
+     */
     private static final Logger LOGGER = 
         Logger.getLogger(ClutoClustering.class.getName());
 
     /**
-     * Uninstantiable
+     * The number of clusters to use during this instance of Cluto clustering.
      */
-    private ClutoClustering() { }
+    private int numClusters;
+
+    /**
+     * The clustering method to use during this instance of Cluto clustering.
+     */
+    private String clusterMethod;
+
+    /**
+     * The similarity measure to use during this instance of Cluto clustering.
+     */
+    private String clusterSimilarity;
+
+    /**
+     * Creates a new {@code ClutoClustering} instance using the System provided 
+     * properties.
+     */
+    public ClutoClustering() {
+        this(System.getProperties());
+    }
+
+    /**
+     * Creates a new {@code ClutoClustering} instance using the given set of
+     * properties.
+     */
+    public ClutoClustering(Properties props) {
+        numClusters = Integer.parseInt(props.getProperty(NUM_CLUSTERS_PROPERTY,
+                                                         DEFAULT_NUM_CLUSTERS));
+        clusterMethod = props.getProperty(CLUSTER_METHOD_PROPERTY,
+                                          DEFAULT_CLUSTER_METHOD);
+        clusterSimilarity = props.getProperty(CLUSTER_SIMILARITY_PROPERTY,
+                                              DEFAULT_CLUSTER_SIMILARITY);
+    }
 
     /**
      * Clusters the rows of the matrix into the specified number of clusters
-     * using a hierarchical agglomerative clustering algorithm.  Rows that have
+     * using a the algorithm specified during construction.  Rows that have
      * no distinguishing features will not be clustered and instead assigned to
      * a cluster index of -1.
      *
      * @param m a matrix whose rows are to be clustered
-     * @param numClusters the number of clusters into which the matrix should
-     *        divided
      *
      * @return an array where each element corresponds to a row and the value is
      *         the cluster number to which that row was assigned.  Cluster
@@ -70,12 +144,36 @@ public class ClutoClustering {
      * @throws IOError if any {@link IOException} occurs when marshalling data
      *         to and from Cluto, or during Cluto's execution.
      */
-    public static int[] agglomerativeCluster(Matrix m, int numClusters) {
+    public int[] cluster(Matrix m) {
         try {
-            return cluster(m, numClusters, "agglo");
+            return cluster(m, numClusters, clusterMethod);
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
+    }
+
+    /**
+     * Clusters the rows of the matrix into the specified number of clusters
+     * using a the algorithm specified during construction.  Rows that have
+     * no distinguishing features will not be clustered and instead assigned to
+     * a cluster index of -1.
+     *
+     * @param m a matrix whose rows are to be clustered
+     *
+     * @return an array where each element corresponds to a row and the value is
+     *         the cluster number to which that row was assigned.  Cluster
+     *         numbers will start at 0 and increase.  Rows that were not able to
+     *         be clustered will be assigned a -1 value.
+     *
+     * @throws IOError if any {@link IOException} occurs when marshalling data
+     */
+    public int[] cluster(SparseMatrix m) {
+        try {
+            return cluster(m, numClusters, clusterMethod);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+
     }
 
     /**

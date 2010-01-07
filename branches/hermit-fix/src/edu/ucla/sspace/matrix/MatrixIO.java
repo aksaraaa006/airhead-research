@@ -207,35 +207,35 @@ public class MatrixIO {
      *         wring the output matrix
      */
     public static File convertFormat(File matrix, Format current, 
-				     Format desired) throws IOException {
-	if (current.equals(desired)) {
-	    return matrix;
-	}
-	
-	switch (current) {
-	case MATLAB_SPARSE: {
-	    if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
-		File output = File.createTempFile(
+                                     Format desired) throws IOException {
+        if (current.equals(desired)) {
+            return matrix;
+        }
+        
+        switch (current) {
+        case MATLAB_SPARSE: {
+            if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
+                File output = File.createTempFile(
                     "matlab-to-SVDLIBC-sparse-text",".dat");
-		output.deleteOnExit();
-		matlabToSVDLIBCsparse(matrix, output);
-		return output;
-	    }
-	    break;
-	}
+                output.deleteOnExit();
+                matlabToSVDLIBCsparse(matrix, output);
+                return output;
+            }
+            break;
+        }
         case SVDLIBC_SPARSE_BINARY: {
             if (desired.equals(Format.MATLAB_SPARSE)) {
-		File output = File.createTempFile(
+                File output = File.createTempFile(
                     "SVDLIBC-sparse-binary-to-Matlab",".dat");
-		output.deleteOnExit();
-		svdlibcSparseBinaryToMatlab(matrix, output);
-		return output;
+                output.deleteOnExit();
+                svdlibcSparseBinaryToMatlab(matrix, output);
+                return output;
             }
         }
-	}
-	throw new UnsupportedOperationException(
-	    "converting from " + current + " to " + desired + 
-	    " is not currently supported");
+        }
+        throw new UnsupportedOperationException(
+            "converting from " + current + " to " + desired + 
+            " is not currently supported");
     }       
 
     /**
@@ -374,7 +374,7 @@ public class MatrixIO {
      * it to the output file in the {@link Format#MATLAB_SPARSE} format.
      */
     private static void svdlibcSparseBinaryToMatlab(File input, File output) 
-	    throws IOException {
+            throws IOException {
         
         DataInputStream dis = new DataInputStream(
             new BufferedInputStream(new FileInputStream(input)));
@@ -536,7 +536,7 @@ public class MatrixIO {
             }
         }
 
-	throw new Error("Reading matrices of " + format + " format is not "+
+        throw new Error("Reading matrices of " + format + " format is not "+
                         "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its" +
                         "inclusion and it will be quickly added");
@@ -591,36 +591,36 @@ public class MatrixIO {
      * @throws IOException if any error occurs while reading in the matrix data
      */
     public static Matrix readMatrix(File matrix, Format format, 
-				    Type matrixType, boolean transposeOnRead) 
-	    throws IOException {
+                                    Type matrixType, boolean transposeOnRead) 
+            throws IOException {
 
-	switch(format) {
-	case DENSE_TEXT: 
-	    return readDenseTextMatrix(matrix, matrixType, transposeOnRead);
-	    
-	case MATLAB_SPARSE:
-	    break;
+        switch(format) {
+        case DENSE_TEXT: 
+            return readDenseTextMatrix(matrix, matrixType, transposeOnRead);
+            
+        case MATLAB_SPARSE:
+            break;
 
         case CLUTO_SPARSE:
             break;
 
-	case SVDLIBC_SPARSE_TEXT:
-	    break;
+        case SVDLIBC_SPARSE_TEXT:
+            break;
 
         case CLUTO_DENSE:
             break;
 
-	case SVDLIBC_DENSE_TEXT: 
-	    return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
-	   
-	case SVDLIBC_SPARSE_BINARY:
-	    break;
+        case SVDLIBC_DENSE_TEXT: 
+            return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
+           
+        case SVDLIBC_SPARSE_BINARY:
+            break;
 
-	case SVDLIBC_DENSE_BINARY:
+        case SVDLIBC_DENSE_BINARY:
             return readDenseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
-	}
-	
-	throw new Error("Reading matrices of " + format + " format is not "+
+        }
+        
+        throw new Error("Reading matrices of " + format + " format is not "+
                         "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its" +
                         "inclusion and it will be quickly added");
@@ -640,10 +640,10 @@ public class MatrixIO {
         throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(matrix));
 
-	// unknown number of rows, so do a quick scan to determine it
-	int rows = 0;
-	int cols = -1;
-	for (String line = null; (line = br.readLine()) != null; rows++) {
+        // unknown number of rows, so do a quick scan to determine it
+        int rows = 0;
+        int cols = -1;
+        for (String line = null; (line = br.readLine()) != null; rows++) {
             // Create a scanner to parse out the values from the current line of
             // the file.
             Scanner s = new Scanner(line);
@@ -663,7 +663,7 @@ public class MatrixIO {
                                     "inconsistent number of columns");
                 }
             }
-	}
+        }
         br.close();
 
         if (MATRIX_IO_LOGGER.isLoggable(Level.FINE)) {
@@ -675,7 +675,7 @@ public class MatrixIO {
         // to load the data into a Matrix instance.  Use a Scanner to parse the
         // text for us.
         Scanner scanner = new Scanner(matrix);
-	Matrix m = (transposeOnRead)
+        Matrix m = (transposeOnRead)
             ? Matrices.create(cols, rows, matrixType)
             : Matrices.create(rows, cols, matrixType);
         
@@ -689,8 +689,8 @@ public class MatrixIO {
             }
         }
         scanner.close();
-	
-	return m;
+        
+        return m;
     }
 
     /**
@@ -704,59 +704,59 @@ public class MatrixIO {
      */
     private static Matrix readDenseSVDLIBCtext(File matrix, Type matrixType,
                                                boolean transposeOnRead) 
-	    throws IOException {
-	BufferedReader br = new BufferedReader(new FileReader(matrix));
+            throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(matrix));
 
-	// Note that according to the formatting, spaces and new lines are
-	// equivalent.  Therefore, someone could just print all of the matrix
-	// values on a single line.
-	
-	int rows = -1;
-	int cols = -1;
-	int valuesSeen = 0;
-	// REMINDER: possibly use on disk if the matrix is too big
-	Matrix m = null; 
+        // Note that according to the formatting, spaces and new lines are
+        // equivalent.  Therefore, someone could just print all of the matrix
+        // values on a single line.
+        
+        int rows = -1;
+        int cols = -1;
+        int valuesSeen = 0;
+        // REMINDER: possibly use on disk if the matrix is too big
+        Matrix m = null; 
 
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] vals = line.split("\\s+");
-	    for (int i = 0; i < vals.length; ++i) {
-		// rows is specified first
-		if (rows == -1) {
-		    rows = Integer.parseInt(vals[i]);
-		}
-		// cols will be second
-		else if (cols == -1) {
-		    cols = Integer.parseInt(vals[i]);
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] vals = line.split("\\s+");
+            for (int i = 0; i < vals.length; ++i) {
+                // rows is specified first
+                if (rows == -1) {
+                    rows = Integer.parseInt(vals[i]);
+                }
+                // cols will be second
+                else if (cols == -1) {
+                    cols = Integer.parseInt(vals[i]);
 
-		    // once both rows and cols have been assigned, create the
-		    // matrix
-		    m = (transposeOnRead) 
+                    // once both rows and cols have been assigned, create the
+                    // matrix
+                    m = (transposeOnRead) 
                         ? Matrices.create(cols, rows, matrixType)
                         : Matrices.create(rows, cols, matrixType);
-		    MATRIX_IO_LOGGER.log(Level.FINE, 
-			"created matrix of size {0} x {1}", 
-			new Object[] {Integer.valueOf(rows), 
-				      Integer.valueOf(cols)});
-		}
-		else {
-		    int row = valuesSeen / cols;
-		    int col = valuesSeen % cols;
+                    MATRIX_IO_LOGGER.log(Level.FINE, 
+                        "created matrix of size {0} x {1}", 
+                        new Object[] {Integer.valueOf(rows), 
+                                      Integer.valueOf(cols)});
+                }
+                else {
+                    int row = valuesSeen / cols;
+                    int col = valuesSeen % cols;
 
-		    double val = Double.parseDouble(vals[i]);
+                    double val = Double.parseDouble(vals[i]);
 
                     if (transposeOnRead)
                         m.set(col, row, val);
                     else
                         m.set(row, col, val);
-		
-		    // increment the number of values seen to properly set the
-		    // next index of the matrix
-		    ++valuesSeen;
-		}
-	    }
-	}
-	
-	return m;
+                
+                    // increment the number of values seen to properly set the
+                    // next index of the matrix
+                    ++valuesSeen;
+                }
+            }
+        }
+        
+        return m;
     }    
 
     /**
@@ -770,8 +770,8 @@ public class MatrixIO {
      */
     private static Matrix readDenseSVDLIBCbinary(File matrix, Type matrixType,
                                                  boolean transposeOnRead) 
-	    throws IOException {
-	DataInputStream dis = new DataInputStream(
+            throws IOException {
+        DataInputStream dis = new DataInputStream(
             new BufferedInputStream(new FileInputStream(matrix)));
 
         int rows = dis.readInt();
@@ -811,61 +811,61 @@ public class MatrixIO {
      */
     public static void writeMatrix(Matrix matrix, File output, Format format)
         throws IOException {
-	if (matrix.rows() == 0 || matrix.columns() == 0)
-	    throw new IllegalArgumentException(
+        if (matrix.rows() == 0 || matrix.columns() == 0)
+            throw new IllegalArgumentException(
                 "cannot write 0-dimensional matrix");
-	switch (format) {
-	   
-	case DENSE_TEXT: {
-	    PrintWriter pw = new PrintWriter(output);
-	    for (int i = 0; i < matrix.rows(); ++i) {
-		StringBuffer sb = new StringBuffer(matrix.columns() *  5);
-		for (int j = 0; j < matrix.columns(); ++j) {
-		    sb.append(matrix.get(i,j)).append(" ");
-		}
-		pw.println(sb.toString());
-	    }
-	    pw.close();
-	    break;
-	}
+        switch (format) {
+           
+        case DENSE_TEXT: {
+            PrintWriter pw = new PrintWriter(output);
+            for (int i = 0; i < matrix.rows(); ++i) {
+                StringBuffer sb = new StringBuffer(matrix.columns() *  5);
+                for (int j = 0; j < matrix.columns(); ++j) {
+                    sb.append(matrix.get(i,j)).append(" ");
+                }
+                pw.println(sb.toString());
+            }
+            pw.close();
+            break;
+        }
             
         case CLUTO_DENSE:
             break;
 
         case SVDLIBC_DENSE_TEXT: {
-	    PrintWriter pw = new PrintWriter(output);
-	    pw.println(matrix.rows() + " " + matrix.columns());
-	    for (int i = 0; i < matrix.rows(); ++i) {
-		StringBuffer sb = new StringBuffer(32);
-		for (int j = 0; j < matrix.columns(); ++j) {
-		    sb.append(matrix.get(i,j)).append(" ");
-		}
-		pw.println(sb.toString());
-	    }
-	    pw.close();
-	    break;
+            PrintWriter pw = new PrintWriter(output);
+            pw.println(matrix.rows() + " " + matrix.columns());
+            for (int i = 0; i < matrix.rows(); ++i) {
+                StringBuffer sb = new StringBuffer(32);
+                for (int j = 0; j < matrix.columns(); ++j) {
+                    sb.append(matrix.get(i,j)).append(" ");
+                }
+                pw.println(sb.toString());
+            }
+            pw.close();
+            break;
         }
 
         case SVDLIBC_DENSE_BINARY: {
-	    DataOutputStream outStream = new DataOutputStream(
+            DataOutputStream outStream = new DataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(output)));
-	    outStream.writeInt(matrix.rows());
-	    outStream.writeInt(matrix.columns());
-	    for (int i = 0; i < matrix.rows(); ++i) {
-		for (int j = 0; j < matrix.columns(); ++j) {
-		    outStream.writeFloat(new Double(matrix.get(i,j)).floatValue());
-		}
-	    }
-	    outStream.close();
-	    break;
+            outStream.writeInt(matrix.rows());
+            outStream.writeInt(matrix.columns());
+            for (int i = 0; i < matrix.rows(); ++i) {
+                for (int j = 0; j < matrix.columns(); ++j) {
+                    outStream.writeFloat(new Double(matrix.get(i,j)).floatValue());
+                }
+            }
+            outStream.close();
+            break;
         }
 
         case CLUTO_SPARSE: {
-	    PrintWriter pw = new PrintWriter(output);
-	    // Count the number of non-zero values in the matrix
-	    int nonZero = 0;
+            PrintWriter pw = new PrintWriter(output);
+            // Count the number of non-zero values in the matrix
+            int nonZero = 0;
             int rows = matrix.rows();
-	    for (int i = 0; i < rows; ++i) {
+            for (int i = 0; i < rows; ++i) {
                 DoubleVector v = matrix.getRowVector(i);
                 if (v instanceof SparseVector) 
                     nonZero += ((SparseVector)v).getNonZeroIndices().length;
@@ -873,9 +873,9 @@ public class MatrixIO {
                     for (int col = 0; col < v.length(); ++col) {
                         if (v.get(col) != 0) 
                             nonZero++;
-		    }
-		}
-	    }
+                    }
+                }
+            }
             // Write the header: rows cols non-zero
             pw.println(matrix.rows() + " " + matrix.columns() + " " + nonZero);
             for (int row = 0; row < rows; ++row) {
@@ -895,71 +895,71 @@ public class MatrixIO {
                         double d = v.get(col);
                         if (d != 0) 
                             sb.append(col+1).append(" ").append(d).append(" ");
-		    }
-		}
+                    }
+                }
                 pw.println(sb.toString());
             }
             pw.close();
             break;
         }
 
-	case SVDLIBC_SPARSE_TEXT: {
-	    PrintWriter pw = new PrintWriter(output);
-	    // count the number of non-zero values for each column as well as
-	    // the total
-	    int nonZero = 0;
-	    int[] nonZeroPerCol = new int[matrix.columns()];
-	    for (int i = 0; i < matrix.rows(); ++i) {
-		for (int j = 0; j < matrix.columns(); ++j) {
-		    if (matrix.get(i, j) != 0) {
-			nonZero++;
-			nonZeroPerCol[j]++;
-		    }
-		}
-	    }
+        case SVDLIBC_SPARSE_TEXT: {
+            PrintWriter pw = new PrintWriter(output);
+            // count the number of non-zero values for each column as well as
+            // the total
+            int nonZero = 0;
+            int[] nonZeroPerCol = new int[matrix.columns()];
+            for (int i = 0; i < matrix.rows(); ++i) {
+                for (int j = 0; j < matrix.columns(); ++j) {
+                    if (matrix.get(i, j) != 0) {
+                        nonZero++;
+                        nonZeroPerCol[j]++;
+                    }
+                }
+            }
 
-	    // loop through the matrix a second time, printing out the number of
-	    // non-zero values for each column, followed by those values and
-	    // their associated row
-	    pw.println(matrix.rows() + " " + matrix.columns() + " " + nonZero);
-	    for (int col = 0; col < matrix.columns(); ++col) {
-		pw.println(nonZeroPerCol[col]);
-		if (nonZeroPerCol[col] > 0) {
-		    for (int row = 0; row < matrix.rows(); ++row) {
-			double val = matrix.get(row, col);
-			if (val != 0) {
-			    // NOTE: need to convert to float since this is what
-			    // SVDLIBC uses
-			    pw.println(row + " " + 
-				       Double.valueOf(val).floatValue());
-			}
-		    }
-		}
-	    }
-	    pw.close();
-	    break;
-	}
+            // loop through the matrix a second time, printing out the number of
+            // non-zero values for each column, followed by those values and
+            // their associated row
+            pw.println(matrix.rows() + " " + matrix.columns() + " " + nonZero);
+            for (int col = 0; col < matrix.columns(); ++col) {
+                pw.println(nonZeroPerCol[col]);
+                if (nonZeroPerCol[col] > 0) {
+                    for (int row = 0; row < matrix.rows(); ++row) {
+                        double val = matrix.get(row, col);
+                        if (val != 0) {
+                            // NOTE: need to convert to float since this is what
+                            // SVDLIBC uses
+                            pw.println(row + " " + 
+                                       Double.valueOf(val).floatValue());
+                        }
+                    }
+                }
+            }
+            pw.close();
+            break;
+        }
 
         case MATLAB_SPARSE: {
-	    PrintWriter pw = new PrintWriter(output);
-	    for (int j = 0; j < matrix.columns(); ++j) {
-		for (int i = 0; i < matrix.rows(); ++i) {
-		    if (matrix.get(i,j) == 0)
-			continue;
-		    StringBuffer sb = new StringBuffer(32);
-		    sb.append(i).append(" ").append(j)
-			.append(" ").append(matrix.get(i,j));
-		    System.out.println(sb.toString());
-		    pw.println(sb.toString());
-		}
-	    }
-	    pw.close();
-	    break;	    	    
-	}
-	default:
-	    throw new UnsupportedOperationException(
-		"writing to " + format + " is currently unsupported");
-	}
+            PrintWriter pw = new PrintWriter(output);
+            for (int j = 0; j < matrix.columns(); ++j) {
+                for (int i = 0; i < matrix.rows(); ++i) {
+                    if (matrix.get(i,j) == 0)
+                        continue;
+                    StringBuffer sb = new StringBuffer(32);
+                    sb.append(i).append(" ").append(j)
+                        .append(" ").append(matrix.get(i,j));
+                    System.out.println(sb.toString());
+                    pw.println(sb.toString());
+                }
+            }
+            pw.close();
+            break;                        
+        }
+        default:
+            throw new UnsupportedOperationException(
+                "writing to " + format + " is currently unsupported");
+        }
     }
 
     public static void writeMatrixArray(double[][] matrix, File output) 

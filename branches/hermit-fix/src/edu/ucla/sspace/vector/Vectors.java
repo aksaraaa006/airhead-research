@@ -55,10 +55,12 @@ public class Vectors {
      * @return a mutable {@code DoubleVector} view of {@code v}
      */
     public static DoubleVector asDouble(Vector v) {
-        // NOTE: Special case the the sparse class first to becase the
-        // base interface of IntegerVectors matches as well.
+        // NOTE: Special case the the sparse classes first to becase the
+        // base interfaces of DoubleVectors and IntegerVectors matches as well.
         if (v instanceof SparseIntegerVector)
             return new IntAsSparseDoubleVector((SparseIntegerVector)v);
+        if (v instanceof SparseDoubleVector)
+            return (SparseDoubleVector) v;
         else if (v instanceof IntegerVector)
             return new IntAsDoubleVector((IntegerVector)v);
         else if (v instanceof DoubleVector)

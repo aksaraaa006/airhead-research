@@ -25,6 +25,17 @@ import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.SVD.Algorithm;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import java.util.logging.Logger;
 
 
@@ -54,6 +65,22 @@ public class Matrices {
      * Uninstantiable
      */
     private Matrices() { }
+
+    /**
+     * Returns a {@link Matrix} from a list of {@code DoubleVector}s.
+     */
+    public static Matrix asMatrix(List<DoubleVector> vectors) {
+        return new DenseListMatrix(vectors);
+    }
+
+    /**
+     * Returns a {@link SparseMatrix} from a list of {@code
+     * SparseDoubleVector}s.
+     */
+    public static SparseMatrix asSparseMatrix(
+            List<SparseDoubleVector> vectors) {
+        return new SparseListMatrix(vectors);
+    }
 
     /**
      *
@@ -335,5 +362,212 @@ public class Matrices {
         }
 
         return transpose;
+    }
+
+    /**
+     * A {@link Matrix} implementation that buildes a matrix out of a list of
+     * {@link DoubleVector}s.  All mutation methods throw {@code
+     * UnsupportedOperationException}.
+     */
+    private static class ListMatrix<T extends DoubleVector> implements Matrix {
+
+        /**
+         * The list of {@code DoubleVector}s providing the values for the {@code
+         * Matrix}.
+         */
+        protected List<T> vectors;
+
+        /**
+         * The number of columns in the {@code Matrix}
+         */
+        protected int columns;
+
+        /**
+         * {@inheritDoc}
+         */
+        public double get(int row, int column) {
+            return vectors.get(row).get(column);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public double[] getColumn(int column) {
+            int i = 0;
+            double[] columnValues = new double[vectors.size()];
+
+            for (DoubleVector vector : vectors)
+                columnValues[i++] = vector.get(column);
+            return columnValues;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public DoubleVector getColumnVector(int column) {
+            int i = 0;
+            DoubleVector columnValues = new DenseVector(vectors.size());
+
+            for (DoubleVector vector : vectors)
+                columnValues.set(i++, vector.get(column));
+            return columnValues;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public double[] getRow(int row) {
+            return vectors.get(row).toArray();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public T getRowVector(int row) {
+            return vectors.get(row);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int columns() {
+            return columns();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int rows() {
+            return vectors.size();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public double[][] toDenseArray() {
+            double[][] result = new double[vectors.size()][columns];
+            int row = 0;
+            for (DoubleVector vector : vectors) {
+                for (int i = 0; i < vector.length(); ++i)
+                    result[row][i] = vector.get(i);
+                row++;
+            }
+            return result;
+        }
+
+        /**
+         * Not supported 
+         *
+         * @throws UnsupportedOperationException
+         */
+        public void set(int row, int column, double value) {
+            throw new UnsupportedOperationException(
+                    "Modifications are not permitted on a Matrix built from " +
+                    "a List of Vectors");
+        }
+
+        /**
+         * Not supported 
+         *
+         * @throws UnsupportedOperationException
+         */
+        public void setColumn(int column, double[] values) {
+            throw new UnsupportedOperationException(
+                    "Modifications are not permitted on a Matrix built from " +
+                    "a List of Vectors");
+        }
+
+        /**
+         * Not supported 
+         *
+         * @throws UnsupportedOperationException
+         */
+        public void setColumn(int column, DoubleVector values) {
+            throw new UnsupportedOperationException(
+                    "Modifications are not permitted on a Matrix built from " +
+                    "a List of Vectors");
+        }
+
+        /**
+         * Not supported 
+         *
+         * @throws UnsupportedOperationException
+         */
+        public void setRow(int row, double[] values) {
+            throw new UnsupportedOperationException(
+                    "Modifications are not permitted on a Matrix built from " +
+                    "a List of Vectors");
+        }
+
+        /**
+         * Not supported 
+         *
+         * @throws UnsupportedOperationException
+         */
+        public void setRow(int row, DoubleVector values) {
+            throw new UnsupportedOperationException(
+                    "Modifications are not permitted on a Matrix built from " +
+                    "a List of Vectors");
+        }
+    }
+
+    /**
+     * A default sub class of a {@link ListMatrix} for vectors that are dense.
+     * Immutable versions of each vector are stored.
+     */
+    public static class DenseListMatrix extends ListMatrix<DoubleVector>
+                                        implements Matrix {
+
+        /**
+         * Creates a new {@code DenseListMatrix} from a list of {@link
+         * DoubleVector}s.
+         */
+        public DenseListMatrix(List<DoubleVector> vectorList) {
+            vectors = new ArrayList<DoubleVector>(vectorList.size());
+            columns = vectorList.get(0).length();
+            for (DoubleVector vector : vectorList) {
+                if (columns != vector.length())
+                    throw new IllegalArgumentException(
+                            "Vectors must all be of the same length when " +
+                            "creating a Matrix from a List of Vectors");
+                vectors.add(Vectors.immutable(vector));
+            }
+        }
+    }
+
+    /**
+     * A sub class of {@link ListMatrix} for {@link SparseDoubleVector}s.
+     */
+    public static class SparseListMatrix extends ListMatrix<SparseDoubleVector>
+                                         implements SparseMatrix {
+
+        /**
+         * Creates a new {@code SparseListMatrix} from a list of {@link
+         * SparseDoubleVectors}.  Immutable versions of each vector are stored.
+         */
+        public SparseListMatrix(List<SparseDoubleVector> vectorList) {
+            vectors = new ArrayList<SparseDoubleVector>(vectorList.size());
+            columns = vectorList.get(0).length();
+            for (SparseDoubleVector vector : vectorList) {
+                if (columns != vector.length())
+                    throw new IllegalArgumentException(
+                            "Vectors must all be of the same length when " +
+                            "creating a Matrix from a List of Vectors");
+                vectors.add(Vectors.immutable(vector));
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public SparseDoubleVector getColumnVector(int column) {
+            int i = 0;
+            SparseDoubleVector columnValues =
+                new CompactSparseVector(vectors.size());
+
+            for (DoubleVector vector : vectors)
+                columnValues.set(i++, vector.get(column));
+            return columnValues;
+        }
     }
 }

@@ -521,8 +521,12 @@ public class PurandareFirstOrder implements SemanticSpace {
         // not purely alphabetic (i.e. contains number of other symbols), don't
         // bother clustering it.  This is done to reduce the computation time,
         // and to avoid clustering non-meaningful terms such as '.' or '''
+        Properties props = new Properties();
+        props.setProperty(ClutoClustering.NUM_CLUSTERS_PROPERTY,
+                          Integer.toString(numClusters));
+        ClutoClustering clustering = new ClutoClustering(props);
         int[] clusterAssignment = (term.matches("[a-zA-z]+") && numClusters > 6)
-            ? ClutoClustering.agglomerativeCluster(contexts, numClusters)
+            ? clustering.cluster(contexts)
             : new int[contexts.rows()];
         
         LOGGER.info("Generative sense vectors for " + term);
