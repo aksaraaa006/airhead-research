@@ -88,7 +88,7 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
     /**
      * {@inheritDoc}
      */
-    public void set(int index, double value) {
+    public void set(int index, double value) {        
         vector.set(index, value);
     }
 
@@ -96,7 +96,7 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
-        vector.set(index, value.doubleValue());
+        vector.set(index, value);
     }
 
     /**

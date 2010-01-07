@@ -129,7 +129,14 @@ public class SparseHashArray<T> implements SparseArray<T> {
      * {@inheritDoc}
      */
     public void set(int index, T value) {
-	indexToValue.put(index, value);
+        T existing = indexToValue.get(index);
+        // If we are setting a non-null value, then always add it to the array
+        if (value != null)
+            indexToValue.put(index, value);
+        // Otherwise, check whether an existing element was there and if so,
+        // remove that index from the array, thereby maintaining sparseness.
+        else if (existing != null)
+            indexToValue.remove(index);
     }
 
     /**
