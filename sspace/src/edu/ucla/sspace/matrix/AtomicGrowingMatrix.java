@@ -258,10 +258,11 @@ public class AtomicGrowingMatrix implements AtomicMatrix {
      * @return an unsafe, non-atomic view of the row's data
      */
     public DoubleVector getRowVectorUnsafe(int row) {
-        int colsAtCall = cols.get();
         AtomicVector rowEntry = sparseMatrix.get(row);
-        return Vectors.immutable(Vectors.subview(rowEntry.getVector(), 
-                                                 0, colsAtCall));
+        return (rowEntry == null)
+            ? new CompactSparseVector(cols.get())
+            : Vectors.immutable(Vectors.subview(rowEntry.getVector(), 
+                                                0, cols.get()));
     }
 
     /**
