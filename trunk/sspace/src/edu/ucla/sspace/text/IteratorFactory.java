@@ -263,6 +263,20 @@ public class IteratorFactory {
         return (filter == null) 
             ? baseIterator : new FilteredIterator(baseIterator, filter);    
     }
+
+    /**
+     * Tokenizes the contents of the string according to the system
+     * configuration and returns an iterator over all the tokens, excluding
+     * those that were removed by any configured {@link TokenFilter}.
+     *
+     * @param str a string whose contents are to be tokenized
+     *
+     * @return an iterator over all of the optionally-filtered tokens in the
+     *         string
+     */
+    public static Iterator<String> tokenize(String str) {
+        return tokenize(new BufferedReader(new StringReader(str)));
+    }
     
     /**
      * Tokenizes the contents of the reader according to the system
@@ -286,6 +300,25 @@ public class IteratorFactory {
         return (filter == null) 
             ? baseIterator
             : new OrderPreservingFilteredIterator(baseIterator, filter);
+    }
+
+    /**
+     * Tokenizes the contents of the string according to the system
+     * configuration and returns an iterator over all the tokens where any
+     * removed tokens have been replaced with the {@code
+     * IteratorFactory.EMPTY_TOKEN} value.  Tokens returned by this method may
+     * be checked against this value to determine whether a token at that
+     * position in the stream would have been returned but was removed.  In
+     * doing this, the original order and positioning is retained.
+     *
+     * @param str a string whose contents are to be tokenized
+     *
+     * @return an iterator over all of the tokens in the string where any tokens
+     *         removed due to filtering have been replaced with the {@code
+     *         IteratorFactory.EMPTY_TOKEN} value
+     */
+    public static Iterator<String> tokenizeOrdered(String str) {
+        return tokenizeOrdered(new BufferedReader(new StringReader(str)));
     }
 
     /**
