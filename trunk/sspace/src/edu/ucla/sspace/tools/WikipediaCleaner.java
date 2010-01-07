@@ -28,6 +28,7 @@ import edu.ucla.sspace.text.DocumentPreprocessor;
 import edu.ucla.sspace.util.Duple;
 
 import java.io.BufferedReader;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -112,22 +113,23 @@ public class WikipediaCleaner {
         processor = new DocumentPreprocessor();
 
         try {
+            String tempName = "wikipedia-cleaner";
             // Create the file pointers needed.
-            //tempFile = File.createTempFile(outputFile, "tmp");
-            //tempFile.deleteOnExit();
-            //articleTitleFile = File.createTempFile(outputFile, "articles");
+            tempFile = File.createTempFile(tempName, "tmp");
+            tempFile.deleteOnExit();
+            articleTitleFile = File.createTempFile(tempName, "articles");
 
             // Create the PrintWriters needed.
-            tmpOutput = new PrintWriter(outputFileName);
-            //output = new PrintWriter(outputFile);
-            //articleOutput = new PrintWriter(articleTitleFile);
+            tmpOutput = new PrintWriter(tempFile);
+            articleOutput = new PrintWriter(articleTitleFile);
+            output = new PrintWriter(outputFileName);
 
             // Create the map to track incoming links.  NOTE: For this map to
             // work, .intern() must be called on all strings used as keys.
             //articleToIncomingLinkCount =
             //    new IdentityHashMap<String, Integer>(8000000);                
         } catch (IOException ioe) {
-            ioe.printStackTrace();
+            throw new IOError(ioe);
         }
     }
 
@@ -282,6 +284,7 @@ public class WikipediaCleaner {
             // don't include Image, foreign language or
             // disambiguation links
             if (shouldProcessArticle(linkedArticleTitle)) {
+                System.out.println(linkedArticleTitle);
                 // (e.g. non-image) article, then intern its string
                 // to save memory
                 linkedArticleTitle = linkedArticleTitle.intern();
@@ -340,7 +343,9 @@ public class WikipediaCleaner {
      * articles will be written to {@code output} in the form "article title |
      * incoming link count | outgoing link count | article content".
      */
-    public void finalizeCorpus() {
+    public void finalizeCorpus(boolean includeTitle,
+                               boolean includeIncoming,
+                               boolean includeOutgoing) {
         // Read through all the stored cleaned documents, and reject any
         // which have less than 5 incoming links or outgoing links.
         // Articles which are saved will have the entire text written to a
@@ -378,9 +383,18 @@ public class WikipediaCleaner {
                 //articleOutput.println(title);
                 //articleOutput.flush();
 
-                output.println(title + // "|" + incoming + "|" + 
-                              // outgoing + 
-                               "|" + doc);
+                StringBuilder sb = new StringBuilder();
+                if (includeTitle)
+                    sb.append(title).append("|");
+                /*
+                if (includeIncoming)
+                    sb.append(incoming).append("|");
+                if (includeOutgoing)
+                    sb.append(outgoing).append("|");
+                    */
+                sb.append(doc);
+
+                output.println(sb.toString());
                 output.flush();
             }
         } catch (IOException ioe) {
@@ -395,6 +409,15 @@ public class WikipediaCleaner {
         ArgOptions options = new ArgOptions();
         options.addOption('w', "wikiDump", "The wikipedia snapshot to process",
                           true, "FILE", "Required");
+        options.addOption('t', "includeTitles",
+                          "If set, article titles are included",
+                          false, null, "Optional");
+        options.addOption('i', "includeIncomingLinks",
+                          "If set, incoming link counts are included",
+                          false, null, "Optional");
+        options.addOption('o', "includeOutgoingLinks",
+                          "If set, outgoing link counts are included",
+                          false, null, "Optional");
         options.parseOptions(args);
 
         if (options.numPositionalArgs() != 1 ||
@@ -435,7 +458,9 @@ public class WikipediaCleaner {
                 break;
         }
 
-        //cleaner.finalizeCorpus();
+        cleaner.finalizeCorpus(options.hasOption('t'),
+                               options.hasOption('i'),
+                               options.hasOption('o'));
     }
 
     /**

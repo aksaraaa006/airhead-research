@@ -55,7 +55,6 @@ import java.sql.Timestamp;
  * file.
  */
 public class BlogPreProcessor {
-  private static final long SECONDS_PER_WEEK = 604800000;
 
   private static final Logger LOGGER =
     Logger.getLogger(BlogPreProcessor.class.getName());
