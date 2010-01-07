@@ -172,8 +172,11 @@ public class AtomicGrowingSparseMatrix implements AtomicMatrix, SparseMatrix {
         checkIndices(0, column);
         rowReadLock.lock();
         SparseDoubleVector values = new SparseHashDoubleVector(rows.get());
-        for (int row = 0; row < rows.get(); ++row)
-            values.set(row, get(row, column));
+        for (int row = 0; row < rows.get(); ++row) {
+            double value = get(row, column);
+            if (value != 0d)
+                values.set(row, get(row, column));
+        }
         rowReadLock.unlock();
         return values;
     }
