@@ -270,7 +270,7 @@ public class LogEntropyTransform implements Transform {
 
         int tokensSeenInCorpus = 0;
         
-        // calculate how many terms were in each document for the original
+        // Calculate the global occurrance count for each term from the original
         // term-document matrix.  Since the format is in the MatLab format,
         // everything is 1 based, so decrement each index we will use later on
         // by 1.
@@ -303,8 +303,7 @@ public class LogEntropyTransform implements Transform {
 
         double[] termEntropy = new double[numUniqueWords];
 
-        // calculate how many terms were in each document for the original
-        // term-document matrix
+        // Calculate the term entropy for each term in the original matrix.
         br = new BufferedReader(new FileReader(inputMatrixFile));
         for (String line = null; (line = br.readLine()) != null; ) {
 
@@ -346,7 +345,7 @@ public class LogEntropyTransform implements Transform {
             double entropy = 1 - termEntropy[term];
             
             // now print out the noralized values
-            pw.println(term + "\t" +
+            pw.println((term + 1) + "\t" +
                        doc + "\t" +
                        (log * entropy));            
         }
