@@ -26,19 +26,54 @@ import java.io.IOException;
 
 
 /**
- * David needs to put javadoc here.
+ * An interface for {@link Matrix} transformations.  These tranformations should
+ * support both a {@link Matrix} and a serialized {@link Matrix} stored in a
+ * {@code File}, in one of the supported matrix formats.  Implementations are
+ * strongly encouraged to implement the {@code toString} method, as many {@link
+ * SemanticSpace} implementations will use this when serializing.
+ *
+ * @author David Jurgens
  */
 public interface Transform {
 
     /**
-
+     * Transforms the matrix in the file using the an implemented method and
+     * returns a temporary file containing the result.
+     *
+     * @param inputMatrixFile a file containing a matrix in the specified format
+     * @param format the format of the matrix
+     *
+     * @return a file with the transformed version of the input.  This file is
+     *         marked to be deleted when the JVM exits.
+     *
+     * @throws IOException if any error occurs while reading the input matrix or
+     *         writing the output matrix
      */
     File transform(File inputMatrixFile, 
                    MatrixIO.Format format) throws IOException;
 
+    /**
+     * Transforms the input matrix using the implemented method and writes the
+     * result to the file for the output matrix.
+     *
+     * @param inputMatrixFile a file containing a matrix in the specified format
+     * @param format the format of the input matrix, and the format in which the
+     *        output matrix will be written
+     * @param outputMatrixFile the file to which the transformed matrix will be
+     *        written
+     *
+     * @throws IOException if any error occurs while reading the input matrix or
+     *         writing the output matrix
+     */
     void transform(File inputMatrixFile, MatrixIO.Format inputFormat, 
-                   File outputMatrixFile) 
-        throws IOException;
+                   File outputMatrixFile) throws IOException;
 
+    /**
+     * Returns a transformed matrix based on the given matrix.
+     *
+     * @param matrix the matrix to be transformed
+     *
+     * @return the transformed version of the input matrix
+     */
     Matrix transform(Matrix input);
 }

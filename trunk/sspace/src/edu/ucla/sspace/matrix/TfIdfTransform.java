@@ -82,11 +82,11 @@ public class TfIdfTransform implements Transform {
      */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
             throws IOException {
-	// create a temp file for the output
-	File output = File.createTempFile(inputMatrixFile.getName() + 
-					  ".tf-idf-transform", ".dat");
-	transform(inputMatrixFile, format, output);
-	return output;
+        // create a temp file for the output
+        File output = File.createTempFile(inputMatrixFile.getName() + 
+                                          ".tf-idf-transform", ".dat");
+        transform(inputMatrixFile, format, output);
+        return output;
     }
 
     /**
@@ -141,8 +141,8 @@ public class TfIdfTransform implements Transform {
 
         // Make one pass through the matrix to calculate the global statistics
 
-	int numUniqueWords = dis.readInt();
-	int numDocs = dis.readInt(); 
+        int numUniqueWords = dis.readInt();
+        int numDocs = dis.readInt(); 
         int numMatrixEntries = dis.readInt();
 
         // Keep track of how many times a word was seen throughout the
@@ -166,7 +166,7 @@ public class TfIdfTransform implements Transform {
                 int occurrences = (int)(dis.readFloat());
                 termToOccurrencesInCorpus[termIndex] += occurrences; 
             }
-	}
+        }
 
         dis.close();
         dis = new DataInputStream(
@@ -217,69 +217,69 @@ public class TfIdfTransform implements Transform {
                                        File outputMatrixFile) 
             throws IOException {
         
-	// for each document and for each term in that document how many
-	// times did that term appear
-	Map<Pair<Integer>,Integer> docToTermFreq = 
-	    new HashMap<Pair<Integer>,Integer>();
-	
-	// for each term, in how many documents did that term appear?
-	Map<Integer,Integer> termToDocOccurences = 
-	    new HashMap<Integer,Integer>();
-	
-	// for each document, how many terms appeared in it
-	Map<Integer,Integer> docToTermCount = 
-	    new HashMap<Integer,Integer>();
-	
-	// how many different terms and documents were used in the matrix
-	int numTerms = 0;
-	int numDocs = 0;	   	    
-	
-	// calculate all the statistics on the original term-document matrix
-	BufferedReader br = new BufferedReader(new FileReader(inputMatrixFile));
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] termDocCount = line.split("\\s+");
-	    
-	    Integer term  = Integer.valueOf(termDocCount[0]);
-	    Integer doc   = Integer.valueOf(termDocCount[1]);
-	    Integer count = Integer.valueOf(termDocCount[2]);
-	    
-	    if (term.intValue() > numTerms)
-		numTerms = term.intValue();
-	    
-	    if (doc.intValue() > numDocs)
-		numDocs = doc.intValue();
-	    
-	    // increase the count for the number of documents in which this
-	    // term was seen
-	    Integer termOccurences = termToDocOccurences.get(term);
-	    termToDocOccurences.put(term, (termOccurences == null) 
-				    ? Integer.valueOf(1) 
-				    : Integer.valueOf(termOccurences + 1));
-	    
-	    // increase the total count of terms seen in ths document
-	    Integer docTermCount = docToTermCount.get(doc);
-	    docToTermCount.put(doc, (docTermCount == null)
-			       ? count
-			       : Integer.valueOf(count + docTermCount));
-	    
-	    docToTermFreq.put(new Pair<Integer>(term, doc), count);
-	}
-	br.close();
-	
-	// the output the new matrix where the count value is replaced by
-	// the tf-idf value
-	PrintWriter pw = new PrintWriter(outputMatrixFile);
-	for (Map.Entry<Pair<Integer>,Integer> e : docToTermFreq.entrySet()) { 
-	    Pair<Integer> termAndDoc = e.getKey();
-	    double count = e.getValue().intValue();
-	    double tf = count / docToTermCount.get(termAndDoc.y);
-	    double idf = Math.log((double)numDocs / 
-				  termToDocOccurences.get(termAndDoc.x));
-	    pw.println(termAndDoc.x + "\t" +
-		       termAndDoc.y + "\t" +
-		       (tf * idf));
-	}
-	pw.close();
+        // for each document and for each term in that document how many
+        // times did that term appear
+        Map<Pair<Integer>,Integer> docToTermFreq = 
+            new HashMap<Pair<Integer>,Integer>();
+        
+        // for each term, in how many documents did that term appear?
+        Map<Integer,Integer> termToDocOccurences = 
+            new HashMap<Integer,Integer>();
+        
+        // for each document, how many terms appeared in it
+        Map<Integer,Integer> docToTermCount = 
+            new HashMap<Integer,Integer>();
+        
+        // how many different terms and documents were used in the matrix
+        int numTerms = 0;
+        int numDocs = 0;                       
+        
+        // calculate all the statistics on the original term-document matrix
+        BufferedReader br = new BufferedReader(new FileReader(inputMatrixFile));
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] termDocCount = line.split("\\s+");
+            
+            Integer term  = Integer.valueOf(termDocCount[0]);
+            Integer doc   = Integer.valueOf(termDocCount[1]);
+            Integer count = Integer.valueOf(termDocCount[2]);
+            
+            if (term.intValue() > numTerms)
+                numTerms = term.intValue();
+            
+            if (doc.intValue() > numDocs)
+                numDocs = doc.intValue();
+            
+            // increase the count for the number of documents in which this
+            // term was seen
+            Integer termOccurences = termToDocOccurences.get(term);
+            termToDocOccurences.put(term, (termOccurences == null) 
+                                    ? Integer.valueOf(1) 
+                                    : Integer.valueOf(termOccurences + 1));
+            
+            // increase the total count of terms seen in ths document
+            Integer docTermCount = docToTermCount.get(doc);
+            docToTermCount.put(doc, (docTermCount == null)
+                               ? count
+                               : Integer.valueOf(count + docTermCount));
+            
+            docToTermFreq.put(new Pair<Integer>(term, doc), count);
+        }
+        br.close();
+        
+        // the output the new matrix where the count value is replaced by
+        // the tf-idf value
+        PrintWriter pw = new PrintWriter(outputMatrixFile);
+        for (Map.Entry<Pair<Integer>,Integer> e : docToTermFreq.entrySet()) { 
+            Pair<Integer> termAndDoc = e.getKey();
+            double count = e.getValue().intValue();
+            double tf = count / docToTermCount.get(termAndDoc.y);
+            double idf = Math.log((double)numDocs / 
+                                  termToDocOccurences.get(termAndDoc.x));
+            pw.println(termAndDoc.x + "\t" +
+                       termAndDoc.y + "\t" +
+                       (tf * idf));
+        }
+        pw.close();
     }
 
     /**
@@ -368,7 +368,7 @@ public class TfIdfTransform implements Transform {
      * Returns the name of this transform.
      */
     public String toString() {
-	return "TF-IDF";
+        return "TF-IDF";
     }
 }
 

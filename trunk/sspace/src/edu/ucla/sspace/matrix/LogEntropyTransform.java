@@ -38,7 +38,9 @@ import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import java.util.logging.Logger;
 
@@ -83,7 +85,7 @@ public class LogEntropyTransform implements Transform {
      */
 
     private static final Logger LOGGER = 
-	Logger.getLogger(LogEntropyTransform.class.getName());
+        Logger.getLogger(LogEntropyTransform.class.getName());
 
     /**
      * Creates an instance of {@code LogEntropyTransform}.
@@ -105,11 +107,11 @@ public class LogEntropyTransform implements Transform {
      */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
              throws IOException {
-	// create a temp file for the output
-	File output = File.createTempFile(inputMatrixFile.getName() + 
-					  ".log-entropy-transform", ".dat");
-	transform(inputMatrixFile, format, output);
-	return output;
+        // create a temp file for the output
+        File output = File.createTempFile(inputMatrixFile.getName() + 
+                                          ".log-entropy-transform", ".dat");
+        transform(inputMatrixFile, format, output);
+        return output;
     }
 
     /**
@@ -158,8 +160,8 @@ public class LogEntropyTransform implements Transform {
             new BufferedInputStream(new FileInputStream(inputMatrixFile)));
 
         // Make one pass through the matrix to calculate the global statistics
-	int numUniqueWords = dis.readInt();
-	int numDocs = dis.readInt(); // equal to the number of rows
+        int numUniqueWords = dis.readInt();
+        int numDocs = dis.readInt(); // equal to the number of rows
         int numMatrixEntries = dis.readInt();
 
         // Also keep track of how many times a word was seen throughout the
@@ -181,7 +183,7 @@ public class LogEntropyTransform implements Transform {
                 termToGlobalCount[termIndex] += occurrences; 
                 docToTermCount[docIndex] += occurrences;
             }
-	}
+        }
 
         // Seek back to the start of the data for the next pass
         dis.close();
@@ -207,7 +209,7 @@ public class LogEntropyTransform implements Transform {
                 double p = tf / gf;
                 termEntropy[termIndex] += (p * log2(p)) / log2(numDocs);
             }
-	}
+        }
 
         dis.close();
 
@@ -224,9 +226,9 @@ public class LogEntropyTransform implements Transform {
             new BufferedInputStream(new FileInputStream(inputMatrixFile)));
         dis.skip(12); // 3 integers
 
-	// Last, rewrite the original matrix using the log-entropy
-	// transformation describe on page 17 of Landauer et al. "An
-	// Introduction to Latent Semantic Analysis"
+        // Last, rewrite the original matrix using the log-entropy
+        // transformation describe on page 17 of Landauer et al. "An
+        // Introduction to Latent Semantic Analysis"
         docIndex = 0;
         entriesSeen = 0;
         for (; entriesSeen < numMatrixEntries; ++docIndex) {
@@ -244,7 +246,7 @@ public class LogEntropyTransform implements Transform {
                 dos.writeInt(termIndex);
                 dos.writeFloat((float)(log * entropy));
             }
-	}
+        }
 
         dis.close();
         dos.close();
@@ -261,61 +263,56 @@ public class LogEntropyTransform implements Transform {
                                        File outputMatrixFile) 
             throws IOException {
 
-	Map<Integer,Integer> docToNumTerms = new HashMap<Integer,Integer>();
-	Map<Integer,Integer> termToGlobalCountMap = 
+        Map<Integer,Integer> docToNumTerms = new HashMap<Integer,Integer>();
+        Map<Integer,Integer> termToGlobalCountMap = 
             new HashMap<Integer,Integer>();
-	Map<Integer,Integer> docToTermCountMap = 
-            new HashMap<Integer,Integer>();
+        Set<Integer> docs = new HashSet<Integer>();
 
-	int tokensSeenInCorpus = 0;
-	
-	// calculate how many terms were in each document for the original
-	// term-document matrix
-	BufferedReader br = new BufferedReader(new FileReader(inputMatrixFile));
-	for (String line = null; (line = br.readLine()) != null; ) {
-
-	    String[] termDocCount = line.split("\\s+");
-	    
-	    Integer term  = Integer.valueOf(termDocCount[0]);
-	    Integer doc   = Integer.valueOf(termDocCount[1]);
-	    Integer count = Double.valueOf(termDocCount[2]).intValue();
-	    	    
-	    Integer termGlobalCount = termToGlobalCountMap.get(term);
-	    termToGlobalCountMap.put(term, (termGlobalCount == null)
-                                     ? count  : termGlobalCount + count);
-            Integer docTermCount = docToTermCountMap.get(doc);
-            docToTermCountMap.put(doc, (docTermCount == null)
-                                  ? count : docTermCount + count);
-	}
-
-	br.close();
+        int tokensSeenInCorpus = 0;
         
-        int numDocs = docToTermCountMap.size();
+        // calculate how many terms were in each document for the original
+        // term-document matrix.  Since the format is in the MatLab format,
+        // everything is 1 based, so decrement each index we will use later on
+        // by 1.
+        BufferedReader br = new BufferedReader(new FileReader(inputMatrixFile));
+        for (String line = null; (line = br.readLine()) != null; ) {
+
+            String[] termDocCount = line.split("\\s+");
+            
+            Integer term  = Integer.valueOf(termDocCount[0]) - 1;
+            Integer doc   = Integer.valueOf(termDocCount[1]);
+            Integer count = Double.valueOf(termDocCount[2]).intValue();
+                        
+            Integer termGlobalCount = termToGlobalCountMap.get(term);
+            termToGlobalCountMap.put(term, (termGlobalCount == null)
+                                     ? count  : termGlobalCount + count);
+            docs.add(doc);
+        }
+
+        br.close();
+        
+        int numDocs = docs.size();
         int numUniqueWords = termToGlobalCountMap.size();
 
         // Recalculate the values as arrays to speed up the computation in the
         // next step
         int[] termToGlobalCount = new int[numUniqueWords];
-        int[] docToTermCount = new int[numDocs];
         
-        for (Map.Entry<Integer,Integer> e : docToTermCountMap.entrySet())
-            docToTermCount[e.getKey()] = e.getValue();
-
         for (Map.Entry<Integer,Integer> e : termToGlobalCountMap.entrySet())
             termToGlobalCount[e.getKey()] = e.getValue();
 
         double[] termEntropy = new double[numUniqueWords];
 
-	// calculate how many terms were in each document for the original
-	// term-document matrix
+        // calculate how many terms were in each document for the original
+        // term-document matrix
         br = new BufferedReader(new FileReader(inputMatrixFile));
-	for (String line = null; (line = br.readLine()) != null; ) {
+        for (String line = null; (line = br.readLine()) != null; ) {
 
-	    String[] termDocCount = line.split("\\s+");
-	    
-	    Integer term  = Integer.valueOf(termDocCount[0]);
-	    Integer doc   = Integer.valueOf(termDocCount[1]);
-	    Integer count = Double.valueOf(termDocCount[2]).intValue();
+            String[] termDocCount = line.split("\\s+");
+            
+            int term  = Integer.valueOf(termDocCount[0]) - 1;
+            int doc   = Integer.valueOf(termDocCount[1]);
+            int count = Double.valueOf(termDocCount[2]).intValue();
 
             // tf = term frequency in that document
             double tf = count;
@@ -323,38 +320,38 @@ public class LogEntropyTransform implements Transform {
             double gf = termToGlobalCount[term];
             double p = tf / gf;
             termEntropy[term] += (p * log2(p)) / log2(numDocs);
-	}
-	br.close();
+        }
+        br.close();
 
-	LOGGER.fine("generating new matrix");
-	    	    
-	PrintWriter pw = new PrintWriter(outputMatrixFile);
+        LOGGER.fine("generating new matrix");
+                        
+        PrintWriter pw = new PrintWriter(outputMatrixFile);
 
-	// Last, rewrite the original matrix using the log-entropy
-	// transformation describe on page 17 of Landauer et al. "An
-	// Introduction to Latent Semantic Analysis"
-	br = new BufferedReader(new FileReader(inputMatrixFile));
-	for (String line = null; (line = br.readLine()) != null; ) {
-	    String[] termDocCount = line.split("\\s+");
-	    
-	    Integer term  = Integer.valueOf(termDocCount[0]);
-	    Integer doc   = Integer.valueOf(termDocCount[1]);
-	    Integer count = Double.valueOf(termDocCount[2]).intValue();
-	    
+        // Last, rewrite the original matrix using the log-entropy
+        // transformation describe on page 17 of Landauer et al. "An
+        // Introduction to Latent Semantic Analysis"
+        br = new BufferedReader(new FileReader(inputMatrixFile));
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] termDocCount = line.split("\\s+");
+            
+            int term  = Integer.valueOf(termDocCount[0]) - 1;
+            int doc   = Integer.valueOf(termDocCount[1]);
+            int count = Double.valueOf(termDocCount[2]).intValue();
+            
             // tf = term frequency in that document
             double tf = count;
             double log = log2_1p(tf);
             // gf = global frequency of the term
             double gf = termToGlobalCount[term];
             double entropy = 1 - termEntropy[term];
-	    
-	    // now print out the noralized values
-	    pw.println(term + "\t" +
-		       doc + "\t" +
-		       (log * entropy));	    
-	}
-	br.close();
-	pw.close();
+            
+            // now print out the noralized values
+            pw.println(term + "\t" +
+                       doc + "\t" +
+                       (log * entropy));            
+        }
+        br.close();
+        pw.close();
     }      
 
     /**
@@ -468,6 +465,6 @@ public class LogEntropyTransform implements Transform {
      * Returns the name of this transform.
      */
     public String toString() {
-	return "log-entropy";
+        return "log-entropy";
     }
 }
