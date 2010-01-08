@@ -168,4 +168,8 @@ public class OnlineClusteringGenerator<T extends Vector> {
         return new OnlineKMeansClustering<T>(clusterThreshold, dropThreshold,
                                              maxNumClusters, clusterWeight);
     }
+
+    public String toString() {
+        return "OnLineKMeans_" + maxNumClusters + "c_" + clusterWeight + "h";
+    }
 }

@@ -52,6 +52,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 
 /**
  * A utility class for running <a
@@ -104,6 +112,8 @@ public class SenseEvalTester {
             System.exit(1);
         }
 
+        PrintWriter answers = new PrintWriter(options.getPositionalArg(0));
+
         SemanticSpace senseInducedSpace =
             SemanticSpaceIO.load(options.getStringOption('s'));
         Map<String, TernaryVector> wordToIndexVector =
@@ -116,114 +126,79 @@ public class SenseEvalTester {
                         new File(options.getStringOption('p')),
                         PermutationFunction.class);
         
-        BufferedReader br =
-            new BufferedReader(new FileReader(options.getStringOption('S')));
-        PrintWriter answers = new PrintWriter(options.getPositionalArg(0));
-        
-        for (String line = null; (line = br.readLine()) != null; ) {
-            
-            if (line.startsWith("    <instance")) {
-                // Find the ID for this word instance
-                int start = 18;
-                int end = line.indexOf("\"", start);
-                // Get the full name of this instance of the word,
-                // e.g. "explain.v.46"
-                String instance = line.substring(start, end);
-                int firstPeriod = instance.indexOf(".");
-                // Get the raw form of the word, which we will use with the
-                // semantic space, e.g. "explain"
-                String word = line.substring(0, firstPeriod);
-                // Identify the word plus its part of speech.  This is not
-                // used with the semantic space, but is necessary for
-                // reporting, e.g. "explain.v"
-                String wordPlusPos = line.substring(0, firstPeriod +2);
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        Document doc = db.parse(new File(options.getStringOption('S')));
+        NodeList instances = doc.getElementsByTagName("instance");
+        for (int i = 0; i < instances.getLength(); ++i) {
+            Element instanceNode = (Element) instances.item(i);
+            String instanceId = instanceNode.getAttribute("id");
+            String[] wordPosNum = instanceId.split("\\.");
 
-                // The next line will contain the exact phrase that
-                // disambiguates the sense
-                String context = br.readLine();
-                
-                // REMINDER: if we wanted to support compound tokens in the
-                // context-building process, we need to provide an option
-                Iterator<String> contextTokens = IteratorFactory.tokenize(
-                    new BufferedReader(new StringReader(context)));
+            Queue<String> prevWords = extractContext(
+                    instanceNode.getFirstChild().getNodeValue());
+            Queue<String> nextWords = extractContext(
+                    instanceNode.getLastChild().getNodeValue());
+            // Create a new Vector that will contain the sum of all the
+            // index vectors for the context.  This will compared with each
+            // sense of the target word.
+            DoubleVector contextVector = 
+                new DenseVector(senseInducedSpace.getVectorLength());
 
-                Queue<String> prevWords = new ArrayDeque<String>();
-                Queue<String> nextWords = new ArrayDeque<String>();
-                boolean headSeen = false;
-                while (contextTokens.hasNext()) {
-                    String token = contextTokens.next();
-                    // The context contains two XML tags to indicate where the
-                    // sense word is found.  Since we ignore any positional
-                    // information, remove these tags.  Note that the token in
-                    // the middle is the word we want to disambiguate, so in
-                    // order to remove any bias from adding in the index vector
-                    // for it, we remove that token as well
-                    if (token.equals("<head>")) {
-                        contextTokens.next();
-                        contextTokens.next();
-                        headSeen = true;
-                        continue;
-                    }
-                    if (headSeen)
-                        nextWords.offer(token);
-                    else
-                        prevWords.offer(token);
-                }
-
-                // Create a new Vector that will contain the sum of all the
-                // index vectors for the context.  This will compared with each
-                // sense of the target word.
-                DoubleVector contextVector = 
-                    new DenseVector(senseInducedSpace.getVectorLength());
-
-                // Extract the TernaryVector and permute in the same way that
-                // FlyingHermit would for the words before and after the head
-                // token.
-                int distance = -1 * prevWords.size();
-                for (String term : prevWords) {
-                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        TernaryVector termVector = wordToIndexVector.get(term);
-                        if (permFunc != null)
+            // Extract the TernaryVector and permute in the same way that
+            // FlyingHermit would for the words before and after the head
+            // token.
+            int distance = -1 * prevWords.size();
+            for (String term : prevWords) {
+                if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    TernaryVector termVector = wordToIndexVector.get(term);
+                    if (permFunc != null)
                             termVector = permFunc.permute(termVector, distance);
-                        add(contextVector, termVector);
-                    }
-                    ++distance;
+                    add(contextVector, termVector);
                 }
-
-                distance = 1;
-                for (String term : nextWords) {
-                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        TernaryVector termVector = wordToIndexVector.get(term);
-                        if (permFunc != null)
-                            termVector = permFunc.permute(termVector, distance);
-                        add(contextVector, termVector);
-                    }
-                    ++distance;
-                }
-
-                // Once the context vector has been build, determine which sense
-                // of the word is most similar to the context
-                double closestSimilarity = -1;
-                String clusterName = null;
-
-                for (int sense = 0; sense < Integer.MAX_VALUE; ++sense) {
-                    String senseWord = (sense == 0) ? word : word + "-" + sense;
-                    Vector semanticVector = 
-                        senseInducedSpace.getVector(senseWord);
-                    double similarity = Similarity.cosineSimilarity(
-                        semanticVector, contextVector);
-                    if (similarity > closestSimilarity) {
-                        closestSimilarity = similarity;
-                        // Use the Part of Speech as a part of the cluster name
-                        // to avoid confusing noun and verb clusters in the
-                        // results.
-                        clusterName = wordPlusPos + "." + sense;
-                    }
-                }
-
-                answers.println(wordPlusPos + " " + instance + " "+clusterName);
+                ++distance;
             }
-        }        
+
+            distance = 1;
+            for (String term : nextWords) {
+                if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    TernaryVector termVector = wordToIndexVector.get(term);
+                    if (permFunc != null)
+                        termVector = permFunc.permute(termVector, distance);
+                    add(contextVector, termVector);
+                }
+                ++distance;
+            }
+
+            // Once the context vector has been build, determine which sense
+            // of the word is most similar to the context
+            double closestSimilarity = -1;
+            String clusterName = null;
+            String word = wordPosNum[0];
+            String wordPos = word + "." + wordPosNum[1];
+
+            for (int sense = 0; sense < Integer.MAX_VALUE; ++sense) {
+                String senseWord = (sense == 0) ? word : word + "-" + sense;
+                Vector semanticVector = 
+                    senseInducedSpace.getVector(senseWord);
+                if (semanticVector == null)
+                    break;
+
+                double similarity = Similarity.cosineSimilarity(
+                    semanticVector, contextVector);
+                if (similarity > closestSimilarity) {
+                    closestSimilarity = similarity;
+                    // Use the Part of Speech as a part of the cluster name
+                    // to avoid confusing noun and verb clusters in the
+                    // results.
+                    clusterName = wordPos + "." + sense;
+                }
+            }
+
+            answers.println(wordPos + " " + instanceId + " " + clusterName);
+        }
+        answers.flush();
+        answers.close();
     }
 
     private void add(DoubleVector dest, TernaryVector src) {
@@ -231,5 +206,14 @@ public class SenseEvalTester {
             dest.add(p, 1);
         for (int n : src.negativeDimensions())
             dest.add(n, -1);
+    }
+
+    private Queue<String> extractContext(String context) {
+        Iterator<String> contextTokens = IteratorFactory.tokenize(
+            new BufferedReader(new StringReader(context)));
+        Queue<String> words = new ArrayDeque<String>();
+        while (contextTokens.hasNext())
+            words.offer(contextTokens.next());
+        return words;
     }
 }

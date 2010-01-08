@@ -172,4 +172,8 @@ public class ClusterMap<T extends Vector> {
         OnlineClustering<T> clustering = vectorClusters.get(term);
         return clustering.finalizeClustering();
     }
+
+    public String toString() {
+        return generator.toString();
+    }
 }

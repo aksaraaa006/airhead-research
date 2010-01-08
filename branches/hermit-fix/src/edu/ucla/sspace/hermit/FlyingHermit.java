@@ -223,14 +223,15 @@ public class FlyingHermit implements SemanticSpace, Filterable {
     /**
      * Create a new instance of {@code FlyingHermit} which takes ownership
      */
-    public FlyingHermit(Map<String, TernaryVector> indexGeneratorMap,
-                        PermutationFunction<TernaryVector> permFunction,
-                        OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator,
-                        Map<String, String> remap,
-                        Set<String> accepted,
-                        int vectorSize,
-                        int prevWordsSize,
-                        int nextWordsSize) {
+    public FlyingHermit(
+            Map<String, TernaryVector> indexGeneratorMap,
+            PermutationFunction<TernaryVector> permFunction,
+            OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator,
+            Map<String, String> remap,
+            Set<String> accepted,
+            int vectorSize,
+            int prevWordsSize,
+            int nextWordsSize) {
         indexVectorSize = vectorSize;
         indexMap = indexGeneratorMap;
         permFunc = permFunction;
@@ -262,9 +263,10 @@ public class FlyingHermit implements SemanticSpace, Filterable {
      * {@inheritDoc}
      */
     public String getSpaceName() {
+        String permName = (permFunc == null) ? "" : permFunc.toString();
         return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize + 
-               "-w" + prevSize + "_" + nextSize +
-               "-" + permFunc.toString();
+               "-w" + prevSize + "_" + nextSize + "-" + permName +
+               "-" + clusterMap.toString();
     }
 
     /**
