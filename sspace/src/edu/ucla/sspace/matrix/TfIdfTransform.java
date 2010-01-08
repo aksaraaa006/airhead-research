@@ -81,7 +81,7 @@ public class TfIdfTransform implements Transform {
      *         writing the output matrix
      */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
-            throws IOException {
+        throws IOException {
         // create a temp file for the output
         File output = File.createTempFile(inputMatrixFile.getName() + 
                                           ".tf-idf-transform", ".dat");
@@ -131,7 +131,7 @@ public class TfIdfTransform implements Transform {
      */
     private void svdlibcSparseBinaryTransform(File inputMatrixFile, 
                                               File outputMatrixFile) 
-            throws IOException {
+        throws IOException {
         
         // Open the input matrix as a random access file to allow for us to
         // travel backwards as multiple passes are needed
@@ -145,9 +145,8 @@ public class TfIdfTransform implements Transform {
         int numDocs = dis.readInt(); 
         int numMatrixEntries = dis.readInt();
 
-        // Keep track of how many times a word was seen throughout the
-        // entire corpus (i.e. matrix)
-        int[] termToOccurrencesInCorpus = new int[numUniqueWords];
+        // How many words are in each document
+        int[] docToTermCount = new int[numDocs];
         // A count of how many different documents a term appeared in
         int[] termToDocCount = new int[numUniqueWords];
         
@@ -164,7 +163,7 @@ public class TfIdfTransform implements Transform {
                 termToDocCount[termIndex]++;
                 // occurrence is specified as a float, rather than an int
                 int occurrences = (int)(dis.readFloat());
-                termToOccurrencesInCorpus[termIndex] += occurrences; 
+                docToTermCount[docIndex] += occurrences; 
             }
         }
 
@@ -192,8 +191,7 @@ public class TfIdfTransform implements Transform {
                 // occurrence is specified as a float, rather than an int
                 float occurrences = dis.readFloat();
                 
-                double termFreq =
-                    occurrences / termToOccurrencesInCorpus[termIndex];
+                double termFreq = occurrences / docToTermCount[docIndex];
                 double invDocFreq = 
                     Math.log(numDocs / (1d + termToDocCount[termIndex]));
 
@@ -215,70 +213,64 @@ public class TfIdfTransform implements Transform {
      */
     private void matlabSparseTransform(File inputMatrixFile, 
                                        File outputMatrixFile) 
-            throws IOException {
-        
-        // for each document and for each term in that document how many
-        // times did that term appear
-        Map<Pair<Integer>,Integer> docToTermFreq = 
-            new HashMap<Pair<Integer>,Integer>();
-        
+        throws IOException {
+         
         // for each term, in how many documents did that term appear?
-        Map<Integer,Integer> termToDocOccurences = 
+        Map<Integer,Integer> termToDocOccurrences = 
             new HashMap<Integer,Integer>();
-        
+ 
         // for each document, how many terms appeared in it
         Map<Integer,Integer> docToTermCount = 
             new HashMap<Integer,Integer>();
-        
+ 
         // how many different terms and documents were used in the matrix
         int numTerms = 0;
-        int numDocs = 0;                       
-        
+        int numDocs = 0;         
+ 
         // calculate all the statistics on the original term-document matrix
         BufferedReader br = new BufferedReader(new FileReader(inputMatrixFile));
         for (String line = null; (line = br.readLine()) != null; ) {
             String[] termDocCount = line.split("\\s+");
-            
+     
             Integer term  = Integer.valueOf(termDocCount[0]);
             Integer doc   = Integer.valueOf(termDocCount[1]);
             Integer count = Integer.valueOf(termDocCount[2]);
-            
-            if (term.intValue() > numTerms)
-                numTerms = term.intValue();
-            
-            if (doc.intValue() > numDocs)
-                numDocs = doc.intValue();
-            
+     
             // increase the count for the number of documents in which this
             // term was seen
-            Integer termOccurences = termToDocOccurences.get(term);
-            termToDocOccurences.put(term, (termOccurences == null) 
-                                    ? Integer.valueOf(1) 
-                                    : Integer.valueOf(termOccurences + 1));
-            
+            Integer termCount = termToDocOccurrences.get(term);
+            termToDocOccurrences.put(term, (termCount == null) 
+                                     ? 1 : Integer.valueOf(termCount + 1));
+     
             // increase the total count of terms seen in ths document
             Integer docTermCount = docToTermCount.get(doc);
             docToTermCount.put(doc, (docTermCount == null)
                                ? count
                                : Integer.valueOf(count + docTermCount));
-            
-            docToTermFreq.put(new Pair<Integer>(term, doc), count);
+     
         }
         br.close();
-        
-        // the output the new matrix where the count value is replaced by
-        // the tf-idf value
+
+        numTerms = termToDocOccurrences.size();
+        numDocs = docToTermCount.size();
+ 
+        // the output the new matrix where the count value is replaced by the
+        // tf-idf value
         PrintWriter pw = new PrintWriter(outputMatrixFile);
-        for (Map.Entry<Pair<Integer>,Integer> e : docToTermFreq.entrySet()) { 
-            Pair<Integer> termAndDoc = e.getKey();
-            double count = e.getValue().intValue();
-            double tf = count / docToTermCount.get(termAndDoc.y);
-            double idf = Math.log((double)numDocs / 
-                                  termToDocOccurences.get(termAndDoc.x));
-            pw.println(termAndDoc.x + "\t" +
-                       termAndDoc.y + "\t" +
-                       (tf * idf));
+        br = new BufferedReader(new FileReader(inputMatrixFile));
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] termDocCount = line.split("\\s+");
+     
+            Integer term  = Integer.valueOf(termDocCount[0]);
+            Integer doc   = Integer.valueOf(termDocCount[1]);
+            Integer count = Integer.valueOf(termDocCount[2]);
+
+            double tf = count.doubleValue() / docToTermCount.get(doc);
+            double idf = 
+                Math.log(numDocs / (1d + termToDocOccurrences.get(term)));
+            pw.println(term + "\t" + doc + "\t" + (tf * idf));
         }
+        br.close();
         pw.close();
     }
 
@@ -302,9 +294,8 @@ public class TfIdfTransform implements Transform {
         int terms = matrix.rows();
         int docs = matrix.columns();
 
-        // Keep track of how many times a word was seen throughout the
-        // entire corpus (i.e. matrix)
-        int[] termToOccurrencesInCorpus = new int[terms];
+        // How many terms were in each document
+        int[] docToTermCount = new int[terms];
         // A count of how many different documents a term appeared in
         int[] termToDocCount = new int[terms];
 
@@ -316,7 +307,8 @@ public class TfIdfTransform implements Transform {
                 int[] docsWithWord = sv.getNonZeroIndices();
                 termToDocCount[term] = docsWithWord.length;
                 for (int doc : docsWithWord) {
-                    termToOccurrencesInCorpus[term] += termVec.get(doc);
+                    int count = (int)(termVec.get(doc));
+                    docToTermCount[doc] += count;
                 }
             }
             else {
@@ -324,7 +316,7 @@ public class TfIdfTransform implements Transform {
                     int count = (int)(termVec.get(doc));
                     if (count > 0) {
                         termToDocCount[term]++;
-                        termToOccurrencesInCorpus[term] += count;
+                        docToTermCount[doc] += count;
                     }
                 }
             }
@@ -342,7 +334,7 @@ public class TfIdfTransform implements Transform {
                 for (int doc : docsWithWord) {
                     double occurrences = termVec.get(doc);
                     double termFreq =
-                        occurrences / termToOccurrencesInCorpus[term];
+                        occurrences / docToTermCount[doc];
                     double invDocFreq = 
                         Math.log(docs / (1 + termToDocCount[term]));
                     transformed.set(term, doc, termFreq * invDocFreq);
@@ -353,7 +345,7 @@ public class TfIdfTransform implements Transform {
                     double occurrences = termVec.get(doc);
                     if (occurrences > 0) {
                         double termFreq =
-                            occurrences / termToOccurrencesInCorpus[term];
+                            occurrences / docToTermCount[doc];
                         double invDocFreq = 
                             Math.log(docs / (1 + termToDocCount[term]));
                         transformed.set(term, doc, termFreq * invDocFreq);
