@@ -250,6 +250,9 @@
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
 

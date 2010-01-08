@@ -88,7 +88,7 @@ public class FinkelsteinEtAl353WordSimilarityEvaluation
         // a tab-separated format.  Support both by checking the file name
         // suffix.
         String delimeter = (word353file.getName().endsWith(".csv"))
-            ? "," : "\t";
+            ? "," : "\\s";
 
         Collection<WordSimilarity> pairs = new LinkedList<WordSimilarity>();
                 
