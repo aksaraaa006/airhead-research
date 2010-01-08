@@ -93,7 +93,7 @@ public class RubensteinGoodenoughWordSimilarityEvaluation
                     continue;
                 }
 
-                String[] wordsAndNum = line.split("\t");
+                String[] wordsAndNum = line.split("\\s+");
                 if (wordsAndNum.length != 3) {
                     throw new Error("Unexpected line formatting: " + line);
                 }

@@ -97,7 +97,7 @@ public class EvaluatorMain {
                               "class names and their data files", 
                               true, "CLASS=FILE[,CLASS=FILE...]", 
                               "Required (at least one of)");
-         argOptions.addOption('s', "wordSimlarity",
+         argOptions.addOption('s', "wordSimilarity",
                               "a list of WordSimilarityEvaluation class names", 
                               true, "CLASS=FILE[,CLASS=FILE...]", 
                               "Required (at least one of)");        
@@ -155,7 +155,7 @@ public class EvaluatorMain {
         // Load the word similarity tests.
         wordSimilarityTests = (wsTests == null)
             ? new LinkedList<WordSimilarityEvaluation>()
-            : loadWordSimilarityEvaluations(wcTests);
+            : loadWordSimilarityEvaluations(wsTests);
 
         // Load any Parse the config file for test types.  The configuration
         // file formatted as pairs of evaluations paired with data
