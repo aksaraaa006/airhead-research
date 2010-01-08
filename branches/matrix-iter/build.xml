@@ -243,7 +243,7 @@
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
       <!-- Comment block for excluding the testing a specific set of files.
-      -->
+        -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
@@ -257,9 +257,12 @@
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatricesTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.matrix.MatlabSparseFileIteratorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>      
       <test name="edu.ucla.sspace.matrix.NormalizeTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.SvdlibcSparseBinaryFileIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
 
@@ -280,8 +283,10 @@
       <test name="edu.ucla.sspace.util.TreeMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
+      
     </junit>
   </target>
 
@@ -309,7 +314,7 @@ document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.
 </script>
 <script type="text/javascript">
 try {
-var pageTracker = _gat._getTracker("UA-6063773-4");
+var pageTracker = _gat._getTracker("UA-6063773-2");
 pageTracker._trackPageview();
 } catch(err) {}</script>]]>
       </footer>

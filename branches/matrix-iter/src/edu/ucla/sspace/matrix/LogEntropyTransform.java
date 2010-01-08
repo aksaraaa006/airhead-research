@@ -72,17 +72,13 @@ import static edu.ucla.sspace.common.Statistics.log2_1p;
  *      Processing, (RANLP’01)</i>, 2001, pp. 187–193. </li>
  *
  * </ul>
+ * This implementation is based on the description in Dumais (1990).
  *
  * @author David Jurgens
  *
  * @see TfIdfTransform
  */
 public class LogEntropyTransform implements Transform {
-
-    /*
-     * Implementation Reminder: This class could be improved through converting
-     * it to use the common.Matrix implementations.
-     */
 
     private static final Logger LOGGER = 
         Logger.getLogger(LogEntropyTransform.class.getName());
@@ -213,6 +209,7 @@ public class LogEntropyTransform implements Transform {
 
         dis.close();
 
+        // Last, rewrite the original matrix using the log-entropy values
         DataOutputStream dos = new DataOutputStream(
             new BufferedOutputStream(new FileOutputStream(outputMatrixFile)));
         // Write the matrix header
@@ -226,9 +223,6 @@ public class LogEntropyTransform implements Transform {
             new BufferedInputStream(new FileInputStream(inputMatrixFile)));
         dis.skip(12); // 3 integers
 
-        // Last, rewrite the original matrix using the log-entropy
-        // transformation describe on page 17 of Landauer et al. "An
-        // Introduction to Latent Semantic Analysis"
         docIndex = 0;
         entriesSeen = 0;
         for (; entriesSeen < numMatrixEntries; ++docIndex) {
@@ -280,7 +274,7 @@ public class LogEntropyTransform implements Transform {
             String[] termDocCount = line.split("\\s+");
             
             Integer term  = Integer.valueOf(termDocCount[0]) - 1;
-            Integer doc   = Integer.valueOf(termDocCount[1]);
+            Integer doc   = Integer.valueOf(termDocCount[1]) - 1;
             Integer count = Double.valueOf(termDocCount[2]).intValue();
                         
             Integer termGlobalCount = termToGlobalCountMap.get(term);
@@ -311,7 +305,7 @@ public class LogEntropyTransform implements Transform {
             String[] termDocCount = line.split("\\s+");
             
             int term  = Integer.valueOf(termDocCount[0]) - 1;
-            int doc   = Integer.valueOf(termDocCount[1]);
+            int doc   = Integer.valueOf(termDocCount[1]) - 1;
             int count = Double.valueOf(termDocCount[2]).intValue();
 
             // tf = term frequency in that document
@@ -327,15 +321,13 @@ public class LogEntropyTransform implements Transform {
                         
         PrintWriter pw = new PrintWriter(outputMatrixFile);
 
-        // Last, rewrite the original matrix using the log-entropy
-        // transformation describe on page 17 of Landauer et al. "An
-        // Introduction to Latent Semantic Analysis"
+        // Last, rewrite the original matrix using the log-entropy values
         br = new BufferedReader(new FileReader(inputMatrixFile));
         for (String line = null; (line = br.readLine()) != null; ) {
             String[] termDocCount = line.split("\\s+");
             
             int term  = Integer.valueOf(termDocCount[0]) - 1;
-            int doc   = Integer.valueOf(termDocCount[1]);
+            int doc   = Integer.valueOf(termDocCount[1]) - 1;
             int count = Double.valueOf(termDocCount[2]).intValue();
             
             // tf = term frequency in that document
@@ -345,9 +337,11 @@ public class LogEntropyTransform implements Transform {
             double gf = termToGlobalCount[term];
             double entropy = 1 - termEntropy[term];
             
-            // now print out the noralized values
-            pw.println(term + "\t" +
-                       doc + "\t" +
+            // now print out the noralized values.  Add 1 to ensure that the
+            // 0-based term and document indices are reconverted to Matlab
+            // 1-based indices
+            pw.println((term + 1) + "\t" +
+                       (doc + 1) + "\t" +
                        (log * entropy));            
         }
         br.close();
@@ -432,8 +426,7 @@ public class LogEntropyTransform implements Transform {
             }
         }
 
-        // Last, take the log value of each occurrence and multiply by the
-        // entropy to get the new value in the transformed matrix
+        // Last, rewrite the original matrix using the log-entropy values
         for (int term = 0; term < rows; ++term) {
             DoubleVector rowVec = matrix.getRowVector(term);
 
