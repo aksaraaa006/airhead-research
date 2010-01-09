@@ -4,7 +4,7 @@
 
 The S-Space package provides a simple interface to using a variety of singular value decomposition tools so that various Semantic Spaces can be free of such work.  The options provided are:
 
-  # [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC]
+  # [http://tedlab.mit.edu/~dr/SVDLIBC/ SVDLIBC]
   # [http://www.mathworks.com/products/matlab Matlab]
   # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
   # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.
