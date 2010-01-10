@@ -62,8 +62,8 @@ import java.util.logging.Logger;
  *   <li> {@code -p}, {@code --usePermutations=BOOL} whether to permute index
  *        vectors based on word order
  *
- *   <li> {@code -s}, {@code --windowSize=INT} how many words to consider in each
- *        direction
+ *   <li> {@code -s}, {@code --windowSize=INT} how many words to consider in
+ *        each direction
  * 
  *   <li> {@code -L}, {@code --loadVectors=FILE} specifies a file containing
  *         word-to-index vector mappings that should be used by the {@code

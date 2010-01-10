@@ -85,8 +85,8 @@ import java.util.logging.Logger;
  *        output formatting to use when generating the semantic space ({@code
  *        .sspace}) file.  See {@link SemanticSpaceIO} for format details.
  *
- *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
- *        documents.  The default is one per core.
+ *   <li> {@code -t}, {@code --threads=INT} how many threads to use when
+ *        processing the documents.  The default is one per core.
  * 
  *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
  *        the existing output files.  The default is {@code true}.  If set to
@@ -233,12 +233,15 @@ public abstract class GenericMain {
      */
     protected ArgOptions setupOptions() {
         ArgOptions options = new ArgOptions();
+
+        // Add input file options.
         options.addOption('f', "fileList", "a list of document files", 
                           true, "FILE[,FILE...]", "Required (at least one of)");
         options.addOption('d', "docFile", 
                           "a file where each line is a document", true,
                           "FILE[,FILE...]", "Required (at least one of)");
 
+        // Add run time options.
         options.addOption('o', "outputFormat", "the .sspace format to use",
                           true, "FORMAT", 
                           "Program Options");
@@ -252,6 +255,7 @@ public abstract class GenericMain {
         options.addOption('v', "verbose", "prints verbose output",
                           false, null, "Program Options");
 
+        // Add tokenizing options.
         options.addOption('Z', "useStemming", "Set to true if words should " + 
                           "be stemmed using the Porter Stemming algorithm",
                           false, null, "Tokenizing Options");
@@ -261,6 +265,9 @@ public abstract class GenericMain {
         options.addOption('C', "compoundWords", "a file where each line is a " +
                           "recognized compound word", true, "FILE", 
                           "Tokenizing Options");
+        options.addOption('z', "wordLimit", "Set the maximum number of words " +
+                          "an document can return",
+                          true, "INT", "Tokenizing Options");
 
         addExtraOptions(options);
         return options;
@@ -382,6 +389,7 @@ public abstract class GenericMain {
                               argOptions.getStringOption("tokenFilter"));            
         }
 
+        // Set any tokenizing options.
         if (argOptions.hasOption("useStemming"))
             props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
 
@@ -389,6 +397,10 @@ public abstract class GenericMain {
             props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
                               argOptions.getStringOption("compoundWords"));
         }
+        if (argOptions.hasOption("wordLimit"))
+            props.setProperty(IteratorFactory.TOKEN_COUNT_LIMIT_PROPERTY,
+                              argOptions.getStringOption("wordLimit"));
+
         IteratorFactory.setProperties(props);
 
         // use the System properties in case the user specified them as

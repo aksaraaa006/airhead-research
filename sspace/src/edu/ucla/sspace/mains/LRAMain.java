@@ -50,6 +50,7 @@ import java.util.Set;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+
 /**
  * An executable class for running {@link LatentRelationalAnalysis} from the
  * command line.  This class takes in several command line arguments.
@@ -59,14 +60,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <li><u>Required</u>:
  *   <ul>
  *
- *   <li> {@code -c}, {@code --corpusDir=DIR} the top-level directory of the corpus.  
- *        Only .txt files will be used. 
- *   <li> {@code -a}, {@code --analogyFile=FILE} a text file containing a list of 
- *      word pairs separated by newlines. 
- *   <li> {@code -t}, {@code --testAnalogies=FILE} a text file containing a list of 
- *      analogies (two word pairs) separated by newlines. 
- *   <li> {@code -o}, {@code --outputFile=FILE} a text file to store the results from
- *      evaluating the --testAnalogies file.
+ *   <li> {@code -c}, {@code --corpusDir=DIR} the top-level directory of the
+ *        corpus.  Only .txt files will be used. 
+ *   <li> {@code -a}, {@code --analogyFile=FILE} a text file containing a list
+ *         of word pairs separated by newlines. 
+ *   <li> {@code -t}, {@code --testAnalogies=FILE} a text file containing a list
+ *        of analogies (two word pairs) separated by newlines. 
+ *   <li> {@code -o}, {@code --outputFile=FILE} a text file to store the results
+ *        from evaluating the --testAnalogies file.
  *
  *   </ul>
  * 
@@ -81,17 +82,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <li><u>Program Options</u>:
  *   <ul>
  *
- *   <li> {@code -i}, {@code --indexDir=DIR} the directory for storing or loading
- *      the Lucene index.
+ *   <li> {@code -i}, {@code --indexDir=DIR} the directory for storing or
+ *         loading the Lucene index.
  *
- *   <li> {@code -s}, {@code --skipIndex=BOOL} specifies whether to skip Lucene  
- *      indexing step.  If this option is set, then --indexDir must also be set.
+ *   <li> {@code -s}, {@code --skipIndex=BOOL} specifies whether to skip Lucene
+ *        indexing step.  If this option is set, then --indexDir must also be 
+ *        set.
  *
  *   <li> {@code -r}, {@code --readMatrixFile=FILE} file containing a reusable
- *      projection matrix.  Must first run program with --writeMatrixFile option.
+ *         projection matrix.  Must first run program with --writeMatrixFile 
+ *         option.
  *
  *   <li> {@code -w}, {@code --writeMatrixFile=FILE} file to store a reusable
- *      projection matrix.  
+ *        projection matrix.  
  *
  *   <li> {@code -v}, {@code --verbose}  specifies whether to print runtime
  *        information to standard out
@@ -105,7 +108,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Sky Lin 
  */
-public class LRAMain {
+public class LRAMain extends GenericMain {
 
     /**
      * Whether to emit messages to {@code stdout} when the {@code verbose}
@@ -118,19 +121,18 @@ public class LRAMain {
      */
     protected ArgOptions argOptions;
 
-    public LRAMain() {
-	argOptions = setupOptions();
-	verbose = false;
+    private LRAMain() {
+        verbose = false;
     }
 
     /**
      * Prints out information on how to run the program to {@code stdout}.
      */
     public void usage() {
- 	System.out.println(
- 	    "usage: java LRAMain [options] <corpusDir> <analogyFile> " +
+         System.out.println(
+             "usage: java LRAMain [options] <corpusDir> <analogyFile> " +
             "<testAnalogies> <outputFile>\n" + 
-	    argOptions.prettyPrint());
+            argOptions.prettyPrint());
     }
 
     /**
@@ -142,34 +144,34 @@ public class LRAMain {
      * @return the {@code Properties} used for processing the semantic space.
      */
     public Properties setupProperties() {
-	// use the System properties in case the user specified them as
-	// -Dprop=<val> to the JVM directly.
-	Properties props = System.getProperties();
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
+        Properties props = System.getProperties();
 
-	if (argOptions.hasOption("dimensions")) {
-	    props.setProperty(LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY,
-			      argOptions.getStringOption("dimensions"));
-	}
+        if (argOptions.hasOption("dimensions")) {
+            props.setProperty(LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY,
+                              argOptions.getStringOption("dimensions"));
+        }
 
-	if (argOptions.hasOption("indexDir")) {
-	    props.setProperty(LatentRelationalAnalysis.LRA_INDEX_DIR,
-			      argOptions.getStringOption("indexDir"));
-	}
+        if (argOptions.hasOption("indexDir")) {
+            props.setProperty(LatentRelationalAnalysis.LRA_INDEX_DIR,
+                              argOptions.getStringOption("indexDir"));
+        }
 
-	if (argOptions.hasOption("skipIndex")) {
-	    props.setProperty(LatentRelationalAnalysis.LRA_SKIP_INDEX,
-			      "true");
-	}
+        if (argOptions.hasOption("skipIndex")) {
+            props.setProperty(LatentRelationalAnalysis.LRA_SKIP_INDEX,
+                              "true");
+        }
 
-	if (argOptions.hasOption("readMatrixFile")) {
-	    props.setProperty(LatentRelationalAnalysis.LRA_READ_MATRIX_FILE,
-			      argOptions.getStringOption("readMatrixFile"));
-	}
+        if (argOptions.hasOption("readMatrixFile")) {
+            props.setProperty(LatentRelationalAnalysis.LRA_READ_MATRIX_FILE,
+                              argOptions.getStringOption("readMatrixFile"));
+        }
 
-	if (argOptions.hasOption("writeMatrixFile")) {
-	    props.setProperty(LatentRelationalAnalysis.LRA_WRITE_MATRIX_FILE,
-			      argOptions.getStringOption("writeMatrixFile"));
-	}
+        if (argOptions.hasOption("writeMatrixFile")) {
+            props.setProperty(LatentRelationalAnalysis.LRA_WRITE_MATRIX_FILE,
+                              argOptions.getStringOption("writeMatrixFile"));
+        }
 
         return props;
     }
@@ -180,39 +182,52 @@ public class LRAMain {
      * different instance if the default options need to be different.
      */
     protected ArgOptions setupOptions() {
-	ArgOptions options = new ArgOptions();
-        /*
-	options.addOption('f', "fileList", "a list of document files", 
-			  true, "FILE[,FILE...]", "Required (at least one of)");
-	options.addOption('d', "docFile", 
-			  "a file where each line is a document", true,
-			  "FILE[,FILE]", "Required (at least one of)");
+        ArgOptions options = new ArgOptions();
+        options.addOption('c', "corpusDir", "the directory of the corpus", 
+                          true, "DIR", "Required");
+        options.addOption('a', "analogyFile",
+                          "the file containing list of word pairs", 
+                          true, "FILE", "Required");
+        options.addOption('t', "testAnalogies",
+                           "the file containing list of analogies",
+                           true, "FILE", "Required"); 
+        options.addOption('o', "outputFile",
+                          "the file containing the cosine similarity output " +
+                          "for the analogies from testAnalogies",
+                          true, "FILE", "Required"); 
+        options.addOption('i', "indexDir",
+                          "a Directory for storing or loading "
+                          + "the Lucene index", true, "DIR", "Required");
+        options.addOption('n', "dimensions", 
+                          "the number of dimensions in the semantic space",
+                          true, "INT"); 
+        options.addOption('r', "readMatrixFile",
+                          "file containing projection matrix"
+                          , true, "FILE");
+        options.addOption('s', "skipIndex",
+                          "turn indexing off.  Must specify index directory",
+                          false , null);
+        options.addOption('v', "verbose",
+                          "prints verbose output",
+                          false, null, "Program Options");
+        options.addOption('w', "writeMatrixFile",
+                          "file to write projection matrix to"
+                          , true, "FILE");
+        return options;
+    }
 
-	options.addOption('w', "overwrite", "specifies whether to " +
-			  "overwrite the existing output", true, "BOOL",
-			  "Program Options");
-        */
-	options.addOption('c', "corpusDir", "the directory of the corpus", 
-			  true, "DIR", "Required");
-	options.addOption('a', "analogyFile", "the file containing list of word pairs", 
-			  true, "FILE", "Required");
-	options.addOption('t', "testAnalogies", "the file containing list of analogies", true, "FILE", "Required"); 
-	options.addOption('o', "outputFile", "the file containing the cosine similarity output for the analogies from testAnalogies", true, "FILE", "Required"); 
-	options.addOption('i', "indexDir", "a Directory for storing or loading "
-			     + "the Lucene index", true, "DIR");
-	options.addOption('n', "dimensions", 
-			     "the number of dimensions in the semantic space",
-			     true, "INT"); 
-	options.addOption('r', "readMatrixFile", "file containing projection matrix"
-			     , true, "FILE");
-	options.addOption('s', "skipIndex", "turn indexing off.  Must specify index directory"
-			     , false , null);
+    public static void main(String[] args) {
+        LRAMain lra = new LRAMain();
+        try {
+            lra.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
+	}
 
-	options.addOption('v', "verbose", "prints verbose output",
-			  false, null, "Program Options");
-	options.addOption('w', "writeMatrixFile", "file to write projection matrix to"
-			     , true, "FILE");
-	return options;
+    public SemanticSpace getSpace() {
+        return null;
     }
 
     /**
@@ -222,7 +237,7 @@ public class LRAMain {
      * @param args arguments used to configure this program and the {@code
      *        LRA} instance
      */
-    public void main(String[] args) {
+    public void run(String[] args) {
         argOptions = setupOptions();
         try {
             if (args.length < 3) {
@@ -232,7 +247,8 @@ public class LRAMain {
             argOptions.parseOptions(args);
             
             if (argOptions.numPositionalArgs() < 4) {
-                throw new IllegalArgumentException("must include all Required args");
+                throw new IllegalArgumentException(
+                        "must include all Required args");
             }
 
             Properties props = setupProperties();
@@ -242,17 +258,21 @@ public class LRAMain {
             String testAnalogies = argOptions.getPositionalArg(2);
             String outputFile = argOptions.getPositionalArg(3);
             String indexDir = corpusDir;
-	    String userSpecifiedDir = 
-		props.getProperty(LatentRelationalAnalysis.LRA_INDEX_DIR);
-	    if (userSpecifiedDir != null) {
+            String userSpecifiedDir = 
+                props.getProperty(LatentRelationalAnalysis.LRA_INDEX_DIR);
+            if (userSpecifiedDir != null) {
                 indexDir = userSpecifiedDir;
             } 
 
             boolean doIndex = true; //set as option later
-            if(props.getProperty(LatentRelationalAnalysis.LRA_SKIP_INDEX).equals("true")) {
+            String skipIndexProp = props.getProperty(
+                    LatentRelationalAnalysis.LRA_SKIP_INDEX);
+            if (skipIndexProp.equals("true")) {
                 doIndex = false; //set as option later
             }
-            LatentRelationalAnalysis lra = new LatentRelationalAnalysis(corpusDir, indexDir, doIndex);
+            LatentRelationalAnalysis lra =
+                new LatentRelationalAnalysis(corpusDir, indexDir, doIndex);
+
             //Steps 1-2. Load analogy input
             lra.loadAnalogiesFromFile(analogyFile);
 
@@ -260,18 +280,18 @@ public class LRAMain {
 
             // if we load a projection matrix from file, we can skip all the
             // preprocessing
-            String readProjectionFile =
-                props.getProperty(LatentRelationalAnalysis.LRA_READ_MATRIX_FILE);
-            if(readProjectionFile != null) {
+            String readProjectionFile = props.getProperty(
+                    LatentRelationalAnalysis.LRA_READ_MATRIX_FILE);
+            if (readProjectionFile != null) {
                 File readFile = new File(readProjectionFile);
                 if (readFile.exists()) {
                     projection = 
-			MatrixIO.readMatrix(new File(readProjectionFile), 
-					    MatrixIO.Format.SVDLIBC_SPARSE_TEXT,
-					    Matrix.Type.SPARSE_IN_MEMORY);
+                        MatrixIO.readMatrix(new File(readProjectionFile), 
+                                            MatrixIO.Format.SVDLIBC_SPARSE_TEXT,
+                                            Matrix.Type.SPARSE_IN_MEMORY);
                 } else {
                     throw new IllegalArgumentException(
-			"specified projection file does not exist");
+                        "specified projection file does not exist");
                 }
             } else { //do normal LRA preprocessing...
 
@@ -292,15 +312,15 @@ public class LRAMain {
 
                 //Step 9. Compute SVD on the pre-processed matrix.
                 int dimensions = 300; //TODO: set as option
-                String userSpecfiedDims = 
-                    props.getProperty(LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY);
+                String userSpecfiedDims = props.getProperty(
+                        LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY);
                 if (userSpecfiedDims != null) {
                     try {
                         dimensions = Integer.parseInt(userSpecfiedDims);
                     } catch (NumberFormatException nfe) {
                         throw new IllegalArgumentException(
-                            LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY + " is not an integer: " +
-                            userSpecfiedDims);
+                            LatentRelationalAnalysis.LRA_DIMENSIONS_PROPERTY +
+                            " is not an integer: " + userSpecfiedDims);
                     }
                 }
                 Matrix[] usv = lra.computeSVD(sparse_matrix, dimensions);
@@ -309,10 +329,12 @@ public class LRAMain {
                 projection = Matrices.multiply(usv[0],usv[1]);
             }
 
-            String writeProjectionFile =
-                props.getProperty(LatentRelationalAnalysis.LRA_WRITE_MATRIX_FILE);
+            String writeProjectionFile = props.getProperty(
+                    LatentRelationalAnalysis.LRA_WRITE_MATRIX_FILE);
             if(writeProjectionFile != null) {
-                MatrixIO.writeMatrix(projection, new File(writeProjectionFile), MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
+                MatrixIO.writeMatrix(projection, 
+                                     new File(writeProjectionFile),
+                                     MatrixIO.Format.SVDLIBC_SPARSE_TEXT);
             }
 
             //Step 11. Get analogy input and Evaluate Alternatives
@@ -323,14 +345,14 @@ public class LRAMain {
     }
 
     protected void verbose(String msg) {
-	if (verbose) {
-	    System.out.println(msg);
-	}
+        if (verbose) {
+            System.out.println(msg);
+        }
     }
 
     protected void verbose(String format, Object... args) {
-	if (verbose) {
-	    System.out.printf(format, args);
-	}
+        if (verbose) {
+            System.out.printf(format, args);
+        }
     }
 }
