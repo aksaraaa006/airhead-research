@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+
 /**
  * A factory class for generating {@code Iterator<String>} tokenizers for
  * streams of tokens such as {@link BufferedReader} instances.  This class
@@ -140,6 +141,13 @@ public class IteratorFactory {
         PROPERTY_PREFIX + ".replacementTokens";
 
     /**
+     * Specifices an upper limit on the number of tokens each iterator can
+     * return.
+     */
+    public static final String TOKEN_COUNT_LIMIT_PROPERTY =
+        PROPERTY_PREFIX + ".tokenCountLimit";
+
+    /**
      * An optional {@code TokenFilter} to use to remove tokens from document
      */
     private static TokenFilter filter;
@@ -148,6 +156,11 @@ public class IteratorFactory {
      * True if stemming should be done in a word iterator.
      */
     private static boolean useStemming;
+
+    /**
+     * The maximum number of tokens an iterator may return.
+     */
+    private static int wordLimit;
 
     /**
      * An optional {@code Map} used to replace terms returned by iterators.
@@ -181,6 +194,9 @@ public class IteratorFactory {
      * specified properties.
      */
     public static synchronized void setProperties(Properties props) {
+        wordLimit = Integer.parseInt(
+                props.getProperty(TOKEN_COUNT_LIMIT_PROPERTY, "0"));
+
         String filterProp = 
             props.getProperty(TOKEN_FILTER_PROPERTY);
         filter = (filterProp != null)
@@ -381,7 +397,11 @@ public class IteratorFactory {
             baseIterator = new WordIterator(reader, useStemming);
         }
 
-        return baseIterator;
+        // If the word limit is less than 1, use the standard iterator.
+        // Otherwise use a LimitedWordIterator.
+        return (wordLimit < 1)
+            ? baseIterator
+            : new LimitedWordIterator(baseIterator, wordLimit);
     }
 
 }

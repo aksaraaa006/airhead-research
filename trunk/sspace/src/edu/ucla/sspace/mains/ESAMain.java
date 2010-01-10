@@ -101,21 +101,4 @@ public class ESAMain extends GenericMain {
         Properties props = System.getProperties();
         return props;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void usage() {
-        System.out.println(
-            "usage: java " 
-            + this.getClass().getName()
-            + " [options] <wikipedia-snapshot> <output-dir>\n"
-            + argOptions.prettyPrint() 
-            + "\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
-            + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION
-            + "\n\n" + OptionDescriptions.FILE_FORMAT_DESCRIPTION
-            + "\n\n" + OptionDescriptions.HELP_DESCRIPTION);
-    }
-
 }

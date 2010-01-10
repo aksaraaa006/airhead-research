@@ -48,6 +48,9 @@ import java.util.Properties;
  */
 public class PurandareMain extends GenericMain {
 
+    /**
+     * Uninstantiable.
+     */
     private PurandareMain() { }
 
     /**
@@ -65,22 +68,18 @@ public class PurandareMain extends GenericMain {
         }
     }
     
+    /**
+     * {@inheritDoc}
+     */
     protected SemanticSpace getSpace() {
         return new PurandareFirstOrder();
     }
 
     /**
-     * Returns the {@likn SSpaceFormat.BINARY binary} format as the default
-     * format of a {@code PurandareFirstOrder} space.
+     * Returns the {@link SSpaceFormat.SPARSE_BINARY sparse_binary} format as
+     * the default format of a {@code PurandareFirstOrder} space.
      */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
-    }
-
-    protected Properties setupProperties() {
-        // use the System properties in case the user specified them as
-        // -Dprop=<val> to the JVM directly.
-        Properties props = System.getProperties();
-        return props;
     }
 }

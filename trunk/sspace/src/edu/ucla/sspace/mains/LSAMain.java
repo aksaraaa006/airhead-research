@@ -88,8 +88,8 @@ import java.util.Properties;
  *        .sspace}) file.  See {@link edu.ucla.sspace.common.SemanticSpaceUtils
  *        SemanticSpaceUtils} for format details.
  *
- *   <li> {@code -t}, {@code --threads=INT} how many threads to use when processing the
- *        documents.  The default is one per core.
+ *   <li> {@code -t}, {@code --threads=INT} how many threads to use when
+ *        processing the documents.  The default is one per core.
  * 
  *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
  *        the existing output files.  The default is {@code true}.  If set to
@@ -130,25 +130,25 @@ public class LSAMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-	options.addOption('n', "dimensions", 
-			  "the number of dimensions in the semantic space",
-			  true, "INT", "Algorithm Options"); 
-	options.addOption('p', "preprocess", "a MatrixTransform class to "
-			  + "use for preprocessing", true, "CLASSNAME",
-			  "Algorithm Options");
-	options.addOption('S', "svdAlgorithm", "a specific SVD algorithm to use"
-			  , true, "SVD.Algorithm", 
-			  "Advanced Algorithm Options");
+        options.addOption('n', "dimensions", 
+                          "the number of dimensions in the semantic space",
+                          true, "INT", "Algorithm Options"); 
+        options.addOption('p', "preprocess", "a MatrixTransform class to "
+                          + "use for preprocessing", true, "CLASSNAME",
+                          "Algorithm Options");
+        options.addOption('S', "svdAlgorithm", "a specific SVD algorithm to use"
+                          , true, "SVD.Algorithm", 
+                          "Advanced Algorithm Options");
     }
 
     public static void main(String[] args) {
-	LSAMain lsa = new LSAMain();
-	try {
-	    lsa.run(args);
-	}
-	catch (Throwable t) {
-	    t.printStackTrace();
-	}
+        LSAMain lsa = new LSAMain();
+        try {
+            lsa.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
     
     protected SemanticSpace getSpace() {
@@ -168,26 +168,26 @@ public class LSAMain extends GenericMain {
     }
 
     protected Properties setupProperties() {
-	// use the System properties in case the user specified them as
-	// -Dprop=<val> to the JVM directly.
-	Properties props = System.getProperties();
+        // use the System properties in case the user specified them as
+        // -Dprop=<val> to the JVM directly.
+        Properties props = System.getProperties();
 
-	if (argOptions.hasOption("dimensions")) {
-	    props.setProperty(LatentSemanticAnalysis.LSA_DIMENSIONS_PROPERTY,
-			      argOptions.getStringOption("dimensions"));
-	}
+        if (argOptions.hasOption("dimensions")) {
+            props.setProperty(LatentSemanticAnalysis.LSA_DIMENSIONS_PROPERTY,
+                              argOptions.getStringOption("dimensions"));
+        }
 
-	if (argOptions.hasOption("preprocess")) {
-	    props.setProperty(LatentSemanticAnalysis.MATRIX_TRANSFORM_PROPERTY,
-			      argOptions.getStringOption("preprocess"));
-	}
+        if (argOptions.hasOption("preprocess")) {
+            props.setProperty(LatentSemanticAnalysis.MATRIX_TRANSFORM_PROPERTY,
+                              argOptions.getStringOption("preprocess"));
+        }
 
-	if (argOptions.hasOption("svdAlgorithm")) {
-	    props.setProperty(LatentSemanticAnalysis.LSA_SVD_ALGORITHM_PROPERTY,
-			      argOptions.getStringOption("svdAlgorithm"));
-	}
+        if (argOptions.hasOption("svdAlgorithm")) {
+            props.setProperty(LatentSemanticAnalysis.LSA_SVD_ALGORITHM_PROPERTY,
+                              argOptions.getStringOption("svdAlgorithm"));
+        }
 
-	return props;
+        return props;
     }
 
     /**
@@ -196,9 +196,9 @@ public class LSAMain extends GenericMain {
     protected String getAlgorithmSpecifics() {
         return 
             "The --svdAlgorithm provides a way to manually specify which " + 
-	    "algorithm should\nbe used internally.  This option should not be" +
-	    " used normally, as LSA will\nselect the fastest algorithm " +
-	    "available.  However, in the event that it\nis needed, valid" +
-	    " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT";
+            "algorithm should\nbe used internally.  This option should not be" +
+            " used normally, as LSA will\nselect the fastest algorithm " +
+            "available.  However, in the event that it\nis needed, valid" +
+            " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT";
     }
 }
