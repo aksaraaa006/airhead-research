@@ -26,6 +26,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.StringReader;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -111,10 +112,10 @@ public class BufferedIterator implements Iterator<String> {
     }
 
     /**
-     * Returns an unmodifiable list of the next tokens in the stream based on
-     * the requested amount.  If the stream did not contain as many tokens as
-     * was requested, list will contain the remaining tokens, but will not throw
-     * an {@code NoSuchElementException}. 
+     * Returns an list of the next tokens in the stream based on the requested
+     * amount.  If the stream did not contain as many tokens as was requested,
+     * list will contain the remaining tokens, but will not throw an {@code
+     * NoSuchElementException}.
      *
      * @param tokens the number of tokens to access in the stream
      * 
@@ -123,7 +124,7 @@ public class BufferedIterator implements Iterator<String> {
      */
     public List<String> peek(int tokens) {
 	advance(tokens);
-	return Collections.unmodifiableList(
+	return new ArrayList<String>(
 	    buffer.subList(0, Math.min(tokens, buffer.size())));
     }
     
