@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 /**
  * An implementation of Latent Semantic Analysis (LSA).  This implementation is
  * based on two papers.
