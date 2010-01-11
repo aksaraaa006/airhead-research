@@ -38,14 +38,17 @@ import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.text.StringUtils;
 import edu.ucla.sspace.text.IteratorFactory;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.ArrayDeque;
@@ -61,6 +64,11 @@ import java.util.Queue;
 import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 
 /**
  * An implementation of the COALS Semantic Space model.  This implementation is
@@ -81,56 +89,112 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * As of right now this class is not thread safe, and still relies on the Jama
  * Matrix class.  It also does not accept any Properties.
- * 
- * TODO: Update the javadoc on this.
- * TODO: Consider rewriting to take into account LSA changes.
  */
 public class Coals implements SemanticSpace {
+
+    /**
+     * The property prefix for other settings.
+     */
+    public static final String PROPERTY_PREFIX = 
+        "edu.ucla.sspace.coals.Coals";
+
+    /**
+     * Specifies whether or not the co-occurance matrix should be reduced.
+     */
     public static final String REDUCE_MATRIX_PROPERTY =
-        "edu.ucla.sspace.coals.Coals.reduce";
-    public static final String REDUCE_MATRIX_DIMENSION_PROPERTY =
-        "edu.ucla.sspace.coals.Coals.dimension";
+        PROPERTY_PREFIX + ".reduce";
+
+    /**
+     * Specifies the number of dimensions the co-occurance matrix should be
+     * reduced to.
+     */
+    public static final String REDUCE_DIMENSION_PROPERTY =
+        PROPERTY_PREFIX + ".dimension";
+
+    /**
+     * Specifies the number of dimensions in the raw co-occurrance matrix to
+     * maintain.
+     */
+    public static final String MAX_DIMENSIONS_PROPERTY = 
+        PROPERTY_PREFIX + ".maxDimensions";
+
+    /**
+     * The default number of dimensions to reduce to.
+     */
+    private static final String DEFAULT_REDUCE_DIMENSIONS = "800";
+
+    /**
+     * The default number of dimensions to save in the co-occurrance matrix.
+     */
+    private static final String DEFAULT_MAX_DIMENSIONS = "14000";
+
+    /**
+     * The name of this {@code SemanticSpace}
+     */
     public static final String COALS_SSPACE_NAME = 
         "coals-semantic-space";
-    private static final int MAX_SAVED_WORDS = 150000;
+
+    /**
+     * The logger used to record all output
+     */
+    private static final Logger COALS_LOGGER = 
+        Logger.getLogger(Coals.class.getName());
 
     /**
      * A temporary file containing temprorary word co-occurance counts from each
      * document.
      */
-    private File rawOccurances;
+    private File rawDataFile;
 
     /**
      * The writer to the {@code rawTermDocMatrix}.
      */
-    private PrintWriter rawOccuranceWriter;
+    private DataOutputStream rawOccuranceWriter;
 
-    private HashMap<String, Integer> wordToIndex;
-    private Map<String, Integer> totalWordFreq;
+    /**
+     * A mapping from word to index number.
+     */
+    private Map<String, Integer> termToIndex;
+
+    /**
+     * A map containg the total frequency counts of each word.
+     */
+    private ConcurrentMap<String, Integer> totalWordFreq;
+
+    /**
+     * The final reduced matrix.
+     */
     Matrix finalCorrelation;
-    private int maxWords;
-    private boolean reduceMatrix;
-    private int reducedDims;
 
+    /**
+     * Specifies if the matrix has been reduced by SVD.
+     */
+    boolean reduceMatrix;
+
+    /**
+     * Specifies the number of reduced dimensions if the matrix is reduced by
+     * SVD. 
+     */
+    int reducedDimensions;
+
+    /**
+     * A counter for keeping track of the index values of words.
+     */
+    private int wordIndexCounter;
+
+    /**
+     * Creats a {@link Coals} instance.
+     */
     public Coals() {
-        init(14000);
-    }
-
-    public Coals(int numWords) {
-        init(numWords);
-    }
-
-    private void init(int numWords) {
-        maxWords = numWords;
-        wordToIndex = new HashMap<String, Integer>();
+        termToIndex = new HashMap<String, Integer>();
         totalWordFreq = new ConcurrentHashMap<String, Integer>();
         try {
-            rawOccurances =
+            rawDataFile =
                 File.createTempFile("coals-occurance-values", "dat");
-            rawOccuranceWriter = new PrintWriter(rawOccurances);
+            rawOccuranceWriter = new DataOutputStream(new BufferedOutputStream(
+                    new FileOutputStream(rawDataFile)));
         } catch (IOException ioe) {
-            ioe.printStackTrace();
-            System.exit(1);
+            throw new IOError(ioe);
         }
         finalCorrelation = null;
     }
@@ -139,14 +203,14 @@ public class Coals implements SemanticSpace {
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-        return wordToIndex.keySet();
+        return termToIndex.keySet();
     }
 
     /**
      * {@inheritDoc}
      */
     public Vector getVector(String term) {
-        Integer index = wordToIndex.get(term);
+        Integer index = termToIndex.get(term);
         if (index == null) 
             return null;
         return Vectors.immutable(
@@ -156,93 +220,169 @@ public class Coals implements SemanticSpace {
     public String getSpaceName() {
         String ret = COALS_SSPACE_NAME;
         if (reduceMatrix)
-            ret += "-svd-" + reducedDims;
+            ret += "-svd-" + reducedDimensions;
         return ret;
     }
 
     public int getVectorLength() {
-        return reducedDims;
+        return finalCorrelation.columns();
     }
 
     /**
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        HashMap<String, Integer> wordFreq = new HashMap<String, Integer>();
-        HashMap<Index, Integer> documentCorrels = new HashMap<Index, Integer>();
+        Map<String, Integer> wordFreq = new HashMap<String, Integer>();
+        Map<String, Map<String, Integer>> wordDocumentCounts =
+            new HashMap<String, Map<String, Integer>>();
+
+        // Setup queues to track the set of previous and next words in a
+        // context.
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
+
         Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
+
         for (int i = 0; i < 4 && it.hasNext(); ++i)
             nextWords.offer(it.next());
 
         if (nextWords.size() < 4)
             return;
 
+        // Compute the co-occurrance statistics of each focus word in the
+        // document.
         while (!nextWords.isEmpty()) {
+            // Get the focus word
             String focusWord = nextWords.remove();
+            if (focusWord.equals(IteratorFactory.EMPTY_TOKEN))
+                continue;
 
+            // Slide over the context by one word.
             if (it.hasNext())
                 nextWords.offer(it.next());
+
+            // Update the frequency count of the focus word.
             int updatedFreq = 1;
             if (wordFreq.containsKey(focusWord))
                 updatedFreq += wordFreq.get(focusWord).intValue();
             wordFreq.put(focusWord, updatedFreq);
-            Iterator<String> wordIter = prevWords.iterator();
-            int offset = 4 - prevWords.size() + 1;
-            for (int i = 0; wordIter.hasNext(); ++i) {
-                String word = wordIter.next();
-                addIfMissing(documentCorrels,
-                             new Index(focusWord, word), offset + i);
+
+            int offset = 4 - prevWords.size();
+            for (String word : prevWords) {
+                offset++;
+                if (word.equals(IteratorFactory.EMPTY_TOKEN))
+                    continue;
+                addIfMissing(wordDocumentCounts, focusWord, word, offset);
             }
-            wordIter = nextWords.iterator();
-            offset = 4;
-            for (int i = 0; wordIter.hasNext(); ++i) { 
-                String word = wordIter.next();
-                addIfMissing(documentCorrels,
-                        new Index(focusWord, word), offset - i);
+
+            offset = 5;
+            for (String word : nextWords) {
+                offset--;
+                if (word.equals(IteratorFactory.EMPTY_TOKEN))
+                    continue;
+                addIfMissing(wordDocumentCounts, focusWord, word, offset);
             }
+
             prevWords.offer(focusWord);
             if (prevWords.size() > 4)
                 prevWords.remove();
         }
-        synchronized (rawOccuranceWriter) {
-            for (Map.Entry<Index, Integer> entry : documentCorrels.entrySet()) {
-                StringBuffer sb = new StringBuffer(32);
-                sb.append(entry.getKey().word).append("|");
-                sb.append(entry.getKey().document).append("|");
-                sb.append(entry.getValue());
-                rawOccuranceWriter.println(sb.toString());
+
+        // Write out the raw occurrance counts out to disk.
+        for (Map.Entry<String, Map<String, Integer>> entry :
+                wordDocumentCounts.entrySet()) {
+            int firstIndex = getIndexFor(entry.getKey());
+            for (Map.Entry<String, Integer> subEntry :
+                    entry.getValue().entrySet()) {
+                int secondIndex = getIndexFor(subEntry.getKey());
+                synchronized (rawOccuranceWriter) {
+                    rawOccuranceWriter.writeInt(firstIndex);
+                    rawOccuranceWriter.writeInt(secondIndex);
+                    rawOccuranceWriter.writeInt(subEntry.getValue());
+                }
             }
         }
-        synchronized (this) {
+
+        // Store the total frequency counts of the words seen in this document
+        // so far.
+        synchronized (totalWordFreq) {
             for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
+                Integer freq = totalWordFreq.get(entry.getKey());
                 int newValue = entry.getValue().intValue();
-                Integer v = totalWordFreq.get(entry.getKey());
-                if (v != null)
-                    newValue += v.intValue();
-                totalWordFreq.put(entry.getKey(), newValue);
+                totalWordFreq.put(entry.getKey(), (freq == null)
+                        ? newValue
+                        : freq.intValue() + newValue);
             }
         }
     }
 
-    private void addIfMissing(HashMap<Index, Integer> map, Index i, int value) {
-        if (!map.containsKey(i))
-            map.put(i, value);
-        else
-            map.put(i, map.get(i).intValue() + value);
+    /**
+     * Returns the index in the co-occurence matrix for this word.  If the word
+     * was not previously assigned an index, this method adds one for it and
+     * returns that index.
+     */
+    private final int getIndexFor(String word) {
+        Integer index = termToIndex.get(word);
+        if (index == null) {     
+            synchronized(this) {
+                // recheck to see if the term was added while blocking
+                index = termToIndex.get(word);
+                // if another thread has not already added this word while the
+                // current thread was blocking waiting on the lock, then add it.
+                if (index == null) {
+                    int i = wordIndexCounter++;
+                    termToIndex.put(word, i);
+                    return i; // avoid the auto-boxing to assign i to index
+                }
+            }
+        }
+        return index;
+    }
+                
+    /**
+     * Adds the {@code value} to the frequency count of the two words.
+     */
+    private void addIfMissing(Map<String, Map<String, Integer>> map,
+                              String firstKey,
+                              String secondKey,
+                              int value) {
+        Map<String, Integer> secondMap = map.get(firstKey);
+        if (secondMap == null) {
+            secondMap = new HashMap<String, Integer>();
+            secondMap.put(secondKey, value);
+            map.put(firstKey, secondMap);
+            return;
+        }
+        Integer freqCount = secondMap.get(secondKey);
+        secondMap.put(secondKey,
+                      (freqCount == null) ? 1 : freqCount.intValue() + 1);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void processSpace(Properties properties) {
+    public void processSpace(Properties props) {
+        reduceMatrix =
+            props.getProperty(REDUCE_MATRIX_PROPERTY) != null;
+        reducedDimensions = Integer.parseInt(
+                props.getProperty(REDUCE_DIMENSION_PROPERTY,
+                                  DEFAULT_REDUCE_DIMENSIONS));
+        int maxWords = Integer.parseInt(
+                props.getProperty(MAX_DIMENSIONS_PROPERTY,
+                                  DEFAULT_MAX_DIMENSIONS));
+
+        COALS_LOGGER.info("Droppring dimensions from co-occurrance matrix.");
+        // Read in the matrix from a file with dimensions dropped.
         if (finalCorrelation == null)
-            finalCorrelation = buildMatrix();
+            finalCorrelation = buildMatrix(maxWords);
+        COALS_LOGGER.info("Done droppring dimensions.");
+
+        COALS_LOGGER.info("Normalizing co-occurrance matrix.");
+        // Normalize the matrix using correlation.
         int wordCount = finalCorrelation.rows();
         Normalize.byCorrelation(finalCorrelation, false);
-        for (int i = 0; i < wordCount; ++i) {
-            for (int j = 0; j < wordCount; ++j) {
+        for (int i = 0; i < finalCorrelation.rows(); ++i) {
+            for (int j = 0; j < finalCorrelation.columns(); ++j) {
                 double newValue;
                 if (finalCorrelation.get(i,j) < 0)
                     newValue = 0;
@@ -251,88 +391,99 @@ public class Coals implements SemanticSpace {
                 finalCorrelation.set(i,j, newValue);
             }
         }
-        reduceMatrix = properties.getProperty(REDUCE_MATRIX_PROPERTY) != null;
+        COALS_LOGGER.info("Done normalizing co-occurrance matrix.");
+
+        COALS_LOGGER.info("Reducing using SVD.");
         if (reduceMatrix) {
             try {
                 File coalsMatrixFile =
-                    File.createTempFile("coals-term-doc-matrix", "txt");
+                    File.createTempFile("coals-term-doc-matrix", "dat");
+                coalsMatrixFile.deleteOnExit();
                 MatrixIO.writeMatrix(finalCorrelation,
                                      coalsMatrixFile,
                                      Format.SVDLIBC_DENSE_BINARY);
-                String dims =
-                    properties.getProperty(REDUCE_MATRIX_DIMENSION_PROPERTY);
-                reducedDims = (800> wordCount) ? wordCount : 800;
-                if (dims != null)
-                    reducedDims = Integer.parseInt(dims);
-                Matrix[] usv = SVD.svd(coalsMatrixFile, SVD.Algorithm.ANY,
+                if (reducedDimensions > finalCorrelation.columns())
+                    reducedDimensions = finalCorrelation.columns();
+
+                Matrix[] usv = SVD.svd(coalsMatrixFile,
+                                       SVD.Algorithm.ANY,
                                        Format.SVDLIBC_DENSE_BINARY,
-                                       reducedDims);
+                                       reducedDimensions);
                 finalCorrelation = usv[0];
             } catch (IOException ioe) {
                 throw new IOError(ioe);
-            } catch (NumberFormatException nfe) {
-                throw new IllegalArgumentException(
-                        REDUCE_MATRIX_DIMENSION_PROPERTY + " is not an integer");
             }
         }
+        COALS_LOGGER.info("Done reducing using SVD.");
     }
 
-    private Matrix buildMatrix() {
+    private Matrix buildMatrix(int maxWords) {
+        // Calculate an inverse mapping from index to word since the binary file
+        // stores things by index number.
+        String[] indexToTerm = new String[termToIndex.size()];
+        for (Map.Entry<String, Integer> entry : termToIndex.entrySet())
+            indexToTerm[entry.getValue()] = entry.getKey();
+
+        // Calculate the new indices for each word that will be kept based on
+        // the frequency count, where the most frequent word will be first.
         ArrayList<Map.Entry<String, Integer>> wordCountList =
             new ArrayList<Map.Entry<String, Integer>>(totalWordFreq.entrySet());
         Collections.sort(wordCountList, new EntryComp());
-        for (int i = 0; i < wordCountList.size(); ++i)
-            wordToIndex.put(wordCountList.get(i).getKey(), i);
 
+        termToIndex.clear();
+        int i = 0;
+        for (Map.Entry<String, Integer> entry : wordCountList)
+            termToIndex.put(entry.getKey(), i++);
+
+        // Finalize all output to the co-occurrance data file.
         totalWordFreq.clear();
         synchronized (rawOccuranceWriter) {
-            rawOccuranceWriter.close();
+            try {
+                rawOccuranceWriter.close();
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
+            }
         }
         
-        int wordCount =
-            (wordCountList.size() > maxWords) ? maxWords : wordCountList.size();
-        try {
-            BufferedReader br =
-                new BufferedReader(new FileReader(rawOccurances));
-            String line = null;
-            Matrix correl = new YaleSparseMatrix(wordCountList.size(), wordCount);
-            while ((line = br.readLine()) != null) {
-                String[] splitLine = line.split("\\|");
-                if (splitLine[0].equals(IteratorFactory.EMPTY_TOKEN) ||
-                        splitLine[1].equals(IteratorFactory.EMPTY_TOKEN))
-                    continue;
-                int r = wordToIndex.get(splitLine[0]).intValue();
-                int c = wordToIndex.get(splitLine[1]).intValue();
-                double value = Double.parseDouble(splitLine[2]);
-                if (r >= MAX_SAVED_WORDS || c >= wordCount || value == 0.0) 
-                    continue;
-                correl.set(r, c, value + correl.get(r, c));
-            }
-            return correl;
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            System.exit(1);
-        }
-        return null;
-    }
+        int wordCount = (wordCountList.size() > maxWords)
+            ? maxWords
+            : wordCountList.size();
 
-    public Matrix compareToMatrix(Matrix o) {
-        if (finalCorrelation == null)
-            finalCorrelation = buildMatrix();
-        Matrix returnMatrix = new ArrayMatrix(finalCorrelation.rows(),
-                                              finalCorrelation.columns());
-        for (int i = 0; i < finalCorrelation.rows(); ++i) {
-            for (int j = 0; j < finalCorrelation.columns(); ++j) {
-                returnMatrix.set(i, j,
-                                 o.get(i, j) - finalCorrelation.get(i, j));
+        Matrix correl = new YaleSparseMatrix(wordCountList.size(), wordCount);
+        try {
+            DataInputStream inStream = new DataInputStream(
+                    new BufferedInputStream(new FileInputStream(rawDataFile)));
+
+            try {
+                while (true) {
+                    // Get a data point from the stored occurrance file.
+                    int firstIndex = inStream.readInt();
+                    int secondIndex = inStream.readInt();
+                    int count = inStream.readInt();
+
+                    // Compute the new index for each of the terms.
+                    String termForFirstIndex = indexToTerm[firstIndex];
+                    String termForSecondIndex = indexToTerm[secondIndex];
+                    int newFirstIndex =
+                        termToIndex.get(termForFirstIndex).intValue();
+                    int newSecondIndex =
+                        termToIndex.get(termForSecondIndex).intValue();
+
+                    // Drop any occurrance counts where the second term is not
+                    // in the most frequent N terms (dimensions).
+                    if (newSecondIndex >= wordCount)
+                        continue;
+                    double oldValue = correl.get(newFirstIndex, newSecondIndex);
+                    correl.set(newFirstIndex, newSecondIndex, count + oldValue);
+                }
+            } catch (EOFException eof) {
+                inStream.close();
             }
+            rawDataFile.delete();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
         }
-        return returnMatrix;
-    }
-     
-    public void dump(File output) throws IOException {
-        MatrixIO.writeMatrix(finalCorrelation, output,
-                             MatrixIO.Format.MATLAB_SPARSE);
+        return correl;
     }
 
     private class EntryComp implements Comparator<Map.Entry<String,Integer>> {

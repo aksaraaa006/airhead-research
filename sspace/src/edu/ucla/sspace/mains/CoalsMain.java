@@ -41,10 +41,10 @@ import java.util.Properties;
  *      word vectors. See {@link Coals} for a default value
  *
  * <li> {@code --reduce} If present, the word-word matrix will be reduced using
- *      Singular Valued Decomposition, otherwise no reduction will be performed.
+ *      Singular Valued Decomposition otherwise no reduction will be performed.
  *
- * <li> {code --svddimension=<int>} size of the reduced svd vectors. See {@link
- *      Coals} for a default value.
+ * <li> {code --reduceDimensions=<int>} size of the reduced svd vectors. See
+ *      {@link Coals} for a default value.
  * </ul>
  *
  * <p>
@@ -57,8 +57,9 @@ import java.util.Properties;
  */
 public class CoalsMain extends GenericMain {
 
-    private int dimensions; 
-
+    /**
+     * Uninstantiable.
+     */
     private CoalsMain() {
     }
 
@@ -67,14 +68,18 @@ public class CoalsMain extends GenericMain {
      */
     public void addExtraOptions(ArgOptions options) {
           options.addOption('n', "dimensions", 
-                            "the number of dimensions in the semantic space",
-                            true, "INT"); 
-          options.addOption('s', "svddimension", 
-                            "the number of dimensions in the reduced space, " +
-                            "only used if --reduce is also given",
-                            true, "INT"); 
+                            "Set the number of columns to keep in the raw " +
+                            "co-occurance matrix.",
+                            true, "INT", "Optional"); 
+          options.addOption('s', "reducedDimension", 
+                            "Set the number of dimension to reduce to " +
+                            "using the Singular Value Decompositon.  This is " +
+                            "used if --reduce is set.",
+                            true, "INT", "Optional");
           options.addOption('r', "reduce", 
-                            "reduce the semantic space using SVD");
+                            "Set to true if the co-occurrance matrix should " +
+                            "be reduced using the Singluar Value Decomposition",
+                            false, null, "Optional");
     }
 
     public static void main(String[] args) {
@@ -91,16 +96,7 @@ public class CoalsMain extends GenericMain {
      * {@inheritDoc}
      */
     public SemanticSpace getSpace() {
-        return (dimensions > 0) ? new Coals(dimensions) : new Coals();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void handleExtraOptions() {
-        dimensions = argOptions.hasOption("dimensions")
-            ? argOptions.getIntOption("dimensions")
-            : 0;
+        return new Coals();
     }
 
     /**
@@ -115,14 +111,15 @@ public class CoalsMain extends GenericMain {
      */
     public Properties setupProperties() {
           Properties props = System.getProperties();
-          if (argOptions.hasOption("svddimension")) {
-                props.setProperty(Coals.REDUCE_MATRIX_DIMENSION_PROPERTY,
-                                  argOptions.getStringOption("svddimension"));
-          }
-
-          if (argOptions.hasOption("reduce")) {
-                props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "true");
-          }
+          if (argOptions.hasOption("reducedDimensions"))
+              props.setProperty(
+                      Coals.REDUCE_DIMENSION_PROPERTY,
+                      argOptions.getStringOption("reducedDimensions"));
+          if (argOptions.hasOption("reduce"))
+              props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "true");
+          if (argOptions.hasOption("dimensions"))
+              props.setProperty(Coals.MAX_DIMENSIONS_PROPERTY,
+                                argOptions.getStringOption("dimensions"));
           return props;
     }
 }
