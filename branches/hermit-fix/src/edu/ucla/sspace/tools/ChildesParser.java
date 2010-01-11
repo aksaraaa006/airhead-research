@@ -96,6 +96,12 @@ public class ChildesParser {
     private final boolean appendPosTags;
 
     /**
+     * {@code true} if the parser shold generate one document for all the text
+     * processed.
+     */
+    private final boolean generateOneDoc;
+
+    /**
      * Creates the {@code ChildesParser}.   The given file name will be used to
      * write the extracted words.
      */
@@ -103,10 +109,12 @@ public class ChildesParser {
                          String posOutFile,
                          boolean generateAugmented,
                          boolean separateByPeriod,
-                         boolean appendPosTags) {
+                         boolean appendPosTags,
+                         boolean generateOneDoc) {
         this.generateAugmented = generateAugmented;
         this.separateByPeriod = separateByPeriod;
         this.appendPosTags = appendPosTags;
+        this.generateOneDoc = generateOneDoc;
         posTags = new HashMultiMap<String, String>();
         try {
             writer = new PrintWriter(outFile);
@@ -120,7 +128,10 @@ public class ChildesParser {
      * Writes strings to the resulting file.
      */
     private synchronized void print(String output) {
-        writer.println(output);
+        if (generateOneDoc) 
+            writer.print(output);
+        else 
+            writer.println(output);
     }
 
     /**
@@ -286,6 +297,10 @@ public class ChildesParser {
                           "otherwise all uterances in a file will be " +
                           "considered a document",
                           false, null, "Optional");
+        options.addOption('g', "generateOneDoc",
+                          "If set, only one document will be generated for " +
+                          "all the text processed",
+                          false, null, "Optional");
 
         options.addOption('A', "augmentedUtterances",
                           "Generates augmented utterances from comments " +
@@ -335,7 +350,8 @@ public class ChildesParser {
                                                  options.getPositionalArg(1),
                                                  genAugmented,
                                                  options.hasOption('S'),
-                                                 options.hasOption('p'));
+                                                 options.hasOption('p'),
+                                                 options.hasOption('g'));
 
         // Process the given file list, if provided.
         if (options.hasOption("fileList")) {
