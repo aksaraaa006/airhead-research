@@ -25,15 +25,21 @@ import edu.ucla.sspace.common.ArgOptions;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.HashMultiMap;
+import edu.ucla.sspace.util.MultiMap;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -62,19 +68,49 @@ public class ChildesParser {
     private PrintWriter writer;
 
     /**
+     * A writer for writing part of speech tags for words in Childes.
+     */
+    private PrintWriter posWriter;
+
+    /**
+     * A map from strings to their parts of speech tags.
+     */
+    private MultiMap<String, String> posTags;
+
+    /**
      * {@code true} if the parser should generate augmented utterances from the
      * comments when parsing
      */
     private final boolean generateAugmented;
 
     /**
+     * {@code true} if the parser should separate sentences with periods.
+     */
+    private final boolean separateByPeriod;
+
+    /**
+     * {@code true} if the parser should append pos tags to each token in the
+     * corpus.  This is useful when the corpus needs the tags to be aligned with
+     * the text.  The format of each token will be TOKEN-POS.
+     */
+    private final boolean appendPosTags;
+
+    /**
      * Creates the {@code ChildesParser}.   The given file name will be used to
      * write the extracted words.
      */
-    public ChildesParser(String outFile, boolean generateAugmented) {
+    public ChildesParser(String outFile,
+                         String posOutFile,
+                         boolean generateAugmented,
+                         boolean separateByPeriod,
+                         boolean appendPosTags) {
         this.generateAugmented = generateAugmented;
+        this.separateByPeriod = separateByPeriod;
+        this.appendPosTags = appendPosTags;
+        posTags = new HashMultiMap<String, String>();
         try {
             writer = new PrintWriter(outFile);
+            posWriter = new PrintWriter(posOutFile);
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
@@ -112,8 +148,19 @@ public class ChildesParser {
                 List<String> wordsInUtterance =
                     new ArrayList<String>(words.getLength());
                 for (int j = 0; j < words.getLength(); ++j) {
-                    wordsInUtterance.add(
-                            words.item(j).getFirstChild().getNodeValue());
+                    // Get the part of speech tag.
+                    Element wordNode = (Element) words.item(j);
+                    NodeList posNodeList = wordNode.getElementsByTagName("pos");
+                    String word = wordNode.getFirstChild().getNodeValue();
+                    if (posNodeList.getLength() > 0) {
+                        Node posNode = 
+                            posNodeList.item(0).getFirstChild().getFirstChild();
+                        String pos = posNode.getNodeValue();
+                        posTags.put(word, pos);
+                        if (appendPosTags)
+                            word += "-" + pos;
+                    }
+                    wordsInUtterance.add(word);
                 }
 
                 // Each of the <a> nodes contains additional information about
@@ -152,7 +199,10 @@ public class ChildesParser {
                             // that the user has specified some form of token
                             // filtering
                             Iterator<String> tokenIter = 
-                                IteratorFactory.tokenize(commentOnUtterance);
+                                IteratorFactory.tokenize(
+                                        new BufferedReader(
+                                            new StringReader(
+                                                commentOnUtterance)));
                             // For each of the tokens in the additional
                             // information, create a pseudo-utterance using a
                             // word from the actual utterance and an
@@ -184,7 +234,11 @@ public class ChildesParser {
                         print(aug);
                 }
                 else {  // otherwise save the utterance.
-                    fileBuilder.append(utterance).append(". ");
+                    fileBuilder.append(utterance);
+                    if (separateByPeriod)
+                        fileBuilder.append(".");
+                    fileBuilder.append(" ");
+
                     // Print all the psuedo utterances constructed from the
                     // comments.  Unlike the utterances, print these as separate
                     // documents to avoid having them register as co-occurrences
@@ -206,6 +260,12 @@ public class ChildesParser {
      * Finalizes the writing of documents.
      */
     public void finalize() {
+        for (Map.Entry<String, String> entry : posTags.entrySet()) {
+            posWriter.println(entry.getKey() + " " + entry.getValue());
+        }
+        posWriter.flush();
+        posWriter.close();
+
         writer.flush();
         writer.close();
     } 
@@ -214,11 +274,19 @@ public class ChildesParser {
 
         // Add the options.
         ArgOptions options = new ArgOptions();
+        options.addOption('p', "partOfSpeechTag",
+                          "If set, each token will be appended with it's " +
+                          "part of speech tag, such as cat-noun",
+                          false, null, "Optional");
+        options.addOption('S', "separateByPeriod",
+                          "If set, seperates sentences by periods",
+                          false, null, "Optional");
         options.addOption('U', "utterancePerDoc",
                           "If set, one utterance is considered a document, " +
                           "otherwise all uterances in a file will be " +
                           "considered a document",
                           false, null, "Optional");
+
         options.addOption('A', "augmentedUtterances",
                           "Generates augmented utterances from comments " +
                           "about the utterances", false, null, "Augmented");
@@ -241,9 +309,11 @@ public class ChildesParser {
         options.parseOptions(args);
         if ((!options.hasOption("fileList") &&
              !options.hasOption("baseChildesDirectory")) ||
-             options.numPositionalArgs() == 0) {
-            System.out.println("usage: java ChildesParser [options] OUTFILE\n" +
-                               options.prettyPrint());
+             options.numPositionalArgs() != 2) {
+            System.out.println(
+                    "usage: java ChildesParser [options] " +
+                    "<outfile> <pos-file>\n" +
+                    options.prettyPrint());
             return;
         }
 
@@ -261,8 +331,11 @@ public class ChildesParser {
             IteratorFactory.setProperties(p);
         }
 
-        ChildesParser parser = 
-            new ChildesParser(options.getPositionalArg(0), genAugmented);
+        ChildesParser parser = new ChildesParser(options.getPositionalArg(0),
+                                                 options.getPositionalArg(1),
+                                                 genAugmented,
+                                                 options.hasOption('S'),
+                                                 options.hasOption('p'));
 
         // Process the given file list, if provided.
         if (options.hasOption("fileList")) {

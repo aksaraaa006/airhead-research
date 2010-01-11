@@ -35,51 +35,126 @@ import edu.ucla.sspace.index.PermutationFunction;
 import edu.ucla.sspace.hermit.FlyingHermit;
 
 import edu.ucla.sspace.text.Document;
-import edu.ucla.sspace.text.FileListDocumentIterator;
-import edu.ucla.sspace.text.IteratorFactory;
-import edu.ucla.sspace.text.OneLinePerDocumentIterator;
+import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 
-import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Properties;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 
 /**
- * An executable class for running {@link Hermit} from the
- * command line.  This class takes in several command line arguments.
+ * An executable class for running {@link FlyingHermit} from the
+ * command line.  This class uses command line options provided by {@link
+ * GenericMain}.  In addition to those options,
+ * it this class includes the following options:
  *
  * <ul>
+ *
+ * <li><u>Optional (At most one of)</u>
+ *   <ul> 
+ *
+ *   </li> {@code -D}, {@code --trainSize=INT} The number of documents to use as
+ *         a training set, All other documents will be considered a test set.
+ *
+ *   </li> {@code -C}, {@code --documentCount=INT} The number of documents
+ *         within the document set to process
+ *   </ul>
+ *
+ * <li><u>Process Properties</u>
+ *   <ul>
+ *
+ *   </li> {@code -l}, {@code --vectorLength=INT} The size of the vectors
+ *
+ *   </li> {@code -g}, {@code --generator=CLASSNAME} {@link
+ *         IntegerVectorGenerator} to use for hermit.  Note that this generator
+ *         should be genric for {@link TernaryVector}.
+ *
+ *   </li> {@code -s}, {@code --windowSize=INT,INT} The number of words before,
+ *         and after the focus term to inspect
+ *
+ *   </li> {@code -X}, {@code --windowLimit=INT} The bucket size to use for
+ *         context windows
+ *
+ *   </li> {@code -p}, {@code --permutationFunction=CLASSNAME} The class name of
+ *         the permutation function to use.  Note that this {@link
+ *         PermutationFunction} should be for {@link TernaryVector}s
+ *
+ *   </li> {@code -P}, {@code --userPermutations} Set if permutations should be
+ *         used
+ *
+ *   </li> {@code -u}, {@code --useDenseSemantics} Set to true if dense vectors
+ *         should be used
+ *
+ *   </ul>
+ *
+ * <li><u>Tokenizing Options</u>
+ *
+ *   <ul>
+ *
+ *   </li> {@code -m}, {@code --replacementMap=FILE} A file which specifies
+ *         mappings between terms and their replacements
+ *
+ *   </li> {@code -A}, {@code --acceptanceList=FILE} A File with one word per
+ *        line listing terms to generate semantics for.  This is separate from
+ *        filtering and will override the replacementMap option
+ *
+ *   </ul>
+ * <li><u>Cluster Properties</u>
+ *
+ *   <ul>
+ *
+ *   </li> {@code -h}, {@code --threshold=DOUBLE} The threshold for clustering
+ *         similar context vectors.
+ *
+ *   </li> {@code -c}, {@code --senseCount=INT} The maximum number of senses
+ *         {@link FlyingHermit} should produce
+ *
+ *   </li> {@code -G}, {@code --clusterGenerator=CLASSNAME} The cluster
+ *         generator to use
+ *
+ *   </li> {@code -W}, {@code --clusterWeight=DOUBLE} If set, this weight will
+ *         be used to expoentially average vectors in a cluster"
+ *
+ *   </ul>
+ *
+ * <li><u>Post Processing</u>
+ *
+ *   <ul>
+ *
+ *   </li> {@code -S}, {@code --saveIndexes=FILE} Save index vectors and
+ *         permutation function to a binary file
+ *
+ *   </ul>
+ *
+ * </li>
+ *
+ * <li><u>Pre Processing</u>
+ *
+ *   <ul>
+ *
+ *   </li> {@code -L}, {@code --loadIndexes=FILE} Load index vectors and
+ *         permutation function from binary files
+ *
+ *   <ul>
+ *
+ * </li>
+ *
  * </ul>
  *
  * <p>
@@ -90,19 +165,37 @@ import java.util.logging.Logger;
  */
 public class FlyingHermitMain extends GenericMain {
 
+    /**
+     * The default {@link PermutationFunction} to use.
+     */
     public static final String DEFAULT_FUNCTION = 
-        "edu.ucla.sspace.index.DefaultPermutationFunction";
+        "edu.ucla.sspace.index.TernaryPermutationFunction";
 
+    /**
+     * The default {@link IntegerVectorGenerator} to use.
+     */
     public static final String DEFAULT_GENERATOR =
         "edu.ucla.sspace.index.RandomIndexVectorGenerator";
 
+    /**
+     * The default {@link OnlineClusteringGenerator} to use.
+     */
     public static final String DEFAULT_CLUSTER =
         "edu.ucla.sspace.clustering.OnlineClusteringGenerator";
 
+    /**
+     * The default number of dimensions the space will have.
+     */
     public static final int DEFAULT_DIMENSION = 10000;
 
+    /**
+     * The default number of clusters to generate.
+     */
     public static final int DEFAULT_SENSE_COUNT = 2;
 
+    /**
+     * The default clustering threshold to use.
+     */
     public static final double DEFAULT_THRESHOLD = .75;
 
     /**
@@ -121,10 +214,23 @@ public class FlyingHermitMain extends GenericMain {
      */
     private int nextWordsSize;
 
+    /**
+     * The {@link IntegerVectorGeneratorMap} to use.  This may be either a new
+     * map, or one deserialized from a file.
+     */
     private IntegerVectorGeneratorMap<TernaryVector> vectorMap;
 
+    /**
+     * The {@link PermutationFunction} for {@link TernaryVector}s to use while
+     * generating contexts.  This may be either a new function, or one
+     * deserialized from a file.
+     */
     private PermutationFunction<TernaryVector> permFunction;
 
+    /**
+     * The {@link OnLineClusteringGenerator} to use for creating new cluster
+     * instances.
+     */
     private OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator;
 
     /**
@@ -134,22 +240,30 @@ public class FlyingHermitMain extends GenericMain {
      */
     private Map<String, String> replacementMap;
 
+    /**
+     * The set of words to generate semantic vectors for.
+     */
     private Set<String> acceptedWords;
 
     /**
      * Uninstantiable.
      */
-    private FlyingHermitMain() {
+    public FlyingHermitMain() {
     }
 
     /**
-     * Adds all of the options to the {@link ArgOptions}.
+     * {@inheritDoc}
      */
     public void addExtraOptions(ArgOptions options) {
+        // Add corpus division options.
         options.addOption('D', "trainSize",
                           "The number of documents to use as a training set, " +
                           "All other documents will be considered a test set",
-                          true, "INT", "Required");
+                          true, "INT", "Optional (At most one of)");
+        options.addOption('C', "documentCount",
+                          "The number of documents within the document set " +
+                          "to process",
+                          true, "INT", "Optional (At most one of)");
 
         // Add process property arguements such as the size of index vectors,
         // the generator class to use, the user class to use, the window sizes
@@ -161,7 +275,7 @@ public class FlyingHermitMain extends GenericMain {
         options.addOption('g', "generator",
                           "IntegerVectorGenerator to use for hermit.  Note " +
                           "that this generator should be genric for " +
-                          "IntegerVectors",
+                          "TernaryVectors",
                           true, "CLASSNAME", "Process Properties");
         options.addOption('s', "windowSize",
                           "The number of words before, and after the focus " +
@@ -173,7 +287,7 @@ public class FlyingHermitMain extends GenericMain {
         options.addOption('p', "permutationFunction",
                           "The class name of the permutation function to use." +
                           "  Note that this permutation function should be " +
-                          "for IntegerVectors",
+                          "for TernaryVectors",
                           true, "CLASSNAME", "Process Properties");
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
@@ -193,10 +307,6 @@ public class FlyingHermitMain extends GenericMain {
                           "filtering and will override the replacementMap " +
                           "option",
                           true, "FILE", "Tokenizing Options");
-        options.addOption('T', "tokenizeWithReplacementMap",
-                          "If true, the replacement map will be used when " +
-                          "tokenizing",
-                          false, null, "Tokenizing Options");
 
         // Add arguments for setting clustering properties such as the
         // similarity threshold, maximum number of senses to create, and the
@@ -205,7 +315,8 @@ public class FlyingHermitMain extends GenericMain {
                           "The threshold for clustering similar context " +
                           "vectors", true, "DOUBLE", "Cluster Properties");
         options.addOption('c', "senseCount",
-                          "The maximum number of senses Hermit should produce",
+                          "The maximum number of senses FlyingHermit should " +
+                          "produce",
                           true, "INT", "Cluster Properties");
         options.addOption('G', "clusterGenerator",
                           "The cluster generator to use",
@@ -252,6 +363,13 @@ public class FlyingHermitMain extends GenericMain {
         }
     }
 
+    /**
+     * Prepare the acceptance list for {@code FlyingHermit} based on the
+     * contents of {@code filename}.  The expected input format is:
+     *   word
+     *
+     * @param filename The filename specifying a set of words to accept.
+     */
     private void prepareAcceptanceList(String filename) {
         try {
             BufferedReader br = new BufferedReader(new FileReader(filename));
@@ -267,23 +385,10 @@ public class FlyingHermitMain extends GenericMain {
     }
         
     /**
-     * Begin processing with {@code FlyingHermit}.
-     */
-    public static void main(String[] args) {
-        FlyingHermitMain hermit = new FlyingHermitMain();
-        try {
-            hermit.run(args);
-        }
-        catch (Throwable t) {
-            t.printStackTrace();
-        }
-    }
-    
-    /**
      * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
-    public void handleExtraOptions() {
+    protected void handleExtraOptions() {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
         // Process the window size arguments;
@@ -292,7 +397,7 @@ public class FlyingHermitMain extends GenericMain {
         prevWordsSize = Integer.parseInt(prevNext[0]);
         nextWordsSize = Integer.parseInt(prevNext[1]);
 
-        if (!argOptions.hasOption('T') && argOptions.hasOption('m')) {
+        if (argOptions.hasOption('m')) {
             prepareReplacementMap(argOptions.getStringOption('m'));
         }
         if (argOptions.hasOption('A'))
@@ -345,7 +450,8 @@ public class FlyingHermitMain extends GenericMain {
             System.setProperty(OnlineClusteringGenerator.WEIGHTING_PROPERTY,
                                argOptions.getStringOption('W'));
         clusterGenerator =
-            (OnlineClusteringGenerator<SparseIntegerVector>) getObjectInstance(clusterName);
+            (OnlineClusteringGenerator<SparseIntegerVector>) getObjectInstance(
+                    clusterName);
     }
 
     /**
@@ -362,6 +468,9 @@ public class FlyingHermitMain extends GenericMain {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void postProcessing() {
         if (argOptions.hasOption("saveIndexes")) {
             String filename = argOptions.getStringOption("saveIndexes");
@@ -371,29 +480,30 @@ public class FlyingHermitMain extends GenericMain {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public SemanticSpace getSpace() {
         return new FlyingHermit(vectorMap, permFunction, clusterGenerator,
                                 replacementMap, acceptedWords, dimension,
                                 prevWordsSize, nextWordsSize);
     }
 
-    public Properties setupProperties() {
-        // use the System properties in case the user specified them as
-        // -Dprop=<val> to the JVM directly.
-        Properties props = System.getProperties();
-
-        if (argOptions.hasOption("replacementMap") &&
-            argOptions.hasOption('T'))
-            props.setProperty(IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY,
-                              argOptions.getStringOption("replacementMap"));
-        if (argOptions.hasOption("threads"))
-            props.setProperty(FlyingHermit.THREADS_PROPERTY,
-                              argOptions.getStringOption("threads"));
-        return props;
-    }
-
     /**
-     * Prints the instructions on how to execute this program to standard out.
+     * Begin processing with {@code FlyingHermit}.
+     */
+    public static void main(String[] args) {
+        FlyingHermitMain hermit = new FlyingHermitMain();
+        try {
+            hermit.run(args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
      */
     public void usage() {
          System.out.println(
@@ -401,86 +511,30 @@ public class FlyingHermitMain extends GenericMain {
                  argOptions.prettyPrint());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
     }
 
-    public void run(String[] args) throws Exception {
-        if (args.length == 0) {
-            usage();
-            System.exit(1);
-        }
-        argOptions.parseOptions(args);
-        
-        if (argOptions.numPositionalArgs() == 0) {
-            throw new IllegalArgumentException("must specify output directory");
-        }
+    /**
+     * {@inheritDoc}
+     */
+    protected void processDocumentsAndSpace(SemanticSpace space,
+                                            Iterator<Document> docIter,
+                                            int numThreads,
+                                            Properties props) throws Exception {
+        int docSize = Integer.MAX_VALUE;
+        if (argOptions.hasOption("trainSize"))
+            docSize = argOptions.getIntOption("trainSize");
+        else if (argOptions.hasOption("documentCount"))
+            docSize = argOptions.getIntOption("documentCount");
 
-        File outputDir = new File(argOptions.getPositionalArg(0));
-        if (!outputDir.isDirectory()){
-            throw new IllegalArgumentException(
-                "output directory is not a directory: " + outputDir);
-        }
-        
-        verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
-        // If verbose output is enabled, update all the loggers in the S-Space
-        // package logging tree to output at Level.FINE (normally, it is
-        // Level.INFO).  This provides a more detailed view of how the execution
-        // flow is proceeding.
-        if (verbose) {
-            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
-            Handler verboseHandler = new ConsoleHandler();
-            verboseHandler.setLevel(Level.FINE);
-            appRooLogger.addHandler(verboseHandler);
-            appRooLogger.setLevel(Level.FINE);
-            appRooLogger.setUseParentHandlers(false);
-        }
+        LimitedOneLinePerDocumentIterator trainTestIter = 
+            new LimitedOneLinePerDocumentIterator(docIter, docSize, false);
 
-        // all the documents are listed in one file, with one document per line
-        Iterator<Document> trainTestIters = getDocumentIterator();
-        
-        // Check whether this class supports mutlithreading when deciding how
-        // many threads to use by default
-        int numThreads = (isMultiThreaded)
-            ? Runtime.getRuntime().availableProcessors()
-            : 1;
-        if (argOptions.hasOption("threads")) {
-            numThreads = argOptions.getIntOption("threads");
-        }
-
-        boolean overwrite = true;
-        if (argOptions.hasOption("overwrite")) {
-            overwrite = argOptions.getBooleanOption("overwrite");
-        }
-        
-        handleExtraOptions();
-
-        Properties props = setupProperties();
-
-        // Initialize the IteratorFactory to tokenize the documents according to
-        // the specified configuration (e.g. filtering, compound words)
-        if (argOptions.hasOption("tokenFilter")) {
-            props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
-                              argOptions.getStringOption("tokenFilter"));
-        }
-
-        if (argOptions.hasOption("useStemming"))
-            props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
-
-        if (argOptions.hasOption("compoundWords")) {
-            props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
-                              argOptions.getStringOption("compoundWords"));
-        }
-        IteratorFactory.setProperties(props);
-
-        // use the System properties in case the user specified them as
-        // -Dprop=<val> to the JVM directly.
-
-        SemanticSpace space = getSpace(); 
-        
-        int trainSize = argOptions.getIntOption("trainSize", Integer.MAX_VALUE);
-        parseDocumentsMultiThreaded(space, trainTestIters,
-                                    numThreads, trainSize);
+        parseDocumentsMultiThreaded(space, trainTestIter, numThreads);
 
         long startTime = System.currentTimeMillis();
         space.processSpace(props);
@@ -488,81 +542,19 @@ public class FlyingHermitMain extends GenericMain {
         verbose("processed space in %.3f seconds",
                 ((endTime - startTime) / 1000d));
 
-        parseDocumentsMultiThreaded(space, trainTestIters,
-                                    numThreads, Integer.MAX_VALUE);
-        
-        startTime = System.currentTimeMillis();
-        space.processSpace(props);
-        endTime = System.currentTimeMillis();
-        verbose("processed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
-
-        File output = (overwrite)
-            ? new File(outputDir, space.getSpaceName() + EXT)
-            : File.createTempFile(space.getSpaceName(), EXT, outputDir);
-
-        SSpaceFormat format = (argOptions.hasOption("outputFormat"))
-            ? SSpaceFormat.valueOf(
-                argOptions.getStringOption("outputFormat").toUpperCase())
-            : getSpaceFormat();
-
-        startTime = System.currentTimeMillis();
-        SemanticSpaceIO.save(space, output, format);
-        endTime = System.currentTimeMillis();
-        verbose("printed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
-
-        postProcessing();
-    }
-
-    protected void parseDocumentsMultiThreaded(final SemanticSpace sspace,
-                                               final Iterator<Document> docIter,
-                                               int numThreads,
-                                               final int numDocs)
-            throws IOException, InterruptedException {
-
-        Collection<Thread> threads = new LinkedList<Thread>();
-
-        final AtomicInteger count = new AtomicInteger(0);
-        
-        for (int i = 0; i < numThreads; ++i) {
-            Thread t = new Thread() {
-                public void run() {
-                    // repeatedly try to process documents while some still
-                    // remain
-                    while (count.get() < numDocs && docIter.hasNext()) {
-                        int docNumber = count.incrementAndGet();
-                        Document doc = docIter.next();
-                        long startTime = System.currentTimeMillis();
-                        int terms = 0;
-                        try {
-                            sspace.processDocument(doc.reader());
-                        } catch (Throwable t) {
-                            t.printStackTrace();
-                        }
-                        long endTime = System.currentTimeMillis();
-                        verbose("parsed document #%d in %.3f seconds",
-                                docNumber, ((endTime - startTime) / 1000d));
-                    }
-                }
-            };
-            threads.add(t);
+        // If we are using a test/train set, process the test set now.
+        // Otherwise we are finished.
+        if (argOptions.hasOption("trainSize")) {
+            // Reset the iterator so that the rest of the corpus is used for
+            // testing.
+            trainTestIter.reset();
+            parseDocumentsMultiThreaded(space, trainTestIter, numThreads);
+            
+            startTime = System.currentTimeMillis();
+            space.processSpace(props);
+            endTime = System.currentTimeMillis();
+            verbose("processed space in %.3f seconds",
+                    ((endTime - startTime) / 1000d));
         }
-
-        long threadStart = System.currentTimeMillis();
-        
-        // start all the threads processing
-        for (Thread t : threads)
-            t.start();
-
-        verbose("Beginning processing using %d threads", numThreads);
-
-        // wait until all the documents have been parsed
-        for (Thread t : threads)
-            t.join();
-
-        verbose("parsed %d document in %.3f total seconds)",
-                count.get(),
-                ((System.currentTimeMillis() - threadStart) / 1000d));
     }
 }

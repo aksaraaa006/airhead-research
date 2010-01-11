@@ -372,14 +372,8 @@ public abstract class GenericMain {
 
         SemanticSpace space = getSpace(); 
         
-        parseDocumentsMultiThreaded(space, docIter, numThreads);
+        processDocumentsAndSpace(space, docIter, numThreads, props);
 
-        long startTime = System.currentTimeMillis();
-        space.processSpace(props);
-        long endTime = System.currentTimeMillis();
-        verbose("processed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
-        
         File output = (overwrite)
             ? new File(outputDir, space.getSpaceName() + EXT)
             : File.createTempFile(space.getSpaceName(), EXT, outputDir);
@@ -389,15 +383,31 @@ public abstract class GenericMain {
                 argOptions.getStringOption("outputFormat").toUpperCase())
             : getSpaceFormat();
 
-        startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         SemanticSpaceIO.save(space, output, format);
-        endTime = System.currentTimeMillis();
+        long endTime = System.currentTimeMillis();
         verbose("printed space in %.3f seconds",
                 ((endTime - startTime) / 1000d));
 
         postProcessing();
     }
 
+    /**
+     * Processes all the documents held by the iterator and process the space.
+     */
+    protected void processDocumentsAndSpace(SemanticSpace space,
+                                            Iterator<Document> docIter,
+                                            int numThreads,
+                                            Properties props) throws Exception {
+        parseDocumentsMultiThreaded(space, docIter, numThreads);
+
+        long startTime = System.currentTimeMillis();
+        space.processSpace(props);
+        long endTime = System.currentTimeMillis();
+        verbose("processed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+    }
+        
     /**
      * Calls {@link SemanticSpace#processDocument(BufferedReader)
      * processDocument} once for every document in {@code docIter} using a
