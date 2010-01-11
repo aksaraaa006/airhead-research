@@ -25,11 +25,13 @@ import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.matrix.CorrelationTransform;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Normalize;
 import edu.ucla.sspace.matrix.SVD;
+import edu.ucla.sspace.matrix.Transform;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.vector.Vector;
@@ -119,6 +121,18 @@ public class Coals implements SemanticSpace {
         PROPERTY_PREFIX + ".maxDimensions";
 
     /**
+     * Specifies the number of words to build semantics for.
+     */
+    public static final String MAX_WORDS_PROPERTY = 
+        PROPERTY_PREFIX + ".maxWords";
+
+    /**
+     * Specifies if Coals should not normalize the co-occurance matrix.
+     */
+    public static final String DO_NOT_NORMALIZE_PROPERTY = 
+        PROPERTY_PREFIX + ".doNotNormalize";
+
+    /**
      * The default number of dimensions to reduce to.
      */
     private static final String DEFAULT_REDUCE_DIMENSIONS = "800";
@@ -127,6 +141,11 @@ public class Coals implements SemanticSpace {
      * The default number of dimensions to save in the co-occurrance matrix.
      */
     private static final String DEFAULT_MAX_DIMENSIONS = "14000";
+
+    /**
+     * The default number of rows to save in the co-occurrance matrix.
+     */
+    private static final String DEFAULT_MAX_WORDS = "15000";
 
     /**
      * The name of this {@code SemanticSpace}
@@ -252,14 +271,15 @@ public class Coals implements SemanticSpace {
         // Compute the co-occurrance statistics of each focus word in the
         // document.
         while (!nextWords.isEmpty()) {
-            // Get the focus word
-            String focusWord = nextWords.remove();
-            if (focusWord.equals(IteratorFactory.EMPTY_TOKEN))
-                continue;
 
             // Slide over the context by one word.
             if (it.hasNext())
                 nextWords.offer(it.next());
+
+            // Get the focus word
+            String focusWord = nextWords.remove();
+            if (focusWord.equals(IteratorFactory.EMPTY_TOKEN))
+                continue;
 
             // Update the frequency count of the focus word.
             int updatedFreq = 1;
@@ -354,8 +374,10 @@ public class Coals implements SemanticSpace {
             return;
         }
         Integer freqCount = secondMap.get(secondKey);
-        secondMap.put(secondKey,
-                      (freqCount == null) ? 1 : freqCount.intValue() + 1);
+        int newValue = (freqCount == null)
+            ? value
+            : freqCount.intValue() + value;
+        secondMap.put(secondKey, newValue);
     }
 
     /**
@@ -367,34 +389,35 @@ public class Coals implements SemanticSpace {
         reducedDimensions = Integer.parseInt(
                 props.getProperty(REDUCE_DIMENSION_PROPERTY,
                                   DEFAULT_REDUCE_DIMENSIONS));
+        boolean normalize =
+            props.getProperty(DO_NOT_NORMALIZE_PROPERTY) == null;
         int maxWords = Integer.parseInt(
+                props.getProperty(MAX_WORDS_PROPERTY,
+                                  DEFAULT_MAX_WORDS));
+        int maxDimensions = Integer.parseInt(
                 props.getProperty(MAX_DIMENSIONS_PROPERTY,
                                   DEFAULT_MAX_DIMENSIONS));
 
         COALS_LOGGER.info("Droppring dimensions from co-occurrance matrix.");
         // Read in the matrix from a file with dimensions dropped.
-        if (finalCorrelation == null)
-            finalCorrelation = buildMatrix(maxWords);
+        finalCorrelation = buildMatrix(maxWords, maxDimensions);
         COALS_LOGGER.info("Done droppring dimensions.");
 
-        COALS_LOGGER.info("Normalizing co-occurrance matrix.");
-        // Normalize the matrix using correlation.
-        int wordCount = finalCorrelation.rows();
-        Normalize.byCorrelation(finalCorrelation, false);
-        for (int i = 0; i < finalCorrelation.rows(); ++i) {
-            for (int j = 0; j < finalCorrelation.columns(); ++j) {
-                double newValue;
-                if (finalCorrelation.get(i,j) < 0)
-                    newValue = 0;
-                else 
-                    newValue = Math.sqrt(finalCorrelation.get(i,j));
-                finalCorrelation.set(i,j, newValue);
-            }
-        }
-        COALS_LOGGER.info("Done normalizing co-occurrance matrix.");
+        if (normalize) {
+            COALS_LOGGER.info("Normalizing co-occurrance matrix.");
 
-        COALS_LOGGER.info("Reducing using SVD.");
+            // Normalize the matrix using correlation.
+            int wordCount = finalCorrelation.rows();
+            System.setProperty(
+                    CorrelationTransform.USE_SQUARE_ROOT_PROPERTY, "");
+            Transform correlation = new CorrelationTransform();
+            finalCorrelation = correlation.transform(finalCorrelation);
+
+            COALS_LOGGER.info("Done normalizing co-occurrance matrix.");
+        }
+
         if (reduceMatrix) {
+            COALS_LOGGER.info("Reducing using SVD.");
             try {
                 File coalsMatrixFile =
                     File.createTempFile("coals-term-doc-matrix", "dat");
@@ -413,11 +436,11 @@ public class Coals implements SemanticSpace {
             } catch (IOException ioe) {
                 throw new IOError(ioe);
             }
+            COALS_LOGGER.info("Done reducing using SVD.");
         }
-        COALS_LOGGER.info("Done reducing using SVD.");
     }
 
-    private Matrix buildMatrix(int maxWords) {
+    private Matrix buildMatrix(int maxWords, int maxDimensions) {
         // Calculate an inverse mapping from index to word since the binary file
         // stores things by index number.
         String[] indexToTerm = new String[termToIndex.size()];
@@ -432,8 +455,9 @@ public class Coals implements SemanticSpace {
 
         termToIndex.clear();
         int i = 0;
-        for (Map.Entry<String, Integer> entry : wordCountList)
+        for (Map.Entry<String, Integer> entry : wordCountList) {
             termToIndex.put(entry.getKey(), i++);
+        }
 
         // Finalize all output to the co-occurrance data file.
         totalWordFreq.clear();
@@ -445,8 +469,8 @@ public class Coals implements SemanticSpace {
             }
         }
         
-        int wordCount = (wordCountList.size() > maxWords)
-            ? maxWords
+        int wordCount = (wordCountList.size() > maxDimensions)
+            ? maxDimensions 
             : wordCountList.size();
 
         Matrix correl = new YaleSparseMatrix(wordCountList.size(), wordCount);
@@ -471,7 +495,8 @@ public class Coals implements SemanticSpace {
 
                     // Drop any occurrance counts where the second term is not
                     // in the most frequent N terms (dimensions).
-                    if (newSecondIndex >= wordCount)
+                    if (newFirstIndex >= maxWords ||
+                        newSecondIndex >= wordCount)
                         continue;
                     double oldValue = correl.get(newFirstIndex, newSecondIndex);
                     correl.set(newFirstIndex, newSecondIndex, count + oldValue);
@@ -492,5 +517,25 @@ public class Coals implements SemanticSpace {
             int diff = o2.getValue().intValue() - o1.getValue().intValue();
             return (diff != 0) ? diff : o2.getKey().compareTo(o1.getKey());
         }
+    }
+
+    public Matrix compareToMatrix(Matrix testMatrix) {
+        if (testMatrix.rows() != finalCorrelation.rows() ||
+            testMatrix.columns() != finalCorrelation.columns()) {
+            System.out.println(testMatrix.rows() + " " + testMatrix.columns());
+            System.out.println(finalCorrelation.rows() + " " + finalCorrelation.columns());
+            throw new IllegalArgumentException(
+                    "The given test matrix size does not match");
+            }
+
+        Matrix result = new ArrayMatrix(testMatrix.rows(),
+                                        testMatrix.columns());
+        for (int row = 0; row < testMatrix.rows(); ++row) {
+            for (int col = 0; col < testMatrix.columns(); ++col) {
+                result.set(row, col, finalCorrelation.get(row, col) -
+                                     testMatrix.get(row, col));
+            }
+        }
+        return result;
     }
 }
