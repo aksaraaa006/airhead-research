@@ -41,49 +41,49 @@ public class Statistics {
      * Returns the entropy of the array.
      */
     public static double entropy(int[] a) {
-	Map<Integer,Integer> symbolFreq = new IntegerMap<Integer>();
-	for (int i : a) {
-	    Integer freq = symbolFreq.get(i);
-	    symbolFreq.put(i, (freq == null) ? 1 : 1 + freq);
-	}
-	
-	double entropy = 0;
+        Map<Integer,Integer> symbolFreq = new IntegerMap<Integer>();
+        for (int i : a) {
+            Integer freq = symbolFreq.get(i);
+            symbolFreq.put(i, (freq == null) ? 1 : 1 + freq);
+        }
+        
+        double entropy = 0;
 
-	int symbols = a.length;
-	for (Integer freq : symbolFreq.values()) {
-	    double symbolProbability = freq / symbols;
-	    entropy -= symbolProbability * log2(symbolProbability);
-	}
+        int symbols = a.length;
+        for (Integer freq : symbolFreq.values()) {
+            double symbolProbability = freq / symbols;
+            entropy -= symbolProbability * log2(symbolProbability);
+        }
 
-	return entropy;
+        return entropy;
     }
 
     /**
      * Returns the entropy of the array.
      */
     public static double entropy(double[] a) {
-	Map<Double,Integer> symbolFreq = new HashMap<Double,Integer>();
-	for (double d : a) {
-	    Integer freq = symbolFreq.get(d);
-	    symbolFreq.put(d, (freq == null) ? 1 : 1 + freq);
-	}
-	
-	double entropy = 0;
+        Map<Double,Integer> symbolFreq = new HashMap<Double,Integer>();
+        for (double d : a) {
+            Integer freq = symbolFreq.get(d);
+            symbolFreq.put(d, (freq == null) ? 1 : 1 + freq);
+        }
+        
+        double entropy = 0;
 
-	int symbols = a.length;
-	for (Integer freq : symbolFreq.values()) {
-	    double symbolProbability = freq / symbols;
-	    entropy -= symbolProbability * log2(symbolProbability);
-	}
+        int symbols = a.length;
+        for (Integer freq : symbolFreq.values()) {
+            double symbolProbability = freq / symbols;
+            entropy -= symbolProbability * log2(symbolProbability);
+        }
 
-	return entropy;
+        return entropy;
     }
 
     /**
      * Returns the base-2 logarithm of {@code d}.
      */
     public static double log2(double d) {
-	return Math.log(d) / Math.log(2);
+        return Math.log(d) / Math.log(2);
     }
 
     /**
@@ -92,7 +92,7 @@ public class Statistics {
      * @see Math#log1p(double)
      */
     public static double log2_1p(double d) {
-	return Math.log1p(d) / Math.log(2);
+        return Math.log1p(d) / Math.log(2);
     }
 
 }

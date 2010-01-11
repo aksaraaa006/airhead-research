@@ -242,10 +242,9 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
+      <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
       <!-- Comment block for excluding the testing a specific set of files.
       -->
-      <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
-
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
@@ -257,11 +256,11 @@
       <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.CorrelationTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatricesTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.matrix.NormalizeTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
