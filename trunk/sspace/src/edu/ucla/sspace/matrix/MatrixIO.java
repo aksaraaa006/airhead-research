@@ -239,6 +239,32 @@ public class MatrixIO {
     }       
 
     /**
+     * Returns an iterator over the matrix entries in the data file.  For sparse
+     * formats that specify only non-zero, no zero valued entries will be
+     * returened.  Conversely, for dense matrix formats, all of the entries,
+     * including zero entries will be returned.
+     *
+     * @param file the file containing matrix data in the specified format
+     * @param format the format of the matrix file
+     *
+     * @return an interator over the entries in the matrix file
+     */
+    public static Iterator<MatrixEntry> getMatrixFileIterator(
+             File matrixFile, Format fileFormat) throws IOException {
+        switch(fileFormat) {
+            case SVDLIBC_SPARSE_BINARY: 
+                return new SvdlibcSparseBinaryFileIterator(matrixFile);
+            case MATLAB_SPARSE: 
+                return new MatlabSparseFileIterator(matrixFile);
+        }
+	throw new Error("Iterating over matrices of " + fileFormat + 
+                        " format is not "+
+                        "currently supported. Email " + 
+                        "s-space-research-dev@googlegroups.com to request its" +
+                        "inclusion and it will be quickly added");
+    }
+
+    /**
      * Reads in a matrix in the {@link Format#MATLAB_SPARSE} format and writes
      * it to the output file in {@link Format#SVDLIBC_SPARSE_TEXT} format.
      */
@@ -528,7 +554,7 @@ public class MatrixIO {
                     int numNonZeros = in.readInt();
                     for (int i = 0; i < numNonZeros; ++i) {
                         int row = in.readInt(); 
-                        double value = in.readDouble();
+                        double value = in.readFloat();
                         array[row][j] = value;
                     }
                 }
@@ -536,8 +562,8 @@ public class MatrixIO {
             }
         }
 
-	throw new Error("Reading matrices of " + format + " format is not "+
-                        "currently supported. Email " + 
+	throw new Error("Convert matrix files of " + format + " format " +
+                        "to an array is not currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its" +
                         "inclusion and it will be quickly added");
     }

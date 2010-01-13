@@ -80,21 +80,21 @@ public class MatrixIOtests {
 
         pw.writeInt(2);
         pw.writeInt(0);
-        pw.writeDouble(2.3);
+        pw.writeFloat(2.3f);
         pw.writeInt(2);
-        pw.writeDouble(3.8);
+        pw.writeFloat(3.8f);
 
         pw.writeInt(1);
         pw.writeInt(1);
-        pw.writeDouble(1.3);
+        pw.writeFloat(1.3f);
 
         pw.writeInt(3);
         pw.writeInt(0);
-        pw.writeDouble(4.2);
+        pw.writeFloat(4.2f);
         pw.writeInt(1);
-        pw.writeDouble(2.2);
+        pw.writeFloat(2.2f);
         pw.writeInt(2);
-        pw.writeDouble(0.5);
+        pw.writeFloat(0.5f);
 
         pw.close();
         return f;
