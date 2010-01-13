@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.ri;
+package edu.ucla.sspace.rri;
 
 import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
