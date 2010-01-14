@@ -368,7 +368,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         semanticFilter = new HashSet<String>();
         wordToReflectiveSemantics = new ConcurrentHashMap<String,IntegerVector>();
         documentCounter = new AtomicInteger();
-        termToIndex = new HashMap<String,Integer>();
+        termToIndex = new ConcurrentHashMap<String,Integer>();
 
         // Last set up the writer that will contain a compressed version of the
         // corpus for use in processSpace()
@@ -431,9 +431,6 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
                 // for the lock
                 v = wordToCoVector.get(word);
                 if (v == null) {
-                    // Add a new counter for this term.  Because the
-                    // termIndexCounter starts at zero, so the next index will
-                    // be the last index in the termCounts list.
                     termToIndex.put(word, termIndexCounter++);
                     v = (useSparseSemantics) 
                         ? new CompactSparseIntegerVector(vectorLength)
