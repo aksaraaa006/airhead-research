@@ -32,6 +32,8 @@ import edu.ucla.sspace.index.TernaryPermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.WorkerThread;
+
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.DenseIntVector;
 import edu.ucla.sspace.vector.IntegerVector;
@@ -66,7 +68,11 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -649,8 +655,9 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * Computes the reflective semantic vectors for word meanings
      */
     private void processSpace() throws IOException {
+        LOGGER.info("generating reflective vectors");
         compressedDocumentsWriter.close();
-        int documents = documentCounter.get();
+        int numDocuments = documentCounter.get();
         indexToTerm = new String[termToIndex.size()];
         for (Map.Entry<String,Integer> e : termToIndex.entrySet())
             indexToTerm[e.getValue()] = e.getKey();
@@ -660,22 +667,47 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         DataInputStream corpusReader = new DataInputStream(
             new BufferedInputStream(new FileInputStream(compressedDocuments)));
 
-        for (int d = 0; d < documents; ++d) {
+        // Set up the concurrent data structures so we can reprocess the
+        // documents concurrently using a work queue
+        final BlockingQueue<Runnable> workQueue =
+            new LinkedBlockingQueue<Runnable>();
+        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
+            Thread t = new WorkerThread(workQueue);
+            t.start();
+        }
+        final Semaphore documentsRerocessed = new Semaphore(0);         
+
+        for (int d = 0; d < numDocuments; ++d) {
             final int docId = d;
-            LOGGER.fine("reprocessing doc #" + docId);
+
             int tokensInDoc = corpusReader.readInt();
             int unfilteredTokens = corpusReader.readInt();
             // Read in the document
-            int[] doc = new int[tokensInDoc];
+            final int[] doc = new int[tokensInDoc];
             for (int i = 0; i < tokensInDoc; ++i)
                 doc[i] = corpusReader.readInt();
 
-            // This method creates the document vector and then adds that
-            // document vector with the reflective semantic vector for each word
-            // occurring in the document
-            processIntDocument(doc);
+            workQueue.offer(new Runnable() {
+                    public void run() {
+                        // This method creates the document vector and then adds
+                        // that document vector with the reflective semantic
+                        // vector for each word occurring in the document
+                        LOGGER.fine("reprocessing doc #" + docId);
+                        processIntDocument(doc);
+                    }
+                });
         }
         corpusReader.close();
+
+        // Wait until all the documents have been processed
+        try {
+            documentsRerocessed.acquire(numDocuments);
+        } catch (InterruptedException ie) {
+            throw new Error("interrupted while waiting for documents to " +
+                            "finish reprocessing", ie);
+        }        
+        LOGGER.fine("finished reprocessing all documents");
+
     }
 
     /**

@@ -38,8 +38,6 @@ import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.util.BoundedSortedMultiMap;
-import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseHashArray;
 import edu.ucla.sspace.util.WorkerThread;
