@@ -527,6 +527,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
                         // vector for each word occurring in the document
                         LOGGER.fine("reprocessing doc #" + docId);
                         processIntDocument(docToVector.get(docId), doc);
+                        documentsRerocessed.release();
                     }
                 });
         }
