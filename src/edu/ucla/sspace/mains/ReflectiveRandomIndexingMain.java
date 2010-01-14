@@ -121,23 +121,7 @@ public class ReflectiveRandomIndexingMain extends GenericMain {
         props = System.getProperties();
         // Use the command line options to set the desired properites in the
         // constructor.  Use the system properties in case these properties were
-        // set using -Dprop=<value>
-        if (argOptions.hasOption("usePermutations")) {
-            props.setProperty(ReflectiveRandomIndexing.USE_PERMUTATIONS_PROPERTY,
-                              argOptions.getStringOption("usePermutations"));
-        }
-
-        if (argOptions.hasOption("permutationFunction")) {
-            props.setProperty(
-                    ReflectiveRandomIndexing.PERMUTATION_FUNCTION_PROPERTY,
-                    argOptions.getStringOption("permutationFunction"));
-        }
-
-        if (argOptions.hasOption("windowSize")) {
-            props.setProperty(ReflectiveRandomIndexing.WINDOW_SIZE_PROPERTY,
-                              argOptions.getStringOption("windowSize"));
-        }
-
+        // set using -Dprop=<value> 
         if (argOptions.hasOption("vectorLength")) {
             props.setProperty(ReflectiveRandomIndexing.VECTOR_LENGTH_PROPERTY,
                               argOptions.getStringOption("vectorLength"));
