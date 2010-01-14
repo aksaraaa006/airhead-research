@@ -380,7 +380,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * {@inheritDoc}
      */ 
     public Set<String> getWords() {
-        return Collections.unmodifiableSet(termToIndexVector.keySet());
+        return Collections.unmodifiableSet(termToReflectiveSemantics.keySet());
     }
 
     /**
@@ -490,6 +490,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         LOGGER.info("generating reflective vectors");
         compressedDocumentsWriter.close();
         int numDocuments = documentCounter.get();
+        termToIndexVector.clear();
         indexToTerm = new String[termToIndex.size()];
         for (Map.Entry<String,Integer> e : termToIndex.entrySet())
             indexToTerm[e.getValue()] = e.getKey();
