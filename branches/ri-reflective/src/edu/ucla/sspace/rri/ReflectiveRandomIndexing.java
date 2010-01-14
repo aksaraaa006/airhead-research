@@ -97,41 +97,12 @@ import java.util.logging.Logger;
  *
  * <dl style="margin-left: 1em">
  *
- * <dt> <i>Property:</i> <code><b>{@value #WINDOW_SIZE_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@value #DEFAULT_WINDOW_SIZE}
- *
- * <dd style="padding-top: .5em">This property sets the number of words before
- *      and after that are counted as co-occurring.  With the default value,
- *      {@value #DEFAULT_WINDOW_SIZE} words are counted before and {@value
- *      #DEFAULT_WINDOW_SIZE} words are counter after.  This class always uses a
- *      symmetric window. <p>
- *
  * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
  *      </b></code> <br>
  *      <i>Default:</i> {@value #DEFAULT_VECTOR_LENGTH}
  *
  * <dd style="padding-top: .5em">This property sets the number of dimensions to
  *      be used for the index and semantic vectors. <p>
- *
- * <dt> <i>Property:</i> <code><b>{@value #USE_PERMUTATIONS_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@code false}
- *
- * <dd style="padding-top: .5em">This property specifies whether to enable
- *      permuting the index vectors of co-occurring words.  Enabling this option
- *      will cause the word semantics to include word-ordering information.
- *      However this option is best used with a larger corpus.<p>
- *
- * <dt> <i>Property:</i> <code><b>{@value #PERMUTATION_FUNCTION_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@link edu.ucla.sspace.index.DefaultPermutationFunction 
- *      DefaultPermutationFunction} 
- *
- * <dd style="padding-top: .5em">This property specifies the fully qualified
- *      class name of a {@link PermutationFunction} instance that will be used
- *      to permute index vectors.  If the {@value #USE_PERMUTATIONS_PROPERTY} is
- *      set to {@code false}, the value of this property has no effect.<p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #USE_SPARSE_SEMANTICS_PROPERTY}
  *      </b></code> <br>
@@ -158,9 +129,7 @@ import java.util.logging.Logger;
  * to access the current semantics of a word.  This allows callers to track
  * incremental changes to the semantics as the corpus is processed.  <p>
  *
- * The {@link #processSpace(Properties) processSpace} method does nothing for
- * this class and calls to it will not affect the results of {@code
- * getVectorFor}.
+ * The {@link #processSpace(Properties) processSpace} method TODO
  *
  * @see PermutationFunction
  * @see IndexVectorGenerator
@@ -183,37 +152,11 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         PROPERTY_PREFIX + ".vectorLength";
 
     /**
-     * The property to specify the number of words to view before and after each
-     * word in focus.
-     */
-    public static final String WINDOW_SIZE_PROPERTY = 
-        PROPERTY_PREFIX + ".windowSize";
-
-    /**
-     * The property to specify whether the index vectors for co-occurrent words
-     * should be permuted based on their relative position.
-     */
-    public static final String USE_PERMUTATIONS_PROPERTY = 
-        PROPERTY_PREFIX + ".usePermutations";
-
-    /**
-     * The property to specify the fully qualified named of a {@link
-     * PermutationFunction} if using permutations is enabled.
-     */
-    public static final String PERMUTATION_FUNCTION_PROPERTY = 
-        PROPERTY_PREFIX + ".permutationFunction";
-
-    /**
      * Specifies whether to use a sparse encoding for each word's semantics,
      * which saves space but requires more computation.
      */
     public static final String USE_SPARSE_SEMANTICS_PROPERTY = 
         PROPERTY_PREFIX + ".sparseSemantics";
-
-    /**
-     * The default number of words to view before and after each word in focus.
-     */
-    public static final int DEFAULT_WINDOW_SIZE = 2; // +2/-2
 
     /**
      * The default number of dimensions to be used by the index and semantic
@@ -228,21 +171,22 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         Logger.getLogger(ReflectiveRandomIndexing.class.getName());
 
     /**
-     * A mapping from each word to its associated index vector
-     */
-    private final Map<String,TernaryVector> wordToIndexVector;
-
-    /**
      * A mapping from each word to the vector the represents its the summation
      * of all the co-occurring words' index vectors.
      */
-    private final Map<String,IntegerVector> wordToCoVector;
+    private final Map<Integer,IntegerVector> docToVector;
 
     /**
      * A mapping from each word to the vector the represents its semantics after
      * the second pass through the corpus.
      */
-    private final Map<String,IntegerVector> wordToReflectiveSemantics;
+    private final Map<String,IntegerVector> termToReflectiveSemantics;
+
+    /**
+     * A mapping from each word to the vector the represents its semantics after
+     * the second pass through the corpus.
+     */
+    private final Map<String,TernaryVector> termToIndexVector;
 
     /**
      * A mapping from a each term to its index
@@ -260,23 +204,6 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
     private final int vectorLength;
 
     /**
-     * The number of words to view before and after each focus word in a window.
-     */
-    private final int windowSize;
-
-    /**
-     * Whether the index vectors for co-occurrent words should be permuted based
-     * on their relative position.
-     */
-    private final boolean usePermutations;
-
-    /**
-     * If permutations are enabled, the permutation function to use on the
-     * index vectors.
-     */
-    private final PermutationFunction<TernaryVector> permutationFunc;
-
-    /**
      * A flag for whether this instance should use {@code SparseIntegerVector}
      * instances for representic a word's semantics, which saves space but
      * requires more computation.
@@ -288,6 +215,8 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * this instance will retain.
      */
     private final Set<String> semanticFilter;
+
+    private final RandomIndexVectorGenerator indexVectorGenerator;
 
     /**
      * A compressed version of the corpus that is built as the text version is
@@ -335,25 +264,8 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         vectorLength = (vectorLengthProp != null)
             ? Integer.parseInt(vectorLengthProp)
             : DEFAULT_VECTOR_LENGTH;
-
-        String windowSizeProp = properties.getProperty(WINDOW_SIZE_PROPERTY);
-        windowSize = (windowSizeProp != null)
-            ? Integer.parseInt(windowSizeProp)
-            : DEFAULT_WINDOW_SIZE;
-
-        String usePermutationsProp = 
-            properties.getProperty(USE_PERMUTATIONS_PROPERTY);
-        usePermutations = (usePermutationsProp != null)
-            ? Boolean.parseBoolean(usePermutationsProp)
-            : false;
-
-        String permutationFuncProp =
-            properties.getProperty(PERMUTATION_FUNCTION_PROPERTY);
-        permutationFunc = (permutationFuncProp != null)
-            ? loadPermutationFunction(permutationFuncProp)
-            : new TernaryPermutationFunction();
-
-        RandomIndexVectorGenerator indexVectorGenerator = 
+        
+        indexVectorGenerator = 
             new RandomIndexVectorGenerator(properties);
 
         String useSparseProp = 
@@ -362,13 +274,15 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
             ? Boolean.parseBoolean(useSparseProp)
             : true;
 
-        wordToIndexVector = new IntegerVectorGeneratorMap<TernaryVector>(
-                indexVectorGenerator, vectorLength);
-        wordToCoVector = new ConcurrentHashMap<String,IntegerVector>();
-        semanticFilter = new HashSet<String>();
-        wordToReflectiveSemantics = new ConcurrentHashMap<String,IntegerVector>();
-        documentCounter = new AtomicInteger();
+        // The various maps for keeping word and document state during
+        // processing
+        termToIndexVector = new ConcurrentHashMap<String,TernaryVector>();
+        docToVector = new ConcurrentHashMap<Integer,IntegerVector>();
+        termToReflectiveSemantics = new ConcurrentHashMap<String,IntegerVector>();
         termToIndex = new ConcurrentHashMap<String,Integer>();
+
+        documentCounter = new AtomicInteger();
+        semanticFilter = new HashSet<String>();
 
         // Last set up the writer that will contain a compressed version of the
         // corpus for use in processSpace()
@@ -385,72 +299,63 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
     }
 
     /**
-     * Returns an instance of the the provided class name, that implements
-     * {@code PermutationFunction}.
-     *
-     * @param className the fully qualified name of a class
-     */ 
-    @SuppressWarnings("unchecked")
-    private static PermutationFunction<TernaryVector> loadPermutationFunction(
-            String className) {
-        try {
-            Class clazz = Class.forName(className);
-            return (PermutationFunction<TernaryVector>)(clazz.newInstance());
-        } catch (Exception e) {
-            // catch all of the exception and rethrow them as an error
-            throw new Error(e);
-        }
-    }
-
-    /**
      * Removes all associations between word and semantics while still retaining
      * the word to index vector mapping.  This method can be used to re-use the
      * same instance of a {@code ReflectiveRandomIndexing} on multiple corpora
      * while keeping the same semantic space.
      */
     public void clearSemantics() {
-        wordToCoVector.clear();
+        termToReflectiveSemantics.clear();
     }
 
     /**
-     * Returns the current semantic vector for the provided word, or if the word
-     * is not currently in the semantic space, a vector is added for it and
-     * returned.
-     *
-     * @param word a word
-     *
-     * @return the {@code SemanticVector} for the provide word.
+     * Returns a vector for representing word or document semantics whose type
+     * is based on whether the used specified to use sparse semantics or not.
      */
-    private IntegerVector getSemanticVector(String word) {
-        IntegerVector v = wordToCoVector.get(word);
-        if (v == null) {
-            // lock on the word in case multiple threads attempt to add it at
-            // once
+    private IntegerVector createVector() {
+        return (useSparseSemantics)
+            ? new CompactSparseIntegerVector(vectorLength)
+            : new DenseIntVector(vectorLength);
+    }
+
+    /**
+     * Returns the index vector for the term, or if creates one if the term to
+     * index vector mapping does not yet exist.
+     *
+     * @param term a word in the semantic space
+     *
+     * @return the index for the provide term.
+     */
+    private TernaryVector getTermIndexVector(String term) {
+        TernaryVector iv = termToIndexVector.get(term);
+        if (iv == null) {
+            // lock in case multiple threads attempt to add it at once
             synchronized(this) {
                 // recheck in case another thread added it while we were waiting
                 // for the lock
-                v = wordToCoVector.get(word);
-                if (v == null) {
-                    termToIndex.put(word, termIndexCounter++);
-                    v = (useSparseSemantics) 
-                        ? new CompactSparseIntegerVector(vectorLength)
-                        : new DenseIntVector(vectorLength);
-                    wordToReflectiveSemantics.put(word,
-                        (useSparseSemantics) 
-                        ? new CompactSparseIntegerVector(vectorLength)
-                        : new DenseIntVector(vectorLength));
-                    wordToCoVector.put(word, v);
+                iv = termToIndexVector.get(term);
+                if (iv == null) {
+                    // since this is a new term, also map it to its index for
+                    // later look-up when the integer documents are processed
+                    termToIndex.put(term, termIndexCounter++);
+                    // next, map it to its reflective vector which will be
+                    // filled in process space
+                    termToReflectiveSemantics.put(term, createVector());
+                    // last, create an index vector for the term
+                    iv = indexVectorGenerator.
+                        generateRandomVector(vectorLength);
+                    termToIndexVector.put(term, iv);                    
                 }
             }
         }
-        return v;
+        return iv;
     }
 
    /**
      * {@inheritDoc}
      */ 
     public IntegerVector getVector(String word) {
-        IntegerVector v = wordToReflectiveSemantics.get(word);
+        IntegerVector v = termToReflectiveSemantics.get(word);
         if (v == null) {
             return null;
         }
@@ -461,10 +366,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * {@inheritDoc}
      */ 
     public String getSpaceName() {
-        return RRI_SSPACE_NAME + "-" + vectorLength + "v-" + windowSize + "w-" 
-            + ((usePermutations) 
-                    ? permutationFunc.toString() 
-                    : "noPermutations");
+        return RRI_SSPACE_NAME + "-" + vectorLength + "v";
     }
 
     /**
@@ -478,7 +380,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * {@inheritDoc}
      */ 
     public Set<String> getWords() {
-        return Collections.unmodifiableSet(wordToCoVector.keySet());
+        return Collections.unmodifiableSet(termToIndexVector.keySet());
     }
 
     /**
@@ -491,7 +393,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      *         to represent them
      */
     public Map<String,TernaryVector> getWordToIndexVector() {
-        return Collections.unmodifiableMap(wordToIndexVector);
+        return Collections.unmodifiableMap(termToIndexVector);
     }
     
     /**
@@ -500,9 +402,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * @param document {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        documentCounter.getAndIncrement();
-        Queue<String> prevWords = new ArrayDeque<String>(windowSize);
-        Queue<String> nextWords = new ArrayDeque<String>(windowSize);
+        int docIndex = documentCounter.getAndIncrement();
 
         Iterator<String> documentTokens = 
             IteratorFactory.tokenizeOrdered(document);
@@ -516,21 +416,12 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         int tokens = 0; // count how many are in this document
         int unfilteredTokens = 0; // how many tokens remained after filtering
 
-        String focusWord = null;
+        IntegerVector docVector = createVector();
+        docToVector.put(docIndex, docVector);
 
-        // prefetch the first windowSize words 
-        for (int i = 0; i < windowSize && documentTokens.hasNext(); ++i)
-            nextWords.offer(documentTokens.next());
-        
-        while (!nextWords.isEmpty()) {
+        while (documentTokens.hasNext()) {
             tokens++;
-            focusWord = nextWords.remove();
-
-            // shift over the window to the next word
-            if (documentTokens.hasNext()) {
-                String windowEdge = documentTokens.next(); 
-                nextWords.offer(windowEdge);
-            }    
+            String focusWord = documentTokens.next();
 
             // If we are filtering the semantic vectors, check whether this word
             // should have its semantics calculated.  In addition, if there is a
@@ -543,91 +434,35 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
 	    // If the filter does not accept this word, skip the semantic
 	    // processing, continue with the next word
             if (!calculateSemantics) {
-                // Mark the token as empty using a negative term index in the
-                // compressed form of the document
-                dos.writeInt(-1);
-		// shift the window
-		prevWords.offer(focusWord);
-		if (prevWords.size() > windowSize)
-		    prevWords.remove();
+                // Do not write out any removed tokens to save space
 		continue;
 	    }
 
-            IntegerVector focusMeaning = getSemanticVector(focusWord);
+            // Update the occurrences of this token
+            unfilteredTokens++;
+            add(docVector, getTermIndexVector(focusWord));
 
-            // Update the compress version of the document with the token
+            // Update the compress version of the document with the token.
+            //
+            // NOTE: this call to termToIndex *must* come after the
+            // getTermIndexVector() call, which is responsible for adding this
+            // mapping if it doesn't already exist.
 	    int focusIndex = termToIndex.get(focusWord);
+
             // write the term index into the compressed for the document for
             // later corpus reprocessing
             dos.writeInt(focusIndex);
-            // Update the occurrences of this token
-            unfilteredTokens++;
-
-            // Sum up the index vector for all the surrounding words.  If
-            // permutations are enabled, permute the index vector based on
-            // its relative position to the focus word.
-            int permutations = -(prevWords.size());        
-            for (String word : prevWords) {
-                // Skip the addition of any words that are excluded from the
-                // filter set.  Note that by doing the exclusion here, we
-                // ensure that the token stream maintains its existing
-                // ordering, which is necessary when permutations are taken
-                // into account.
-                if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-                    ++permutations;
-                    continue;
-                }
-                
-                TernaryVector iv = wordToIndexVector.get(word);
-                if (usePermutations) {
-                    iv = permutationFunc.permute(iv, permutations);
-                    ++permutations;
-                }
-                
-                add(focusMeaning, iv);
-            }
-            
-            // Repeat for the words in the forward window.
-            permutations = 1;
-            for (String word : nextWords) {
-                // Skip the addition of any words that are excluded from the
-                // filter set.  Note that by doing the exclusion here, we
-                // ensure that the token stream maintains its existing
-                // ordering, which is necessary when permutations are taken
-                // into account.
-                if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-                    ++permutations;
-                    continue;
-                }
-                
-                TernaryVector iv = wordToIndexVector.get(word);
-                if (usePermutations) {
-                    iv = permutationFunc.permute(iv, permutations);
-                    ++permutations;
-                    }
-                
-                add(focusMeaning, iv);
-            }
-        }
-        
-        // Last put this focus word in the prev words and shift off the
-        // front of the previous word window if it now contains more words
-        // than the maximum window size
-        prevWords.offer(focusWord);
-        if (prevWords.size() > windowSize) {
-            prevWords.remove();
         }
 
         document.close();
-
+        
         dos.close();
         byte[] docAsBytes = compressedDocument.toByteArray();
 
         // Once the document is finished, write the compressed contents to the
         // corpus stream
         synchronized(compressedDocumentsWriter) {
-            // Write how many terms were in this document
-            compressedDocumentsWriter.writeInt(tokens);
+            // Write how many terms were in this document after filtering
             compressedDocumentsWriter.writeInt(unfilteredTokens);
             compressedDocumentsWriter.write(docAsBytes, 0, docAsBytes.length);
         }
@@ -677,8 +512,9 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         for (int d = 0; d < numDocuments; ++d) {
             final int docId = d;
 
+            // This value already has any filtered tokens taken into account,
+            // i.e. in only counts those tokens that remain after filtering
             int tokensInDoc = corpusReader.readInt();
-            int unfilteredTokens = corpusReader.readInt();
             // Read in the document
             final int[] doc = new int[tokensInDoc];
             for (int i = 0; i < tokensInDoc; ++i)
@@ -690,7 +526,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
                         // that document vector with the reflective semantic
                         // vector for each word occurring in the document
                         LOGGER.fine("reprocessing doc #" + docId);
-                        processIntDocument(doc);
+                        processIntDocument(docToVector.get(docId), doc);
                     }
                 });
         }
@@ -709,37 +545,23 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
 
     /**
      * Processes the compressed version of a document where each integer
-     * indicates that token's index and identifies all the contexts for the
-     * target word, adding them as new rows to the context matrix.
+     * indicates that token's index, adding the document's vector to the
+     * reflective semantic vector each time a term occurs in the document.
      *
+     * @param docVector the vector of the document that is being processed
      * @param document the document to be processed where each {@code int} is a
      *        term index
      *
      * @return the number of contexts present in this document
      */
-    private void processIntDocument(int[] document) {
-
-        IntegerVector docVector = new DenseIntVector(vectorLength);
+    private void processIntDocument(IntegerVector docVector, int[] document) {
 
         // Make one pass through the document to build the document vector.
         for (int termIndex : document) {
-            // Skip filter/omitted tokens
-            if (termIndex == -1)
-                continue;
-            IntegerVector coOcVector = 
-                wordToCoVector.get(indexToTerm[termIndex]);
-            VectorMath.add(docVector, coOcVector);
-        }
-
-        // Make a second pass through the corpus to update the reflective
-        // semantics for each term
-        for (int termIndex : document) {
-            // Skip filter/omitted tokens
-            if (termIndex == -1)
-                continue;
             IntegerVector reflectiveVector = 
-                wordToReflectiveSemantics.get(indexToTerm[termIndex]);
-            // Lock to ensure no other thread modifies this vector
+                termToReflectiveSemantics.get(indexToTerm[termIndex]);
+            // Lock on the term's vector to prevent another thread from updating
+            // it concurrently
             synchronized(reflectiveVector) {
                 VectorMath.add(reflectiveVector, docVector);
             }
@@ -756,8 +578,8 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      *        used represent it when calculating other word's semantics
      */
     public void setWordToIndexVector(Map<String,TernaryVector> m) {
-        wordToIndexVector.clear();
-        wordToIndexVector.putAll(m);
+        termToIndexVector.clear();
+        termToIndexVector.putAll(m);
     }
 
     /**
