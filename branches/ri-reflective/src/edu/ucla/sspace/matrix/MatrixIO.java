@@ -535,9 +535,8 @@ public class MatrixIO {
                 return array;
             }
 
+            // These two formats are equivalent
             case CLUTO_DENSE:
-                break;
-
             case SVDLIBC_DENSE_TEXT:
                 // TODO IMPLEMENT ME.
                 break;
@@ -633,9 +632,8 @@ public class MatrixIO {
 	case SVDLIBC_SPARSE_TEXT:
 	    break;
 
+        // These two formats are equivalent
         case CLUTO_DENSE:
-            break;
-
 	case SVDLIBC_DENSE_TEXT: 
 	    return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
 	   
@@ -855,12 +853,10 @@ public class MatrixIO {
 	    break;
 	}
             
+        // These two formats are equivalent
         case CLUTO_DENSE:
-            break;
-
         case SVDLIBC_DENSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);
-	    pw.println(matrix.rows() + " " + matrix.columns());
 	    for (int i = 0; i < matrix.rows(); ++i) {
 		StringBuffer sb = new StringBuffer(32);
 		for (int j = 0; j < matrix.columns(); ++j) {
