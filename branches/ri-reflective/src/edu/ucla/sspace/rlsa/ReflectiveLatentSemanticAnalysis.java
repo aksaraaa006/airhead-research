@@ -556,7 +556,7 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
             // clusters).
             int newCluster = (assignment < 0 || pruned.get(assignment))
                 ? (int)(Math.random() * unprunedClusters)
-                : remapping[i];
+                : remapping[assignment];
             
             initial[i] = newCluster;
         }
