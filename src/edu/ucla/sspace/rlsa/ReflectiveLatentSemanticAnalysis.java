@@ -207,13 +207,6 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
     private int termIndexCounter;
 
     /**
-     * A mapping from each term's index to the term.  This value is not set
-     * until {@link #processSpace(Properties)} is called, at which point the
-     * final set of terms has been determined
-     */
-    private String[] indexToTerm;
-
-    /**
      * The word space of the RLSA model, which is the left factor matrix of the
      * SVD of the word-document matrix.  This matrix is only available after the
      * {@link #processSpace(Properties) processSpace} method has been called.
@@ -412,6 +405,10 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
             // term-document matrix.
             int termSenseRowCounter = 0;
 
+            String[] indexToTerm = new String[termToIndex.size()];
+            for (Map.Entry<String,Integer> e : termToIndex.entrySet())
+                indexToTerm[e.getValue()] = e.getKey();
+
             // Generate another matrix builder that will contain the
             // sense-induced sense-document matrix.  Each term will have its
             // documents clustered to discover the similarities.  Then each
@@ -488,6 +485,7 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
                     termToSenseIndex.put(senseTerm, termSenseRowCounter++);
                 }
             }
+            indexToTerm = null;
 
             // Once all of the terms have been reprocessed, finish the matrix
             // and compute its svd
