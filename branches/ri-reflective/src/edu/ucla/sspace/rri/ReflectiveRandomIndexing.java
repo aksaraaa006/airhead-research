@@ -124,16 +124,10 @@ import java.util.logging.Logger;
  * is infeasible.<p>
  *
  * This class is thread-safe for concurrent calls of {@link
- * #processDocument(BufferedReader) processDocument}.  At any given point in
- * processing, the {@link #getVector(String) getVector} method may be used
- * to access the current semantics of a word.  This allows callers to track
- * incremental changes to the semantics as the corpus is processed.  <p>
+ * #processDocument(BufferedReader) processDocument}.  The {@link
+ * #getVector(String) getVector} method will only return valid reflective
+ * vectors after the call to {@link #processSpace(Properties) processSpace}. <p>
  *
- * The {@link #processSpace(Properties) processSpace} method TODO
- *
- * @see PermutationFunction
- * @see IndexVectorGenerator
- * 
  * @author David Jurgens
  */
 public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
@@ -163,10 +157,16 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      * vectors.
      */
     public static final int DEFAULT_VECTOR_LENGTH = 4000;
-    
+
+    /**
+     * The name returned by {@code getName}.
+     */
     private static final String RRI_SSPACE_NAME =
         "reflective-random-indexing";
 
+    /**
+     * The internal logger used for tracking processing progress.
+     */
     private static final Logger LOGGER = 
         Logger.getLogger(ReflectiveRandomIndexing.class.getName());
 
@@ -216,6 +216,10 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      */
     private final Set<String> semanticFilter;
 
+    /**
+     * The generator used to create index vectors for each unique term in the
+     * corpus.
+     */
     private final RandomIndexVectorGenerator indexVectorGenerator;
 
     /**
@@ -235,7 +239,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
     private DataOutputStream compressedDocumentsWriter;
 
     /**
-     * The number that keeps track of the index values of words
+     * The number that keeps track of the index values of words.
      */
     private int termIndexCounter;
 
@@ -247,16 +251,16 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
     private String[] indexToTerm;
 
     /**
-     * Creates a new {@code ReflectiveRandomIndexing} instance using the current {@code
-     * System} properties for configuration.
+     * Creates a new {@code ReflectiveRandomIndexing} instance using the current
+     * {@code System} properties for configuration.
      */
     public ReflectiveRandomIndexing() {
         this(System.getProperties());
     }
 
     /**
-     * Creates a new {@code ReflectiveRandomIndexing} instance using the provided
-     * properites for configuration.
+     * Creates a new {@code ReflectiveRandomIndexing} instance using the
+     * provided properites for configuration.
      */
    public ReflectiveRandomIndexing(Properties properties) {
         String vectorLengthProp = 
@@ -265,20 +269,21 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
             ? Integer.parseInt(vectorLengthProp)
             : DEFAULT_VECTOR_LENGTH;
         
-        indexVectorGenerator = 
-            new RandomIndexVectorGenerator(properties);
-
         String useSparseProp = 
         properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
         useSparseSemantics = (useSparseProp != null)
             ? Boolean.parseBoolean(useSparseProp)
             : true;
 
+        indexVectorGenerator = 
+            new RandomIndexVectorGenerator(properties);
+
         // The various maps for keeping word and document state during
         // processing
         termToIndexVector = new ConcurrentHashMap<String,TernaryVector>();
         docToVector = new ConcurrentHashMap<Integer,IntegerVector>();
-        termToReflectiveSemantics = new ConcurrentHashMap<String,IntegerVector>();
+        termToReflectiveSemantics = 
+            new ConcurrentHashMap<String,IntegerVector>();
         termToIndex = new ConcurrentHashMap<String,Integer>();
 
         documentCounter = new AtomicInteger();
@@ -295,17 +300,6 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
-
-    }
-
-    /**
-     * Removes all associations between word and semantics while still retaining
-     * the word to index vector mapping.  This method can be used to re-use the
-     * same instance of a {@code ReflectiveRandomIndexing} on multiple corpora
-     * while keeping the same semantic space.
-     */
-    public void clearSemantics() {
-        termToReflectiveSemantics.clear();
     }
 
     /**
@@ -381,19 +375,6 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
      */ 
     public Set<String> getWords() {
         return Collections.unmodifiableSet(termToReflectiveSemantics.keySet());
-    }
-
-    /**
-     * Returns an unmodifiable view on the token to {@link IntegerVector}
-     * mapping used by this instance.  Any further changes made by this instance
-     * to its token to {@code IntegerVector} mapping will be reflected in the
-     * returned map.
-     *
-     * @return a mapping from the current set of tokens to the index vector used
-     *         to represent them
-     */
-    public Map<String,TernaryVector> getWordToIndexVector() {
-        return Collections.unmodifiableMap(termToIndexVector);
     }
     
     /**
@@ -568,20 +549,6 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
                 VectorMath.add(reflectiveVector, docVector);
             }
         }
-    }
-
-    /**
-     * Assigns the token to {@link IntegerVector} mapping to be used by this
-     * instance.  The contents of the map are copied, so any additions of new
-     * index words by this instance will not be reflected in the parameter's
-     * mapping.
-     *
-     * @param m a mapping from token to the {@code IntegerVector} that should be
-     *        used represent it when calculating other word's semantics
-     */
-    public void setWordToIndexVector(Map<String,TernaryVector> m) {
-        termToIndexVector.clear();
-        termToIndexVector.putAll(m);
     }
 
     /**

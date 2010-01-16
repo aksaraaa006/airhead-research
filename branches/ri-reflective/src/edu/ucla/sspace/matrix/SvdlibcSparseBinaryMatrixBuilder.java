@@ -25,8 +25,10 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import edu.ucla.sspace.util.SparseArray;
 
-import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -273,10 +275,12 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
     /**
      * {@inheritDoc}
      */
-    public synchronized int addColumn(DoubleVector column) {
+    public synchronized int addColumn(Vector col) {
         if (isFinished)
             throw new IllegalStateException(
                 "Cannot add columns to a MatrixBuilder that is finished");
+
+        DoubleVector column = Vectors.asDouble(col);
 
         if (column.length() > numRows)
             numRows = column.length();
