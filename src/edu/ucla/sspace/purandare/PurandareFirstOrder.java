@@ -109,9 +109,10 @@ public class PurandareFirstOrder implements SemanticSpace {
         "edu.ucla.sspace.purandare.PurandareFirstOrder";
 
     /**
-     * Map that pairs the word with it's position in the matrix
+     * Map that pairs the word with its position in the original term-document
+     * matrix.
      */
-    private final Map<String,Integer> termToIndex;       
+    private final Map<String,Integer> termToIndex;
 
     /**
      * A mapping from term to the sense-induced semantic vectors.  The first

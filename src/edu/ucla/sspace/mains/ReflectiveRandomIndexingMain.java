@@ -144,17 +144,6 @@ public class ReflectiveRandomIndexingMain extends GenericMain {
         // Once all the optional properties are known and set, create the
         // ReflectiveRandomIndexing algorithm using them
         ri = new ReflectiveRandomIndexing(props);
-
-        // note that getSpace() is called after the arg options have been
-        // parsed, so this call is safe.
-        if (argOptions.hasOption("loadVectors")) {
-            String fileName = argOptions.getStringOption("loadVectors");
-            LOGGER.info("loading index vectors from " + fileName);
-            Map<String,TernaryVector> wordToIndexVector = 
-                IndexVectorUtil.load(new File(fileName));
-            ri.setWordToIndexVector(wordToIndexVector);
-        }
-
         return ri;
     }
 
@@ -164,18 +153,5 @@ public class ReflectiveRandomIndexingMain extends GenericMain {
      */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
-    }
-
-    /**
-     * If {@code --saveVectors} was specified, write the accumulated
-     * word-to-index vector mapping to file.
-     */
-    @Override protected void postProcessing() {
-        if (argOptions.hasOption("saveVectors")) {
-            String fileName = argOptions.getStringOption("saveVectors");
-            LOGGER.info("saving index vectors to " + fileName);
-            IndexVectorUtil.save(ri.getWordToIndexVector(), 
-                                 new File(fileName));
-        }
     }
 }
