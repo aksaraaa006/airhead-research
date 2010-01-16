@@ -525,10 +525,10 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
                 clusterCounts[i]++;
         }
         
-        // Prune out any clusters that contain fewer than 2% of the documents
+        // Prune out any clusters that contain fewer than 10% of the documents
         BitSet pruned = new BitSet(numClusters);
         for (int i = 0; i < clusterCounts.length; ++i) {
-            if (clusterCounts[i] / (double)numRows < 0.02)
+            if (clusterCounts[i] / (double)numRows < 0.10)
                 pruned.set(i);
         }
 

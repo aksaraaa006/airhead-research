@@ -376,12 +376,11 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
             // form.  Issue a call to SVDLIBC to transposed the file contents
             // for us.
             if (transposeData) {
-                try {
-                    LOGGER.fine("transposing svdlibc sparse matrix");
-                    String commandLine = "svd -c " + transposedMatrixFile + " " + 
-                        matrixFile + " -r sb " + " -w sb";
+                try {                    
+                    String commandLine = "svd  -r sb " + " -w sb -t -c " 
+                        + transposedMatrixFile + " " + matrixFile;
                     Process svdlibc = Runtime.getRuntime().exec(commandLine);
-                    
+                    LOGGER.fine("transposing svdlibc sparse matrix: " + commandLine);
                     BufferedReader stdout = new BufferedReader(
                         new InputStreamReader(svdlibc.getInputStream()));
                     BufferedReader stderr = new BufferedReader(
