@@ -457,7 +457,7 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
                 
                 // Cluster the documents with the term into groupings to
                 // identify which documents use the term in a similar manner
-                int[] docGroupings = groupDocs(docsToCluster);
+                int[] docGroupings = groupDocs(term, docsToCluster);
 
                 // Determine the final number of groups
                 int numGroups = 0;
@@ -506,12 +506,13 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
      * Groups the docs into clusters and returns the group assignment for each
      * row in the {@code docs} matrix.
      */
-    private int[] groupDocs(Matrix docs) {
+    private int[] groupDocs(String term, Matrix docs) {
         int numRows = docs.rows();
         int numClusters = 20;
         // For matrices with fewer rows than the number of clusters, assign all
-        // the documents to the same cluster
-        if (numRows < numClusters) {            
+        // the documents to the same cluster.  In addition, skip clustering for
+        // non alphabetic tokens
+        if (!term.matches("[a-zA-z]+") || numRows < numClusters) {            
             return new int[docs.rows()];
         }
         
