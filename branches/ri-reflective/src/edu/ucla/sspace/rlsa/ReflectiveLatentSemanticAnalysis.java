@@ -414,7 +414,7 @@ public class ReflectiveLatentSemanticAnalysis implements SemanticSpace {
             // documents clustered to discover the similarities.  Then each
             // document cluster will be assigned a column in this matrix.
             MatrixBuilder termSenseDocMatrixBuilder =
-                 Matrices.getMatrixBuilderForSVD();
+                 Matrices.getMatrixBuilderForSVD(true);
             
             // Once the spaces are created, reprocess the corpus and attempt to
             // distinguish between different meanings of words by clustering the
