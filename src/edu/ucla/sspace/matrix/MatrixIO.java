@@ -857,10 +857,11 @@ public class MatrixIO {
         case CLUTO_DENSE:
         case SVDLIBC_DENSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);
+            pw.println(matrix.rows() + " " +  matrix.columns());
 	    for (int i = 0; i < matrix.rows(); ++i) {
 		StringBuffer sb = new StringBuffer(32);
 		for (int j = 0; j < matrix.columns(); ++j) {
-		    sb.append(matrix.get(i,j)).append(" ");
+		    sb.append((float)(matrix.get(i,j))).append(" ");
 		}
 		pw.println(sb.toString());
 	    }
