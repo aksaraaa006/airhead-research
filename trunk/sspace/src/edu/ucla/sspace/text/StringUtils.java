@@ -253,10 +253,10 @@ public class StringUtils {
                 source.replace(start, end + 1, decoded);
 	    }
 	    
-            // Use the start+2 rather than end, since the decoded text may be
-            // smaller than the encoded version.  However, don't use start+1 in
+            // Use the start+1 rather than end, since the decoded text may be
+            // smaller than the encoded version.  However, don't use start in
             // case the decoded character was actually a '&'.
-	    start = source.indexOf("&", start + 2);
+	    start = source.indexOf("&", start + 1);
 	    end = source.indexOf(";", start);
 	}
     }
