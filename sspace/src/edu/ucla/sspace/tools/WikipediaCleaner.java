@@ -320,7 +320,7 @@ public class WikipediaCleaner {
             if (tableEnd > tableStart) 
                 article.delete(tableStart, tableEnd + 2);
             else 
-                    break;
+                break;
             // Search for the next {| if it exists
             tableStart = article.indexOf("{|", tableStart);
         }

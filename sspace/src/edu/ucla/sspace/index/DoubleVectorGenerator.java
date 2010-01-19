@@ -31,7 +31,7 @@ import edu.ucla.sspace.vector.DoubleVector;
  * Indexing, can easily swap out the type of indexing used for experimentation
  * purposes.
  */
-public interface DoubleVectorGenerator {
+public interface DoubleVectorGenerator<T extends DoubleVector> {
 
     /**
      * Creates an {@code VectorVector} with the provided length.
@@ -40,5 +40,5 @@ public interface DoubleVectorGenerator {
      *
      * @return an index vector
      */
-    public DoubleVector generateRandomVector(int length);
+    public T generateRandomVector(int length);
 }
