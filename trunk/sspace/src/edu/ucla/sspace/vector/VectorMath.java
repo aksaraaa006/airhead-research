@@ -182,7 +182,7 @@ public class VectorMath {
      *
      * @param vector1 The first vector to used in a summation.
      * @param vector2 The second vector to be used in a summation.
-     * @return The summation of {code vector1} and {@code vector2}.
+     * @return The summation of {@code vector1} and {@code vector2}.
      */
     public static IntegerVector addUnmodified(IntegerVector vector1,
                                               IntegerVector vector2) {

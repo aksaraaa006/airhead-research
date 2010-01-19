@@ -113,6 +113,7 @@ public class WordIterator implements Iterator<String> {
                     // next as null to indicate that there are no more words
                     if (line == null) {
                         next = null;
+                        br.close();
                         return;
                     }
                     

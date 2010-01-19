@@ -26,6 +26,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -318,21 +320,27 @@ public class StaticSemanticSpace implements SemanticSpace {
         DataInputStream dis = new DataInputStream(fileStream);
         int rows = dis.readInt();
         int cols = dis.readInt();
-        // create a sparse matrix
-        Matrix m = Matrices.create(rows, cols, false);
+        // Create the sparse matrix as individual rows since we can fully
+        // allocate the indices values at once, rather than pay the log(n)
+        // overhead of sorting them
+        CompactSparseVector[] rowVectors = new CompactSparseVector[rows];
 
         for (int row = 0; row < rows; ++row) {
             String word = dis.readUTF();
             termToIndex.put(word, row);
             
             int nonZero = dis.readInt();
+            int[] indices = new int[nonZero];
+            double[] values = new double[nonZero];
             for (int i = 0; i < nonZero; ++i) {
-                int col = dis.readInt();
+                int nz = dis.readInt();
                 double val = dis.readDouble();
-                m.set(row, col, val);
-                }
+                indices[i] = nz;
+                values[i] = val;
+            }
+            rowVectors[row] = new CompactSparseVector(indices, values, cols);
         }
-        return m;
+        return Matrices.asMatrix(Arrays.asList(rowVectors));
     }
 
     /**
