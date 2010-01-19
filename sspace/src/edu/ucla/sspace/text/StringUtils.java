@@ -169,10 +169,6 @@ public class StringUtils {
 	LATIN1_CODES.put("&#38;", "&");
 	LATIN1_CODES.put("&#8217;", "'");
     }
-
-
-
-    
     
     /**
      * Returns the provided string where all HTML special characters
@@ -224,14 +220,45 @@ public class StringUtils {
 	return sb.toString();
     }
 
-    public static boolean isValid(String word) {
-	return true;
+    /**
+     * Modifies the provided {@link StringBuilder} by replacing all HTML special
+     * characters (e.g. <pre>&nbsp;</pre>) with their utf8 equivalents.
+     *
+     * @param source a String possibly containing escaped HTML characters
+     */
+    public static final void unescapeHTML(StringBuilder source) {
+
+	// position markers for the & and ;
+	int start = -1, end = -1;
+	
+	// the end position of the last escaped HTML character
+	int last = 0;
+
+	start = source.indexOf("&");
+	end = source.indexOf(";", start);
+	
+	while (start > -1 && end > start) {
+	    String encoded = source.substring(start, end + 1);
+	    String decoded = HTML_CODES.get(encoded);
+
+	    // if encoded form wasn't in the HTML codes, try checking to see if
+	    // it was a Latin-1 code
+	    if (decoded == null) {
+		decoded = LATIN1_CODES.get(encoded);
+	    }
+            
+            // If the string had encoded HTML that was recognized, replace it
+            // with the decoded version
+	    if (decoded != null) {
+                source.replace(start, end + 1, decoded);
+	    }
+	    
+            // Use the start+2 rather than end, since the decoded text may be
+            // smaller than the encoded version.  However, don't use start+1 in
+            // case the decoded character was actually a '&'.
+	    start = source.indexOf("&", start + 2);
+	    end = source.indexOf(";", start);
+	}
     }
 
-    public static String cleanup(String word) {
-	// remove all non-letter characters
-	word = word.replaceAll("\\W", "");
-	// make the string lower case
-	return word.toLowerCase();
-    }
 }
