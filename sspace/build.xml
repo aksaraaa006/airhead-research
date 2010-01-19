@@ -271,6 +271,7 @@
       <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.text.DocumentPreprocessorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.FilteredIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.IteratorFactoryTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.StringUtilsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.PatPhoTest" todir="${report.dir}"/>

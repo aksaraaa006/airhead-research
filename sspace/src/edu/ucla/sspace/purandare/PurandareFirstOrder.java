@@ -46,8 +46,10 @@ import edu.ucla.sspace.util.WorkerThread;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.VectorMath;
+import edu.ucla.sspace.vector.Vectors;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -350,11 +352,6 @@ public class PurandareFirstOrder implements SemanticSpace {
     private void processSpace() throws IOException {
         compressedDocumentsWriter.close();        
 
-        File coocOutput = 
-            new File("purandare-co-occurrence-matrix.cluto.sparse.txt");
-        MatrixIO.writeMatrix(cooccurrenceMatrix, coocOutput, 
-                             Format.CLUTO_SPARSE);
-
         // Generate the reverse index-to-term mapping.  We will need this for
         // assigning specific senses to each term
         String[] indexToTerm = new String[termToIndex.size()];
@@ -368,6 +365,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             corpusSize += i.get();
         final int uniqueTerms = cooccurrenceMatrix.rows();
 
+        LOGGER.info("calculating term features");
         // Create a set for each term that contains the term indices that are
         // determined to be features for the term, i.e. not all co-occurrences
         // will count as the features.  The feature set for each term is
@@ -398,7 +396,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             workQueue.offer(new Runnable() {
                     public void run() {
                         try {
-                        LOGGER.info(String.format(
+                        LOGGER.fine(String.format(
                             "processing term %6d/%d: %s", i, uniqueTerms,term));
                         Matrix contexts = processTerm(i, termFeatures[i]);
                         senseInduce(term, contexts);
@@ -422,7 +420,7 @@ public class PurandareFirstOrder implements SemanticSpace {
 
     private BitSet calculateTermFeatures(String term, int corpusSize) {
         int termIndex = termToIndex.get(term);
-        LOGGER.info(String.format("Calculating feature set for %6d/%d: %s",
+        LOGGER.fine(String.format("Calculating feature set for %6d/%d: %s",
                                   termIndex, cooccurrenceMatrix.rows(), term));
         DoubleVector cooccurrences = cooccurrenceMatrix.getRowVector(termIndex);
         int termCount = termCounts.get(termIndex).get();
@@ -453,8 +451,8 @@ public class PurandareFirstOrder implements SemanticSpace {
             if (logLikelihood > 3.841)
                 validFeatures.set(co);
         }
-        if (LOGGER.isLoggable(Level.INFO))
-            LOGGER.info(term + " had " + validFeatures.cardinality() 
+        if (LOGGER.isLoggable(Level.FINE))
+            LOGGER.fine(term + " had " + validFeatures.cardinality() 
                         + " features");
         return validFeatures;
     }
@@ -480,8 +478,10 @@ public class PurandareFirstOrder implements SemanticSpace {
             new BufferedInputStream(new FileInputStream(compressedDocuments)));
 
         int documents = documentCounter.get();
-        Matrix contexts = 
-            new YaleSparseMatrix(termToIndex.size(), termToIndex.size());
+        // Use the number of times the term occurred in the corpus to determine
+        // how many rows (contexts) in the matrix.
+        Matrix contextsForCurTerm = new YaleSparseMatrix(
+            termCounts.get(termIndex).get(), termToIndex.size());
         int contextsSeen = 0;
         for (int d = 0; d < documents; ++d) {
             final int docId = d;
@@ -494,12 +494,12 @@ public class PurandareFirstOrder implements SemanticSpace {
                 doc[i] = corpusReader.readInt();
 
             int contextsInDoc = 
-                processIntDocument(termIndex, doc, contexts,
+                processIntDocument(termIndex, doc, contextsForCurTerm,
                                    contextsSeen, termFeatures);
             contextsSeen += contextsInDoc;
         }
         corpusReader.close();
-        return contexts;
+        return contextsForCurTerm;
     }
 
     /**
@@ -511,7 +511,7 @@ public class PurandareFirstOrder implements SemanticSpace {
      *        term} appear, with one context per row
      */
     private void senseInduce(String term, Matrix contexts) throws IOException {
-        LOGGER.info("Clustering " + contexts.rows() + " contexts for " + term);
+        LOGGER.fine("Clustering " + contexts.rows() + " contexts for " + term);
 
         // For terms with fewer than seven contexts, set the number of potential
         // clusters lower
@@ -525,16 +525,20 @@ public class PurandareFirstOrder implements SemanticSpace {
             ? ClutoClustering.agglomerativeCluster(contexts, numClusters)
             : new int[contexts.rows()];
         
-        LOGGER.info("Generative sense vectors for " + term);
+        LOGGER.fine("Generative sense vectors for " + term);
         
         // For each of the clusters, compute the mean sense vector
         int[] clusterSize = new int[numClusters];
-        // Use CompactSparseVector to conserve memory given the potentially
-        // large number of sense vectors
+
         SparseDoubleVector[] meanSenseVectors =
-            new CompactSparseVector[numClusters];
+            new SparseDoubleVector[numClusters];
+        // Initially set the vectors to be sparse hash vectors to improve
+        // performance when summing (due to the O(1) access time).  Once the
+        // mean has been computed, convert back to compact vectors to save
+        // space.
         for (int i = 0; i < meanSenseVectors.length; ++i)
-            meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
+            meanSenseVectors[i] = 
+                new SparseHashDoubleVector(termToIndex.size());
         for (int row = 0; row < clusterAssignment.length; ++row) {
             DoubleVector contextVector = contexts.getRowVector(row);
             int assignment = clusterAssignment[row];
@@ -544,6 +548,15 @@ public class PurandareFirstOrder implements SemanticSpace {
                 continue;
             clusterSize[assignment]++;
             VectorMath.add(meanSenseVectors[assignment], contextVector);
+        }
+
+        // Once the mean has been computed, convert the hash vectors to
+        // CompactSparseVector in order to conserve memory, given the
+        // potentially large number of sense vectors.
+        SparseDoubleVector[] hashVectors = meanSenseVectors;
+        for (int i = 0; i < meanSenseVectors.length; ++i) {
+            meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
+            Vectors.copy(meanSenseVectors[i], hashVectors[i]);
         }
         
         // For each of the clusters with more than 2% of the contexts, generage
@@ -565,7 +578,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                 termToVector.put(termWithSense,senseVector);
             }
         }
-        LOGGER.info("Discovered " + senseCounter + " senses for " + term);
+        LOGGER.fine("Discovered " + senseCounter + " senses for " + term);
     }
 
     /**
@@ -576,8 +589,8 @@ public class PurandareFirstOrder implements SemanticSpace {
      * @param termIndex the term whose contexts should be extracted
      * @param document the document to be processed where each {@code int} is a
      *        term index
-     * @param contextMatrix the matrix to which the context vectors should be
-     *        added as rows
+     * @param contextMatrix the matrix that will contain all the contexts for
+     *        the term with {@code termIndex} when this method returns
      * @param rowStart the next row index in the matrix where a new context can
      *        be added
      * @param featuresForTerm a mapping from term index to the set of other term
@@ -631,9 +644,10 @@ public class PurandareFirstOrder implements SemanticSpace {
             // specific context instance can be determined from the current word
             // and the number of previously process words
             int curContext = rowStart + contexts;
-            for (int feat : contextCounts.getElementIndices())
+            for (int feat : contextCounts.getElementIndices()) {
+                //System.out.println("setting row: " + curContext + ", col: " + feat);
                 contextMatrix.set(curContext, feat, contextCounts.get(feat));
-
+            }
             // If the current token wasn't skipped, indicate that another
             // context was seen
             contexts++;

@@ -338,13 +338,7 @@ public abstract class GenericMain {
         argOptions.parseOptions(args);
         
         if (argOptions.numPositionalArgs() == 0) {
-            throw new IllegalArgumentException("must specify output directory");
-        }
-
-        File outputDir = new File(argOptions.getPositionalArg(0));
-        if (!outputDir.isDirectory()){
-            throw new IllegalArgumentException(
-                "output directory is not a directory: " + outputDir);
+            throw new IllegalArgumentException("must specify output path");
         }
         
         verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
@@ -415,10 +409,46 @@ public abstract class GenericMain {
         long endTime = System.currentTimeMillis();
         verbose("processed space in %.3f seconds",
                 ((endTime - startTime) / 1000d));
-        
-        File output = (overwrite)
-            ? new File(outputDir, space.getSpaceName() + EXT)
-            : File.createTempFile(space.getSpaceName(), EXT, outputDir);
+
+        File outputPath = new File(argOptions.getPositionalArg(0));
+        File outputFile = null;
+        // If the path is a directory, generate the .sspace file name based on
+        // the space's name, taking into account any duplicates
+        if (outputPath.isDirectory()) {
+            outputFile = (overwrite)
+                ? new File(outputPath, space.getSpaceName() + EXT)
+                : File.createTempFile(space.getSpaceName(), EXT, outputPath);
+
+        }
+        // Otherwise the user has specified a file name directly, which should
+        // be used.
+        else {
+            if (outputPath.exists() && !overwrite) {
+                // Find the file's base name and extension in order to generate
+                // a unique file name with the same structure
+                String name = outputPath.getName();
+                int dotIndex = name.lastIndexOf(".");
+                String extension = (dotIndex < 0 && dotIndex+1 < name.length())
+                    ? "" : name.substring(dotIndex);
+                String baseName = name.substring(0, dotIndex);
+                // createTempFile has a restriction that the filename must be at
+                // least 3 characters.  If it is less, then we need to pad it
+                // with random numbers outselves.
+                if (baseName.length() < 3)
+                    baseName += Math.abs((Math.random() * Short.MAX_VALUE) *10);
+                File outputDir = outputPath.getParentFile();
+                // If the parent was null, then the file must be being created
+                // in the directory from which this class was invoked.  
+                if (outputDir == null)
+                    outputDir = new File("");
+                System.out.println("base dir: " + outputDir);
+                outputFile = File.createTempFile(baseName, extension, outputDir);
+            }
+            else
+                outputFile = outputPath;
+        }
+
+        System.out.println("output File: " + outputFile);
 
         SSpaceFormat format = (argOptions.hasOption("outputFormat"))
             ? SSpaceFormat.valueOf(
@@ -426,7 +456,7 @@ public abstract class GenericMain {
             : getSpaceFormat();
 
         startTime = System.currentTimeMillis();
-        SemanticSpaceIO.save(space, output, format);
+        SemanticSpaceIO.save(space, outputFile, format);
         endTime = System.currentTimeMillis();
         verbose("printed space in %.3f seconds",
                 ((endTime - startTime) / 1000d));

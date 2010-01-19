@@ -91,6 +91,8 @@ public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
      * Creates a sparse array copy of the provided array, retaining only the
      * non-zero values.  The length of the provided array is used to set the
      * maximum size of this sparse array.
+     *
+     * @param array the array whose values will be copied into this sparse array
      */
     public SparseDoubleArray(double[] array) {
         maxLength = array.length;
@@ -111,6 +113,34 @@ public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
                 values[index++] = array[i];
             }
         }    
+    }
+
+    /**
+     * Creates a sparse array using the specified indices and their
+     * corresponding values.
+     *
+     * @param indices an sorted array of positive values representing the
+     *        non-zero indices of the array
+     * @param values an array of values that correspond their respective indices
+     * @param length the total length of the array
+     *
+     * @throw IllegalArgumentException if {@code indices} and {@code values}
+     *        have different lengths or if {@code indices} contains duplicate
+     *        elements or those not in sorted order
+     */
+    public SparseDoubleArray(int[] indices, double[] values, int length) {
+        if (indices.length != values.length)
+            throw new IllegalArgumentException(
+                "different number of indices and values");
+        maxLength = length;
+        this.indices = indices;
+        this.values = values;
+        // Ensure that no duplicate indices, or unsorted exist
+        for (int i = 0; i < this.indices.length - 1; ++i) {
+            if (this.indices[i] >= this.indices[i+1])
+                throw new IllegalArgumentException(
+                    "Indices must be sorted and unique");
+        }
     }
 
     /**

@@ -73,6 +73,39 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
     }
 
     /**
+     * Create a {@code CompactSparseVector} from an array, saving only the non
+     * zero entries.
+     *
+     * @param array The double array to produce a sparse vector from.
+     */
+    public CompactSparseVector(SparseDoubleVector v) {
+        int length = v.length();
+        int[] nz = v.getNonZeroIndices();
+        double[] values = new double[nz.length];
+        for (int i = 0; i < nz.length; ++i)
+            values[i] = v.get(nz[i]);
+        vector = new SparseDoubleArray(nz, values, length);
+    }
+
+    /**
+     * Create a {@code CompactSparseVector} using the indices and their
+     * respecitve values.
+     *
+     * @param indices an sorted array of positive values representing the
+     *        non-zero indices of the array
+     * @param values an array of values that correspond their respective indices
+     * @param length the total length of the array
+     *
+     * @throw IllegalArgumentException if {@code indices} and {@code values}
+     *        have different lengths or if {@code indices} contains duplicate
+     *        elements or those not in sorted order
+     */
+    public CompactSparseVector(int[] nonZeroIndices, double[] values, 
+                               int length) {
+        vector = new SparseDoubleArray(nonZeroIndices, values, length);
+    }
+
+    /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {

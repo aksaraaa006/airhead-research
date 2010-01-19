@@ -90,6 +90,6 @@ public class SparseHashVector<T extends Number>
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
-        vector.set(index, (value.intValue() == 0) ? null : value);
+        vector.set(index, (value.doubleValue() == 0d) ? null : value);
     }
 }

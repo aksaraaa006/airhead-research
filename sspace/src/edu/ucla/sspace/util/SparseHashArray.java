@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.util;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,6 +57,13 @@ public class SparseHashArray<T> implements SparseArray<T> {
     private Map<Integer,T> indexToValue;
 
     /**
+     * A memoized array of the non-zero indices that is only set after a call to
+     * {@link #getElementIndices()} and is set back to {@code null} if any
+     * mutating operation occur subsequently.
+     */
+    private int[] indices;
+
+    /**
      * Creates a sparse array that grows to the maximum size set by {@link
      * Integer#MAX_VALUE}.
      */
@@ -70,7 +78,7 @@ public class SparseHashArray<T> implements SparseArray<T> {
 	if (length < 0)
 	    throw new IllegalArgumentException("length must be non-negative");
 	maxLength = length;
-	
+        indices = null;
         indexToValue = new HashMap<Integer,T>();
     }
 
@@ -80,9 +88,8 @@ public class SparseHashArray<T> implements SparseArray<T> {
      * maximum size of this sparse array.
      */
     public SparseHashArray(T[] array) {
-
 	maxLength = array.length;
-
+        indices = null;
 	// Find how many non-zero elements there are
 	int nonZero = 0;
 	for (int i = 0; i < array.length; ++i) {
@@ -111,11 +118,15 @@ public class SparseHashArray<T> implements SparseArray<T> {
      * @return the indices that contain values
      */
     public int[] getElementIndices() {
-        Integer[] indices = indexToValue.keySet().toArray(new Integer[0]);
-        int[] primitive = new int[indices.length];
-        for (int i = 0; i < indices.length; ++i)
-            primitive[i] = indices[i].intValue();
-        return primitive;
+        if (indices != null)
+            return indices;
+        Integer[] objIndices = indexToValue.keySet().toArray(new Integer[0]);
+        indices = new int[objIndices.length];
+        for (int i = 0; i < objIndices.length; ++i)
+            indices[i] = objIndices[i].intValue();
+        // sort the indices
+        Arrays.sort(indices);
+        return indices;
     }
     
     /**
@@ -129,14 +140,24 @@ public class SparseHashArray<T> implements SparseArray<T> {
      * {@inheritDoc}
      */
     public void set(int index, T value) {
-        T existing = indexToValue.get(index);
         // If we are setting a non-null value, then always add it to the array
-        if (value != null)
-            indexToValue.put(index, value);
-        // Otherwise, check whether an existing element was there and if so,
-        // remove that index from the array, thereby maintaining sparseness.
-        else if (existing != null)
-            indexToValue.remove(index);
+        if (value != null) {
+            // Check whether the put call actually modified the map, and if so
+            // invalidate any previous set of indices;
+            if (indexToValue.put(index, value) == null)
+                indices = null;
+        }
+        else {
+            T existing = indexToValue.get(index);
+            // Otherwise, check whether an existing element was there and if so,
+            // remove that index from the array, thereby maintaining sparseness.
+            if (existing != null) {
+                indexToValue.remove(index);
+                // Since we removed something from the map, invalidate the memoized
+                // indices
+                indices = null;
+            }
+        }
     }
 
     /**
