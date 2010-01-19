@@ -36,7 +36,7 @@ public class StringUtilsTest {
  	assertEquals(" ", output);
     }
 
-    @Test public void testRepating() {
+    @Test public void testRepeating() {
 	String good = "", html = "";
 	for (int i = 0; i < 10; ++i) {
 	    html += "&Ccedil;";
@@ -44,6 +44,23 @@ public class StringUtilsTest {
 	}
 	String output = StringUtils.unescapeHTML(html);
  	assertEquals(good, output);
+    }
+
+    @Test public void testSpaceStringBuilder() {
+        StringBuilder sb = new StringBuilder("&nbsp;");
+	StringUtils.unescapeHTML(sb);
+ 	assertEquals(" ", sb.toString());
+    }
+
+    @Test public void testRepeatingStringBuilder() {
+	String good = "";
+        StringBuilder html = new StringBuilder("");
+	for (int i = 0; i < 10; ++i) {
+	    html.append("&Ccedil;");
+	    good += "Ç";
+	}
+	StringUtils.unescapeHTML(html);
+ 	assertEquals(good, html.toString());
     }
     
 }
