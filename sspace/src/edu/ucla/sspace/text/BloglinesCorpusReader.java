@@ -32,6 +32,11 @@ import java.sql.Timestamp;
 import java.util.Iterator;
 
 
+/**
+ * A {@code DirectoryCorpusReader} for the bloglines corpus.
+ *
+ * @author Keith Stevens
+ */
 public class BloglinesCorpusReader extends DirectoryCorpusReader {
 
     /**

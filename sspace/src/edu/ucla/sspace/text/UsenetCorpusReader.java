@@ -32,6 +32,11 @@ import java.util.Calendar;
 import java.util.Iterator;
 
 
+/**
+ * A {@code DirectoryCorpusReader} for the usenet corpus.
+ *
+ * @author Keith Stevens
+ */
 public class UsenetCorpusReader extends DirectoryCorpusReader {
 
     private static final String END_OF_DOCUMENT =
