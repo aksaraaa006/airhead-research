@@ -236,7 +236,7 @@ public class LogEntropyTransform implements Transform {
                 // tf = term frequency in that document
                 double tf = occurrences;
                 double log = log2_1p(tf);
-                double entropy = 1 - termEntropy[termIndex];
+                double entropy = 1 + termEntropy[termIndex];
                 dos.writeInt(termIndex);
                 dos.writeFloat((float)(log * entropy));
             }
@@ -334,7 +334,7 @@ public class LogEntropyTransform implements Transform {
             double log = log2_1p(tf);
             // gf = global frequency of the term
             double gf = termToGlobalCount[term];
-            double entropy = 1 - termEntropy[term];
+            double entropy = 1 + termEntropy[term];
             
             // now print out the noralized values.  Add 1 to ensure that the
             // 0-based term and document indices are reconverted to Matlab
@@ -435,7 +435,7 @@ public class LogEntropyTransform implements Transform {
                     double occurrences = rowVec.get(doc);
                     double tf = occurrences;
                     double log = log2_1p(tf);
-                    double entropy = 1 - termEntropy[term];
+                    double entropy = 1 + termEntropy[term];
                     transformed.set(term, doc, log * entropy);
                 }
             }
@@ -444,7 +444,7 @@ public class LogEntropyTransform implements Transform {
                     double occurrences = rowVec.get(doc);
                     double tf = occurrences;
                     double log = log2_1p(tf);
-                    double entropy = 1 - termEntropy[term];
+                    double entropy = 1 + termEntropy[term];
                     transformed.set(term, doc, log * entropy);
                 }
             }
