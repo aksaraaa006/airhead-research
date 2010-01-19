@@ -91,11 +91,14 @@ public class ToeflSynonymEvaluation implements WordChoiceEvaluation {
             BufferedReader br = new BufferedReader(new FileReader(answerFile));
             List<Integer> answers = new ArrayList<Integer>();
             for (String line = null; (line = br.readLine()) != null; ) { 
+                // Skip blank lines in the file
+                if (line.length() == 0)
+                    continue;
                 // The answers are formatted in 4 fields where the correct
                 // option is in the 4th column.  Correct options are marker
                 // using their character option (starting at 'a'), so subtrack
-                // 'a' to it the integer 0-4 that we will use as our index
-                answers.add('a' - line.split("\\s+")[3].charAt(0));
+                // 'a' from it the integer 0-4 that we will use as our index
+                answers.add(line.split("\\s+")[3].charAt(0) - 'a');
             }
             br.close();
             
@@ -118,6 +121,7 @@ public class ToeflSynonymEvaluation implements WordChoiceEvaluation {
                 int correctOption = answers.get(question);
                 questions.add(new SimpleMultipleChoiceQuestion(
                     prompt, optionsAsList, correctOption));
+                question++;
             }
             br.close();
 
