@@ -60,6 +60,7 @@ public class ChildesCorpusReader extends DirectoryCorpusReader {
     public ChildesCorpusReader(String corpusFileName) {
         super(corpusFileName);
         oneUtterancePerDoc = true;
+        init();
     }
 
     /**

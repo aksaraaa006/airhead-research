@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Stack;
 
@@ -39,6 +40,12 @@ import java.util.Stack;
  * and return string forms of documents.
  */
 public abstract class DirectoryCorpusReader implements Iterator<Document> {
+
+    public static final String PROPERTY_PREFIX = 
+        "edu.ucla.sspace.text.DirectoryCorpusReader";
+
+    public static final String NO_PRE_PROCESS_PROPERTY =
+        PROPERTY_PREFIX + ".nopreprocess";
 
     /**
      * The set of directories, represented as a queue of files, that need to be
@@ -52,12 +59,26 @@ public abstract class DirectoryCorpusReader implements Iterator<Document> {
     private String nextLine;
 
     /**
+     * The document pre processor that will be used to remove any unwanted items
+     * from documents.
+     */
+    private final DocumentPreprocessor processor;
+
+    /**
+     * Constructs a new {@link DirectoryCoprusReader} from an initial file
+     * with the system properties. 
+     */
+    public DirectoryCorpusReader(String startingFile) {
+        this(startingFile, System.getProperties());
+    }
+
+    /**
      * Constructs a new {@link DirectoryCoprusReader} from an initial file.  If
      * that file is a real file, it will be the only file read.  If the file
      * given is a directory, all the files and sub directories will be read by
      * this reader.
      */
-    public DirectoryCorpusReader(String startingFile) {
+    public DirectoryCorpusReader(String startingFile, Properties props) {
         filesToExplore = new Stack<Queue<File>>();
 
         LinkedList<File> files = new LinkedList<File>();
@@ -75,7 +96,17 @@ public abstract class DirectoryCorpusReader implements Iterator<Document> {
             files.add(start);
         Collections.sort(files);
 
-        // Get the document iterations started.
+        if (props.getProperty(NO_PRE_PROCESS_PROPERTY) == null)
+            processor = new DocumentPreprocessor();
+        else 
+            processor = null;
+    }
+
+    /**
+     * Sets up the iterator so that the first call to next returns a document.
+     * THIS MUST BE CALLED IN CONSTRUCTORS FOR SUB CLASSES.
+     */
+    protected void init() {
         String currentDoc = findNextDoc();
         setupCurrentDoc(currentDoc);
         nextLine = advance();
@@ -115,6 +146,10 @@ public abstract class DirectoryCorpusReader implements Iterator<Document> {
      * processed.
      */
     protected abstract void setupCurrentDoc(String currentDocName);
+
+    protected String cleanDoc(String document) {
+        return (processor != null) ? processor.process(document) : document;
+    }
 
     /**
      * Returns the next String representing a complete document that is
