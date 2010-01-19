@@ -25,6 +25,11 @@ import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.SVD.Algorithm;
 
+import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+
+import java.util.List;
+
 import java.util.logging.Logger;
 
 
@@ -54,6 +59,25 @@ public class Matrices {
      * Uninstantiable
      */
     private Matrices() { }
+
+    /**
+     * Returns a {@link Matrix} from a list of {@code DoubleVector}s.  The
+     * resulting matrix will be modifiable.  Any modifications will affect the
+     * vectors stored in the passed in list.
+     */
+    public static <T extends DoubleVector> Matrix asMatrix(List<T> vectors) {
+        return new ListMatrix<T>(vectors);
+    }
+
+    /**
+     * Returns a {@link SparseMatrix} from a list of {@code
+     * SparseDoubleVector}s. The resulting matrix will be modifiable.  Any
+     * modifications will affect the vectors stored in the passed in list.
+     */
+    public static <T extends SparseDoubleVector> SparseMatrix asSparseMatrix(
+            List<T> vectors) {
+        return new SparseListMatrix<T>(vectors);
+    }
 
     /**
      *
