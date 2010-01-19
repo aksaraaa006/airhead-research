@@ -42,14 +42,14 @@ public class StringDocument implements Document {
      * @param docText the document text
      */
     public StringDocument(String docText) {
-	reader = new BufferedReader(new StringReader(docText));
+        reader = new BufferedReader(new StringReader(docText));
     }
     
     /**
      * {@inheritDoc}
      */
     public BufferedReader reader() {
-	return reader;
+        return reader;
     }
 
 }
