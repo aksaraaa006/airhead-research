@@ -24,21 +24,26 @@ package edu.ucla.sspace.tools;
 import edu.ucla.sspace.common.ArgOptions;
 
 import edu.ucla.sspace.text.DocumentPreprocessor;
+import edu.ucla.sspace.text.IteratorFactory;
+import edu.ucla.sspace.text.StringUtils;
 
-import edu.ucla.sspace.util.Duple;
-
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.PrintWriter;
 
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
+import java.util.Set;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,150 +51,159 @@ import java.util.concurrent.TimeUnit;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * A simple parser for wikipedia documents.
+ * A tool for converting <a
+ * href="http://en.wikipedia.org/wiki/Wikipedia_database#Where_do_I_get...">Wikipedia
+ * Snapshots</a> into a parsable corpus of documents.
  *
  * @author David Jurgens
  * @author Keith Stevens
  */
 public class WikipediaCleaner {
 
-    /**
-     * A pointer to a temporary file which will contain each lines of the
-     * pattern "article Title | outgoing link count | article content".  This
-     * file will be deleted when the cleaner finishes.
-     */
-    private File tempFile;
+    public enum CleanerOption {
+        INCLUDE_TITLES, INCLUDE_CAPTIONS, INCLUDE_LINK_TEXT,
+            FILTER_TOKENS, USE_PREPROCESSOR
+    }
+
+    private static final Logger LOGGER =
+        Logger.getLogger(WikipediaCleaner.class.getName());
 
     /**
-     * A pointer to a persistent file which lists all of the article titles
-     * found, for use in a {@link CompoundWordIterator}.
+     * The file to where the processed articles will be written
      */
-    private File articleTitleFile;
+    private PrintWriter processedArticleWriter;
 
     /**
-     * A {@code PrintWriter} for writing to {@code tempFile}.
+     * The set of options to use when processing the documents
      */
-    private PrintWriter tmpOutput;
-
+    private final Set<CleanerOption> options;
+    
     /**
-     * A {@code PrintWriter} for writing the final article content output.
+     * The minimum number of tokens per article
      */
-    private PrintWriter output;
-
-    /**
-     * A {@code PrintWriter} for writing to {@code articleTitleFile}.
-     */
-    private PrintWriter articleOutput;
-
-    private DocumentPreprocessor processor;
-    /**
-     * A {@code Map} tracking how many incoming links each wikipedia article
-     * contains.
-     */
-    //private Map<String,Integer> articleToIncomingLinkCount;
-
-    /**
-     * The minimum number of incoming links each article should have.  Articles
-     * with fewer links are rejected.
-     */
-    private int minIncomingCount;
-
-    /**
-     * The minimum number of outgoing links each article should have.  Articles
-     * with fewer links are rejected.
-     */
-    private int minOutgoingCount;
+    private final int minTokensPerArticle;
 
     /**
      * Create a new {@code WikipediaCleaner} which will read articles from
      * {@code outputFileName}, with the given thresholds for link requirements.
      */
-    public WikipediaCleaner(String outputFileName,
-                            int minIncoming,
-                            int minOutgoing) {
-        String outputFile = outputFileName;
-        processor = new DocumentPreprocessor();
-
+    public WikipediaCleaner(String outputFile, Set<CleanerOption> options,
+                            int minTokensPerArticle) { 
+        this.options = options;
+        this.minTokensPerArticle = minTokensPerArticle;       
         try {
-            String tempName = "wikipedia-cleaner";
-            // Create the file pointers needed.
-            tempFile = File.createTempFile(tempName, "tmp");
-            tempFile.deleteOnExit();
-            articleTitleFile = File.createTempFile(tempName, "articles");
-
-            // Create the PrintWriters needed.
-            tmpOutput = new PrintWriter(tempFile);
-            articleOutput = new PrintWriter(articleTitleFile);
-            output = new PrintWriter(outputFileName);
-
-            // Create the map to track incoming links.  NOTE: For this map to
-            // work, .intern() must be called on all strings used as keys.
-            //articleToIncomingLinkCount =
-            //    new IdentityHashMap<String, Integer>(8000000);                
+            processedArticleWriter = new PrintWriter(
+                new BufferedOutputStream(new FileOutputStream(outputFile)));
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
     }
 
     /**
-     * Process the content of the given {@code WikiDoc}.  Html tags, wiki links,
-     * and wiki markups will all be removed.  The cleaned content, along with
-     * meta data for the article will be stored temporarily in {@code
-     * tempFile}.  This will also track the number of incoming links for each
-     * article and the set of article titles encountered.  False is returned
-     * when doc is in an invalid state, otherwise True is returned.
+     * Process the content of the given {@code WikiDoc}.
      *
      * @param doc The {@code WikiDoc} to process.
      *
      * @return True if document processing should continue, false if the cleaner
      *         has entered an invalid state.
      */
-    public boolean processDocument(WikiDoc doc) {
-        String rawArticleName = doc.name;
-        // sanity check in case we didn't get an invalid document
-        if (rawArticleName == null || doc.text == null) {
-            System.out.println("race condition in the document " +
-                               "caching; continuing...");
-            return false;
-        }
+    public void processDocument(WikiDoc doc) {
 
-        String articleName =
-            unescapeHTML(rawArticleName,0).replaceAll("/"," ");
-        articleName = articleName.toLowerCase().trim();
+        String rawArticleName = doc.name;        
+        String articleName = StringUtils.unescapeHTML(rawArticleName);
+        articleName = articleName.trim();
 
         // skip articles that are not text-based or are
         // wikipedia-specific
-        if (!shouldProcessArticle(articleName)) {
-            System.out.printf("skipping file %s\n", articleName);
-            return true;
-        } else if (doc.text.contains("#REDIRECT")) {
-            System.out.printf("skipping redirect %s\n", articleName);
-            return true;
+        if (!isArticleLink(articleName)) {
+            LOGGER.fine("skipping non-article document: " + articleName);
+            return;
+        } 
+        // Skip processing articles that exist solely to direct the user to a
+        // different article
+        else if (articleName.indexOf("#REDIRECT") >= 0 ||
+                   doc.text.indexOf("#REDIRECT") >= 0) {
+            LOGGER.fine("skipping redirect: " + articleName);
+            return;
         }
-        System.out.println("Processing article: "  + articleName +
-                           " of size: " + doc.text.length());
-
-        // intern the article name since it will be around a while
-        //articleName = articleName.intern();
+        LOGGER.log(Level.FINE, "Procesing article {0} with {1} characters",
+                   new Object[] { articleName, doc.text.length() });
     
-        // Clean article content.
-        String rawArticleText = extractArticle(doc.text);
-        rawArticleText = removeWikiStuff(rawArticleText);
+        // Gets the raw tokens contained in the article XML
+        StringBuilder rawArticleText = doc.text;
 
-            String wikiFreeText = removeWikiStuff(rawArticleText);
-        Duple<String, Integer> tagFreeAndLinkCount = 
-            replaceAndCountLinks(wikiFreeText);
-        String scrubbed = removeRedirect(tagFreeAndLinkCount.x);
-        scrubbed = processor.process(scrubbed);
-        tmpOutput.println(articleName //+ "|" + tagFreeAndLinkCount.y.intValue() 
-                          + "|" + scrubbed);
-        tmpOutput.flush();
+        // Remove all the header and footer information from the article
+        LOGGER.finer("extracting raw article text");        
+        extractArticle(rawArticleText);
 
-        // Print article content and meta data to the temporary file.
+        // Remove any tables
+        LOGGER.finer("removing tables");
+        removeTables(rawArticleText);       
 
-        return true;
+        // Remove the {{ text }} content from the document first as it sometimes
+        // contains [[ text ]], which would be needlessly processed prior to
+        // removal if this were called later.
+        LOGGER.finer("removing {{text}} from article");
+        removeDoubleBraceMarkup(rawArticleText);
+
+        // Next remove the [[ link ]] markup
+        LOGGER.finer("removing [[wiki-link]] from article");
+        removeWikiLinkMarkup(rawArticleText, articleName);
+
+        // Once the wiki-links are removed, go after external links, which are
+        // only a single [link].  Occassinally, these will have text.
+        LOGGER.finer("removing [external-link] from article");
+        removeExternalLinkMarkup(rawArticleText);
+                
+        // Once all of the wiki markup has been removed, replace all of the
+        // encoded HTML with its equivalents
+        LOGGER.finer("unescaping HTML");
+        StringUtils.unescapeHTML(rawArticleText);
+
+        // Remove auto-generated Wikipedia warnings which appear in HTML comment
+        // text
+        LOGGER.finer("removing HTML comments");
+        removeHtmlComments(rawArticleText);
+        
+        String article = rawArticleText.toString();
+
+        // Being removing any tokens according to the options
+        if (options.contains(CleanerOption.USE_PREPROCESSOR)) {
+            LOGGER.finer("applying preprocessor");
+            article = new DocumentPreprocessor().process(article);
+        }
+        if (options.contains(CleanerOption.FILTER_TOKENS)) {
+            LOGGER.finer("filtering tokens");
+            article = filterTokens(article);
+        }
+            
+        // Count how many tokens remain in the document after all of the
+        // processing stages.  If too few remain, do not write the document
+        int finalTokenCount = getTokenCount(article);
+        if (finalTokenCount < minTokensPerArticle) {
+            LOGGER.log(Level.FINE, "Document {0} contained only {1} tokens"
+                       + " and was not printed", new Object[] {
+                           articleName, finalTokenCount });
+            return;
+        }
+
+        if (options.contains(CleanerOption.INCLUDE_TITLES)) {
+            processedArticleWriter.print(articleName);
+            processedArticleWriter.print(" ");
+        }
+        
+        // Write the remaining part of the article
+        processedArticleWriter.println(article);
+        processedArticleWriter.flush();
     }
 
     /**
@@ -199,53 +213,140 @@ public class WikipediaCleaner {
      *
      * @return Article text extracted from {@code text} tags.
      */
-    public static String extractArticle(String text) {
-        String article = text;;
+    private void extractArticle(StringBuilder article) {
         // remove all html tags before we unescape the text itself
         // and possibly introduce non-html < characters
         int startOfTextTag = article.indexOf("<text");
-        int endOfStart  = article.indexOf(">", startOfTextTag);
-        
+        int endOfStart  = article.indexOf(">", startOfTextTag);        
         int closingTextTag = article.indexOf("</text");
-        return article.substring(endOfStart+1, closingTextTag);
+        // Remove the ending content.  Some rare, malformatted articles do not
+        // contain the ending text tag, so just leave whatever was at the end of
+        // the text.
+        if (closingTextTag >= 0)
+            article.delete(closingTextTag, article.length());
+        // Then anything occurring before the text
+        article.delete(0, endOfStart + 1);
     }
 
     /**
-     * Remove wiki markup tags of the form "{{ stuff }}".
-     *
-     * @param text The article text to clean.
-     *
-     * @return Article text without wiki tags.
+     * Removes any tokens not allowed by the {@link
+     * edu.ucla.sspace.text.TokenFilter} in the article.
      */
-    public static String removeWikiStuff(String text) {
-        if (text.indexOf("{{") >= 0) {
-            StringBuilder tagCleanBuilder = new StringBuilder(text.length());
-            int lastGoodIndex = 0;
-            // remove all wiki tags before we unescape the text
-            // itself and possibly introduce non-html < characters
-            for (int i = 0; (i = text.indexOf("{{", i)) >= 0; ) {
-                String s = text.substring(lastGoodIndex,i);
-                System.out.println(i);
-                System.out.println("{{:" + text.indexOf("}}", i));
-                tagCleanBuilder.append(s);
-                lastGoodIndex = text.indexOf("}}", i) + 2;
-                
-                // Some articles have no ending }}, indicating that {{ was
-                // somehow part of the text, so cut out early.
-                if (lastGoodIndex == 1) {
-                    tagCleanBuilder.append("OMGFWDF").append(text.substring(i));
-                    break;
-                }
-
-                i = lastGoodIndex;
-            }
-            if (lastGoodIndex != 1)
-                tagCleanBuilder.append(text.substring(lastGoodIndex));
-            return tagCleanBuilder.toString();
+    private String filterTokens(String article) {
+        Iterator<String> filteredTokens = IteratorFactory.tokenize(article);
+        StringBuilder sb = new StringBuilder(article.length());
+        while (filteredTokens.hasNext()) {
+            sb.append(filteredTokens.next());
+            if (filteredTokens.hasNext())
+                sb.append(" ");
         }
+        return sb.toString();
+    }
 
-        // If there are no wiki tags, just return the given text.
-        return text;
+    /**
+     * Remove wiki citations of the form "{{cite ... }}", which links to some
+     * text or another wikipedia link.
+     *
+     * @param article The article text to clean.
+     */
+    private void removeDoubleBraceMarkup(StringBuilder article) {
+        int braceStart = article.indexOf("{{");
+        // Repeatedly loop while {{ }} text still exists in the document
+        while (braceStart >= 0) {
+            // Find the matching closing }} if it exists.  Some wikipedia
+            // text is malformated, with no matching brace. so take no
+            // action in this case.
+            int braceEnd = article.indexOf("}}", braceStart);
+        
+            int nextBraceStart = article.indexOf("{{", braceStart + 1);
+            // Some {{ content has embedded {{ content, which causes problems
+            // for nearest matching.  Recursively search until a nearest-match
+            // is found and then 
+            while (nextBraceStart > braceStart && nextBraceStart < braceEnd) {
+                removeEmbeddedBrace(article, nextBraceStart);
+                // Recompute the ending brace, since removing the embedded {{
+                // will have removed the }} as well.
+                braceEnd = article.indexOf("}}", braceStart);
+                nextBraceStart = article.indexOf("{{", braceStart + 1);
+            }
+
+            if (braceEnd < 0)
+                break;
+
+            article.delete(braceStart, braceEnd + 2);
+            // Search for the next {{ if it exists
+            braceStart = article.indexOf("{{", braceStart);            
+        }
+    }
+
+    /**
+     * Recursively searches for {{ }} markup that has no embedded {{ }} markup
+     * itself, and removes it.
+     */
+    private void removeEmbeddedBrace(StringBuilder article, int startOffset) {
+        int braceStart = startOffset;
+        // Find the matching closing }} if it exists.  Some wikipedia
+        // text is malformated, with no matching brace. so take no
+        // action in this case.
+        int braceEnd = article.indexOf("}}", braceStart);
+        int nextBraceStart = article.indexOf("{{", braceStart + 1);
+        while (nextBraceStart > braceStart && nextBraceStart < braceEnd) {
+            removeEmbeddedBrace(article, nextBraceStart);
+            // Recompute the ending brace, since removing the embedded {{
+            // will have removed the }} as well.
+            braceEnd = article.indexOf("}}", braceStart);
+            nextBraceStart = article.indexOf("{{", braceStart + 1);
+        }
+        
+        if (braceEnd < 0)
+            return;
+        
+        article.delete(braceStart, braceEnd + 2);
+    }
+
+    /**
+     * Remove wiki tables of the form "{| table |}".
+     *
+     * @param article The article text to clean.
+     */
+    private void removeTables(StringBuilder article) {
+        int tableStart = article.indexOf("{|");
+        // Repeatedly loop while {| |} table markup still exists in the document
+        while (tableStart >= 0) {
+            // Find the matching closing |} if it exists.  Some wikipedia
+            // text is malformated, with no matching table end. so take no
+            // action in this case.
+            int tableEnd = article.indexOf("|}", tableStart);
+            if (tableEnd > tableStart) 
+                article.delete(tableStart, tableEnd + 2);
+            else 
+                    break;
+            // Search for the next {| if it exists
+            tableStart = article.indexOf("{|", tableStart);
+        }
+    }
+
+    /**
+     * Removes HTML comments from the article text
+     *
+     * @param article The article text to clean.
+     */
+    private void removeHtmlComments(StringBuilder article) {
+        int htmlCommentStart = article.indexOf("<!--");
+        // Repeatedly loop while <!-- --> html comment markup still exists in
+        // the document
+        while (htmlCommentStart >= 0) {
+            // Find the matching closing --> if it exists.  Some wikipedia text
+            // is malformated, with no matching html comment end. so take no
+            // action in this case.
+            int htmlCommentEnd = article.indexOf("-->", htmlCommentStart);
+            if (htmlCommentEnd > htmlCommentStart) 
+                article.delete(htmlCommentStart, htmlCommentEnd + 3);
+            else 
+                    break;
+            // Search for the next <!-- if it exists
+            htmlCommentStart = article.indexOf("<!--", htmlCommentStart);
+        }
     }
 
     /**
@@ -256,212 +357,207 @@ public class WikipediaCleaner {
      *
      * @return A Duple containing the cleaned text and the outgoing link count.
      */
-    public Duple<String, Integer> replaceAndCountLinks(String text) {
-        StringBuilder linkCleanBuilder = new StringBuilder(text.length());
-        int lastGoodIndex = 0;
-        int outgoingLinks = 0;
-        //int prevTotalIncomingLinks = articleToIncomingLinkCount.size();
-        for (int i = 0; (i = text.indexOf("[[", i)) > 0; ) {
-            linkCleanBuilder.append(text.substring(lastGoodIndex,i));
+    public void removeWikiLinkMarkup(StringBuilder article, String title) {
+        int bracketStart = article.indexOf("[[");
+        boolean includeLinkText = 
+            options.contains(CleanerOption.INCLUDE_LINK_TEXT);
+        while (bracketStart >= 0) {
             
-            // grab the linked article name which is all text to the
-            // next ]], or to the next | in the case where the
-            // article is given a different name in the text, e.g.
-            // [[article title|link text]]
-            int j = text.indexOf("]]", i);
-            int k = text.indexOf("|", i);
-            int linkEnd = (k > 0) ? (j < 0) ? k : Math.min(j,k) : j;
-            
-            // transform the file name to get rid of any special
-            // characters
-            String linkedArticleRawName = text.substring(i+2,linkEnd);
-            String linkedArticleTitle =
-                linkedArticleRawName.replaceAll("/", " ");
-            linkedArticleTitle =
-                unescapeHTML(linkedArticleTitle.toLowerCase(), 0);
-            
-            /*
-            // don't include Image, foreign language or
-            // disambiguation links
-            if (shouldProcessArticle(linkedArticleTitle)) {
-                System.out.println(linkedArticleTitle);
-                // (e.g. non-image) article, then intern its string
-                // to save memory
-                linkedArticleTitle = linkedArticleTitle.intern();
-
-                // print out the link name so that it gets included
-                // in the term list
-                linkCleanBuilder.append(linkedArticleTitle).append(" ");
-
-                // increase the link counts accordingly
-                //
-                // NOTE: we have linkedArticleTitle is the canonical
-                // copy of the string (via intern()), and so this
-                // put() call works correctly, i.e. doesn't create
-                // duplicate keys
-                Integer incomingLinks =
-                    articleToIncomingLinkCount.get(linkedArticleTitle);
-
-                articleToIncomingLinkCount.put(
-                        linkedArticleTitle, (incomingLinks == null)
-                        ? Integer.valueOf(1)
-                        : Integer.valueOf(1 + incomingLinks));
-                ++outgoingLinks;
-            }
-            */
-
-            lastGoodIndex = text.indexOf("]]", i) + 2;
-            i = lastGoodIndex;
-            
-            // the "j < 0" condition is for malformed wiki pages
-            // where there is no closing ]] for the link.
-            if (text.indexOf("[[", i) < 0 || j < 0) {
-                linkCleanBuilder.append(text.substring(lastGoodIndex));
+            // grab the linked article name which is all text to the next ]], or
+            // to
+            int bracketEnd = article.indexOf("]]", bracketStart);
+            // If there wasn't a matching closing bracket (i.e. malformatted
+            // wiki), then abort the replacement
+            if (bracketEnd < 0)
                 break;
-            }
-        }
+            
+            // If the link text is supposed to be included in the document, then
+            // strip out the pertinent text.  However, ensure that the link
+            // points to an article, which filters out non-content links in the
+            // article headers and footers
+            if (includeLinkText && 
+                isArticleLink(article.substring(bracketStart+2, 
+                                                bracketEnd), title)) {
 
-        return new Duple<String, Integer>(linkCleanBuilder.toString(),
-                                          outgoingLinks);
+                // the link may also have a text description that replaces the
+                // link text, e.g.  [[article title|link text]].
+                int optionalLinkDescriptionStart = 
+                    article.indexOf("|", bracketStart);
+                // When selecting the optional text, ensure that the | delimeter
+                // falls within the link structure itself
+                int linkTextStart = 
+                    (optionalLinkDescriptionStart >= 0 && 
+                     optionalLinkDescriptionStart < bracketEnd)
+                    ? optionalLinkDescriptionStart + 1
+                    : bracketStart + 2;
+                // Parse out the link text
+                String linkText = article.substring(linkTextStart, bracketEnd);
+                // Then replace the entire link with the desired text
+                article.replace(bracketStart, bracketEnd+2, linkText);
+            }
+            // If the link text isn't to be used in the document, remove it
+            // completely
+            else {
+                article.delete(bracketStart, bracketEnd + 2);
+            }
+            bracketStart = article.indexOf("[[", bracketStart);
+        }   
     }
 
     /**
-     * Unescape any html and remove any redirect tags.
+     * Replace [link] tags with link name and track what articles this article
+     * links to.
      *
-     * @param text The article text to clean.
-     *
-     * @return The cleaned article content.
+     * @param text The article text to clean and process link structure of.
      */
-    public static String removeRedirect(String text) {
-        return unescapeHTML(text, 0).replaceAll("#REDIRECT", "");
+    public void removeExternalLinkMarkup(StringBuilder article) {
+        int bracketStart = article.indexOf("[");
+        boolean includeLinkText = 
+            options.contains(CleanerOption.INCLUDE_LINK_TEXT);
+        while (bracketStart >= 0) {            
+            int bracketEnd = article.indexOf("]", bracketStart);
+            // If there wasn't a matching closing bracket (i.e. malformatted
+            // wiki), then abort the replacement
+            if (bracketEnd < 0)
+                break;
+            
+            // If the link text is supposed to be included in the document, then
+            // strip out the pertinent text.
+            if (includeLinkText) {
+                // the link may also have a text description that replaces the
+                // link text, e.g.  [link text].
+                int optionalLinkDescriptionStart = 
+                    article.indexOf(" ", bracketStart);
+                // When selecting the optional text, ensure that the ' '
+                // delimeter falls within the link structure itself
+                int linkTextStart = 
+                    (optionalLinkDescriptionStart >= 0 && 
+                     optionalLinkDescriptionStart < bracketEnd)
+                    ? optionalLinkDescriptionStart
+                    : bracketStart + 1;
+                // Parse out the link text
+                String linkText = article.substring(linkTextStart, bracketEnd);
+                // Then replace the entire link with the desired text
+                article.replace(bracketStart, bracketEnd + 1, linkText);
+            }
+            // If the link text isn't to be used in the document, remove it
+            // completely
+            else {
+                article.delete(bracketStart, bracketEnd + 1);
+            }
+            bracketStart = article.indexOf("[", bracketStart);
+        }   
     }
 
     /**
-     * Finalize all processing of the corpus.  For {@code WikipediaCleaner},
-     * this will read in cleaned documents from {@code tempOutput} and simply
-     * reject any articles which do not meet the link requirements.  All valid
-     * articles will be written to {@code output} in the form "article title |
-     * incoming link count | outgoing link count | article content".
+     * Returns the number of tokens in the article.
      */
-    public void finalizeCorpus(boolean includeTitle,
-                               boolean includeIncoming,
-                               boolean includeOutgoing) {
-        // Read through all the stored cleaned documents, and reject any
-        // which have less than 5 incoming links or outgoing links.
-        // Articles which are saved will have the entire text written to a
-        // single line in the format "title | incoming count | outgoing
-        // count | article content".
-        int removed = 0 ;
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(tempFile));
-            for (String line = null; (line = br.readLine()) != null; ) {
-                String[] titleCountDoc = line.split("\\|");
-                String title = titleCountDoc[0].intern();
-
-                /*
-                // Reject articles with fewer than the minimum outgoing link
-                // count.
-                int outgoing = Integer.parseInt(titleCountDoc[1]);
-                if (outgoing < minOutgoingCount)
-                    continue;
-                */
-                
-                // Reject articles with no content.
-                if (titleCountDoc.length != 3)
-                    continue;
-                String doc = titleCountDoc[2];
-
-                /*
-                // Reject articles with fewer than the minimum incoming link
-                // count.
-                Integer incoming = articleToIncomingLinkCount.get(title);
-                if (incoming == null ||
-                    incoming.intValue() < minIncomingCount)
-                    continue;
-                */
-
-                //articleOutput.println(title);
-                //articleOutput.flush();
-
-                StringBuilder sb = new StringBuilder();
-                if (includeTitle)
-                    sb.append(title).append("|");
-                /*
-                if (includeIncoming)
-                    sb.append(incoming).append("|");
-                if (includeOutgoing)
-                    sb.append(outgoing).append("|");
-                    */
-                sb.append(doc);
-
-                output.println(sb.toString());
-                output.flush();
-            }
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        }
-
-        articleOutput.close();
-        output.close();
+    private int getTokenCount(String article) {
+        Pattern notWhiteSpace = Pattern.compile("\\S+");
+        Matcher matcher = notWhiteSpace.matcher(article);
+        int tokens = 0;
+        while (matcher.find())
+            tokens++;
+        return tokens;
     }
 
     public static void main(String[] args) {
         ArgOptions options = new ArgOptions();
-        options.addOption('w', "wikiDump", "The wikipedia snapshot to process",
-                          true, "FILE", "Required");
         options.addOption('t', "includeTitles",
-                          "If set, article titles are included",
+                          "Prints article and section titles as a part of " +
+                          "the document",
+                          false, null, "Document Processing");
+        options.addOption('c', "includeCaptions",
+                          "Prints image and table captions as a part of " +
+                          "the document",
+                          false, null, "Document Processing");
+        options.addOption('w', "includeLinkText",
+                          "Prints text in the Wikipedia links as a part of " +
+                          "the document",
+                          false, null, "Document Processing");
+        options.addOption('F', "tokenFilter",
+                          "Specifies a filter to remove or retain certain " +
+                          "tokens",
+                          true, "FILTER_SPEC", "Filtering");
+        options.addOption('M', "minTokens",
+                          "Records only those documents with at least the " +
+                          "minimum number of tokens",
+                          true, "INT", "Filtering");
+        options.addOption('P', "applyPreprocessor",
+                          "Applies the DocumentPreprocessor to the documents",
+                          false, null, "Filtering");
+        options.addOption('v', "verbose",
+                          "Print verbose output about article cleaning",
                           false, null, "Optional");
-        options.addOption('i', "includeIncomingLinks",
-                          "If set, incoming link counts are included",
+        options.addOption('V', "veryVerbose",
+                          "Print lots of verbose output about article cleaning",
                           false, null, "Optional");
-        options.addOption('o', "includeOutgoingLinks",
-                          "If set, outgoing link counts are included",
-                          false, null, "Optional");
+
+
         options.parseOptions(args);
 
-        if (options.numPositionalArgs() != 1 ||
-            !options.hasOption('w')) {
-            System.out.println("usage java [OPTIONS] <output-file>\n"+ 
-                               options.prettyPrint());
+        if (options.numPositionalArgs() != 2) {
+            System.out.println("usage java [OPTIONS] <wikifile> <output-file>\n"
+                               + options.prettyPrint());
             return;
         }
 
-        int minIncomingCount = 5;
-        int minOutgoingCount = 5;
-
-        DocumentBufferedQueue docQueue = null;
-        try {
-            docQueue = new DocumentBufferedQueue(options.getStringOption('w'));
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+        // If verbose output is enabled, update all the loggers in the S-Space
+        // package logging tree to output at Level.FINE (normally, it is
+        // Level.INFO).  This provides a more detailed view of how the execution
+        // flow is proceeding.
+        Level logLevel = null;
+        if (options.hasOption("verbose")) 
+            logLevel = Level.FINE;
+        else if (options.hasOption("veryVerbose")) 
+            logLevel = Level.FINER;
+        if (logLevel != null) {
+            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
+            Handler verboseHandler = new ConsoleHandler();
+            verboseHandler.setLevel(logLevel);
+            appRooLogger.addHandler(verboseHandler);
+            appRooLogger.setLevel(logLevel);
+            appRooLogger.setUseParentHandlers(false);
         }
-
-        String outFileName = options.getPositionalArg(0);
-        WikipediaCleaner cleaner = new WikipediaCleaner(
-                outFileName, minIncomingCount, minOutgoingCount);
-
-        while (docQueue.hasNext()) {
-            WikiDoc doc = null;
-            try {
-                doc = docQueue.next();
-            } catch (InterruptedException ie) {
-            }
         
-            if (doc == null) {
-                System.out.println("race condition in the document " +
-                           "caching; continuing...");
-                break;
-            }
-
-            if (!cleaner.processDocument(doc))
-                break;
+        // Set up the options for the cleaner
+        Set<CleanerOption> cleanerOptions = EnumSet.noneOf(CleanerOption.class);
+        if (options.hasOption("includeTitles"))
+            cleanerOptions.add(CleanerOption.INCLUDE_TITLES);
+        if (options.hasOption("includeCaptions"))
+            cleanerOptions.add(CleanerOption.INCLUDE_CAPTIONS);
+        if (options.hasOption("includeLinkText"))
+            cleanerOptions.add(CleanerOption.INCLUDE_LINK_TEXT);
+        if (options.hasOption("tokenFilter")) {
+            // Set up the token filter based on the spec
+            Properties props = new Properties();
+            props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
+                              options.getStringOption("tokenFilter"));
+            IteratorFactory.setProperties(props);
+            cleanerOptions.add(CleanerOption.FILTER_TOKENS);
         }
+        if (options.hasOption("applyPreprocessor"))
+            cleanerOptions.add(CleanerOption.USE_PREPROCESSOR);
+            
+        int minTokens = (options.hasOption("minTokens"))
+            ? options.getIntOption("minTokens")
+            : 0;
 
-        cleaner.finalizeCorpus(options.hasOption('t'),
-                               options.hasOption('i'),
-                               options.hasOption('o'));
-    }
+        try {
+            DocumentBufferedQueue docQueue = 
+                new DocumentBufferedQueue(options.getPositionalArg(0));
+            
+            String outFileName = options.getPositionalArg(1);
+            WikipediaCleaner cleaner = 
+                new WikipediaCleaner(outFileName, cleanerOptions, minTokens);
+            
+            while (docQueue.hasNext()) {
+                cleaner.processDocument(docQueue.next());
+            } 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }    
 
     /**
      * A queue representing a series of wikipedia documents which have been
@@ -538,16 +634,18 @@ public class WikipediaCleaner {
                             throw new Error("Malformed title: " + line);
 
                         articleTitle = rem.substring(0, index);
-                        articleTitle = 
-                            articleTitle.replaceAll("/"," ").toLowerCase();
 
                         // read in the rest of the page until we see the end tag
                         while ((line = wikiReader.readLine()) != null && 
                                !line.startsWith("  </page>")) {
-                            sb.append(line);
+                            // Append a space to each line to avoid creating a
+                            // single token out of tokens that each appear on a
+                            // subsequent lines with no padding.  This is common
+                            // in lists and header text
+                            sb.append(line).append(" ");
                         }
 
-                        return new WikiDoc(articleTitle, sb.toString());
+                        return new WikiDoc(articleTitle, sb);
                     } catch (Throwable t) {
                         t.printStackTrace();
                         break;
@@ -599,80 +697,51 @@ public class WikipediaCleaner {
         /**
          * The article's content.
          */
-        public final String text;
+        public final StringBuilder text;
 
         /**
          * Create a new {@code WikiDoc} with the given name and content.
          */
-        public WikiDoc(String name, String text) {
+        public WikiDoc(String name, StringBuilder text) {
             this.name = name;
             this.text = text;
         }
     }
 
     /**
-     * A translation map for html encoding of several special characters.
+     * Returns {@code true} if the article's title does not begin with a known
+     * set of non-article prefixes.  This method acts as a rough heuristic for
+     * assessing the type of link in a document.
      */
-    private static final Map<String,String> HTML_ENTITIES;
-    static {
-        HTML_ENTITIES = new HashMap<String,String>();
-        HTML_ENTITIES.put("&lt;","<")    ; HTML_ENTITIES.put("&gt;",">");
-        HTML_ENTITIES.put("&amp;","&")   ; HTML_ENTITIES.put("&quot;","\"");
-        HTML_ENTITIES.put("&agrave;","à"); HTML_ENTITIES.put("&Agrave;","À");
-        HTML_ENTITIES.put("&acirc;","â") ; HTML_ENTITIES.put("&auml;","ä");
-        HTML_ENTITIES.put("&Auml;","Ä")  ; HTML_ENTITIES.put("&Acirc;","Â");
-        HTML_ENTITIES.put("&aring;","å") ; HTML_ENTITIES.put("&Aring;","Å");
-        HTML_ENTITIES.put("&aelig;","æ") ; HTML_ENTITIES.put("&AElig;","Æ" );
-        HTML_ENTITIES.put("&ccedil;","ç"); HTML_ENTITIES.put("&Ccedil;","Ç");
-        HTML_ENTITIES.put("&eacute;","é"); HTML_ENTITIES.put("&Eacute;","É" );
-        HTML_ENTITIES.put("&egrave;","è"); HTML_ENTITIES.put("&Egrave;","È");
-        HTML_ENTITIES.put("&ecirc;","ê") ; HTML_ENTITIES.put("&Ecirc;","Ê");
-        HTML_ENTITIES.put("&euml;","ë")  ; HTML_ENTITIES.put("&Euml;","Ë");
-        HTML_ENTITIES.put("&iuml;","ï")  ; HTML_ENTITIES.put("&Iuml;","Ï");
-        HTML_ENTITIES.put("&ocirc;","ô") ; HTML_ENTITIES.put("&Ocirc;","Ô");
-        HTML_ENTITIES.put("&ouml;","ö")  ; HTML_ENTITIES.put("&Ouml;","Ö");
-        HTML_ENTITIES.put("&oslash;","ø") ; HTML_ENTITIES.put("&Oslash;","Ø");
-        HTML_ENTITIES.put("&szlig;","ß") ; HTML_ENTITIES.put("&ugrave;","ù");
-        HTML_ENTITIES.put("&Ugrave;","Ù"); HTML_ENTITIES.put("&ucirc;","û");
-        HTML_ENTITIES.put("&Ucirc;","Û") ; HTML_ENTITIES.put("&uuml;","ü");
-        HTML_ENTITIES.put("&Uuml;","Ü")  ; HTML_ENTITIES.put("&nbsp;"," ");
-        HTML_ENTITIES.put("&copy;","\u00a9");
-        HTML_ENTITIES.put("&reg;","\u00ae");
-        HTML_ENTITIES.put("&euro;","\u20a0");
-    }
-
-    static final String unescapeHTML(String source, int start){
-        int i,j;
-    
-        i = source.indexOf("&", start);
-        if (i > -1) {
-            j = source.indexOf(";" ,i);
-            if (j > i) {
-                    String entityToLookFor = source.substring(i , j + 1);
-                    String value = HTML_ENTITIES.get(entityToLookFor);
-                if (value != null) {
-                    StringBuffer sb = new StringBuffer();
-                    sb.append(source.substring(0 , i));
-                    sb.append(value);
-                    sb.append(source.substring(j + 1));
-                    source = sb.toString();
-                    return unescapeHTML(source, start + 1); // recursive call
-                }
-            }
-        }
-        return source;
+    private static boolean isArticleLink(String linkedArticleTitle) {
+        String s = linkedArticleTitle.toLowerCase();
+        return !(s.startsWith("image:") ||
+                 s.startsWith("wikipedia:") ||
+                 s.startsWith("template:") ||
+                 s.startsWith("category:") ||
+                 s.startsWith("portal:") ||
+                 s.contains("(disambiguation)"));
     }
 
     /**
-     * Check if the artile is actually reasonable.
+     * Returns {@code true} if the article's title does not begin with a known
+     * set of non-article prefixes and the link does not match the foreign
+     * language code tempate of [[languagcode:LinkingArticleName]].  This method
+     * acts as a rough heuristic for assessing the type of link in a document.
+     *
+     * @param linkingArticleTitle the name of the article that contains the link
      */
-    public static boolean shouldProcessArticle(String linkedArticleTitle) {
-        return !(linkedArticleTitle.startsWith("image:") ||
-                 linkedArticleTitle.startsWith("wikipedia:") ||
-                 linkedArticleTitle.startsWith("template:") ||
-                 linkedArticleTitle.startsWith("category:") ||
-                (linkedArticleTitle.length() >= 3 && 
-                 linkedArticleTitle.charAt(2) == ':') ||
-                 linkedArticleTitle.contains("(disambiguation)"));
+    private static boolean isArticleLink(String linkedArticleTitle, 
+                                         String linkingArticleTitle) {
+        if (isArticleLink(linkedArticleTitle)) {
+            int colonIndex = linkedArticleTitle.indexOf(":");
+            if (colonIndex >= 0 &&
+                Pattern.matches("[a-z]*", 
+                                linkedArticleTitle.substring(0, colonIndex)))
+                return false;
+            else 
+                return !linkedArticleTitle.endsWith(":" + linkingArticleTitle);
+        }
+        return false;
     }
 }
