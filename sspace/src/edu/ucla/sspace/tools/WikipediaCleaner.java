@@ -23,6 +23,8 @@ package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
 
+import edu.ucla.sspace.mains.LoggerUtil;
+
 import edu.ucla.sspace.text.DocumentPreprocessor;
 import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.text.StringUtils;
@@ -511,14 +513,8 @@ public class WikipediaCleaner {
             logLevel = Level.FINE;
         else if (options.hasOption("veryVerbose")) 
             logLevel = Level.FINER;
-        if (logLevel != null) {
-            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
-            Handler verboseHandler = new ConsoleHandler();
-            verboseHandler.setLevel(logLevel);
-            appRooLogger.addHandler(verboseHandler);
-            appRooLogger.setLevel(logLevel);
-            appRooLogger.setUseParentHandlers(false);
-        }
+        if (logLevel != null) 
+            LoggerUtil.setLevel(logLevel);
         
         // Set up the options for the cleaner
         Set<CleanerOption> cleanerOptions = EnumSet.noneOf(CleanerOption.class);

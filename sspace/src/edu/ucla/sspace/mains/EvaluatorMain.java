@@ -57,6 +57,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Evaluates the performance of {@link SemanticSpace} instances on provided
@@ -65,17 +67,26 @@ import java.util.Set;
 public class EvaluatorMain {
 
     /**
+     * The logger used to report verbose output
+     */
+    private static final Logger LOGGER = 
+        Logger.getLogger(EvaluatorMain.class.getName());
+
+    /**
      * The options available to this main
      */
     private final ArgOptions argOptions;
-
+    
     /**
-     * If true, this main will emit verbose messages
+     * The collection of {@link WordChoiceEvaluation} tests that will be run on
+     * the {@link SemanticSpace} instances.
      */
-    private boolean verbose;
-
     private Collection<WordChoiceEvaluation> wordChoiceTests;
 
+    /**
+     * The collection of {@link WordSimilarityEvaluation} tests that will be run
+     * on the {@link SemanticSpace} instances.
+     */
     private Collection<WordSimilarityEvaluation> wordSimilarityTests;
 
     /**
@@ -83,7 +94,6 @@ public class EvaluatorMain {
      */
     public EvaluatorMain() {
         argOptions = new ArgOptions();
-        verbose = false;
         addOptions();
     }
 
@@ -95,11 +105,11 @@ public class EvaluatorMain {
          argOptions.addOption('c', "wordChoice",
                               "a list of WordChoiceEvaluation " +
                               "class names and their data files", 
-                              true, "CLASS=FILE[,CLASS=FILE...]", 
+                              true, "CLASS=FILE[=FILE2...][,CLASS=FILE...]", 
                               "Required (at least one of)");
          argOptions.addOption('s', "wordSimilarity",
                               "a list of WordSimilarityEvaluation class names", 
-                              true, "CLASS=FILE[,CLASS=FILE...]", 
+                              true, "CLASS=FILE[=FILE2...][,CLASS=FILE...]", 
                               "Required (at least one of)");        
          argOptions.addOption('g', "testConfiguration",
                               "a file containing a list of test " +
@@ -125,7 +135,8 @@ public class EvaluatorMain {
         }
         argOptions.parseOptions(args);
 
-        verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
+        if (argOptions.hasOption("verbose"))
+            LoggerUtil.setLevel(Level.FINE);
 
         // load in the arguments specificing which tests that will be run 
         String wcTests = (argOptions.hasOption("wordChoice"))
@@ -169,20 +180,24 @@ public class EvaluatorMain {
                     throw new Error("test is not matched with data file: " + 
                                     className);
                 }
-                String dataFile = it.next();
+                String[] dataFiles = it.next().split(",");
+                // Base the number of constructor arguments on the number of
+                // String parameters specified
                 Class<?> clazz = Class.forName(className);
-                Constructor<?> c =
-                    clazz.getConstructor(new Class[]{String.class});
-                Object o = c.newInstance(new Object[] {dataFile});
+                Class[] constructorArgs = new Class[dataFiles.length];
+                for (int i = 0; i < constructorArgs.length; ++i)
+                    constructorArgs[i] = String.class;
+                Constructor<?> c = clazz.getConstructor(constructorArgs);                
+                Object o = c.newInstance((Object[])dataFiles);
                 
                 // once the test has been created, determine what kind it is
                 if (o instanceof WordChoiceEvaluation) {
                     wordChoiceTests.add((WordChoiceEvaluation)o);
-                    verbose("Loaded word choice test %s%n", className);
+                    verbose("Loaded word choice test " + className);
                 }
                 else if (o instanceof WordSimilarityEvaluation) {
                     wordSimilarityTests.add((WordSimilarityEvaluation)o);
-                    verbose("Loaded word similarity test %s%n", className);
+                    verbose("Loaded word similarity test " + className);
                 }
                 else {
                     throw new IllegalStateException(
@@ -206,7 +221,7 @@ public class EvaluatorMain {
                     String setting = sspaceConfig[j];
                     if (j > 2) {
                         throw new IllegalStateException(
-                            "too may .sspace file arguments:" + 
+                            "too many .sspace file arguments:" + 
                             argOptions.getPositionalArg(i));
                     }
                     else if (setting.startsWith("function")) {
@@ -223,12 +238,12 @@ public class EvaluatorMain {
             // Load and evaluate the .sspace file if it hasn't been loaded
             // already
             if (!loadedSSpaces.contains(sspace)) {
-                verbose("Loading semantic space: %s.", sspaceFileName);
+                verbose("Loading semantic space: " + sspaceFileName);
                 sspace = SemanticSpaceIO.load(sspaceFileName);
                 loadedSSpaces.add(sspaceFileName);
                 verbose("Done loading.");
 
-                verbose("Evaluating semantic space: %s." , sspaceFileName);
+                verbose("Evaluating semantic space: " + sspaceFileName);
                 evaluateSemanticSpace(sspace, comparisonFunction);
                 verbose("Done evaluating.");
             }
@@ -259,18 +274,14 @@ public class EvaluatorMain {
      * Prints verbose strings.
      */
     protected void verbose(String msg) {
-        if (verbose) {
-            System.out.println(msg);
-        }
+        LOGGER.fine(msg);
     }
 
     /**
      * Prints verbose strings with formatting.
      */
     protected void verbose(String format, Object... args) {
-        if (verbose) {
-            System.out.printf(format, args);
-        }
+        LOGGER.fine(String.format(format, args));
     }
 
     /**
@@ -294,7 +305,7 @@ public class EvaluatorMain {
             "line.  The .sspace file will be loaded only once.\n\n" +
             "A test configuration file is a series of fully qualified class " +
             "names of evaluations\nthat should be run followed by the data" +
-            "file that contains\nthe test information");
+            "files that contains\nthe test information, comma separated");
     }
 
     /**
@@ -320,16 +331,21 @@ public class EvaluatorMain {
         try {
             for (String s : testsAndFiles) {
                 String[] testAndFile = s.split("=");
-                if (testAndFile.length != 2) {
-                    throw new IllegalArgumentException(
-                        "unexpected token: " + wcTests);
-                }
                 Class<?> clazz = Class.forName(testAndFile[0]);
-                Constructor<?> c =
-                    clazz.getConstructor(new Class[]{String.class});
-                WordChoiceEvaluation eval = (WordChoiceEvaluation)
-                (c.newInstance(new Object[]{testAndFile[1]}));
-                verbose("Loaded word choice test %s%n", testAndFile[0]);
+                
+                // Base the number of constructor arguments on the number of
+                // String parameters specified
+                Class[] constructorArgs = new Class[testAndFile.length - 1];
+                for (int i = 0; i < constructorArgs.length; ++i)
+                    constructorArgs[i] = String.class;
+                Constructor<?> c = clazz.getConstructor(constructorArgs);                
+                Object[] args = new String[testAndFile.length - 1];
+                for (int i = 1; i < testAndFile.length; ++i)
+                    args[i - 1] = testAndFile[i];
+                WordChoiceEvaluation eval = 
+                    (WordChoiceEvaluation)(c.newInstance(args));
+
+                verbose("Loaded word choice test " + testAndFile[0]);
                 wordChoiceTests.add(eval);
             }
         } catch (Exception e) {
@@ -350,16 +366,19 @@ public class EvaluatorMain {
         try { 
             for (String s : testsAndFiles) {
                 String[] testAndFile = s.split("=");
-                if (testAndFile.length != 2) {
-                    throw new IllegalArgumentException(
-                        "unexpected token: " + wcTests);
-                }
                 Class<?> clazz = Class.forName(testAndFile[0]);
-                Constructor<?> c =
-                    clazz.getConstructor(new Class[]{String.class});
-                WordSimilarityEvaluation eval = (WordSimilarityEvaluation)
-                    (c.newInstance(new Object[]{testAndFile[1]}));
-                verbose("Loaded word choice test %s%n", testAndFile[0]);
+                // Base the number of constructor arguments on the number of
+                // String parameters specified
+                Class[] constructorArgs = new Class[testAndFile.length - 1];
+                for (int i = 0; i < constructorArgs.length; ++i)
+                    constructorArgs[i] = String.class;
+                Constructor<?> c = clazz.getConstructor(constructorArgs);                
+                Object[] args = new String[testAndFile.length - 1];
+                for (int i = 1; i < testAndFile.length; ++i)
+                    args[i - 1] = testAndFile[i];
+                WordSimilarityEvaluation eval =
+                     (WordSimilarityEvaluation)(c.newInstance(args));
+                verbose("Loaded word similarity test " + testAndFile[0]);
                 wordSimTests.add(eval);
             }
         } catch (Exception e) {

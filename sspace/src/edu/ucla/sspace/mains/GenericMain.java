@@ -346,14 +346,8 @@ public abstract class GenericMain {
         // package logging tree to output at Level.FINE (normally, it is
         // Level.INFO).  This provides a more detailed view of how the execution
         // flow is proceeding.
-        if (verbose) {
-            Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
-            Handler verboseHandler = new ConsoleHandler();
-            verboseHandler.setLevel(Level.FINE);
-            appRooLogger.addHandler(verboseHandler);
-            appRooLogger.setLevel(Level.FINE);
-            appRooLogger.setUseParentHandlers(false);
-        }
+        if (verbose) 
+            LoggerUtil.setLevel(Level.FINE);
 
         // all the documents are listed in one file, with one document per line
         Iterator<Document> docIter = getDocumentIterator();
