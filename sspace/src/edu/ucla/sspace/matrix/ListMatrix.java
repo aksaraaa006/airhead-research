@@ -100,7 +100,7 @@ class ListMatrix<T extends DoubleVector> implements Matrix {
      * {@inheritDoc}
      */
     public int columns() {
-        return columns();
+        return columns;
     }
 
     /**
