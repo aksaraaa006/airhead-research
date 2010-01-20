@@ -171,7 +171,7 @@ public class DefaultPermutationFunction
         }
 
         for (int d : dimensions)
-            result.set(d, v.getValue(d).intValue());
+            result.set(d, v.getValue(d));
 
         return result;
     }
