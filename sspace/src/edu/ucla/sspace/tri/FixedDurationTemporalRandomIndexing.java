@@ -138,55 +138,55 @@ import edu.ucla.sspace.util.TimeSpan;
  *     Thread processingThread = new Thread() {
  *         public void run() {
  *
- *  		// repeatedly try to process any remaining documents
- *		while (documents.hasNext()) {
- *		    
- *		    TemporalDocument doc = docuemnts.next();
- *		    long docTime = doc.timeStamp();
+ *                  // repeatedly try to process any remaining documents
+ *                while (documents.hasNext()) {
+ *                    
+ *                    TemporalDocument doc = docuemnts.next();
+ *                    long docTime = doc.timeStamp();
  *                  int docNumber = docCounter.incrementAndGet();
  *
- *		    // special case for first document
- *		    if (docNumber == 1) {
- *			startTimeOfCurrentPartition.set(docTime);
- *			startBarrier.set(true);
- *		    }
- *		    
- *		    // Spin until the Thread with the first document sets the
- *		    // initial starting document time.  Note that we spin here
- *		    // instead of block, because this is expected that another
- *		    // thread will immediately set this and so it will be a
- *		    // quick no-op
- *		    while (startBarrier.get() == false)
- *			;
+ *                    // special case for first document
+ *                    if (docNumber == 1) {
+ *                        startTimeOfCurrentPartition.set(docTime);
+ *                        startBarrier.set(true);
+ *                    }
+ *                    
+ *                    // Spin until the Thread with the first document sets the
+ *                    // initial starting document time.  Note that we spin here
+ *                    // instead of block, because this is expected that another
+ *                    // thread will immediately set this and so it will be a
+ *                    // quick no-op
+ *                    while (startBarrier.get() == false)
+ *                        ;
  *
- * 		    // Check whether the time for this document would exceed the
- *		    // maximum duration of the current partition.  Loop to ensure
- *		    // that if this thread does loop and another thread has an
- *		    // earlier time that exceeds the time period, then this
- *		    // thread will block until the earlier partition has finished
- *		    // processing
- *		    while (!timeSpan.insideRange(startTimeOfCurrentPartition.get(), docTime)) {
- *			try {
- *			    // notify the barrier that this Thread is now
- *			    // processing a document in the next time span.  In
- * 			    // addition, enqueue the time for this document so
- * 			    // the serialization thread can reset the correct
- * 			    // s-sspace start time
- *			    futureStartTimes.add(docTime, new Object());
- *			    exceededTimeSpanBarrier.await();
- *			} catch (Exception ex) {
- *			    // Handle exception here;
- *			} 
- *		    }
+ *                     // Check whether the time for this document would exceed the
+ *                    // maximum duration of the current partition.  Loop to ensure
+ *                    // that if this thread does loop and another thread has an
+ *                    // earlier time that exceeds the time period, then this
+ *                    // thread will block until the earlier partition has finished
+ *                    // processing
+ *                    while (!timeSpan.insideRange(startTimeOfCurrentPartition.get(), docTime)) {
+ *                        try {
+ *                            // notify the barrier that this Thread is now
+ *                            // processing a document in the next time span.  In
+ *                             // addition, enqueue the time for this document so
+ *                             // the serialization thread can reset the correct
+ *                             // s-sspace start time
+ *                            futureStartTimes.add(docTime, new Object());
+ *                            exceededTimeSpanBarrier.await();
+ *                        } catch (Exception ex) {
+ *                            // Handle exception here;
+ *                        } 
+ *                    }
  *
- *		    try {
- *			fdTRI.processDocument(doc.reader());
- *		    } catch (IOException ioe) {
- *			throw new IOError(ioe); // rethrow
- *		    }
- *		}
- *	    }
- *	};
+ *                    try {
+ *                        fdTRI.processDocument(doc.reader());
+ *                    } catch (IOException ioe) {
+ *                        throw new IOError(ioe); // rethrow
+ *                    }
+ *                }
+ *            }
+ *        };
  * 
  * // Start threads and wait for processing to finish...
  * </pre> <p>
@@ -208,20 +208,20 @@ public class FixedDurationTemporalRandomIndexing
      * specified using the {@value #SEMANTIC_PARTITION_DURATION_PROPERTY} property.
      */
     public static final TimeSpan DEFAULT_SEMANTIC_PARTITION_DURATION = 
-	new TimeSpan(0, 1, 0, 0, 0);
+        new TimeSpan(0, 1, 0, 0, 0);
 
     /**
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-	"edu.ucla.sspace.tri.FixedDurationTemporalRandomIndexing";
+        "edu.ucla.sspace.tri.FixedDurationTemporalRandomIndexing";
 
     /**
      * The property to set duration of a semantic partition using a {@link TimeSpan}
      * configuration string.
      */
     public static final String SEMANTIC_PARTITION_DURATION_PROPERTY = 
-	PROPERTY_PREFIX + ".partitionDuration";
+        PROPERTY_PREFIX + ".partitionDuration";
     
     /**
      * The duration of a semantic partition.
@@ -236,7 +236,7 @@ public class FixedDurationTemporalRandomIndexing
      *         #SEMANTIC_PARTITION_DURATION_PROPERTY} property is not set 
      */
     public FixedDurationTemporalRandomIndexing() {
-	this(System.getProperties());
+        this(System.getProperties());
     }
 
     /**
@@ -249,21 +249,21 @@ public class FixedDurationTemporalRandomIndexing
      *         #SEMANTIC_PARTITION_DURATION_PROPERTY} property is not set 
      */
     public FixedDurationTemporalRandomIndexing(Properties props) {
-	super(props);
-	
-	String timeSpanProp = 
-	    props.getProperty(SEMANTIC_PARTITION_DURATION_PROPERTY);
+        super(props);
+        
+        String timeSpanProp = 
+            props.getProperty(SEMANTIC_PARTITION_DURATION_PROPERTY);
 
-	partitionDuration = (timeSpanProp == null) 
-	    ? DEFAULT_SEMANTIC_PARTITION_DURATION
-	    : new TimeSpan(timeSpanProp);
+        partitionDuration = (timeSpanProp == null) 
+            ? DEFAULT_SEMANTIC_PARTITION_DURATION
+            : new TimeSpan(timeSpanProp);
     }
 
     /**
      * {@inheritDoc}
      */
     public String getSpaceName() {
-	return PROPERTY_PREFIX + "-" + partitionDuration + "-" + getVectorLength();
+        return PROPERTY_PREFIX + "-" + partitionDuration + "-" + getVectorLength();
     }
 
     /**
@@ -276,7 +276,7 @@ public class FixedDurationTemporalRandomIndexing
      *         the duration of the current semantic partition
      */
     protected boolean shouldPartitionSpace(long timeStamp) {
-	return !partitionDuration.insideRange(startTime, timeStamp);
+        return !partitionDuration.insideRange(startTime, timeStamp);
     }
 
 }
