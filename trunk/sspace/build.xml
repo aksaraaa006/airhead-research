@@ -28,7 +28,7 @@
   <property name="src.dir" value="src"/>
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
-  <property name="version" value="0.1"/>
+  <property name="version" value="1.0"/>
   
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -85,7 +85,7 @@
     </javac>
   </target>
 
-  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar">
+  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
   
@@ -165,6 +165,22 @@
 	<attribute name="Implementation-Title" value="Incremental Semantic Analysis"/>
 	<attribute name="Implementation-Version" value="${version}"/>
 	<attribute name="Main-Class" value="edu.ucla.sspace.mains.IsaMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="esa-jar" depends="compile">
+    <jar destfile="${bin.dir}/esa.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Incremental Semantic Analysis"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.ESAMain"/>
       </manifest>
     </jar>
   </target>
