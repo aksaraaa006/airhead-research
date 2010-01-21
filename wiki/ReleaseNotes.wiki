@@ -1,7 +1,23 @@
 #summary Details of the various releases
 #labels Featured
 
-= July 24, 2009 =
+= Release 1.0 = 
+
+This release indicates several months of testing and debugging.  All [ImplementedAlgorithms Tier 1] algorithms are now fully vetted and have been highly optimized.  All supported algorithms have now been versioned at 1.0, reflecting this release.
+
+*Highlights*
+
+  * Significant optimizations to the core algorithms
+  * Support for fast streaming of matrices to disk
+  * Complete overhaul and optimization of vector and matrices classes
+  * Support for a variety of [Tokenizing tokenization] behaviors
+  * Basic support for interacting with [http://glaros.dtc.umn.edu/gkhome/cluto/cluto/download Cluto] clustering facilities
+  * An expanded set of unit tests for library classes
+
+
+= Earlier Incremental Releases =
+
+== July 24, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.9
 
@@ -15,7 +31,7 @@
   * Support for manually selecting the SVD algorithm to use
   * Minor performance increase in parsing
 
-= July 6, 2009 =
+== July 6, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.8
 
@@ -27,7 +43,7 @@
 
   * Fixes a bug which prevented files from being processed.
 
-= June 18, 2009 =
+== June 18, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.6
 
@@ -46,7 +62,7 @@
 
   * Fixed potential bug in sparse semantics where index vectors values were incorrectly updated.  This resulting in index vectors not being as orthogonal as they were initialized to be.
 
-= June 17, 2009 =
+== June 17, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.5
 
@@ -57,7 +73,7 @@
 
   * Fixed [http://code.google.com/p/airhead-research/issues/detail?id=16 Issue 16] where the resulting LSA vectors were not properly truncated when JAMA was used for the SVD.
 
-= June 16, 2009 =
+== June 16, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.4
 
@@ -69,7 +85,7 @@
   * Fixed [http://code.google.com/p/airhead-research/issues/detail?id=15 Issue 15] where JAMA wasn't supported for lsa.jar due to a classpath issue
 
 
-= June 1, 2009 =
+== June 1, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.3
 
@@ -86,7 +102,7 @@
   * Performance fix for LSA Matlab-to-SVDLIBC matrix conversion path.  Previously, large word-document matrices were loaded into memory for conversion, which resulted in unnecessary `OutOfMemory` exceptions.  The fix does the conversion iteratively, which eliminates the memory bottleneck.
 
 
-= May 11, 2009 =
+== May 11, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.2
 
@@ -100,7 +116,7 @@
   * Added a binary output option where the resulting .sspace file is much smaller.  See [FileFormats] for details
   * LSA matrix operations now clean up the temporary files they generate.
 
-= May 9, 2009 =
+== May 9, 2009 ==
 
 [Coals] version 0.1.1
 
@@ -110,7 +126,7 @@
 *Details:*
 Revised release of Coals, where all rows are saved, and only the column lengths are shortened.
 
-= May 8, 2009 =
+== May 8, 2009 ==
 
 [Coals] version 0.1.0
 
@@ -120,7 +136,7 @@ Revised release of Coals, where all rows are saved, and only the column lengths 
 *Details:*
 Initial release of Coals.  Release supports configurable word dimensions, svd reduction, and size of svd reduction.  See [Coals Coals] wiki page for full details.
 
-= May 7, 2009 =
+== May 7, 2009 ==
 
 [RandomIndexing Random Indexing] version 0.1.0
 
@@ -130,7 +146,7 @@ Initial release of Coals.  Release supports configurable word dimensions, svd re
 *Details:*
 Initial release of Random Indexing.  Release supports permutatations, configurable dimensions, and index vectors distributions.  See [RandomIndexing Random Indexing] wiki page for full details.
 
-= May 1, 2009 =
+== May 1, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.1
 
@@ -140,7 +156,7 @@ Initial release of Random Indexing.  Release supports permutatations, configurab
 *Details:*
 Bug fix for an internal conversion between matrix types.  If the user used SVDLIBC, the program would incorrectly covert the format, which resulted in a malformatted S-Space.
 
-= April 27, 2009 =
+== April 27, 2009 ==
 
 [LatentSemanticAnalysis LSA] version 0.1.0
 
