@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,27 +21,16 @@
 
 package edu.ucla.sspace.text;
 
-import java.io.*;
-import java.util.*;
 
-import org.junit.Ignore;
-import org.junit.Test;
+/**
+ * An interface for classes that <a
+ * href="http://en.wikipedia.org/wiki/Stemming">stem</a> tokens.
+ */
+public interface Stemmer {
 
-import static org.junit.Assert.*;
-
-
-public class PorterStemmerTest {
-    @Test public void testStemming() {
-        String[][] testWords = {{"cats", "cat"},
-                                {"cat", "cat"},
-                                {"opened", "open"},
-                                {"open", "open"},
-                                {"candies", "candi"},
-                                {"candy", "candi"},
-                                {"immediately", "immedi"}};
-         for (String[] testExpected : testWords) {
-             String stem = new PorterStemmer().stem(testExpected[0]);
-             assertEquals(stem, testExpected[1]);
-         }
-    }
+    /**
+     * Converts the token to its root form, or if it is already in root form,
+     * returns the token.
+     */
+    public String stem(String token);
 }

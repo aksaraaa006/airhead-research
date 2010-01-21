@@ -129,7 +129,7 @@ public abstract class DirectoryCorpusReader implements Iterator<Document> {
     }
 
     /**
-     * Unsupported.
+     * Throws {@link UnsupportedOperationException} if called.
      */
     public synchronized void remove() {
         throw new UnsupportedOperationException("Remove not permitted.");
@@ -147,6 +147,12 @@ public abstract class DirectoryCorpusReader implements Iterator<Document> {
      */
     protected abstract void setupCurrentDoc(String currentDocName);
 
+    /**
+     * Returns a cleaned version of the document if document processing is
+     * enabled
+     *
+     * @see DocumentProcessor#process(String)
+     */
     protected String cleanDoc(String document) {
         return (processor != null) ? processor.process(document) : document;
     }
