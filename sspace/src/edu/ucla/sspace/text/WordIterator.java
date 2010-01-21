@@ -65,19 +65,10 @@ public class WordIterator implements Iterator<String> {
     private String curLine;
 
     /**
-     * True if tokens should be stemmed using the Porter Stemmer algorithm.
-     */
-    private boolean stemWords;
-
-    /**
      * Constructs an iterator for all the tokens contained in the string
      */
     public WordIterator(String str) {
         this(new BufferedReader(new StringReader(str)));
-    }
-
-    public WordIterator(String str, boolean useStemming) {
-        this(new BufferedReader(new StringReader(str)), useStemming);
     }
 
     /**
@@ -85,13 +76,8 @@ public class WordIterator implements Iterator<String> {
      * provided reader.
      */
     public WordIterator(BufferedReader br) {
-        this(br, false);
-    }
-
-    public WordIterator(BufferedReader br, boolean useStemming) {
         this.br = br;
         curLine = null;
-        stemWords = useStemming;
         advance();
     }
 
@@ -150,8 +136,6 @@ public class WordIterator implements Iterator<String> {
         }
         String s = next;
         advance();
-        if (stemWords)
-            return PorterStemmer.stem(s);
         return s;
     }
 

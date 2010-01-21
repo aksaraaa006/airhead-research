@@ -85,6 +85,14 @@ public class CompoundWordIterator implements Iterator<String> {
 	initializeMapping(compoundWords);
     }
 
+
+    public CompoundWordIterator(Iterator<String> tokens, 
+                                Set<String> compoundWords) {
+	tokenizer = new BufferedIterator(tokens);
+	compoundTokens = new LinkedHashMap<String,CompoundTokens>();
+	initializeMapping(compoundWords);
+    }
+
     /**
      * Fills the {@link #compoundTokens} mapping based on the set of compound
      * words.
@@ -170,6 +178,14 @@ public class CompoundWordIterator implements Iterator<String> {
      */
     public void reset(BufferedReader br) {
 	tokenizer = new BufferedIterator(br);
+    }
+
+    /**
+     * Resets the underlying token stream to point to the tokens in the provided
+     * iterator.  This does not change the set of accepted compound words.
+     */
+    public void reset(Iterator<String> tokens) {
+	tokenizer = new BufferedIterator(tokens);
     }
 
     /**

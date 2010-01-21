@@ -33,30 +33,50 @@ import java.util.Iterator;
 
 
 /**
- * A {@code DirectoryCorpusReader} for the usenet corpus.
+ * A {@code DirectoryCorpusReader} for the <a
+ * href="http://www.psych.ualberta.ca/~westburylab/downloads/usenetcorpus.download.html">Usenet
+ * corpus</a> provided by the <a
+ * href="http://www.psych.ualberta.ca/~westburylab/index.html">Westbury Lab</a>.
+ * The corpus filenames are expected to remain unchanged from how they were
+ * specified, i.e. have the numeric timestamp naming convention.
  *
  * @author Keith Stevens
  */
 public class UsenetCorpusReader extends DirectoryCorpusReader {
 
+    /**
+     * The string delimiter that separates documents in the USENET corpus.
+     */
     private static final String END_OF_DOCUMENT =
         "---END.OF.DOCUMENT---";
 
     /**
-     * A reader for extracting content from the bloglines corpus.
+     * A reader for extracting content from the usenet corpus.
      */
-    private BufferedReader bloglinesReader;
+    private BufferedReader usenetReader;
 
-    private long currentTimestamp;
+    /**
+     * The timestamp of the current document
+     */
+    private long curDocTimestamp;
 
+    /**
+     * {@code true} if the reader should output UNIX timestamps for each
+     * document, indicating when it was created.
+     */
     private final boolean useTimestamps;
 
+    /**
+     * Creates a reader for USENET document, starting with the specified file.
+     */
     public UsenetCorpusReader(String corpusFileName) {
         this(corpusFileName, false);
     }
 
-    /**
-     * Creates a new {@code UsenetCorpusReader} from a given file name.
+    /** 
+     * Creates a reader for USENET document, starting with the specified file
+     * and, if {@code includeTimestamps} is {@code true}, prepending the
+     * creation date of each document as the first token in the document.
      */
     public UsenetCorpusReader(String corpusFileName,
                               boolean includeTimestamps) {
@@ -71,9 +91,8 @@ public class UsenetCorpusReader extends DirectoryCorpusReader {
      */
     protected void setupCurrentDoc(String currentDocName) {
         try {
-            bloglinesReader =
+            usenetReader =
                 new BufferedReader(new FileReader(currentDocName));
-
             // Extract the time stamp of the current doc.  All usenet files are
             // named in the format "text.text.date.txt".  the date portion is
             // formated with YYYYMMDD followed with extra information.
@@ -83,7 +102,7 @@ public class UsenetCorpusReader extends DirectoryCorpusReader {
                     Integer.parseInt(date.substring(0, 4)),
                     Integer.parseInt(date.substring(4, 6)),
                     Integer.parseInt(date.substring(6, 8)));
-            currentTimestamp = calendar.getTimeInMillis();
+            curDocTimestamp = calendar.getTimeInMillis();
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
@@ -96,19 +115,31 @@ public class UsenetCorpusReader extends DirectoryCorpusReader {
     protected String advanceInDoc() {
         String line = null;
         StringBuilder content = new StringBuilder();
+        // If the system is using timestamps, append it as the first token in
+        // the document
+        if (useTimestamps)
+            content.append(curDocTimestamp).append(" ");
         try {
-            // Read through a single content block, and possibly a the
-            // timestamp, to extract a single document.
-            while ((line = bloglinesReader.readLine()) != null) {
-                if (line.contains(END_OF_DOCUMENT)) {
-                    String cleaned = cleanDoc(content.toString());
-                    if (useTimestamps)
-                        return String.format(
-                                "%d %s", currentTimestamp, cleaned);
-                    else
-                        return cleaned;
-                } else
-                    content.append(line);
+            // Read the the text block, possibly spanning multiple lines and
+            // process it as a single document.  For consistency, strip off the
+            // USENET threading formatting, e.g. >>>, from the front of each
+            // line.
+            while ((line = usenetReader.readLine()) != null) {
+                if (line.contains(END_OF_DOCUMENT)) 
+                    return cleanDoc(content.toString());
+                else {
+                    int lineStart = 0;
+                    // Find the first non '>' or ' ' in the line to determine
+                    // where the auto-threading formatting stops.
+                    for (char c = line.charAt(lineStart); 
+                         lineStart < line.length() && (c == '>' || c == ' ');
+                         c = line.charAt(++lineStart))
+                        ;
+                    // Append the unformatted line.  Also append an extra space
+                    // to avoid combining terms from multiple lines into a
+                    // single token
+                    content.append(line.substring(lineStart)).append(" ");
+                }
             }
         } catch (IOException ioe) {
             throw new IOError(ioe);

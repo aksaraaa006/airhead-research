@@ -56,15 +56,30 @@ import java.util.Set;
  *
  * <dt> <i>Property:</i> <code><b>{@value #TOKEN_FILTER_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@code null}
+ *      <i>Default:</i> <i>unset</i>
  *
  * <dd style="padding-top: .5em">This property sets a configuration of a {@link
  *      TokenFilter} that should be applied to all token streams.<p>
  *
+ * <dt> <i>Property:</i> <code><b>{@value #USE_STEMMING_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> <i>unset</i>
+ *
+ * <dd style="padding-top: .5em">This property sets enables the use of the
+ *      {@link PorterStemmer} on all the tokens returned by iterators of this
+ *      class.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #TOKEN_COUNT_LIMIT_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> <i>unset</i>
+ *
+ * <dd style="padding-top: .5em">This property sets the maximum number of tokens
+ *       returned by any iterator returned from this class.  It can be used to
+ *       artificially limit the total number of tokens per document.<p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #COMPOUND_TOKENS_FILE_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@code null}
+ *      <i>Default:</i> <i>unset</i>
  *
  * <dd style="padding-top: .5em">This property sets the name of a file that
  *      contains all of the recognized compound words (or multi-token tokens)
@@ -124,7 +139,7 @@ public class IteratorFactory {
      * Specifies whether or not steming should be done on tokens.
      */
     public static final String USE_STEMMING_PROPERTY =
-        PROPERTY_PREFIX + ".stem";
+        PROPERTY_PREFIX + ".stemmer";
 
     /**
      * Specifies the name of a file that contains all the recognized compound
@@ -155,7 +170,7 @@ public class IteratorFactory {
     /**
      * True if stemming should be done in a word iterator.
      */
-    private static boolean useStemming;
+    private static Stemmer stemmer;
 
     /**
      * The maximum number of tokens an iterator may return.
@@ -202,8 +217,12 @@ public class IteratorFactory {
         filter = (filterProp != null)
             ? TokenFilter.loadFromSpecification(filterProp)
             : null;
-
-        useStemming = props.getProperty(USE_STEMMING_PROPERTY) != null;
+        
+        // NOTE: future implementations may interpret the value of this property
+        // to decide which stemmer to use
+        String stemmerProp = props.getProperty(USE_STEMMING_PROPERTY);
+        if (stemmerProp != null)
+            stemmer = new PorterStemmer();
 
         String compoundTokensProp = 
             props.getProperty(COMPOUND_TOKENS_FILE_PROPERTY);
@@ -273,11 +292,7 @@ public class IteratorFactory {
      *         reader
      */
     public static Iterator<String> tokenize(BufferedReader reader) {
-        Iterator<String> baseIterator = getBaseIterator(reader);
-
-        // If a filter is enabled, wrap the base tokenizer
-        return (filter == null) 
-            ? baseIterator : new FilteredIterator(baseIterator, filter);    
+        return getBaseIterator(reader, false);
     }
 
     /**
@@ -310,12 +325,7 @@ public class IteratorFactory {
      *         IteratorFactory.EMPTY_TOKEN} value
      */
     public static Iterator<String> tokenizeOrdered(BufferedReader reader) {
-        Iterator<String> baseIterator = getBaseIterator(reader);
-
-        // If a filter is enabled, wrap the base tokenizer
-        return (filter == null) 
-            ? baseIterator
-            : new OrderPreservingFilteredIterator(baseIterator, filter);
+        return getBaseIterator(reader, true);
     }
 
     /**
@@ -365,22 +375,29 @@ public class IteratorFactory {
      *
      * @return an iterator over the tokens in the stream
      */
-    private static Iterator<String> getBaseIterator(BufferedReader reader) {
-        // The base iterator is how the stream will be tokenized prior to any
-        // filtering
-        Iterator<String> baseIterator = null;
+    private static Iterator<String> getBaseIterator(BufferedReader reader,
+                                                    boolean keepOrdering) {
 
-        // If a Set of compound tokens has been set, then create the underlying
-        // iterator to recognize those tokens
+        // The final iterator is how the stream will be tokenized after all the
+        // tokenizing options have been applied.  This value is iteratively set
+        // as the options are applied
+        Iterator<String> finalIterator = new WordIterator(reader);
+
+        // STEP 1: APPLY TOKEN REPLACEMENT
+        if (replacementMap != null)
+            finalIterator = 
+                new WordReplacementIterator(finalIterator, replacementMap);
+
+        // STEP 2: APPLY COMPOUND TOKENIZING
         if (compoundTokens != null) {
             // Because the initialization step for a CWI has some overhead, use
             // the reset to keep the same tokens.  However, multiple threads may
             // be each using their own CWI, so keep Thread-local storage of what
             // CWI is being used to avoid resetting another thread's iterator.
             CompoundWordIterator cwi = 
-            compoundIterators.get(Thread.currentThread());
+                compoundIterators.get(Thread.currentThread());
             if (cwi == null) {
-                cwi = new CompoundWordIterator(reader, compoundTokens);
+                cwi = new CompoundWordIterator(finalIterator, compoundTokens);
                 compoundIterators.put(Thread.currentThread(), cwi);
             } else {
                 // NOTE: if the underlying set of valid compound words is ever
@@ -388,20 +405,27 @@ public class IteratorFactory {
                 // will have been updated by the setProperties() call, so this
                 // method is guaranteed to pick up the latest set of compound
                 // words
-                cwi.reset(reader);
+                cwi.reset(finalIterator);
             }
-            baseIterator = cwi;
-        } else {
-            // Otherwise, just return a standard iterator over all the tokens
-            // with no compounding
-            baseIterator = new WordIterator(reader, useStemming);
+            finalIterator = cwi;
+        } 
+
+        // STEP 3: APPLY TOKEN LIMITING
+        if (wordLimit > 0)
+            finalIterator = new LimitedWordIterator(finalIterator, wordLimit);
+
+        // STEP 4: APPLY TOKEN FILTERING
+        if (filter != null) {
+            finalIterator = (keepOrdering)
+                ? new OrderPreservingFilteredIterator(finalIterator, filter)
+                : new FilteredIterator(finalIterator, filter);
         }
 
-        // If the word limit is less than 1, use the standard iterator.
-        // Otherwise use a LimitedWordIterator.
-        return (wordLimit < 1)
-            ? baseIterator
-            : new LimitedWordIterator(baseIterator, wordLimit);
+        // STEP 5: APPLY STEMMING
+        if (stemmer != null) 
+            finalIterator = new StemmingIterator(finalIterator, stemmer);
+
+        return finalIterator;
     }
 
 }
