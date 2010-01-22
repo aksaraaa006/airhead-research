@@ -830,8 +830,6 @@ public class MatrixIO {
         }
             
         case CLUTO_DENSE:
-            break;
-
         case SVDLIBC_DENSE_TEXT: {
             PrintWriter pw = new PrintWriter(output);
             pw.println(matrix.rows() + " " + matrix.columns());

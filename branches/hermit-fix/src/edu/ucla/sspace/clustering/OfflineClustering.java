@@ -43,11 +43,4 @@ public interface OfflineClustering {
      * assigned.
      */
     int[] cluster(Matrix vectors);
-
-    /**
-     * Clusters the set of rows in the given {@code Matrix} and returns a unique
-     * integer specifying the cluster the row to which the row vectors has been
-     * assigned.
-     */
-    int[] cluster(SparseMatrix vectors);
 }

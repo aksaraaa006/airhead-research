@@ -157,7 +157,7 @@ public class RandomOrthogonalVectorGenerator
      * initial vector.
      */
     public RandomOrthogonalVectorGenerator(Properties properties,
-                                      DoubleVector originalVector) {
+                                           DoubleVector originalVector) {
         String meanProp = 
             properties.getProperty(VECTOR_MEAN_PROPERTY);
         mean = (meanProp != null)

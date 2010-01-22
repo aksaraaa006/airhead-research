@@ -71,6 +71,37 @@ public class ClutoClustering implements OfflineClustering {
     public static String CLUSTER_SIMILARITY_PROPERTY = 
         PROPERTY_PREFIX + ".clusterSimilarity";
 
+
+    /**
+     * The method value for using repeated bisections.
+     */
+    public static String REPEATED_BISECTIONS = "rb";
+
+    /**
+     * The method vlaue for using repeated bisections.
+     */
+    public static String REPEATED_BISECTIONS_REPEATED = "rbr";
+
+    /**
+     * The method value for using K-Means.
+     */
+    public static String KMEANS = "direct";
+
+    /**
+     * The method value for using agglomerative clustering.
+     */
+    public static String AGGLOMERATIVE = "agglo";
+
+    /**
+     * The method value for using nearest neighboor clustering.
+     */
+    public static String NEAREST_NEIGHBOOR = "graph";
+
+    /**
+     * The method value for using bagglo clustering.
+     */
+    public static String BAGGLO = "bagglo";
+
     /**
      * The default number of clusters to be created by Cluto.
      */
@@ -126,6 +157,14 @@ public class ClutoClustering implements OfflineClustering {
                                           DEFAULT_CLUSTER_METHOD);
         clusterSimilarity = props.getProperty(CLUSTER_SIMILARITY_PROPERTY,
                                               DEFAULT_CLUSTER_SIMILARITY);
+    }
+
+    /**
+     * Creates a new {@code ClutoClustering} instance using the given arguments.
+     */
+    public ClutoClustering(int numClusters, String clusterMethod) {
+        this.numClusters = numClusters;
+        this.clusterMethod = clusterMethod;
     }
 
     /**
@@ -192,13 +231,44 @@ public class ClutoClustering implements OfflineClustering {
      *         numbers will start at 0 and increase.  Rows that were not able to
      *         be clustered will be assigned a -1 value.
      */
-    private static int[] cluster(Matrix m, int numClusters, String method) 
+    public static int[] cluster(Matrix m, int numClusters, String method)
             throws IOException {
         File matrixFile = File.createTempFile("cluto-input",".matrix");
         matrixFile.deleteOnExit();
         MatrixIO.writeMatrix(m, matrixFile, MatrixIO.Format.CLUTO_SPARSE);
         File outputFile = File.createTempFile("cluto-output", ".matrix");
         outputFile.deleteOnExit();
+        int[] assignments = new int[m.rows()];
+        cluster(assignments, matrixFile, outputFile, numClusters, method);
+        return assignments;
+    }
+
+    /**
+     * Clusters the rows of the give file into the specified number of clusters
+     * using the string {@code method} to indicate to Cluto which type of
+     * clustering to use.
+     *
+     * @param clusterAssignment An array where each element corresponds to a row
+     *                          and the filled in value will be  the cluster
+     *                          number to which that row was assigned.  Cluster
+     *                          numbers will start at 0 and increase.  Rows that
+     *                          were not able to be clustered will be assigned a
+     *                          -1 value.
+     * @param matrixFile The data file containing the data points to cluster.
+     * @param outputFile The data file that will store the cluster assignments
+     *                   made by cluto.
+     * @param numClusters The number of clusters into which the matrix should
+     *                    divided.
+     * @param method A string recognized by Cluto that indicates which
+     *               clustering algorithm should be used.
+     *
+     * @return A string containing the standard output created by Cluto.
+     */
+    public static String cluster(int[] clusterAssignment,
+                                 File matrixFile, 
+                                 File outputFile,
+                                 int numClusters,
+                                 String method) throws IOException {
         // NOTE: the defaults for Agglomerative clustering are cosine similarity
         // and using mean-link (UPGMA) clustering, which is what we want.
         String commandLine = "vcluster " +
@@ -214,18 +284,17 @@ public class ClutoClustering implements OfflineClustering {
         BufferedReader stderr = new BufferedReader(
             new InputStreamReader(cluto.getErrorStream()));
         
-        if (LOGGER.isLoggable(Level.FINE)) {
-            StringBuilder output = new StringBuilder("Cluto output:\n");
-            for (String line = null; (line = stdout.readLine()) != null; ) {
-                output.append(line).append("\n");
-            }
-            LOGGER.fine(output.toString());
-        }
+        String clutoOutput = null;
+        StringBuilder output = new StringBuilder("Cluto output:\n");
+        for (String line = null; (line = stdout.readLine()) != null; ) 
+            output.append(line).append("\n");
+        clutoOutput = output.toString();
+        if (LOGGER.isLoggable(Level.FINE))
+            LOGGER.fine(clutoOutput);
 	    
         int exitStatus = 0;
         try {
             exitStatus = cluto.waitFor();
-            
         } catch (InterruptedException ie) {
             LOGGER.log(Level.SEVERE, "Cluto", ie);
         }
@@ -234,25 +303,32 @@ public class ClutoClustering implements OfflineClustering {
 
         // If Cluto was successful in generating the clustering the rows, read
         // in the results file to generate the output.
-        if (exitStatus == 0) {
-            int[] clusterAssignment = new int[m.rows()];
-            // The cluster assignmnet file is formatted as each row (data point)
-            // having its cluster label specified on a separate line.  We can
-            // read these in sequence to generate the output array.
-            BufferedReader br = new BufferedReader(new FileReader(outputFile));
-            for (int i = 0; i < clusterAssignment.length; ++i)
-                clusterAssignment[i] = Integer.parseInt(br.readLine());
-            return clusterAssignment;
-        }
-        else {
+        if (exitStatus == 0 && clusterAssignment != null)
+            extractAssignment(outputFile, clusterAssignment);
+        else if (exitStatus != 0) {
             StringBuilder sb = new StringBuilder();
-            for (String line = null; (line = stderr.readLine()) != null; ) {
+            for (String line = null; (line = stderr.readLine()) != null; )
                 sb.append(line).append("\n");
-            }
+
             // warning or error?
             LOGGER.warning("Cluto exited with error status.  " + exitStatus +
                                " stderr:\n" + sb.toString());
             throw new Error("Clustering failed");
         }
+        return clutoOutput;
+    }
+
+    /**
+     * Extract the set of assignemnts from a Cluto assignment file.
+     */
+    public static void extractAssignment(File outputFile,
+                                         int[] clusterAssignment)
+            throws IOException {
+        // The cluster assignmnet file is formatted as each row (data point)
+        // having its cluster label specified on a separate line.  We can
+        // read these in sequence to generate the output array.
+        BufferedReader br = new BufferedReader(new FileReader(outputFile));
+        for (int i = 0; i < clusterAssignment.length; ++i)
+            clusterAssignment[i] = Integer.parseInt(br.readLine());
     }
 }

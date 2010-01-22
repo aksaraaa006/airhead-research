@@ -431,7 +431,7 @@ public class Matrices {
          * {@inheritDoc}
          */
         public int columns() {
-            return columns();
+            return columns;
         }
 
         /**

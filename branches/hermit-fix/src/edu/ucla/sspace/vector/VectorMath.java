@@ -360,6 +360,96 @@ public class VectorMath {
     }
 
     /**
+     * Subtracts the second {@code Vector} fromt the first {@code Vector} and
+     * returns the result.
+     *
+     * @param vector1 The destination vector to be subtracted from.
+     * @param vector2 The source vector to subtract.
+     * @return The subtraction of {code vector2} from {@code vector1}.
+     */
+    public static Vector subtract(Vector vector1, Vector vector2) {
+        if (vector2.length() != vector1.length())
+            throw new IllegalArgumentException(
+                    "Vectors of different sizes cannot be added");
+        if (vector2 instanceof IntegerVector &&
+            vector1 instanceof DoubleVector)
+            return subtract(vector1, Vectors.asDouble(vector2));
+        if (vector2 instanceof SparseVector)
+            subtractSparseValues(vector1, vector2);
+        else {
+            for (int i = 0; i < vector2.length(); ++i) {
+                double value = vector1.getValue(i).doubleValue() -
+                               vector2.getValue(i).doubleValue();
+                vector1.set(i, value);
+            }
+        }
+
+        return vector1;
+    }
+
+    /**
+     * Subtracts the second {@code DoubleVector} from the first {@code
+     * DoubleVector} and returns the result.
+     *
+     * @param vector1 The destination vector to be subtracted from.
+     * @param vector2 The source vector to subtract.
+     * @return The subtraction of {code vector2} from {@code vector1}.
+     */
+    public static DoubleVector subtract(DoubleVector vector1,
+                                        DoubleVector vector2) {
+        if (vector2.length() != vector1.length())
+            throw new IllegalArgumentException(
+                    "Vectors of different sizes cannot be added");
+        // If vector is a sparse vector, simply get the non zero values and
+        // add them to this instance.
+        if (vector2 instanceof SparseVector)
+            subtractSparseValues(vector1, vector2);
+        else {
+            // Otherwise, inspect all values of vector, and only add the non
+            // zero values.
+            for (int i = 0; i < vector2.length(); ++i) {
+                double value = vector2.get(i);
+                // In the case that vector1 is sparse, only add non zero values.
+                if (value != 0d)
+                    vector1.add(i, -1 * value);
+            }
+        }
+        return vector1;
+    }
+
+    /**
+     * Subtracts the second {@code IntegerVector} from the first {@code
+     * IntegerVector} and returns the result.
+     *
+     * @param vector1 The destination vector to be subtracted from.
+     * @param vector2 The source vector to subtract.
+     * @return The subtraction of {code vector2} from {@code vector1}.
+     */
+    public static IntegerVector subtract(IntegerVector vector1,
+                                         IntegerVector vector2) {
+        if (vector2.length() != vector1.length())
+            throw new IllegalArgumentException(
+                    "Vectors of different sizes cannot be added");
+        // If vector is a sparse vector, simply get the non zero values and
+        // add them to this instance.
+        if (vector2 instanceof SparseVector) 
+            subtractSparseValues(vector1, vector2);
+        else if (vector2 instanceof TernaryVector)
+            subtractTernaryValues(vector1, (TernaryVector)vector2);
+        else {
+            // Otherwise, inspect all values of vector, and only add the non
+            // zero values.
+            for (int i = 0; i < vector2.length(); ++i) {
+                int value = vector2.get(i);
+                // In the case that vector1 is sparse, only add non zero values.
+                if (value != 0d)
+                    vector1.add(i, -1 * value);
+            }
+        }
+        return vector1;
+    }
+
+    /**
      * Adds the values from a {@code CompactSparseVector} to a {@code Vector}.
      * Only the non-zero indices will be traversed to save time.
      *
@@ -448,5 +538,96 @@ public class VectorMath {
             destination.set(p, 1 + destination.getValue(p).doubleValue());
         for (int n : source.negativeDimensions())
             destination.set(n, -1 + destination.getValue(n).doubleValue());
+    }
+
+    /**
+     * Adds the values from a {@code CompactSparseVector} to a {@code Vector}.
+     * Only the non-zero indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void subtractSparseValues(DoubleVector destination,
+                                             DoubleVector source) {
+        int[] otherIndices = ((SparseVector) source).getNonZeroIndices();
+        for (int index : otherIndices)
+            destination.add(index, -1 * source.get(index));
+    }
+
+    /**
+     * Adds the values from a {@code CompactSparseVector} to a {@code Vector}.
+     * Only the non-zero indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void subtractSparseValues(IntegerVector destination,
+                                             IntegerVector source) {
+        int[] otherIndices = ((SparseVector) source).getNonZeroIndices();
+        for (int index : otherIndices) {
+            destination.add(index, -1 * source.get(index));
+        }
+    }
+
+    /**
+     * Adds the values from a {@code CompactSparseVector} to a {@code Vector}.
+     * Only the non-zero indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void subtractSparseValues(Vector destination,
+                                        Vector source) {
+        int[] otherIndices = ((SparseVector) source).getNonZeroIndices();
+        for (int index : otherIndices) {
+            double value = destination.getValue(index).doubleValue() -
+                           source.getValue(index).doubleValue();
+            destination.set(index, value);
+        }
+    }
+
+    /**
+     * Adds the values from a {@code TernaryVector} to an {@code IntegerVector}.
+     * Only the positive and negative indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void subtractTernaryValues(IntegerVector destination,
+                                              TernaryVector source) {
+        for (int p : source.positiveDimensions())
+            destination.add(p, -1);
+        for (int n : source.negativeDimensions())
+            destination.add(n, 1);
+    }
+
+    /**
+     * Adds the values from a {@code TernaryVector} to a {@code DoubleVector}.
+     * Only the positive and negative indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void subtractTernaryValues(DoubleVector destination,
+                                              TernaryVector source) {
+        for (int p : source.positiveDimensions())
+            destination.add(p, -1);
+        for (int n : source.negativeDimensions())
+            destination.add(n, 1);
+    }
+
+    /**
+     * Adds the values from a {@code TernaryVector} to a {@code Vector}.
+     * Only the positive and negative indices will be traversed to save time.
+     *
+     * @param destination The vector to write new values to.
+     * @param source The vector to read values from.
+     */
+    private static void subtractTernaryValues(Vector destination,
+                                              TernaryVector source) {
+        for (int p : source.positiveDimensions())
+            destination.set(p, destination.getValue(p).doubleValue() - 1);
+        for (int n : source.negativeDimensions())
+            destination.set(n, destination.getValue(n).doubleValue() + 1);
     }
 }
