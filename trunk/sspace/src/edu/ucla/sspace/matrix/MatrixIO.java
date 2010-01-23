@@ -535,9 +535,8 @@ public class MatrixIO {
                 return array;
             }
 
+            // These two formats are equivalent
             case CLUTO_DENSE:
-                break;
-
             case SVDLIBC_DENSE_TEXT:
                 // TODO IMPLEMENT ME.
                 break;
@@ -633,14 +632,13 @@ public class MatrixIO {
 	case SVDLIBC_SPARSE_TEXT:
 	    break;
 
+        // These two formats are equivalent
         case CLUTO_DENSE:
-            break;
-
 	case SVDLIBC_DENSE_TEXT: 
 	    return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
 	   
 	case SVDLIBC_SPARSE_BINARY:
-	    break;
+            return readSparseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
 
 	case SVDLIBC_DENSE_BINARY:
             return readDenseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
@@ -648,7 +646,7 @@ public class MatrixIO {
 	
 	throw new Error("Reading matrices of " + format + " format is not "+
                         "currently supported. Email " + 
-                        "s-space-research-dev@googlegroups.com to request its" +
+                        "s-space-research-dev@googlegroups.com to request its "+
                         "inclusion and it will be quickly added");
     }
 
@@ -825,6 +823,55 @@ public class MatrixIO {
     }    
 
     /**
+     * Creates a {@code Matrix} from the data encoded as {@link
+     * Format#SVDLIBC_SPARSE_BINARY} in provided file.
+     *
+     * @param matrix
+     * @param matrixType
+     *
+     * @return a matrix whose data was specified by the provided file
+     */
+    private static Matrix readSparseSVDLIBCbinary(File matrix, Type matrixType,
+                                                  boolean transposeOnRead) 
+	    throws IOException {
+	DataInputStream dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(matrix)));
+
+        int rows = dis.readInt();
+        int cols = dis.readInt();
+        int nz = dis.readInt();
+        System.out.printf("Creating %s matrix %d rows, %d cols, %d nz%n",
+                          ((transposeOnRead) ? "transposed" : ""),
+                          rows, cols, nz);
+        Matrix m = (transposeOnRead)
+            ? Matrices.create(cols, rows, matrixType)
+            : Matrices.create(rows, cols, matrixType);
+        
+        if (transposeOnRead) {
+            int entriesSeen = 0;
+            int col = 0;
+            for (; entriesSeen < nz; ++col) {
+                int nzInCol = dis.readInt();
+                for (int i = 0; i < nzInCol; ++i, ++entriesSeen) {
+                    m.set(col, dis.readInt(), dis.readFloat());
+                }
+            }
+        }
+        else {
+            int entriesSeen = 0;
+            int col = 0;
+            for (; entriesSeen < nz; ++col) {
+                int nzInCol = dis.readInt();
+                for (int i = 0; i < nzInCol; ++i, ++entriesSeen) {
+                    m.set(dis.readInt(), col, dis.readFloat());
+                }
+            }
+        }
+
+        return m;
+    }    
+
+    /**
      * Writes the matrix to the specified output file in the provided format
      *
      * @param matrix the matrix to be written
@@ -855,16 +902,15 @@ public class MatrixIO {
 	    break;
 	}
             
+        // These two formats are equivalent
         case CLUTO_DENSE:
-            break;
-
         case SVDLIBC_DENSE_TEXT: {
 	    PrintWriter pw = new PrintWriter(output);
-	    pw.println(matrix.rows() + " " + matrix.columns());
+            pw.println(matrix.rows() + " " +  matrix.columns());
 	    for (int i = 0; i < matrix.rows(); ++i) {
 		StringBuffer sb = new StringBuffer(32);
 		for (int j = 0; j < matrix.columns(); ++j) {
-		    sb.append(matrix.get(i,j)).append(" ");
+		    sb.append((float)(matrix.get(i,j))).append(" ");
 		}
 		pw.println(sb.toString());
 	    }

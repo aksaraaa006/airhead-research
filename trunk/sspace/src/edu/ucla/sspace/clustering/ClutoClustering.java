@@ -23,6 +23,7 @@ package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.SparseMatrix;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -96,9 +97,17 @@ public class ClutoClustering {
      */
     private static int[] cluster(Matrix m, int numClusters, String method) 
             throws IOException {
+        LOGGER.log(Level.FINE, "clustering {0} data points with {1} features",
+                   new Object[] { m.rows(), m.columns() });
         File matrixFile = File.createTempFile("cluto-input",".matrix");
-        matrixFile.deleteOnExit();
-        MatrixIO.writeMatrix(m, matrixFile, MatrixIO.Format.CLUTO_SPARSE);
+        matrixFile.deleteOnExit();        
+        // NOTE: Cluto seems to have allocation problems on sparse matrices that
+        // are dense.  Therefore, try to estimate whether to use a dense matrix
+        // format based on the matrix type
+        MatrixIO.writeMatrix(m, matrixFile, 
+                             ((m instanceof SparseMatrix) 
+                              ? MatrixIO.Format.CLUTO_SPARSE
+                              : MatrixIO.Format.CLUTO_DENSE));
         File outputFile = File.createTempFile("cluto-output", ".matrix");
         outputFile.deleteOnExit();
         // NOTE: the defaults for Agglomerative clustering are cosine similarity
