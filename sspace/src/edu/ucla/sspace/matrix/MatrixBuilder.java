@@ -25,7 +25,7 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import edu.ucla.sspace.util.SparseArray;
 
-import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.File;
 
@@ -99,7 +99,7 @@ public interface MatrixBuilder {
      * @throws IllegalStateException if {@code finish} has been called, thereby
      *         signaling that no further data will be added to the matrix
      */
-    int addColumn(DoubleVector column);
+    int addColumn(Vector column);
 
     /**
      * Indicates that no further data will be added to the matrix and any

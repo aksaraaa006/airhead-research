@@ -35,6 +35,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
 
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
@@ -269,6 +270,11 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     /**
      * Parses the document.
      *
+     * <p>
+     *
+     * This method is thread-safe and may be called in parallel with separate
+     * documents to speed up overall processing time.
+     *
      * @param document {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
@@ -376,28 +382,28 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * completely unrelated.  However, document vectors may be compared to find
      * those document with similar content.<p>
      *
-     * Similar to {@code getVectorFor}, this method is only to be used after
+     * Similar to {@code getVector}, this method is only to be used after
      * {@code processSpace} has been called.<p>
      *
      * Implementation note: If a specific document ordering is needed, caution
      * should be used when using this class in a multi-threaded environment.
      * Beacuse the document number is based on what order it was
      * <i>processed</i>, no guarantee is made that this will correspond with the
-     * original ordering.  However, in a single-threaded environment, the
-     * ordering will be maintained.
+     * original document ordering as it exists in the corpus files.  However, in
+     * a single-threaded environment, the ordering will be preserved.
      *
      * @param documentNumber the number of the document according to when it was
      *        processed
      *
      * @return the semantics of the document in the document space
      */
-    public double[] getDocumentVector(int documentNumber) {
+    public DoubleVector getDocumentVector(int documentNumber) {
         if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
             throw new IllegalArgumentException(
                     "Document number is not within the bounds of the number of "
                     + "documents: " + documentNumber);
         }
-        return documentSpace.getRow(documentNumber);
+        return documentSpace.getRowVector(documentNumber);
     }
 
     /**
@@ -416,11 +422,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
     /**
      * {@inheritDoc}
-     *
-     * <p>
-     *
-     * This method is thread-safe and may be called in parallel with separate
-     * documents to speed up overall processing time.
      *
      * @param properties {@inheritDoc} See this class's {@link
      *        LatentSemanticAnalysis javadoc} for the full list of supported

@@ -118,7 +118,7 @@ import java.util.Properties;
  * thread per core, which is the default setting.
  *
  * @see LatentSemanticAnalysis
- * @see edu.ucla.sspace.lsa.MatrixTransformer MatrixTransformer
+ * @see edu.ucla.sspace.matrix.Transform Transform
  *
  * @author David Jurgens
  */

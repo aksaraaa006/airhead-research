@@ -38,8 +38,6 @@ import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.util.BoundedSortedMultiMap;
-import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseHashArray;
 import edu.ucla.sspace.util.WorkerThread;
@@ -113,9 +111,10 @@ public class PurandareFirstOrder implements SemanticSpace {
         "edu.ucla.sspace.purandare.PurandareFirstOrder";
 
     /**
-     * Map that pairs the word with it's position in the matrix
+     * Map that pairs the word with its position in the original term-document
+     * matrix.
      */
-    private final Map<String,Integer> termToIndex;       
+    private final Map<String,Integer> termToIndex;
 
     /**
      * A mapping from term to the sense-induced semantic vectors.  The first
