@@ -458,20 +458,19 @@ public class SemanticSpaceIO {
                 if (vector instanceof DoubleVector) {
                     SparseDoubleVector sdv = (SparseDoubleVector)vector;
                     int[] nz = sdv.getNonZeroIndices();
-                    new StringBuilder(nz.length * 4);
+                    sb = new StringBuilder(nz.length * 4);
                     // special case the first
-                    for (int i = 0; i < nz.length; ++i)
-                        sb.append(i).append(",").append(sdv.get(i));
+                    sb.append(0).append(",").append(sdv.get(0));
                     for (int i = 1; i < nz.length; ++i)
                         sb.append(",").append(i).append(",").append(sdv.get(i));
                 }
                 else {
                     SparseVector sv = (SparseVector)vector;
                     int[] nz = sv.getNonZeroIndices();                    
-                    new StringBuilder(nz.length * 4);
-                    for (int i = 0; i < nz.length; ++i)
-                        sb.append(i).append(",").
-                            append(sv.getValue(i).doubleValue());
+                    sb = new StringBuilder(nz.length * 4);
+                    // special case the first
+                    sb.append(0).append(",")
+                        .append(sv.getValue(0).doubleValue());
                     for (int i = 1; i < nz.length; ++i)
                         sb.append(",").append(i).append(",").
                             append(sv.getValue(i).doubleValue());
@@ -496,6 +495,7 @@ public class SemanticSpaceIO {
             }
             pw.println(sb.toString());
         }
+        pw.flush();
         pw.close();
     }
 
