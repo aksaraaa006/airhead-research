@@ -214,6 +214,11 @@ public class AtomicGrowingSparseMatrix implements AtomicMatrix, SparseMatrix {
         AtomicSparseVector rowEntry = sparseMatrix.get(row);
         rowReadLock.unlock();
          
+        // Update the column size if needed.
+        if (col >= cols.get()) {
+            cols.set(col + 1);
+        }
+
         // If no row existed, create one
         if (rowEntry == null && createIfAbsent) {
             rowWriteLock.lock();
@@ -226,9 +231,6 @@ public class AtomicGrowingSparseMatrix implements AtomicMatrix, SparseMatrix {
                 // update the bounds as necessary
                 if (row >= rows.get()) {
                     rows.set(row + 1);
-                }
-                if (col >= cols.get()) {
-                    cols.set(col + 1);
                 }
                 sparseMatrix.put(row, rowEntry);
             }

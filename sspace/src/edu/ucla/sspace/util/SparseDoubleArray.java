@@ -139,7 +139,8 @@ public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
         for (int i = 0; i < this.indices.length - 1; ++i) {
             if (this.indices[i] >= this.indices[i+1])
                 throw new IllegalArgumentException(
-                    "Indices must be sorted and unique");
+                    "Indices must be sorted and unique.  Given " +
+                    this.indices[i] + " and " + this.indices[i+1]);
         }
     }
 
