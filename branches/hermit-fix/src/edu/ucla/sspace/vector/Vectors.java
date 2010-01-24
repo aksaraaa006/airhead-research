@@ -71,6 +71,10 @@ public class Vectors {
             return new ViewVectorAsDoubleVector(v);
     }
 
+    public static SparseDoubleVector asDouble(SparseIntegerVector v) {
+        return new IntAsSparseDoubleVector(v);
+    }
+
     /**
      * Returns a vector backed by the specified array.  Any changes to the
      * vector are written through to the array.  This method acts a bridge

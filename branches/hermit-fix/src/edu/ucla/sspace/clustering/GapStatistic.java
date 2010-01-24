@@ -14,6 +14,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.StringReader;
 
+import java.util.Properties;
 import java.util.Random;
 
 import edu.ucla.sspace.common.SemanticSpace;
@@ -32,11 +33,58 @@ import java.util.Set;
  * reference data points.  This will recompute k-means with incresing values of
  * k until the difference between the original data set and the reference data
  * sets begins to decline.  Clustering will stop at the first k value where this
- * difference is less than the previous difference.
+ * difference is less than the previous difference.  This clustering method is
+ * an implementation of the method specified in the following paper:
+ *
+ *   <li style="font-family:Garamond, Georgia serif">R. Tibshirani, G. Walther,
+ *   and T. Hastie. (2001). Estimating the number of clusters in a dataset via
+ *   the Gap statistic. <i>Journal of the Royal Statistics Society (Series
+ *   B)</i>, 411–423. Available <a
+ *   href="http://www-stat.stanford.edu/~tibs/ftp/gap.ps">here</a>
+ *   </li>
  *
  * @author Keith Stevens
  */
 public class GapStatistic implements OfflineClustering {
+
+    /**
+     * A property prefix used for properties.
+     */
+    public static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.clustering.GapStatistic";
+
+    /**
+     * The number of clusters to start clustering at.
+     */
+    public static final String NUM_CLUSTERS_START = 
+        PROPERTY_PREFIX + ".numClusterStart";
+
+    /**
+     * The number of clusters to stop clustering at.
+     */
+    public static final String NUM_CLUSTERS_END = 
+        PROPERTY_PREFIX + ".numClusterEnd";
+
+    /**
+     * The number of reference data sets to use.
+     */
+    public static final String NUM_REFERENCE_DATA_SETS = 
+        PROPERTY_PREFIX + ".numReferenceDataSets";
+
+    /**
+     * The default number of clusters at which to start clustering.
+     */
+    private static final String DEFAULT_NUM_CLUSTERS_START = "1";
+
+    /**
+     * The default number of clusters at which to stop clustering.
+     */
+    private static final String DEFAULT_NUM_CLUSTERS_END = "10";
+
+    /**
+     * The default number of reference data sets to use.
+     */
+    private static final String DEFAULT_NUM_REFERENCE_DATA_SETS = "5";
 
     /**
      * A random number generator for creating reference data sets.
@@ -62,6 +110,31 @@ public class GapStatistic implements OfflineClustering {
      * The number of reference data sets to use.
      */
     private final int numGaps;
+
+    /**
+     * Creates a new instance of the {@code GapStatistic} using system
+     * properties.
+     */
+    public GapStatistic() {
+        this(System.getProperties());
+    }
+
+    /**
+     * Creates a new instance of the {@code GapStatistic} using the provided
+     * properties.
+     */
+    public GapStatistic(Properties props) {
+        startSize = Integer.parseInt(props.getProperty(
+                NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
+
+        int endSize = Integer.parseInt(props.getProperty(
+                NUM_CLUSTERS_END, DEFAULT_NUM_CLUSTERS_END));
+
+        numIterations = endSize - startSize;
+
+        numGaps = Integer.parseInt(props.getProperty(
+                NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
+    }
 
     /**
      * Creates a new {@code GapStatistic} that will compute k-means iteratively
