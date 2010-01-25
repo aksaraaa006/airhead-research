@@ -256,11 +256,11 @@ public class FlyingHermitMain extends GenericMain {
      */
     public void addExtraOptions(ArgOptions options) {
         // Add corpus division options.
-        options.addOption('D', "trainSize",
+        options.addOption('T', "trainSize",
                           "The number of documents to use as a training set, " +
                           "All other documents will be considered a test set",
                           true, "INT", "Optional (At most one of)");
-        options.addOption('C', "documentCount",
+        options.addOption('D', "documentCount",
                           "The number of documents within the document set " +
                           "to process",
                           true, "INT", "Optional (At most one of)");
@@ -549,12 +549,12 @@ public class FlyingHermitMain extends GenericMain {
             // testing.
             trainTestIter.reset();
             parseDocumentsMultiThreaded(space, trainTestIter, numThreads);
-            
-            startTime = System.currentTimeMillis();
-            space.processSpace(props);
-            endTime = System.currentTimeMillis();
-            verbose("processed space in %.3f seconds",
-                    ((endTime - startTime) / 1000d));
         }
+            
+        startTime = System.currentTimeMillis();
+        space.processSpace(props);
+        endTime = System.currentTimeMillis();
+        verbose("processed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
     }
 }
