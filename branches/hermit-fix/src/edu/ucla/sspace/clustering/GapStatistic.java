@@ -17,6 +17,8 @@ import java.io.StringReader;
 import java.util.Properties;
 import java.util.Random;
 
+import java.util.logging.Logger;
+
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StaticSemanticSpace;
 import edu.ucla.sspace.matrix.Matrices;
@@ -46,6 +48,12 @@ import java.util.Set;
  * @author Keith Stevens
  */
 public class GapStatistic implements OfflineClustering {
+
+    /**
+     * The logger used to record all output.
+     */
+    private static final Logger LOGGER =
+        Logger.getLogger(GapStatistic.class.getName());
 
     /**
      * A property prefix used for properties.
@@ -156,6 +164,7 @@ public class GapStatistic implements OfflineClustering {
      * using the the Gap Statistic .
      */
     public int[] cluster(Matrix m) {
+        LOGGER.fine("Generating the reference data set");
         // Generate the reference data sets.
         ReferenceDataGenerator generator = new ReferenceDataGenerator(m);
         File[] gapFiles = new File[numGaps];
@@ -181,6 +190,9 @@ public class GapStatistic implements OfflineClustering {
         String result = null;
         for (int i = 0; i < numIterations; ++i) {
             try {
+                LOGGER.fine("Clustering reference data for " +
+                            (startSize + i) + " clusters");
+
                 // Compute the score for the reference data sets with k
                 // clusters.
                 double gapScore = 0;
@@ -198,6 +210,8 @@ public class GapStatistic implements OfflineClustering {
                 }
                 gapScore = gapScore / numGaps;
 
+                LOGGER.fine("Clustering original data for " +
+                            (startSize + i) + " clusters");
                 // Compute the score for the original data set with k clusters.
                 File outFile =
                     File.createTempFile("gap-clustering-output", ".matrix");

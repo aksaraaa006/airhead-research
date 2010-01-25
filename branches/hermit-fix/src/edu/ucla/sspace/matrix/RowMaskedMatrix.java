@@ -139,7 +139,7 @@ public class RowMaskedMatrix implements Matrix {
         rows = rowToReal.size();
     }
 
-    private int getRealRow(int virtualRow) {
+    protected int getRealRow(int virtualRow) {
         if (virtualRow < 0 || virtualRow >= rows)
             throw new IndexOutOfBoundsException(
                 "row out of bounds: " + virtualRow);

@@ -17,6 +17,8 @@ import java.io.StringReader;
 import java.util.Properties;
 import java.util.Random;
 
+import java.util.logging.Logger;
+
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StaticSemanticSpace;
 import edu.ucla.sspace.matrix.Matrices;
@@ -50,6 +52,12 @@ import java.util.Set;
  * @author Keith Stevens
  */
 public class AutomaticStopClustering implements OfflineClustering {
+
+    /**
+     * The logger used to record all output.
+     */
+    private static final Logger LOGGER =
+        Logger.getLogger(AutomaticStopClustering.class.getName());
 
     /**
      * A property prefix used for properties.
@@ -236,6 +244,8 @@ public class AutomaticStopClustering implements OfflineClustering {
         // Compute the gap statistic for each iteration.
         String result = null;
         for (int i = 0; i < numIterations; ++i) {
+            LOGGER.fine("Clustering with " + (startSize + 1) + " clusters");
+
             try {
                 // Compute the score for the original data set with k clusters.
                 outFiles[i] = 

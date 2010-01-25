@@ -29,12 +29,14 @@ import edu.ucla.sspace.index.RandomOrthogonalVectorGenerator;
 
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.RowMaskedMatrix;
+import edu.ucla.sspace.matrix.SparseRowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
 import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.VectorMath;
 
 import java.util.Arrays;
@@ -46,13 +48,17 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.logging.Logger;
+
 // Temp for testing
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.StaticSemanticSpace;
 import edu.ucla.sspace.matrix.Matrices;
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vectors;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 
@@ -79,6 +85,12 @@ import java.util.Set;
  * @author Keith Stevens
  */
 public class SpectralClustering implements OfflineClustering {
+
+    /**
+     * The logger used to record all output.
+     */
+    private static final Logger LOGGER =
+        Logger.getLogger(SpectralClustering.class.getName());
 
     /**
      * The default intra cluster similarity weight.
@@ -129,7 +141,7 @@ public class SpectralClustering implements OfflineClustering {
 
         // First compute the pair wise similarities between every row vector
         // given.
-        System.out.println("Computing pair wise similarities");
+        LOGGER.fine("Computing pair wise similarities");
         PairDistances pairDistances = new PairDistances();
         for (int r = 0; r < matrix.rows(); ++r) {
             for (int c = r+1; c < matrix.rows(); ++c) {
@@ -142,15 +154,17 @@ public class SpectralClustering implements OfflineClustering {
                 pairDistances.set(r, c, sim);
             }
         }
-        System.out.println("Pair wise similarities done");
+        LOGGER.fine("Pair wise similarities done");
 
         // Cluster the matrix recursively.
-        ClusterResult r = realCluster(matrix, pairDistances);
-        System.out.println(r.numClusters);
+        ClusterResult r = realCluster(matrix, pairDistances, 0);
         return r.assignments;
     }
 
-    private ClusterResult realCluster(Matrix matrix, PairDistances pairDistances) {
+    private ClusterResult realCluster(Matrix matrix,
+                                      PairDistances pairDistances,
+                                      int depth) {
+        LOGGER.fine("Clustering at depth " + depth);
         // If the matrix has only one element then the item is in it's own
         // cluster.
         if (matrix.rows() == 1)
@@ -203,18 +217,10 @@ public class SpectralClustering implements OfflineClustering {
                 v.set(i, v.get(i) / D.get(i));
             
             // Step 2b-2) v = matrix-Transpose * v.
-            DoubleVector newV = new DenseVector(matrix.columns());
-            for (int r = 0; r < matrix.rows(); ++r)
-                for (int c = 0; c < matrix.columns(); ++c)
-                    newV.set(c, matrix.get(r, c) * v.get(r));
+            DoubleVector newV = computeMatrixTransposeV(matrix, v);
 
             // Step 2b-3) v = matrix * v.
-            for (int r = 0; r < matrix.rows(); ++r) {
-                double vValue = 0;
-                for (int c = 0; c < matrix.columns(); ++c)
-                    vValue += matrix.get(r, c) * newV.get(c);
-                v.set(r, vValue);
-            }
+            computeMatrixDotV(matrix, newV, v);
 
             // Step 2b-4) v = D*R-Inverse * v. Note that R = p.
             for (int i = 0; i < vectorLength; ++i)
@@ -271,6 +277,7 @@ public class SpectralClustering implements OfflineClustering {
             }
         }
 
+        // Compute the split masked sub matrices from the original.
         LinkedHashSet<Integer> leftMatrixRows = new LinkedHashSet<Integer>();
         LinkedHashSet<Integer> rightMatrixRows = new LinkedHashSet<Integer>();
         int i = 0;
@@ -283,8 +290,17 @@ public class SpectralClustering implements OfflineClustering {
         }
 
         // Create the split permuted matricies.
-        Matrix leftMatrix = new RowMaskedMatrix(matrix, leftMatrixRows);
-        Matrix rightMatrix = new RowMaskedMatrix(matrix, rightMatrixRows);
+        Matrix leftMatrix = null;
+        Matrix rightMatrix = null;
+        if (matrix instanceof SparseMatrix) {
+            leftMatrix = new SparseRowMaskedMatrix((SparseMatrix) matrix,
+                                                   leftMatrixRows);
+            rightMatrix = new SparseRowMaskedMatrix((SparseMatrix) matrix,
+                                                    rightMatrixRows);
+        } else {
+            leftMatrix = new RowMaskedMatrix(matrix, leftMatrixRows);
+            rightMatrix = new RowMaskedMatrix(matrix, rightMatrixRows);
+        }
 
         // Create the new masked distance maps.
         PairDistances leftDistances =
@@ -293,8 +309,12 @@ public class SpectralClustering implements OfflineClustering {
             new PairDistances(pairDistances, elementIndices, cutIndex, false);
 
         // Do clustering on the left and right branches.
-        ClusterResult leftResult = realCluster(leftMatrix, leftDistances);
-        ClusterResult rightResult = realCluster(rightMatrix, rightDistances);
+        ClusterResult leftResult =
+            realCluster(leftMatrix, leftDistances, depth+1);
+        ClusterResult rightResult =
+            realCluster(rightMatrix, rightDistances, depth+1);
+
+        LOGGER.fine("Merging at depth " + depth);
 
         // Compute the objective when we keep the two branches split.
         double splitObjective = computeObjective(
@@ -313,9 +333,13 @@ public class SpectralClustering implements OfflineClustering {
         // all clusters into one.
         int[] assignments = new int[matrix.rows()];
         int numClusters = 1;
-        if (mergedObjective < splitObjective)
+        if (mergedObjective < splitObjective) {
+            LOGGER.fine("Selecting to combine sub trees at depth " + depth);
             Arrays.fill(assignments, 0);
+        }
         else  {
+            LOGGER.fine("Selecting to maintain sub trees at depth " + depth);
+
             // Copy over the left assignments and the right assignments, where
             // the cluster id's of the right assignments are incremented to
             // avoid duplicate cluster ids.
@@ -330,6 +354,63 @@ public class SpectralClustering implements OfflineClustering {
                     rightResult.assignments[index] + offset;
         }
         return new ClusterResult(assignments, numClusters);
+    }
+
+    /**
+     * Returns the dot product between the transpose of a given matrix and a
+     * given vector.  This method has special casing for a {@code SparseMatrix}.
+     * This method also assumes that {@code matrix} is row based and iterates
+     * over each of the values in the row before iterating over another row.
+     */
+    private DoubleVector computeMatrixTransposeV(Matrix matrix,
+                                                 DoubleVector v) {
+        DoubleVector newV = new DenseVector(matrix.columns());
+        if (matrix instanceof SparseMatrix) {
+            SparseMatrix smatrix = (SparseMatrix) matrix;
+            for (int r = 0; r < smatrix.rows(); ++r) {
+                SparseDoubleVector row = smatrix.getRowVector(r);
+                int[] nonZeros = row.getNonZeroIndices();
+                for (int c : nonZeros)
+                    newV.add(c, row.get(c) * v.get(r));
+            }
+        } else {
+            for (int r = 0; r < matrix.rows(); ++r)
+                for (int c = 0; c < matrix.columns(); ++c)
+                    newV.add(c, matrix.get(r, c) * v.get(r));
+        }
+        return newV;
+    }
+
+    /**
+     * Computes the dot product between a given matrix and a given vector {@code
+     * newV}.  The result is stored in {@code v}.  This method has special
+     * casing for when {@code matrix} is a {@code SparseMatrix}.  This method
+     * also assumes that {@code matrix} is row based and iterates over each of
+     * the values in the row before iterating over another row.
+     */
+    private void computeMatrixDotV(Matrix matrix,
+                                   DoubleVector newV,
+                                   DoubleVector v) {
+        // Special case for sparse matrices.
+        if (matrix instanceof SparseMatrix) {
+            SparseMatrix smatrix = (SparseMatrix) matrix;
+            for (int r = 0; r < smatrix.rows(); ++r) {
+                double vValue = 0;
+                SparseDoubleVector row = smatrix.getRowVector(r);
+                int[] nonZeros = row.getNonZeroIndices();
+                for (int c : nonZeros)
+                    vValue += row.get(c) * newV.get(c);
+                v.set(r, vValue);
+            }
+        } else {
+            // Handle dense matrices.
+            for (int r = 0; r < matrix.rows(); ++r) {
+                double vValue = 0;
+                for (int c = 0; c < matrix.columns(); ++c)
+                    vValue += matrix.get(r, c) * newV.get(c);
+                v.set(r, vValue);
+            }
+        }
     }
 
     /**
@@ -400,7 +481,7 @@ public class SpectralClustering implements OfflineClustering {
      * Compute the row sums of the values in {@code matrix} and returns the
      * values in a vector of length {@code matrix.columns()}.
      */
-    private DoubleVector computeMatrixRowSum(Matrix matrix) {
+    private <T extends Matrix> DoubleVector computeMatrixRowSum(T matrix) {
         DoubleVector rowSums = new DenseVector(matrix.columns());
         for (int r = 0; r < matrix.rows(); ++r)
             VectorMath.add(rowSums, matrix.getRowVector(r));
@@ -704,6 +785,29 @@ public class SpectralClustering implements OfflineClustering {
     }
 
     public static void main(String[] args) throws Exception {
+        SpectralClustering clustering = null;
+        if (args.length > 1)
+            clustering = new SpectralClustering(
+                    Double.parseDouble(args[1]),
+                    Double.parseDouble(args[2]));
+        else 
+            clustering = new SpectralClustering();
+
+        List<SparseDoubleVector> vectors = new ArrayList<SparseDoubleVector>();
+        Random random = new Random();
+        for (int i = 0; i < 100; i++) {
+            SparseDoubleVector vector = new CompactSparseVector(100);
+            for (int j = 10; j < 10; ++j)
+                vector.set(random.nextInt(10), 1);
+            vectors.add(vector);
+        }
+
+        System.out.println("Clustering Start");
+        int[] assignments =
+            clustering.cluster(Matrices.asSparseMatrix(vectors));
+        System.out.println("Clustering Done");
+
+        /*
         SemanticSpace sspace = new StaticSemanticSpace(args[0]);
         List<DoubleVector> vectors = new ArrayList<DoubleVector>();
 
@@ -716,17 +820,6 @@ public class SpectralClustering implements OfflineClustering {
             vectors.add(Vectors.asDouble(sspace.getVector(word)));
         }
 
-        SpectralClustering clustering = null;
-        if (args.length > 1)
-            clustering = new SpectralClustering(
-                    Double.parseDouble(args[1]),
-                    Double.parseDouble(args[2]));
-        else 
-            clustering = new SpectralClustering();
-
-        System.out.println("Clustering Start");
-        int[] assignments = clustering.cluster(Matrices.asMatrix(vectors));
-        System.out.println("Clustering Done");
         i = 0;
         for (String word : words) {
             if (i == 100)
@@ -734,5 +827,6 @@ public class SpectralClustering implements OfflineClustering {
             i++;
             System.out.printf("%s %d\n", word, assignments[i++]);
         }
+        */
     }
 }
