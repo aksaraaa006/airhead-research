@@ -589,7 +589,7 @@ public class SemanticSpaceExplorer {
             "  alias filename.sspace name\n" + 
             "  write-command-results output-file command...\n" +
             "  print-vector word\n" +
-        "  print-words [string-prefix]\n";
+            "  get-words [string-prefix]\n";
     }
 
     /**
