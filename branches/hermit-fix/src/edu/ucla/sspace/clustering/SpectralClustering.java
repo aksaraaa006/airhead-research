@@ -785,29 +785,6 @@ public class SpectralClustering implements OfflineClustering {
     }
 
     public static void main(String[] args) throws Exception {
-        SpectralClustering clustering = null;
-        if (args.length > 1)
-            clustering = new SpectralClustering(
-                    Double.parseDouble(args[1]),
-                    Double.parseDouble(args[2]));
-        else 
-            clustering = new SpectralClustering();
-
-        List<SparseDoubleVector> vectors = new ArrayList<SparseDoubleVector>();
-        Random random = new Random();
-        for (int i = 0; i < 100; i++) {
-            SparseDoubleVector vector = new CompactSparseVector(100);
-            for (int j = 10; j < 10; ++j)
-                vector.set(random.nextInt(10), 1);
-            vectors.add(vector);
-        }
-
-        System.out.println("Clustering Start");
-        int[] assignments =
-            clustering.cluster(Matrices.asSparseMatrix(vectors));
-        System.out.println("Clustering Done");
-
-        /*
         SemanticSpace sspace = new StaticSemanticSpace(args[0]);
         List<DoubleVector> vectors = new ArrayList<DoubleVector>();
 
@@ -820,6 +797,20 @@ public class SpectralClustering implements OfflineClustering {
             vectors.add(Vectors.asDouble(sspace.getVector(word)));
         }
 
+        SpectralClustering clustering = null;
+        if (args.length > 1)
+            clustering = new SpectralClustering(
+                    Double.parseDouble(args[1]),
+                    Double.parseDouble(args[2]));
+        else 
+            clustering = new SpectralClustering();
+
+        System.out.println("Clustering Start");
+        int[] assignments =
+            clustering.cluster(Matrices.asMatrix(vectors));
+        System.out.println("Clustering Done");
+
+
         i = 0;
         for (String word : words) {
             if (i == 100)
@@ -827,6 +818,5 @@ public class SpectralClustering implements OfflineClustering {
             i++;
             System.out.printf("%s %d\n", word, assignments[i++]);
         }
-        */
     }
 }

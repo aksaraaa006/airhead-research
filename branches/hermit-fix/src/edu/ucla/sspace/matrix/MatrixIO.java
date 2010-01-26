@@ -945,9 +945,8 @@ public class MatrixIO {
                     if (matrix.get(i,j) == 0)
                         continue;
                     StringBuffer sb = new StringBuffer(32);
-                    sb.append(i).append(" ").append(j)
+                    sb.append(i+1).append(" ").append(j+1)
                         .append(" ").append(matrix.get(i,j));
-                    System.out.println(sb.toString());
                     pw.println(sb.toString());
                 }
             }
