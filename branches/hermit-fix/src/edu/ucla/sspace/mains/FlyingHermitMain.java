@@ -422,7 +422,7 @@ public class FlyingHermitMain extends GenericMain {
 
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
-            String savedIndexName = argOptions.getStringOption("loadVectors");
+            String savedIndexName = argOptions.getStringOption("loadIndexes");
             vectorMap = (IntegerVectorGeneratorMap<TernaryVector>)
                 SerializableUtil.load(new File(savedIndexName + ".index"),
                                       IntegerVectorGeneratorMap.class);
