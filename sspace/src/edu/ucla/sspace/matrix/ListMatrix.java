@@ -24,6 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -47,8 +48,27 @@ class ListMatrix<T extends DoubleVector> implements Matrix {
      */
     protected int columns;
 
+    /**
+     * Constructs a matrix from the list of vectors where the first list element
+     * is treated as the first row in the matrix and so on.
+     *
+     * @throws IllegalArgumentException if the list is empty or if the vectors
+     * have different lengths
+     */
     public ListMatrix(List<T> vectors) {
-        this.vectors = vectors;
+        if (vectors.size() == 0)
+            throw new IllegalArgumentException(
+                "Must provide at least one vector");
+        // Copy the contents to an ArrayList to guarantee O(1) row access
+        this.vectors = new ArrayList<T>(vectors.size());
+        columns = vectors.get(0).length();
+        int row = 0;
+        for (T t : vectors) {
+            if (t.length() != columns)
+                throw new IllegalArgumentException(
+                    "Cannot create ragged matrix from list of vectors");
+            this.vectors.set(row++, t);
+        }        
     }
 
     /**
