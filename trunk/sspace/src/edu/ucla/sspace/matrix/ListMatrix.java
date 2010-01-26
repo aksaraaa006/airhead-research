@@ -62,12 +62,11 @@ class ListMatrix<T extends DoubleVector> implements Matrix {
         // Copy the contents to an ArrayList to guarantee O(1) row access
         this.vectors = new ArrayList<T>(vectors.size());
         columns = vectors.get(0).length();
-        int row = 0;
         for (T t : vectors) {
             if (t.length() != columns)
                 throw new IllegalArgumentException(
                     "Cannot create ragged matrix from list of vectors");
-            this.vectors.set(row++, t);
+            this.vectors.add(t);
         }        
     }
 
