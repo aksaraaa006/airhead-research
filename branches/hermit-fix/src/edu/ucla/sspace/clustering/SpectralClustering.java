@@ -28,6 +28,9 @@ import edu.ucla.sspace.index.DoubleVectorGenerator;
 import edu.ucla.sspace.index.RandomOrthogonalVectorGenerator;
 
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.Matrix.Type;
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.RowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseRowMaskedMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
@@ -38,6 +41,7 @@ import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.VectorMath;
+import edu.ucla.sspace.vector.VectorIO;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -46,6 +50,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import java.util.logging.Logger;
@@ -56,6 +61,7 @@ import edu.ucla.sspace.common.StaticSemanticSpace;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vectors;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -86,6 +92,12 @@ import java.util.Set;
  */
 public class SpectralClustering implements OfflineClustering {
 
+    public static final String PROPERTY_PREFIX = 
+        "edu.ucla.sspace.clustering.SpectralClustering";
+
+    public static final String ALPHA_PROPERTY =
+        PROPERTY_PREFIX + ".alpha";
+
     /**
      * The logger used to record all output.
      */
@@ -96,11 +108,6 @@ public class SpectralClustering implements OfflineClustering {
      * The default intra cluster similarity weight.
      */
     private static final Double DEFAULT_ALPHA = .4;
-
-    /**
-     * The default inter cluster similarity weight.
-     */
-    private static final Double DEFAULT_BETA = .6;
 
     /**
      * When using the relaxed correlational objective function, this variable
@@ -115,20 +122,44 @@ public class SpectralClustering implements OfflineClustering {
     private final double alpha;
 
     /**
+     * The maximum number of clusters that should be created.  This implicitly
+     * puts a limit on the depth of the splitting that gets done since no
+     * element below a depth of {@code maxClusters} would be in a separate
+     * cluster.
+     */
+    private final int maxClusters;
+
+    /**
      * Constructs a new {@code SpectralClustering} instance with default weights
      * for relaxed correlation.
      */
     public SpectralClustering() {
-        this(DEFAULT_ALPHA, DEFAULT_BETA);
+        this(System.getProperties());
+    }
+
+    public SpectralClustering(Properties props) {
+        String alphaProp = props.getProperty(ALPHA_PROPERTY);
+        alpha = (alphaProp == null)
+            ? DEFAULT_ALPHA
+            : Double.parseDouble(alphaProp);
+
+        beta = 1 - alpha;
+
+        String maxClusterProp =
+            props.getProperty(OfflineProperties.MAX_NUM_CLUSTER_PROPERTY);
+        maxClusters = (maxClusterProp == null)
+            ? Integer.MAX_VALUE 
+            : Integer.parseInt(maxClusterProp);
     }
 
     /**
      * Constructs a new {@code SpectralClustering} instance with give weights
      * for relaxed correlation.
      */
-    public SpectralClustering(double alpha, double beta) {
+    public SpectralClustering(double alpha, int maxClusters) {
         this.alpha = alpha;
-        this.beta = beta;
+        this.beta = 1 - alpha;
+        this.maxClusters = maxClusters;
     }
 
     /**
@@ -138,10 +169,9 @@ public class SpectralClustering implements OfflineClustering {
      * Divide-and-Merge Methodology for Clustering" when applicable.
      */
     public int[] cluster(Matrix matrix) {
-
         // First compute the pair wise similarities between every row vector
         // given.
-        LOGGER.fine("Computing pair wise similarities");
+        verbose("Computing pair wise similarities");
         PairDistances pairDistances = new PairDistances();
         for (int r = 0; r < matrix.rows(); ++r) {
             for (int c = r+1; c < matrix.rows(); ++c) {
@@ -154,7 +184,7 @@ public class SpectralClustering implements OfflineClustering {
                 pairDistances.set(r, c, sim);
             }
         }
-        LOGGER.fine("Pair wise similarities done");
+        verbose("Pair wise similarities done");
 
         // Cluster the matrix recursively.
         ClusterResult r = realCluster(matrix, pairDistances, 0);
@@ -164,21 +194,27 @@ public class SpectralClustering implements OfflineClustering {
     private ClusterResult realCluster(Matrix matrix,
                                       PairDistances pairDistances,
                                       int depth) {
-        LOGGER.fine("Clustering at depth " + depth);
-        // If the matrix has only one element then the item is in it's own
+        verbose("Clustering at depth " + depth);
+
+        // If the matrix has only one element or the depth is equal to the
+        // maximum number of desired clusters then all items are in a single
         // cluster.
-        if (matrix.rows() == 1)
-            return new ClusterResult(new int[] { 0 }, 1);
+        if (matrix.rows() == 1 || depth == maxClusters)
+            return new ClusterResult(new int[matrix.rows()], 1);
 
         int vectorLength = matrix.rows();
         DoubleVector matrixRowSums = computeMatrixRowSum(matrix);
+        double magnitude = 0;
+        for (int i = 0; i < matrixRowSums.length(); ++i)
+            magnitude += Math.pow(matrixRowSums.get(i), 2);
+        magnitude = Math.sqrt(magnitude);
 
         // Compute p.
         DoubleVector p = new DenseVector(vectorLength);
         double pSum = 0;
         for (int r = 0; r < matrix.rows(); ++r) {
-            double dot = Similarity.cosineSimilarity(matrix.getRowVector(r),
-                                                     matrixRowSums);
+            double dot = cosineSimilarity(
+                    matrixRowSums, magnitude, matrix.getRowVector(r));
             pSum += dot;
             p.set(r, dot);
         }
@@ -190,10 +226,114 @@ public class SpectralClustering implements OfflineClustering {
         for (int i = 0; i < vectorLength; ++i) {
             double piValue = p.get(i)/pSum;
             pi.set(i, piValue);
-            D.set(i, Math.sqrt(piValue));
-            piDInverse.set(i, piValue / D.get(i));
+            if (piValue > 0d) {
+                D.set(i, Math.sqrt(piValue));
+                piDInverse.set(i, piValue / D.get(i));
+            }
         }
 
+        DoubleVector v = computeSecondEigenVector(matrix, piDInverse, D, p);
+
+        // Sort the rows of the original matrix based on their v values.
+        Index[] elementIndices = new Index[v.length()];
+        for (int i = 0; i < v.length(); ++i)
+            elementIndices[i] = new Index(v.get(i), i);
+        Arrays.sort(elementIndices);
+
+        int cutIndex = computeCut(matrix, p, elementIndices);
+
+        // Compute the split masked sub matrices from the original.
+        LinkedHashSet<Integer> leftMatrixRows = new LinkedHashSet<Integer>();
+        LinkedHashSet<Integer> rightMatrixRows = new LinkedHashSet<Integer>();
+        int i = 0;
+        for (Index index : elementIndices) {
+            if (i <= cutIndex)
+                leftMatrixRows.add(index.index);
+            else
+                rightMatrixRows.add(index.index);
+            i++;
+        }
+
+        // Create the split permuted matricies.
+        Matrix leftMatrix = null;
+        Matrix rightMatrix = null;
+        if (matrix instanceof SparseMatrix) {
+            leftMatrix = new SparseRowMaskedMatrix((SparseMatrix) matrix,
+                                                   leftMatrixRows);
+            rightMatrix = new SparseRowMaskedMatrix((SparseMatrix) matrix,
+                                                    rightMatrixRows);
+        } else {
+            leftMatrix = new RowMaskedMatrix(matrix, leftMatrixRows);
+            rightMatrix = new RowMaskedMatrix(matrix, rightMatrixRows);
+        }
+
+        verbose(String.format("Splitting into two matricies %d-%d",
+                                  leftMatrix.rows(), rightMatrix.rows()));
+
+        // Create the new masked distance maps.
+        PairDistances leftDistances =
+            new PairDistances(pairDistances, elementIndices, cutIndex, true);
+        PairDistances rightDistances =
+            new PairDistances(pairDistances, elementIndices, cutIndex, false);
+
+        // Do clustering on the left and right branches.
+        ClusterResult leftResult =
+            realCluster(leftMatrix, leftDistances, depth+1);
+        ClusterResult rightResult =
+            realCluster(rightMatrix, rightDistances, depth+1);
+
+        verbose("Merging at depth " + depth);
+
+        // Compute the objective when we keep the two branches split.
+        double splitObjective = computeObjective(
+                leftResult, rightResult, elementIndices, pairDistances);
+
+        // Compute the objective when we merge the two branches together.
+        double mergedObjective = 0;
+        for (i = 0; i < matrix.rows(); ++i) {
+            for (int j = i + 1; j < matrix.rows(); ++j) {
+                double sim = pairDistances.get(i, j);
+                mergedObjective += alpha * (1 - sim);
+            }
+        }
+
+        // If the merged objective value is less than the split version, combine
+        // all clusters into one.
+        int[] assignments = new int[matrix.rows()];
+        int numClusters = 1;
+        if (mergedObjective < splitObjective) {
+            verbose("Selecting to combine sub trees at depth " + depth);
+            Arrays.fill(assignments, 0);
+        }
+        else  {
+            verbose("Selecting to maintain sub trees at depth " + depth);
+
+            // Copy over the left assignments and the right assignments, where
+            // the cluster id's of the right assignments are incremented to
+            // avoid duplicate cluster ids.
+            numClusters = leftResult.numClusters + rightResult.numClusters;
+
+            for (int index = 0; index < leftResult.assignments.length; ++index)
+                assignments[elementIndices[index].index] =
+                    leftResult.assignments[index];
+            int offset = leftResult.assignments.length;
+            for (int index = 0; index < rightResult.assignments.length; ++index)
+                assignments[elementIndices[index + offset].index] =
+                    rightResult.assignments[index] + offset;
+        }
+        return new ClusterResult(assignments, numClusters);
+
+        /*
+        return new ClusterResult(new int[matrix.rows()], 1);
+
+        */
+    }
+
+    private DoubleVector computeSecondEigenVector(Matrix matrix,
+                                                  DoubleVector piDInverse,
+                                                  DoubleVector D,
+                                                  DoubleVector p) {
+        int vectorLength = piDInverse.length();
         // Step 1, generate a random vector, v,  that is orthogonal to
         // pi*D-Inverse.
         System.setProperty(
@@ -204,8 +344,12 @@ public class SpectralClustering implements OfflineClustering {
         DoubleVector v =
             generator.generateRandomVector(vectorLength);
 
-        int log = (int) Statistics.log2(vectorLength);
+        int log = 1; //(int) Statistics.log2(vectorLength);
         for (int k = 0; k < log; ++k) {
+            double average = 0;
+            double minValue = Double.MAX_VALUE;
+            double maxValue = Double.MIN_VALUE;
+
             // Step 2, repeated, (a) normalize v (b) set v = Q*v, where Q = D *
             // R-Inverse * matrix * matrix-Transpose * D-Inverse.
             normalize(v);
@@ -214,7 +358,8 @@ public class SpectralClustering implements OfflineClustering {
             // multiplications. 
             // Step 2b-1) v = D-Inverse*v.
             for (int i = 0; i < vectorLength; ++ i)
-                v.set(i, v.get(i) / D.get(i));
+                if (D.get(i) != 0d)
+                    v.set(i, v.get(i) / D.get(i));
             
             // Step 2b-2) v = matrix-Transpose * v.
             DoubleVector newV = computeMatrixTransposeV(matrix, v);
@@ -222,17 +367,21 @@ public class SpectralClustering implements OfflineClustering {
             // Step 2b-3) v = matrix * v.
             computeMatrixDotV(matrix, newV, v);
 
-            // Step 2b-4) v = D*R-Inverse * v. Note that R = p.
-            for (int i = 0; i < vectorLength; ++i)
-                v.set(i, v.get(i) * D.get(i) / p.get(i));
+            // Step 2b-4) v = D*R-Inverse * v. Note that R is a diagonal matrix
+            // with p as the values along the diagonal.
+            for (int i = 0; i < vectorLength; ++i) {
+                double oldValue = v.get(i);
+                double newValue = oldValue * D.get(i) / p.get(i);
+                v.set(i, newValue);
+            }
         }
 
-        // Sort the rows of the original matrix based on their v values.
-        Index[] elementIndices = new Index[v.length()];
-        for (int i = 0; i < v.length(); ++i)
-            elementIndices[i] = new Index(v.get(i), i);
-        Arrays.sort(elementIndices);
+        return v;
+    }
 
+    private int computeCut(Matrix matrix,
+                           DoubleVector p,
+                           Index[] elementIndices) {
         // Compute the conductance of the newly sorted matrix.
         DoubleVector x = new DenseVector(matrix.columns());
         DoubleVector y = new DenseVector(matrix.columns());
@@ -276,84 +425,36 @@ public class SpectralClustering implements OfflineClustering {
                 cutIndex = i;
             }
         }
+        return cutIndex;
+    }
 
-        // Compute the split masked sub matrices from the original.
-        LinkedHashSet<Integer> leftMatrixRows = new LinkedHashSet<Integer>();
-        LinkedHashSet<Integer> rightMatrixRows = new LinkedHashSet<Integer>();
-        int i = 0;
-        for (Index index : elementIndices) {
-            if (i <= cutIndex)
-                leftMatrixRows.add(index.index);
-            else
-                rightMatrixRows.add(index.index);
-            i++;
-        }
-
-        // Create the split permuted matricies.
-        Matrix leftMatrix = null;
-        Matrix rightMatrix = null;
-        if (matrix instanceof SparseMatrix) {
-            leftMatrix = new SparseRowMaskedMatrix((SparseMatrix) matrix,
-                                                   leftMatrixRows);
-            rightMatrix = new SparseRowMaskedMatrix((SparseMatrix) matrix,
-                                                    rightMatrixRows);
+    /**
+     * Computes the dot product when the second vector may be sparse and the
+     * first vector has a known magnitude.
+     */
+    private double cosineSimilarity(DoubleVector v1,
+                                    double v1Magnitude,
+                                    DoubleVector v2) {
+        double dot = 0;
+        double v2Magnitude = 0;
+        if (v2 instanceof SparseDoubleVector) {
+            SparseDoubleVector sv2 = (SparseDoubleVector) v2;
+            int[] nonZeros = sv2.getNonZeroIndices();
+            for (int index : nonZeros) {
+                double v2Value = v2.get(index);
+                v2Magnitude += Math.pow(v2Value, 2);
+                dot += v2Value * v1.get(index);
+            }
         } else {
-            leftMatrix = new RowMaskedMatrix(matrix, leftMatrixRows);
-            rightMatrix = new RowMaskedMatrix(matrix, rightMatrixRows);
-        }
-
-        // Create the new masked distance maps.
-        PairDistances leftDistances =
-            new PairDistances(pairDistances, elementIndices, cutIndex, true);
-        PairDistances rightDistances =
-            new PairDistances(pairDistances, elementIndices, cutIndex, false);
-
-        // Do clustering on the left and right branches.
-        ClusterResult leftResult =
-            realCluster(leftMatrix, leftDistances, depth+1);
-        ClusterResult rightResult =
-            realCluster(rightMatrix, rightDistances, depth+1);
-
-        LOGGER.fine("Merging at depth " + depth);
-
-        // Compute the objective when we keep the two branches split.
-        double splitObjective = computeObjective(
-                leftResult, rightResult, elementIndices, pairDistances);
-
-        // Compute the objective when we merge the two branches together.
-        double mergedObjective = 0;
-        for (i = 0; i < matrix.rows(); ++i) {
-            for (int j = i + 1; j < matrix.rows(); ++j) {
-                double sim = pairDistances.get(i, j);
-                mergedObjective += alpha * (1 - sim);
+            for (int i = 0; i < v2.length(); ++i) {
+                double v2Value = v2.get(i);
+                v2Magnitude += Math.pow(v2Value, 2);
+                dot += v2Value * v1.get(i);
             }
         }
+        v2Magnitude = Math.sqrt(v2Magnitude);
 
-        // If the merged objective value is less than the split version, combine
-        // all clusters into one.
-        int[] assignments = new int[matrix.rows()];
-        int numClusters = 1;
-        if (mergedObjective < splitObjective) {
-            LOGGER.fine("Selecting to combine sub trees at depth " + depth);
-            Arrays.fill(assignments, 0);
-        }
-        else  {
-            LOGGER.fine("Selecting to maintain sub trees at depth " + depth);
-
-            // Copy over the left assignments and the right assignments, where
-            // the cluster id's of the right assignments are incremented to
-            // avoid duplicate cluster ids.
-            numClusters = leftResult.numClusters + rightResult.numClusters;
-
-            for (int index = 0; index < leftResult.assignments.length; ++index)
-                assignments[elementIndices[index].index] =
-                    leftResult.assignments[index];
-            int offset = leftResult.assignments.length;
-            for (int index = 0; index < rightResult.assignments.length; ++index)
-                assignments[elementIndices[index + offset].index] =
-                    rightResult.assignments[index] + offset;
-        }
-        return new ClusterResult(assignments, numClusters);
+        return ((dot / (v1Magnitude * v2Magnitude)) + 1) / 2;
     }
 
     /**
@@ -489,14 +590,27 @@ public class SpectralClustering implements OfflineClustering {
     }
 
     /**
-     * Normalizes using the l2 norm.
+     * Normalizes using the the largest value in the vector.
      */
     private void normalize(DoubleVector v) {
-        double magnitude = 0;
+        /*
+        double maxValue = Double.MAX_VALUE;
+        for (int i = 0; i < v.length(); ++i) {
+            double val = v.get(i);
+            if (val > maxValue)
+                maxValue = val;
+        }
+        */
+        double maxValue = 0;
         for (int i = 0; i < v.length(); ++i)
-            magnitude += Math.pow(v.get(i), 2);
+            maxValue += Math.pow(v.get(i), 2);
+        maxValue = Math.sqrt(maxValue);
         for (int i = 0; i < v.length(); ++i)
-            v.set(i, v.get(i) / magnitude);
+            v.set(i, v.get(i) / maxValue);
+    }
+
+    private void verbose(String out) {
+        LOGGER.info(out);
     }
 
     /**
@@ -617,7 +731,8 @@ public class SpectralClustering implements OfflineClustering {
                 replacementIndices = new int[elementIndices.length - cut - 1];
                 offset = cut + 1;
                 for (int i = cut + 1; i < elementIndices.length; i++)
-                    replacementIndices[i-offset] = elementIndices[i-offset].index;
+                    replacementIndices[i-offset] =
+                        elementIndices[i-offset].index;
             }
         }
 
@@ -785,38 +900,12 @@ public class SpectralClustering implements OfflineClustering {
     }
 
     public static void main(String[] args) throws Exception {
-        SemanticSpace sspace = new StaticSemanticSpace(args[0]);
-        List<DoubleVector> vectors = new ArrayList<DoubleVector>();
-
-        Set<String> words = sspace.getWords();
-        int i = 0;
-        for (String word : words) {
-            if (i == 100)
-                break;
-            i++;
-            vectors.add(Vectors.asDouble(sspace.getVector(word)));
-        }
-
-        SpectralClustering clustering = null;
-        if (args.length > 1)
-            clustering = new SpectralClustering(
-                    Double.parseDouble(args[1]),
-                    Double.parseDouble(args[2]));
-        else 
-            clustering = new SpectralClustering();
-
-        System.out.println("Clustering Start");
-        int[] assignments =
-            clustering.cluster(Matrices.asMatrix(vectors));
-        System.out.println("Clustering Done");
-
-
-        i = 0;
-        for (String word : words) {
-            if (i == 100)
-                break;
-            i++;
-            System.out.printf("%s %d\n", word, assignments[i++]);
-        }
+        Matrix m = MatrixIO.readMatrix(new File(args[0]),
+                                       Format.SVDLIBC_SPARSE_TEXT,
+                                       Type.SPARSE_IN_MEMORY);
+        //File t = File.createTempFile("matlab-spectral", ".dat");
+        //MatrixIO.writeMatrix(m, t, Format.MATLAB_SPARSE);
+        OfflineClustering cluster = new SpectralClustering();
+        int[] assignments = cluster.cluster(m);
     }
 }

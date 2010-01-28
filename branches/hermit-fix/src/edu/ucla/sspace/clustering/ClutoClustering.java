@@ -54,12 +54,6 @@ public class ClutoClustering implements OfflineClustering {
         "edu.ucla.sspace.clustering.ClutoClustering";
 
     /**
-     * The property to set the number of clusters.
-     */
-    public static String NUM_CLUSTERS_PROPERTY = 
-        PROPERTY_PREFIX + ".numClusters";
-
-    /**
      * The property to set the clustering method used by Cluto.
      */
     public static String CLUSTER_METHOD_PROPERTY = 
@@ -151,8 +145,8 @@ public class ClutoClustering implements OfflineClustering {
      * properties.
      */
     public ClutoClustering(Properties props) {
-        numClusters = Integer.parseInt(props.getProperty(NUM_CLUSTERS_PROPERTY,
-                                                         DEFAULT_NUM_CLUSTERS));
+        numClusters = Integer.parseInt(props.getProperty(
+                    OfflineProperties.MAX_NUM_CLUSTER_PROPERTY, DEFAULT_NUM_CLUSTERS));
         clusterMethod = props.getProperty(CLUSTER_METHOD_PROPERTY,
                                           DEFAULT_CLUSTER_METHOD);
         clusterSimilarity = props.getProperty(CLUSTER_SIMILARITY_PROPERTY,

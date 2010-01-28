@@ -128,9 +128,6 @@ import java.util.Properties;
  *   </li> {@code -G}, {@code --clusterGenerator=CLASSNAME} The cluster
  *         generator to use
  *
- *   </li> {@code -W}, {@code --clusterWeight=DOUBLE} If set, this weight will
- *         be used to expoentially average vectors in a cluster"
- *
  *   </ul>
  *
  * <li><u>Post Processing</u>
@@ -321,9 +318,9 @@ public class FlyingHermitMain extends GenericMain {
         options.addOption('G', "clusterGenerator",
                           "The cluster generator to use",
                           true, "CLASSNAME", "Cluster Properties");
-        options.addOption('W', "clusterWeight",
-                          "If set, this weight will be used to expoentially " +
-                          "average vectors in a cluster",
+        options.addOption('W', "minPercentage",
+                          "The minimum percentage of items a cluster must " +
+                          "have to be maintained",
                           true, "DOUBLE", "Cluster Properties");
 
         // Additional processing steps.
@@ -447,8 +444,9 @@ public class FlyingHermitMain extends GenericMain {
         System.setProperty(OnlineClusteringGenerator.MERGE_THRESHOLD_PROPERTY,
                            Double.toString(threshold));
         if (argOptions.hasOption('W'))
-            System.setProperty(OnlineClusteringGenerator.WEIGHTING_PROPERTY,
-                               argOptions.getStringOption('W'));
+            System.setProperty(
+                    OnlineClusteringGenerator.DROP_THRESHOLD_PROPERTY,
+                    argOptions.getStringOption('W'));
         clusterGenerator =
             (OnlineClusteringGenerator<SparseIntegerVector>) getObjectInstance(
                     clusterName);

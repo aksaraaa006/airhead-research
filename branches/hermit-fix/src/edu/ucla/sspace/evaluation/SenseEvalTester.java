@@ -125,6 +125,7 @@ public class SenseEvalTester {
                 (PermutationFunction<TernaryVector>) SerializableUtil.load(
                         new File(options.getStringOption('p')),
                         PermutationFunction.class);
+        System.out.println(permFunc);
         
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
@@ -153,7 +154,7 @@ public class SenseEvalTester {
                 if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
                     TernaryVector termVector = wordToIndexVector.get(term);
                     if (permFunc != null)
-                            termVector = permFunc.permute(termVector, distance);
+                        termVector = permFunc.permute(termVector, distance);
                     add(contextVector, termVector);
                 }
                 ++distance;

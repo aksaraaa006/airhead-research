@@ -22,6 +22,7 @@
 package edu.ucla.sspace.purandare;
 
 import edu.ucla.sspace.clustering.ClutoClustering;
+import edu.ucla.sspace.clustering.OfflineProperties;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity.SimType;
@@ -522,7 +523,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         // bother clustering it.  This is done to reduce the computation time,
         // and to avoid clustering non-meaningful terms such as '.' or '''
         Properties props = new Properties();
-        props.setProperty(ClutoClustering.NUM_CLUSTERS_PROPERTY,
+        props.setProperty(OfflineProperties.MAX_NUM_CLUSTER_PROPERTY,
                           Integer.toString(numClusters));
         ClutoClustering clustering = new ClutoClustering(props);
         int[] clusterAssignment = (term.matches("[a-zA-z]+") && numClusters > 6)

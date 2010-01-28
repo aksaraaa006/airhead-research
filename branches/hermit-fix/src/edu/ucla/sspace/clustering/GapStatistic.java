@@ -68,12 +68,6 @@ public class GapStatistic implements OfflineClustering {
         PROPERTY_PREFIX + ".numClusterStart";
 
     /**
-     * The number of clusters to stop clustering at.
-     */
-    public static final String NUM_CLUSTERS_END = 
-        PROPERTY_PREFIX + ".numClusterEnd";
-
-    /**
      * The number of reference data sets to use.
      */
     public static final String NUM_REFERENCE_DATA_SETS = 
@@ -136,7 +130,8 @@ public class GapStatistic implements OfflineClustering {
                 NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
 
         int endSize = Integer.parseInt(props.getProperty(
-                NUM_CLUSTERS_END, DEFAULT_NUM_CLUSTERS_END));
+                OfflineProperties.MAX_NUM_CLUSTER_PROPERTY,
+                DEFAULT_NUM_CLUSTERS_END));
 
         numIterations = endSize - startSize;
 

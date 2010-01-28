@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -227,10 +228,10 @@ public class OnlineKMeansClustering<T extends Vector>
      * {@inheritDoc}
      */
     public synchronized Map<Integer, Integer> finalizeClustering() {
-        Map<Integer, Integer> mapping = mergeClusters();
-        //List<Integer> droppedList = dropClusters(term, minPercentage);
-        //for (Integer dropped : droppedList)
-        //    mapping.put(dropped, -1);
+        Set<Integer> droppedList = dropClusters();
+        Map<Integer, Integer> mapping = mergeClusters(droppedList);
+        for (Integer dropped : droppedList)
+            mapping.put(dropped, -1);
         return mapping;
     }
 
@@ -242,10 +243,10 @@ public class OnlineKMeansClustering<T extends Vector>
      * @return The a mapping from merged cluster to the new destination cluster
      *         index.
      */
-    private Map<Integer, Integer> mergeClusters() {
+    private Map<Integer, Integer> mergeClusters(Set<Integer> droppedList) {
         MultiMap<Integer, Integer> mergeMap =
             new HashMultiMap<Integer, Integer>();
-        Set<Integer> skipList = new TreeSet<Integer>();
+        Set<Integer> skipList = new TreeSet<Integer>(droppedList);
 
         boolean merged = true;
         while (merged) {
@@ -314,23 +315,25 @@ public class OnlineKMeansClustering<T extends Vector>
      *
      * @return The list of cluster indexes dropped.
      */
-    private List<Integer> dropClusters() {
-        List<Integer> dropped = new LinkedList<Integer>();
+    private Set<Integer> dropClusters() {
+        System.out.println("DROPPING");
+        Set<Integer> dropped = new HashSet<Integer>();
 
         double[] clusterSizes = new double[elements.size()];
         int i = 0;
         int sum = 0;
         for (Cluster cluster : elements) {
-          clusterSizes[i] = cluster.getTotalMemberCount();
-          sum += clusterSizes[i];
+            clusterSizes[i] = cluster.getTotalMemberCount();
+            sum += clusterSizes[i];
+            i++;
         }
 
         int dropCount = 0;
         for (i = 0; i < clusterSizes.length; ++i) {
+            System.out.println("Cluster size: " + clusterSizes[i]/sum);
             if (clusterSizes[i]/sum < dropThreshold) {
+                System.out.println("Dropping cluster: " + i);
                 dropped.add(i);
-                elements.remove(i - dropCount);
-                dropCount++;
             }
         }
         return dropped;

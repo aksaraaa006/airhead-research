@@ -605,7 +605,7 @@ public class MatrixIO {
             break;
 
         case SVDLIBC_SPARSE_TEXT:
-            break;
+            return readSparseSVDLIBCtext(matrix, matrixType, transposeOnRead);
 
         case CLUTO_DENSE:
             break;
@@ -624,6 +624,41 @@ public class MatrixIO {
                         "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its" +
                         "inclusion and it will be quickly added");
+    }
+
+    private static Matrix readSparseSVDLIBCtext(
+            File matrix,
+            Type matrixType,
+            boolean transposeOnRead) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(matrix));
+        String line = br.readLine();
+        if (line == null)
+            throw new IOException("Empty input Matrix");
+
+            String[] numRowsColsNonZeros = line.split("\\s");
+            int rows = Integer.parseInt(numRowsColsNonZeros[0]);
+            int cols = Integer.parseInt(numRowsColsNonZeros[1]);
+
+        Matrix m = (transposeOnRead)
+            ? Matrices.create(cols, rows, matrixType)
+            : Matrices.create(rows, cols, matrixType);
+        
+        for (int j = 0; j < cols && (line = br.readLine()) != null; ++j) {
+            int numNonZeros = Integer.parseInt(line);
+            for (int i = 0; i < numNonZeros && 
+                    (line = br.readLine()) != null; ++i) {
+                String[] rowValue = line.split("\\s");
+                int row = Integer.parseInt(rowValue[0]);
+                double value = Double.parseDouble(rowValue[1]);
+                if (value != 0d) {
+                    if (transposeOnRead)
+                        m.set(j, row, value);
+                    else
+                        m.set(row, j, value);
+                }
+            }
+        }
+        return m;
     }
 
     /**
@@ -851,7 +886,8 @@ public class MatrixIO {
             outStream.writeInt(matrix.columns());
             for (int i = 0; i < matrix.rows(); ++i) {
                 for (int j = 0; j < matrix.columns(); ++j) {
-                    outStream.writeFloat(new Double(matrix.get(i,j)).floatValue());
+                    outStream.writeFloat(
+                            new Double(matrix.get(i,j)).floatValue());
                 }
             }
             outStream.close();
