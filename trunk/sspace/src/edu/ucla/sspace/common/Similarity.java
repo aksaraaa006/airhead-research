@@ -57,7 +57,9 @@ public class Similarity {
         PEARSON_CORRELATION,
         EUCLIDEAN,
         SPEARMAN_RANK_CORRELATION,
-        JACCARD_INDEX
+        JACCARD_INDEX,
+        LIN,
+        KL_DIVERGENCE,
     }
 
     /**
@@ -72,7 +74,7 @@ public class Similarity {
      * @throws Error if a {@link NoSuchMethodException} is thrown
      */
     @Deprecated
-     public static Method getMethod(SimType similarityType) {
+    public static Method getMethod(SimType similarityType) {
         String methodName = null;
         switch (similarityType) {
         case COSINE:
@@ -90,10 +92,16 @@ public class Similarity {
         case JACCARD_INDEX:
             methodName = "jaccardIndex";
             break;
+        case LIN:
+            methodName = "linSimilarity";
+            break;
+        case KL_DIVERGENCE:
+            methodName = "klDivergence";
+            break;
         default:
             assert false : similarityType;
         }
-         Method m = null;
+        Method m = null;
         try { 
             m = Similarity.class.getMethod(methodName,
                            new Class[] {double[].class, double[].class});
@@ -129,6 +137,10 @@ public class Similarity {
                 return spearmanRankCorrelationCoefficient(a, b);
             case JACCARD_INDEX:
                 return jaccardIndex(a, b);
+            case LIN:
+                return linSimilarity(a, b);
+            case KL_DIVERGENCE:
+                return klDivergence(a, b);
         }
         return 0;
     }
@@ -157,6 +169,10 @@ public class Similarity {
                 return spearmanRankCorrelationCoefficient(a, b);
             case JACCARD_INDEX:
                 return jaccardIndex(a, b);
+            case LIN:
+                return linSimilarity(a, b);
+            case KL_DIVERGENCE:
+                return klDivergence(a, b);
         }
         return 0;
     }
@@ -247,9 +263,6 @@ public class Similarity {
 
     /**
      * Returns the cosine similarity of the two {@code DoubleVector}.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
      *
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
@@ -1007,5 +1020,543 @@ public class Similarity {
                                                             Vector b) {
         return spearmanRankCorrelationCoefficient(Vectors.asDouble(a),
                                                   Vectors.asDouble(b));
+    }
+
+    /**
+     * Computes the lin similarity measure, which is motivated by information
+     * theory priniciples.  This works best if both vectors have already been
+     * weighted using point-wise mutual information.  This similarity measure is
+     * described in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">D. Lin, "Automatic
+     *   Retrieval and Clustering of Similar Words" <i> Proceedings of the 36th
+     *   Annual Meeting of the Association for Computational Linguistics and
+     *   17th International Conference on Computational Linguistics, Volume 2
+     *   </i>, Montreal, Quebec, Canada, 1998.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double linSimilarity(DoubleVector a, DoubleVector b) {
+        check(a, b);
+
+        // The total amount of information contained in a.
+        double aInformation = 0;
+        // The total amount of information contained in b.
+        double bInformation = 0;
+        // The total amount of information contained in both vectors.
+        double combinedInformation = 0;
+
+        // Special case when both vectors are sparse vectors.
+        if (a instanceof SparseVector &&
+            b instanceof SparseVector) {
+            // Convert both vectors to sparse vectors.
+            SparseVector sa = (SparseVector) a;
+            int[] aNonZeros = sa.getNonZeroIndices();
+
+            SparseVector sb = (SparseVector) b;
+            int[] bNonZeros = sb.getNonZeroIndices();
+
+            // If b is the smaller vector swap it with a.  This allows the dot
+            // product to work over the vector with the smallest number of non
+            // zero values.
+            if (bNonZeros.length < aNonZeros.length) {
+                SparseVector temp = sa;
+                int[] tempNonZeros = aNonZeros;
+
+                sa = sb;
+                aNonZeros = bNonZeros;
+
+                sb = temp;
+                bNonZeros = tempNonZeros;
+            }
+
+            // Compute the combined information by iterating over the vector
+            // with the smallest number of non zero values.
+            for (int index : aNonZeros) {
+                double aValue = a.get(index);
+                double bValue = b.get(index);
+                aInformation += aValue;
+                combinedInformation += aValue + bValue;
+            }
+
+            // Compute the information from the other vector by iterating over
+            // it's non zero values.
+            for (int index : bNonZeros) {
+                bInformation += b.get(index);
+            }
+        }
+        else {
+            // Compute the information between the two vectors by iterating over
+            // all known values.
+            for (int i = 0; i < a.length(); ++i) {
+                double aValue = a.get(i);
+                aInformation += aValue;
+
+                double bValue = b.get(i);
+                bInformation += bValue;
+
+                if (aValue != 0d && bValue != 0d)
+                    combinedInformation += aValue + bInformation;
+            }
+        }
+        return combinedInformation / (aInformation + bInformation);
+    }
+
+    /**
+     * Computes the lin similarity measure, which is motivated by information
+     * theory priniciples.  This works best if both vectors have already been
+     * weighted using point-wise mutual information.  This similarity measure is
+     * described in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">D. Lin, "Automatic
+     *   Retrieval and Clustering of Similar Words" <i> Proceedings of the 36th
+     *   Annual Meeting of the Association for Computational Linguistics and
+     *   17th International Conference on Computational Linguistics, Volume 2
+     *   </i>, Montreal, Quebec, Canada, 1998.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double linSimilarity(IntegerVector a, IntegerVector b) {
+        check(a, b);
+
+        // The total amount of information contained in a.
+        double aInformation = 0;
+        // The total amount of information contained in b.
+        double bInformation = 0;
+        // The total amount of information contained in both vectors.
+        double combinedInformation = 0;
+
+        // Special case when both vectors are sparse vectors.
+        if (a instanceof SparseVector &&
+            b instanceof SparseVector) {
+            // Convert both vectors to sparse vectors.
+            SparseVector sa = (SparseVector) a;
+            int[] aNonZeros = sa.getNonZeroIndices();
+
+            SparseVector sb = (SparseVector) b;
+            int[] bNonZeros = sb.getNonZeroIndices();
+
+            // If b is the smaller vector swap it with a.  This allows the dot
+            // product to work over the vector with the smallest number of non
+            // zero values.
+            if (bNonZeros.length < aNonZeros.length) {
+                SparseVector temp = sa;
+                int[] tempNonZeros = aNonZeros;
+
+                sa = sb;
+                aNonZeros = bNonZeros;
+
+                sb = temp;
+                bNonZeros = tempNonZeros;
+            }
+
+            // Compute the combined information by iterating over the vector
+            // with the smallest number of non zero values.
+            for (int index : aNonZeros) {
+                double aValue = a.get(index);
+                double bValue = b.get(index);
+                aInformation += aValue;
+                combinedInformation += aValue + bValue;
+            }
+
+            // Compute the information from the other vector by iterating over
+            // it's non zero values.
+            for (int index : bNonZeros) {
+                bInformation += b.get(index);
+            }
+        }
+        else {
+            // Compute the information between the two vectors by iterating over
+            // all known values.
+            for (int i = 0; i < a.length(); ++i) {
+                double aValue = a.get(i);
+                aInformation += aValue;
+
+                double bValue = b.get(i);
+                bInformation += bValue;
+
+                if (aValue != 0d && bValue != 0d)
+                    combinedInformation += aValue + bInformation;
+            }
+        }
+        return combinedInformation / (aInformation + bInformation);
+    }
+
+    /**
+     * Computes the lin similarity measure, which is motivated by information
+     * theory priniciples.  This works best if both vectors have already been
+     * weighted using point-wise mutual information.  This similarity measure is
+     * described in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">D. Lin, "Automatic
+     *   Retrieval and Clustering of Similar Words" <i> Proceedings of the 36th
+     *   Annual Meeting of the Association for Computational Linguistics and
+     *   17th International Conference on Computational Linguistics, Volume 2
+     *   </i>, Montreal, Quebec, Canada, 1998.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double linSimilarity(Vector a, Vector b) {
+        check(a, b);
+
+        // The total amount of information contained in a.
+        double aInformation = 0;
+        // The total amount of information contained in b.
+        double bInformation = 0;
+        // The total amount of information contained in both vectors.
+        double combinedInformation = 0;
+
+        // Special case when both vectors are sparse vectors.
+        if (a instanceof SparseVector &&
+            b instanceof SparseVector) {
+            // Convert both vectors to sparse vectors.
+            SparseVector sa = (SparseVector) a;
+            int[] aNonZeros = sa.getNonZeroIndices();
+
+            SparseVector sb = (SparseVector) b;
+            int[] bNonZeros = sb.getNonZeroIndices();
+
+            // If b is the smaller vector swap it with a.  This allows the dot
+            // product to work over the vector with the smallest number of non
+            // zero values.
+            if (bNonZeros.length < aNonZeros.length) {
+                SparseVector temp = sa;
+                int[] tempNonZeros = aNonZeros;
+                sa = sb;
+                aNonZeros = bNonZeros;
+                sb = temp;
+                bNonZeros = tempNonZeros;
+            }
+
+            // Compute the combined information by iterating over the vector
+            // with the smallest number of non zero values.
+            for (int index : aNonZeros) {
+                double aValue = a.getValue(index).doubleValue();
+                double bValue = b.getValue(index).doubleValue();
+                aInformation += aValue;
+                combinedInformation += aValue + bValue;
+            }
+
+            // Compute the information from the other vector by iterating over
+            // it's non zero values.
+            for (int index : bNonZeros) {
+                bInformation += b.getValue(index).doubleValue();
+            }
+        }
+        else {
+            // Compute the information between the two vectors by iterating over
+            // all known values.
+            for (int i = 0; i < a.length(); ++i) {
+                double aValue = a.getValue(i).doubleValue();
+                aInformation += aValue;
+
+                double bValue = b.getValue(i).doubleValue();
+                bInformation += bValue;
+
+                if (aValue != 0d && bValue != 0d)
+                    combinedInformation += aValue + bInformation;
+            }
+        }
+        return combinedInformation / (aInformation + bInformation);
+    }
+
+    /**
+     * Computes the lin similarity measure, which is motivated by information
+     * theory priniciples.  This works best if both vectors have already been
+     * weighted using point-wise mutual information.  This similarity measure is
+     * described in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">D. Lin, "Automatic
+     *   Retrieval and Clustering of Similar Words" <i> Proceedings of the 36th
+     *   Annual Meeting of the Association for Computational Linguistics and
+     *   17th International Conference on Computational Linguistics, Volume 2
+     *   </i>, Montreal, Quebec, Canada, 1998.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double linSimilarity(double[] a, double[] b) {
+        check(a, b);
+
+        // The total amount of information contained in a.
+        double aInformation = 0;
+        // The total amount of information contained in b.
+        double bInformation = 0;
+        // The total amount of information contained in both vectors.
+        double combinedInformation = 0;
+
+        // Compute the information between the two vectors by iterating over
+        // all known values.
+        for (int i = 0; i < a.length; ++i) {
+            aInformation += a[i];
+            bInformation += b[i];
+            if (a[i] != 0d && b[i] != 0d)
+                combinedInformation += a[i] + b[i];
+        }
+        return combinedInformation / (aInformation + bInformation);
+    }
+
+    /**
+     * Computes the lin similarity measure, which is motivated by information
+     * theory priniciples.  This works best if both vectors have already been
+     * weighted using point-wise mutual information.  This similarity measure is
+     * described in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">D. Lin, "Automatic
+     *   Retrieval and Clustering of Similar Words" <i> Proceedings of the 36th
+     *   Annual Meeting of the Association for Computational Linguistics and
+     *   17th International Conference on Computational Linguistics, Volume 2
+     *   </i>, Montreal, Quebec, Canada, 1998.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double linSimilarity(int[] a, int[] b) {
+        check(a, b);
+
+        // The total amount of information contained in a.
+        double aInformation = 0;
+        // The total amount of information contained in b.
+        double bInformation = 0;
+        // The total amount of information contained in both vectors.
+        double combinedInformation = 0;
+
+        // Compute the information between the two vectors by iterating over
+        // all known values.
+        for (int i = 0; i < a.length; ++i) {
+            aInformation += a[i];
+            bInformation += b[i];
+            if (a[i] != 0d && b[i] != 0d)
+                combinedInformation += a[i] + b[i];
+        }
+        return combinedInformation / (aInformation + bInformation);
+    }
+
+    /**
+     * Computes the K-L Divergence of two probability distributions {@code A}
+     * and {@code B} where the vectors {@code a} and {@code b} correspond to
+     * {@code n} samples from each respective distribution.  The divergence
+     * between two samples is non-symmetric and is frequently used as a distance
+     * metric between vectors from a semantic space.  This metric is described
+     * in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">S. Kullback and R. A.
+     *   Leibler, "On Information and Sufficiency", <i>The Annals of
+     *   Mathematical Statistics</i> 1951.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double klDivergence(DoubleVector a, DoubleVector b) {
+        check(a, b);
+
+        double divergence = 0;
+
+        // Iterate over just the non zero values of a if it is a sparse vector.
+        if (a instanceof SparseVector) {
+            SparseVector sa = (SparseVector) a;
+            int[] aNonZeros = sa.getNonZeroIndices();
+
+            for (int index : aNonZeros) {
+                double aValue = a.get(index);
+                double bValue = b.get(index);
+
+                // Ignore values from b that are zero, since they would cause a
+                // divide by zero error.
+                if (bValue != 0d)
+                    divergence += aValue * Math.log(aValue / bValue);
+            }
+        }
+        // Otherwise iterate over all values and ignore any that are zero.
+        else {
+            for (int i = 0; i < a.length(); ++i) {
+                double aValue = a.get(i);
+                double bValue = b.get(i);
+
+                // Ignore values from b that are zero, since they would cause a
+                // divide by zero error.
+                if (aValue != 0d && bValue != 0d)
+                    divergence += aValue * Math.log(aValue / bValue);
+            }
+        }
+
+        return divergence;
+    }
+
+    /**
+     * Computes the K-L Divergence of two probability distributions {@code A}
+     * and {@code B} where the vectors {@code a} and {@code b} correspond to
+     * {@code n} samples from each respective distribution.  The divergence
+     * between two samples is non-symmetric and is frequently used as a distance
+     * metric between vectors from a semantic space.  This metric is described
+     * in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">S. Kullback and R. A.
+     *   Leibler, "On Information and Sufficiency", <i>The Annals of
+     *   Mathematical Statistics</i> 1951.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double klDivergence(IntegerVector a, IntegerVector b) {
+        check(a, b);
+
+        double divergence = 0;
+
+        // Iterate over just the non zero values of a if it is a sparse vector.
+        if (a instanceof SparseVector) {
+            SparseVector sa = (SparseVector) a;
+            int[] aNonZeros = sa.getNonZeroIndices();
+
+            for (int index : aNonZeros) {
+                double aValue = a.get(index);
+                double bValue = b.get(index);
+
+                // Ignore values from b that are zero, since they would cause a
+                // divide by zero error.
+                if (bValue != 0d)
+                    divergence += aValue * Math.log(aValue / bValue);
+            }
+        }
+        // Otherwise iterate over all values and ignore any that are zero.
+        else {
+            for (int i = 0; i < a.length(); ++i) {
+                double aValue = a.get(i);
+                double bValue = b.get(i);
+
+                // Ignore values from b that are zero, since they would cause a
+                // divide by zero error.
+                if (aValue != 0d && bValue != 0d)
+                    divergence += aValue * Math.log(aValue / bValue);
+            }
+        }
+
+        return divergence;
+    }
+
+    /**
+     * Computes the K-L Divergence of two probability distributions {@code A}
+     * and {@code B} where the vectors {@code a} and {@code b} correspond to
+     * {@code n} samples from each respective distribution.  The divergence
+     * between two samples is non-symmetric and is frequently used as a distance
+     * metric between vectors from a semantic space.  This metric is described
+     * in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">S. Kullback and R. A.
+     *   Leibler, "On Information and Sufficiency", <i>The Annals of
+     *   Mathematical Statistics</i> 1951.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double klDivergence(Vector a, Vector b) {
+        check(a, b);
+
+        double divergence = 0;
+
+        // Iterate over just the non zero values of a if it is a sparse vector.
+        if (a instanceof SparseVector) {
+            SparseVector sa = (SparseVector) a;
+            int[] aNonZeros = sa.getNonZeroIndices();
+
+            for (int index : aNonZeros) {
+                double aValue = a.getValue(index).doubleValue();
+                double bValue = b.getValue(index).doubleValue();
+
+                // Ignore values from b that are zero, since they would cause a
+                // divide by zero error.
+                if (bValue != 0d)
+                    divergence += aValue * Math.log(aValue / bValue);
+            }
+        }
+        // Otherwise iterate over all values and ignore any that are zero.
+        else {
+            for (int i = 0; i < a.length(); ++i) {
+                double aValue = a.getValue(i).doubleValue();
+                double bValue = b.getValue(i).doubleValue();
+
+                // Ignore values from b that are zero, since they would cause a
+                // divide by zero error.
+                if (aValue != 0d && bValue != 0d)
+                    divergence += aValue * Math.log(aValue / bValue);
+            }
+        }
+
+        return divergence;
+    }
+
+    /**
+     * Computes the K-L Divergence of two probability distributions {@code A}
+     * and {@code B} where the vectors {@code a} and {@code b} correspond to
+     * {@code n} samples from each respective distribution.  The divergence
+     * between two samples is non-symmetric and is frequently used as a distance
+     * metric between vectors from a semantic space.  This metric is described
+     * in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">S. Kullback and R. A.
+     *   Leibler, "On Information and Sufficiency", <i>The Annals of
+     *   Mathematical Statistics</i> 1951.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double klDivergence(double[] a, double[] b) {
+        check(a, b);
+
+        double divergence = 0;
+
+        // Iterate over all values and ignore any that are zero.
+        for (int i = 0; i < a.length; ++i) {
+            // Ignore values from b that are zero, since they would cause a
+            // divide by zero error.
+            if (a[i] != 0d && b[i] != 0d)
+                divergence += a[i] * Math.log(a[i]/ b[i]);
+        }
+
+        return divergence;
+    }
+
+    /**
+     * Computes the K-L Divergence of two probability distributions {@code A}
+     * and {@code B} where the vectors {@code a} and {@code b} correspond to
+     * {@code n} samples from each respective distribution.  The divergence
+     * between two samples is non-symmetric and is frequently used as a distance
+     * metric between vectors from a semantic space.  This metric is described
+     * in more detail in the following paper:
+     *
+     *   <li style="font-family:Garamond, Georgia, serif">S. Kullback and R. A.
+     *   Leibler, "On Information and Sufficiency", <i>The Annals of
+     *   Mathematical Statistics</i> 1951.
+     *   </li>
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double klDivergence(int[] a, int[] b) {
+        check(a, b);
+
+        double divergence = 0;
+
+        // Iterate over all values and ignore any that are zero.
+        for (int i = 0; i < a.length; ++i) {
+            // Ignore values from b that are zero, since they would cause a
+            // divide by zero error.
+            if (a[i] != 0d && b[i] != 0d)
+                divergence += a[i] * Math.log(a[i]/ b[i]);
+        }
+
+        return divergence;
     }
 }
