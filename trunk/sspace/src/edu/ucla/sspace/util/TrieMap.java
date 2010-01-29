@@ -36,31 +36,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.TreeMap;
+
 
 /**
- * A trie-based {@link Map} implementation that uses {@link CharSequence}
- * instances as keys.  Keys are returned in alphabetical order.
- *
- * <p>
- *
- * Two {@code CharSequence} keys are said to be equal if the characters and
- * ordering for each are identical.  This ensures that different {@code
- * CharSequence} implementations will map to the correct value even if their
- * {@code equals} methods would return {@code false}.
- *
- * This class stores an internal copy of each {@code CharSequence} key. This
- * allows users to use mutable {@code CharSequence} instances as keys and then
- * later mutate those instances without affecting the key-value mapping.
- *
- * <p>
- *
- * This class is optimized for space efficiency.
+ * A trie-based {@link Map} implementation that uses {@link String} instances as
+ * keys.  Keys are returned in alphabetical order.  This class is optimized for
+ * space efficiency.  For a string of length {@code n}, operations are at worst
+ * case {@code n * log(k)}, where {@code k} is the number of unique characters.
+ * In most cases, the cost will be much closer to linear in the number of
+ * characters in the string.
  *
  * <p>
  *
  * This class does not permit {@code null} keys or values.  However, this class
- * does permit the use of the empty string (a {@code CharSequence} of length
+ * does permit the use of the empty string (a {@code String} of length
  * {@code 0}).
  *
  * <p>
@@ -74,17 +63,10 @@ import java.util.TreeMap;
  *
  * @author David Jurgens
  */
-public class TrieMap<V> extends AbstractMap<CharSequence,V> 
+public class TrieMap<V> extends AbstractMap<String,V> 
         implements Serializable {
 
     private static final long serialVersionUID = 1;
-
-    /**
-     * The comparator used by all {@link Node} instances to keep their children
-     * in alphabetic-sorted order
-     */
-    private static final AlphabeticComparator ALPHABETIC_COMPARATOR = 
-	new AlphabeticComparator();
 
     /**
      * The root node of this trie
@@ -108,7 +90,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     /**
      * Constructs this trie, adding all of the provided mappings
      */
-    public TrieMap(Map<? extends CharSequence,? extends V> m) {
+    public TrieMap(Map<String,? extends V> m) {
 	this();
 	if (m == null) {
 	    throw new NullPointerException("map cannot be null");
@@ -118,15 +100,15 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 
     /**
      * Throws the appropriate {@code Exception} if the provided key is {@code
-     * null}, is not an instance of {@code CharSequence}, or is the empty
+     * null}, is not an instance of {@code String}, or is the empty
      * string.
      */
     private void checkKey(Object key) {
 	if (key == null) {
 	    throw new NullPointerException("keys cannot be null");
 	}
-	if (!(key instanceof CharSequence)) {
-	    throw new ClassCastException("key not an instance of CharSequence");
+	if (!(key instanceof String)) {
+	    throw new ClassCastException("key not an instance of String");
 	}
     }
 
@@ -143,26 +125,26 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
      *
      * @throws NullPointerException if key is {@code null}
      * @throws ClassCastException if key is not an instance of {@link
-     *         CharSequence}
+     *         String}
      */
     public boolean containsKey(Object key) {
 	if (key == null) {
 	    throw new NullPointerException("key cannot be null");
 	}
-	else if (key instanceof CharSequence) {
-	    Node<V> n = lookup((CharSequence)key);
+	else if (key instanceof String) {
+	    Node<V> n = lookup((String)key);
 	    return n != null && n.isTerminal();
 	}
 	else {
 	    throw new ClassCastException("The provided key does not implement" +
-					 " CharSequence: " + key);
+					 " String: " + key);
 	}
     }
 
     /**
      * Returns a {@link Set} view of the mappings contained in this map.
      */
-    public Set<Map.Entry<CharSequence,V>> entrySet() {
+    public Set<Map.Entry<String,V>> entrySet() {
 	return new EntryView();
     }
 
@@ -173,7 +155,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     public V get(Object key) {
 	checkKey(key);
 	
-	CharSequence cs = (CharSequence)key;
+	String cs = (String)key;
 	Node<V> n = lookup(cs);
 	return (n == null) ? null : n.value;
     }
@@ -181,7 +163,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     /**
      * Returns a {@link Set} view of the keys contained in this map.
      */
-    public Set<CharSequence> keySet() {
+    public Set<String> keySet() {
 	return new KeyView();
     }
 
@@ -189,7 +171,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
      * Returns the trie node that maps to the provided key or {@code null} if
      * the key is not currently mapped.
      */
-    private Node<V> lookup(CharSequence key) {
+    private Node<V> lookup(String key) {
 	if (key == null) {
 	    throw new NullPointerException("key cannot be null");
 	}
@@ -262,7 +244,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
      * @throws NullPointerException
      * @throws IllegalArgumentException
      */
-    public V put(CharSequence key, V value) {
+    public V put(String key, V value) {
 
 	if (key == null || value == null) {
 	    throw new NullPointerException("keys and values cannot be null");
@@ -375,7 +357,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     public V remove(Object key) {
 	checkKey(key);
 	
-	CharSequence cs = (CharSequence)key;
+	String cs = (String)key;
 	Node<V> n = lookup(cs);
 	if (n != null && n.isTerminal()) {
 	    V old = n.value;
@@ -432,7 +414,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
      * @param value the value being mapped to the provided key
      */
     private void addChildNode(Node<V> parent,
-			      CharSequence key,
+			      String key,
 			      int transitionCharIndex,
 			      V value) {
 	char transitionChar = key.charAt(transitionCharIndex);
@@ -459,7 +441,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
      */
     private void addIntermediateNode(Node<V> original, 
 				     int numOverlappingCharacters,
-				     CharSequence key, 
+				     String key, 
 				     int indexOfStartOfOverlap,
 				     V value) {	
 
@@ -485,8 +467,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 
 	// 
 	original.prefix = overlappingPrefix;
-	original.children = 
-	    new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
+	original.children = new CharMap<Node<V>>();
 	original.addChild(distinguishing, child);
 
 	// Determine whether the remaining portion of the key was a substring of
@@ -556,7 +537,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	/**
 	 * Constructs a new {@code Node}.
 	 * 
-	 * @param seq the {@code CharSequence} to be stored at this node in the
+	 * @param seq the {@code String} to be stored at this node in the
 	 *        trie
 	 * @param tailStart the index into {@code seq} that denotes the
 	 *        preceding characters of {@code seq} that are not a part of the
@@ -567,7 +548,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	// the remaining characters to avoid an unnecessary copy from
 	// subSequence.  This class stores the remaining characters in a char[]
 	// to save wasted space from unnecessary object overhead.
-	Node(CharSequence seq, int prefixStart, V value) {
+	Node(String seq, int prefixStart, V value) {
 	    this(toArray(seq, prefixStart), value);
 	}
 
@@ -577,14 +558,13 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    children = null;
 	}
 
-	public Node(CharSequence prefix, V value) {
+	public Node(String prefix, V value) {
 	    this(prefix, 0, value);
 	}
 
 	public void addChild(char c, Node<V> child) {
 	    if (children == null) {
-		children = 
-		    new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
+		children = new CharMap<Node<V>>();
 	    }
 	    children.put(c, child);
 	}
@@ -606,7 +586,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    return value != null;
 	}
 
-	void setTail(CharSequence seq) {
+	void setTail(String seq) {
 	    prefix = toArray(seq);
 	}
 
@@ -619,7 +599,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    return old;
 	}
 
-	boolean prefixMatches(CharSequence seq) {
+	boolean prefixMatches(String seq) {
 	    if (seq.length() == prefix.length) {
 		for (int i = 0; i < prefix.length; ++i) {
 		    if (seq.charAt(i) != prefix[i]) {
@@ -631,11 +611,11 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    return false;
 	}
 
-	private static char[] toArray(CharSequence seq) {
+	private static char[] toArray(String seq) {
 	    return toArray(seq, 0);
 	}
 
-	private static char[] toArray(CharSequence seq, int start) {
+	private static char[] toArray(String seq, int start) {
 	    char[] arr = new char[seq.length() - start];
 	    for (int i = 0; i < arr.length; ++i) {
 		arr[i] = seq.charAt(i + start);
@@ -660,14 +640,14 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 
 	public RootNode() {
 	    super("", null);
-	    children = new TreeMap<Character,Node<V>>(ALPHABETIC_COMPARATOR);
+	    children = new CharMap<Node<V>>();
 	}
 
 	public void clear() {
 	    children.clear();
 	}
 
-	void setTail(CharSequence seq) {
+	void setTail(String seq) {
 	    throw new IllegalStateException("cannot set tail on root node");
 	}
 
@@ -675,13 +655,13 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    return super.setValue(newValue);
 	}
 
-	boolean tailMatches(CharSequence seq) {
+	boolean tailMatches(String seq) {
 	    return seq.length() == 0;
 	}	
     }
 
     /**
-     * An immutable {@code CharSequence} implementation backed by an array.
+     * An immutable {@code String} implementation backed by an array.
      */
     private static class ArraySequence implements CharSequence {
 
@@ -696,8 +676,8 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	}
 
 	public boolean equals(Object o) {
-	    if (o instanceof CharSequence) {
-		CharSequence cs = (CharSequence)o;
+	    if (o instanceof String) {
+		String cs = (String)o;
 		if (cs.length() != sequence.length) {
 		    return false;
 		}
@@ -730,7 +710,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     
     /**
      * An internal decorator class on {@link TrieMap.Node} that records that
-     * {@code Node} path and associated {@link CharSequence} prefix that leads
+     * {@code Node} path and associated {@link String} prefix that leads
      * to a {@code Node}.  This class is only used by
      * {@link TrieMap.TrieIterator} class for constructing correct {@link
      * Map.Entry} instances.
@@ -780,21 +760,22 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	 * The next entry to return or {@code null} if there are no further
 	 * entries.
 	 */
-	private Map.Entry<CharSequence,V> next;
+	private Map.Entry<String,V> next;
 
 	/**
 	 * The node previously returned used for supporting the {@code remove}
 	 * operation.
 	 */
-	private Map.Entry<CharSequence,V> prev;
+	private Map.Entry<String,V> prev;
 
 	public TrieIterator() {
 	    
 	    dfsFrontier = new ArrayDeque<AnnotatedNode<V>>();
 	    for (Entry<Character,Node<V>> child : 
 		     rootNode.getChildren().entrySet())
-		dfsFrontier.push(new AnnotatedNode<V>(child.getValue(),
-						      child.getKey().toString()));
+		dfsFrontier.offer(
+                    new AnnotatedNode<V>(child.getValue(),
+                                         child.getKey().toString()));
 	    next = null;
 	    prev = null;
 
@@ -814,9 +795,22 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    // repeatedly expand a new frontier until we either run out of nodes
 	    // or we find a terminal node
 	    while (n != null && !n.node.isTerminal()) {
-		// remove the top of the stack and add its children
+		// remove the top of the stack and add its children in
+		// alphabetical order.  Because the character mapping is sorted
+		// alphabetically, temporarily copy them to an array so we can
+		// push them on the stack in reverse order.
+                @SuppressWarnings("unchecked")
+                Entry<Character,Node<V>>[] reversed = 
+                    (Entry<Character,Node<V>>[])
+                    new Entry[n.node.getChildren().size()];
+                int i = 1;
  		for (Entry<Character,Node<V>> child : 
 			 n.node.getChildren().entrySet()) {
+                    reversed[reversed.length - i] = child;
+                    i++;
+                }
+                
+                for (Entry<Character,Node<V>> child : reversed) {
  		    dfsFrontier.push(new AnnotatedNode<V>(
 				     child.getValue(), n.prefix 
 				     + n.node.getPrefix() + child.getKey()));
@@ -829,9 +823,22 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    }
 	    else {
 		next = createEntry(n);
-		// add all of the children of the former top of the stack.
+		// remove the top of the stack and add its children in
+		// alphabetical order.  Because the character mapping is sorted
+		// alphabetically, temporarily copy them to an array so we can
+		// push them on the stack in reverse order.
+                @SuppressWarnings("unchecked")
+                Entry<Character,Node<V>>[] reversed = 
+                    (Entry<Character,Node<V>>[])
+                    new Entry[n.node.getChildren().size()];
+                int i = 1;
  		for (Entry<Character,Node<V>> child : 
 			 n.node.getChildren().entrySet()) {
+                    reversed[reversed.length - i] = child;
+                    i++;
+                }
+
+ 		for (Entry<Character,Node<V>> child : reversed) {
  		    dfsFrontier.push(new AnnotatedNode<V>(
 			child.getValue(), n.prefix 
 			+ n.node.getPrefix() + child.getKey()));
@@ -844,7 +851,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	 * AnnotatedNode}.  Changes to the returned entry are pass through to
 	 * the node.
 	 */
-	private Map.Entry<CharSequence,V> createEntry(AnnotatedNode<V> node) {
+	private Map.Entry<String,V> createEntry(AnnotatedNode<V> node) {
 	    // determine the String key that makes up this entry based on what
 	    // nodes have been traversed thus far.
 	    String key = node.prefix + node.node.getPrefix();
@@ -861,7 +868,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	/**
 	 * Returns the next {@code Entry} from the trie.
 	 */
-	public Map.Entry<CharSequence,V> nextEntry() {
+	public Map.Entry<String,V> nextEntry() {
 	    if (next == null) {
 		throw new NoSuchElementException("no further elements");
 	    }
@@ -889,17 +896,17 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 
 
     private class EntryIterator 
-	    extends TrieIterator<Map.Entry<CharSequence,V>> {
+	    extends TrieIterator<Map.Entry<String,V>> {
 
-	public Map.Entry<CharSequence,V> next() {
+	public Map.Entry<String,V> next() {
 	    return nextEntry();
 	}
 	
     }
 
-    private class KeyIterator extends TrieIterator<CharSequence> {
+    private class KeyIterator extends TrieIterator<String> {
 
-	public CharSequence next() {
+	public String next() {
 	    return nextEntry().getKey();
 	}
 	
@@ -913,13 +920,12 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	
     }
     
-
     /**
      * An implementation of {@link Map.Entry} backed by a {@link TrieMap.Node}
      * instance.  Changes to instances of this class are reflected in the trie.
      */
     private static class TrieEntry<V> 
-	    extends AbstractMap.SimpleEntry<CharSequence,V> {
+	    extends AbstractMap.SimpleEntry<String,V> {
 	
 	private static final long serialVersionUID = 1;
 
@@ -942,7 +948,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     /**
      * A {@link Set} view of the keys contained in this trie.
      */
-    private class KeyView extends AbstractSet<CharSequence> {
+    private class KeyView extends AbstractSet<String> {
 	
 	public void clear() {
 	    clear();
@@ -952,7 +958,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    return containsKey(o);
 	}
 
-	public Iterator<CharSequence> iterator() {
+	public Iterator<String> iterator() {
 	    return new KeyIterator();
 	}
 	
@@ -990,7 +996,7 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
     /**
      * A {@link Set} view of the key value mappings contained in this trie.
      */
-    private class EntryView extends AbstractSet<Map.Entry<CharSequence,V>> {
+    private class EntryView extends AbstractSet<Map.Entry<String,V>> {
 	
 	public void clear() {
 	    clear();
@@ -1007,27 +1013,12 @@ public class TrieMap<V> extends AbstractMap<CharSequence,V>
 	    return false;
 	}
 
-	public Iterator<Map.Entry<CharSequence,V>> iterator() {
+	public Iterator<Map.Entry<String,V>> iterator() {
 	    return new EntryIterator();
 	}
 	
 	public int size() {
 	    return size;
 	}
-    }
-
-    /**
-     * A {@code Comparator} implementations that can be used to sort characters
-     * alphabetically.
-     */
-    private static final class AlphabeticComparator 
-	implements Comparator<Character>, Serializable {
-	
-	private static final long serialVersionUID = 1;
-
-	public int compare(Character c1, Character c2) {
-	    return -(c1.compareTo(c2));
-	}
-    }
-   
+    }   
 }

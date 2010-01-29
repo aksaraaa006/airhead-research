@@ -258,13 +258,14 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
+      <!-- Comment block for excluding the testing a specific set of files. -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
-      <!-- Comment block for excluding the testing a specific set of files.
-        -->
+
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
@@ -276,7 +277,6 @@
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatricesTest" todir="${report.dir}"/>
-
       <test name="edu.ucla.sspace.matrix.MatlabSparseFileIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>      
       <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
@@ -295,17 +295,19 @@
       <test name="edu.ucla.sspace.text.TestWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestCompoundWordIterator" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.util.CharMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.HashMultiMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.IntegerMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.SparseIntArrayTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.SparseDoubleArrayTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TreeMultiMapTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.TrieSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-      
+      <!-- -->      
     </junit>
   </target>
 
