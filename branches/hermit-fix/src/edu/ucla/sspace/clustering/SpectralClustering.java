@@ -171,8 +171,9 @@ public class SpectralClustering implements OfflineClustering {
     public int[] cluster(Matrix matrix) {
         // First compute the pair wise similarities between every row vector
         // given.
-        verbose("Computing pair wise similarities");
         PairDistances pairDistances = new PairDistances();
+        /*
+        verbose("Computing pair wise similarities");
         for (int r = 0; r < matrix.rows(); ++r) {
             for (int c = r+1; c < matrix.rows(); ++c) {
                 double sim = Similarity.cosineSimilarity(
@@ -185,6 +186,7 @@ public class SpectralClustering implements OfflineClustering {
             }
         }
         verbose("Pair wise similarities done");
+        */
 
         // Cluster the matrix recursively.
         ClusterResult r = realCluster(matrix, pairDistances, 0);
@@ -285,17 +287,17 @@ public class SpectralClustering implements OfflineClustering {
         verbose("Merging at depth " + depth);
 
         // Compute the objective when we keep the two branches split.
-        double splitObjective = computeObjective(
-                leftResult, rightResult, elementIndices, pairDistances);
+        double intraClusterScore = 
+            computeIntraClusterScore(leftResult, leftMatrix) +
+            computeIntraClusterScore(rightResult, rightMatrix);
+
+        double interClusterScore = (pSum / 2) - intraClusterScore;
+        double splitObjective = alpha * intraClusterScore + interClusterScore;
 
         // Compute the objective when we merge the two branches together.
-        double mergedObjective = 0;
-        for (i = 0; i < matrix.rows(); ++i) {
-            for (int j = i + 1; j < matrix.rows(); ++j) {
-                double sim = pairDistances.get(i, j);
-                mergedObjective += alpha * (1 - sim);
-            }
-        }
+        int numRows = matrix.rows();
+        double mergedObjective = alpha *
+            ((numRows * (numRows + 1) / 2) - pSum/2);
 
         // If the merged objective value is less than the split version, combine
         // all clusters into one.
@@ -304,8 +306,7 @@ public class SpectralClustering implements OfflineClustering {
         if (mergedObjective < splitObjective) {
             verbose("Selecting to combine sub trees at depth " + depth);
             Arrays.fill(assignments, 0);
-        }
-        else  {
+        } else  {
             verbose("Selecting to maintain sub trees at depth " + depth);
 
             // Copy over the left assignments and the right assignments, where
@@ -319,14 +320,10 @@ public class SpectralClustering implements OfflineClustering {
             int offset = leftResult.assignments.length;
             for (int index = 0; index < rightResult.assignments.length; ++index)
                 assignments[elementIndices[index + offset].index] =
-                    rightResult.assignments[index] + offset;
+                    rightResult.assignments[index] + leftResult.numClusters;
         }
         return new ClusterResult(assignments, numClusters);
 
-        /*
-        return new ClusterResult(new int[matrix.rows()], 1);
-
-        */
     }
 
     private DoubleVector computeSecondEigenVector(Matrix matrix,
@@ -515,67 +512,27 @@ public class SpectralClustering implements OfflineClustering {
     }
 
     /**
-     * Computes the relaxed correlation objective between two sets of clusters
-     * that were separated according to the eigenvector.
+     * Computes the inter cluster objective for a clustering result.
      *
-     * @param firstResult The set of cluster assignments for vectors placed into
-     *                    the left sub matrix.
-     * @param secondResult The set of cluster assignments for vectors placed
-     *                     into the rightsub matrix.
-     * @param elementIndices A mapping from indices from the left and right
-     *                       submatrices to the original matrix row number
-     * @param distances cosine similarities between rows in the original matrix
+     * @param result The set of cluster assignments for a set of vectors.
+     * @param m the matrix containing each row in the cluster result.
      */
-    private double computeObjective(ClusterResult firstResult,
-                                    ClusterResult secondResult,
-                                    Index[] elementIndices,
-                                    PairDistances distances) {
-        double objective = 0;
-        // Compute the inter and intra cluster similarity between vectors in the
-        // left sub matrix.
-        for (int i = 0; i < firstResult.assignments.length; ++i) {
-            for (int j = i + 1; j < firstResult.assignments.length; ++j) {
-                double sim = distances.get(elementIndices[i].index,
-                                           elementIndices[j].index);
-                if (firstResult.assignments[i] == firstResult.assignments[j])
-                    objective += alpha * (1 - sim);
-                else
-                    objective += beta * sim;
+    private double computeIntraClusterScore(ClusterResult result,
+                                            Matrix m) {
+        DoubleVector[] centroids = new DoubleVector[result.numClusters];
+        double intraClusterScore = 0;
+        for (int i = 0; i < result.assignments.length; ++i) {
+            int assignment = result.assignments[i];
+            DoubleVector v = m.getRowVector(i);
+            if (centroids[assignment] == null)
+                centroids[assignment] = Vectors.copyOf(v);
+            else {
+                DoubleVector centroid = centroids[assignment];
+                intraClusterScore += Similarity.cosineSimilarity(centroid, v);
+                VectorMath.add(centroid, v);
             }
         }
-        // Compute the inter cluster similarity between vectors in the left and
-        // right sub matrix.
-        int offset = firstResult.assignments.length;
-        for (int i = 0; i < firstResult.assignments.length; ++i) {
-            for (int j = 0; j < secondResult.assignments.length; ++j) {
-                double sim = distances.get(elementIndices[i].index,
-                                           elementIndices[j+offset].index);
-                objective += beta * sim;
-            }
-        }
-
-        // Compute the inter and intra cluster similarity between vectors in the
-        // right sub matrix.
-        for (int i = 0; i < secondResult.assignments.length; ++i) {
-            for (int j = i + 1; j < secondResult.assignments.length; ++j) {
-                double sim = distances.get(elementIndices[i+offset].index,
-                                           elementIndices[j+offset].index);
-                if (secondResult.assignments[i] == secondResult.assignments[j])
-                    objective += alpha * (1 - sim);
-                else
-                    objective += beta * sim;
-            }
-        }
-        // Compute the inter cluster similarity between vectors in the left and
-        // right sub matrix.
-        for (int i = 0; i < secondResult.assignments.length; ++i) {
-            for (int j = 0; j < firstResult.assignments.length; ++j) {
-                double sim = distances.get(elementIndices[i+offset].index,
-                                           elementIndices[j].index);
-                objective += beta * sim;
-            }
-        }
-        return objective;
+        return intraClusterScore;
     }
 
     /**
@@ -903,8 +860,8 @@ public class SpectralClustering implements OfflineClustering {
         Matrix m = MatrixIO.readMatrix(new File(args[0]),
                                        Format.SVDLIBC_SPARSE_TEXT,
                                        Type.SPARSE_IN_MEMORY);
-        //File t = File.createTempFile("matlab-spectral", ".dat");
-        //MatrixIO.writeMatrix(m, t, Format.MATLAB_SPARSE);
+        //File t = File.createTempFile("eigen-spectral", ".dat");
+        //MatrixIO.writeMatrix(m, t, Format.EIGEN_SPARSE);
         OfflineClustering cluster = new SpectralClustering();
         int[] assignments = cluster.cluster(m);
     }

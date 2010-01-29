@@ -361,6 +361,9 @@ public class Vectors {
         } else if (source instanceof AmortizedSparseVector) {
             result = new AmortizedSparseVector(source.length());
             copyFromSparseVector(result, source);
+        } else if (source instanceof DoubleVectorView) {
+            DoubleVectorView view = (DoubleVectorView) source;
+            return copyOf(view.getOriginalVector());
         } else {
             // Create a copy of the given class using reflection.  This code
             // assumes that the given implemenation of Vector has a constructor

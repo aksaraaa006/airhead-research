@@ -316,7 +316,6 @@ public class OnlineKMeansClustering<T extends Vector>
      * @return The list of cluster indexes dropped.
      */
     private Set<Integer> dropClusters() {
-        System.out.println("DROPPING");
         Set<Integer> dropped = new HashSet<Integer>();
 
         double[] clusterSizes = new double[elements.size()];
@@ -330,9 +329,7 @@ public class OnlineKMeansClustering<T extends Vector>
 
         int dropCount = 0;
         for (i = 0; i < clusterSizes.length; ++i) {
-            System.out.println("Cluster size: " + clusterSizes[i]/sum);
             if (clusterSizes[i]/sum < dropThreshold) {
-                System.out.println("Dropping cluster: " + i);
                 dropped.add(i);
             }
         }

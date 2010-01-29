@@ -196,7 +196,8 @@ public class SenseEvalTester {
                 }
             }
 
-            answers.println(wordPos + " " + instanceId + " " + clusterName);
+            if (clusterName != null)
+                answers.println(wordPos + " " + instanceId + " " + clusterName);
         }
         answers.flush();
         answers.close();
