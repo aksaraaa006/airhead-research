@@ -257,7 +257,7 @@ public class TrieMapTests {
 	    c++;
 	}
 
-	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	for (Map.Entry<String,String> e : m.entrySet()) {
 	    assertEquals(Integer.parseInt(e.getKey().toString()),
 			 Integer.parseInt(e.getValue()));
 	}
@@ -273,7 +273,7 @@ public class TrieMapTests {
 	    assertEquals(i+1, m.size());
 	}
 
-	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	for (Map.Entry<String,String> e : m.entrySet()) {
 	    assertEquals(Integer.parseInt(e.getKey().toString()),
 			 Integer.parseInt(e.getValue()));
 	}
@@ -362,7 +362,7 @@ public class TrieMapTests {
 	m.put("apple", "3");
 	m.put("banana", "4");
 
-	Set<CharSequence> test = m.keySet();
+	Set<String> test = m.keySet();
 	
 	assertTrue(test.contains("apple"));
 	assertTrue(test.contains("banana"));
@@ -379,9 +379,9 @@ public class TrieMapTests {
 	m.put("apple", "3");
 	m.put("banana", "4");
 
-	Set<Map.Entry<CharSequence,String>> test = m.entrySet();
+	Set<Map.Entry<String,String>> test = m.entrySet();
 
-	for (Map.Entry<CharSequence,String> e : m.entrySet()) {
+	for (Map.Entry<String,String> e : m.entrySet()) {
 	    e.setValue(e.getKey().toString());
 	}
 	
@@ -396,8 +396,8 @@ public class TrieMapTests {
     public void testEntrySetNullValue() {
 	TrieMap<String> m = new TrieMap<String>();
 	m.put("key", "value");
-	Set<Map.Entry<CharSequence,String>> test = m.entrySet();
-	for (Map.Entry<CharSequence,String> e : test) {
+	Set<Map.Entry<String,String>> test = m.entrySet();
+	for (Map.Entry<String,String> e : test) {
 	    e.setValue(null);
 	}
 	
@@ -414,7 +414,7 @@ public class TrieMapTests {
 	control.add("category");
 	control.add("catamaran");
 
-	Set<CharSequence> test = m.keySet();
+	Set<String> test = m.keySet();
 
 	assertTrue(test.containsAll(control));
 	assertTrue(control.containsAll(test));
@@ -442,7 +442,7 @@ public class TrieMapTests {
     @Test public void testIteratorHasNext() {
 	
 	TrieMap<String> m = new TrieMap<String>();
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	assertFalse(it.hasNext());
 
 	m.put("cat", "0");
@@ -451,13 +451,13 @@ public class TrieMapTests {
 
 	it = m.keySet().iterator();
 
-	Set<CharSequence> control = new HashSet<CharSequence>();
+	Set<String> control = new HashSet<String>();
 
 	while (it.hasNext()) {
 	    control.add(it.next());
 	}
 
-	Set<CharSequence> test = m.keySet();
+	Set<String> test = m.keySet();
 
 	assertTrue(test.containsAll(control));
 	assertTrue(control.containsAll(test));
@@ -469,7 +469,7 @@ public class TrieMapTests {
 	TrieMap<String> m = new TrieMap<String>();
 	m.put("cat", "0");
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next();
 	it.next(); // error
     }
@@ -479,7 +479,7 @@ public class TrieMapTests {
 	
 	TrieMap<String> m = new TrieMap<String>();
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next(); // error
     }
 
@@ -489,7 +489,7 @@ public class TrieMapTests {
 	m.put("cat", "0");
 	assertTrue(m.containsKey("cat"));
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next();
 	it.remove();
 	assertFalse(m.containsKey("cat"));
@@ -502,7 +502,7 @@ public class TrieMapTests {
 	m.put("cat", "0");
 	assertTrue(m.containsKey("cat"));
 
-	Iterator<CharSequence> it = m.keySet().iterator();
+	Iterator<String> it = m.keySet().iterator();
 	it.next();
 	it.remove();
 	it.remove();
@@ -653,11 +653,11 @@ public class TrieMapTests {
 	m.put("boy", "4");
 	m.put("cat", "5");
 	
-	SortedSet<CharSequence> control = 
-	    new TreeSet<CharSequence>(m.keySet());
+	SortedSet<String> control = 
+	    new TreeSet<String>(m.keySet());
 	
-	Iterator<CharSequence> it1 = m.keySet().iterator();
-	Iterator<CharSequence> it2 = control.iterator();
+	Iterator<String> it1 = m.keySet().iterator();
+	Iterator<String> it2 = control.iterator();
 
 	while (it1.hasNext() && it2.hasNext()) {
 	    assertEquals(it2.next(), it1.next());
