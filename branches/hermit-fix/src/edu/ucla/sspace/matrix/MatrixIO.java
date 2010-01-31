@@ -194,9 +194,21 @@ public class MatrixIO {
         CLUTO_SPARSE,
 
         EIGEN_SPARSE,
+        EIGEN_DENSE,
 
     }
 
+    public static Iterator<MatrixEntry> iterate(File inputMatrixFile,
+                                                Format format) {
+        switch (format) {
+            default:
+                throw new UnsupportedOperationException(
+                        "Iterating over format " + format + " is currently " +
+                        "not implemented.  Please email " +
+                        "s-space-research-dev@googlegroups.com to have this " +
+                        "implemented.");
+        }
+    }
     /**
      * Converts the format of the input {@code matrix}, returning a temporary
      * file containing the matrix's data in the desired format.
@@ -1008,6 +1020,19 @@ public class MatrixIO {
                         sb.append(index).append(" ").append(v.get(index)).append(" ");
                     pw.println(sb.toString());
                 }
+            }
+            pw.close();
+            break;
+        }
+
+        case EIGEN_DENSE: {
+            PrintWriter pw = new PrintWriter(output);
+            pw.printf("%d %d\n", matrix.rows(), matrix.columns());
+            for (int r = 0; r < matrix.rows(); ++r) {
+                StringBuilder sb = new StringBuilder();
+                for (int c = 0; c < matrix.columns(); ++c)
+                    sb.append(matrix.get(r, c)).append(" ");
+                pw.println(sb.toString());
             }
             pw.close();
             break;
