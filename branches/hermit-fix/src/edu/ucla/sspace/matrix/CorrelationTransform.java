@@ -202,6 +202,6 @@ public class CorrelationTransform implements AltTransform {
      * Returns the name of this transform.
      */
     public String toString() {
-        return "Correlation":
+        return "Correlation";
     }
 }
