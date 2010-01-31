@@ -88,7 +88,7 @@ public class TfIdfAltTransform implements AltTransform {
             for (int term = 0; term < matrix.rows(); ++term) {
                 SparseDoubleVector termVec = smatrix.getRowVector(term);
                 int[] nonZeros = termVec.getNonZeroIndices();
-                termDocCount[index] = nonZeros.length;
+                termDocCount[term] = nonZeros.length;
                 for (int index : nonZeros)
                     termOccuranceCount[term] += termVec.get(index);
             }
