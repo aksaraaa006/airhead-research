@@ -3,6 +3,7 @@ package edu.ucla.sspace.clustering;
 import edu.ucla.sspace.matrix.ClutoDenseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
@@ -14,8 +15,10 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.StringReader;
 
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 
 import java.util.logging.Logger;
 
@@ -24,6 +27,7 @@ import edu.ucla.sspace.common.StaticSemanticSpace;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -159,7 +163,7 @@ public class GapStatistic implements OfflineClustering {
      * using the the Gap Statistic .
      */
     public int[] cluster(Matrix m) {
-        LOGGER.fine("Generating the reference data set");
+        verbose("Generating the reference data set");
         // Generate the reference data sets.
         ReferenceDataGenerator generator = new ReferenceDataGenerator(m);
         File[] gapFiles = new File[numGaps];
@@ -184,9 +188,9 @@ public class GapStatistic implements OfflineClustering {
         // Compute the gap statistic for each iteration.
         String result = null;
         for (int i = 0; i < numIterations; ++i) {
+            int k = i + startSize;
             try {
-                LOGGER.fine("Clustering reference data for " +
-                            (startSize + i) + " clusters");
+                verbose("Clustering reference data for %d clusters\n", k);
 
                 // Compute the score for the reference data sets with k
                 // clusters.
@@ -197,7 +201,7 @@ public class GapStatistic implements OfflineClustering {
                     result = ClutoClustering.cluster(null,
                                                      gapFiles[j],
                                                      outputFile,
-                                                     i + startSize,
+                                                     k,
                                                      METHOD);
                     outputFile.delete();
 
@@ -205,8 +209,7 @@ public class GapStatistic implements OfflineClustering {
                 }
                 gapScore = gapScore / numGaps;
 
-                LOGGER.fine("Clustering original data for " +
-                            (startSize + i) + " clusters");
+                verbose("Clustering original data for %d clusters\n", k);
                 // Compute the score for the original data set with k clusters.
                 File outFile =
                     File.createTempFile("gap-clustering-output", ".matrix");
@@ -222,8 +225,10 @@ public class GapStatistic implements OfflineClustering {
                 // previous assignment is considered best.
                 double gap = Math.log(extractScore(result));
                 gap = gapScore - gap;
-                if (previousGap >= gap)
+                if (previousGap >= gap) {
+                    verbose("Found best clustering with %d clusters\n", (k-1));
                     break;
+                }
 
                 // Otherwise, continue clustering with higher values of k.
                 previousGap = gap;
@@ -281,6 +286,17 @@ public class GapStatistic implements OfflineClustering {
         private final double[] maxValues;
 
         /**
+         * The average number of non zero values in a single row.
+         */
+        private final double averageNumValuesPerRow;
+
+        /**
+         * The standard deviation of the number of non zero values in a single
+         * row.
+         */
+        private final double stdevNumValuesPerRow;
+
+        /**
          * The number of rows to generate in a test data set.
          */
         private final int rows;
@@ -290,18 +306,42 @@ public class GapStatistic implements OfflineClustering {
          * matrix {@code m}.
          */
         public ReferenceDataGenerator(Matrix m) {
+            // Initialize the bounds.
             rows = m.rows();
             minValues = new double[m.columns()];
             maxValues = new double[m.columns()];
+            int[] numNonZeros = new int[m.rows()];
+            double averageNumNonZeros = 0;
+
             for (int r = 0; r < m.rows(); ++r) {
                 for (int c = 0; c < m.columns(); ++c) {
                     double value = m.get(r, c);
+                    // Get the max and minimum value for the row.
                     if (value < minValues[c])
                         minValues[c] = value;
                     if (value > maxValues[c])
                         maxValues[c] = value;
+
+                    // Calculate the number of non zeros per row.
+                    if (value != 0d) {
+                        numNonZeros[r]++;
+                        averageNumNonZeros++;
+                    }
                 }
             }
+
+            // Finalize the average number of non zeros per row.
+            averageNumValuesPerRow = averageNumNonZeros / m.rows();
+
+            // Compute the standard deviation of the number of non zeros per
+            // row.
+            double stdev = 0;
+            for (int nonZeroCount : numNonZeros)
+                stdev += Math.pow(averageNumValuesPerRow- nonZeroCount, 2);
+
+            // Finalize the standar deviation.
+            stdevNumValuesPerRow = Math.sqrt(stdev / m.rows());
+            
         }
 
         /**
@@ -312,11 +352,37 @@ public class GapStatistic implements OfflineClustering {
         public File generateTestData() {
             MatrixBuilder builder = new ClutoDenseMatrixBuilder();
             for (int i = 0; i < rows; ++i) {
-                double[] values = new double[minValues.length];
-                for (int j = 0; j < values.length; ++j) {
-                    double value = random.nextDouble();
-                    values[j] = value * (maxValues[j] - minValues[j]) + 
-                                minValues[j];
+                int cols = minValues.length;
+                double[] values = new double[cols];
+
+                // If the average number of values per row is significantly
+                // smaller than the total number of columns then select a subset
+                // to be non zero.
+                if (averageNumValuesPerRow < cols / 2) {
+                    Set<Integer> nonZeros = new HashSet<Integer>();
+                    int numNonZeros =
+                        (int) (random.nextGaussian() * stdevNumValuesPerRow +
+                               averageNumValuesPerRow);
+                    for (int j = 0; j < numNonZeros; ++j) {
+                        // Get the next index to set.
+                        int col = -1;
+                        while (!nonZeros.contains(col = random.nextInt(cols)))
+                            ;
+
+                        // Set the column's value.
+                        nonZeros.add(col);
+                        double value = random.nextDouble();
+                        values[col] = value *
+                                      (maxValues[col] - minValues[col]) + 
+                                      minValues[col];
+                    }
+                } else {
+                    // Set all values in the column.
+                    for (int j = 0; j < cols; ++j) {
+                        double value = random.nextDouble();
+                        values[j] = value * (maxValues[j] - minValues[j]) + 
+                                    minValues[j];
+                    }
                 }
                 builder.addColumn(values);
             }
@@ -326,39 +392,18 @@ public class GapStatistic implements OfflineClustering {
     }
 
     public static void main(String[] args) throws IOException {
-        SemanticSpace sspace = new StaticSemanticSpace(args[0]);
-        List<DoubleVector> vectors = new ArrayList<DoubleVector>();
+        Matrix m = MatrixIO.readMatrix(new File(args[0]),
+                                       Format.SVDLIBC_SPARSE_TEXT,
+                                       Type.SPARSE_IN_MEMORY);
+        OfflineClustering cluster = new GapStatistic();
+        int[] assignments = cluster.cluster(m);
+    }
 
-        Set<String> words = sspace.getWords();
-        int i = 0;
-        for (String word : words) {
-            /*
-            if (i == 100)
-                break;
-            i++;
-            */
-            vectors.add(Vectors.asDouble(sspace.getVector(word)));
-        }
+    protected void verbose(String msg) {
+        LOGGER.fine(msg);
+    }
 
-        OfflineClustering clustering = null;
-        if (args.length > 1)
-            clustering = new GapStatistic(
-                    1,
-                    Integer.parseInt(args[1]),
-                    Integer.parseInt(args[2]));
-        else 
-            clustering = new GapStatistic(1, 5, 5);
-
-        System.out.println("Clustering Start");
-        int[] assignments = clustering.cluster(Matrices.asMatrix(vectors));
-        System.out.println("Clustering Done");
-        i = 0;
-        for (String word : words) {
-            /*
-            if (i == 100)
-                break;
-                */
-            System.out.printf("%s %d\n", word, assignments[i++]);
-        }
+    protected void verbose(String format, Object... args) {
+        LOGGER.fine(String.format(format, args));        
     }
 }

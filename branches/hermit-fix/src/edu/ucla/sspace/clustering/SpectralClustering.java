@@ -190,6 +190,7 @@ public class SpectralClustering implements OfflineClustering {
 
         // Cluster the matrix recursively.
         ClusterResult r = realCluster(matrix, pairDistances, 0);
+        verbose("Created " + r.numClusters + " clusters");
         return r.assignments;
     }
 
