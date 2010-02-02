@@ -299,7 +299,8 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 addNextWord(it, nextWords, nextOriginals);
 
             // Only process words which have a suitable replacement.
-            if (acceptedWords == null || acceptedWords.contains(focusWord)) {
+            if (!focusWord.equals(EMPTY_TOKEN) && 
+                (acceptedWords == null || acceptedWords.contains(focusWord))) {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
@@ -346,8 +347,9 @@ public class FlyingHermit implements SemanticSpace, Filterable {
 
                 // Count the accuracy of the current cluster assignment for
                 // words which have a replacement different from themselves.
-                if (!focusWord.equals(original))
+                if (!focusWord.equals(original)) {
                     accuracyMap.addInstance(focusWord, clusterNum, original);
+                }
             }
 
             // Push the focus word into previous word set for the next focus
@@ -381,8 +383,8 @@ public class FlyingHermit implements SemanticSpace, Filterable {
         String replacement = term;
         if (replacementMap != null) {
             replacement = replacementMap.get(term);
-            replacement = (replacement != null) ? replacement : EMPTY_TOKEN;
-        } 
+            replacement = (replacement != null) ? replacement : term;
+        }
 
         nextWords.offer(replacement.intern());
         nextOriginals.offer(term.intern());
