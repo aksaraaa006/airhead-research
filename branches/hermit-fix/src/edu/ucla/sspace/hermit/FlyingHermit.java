@@ -299,8 +299,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 addNextWord(it, nextWords, nextOriginals);
 
             // Only process words which have a suitable replacement.
-            if (!focusWord.equals(EMPTY_TOKEN) && 
-                (acceptedWords == null || acceptedWords.contains(focusWord))) {
+            if (acceptWord(focusWord, original)) {
                 // Incorporate the context into the semantic vector for the
                 // focus word.  If the focus word has no semantic vector yet,
                 // create a new one, as determined by the index builder.
@@ -463,6 +462,17 @@ public class FlyingHermit implements SemanticSpace, Filterable {
 
         acceptedWords.clear();
         acceptedWords.addAll(wordsToProcess);
+    }
+
+    private boolean acceptWord(String focusWord, String original) {
+        if (acceptedWords != null && replacementMap != null)
+            return !focusWord.equals(original) &&
+                   acceptedWords.contains(original);
+        if (acceptedWords == null && replacementMap != null)
+            return !focusWord.equals(original);
+        if (acceptedWords == null)
+            return !focusWord.equals(EMPTY_TOKEN);
+        return acceptedWords.contains(focusWord);
     }
 
     /**
