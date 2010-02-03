@@ -449,7 +449,7 @@ public class SecondFlyingHermitMain extends GenericMain {
      * Begin processing with {@code FlyingHermit}.
      */
     public static void main(String[] args) {
-        FlyingHermitMain hermit = new FlyingHermitMain();
+        SecondFlyingHermitMain hermit = new SecondFlyingHermitMain();
         try {
             hermit.run(args);
         }

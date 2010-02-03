@@ -63,7 +63,7 @@ public class SenseEvalCleaner {
             String prevContext = instanceNode.getFirstChild().getNodeValue();
             prevContext = prevContext.substring(1);
             String nextContext = instanceNode.getLastChild().getNodeValue();
-            writer.printf("%s %s %s %s",
+            writer.printf("%s %s |||| %s %s",
                           instanceId, prevContext, wordPosNum[0], nextContext);
         }
         writer.flush();

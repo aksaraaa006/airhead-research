@@ -283,67 +283,59 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
 
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
-        for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
+        for (int i = 0 ; it.hasNext(); ++i) {
+            String term = it.next();
+            if (term.equals("||||"))
+                break;
+            prevWords.offer(term.intern());
+        }
+
+        String focusWord = it.next().intern();
+
+        while (it.hasNext())
             nextWords.offer(it.next().intern());
 
-        String focusWord = null;
-        while (!nextWords.isEmpty()) {
-            focusWord = nextWords.remove();
+        // Incorporate the context into the semantic vector for the
+        // focus word.  If the focus word has no semantic vector yet,
+        // create a new one, as determined by the index builder.
+        SparseIntegerVector meaning = 
+            new SparseHashIntegerVector(indexVectorSize);
 
-            if (it.hasNext())
-                nextWords.offer(it.next().intern());
-
-            // Only process words which have a suitable replacement.
-            if (acceptWord(focusWord)) {
-                // Incorporate the context into the semantic vector for the
-                // focus word.  If the focus word has no semantic vector yet,
-                // create a new one, as determined by the index builder.
-                SparseIntegerVector meaning = 
-                    new SparseHashIntegerVector(indexVectorSize);
-
-                // Process the previous words, specifying their distance from
-                // the focus word.
-                int distance = -1 * prevWords.size();
-                for (String term : prevWords) {
-                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        TernaryVector termVector = indexMap.get(term);
-                        if (permFunc != null)
-                            termVector = permFunc.permute(termVector, distance);
-                        add(meaning, termVector);
-                    }
-                    ++distance;
-                }
-
-                distance = 1;
-
-                // Process the next words, specifying the distance from the
-                // focus word.
-                for (String term : nextWords) {
-                    if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        TernaryVector termVector = indexMap.get(term);
-                        if (permFunc != null)
-                            termVector = permFunc.permute(termVector, distance);
-                        add(meaning, termVector);
-                    }
-                    ++distance;
-                }
-
-                // Compare the most recent vector to all the saved vectors.  If
-                // the vector with the highest similarity has a similarity over
-                // a threshold, incorporate this {@code IntegerVector} to that
-                // winner.  Otherwise add this {@code IntegerVector} as a new
-                // vector for the term.
-                int clusterNum;
-                clusterNum = clusterMap.addVector(focusWord, meaning);
-                assignmentMap.addInstance(focusWord, clusterNum, instanceId);
+        // Process the previous words, specifying their distance from
+        // the focus word.
+        int distance = -1 * prevWords.size();
+        for (String term : prevWords) {
+            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                TernaryVector termVector = indexMap.get(term);
+                if (permFunc != null)
+                    termVector = permFunc.permute(termVector, distance);
+                add(meaning, termVector);
             }
-
-            // Push the focus word into previous word set for the next focus
-            // word.
-            prevWords.offer(focusWord);
-            if (prevWords.size() > prevSize)
-                prevWords.remove();
+            ++distance;
         }
+
+        distance = 1;
+
+        // Process the next words, specifying the distance from the
+        // focus word.
+        for (String term : nextWords) {
+            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                TernaryVector termVector = indexMap.get(term);
+                if (permFunc != null)
+                    termVector = permFunc.permute(termVector, distance);
+                add(meaning, termVector);
+            }
+            ++distance;
+        }
+
+        // Compare the most recent vector to all the saved vectors.  If
+        // the vector with the highest similarity has a similarity over
+        // a threshold, incorporate this {@code IntegerVector} to that
+        // winner.  Otherwise add this {@code IntegerVector} as a new
+        // vector for the term.
+        int clusterNum;
+        clusterNum = clusterMap.addVector(focusWord, meaning);
+        assignmentMap.addInstance(focusWord, clusterNum, instanceId);
     }
     
     /**
