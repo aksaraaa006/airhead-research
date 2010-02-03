@@ -72,9 +72,26 @@ public class TokenCounter {
     private final Map<String,Integer> tokenToCount;
 
     /**
+     * {@code true} if the token counter should lower case all tokens before
+     * counting
+     */
+    private final boolean doLowerCasing;
+
+    /**
      * Creates a new token counter
      */
     public TokenCounter() { 
+        this(false);
+    }
+
+    /**
+     * Creates a new token counter that optionally lower cases tokens
+     *
+     * @param doLowerCasing {@code true} if the token counter should lower case
+     *        all tokens before counting
+     */
+    public TokenCounter(boolean doLowerCasing) { 
+        this.doLowerCasing = doLowerCasing;
         tokenToCount = new TrieMap<Integer>();
     }
 
@@ -123,6 +140,8 @@ public class TokenCounter {
         long numTokens = 0;
         while (tokens.hasNext()) {
             String token = tokens.next();
+            if (doLowerCasing)
+                token = token.toLowerCase();
             Integer count = tokenToCount.get(token);
             tokenToCount.put(token, (count == null) ? 1 : 1 + count);
             numTokens++;
@@ -143,6 +162,9 @@ public class TokenCounter {
         options.addOption('C', "compoundWords", "a file where each line is a " +
                           "recognized compound word", true, "FILE", 
                           "Tokenizing Options");
+        options.addOption('L', "lowerCase", "lower-cases each token after " +
+                          "all other filtering has been applied", false, null, 
+                          "Tokenizing Options");
         options.addOption('z', "wordLimit", "Set the maximum number of words " +
                           "an document can return",
                           true, "INT", "Tokenizing Options");
@@ -160,6 +182,8 @@ public class TokenCounter {
             LoggerUtil.setLevel(Level.FINE);
 
 
+        boolean doLowerCasing = options.hasOption("lowerCase");
+
         Properties props = System.getProperties();
         // Initialize the IteratorFactory to tokenize the documents according to
         // the specified configuration (e.g. filtering, compound words)
@@ -169,11 +193,10 @@ public class TokenCounter {
         // Set any tokenizing options.
         if (options.hasOption("useStemming"))
             props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
-
-        if (options.hasOption("compoundWords")) {
+         
+        if (options.hasOption("compoundWords")) 
             props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
                               options.getStringOption("compoundWords"));
-        }
         if (options.hasOption("wordLimit"))
             props.setProperty(IteratorFactory.TOKEN_COUNT_LIMIT_PROPERTY,
                               options.getStringOption("wordLimit"));
@@ -181,7 +204,7 @@ public class TokenCounter {
         IteratorFactory.setProperties(props);
 
         try {
-            TokenCounter counter = new TokenCounter();
+            TokenCounter counter = new TokenCounter(doLowerCasing);
             // Process each of the input files
             for (int i = 1; i < options.numPositionalArgs(); ++i)
                 counter.processFile(options.getPositionalArg(i));
