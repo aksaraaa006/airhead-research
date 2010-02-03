@@ -560,6 +560,46 @@ public class MatrixIO {
 
     /**
      * Converts the contents of a matrix file as a {@link Matrix} object, using
+     * the provided format as a hint for what kind to create.  The
+     * type of {@code Matrix} object created will assuming that the entire
+     * matrix can fit in memory based on the format of the file speicfied
+     * Note that the returned {@link Matrix} instance is not backed by the data
+     * on file; changes to the {@code Matrix} will <i>not</i> be reflected in
+     * the original file's data.
+     *
+     * @param matrix a file contain matrix data
+     * @param format the format of the file
+     *
+     * @return the {@code Matrix} instance that contains the data in the
+     *         provided file
+     */
+    public static Matrix readMatrix(File matrix, Format format)
+            throws IOException {
+        switch (format) {
+            // Assume all sparse formats will fit in memory.
+            case SVDLIBC_SPARSE_TEXT:
+            case SVDLIBC_SPARSE_BINARY:
+            case MATLAB_SPARSE:
+            case CLUTO_SPARSE:
+                return readMatrix(matrix, format, Type.SPARSE_IN_MEMORY, false);
+            // Assume all dense formats will fit in memory.
+            case SVDLIBC_DENSE_TEXT:
+            case SVDLIBC_DENSE_BINARY:
+            case DENSE_TEXT:
+            case CLUTO_DENSE:
+                return readMatrix(matrix, format, Type.DENSE_IN_MEMORY, false);
+
+            default:
+                throw new Error(
+                        "Reading matrices of " + format + " format is not "+
+                        "currently supported. Email " +
+                        "s-space-research-dev@googlegroups.com to request its" +
+                        "inclusion and it will be quickly added");
+        }
+    }
+    
+    /**
+     * Converts the contents of a matrix file as a {@link Matrix} object, using
      * the provided type description as a hint for what kind to create.  The
      * type of {@code Matrix} object created will be based on an estimate of
      * whether the data will fit into the available memory.  Note that the

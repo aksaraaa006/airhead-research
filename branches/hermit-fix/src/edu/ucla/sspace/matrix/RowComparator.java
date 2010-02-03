@@ -31,6 +31,7 @@ import edu.ucla.sspace.vector.DoubleVector;
 
 import java.lang.reflect.Method;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -46,10 +47,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * A utility class for finding the {@code k} most-similar words to a provided
- * word in a {@link SemanticSpace}.  The comparisons required for generating the
+ * A utility class for finding the {@code k} most-similar rows to a provided
+ * row in a {@link Matrix}.  The comparisons required for generating the
  * list maybe be run in parallel by configuring an instance of this class to use
- * multiple threads. <p>
+ * multiple threads. Note that this comparator assumes that the similarity
+ * method used is symmetric.<p>
  *
  * All instances of this class are thread-safe.
  * 
@@ -80,40 +82,31 @@ public class RowComparator {
     }
 
     /**
-     * Compares the provided word to all other words in the provided {@link
-     * SemanticSpace} and return the specified number of words that were most
-     * similar according to the specified similarity measure.
-     *
-     * @return the most similar words, or {@code null} if the provided word was
-     *         not in the semantic space.
+     * Compares the provided row to all other rows in the provided {@link
+     * Matrix} and populates the list of most similar rows to this row, and to
+     * other rows that are compared.  This method only compares the current row
+     * to rows that come after the current row.
      */
-    public SortedMultiMap<Double,Integer> getMostSimilar(
-            final int row, final Matrix matrix,
-            int numberOfSimilarRows, Similarity.SimType similarityType) {
-        // the most-similar set will automatically retain only a fixed number
-        // of elements
-        final SortedMultiMap<Double,Integer> mostSimilar =
-            new BoundedSortedMultiMap<Double,Integer>(numberOfSimilarRows,
-                                                     false);
+    public void getMostSimilar(
+            final int row,
+            final Matrix matrix,
+            final ArrayList<SortedMultiMap<Double, Integer>> mostSimilarPerRow,
+            Similarity.SimType similarityType) {
+        int startRow = row + 1;
 
-        // The semaphore used to block until all the words have been compared.
-        // Use word-2 since we don't process the comparison of the word to
-        // itself, and we want one permit to be availabe after the last word is
-        // compared.  The negative ensures that the release() must happen before
-        // the main thread's acquire() will return.
-        final Semaphore comparisons = new Semaphore(0 - (matrix.rows() - 2));
+        // The semaphore used to block until all the rows have been compared.
+        // Set the number of computations to be the number of rows that come
+        // after the current row.  The negative ensures that the release() must
+        // happen before the main thread's acquire() will return.
+        int numRowsToCompare = 0 - (matrix.rows() - startRow);
+        final Semaphore comparisons = new Semaphore(numRowsToCompare);
 
-        // loop through all the other words computing their
-        // similarity
-        int submitted = 0;
-        for (int i = 0; i < matrix.rows(); ++i) {
-            // skip if it is ourselves
-            if (i == row)
-                continue;
-
+        // loop through all rows after the current row to compute their
+        // similarity.
+        for (int i = row+1; i < matrix.rows(); ++i) {
              workQueue.offer(new Comparison(
-                         comparisons, matrix, matrix.getRowVector(row), 
-                         i, similarityType, mostSimilar));
+                         comparisons, matrix, row, 
+                         i, similarityType, mostSimilarPerRow));
         }
         
         try {
@@ -121,14 +114,12 @@ public class RowComparator {
         } catch (InterruptedException ie) {
             // check whether we were interrupted while still waiting for the
             // comparisons to finish
-             if (comparisons.availablePermits() < 1) {
+            if (comparisons.availablePermits() < 1) {
                 throw new IllegalStateException(
                     "interrupted while waiting for word comparisons to finish", 
                     ie);
-             }
+            }
         }
-        
-        return mostSimilar;
     }
 
     /**
@@ -140,35 +131,35 @@ public class RowComparator {
         private final Semaphore semaphore;
 
         Matrix matrix;
-        DoubleVector row;
+        int row;
         int other;
         Similarity.SimType similarityMeasure;
-        MultiMap<Double,Integer> mostSimilar;
+        ArrayList<SortedMultiMap<Double,Integer>> mostSimilarPerRow;
 
-        public Comparison(Semaphore semaphore,
-                          Matrix matrix,
-                          DoubleVector row,
-                          int other,
-                          Similarity.SimType similarityMeasure,
-                          MultiMap<Double,Integer> mostSimilar) {
+        public Comparison(
+                Semaphore semaphore,
+                Matrix matrix,
+                int row,
+                int other,
+                Similarity.SimType similarityMeasure,
+                ArrayList<SortedMultiMap<Double, Integer>> mostSimilarPerRow) {
             this.semaphore = semaphore;
             this.matrix = matrix;
             this.row = row;
             this.other = other;
             this.similarityMeasure = similarityMeasure;
-            this.mostSimilar = mostSimilar;
+            this.mostSimilarPerRow = mostSimilarPerRow;
         }
 
         public void run() {
             try {            
                 DoubleVector otherV = matrix.getRowVector(other);
+                DoubleVector rowV = matrix.getRowVector(row);
                 Double similarity = Similarity.getSimilarity(
-                    similarityMeasure, row, otherV);
-                
-                // lock on the Map, as it is not thread-safe
-                synchronized(mostSimilar) {
-                    mostSimilar.put(similarity, other);
-                }
+                    similarityMeasure, rowV, otherV);
+
+                addToMostSimilar(row, other, similarity.doubleValue());
+                addToMostSimilar(other, row, similarity.doubleValue());
             } catch (Exception e) {
                 // Rethrow any reflection-related exception, as this situation
                 // should not normally occur since the Method being invoked
@@ -178,6 +169,16 @@ public class RowComparator {
                 // notify that the word has been processed regardless of whether
                 // an error occurred
                 semaphore.release();
+            }
+        }
+
+        private void addToMostSimilar(int row, int other, double similarity) {
+            // Get the multi map for the row we that is being comapred against.
+            SortedMultiMap<Double, Integer> mostSimilar =
+                mostSimilarPerRow.get(row);
+            // lock on the Map, as it is not thread-safe
+            synchronized(mostSimilar) {
+                mostSimilar.put(similarity, other);
             }
         }
     }
