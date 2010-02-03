@@ -57,13 +57,14 @@ public class SenseEvalCleaner {
         NodeList instances = doc.getElementsByTagName("instance");
         for (int i = 0; i < instances.getLength(); ++i) {
             Element instanceNode = (Element) instances.item(i);
-            String instanceId = instanceNode.getAttribute("id");
+            String instanceId = instanceNode.getAttribute("id").trim();
             String[] wordPosNum = instanceId.split("\\.");
 
             String prevContext = instanceNode.getFirstChild().getNodeValue();
+            prevContext = prevContext.substring(1);
             String nextContext = instanceNode.getLastChild().getNodeValue();
-            writer.println(
-                    prevContext + " " + wordPosNum[0] + " " + nextContext);
+            writer.printf("%s %s %s %s",
+                          instanceId, prevContext, wordPosNum[0], nextContext);
         }
         writer.flush();
         writer.close();

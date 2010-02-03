@@ -32,6 +32,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Properties;
 
 
 /**
@@ -62,7 +63,7 @@ public class SemanticNeighborHoodTransform implements Transform {
      * The property for setting the number of similar rows to consider part of a
      * neighboorhood.
      */
-    public static final String NUM_SIMILAR_PROEPRTY =
+    public static final String NUM_SIMILAR_PROPERTY =
         PROPERTY_PREFIX + ".numSimilar";
 
     /**
@@ -88,7 +89,7 @@ public class SemanticNeighborHoodTransform implements Transform {
      * properties.
      */
     public SemanticNeighborHoodTransform(Properties props) {
-        numSiimlar = Integer.parseInt(props.getProperty(
+        numSimilar = Integer.parseInt(props.getProperty(
                     NUM_SIMILAR_PROPERTY, DEFAULT_NUM_SIMILAR));
     }
 
