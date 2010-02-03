@@ -144,8 +144,8 @@ public class Similarity {
      *
      * @return the similarity according to the specified measure
      */
-    public static double getSimilarity(SimType similarityType, 
-                                       Vector a, Vector b) {
+    public static <T extends Vector> double getSimilarity(
+            SimType similarityType, T a, T b) {
         switch (similarityType) {
             case COSINE:
                 return cosineSimilarity(a, b);
