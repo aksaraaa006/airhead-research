@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
+import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
@@ -37,18 +38,22 @@ import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
 
+import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
+import edu.ucla.sspace.util.MultiMap;
 
 import edu.ucla.sspace.vector.SparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
+import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -218,6 +223,13 @@ public class FlyingHermitMain extends GenericMain {
     private IntegerVectorGeneratorMap<TernaryVector> vectorMap;
 
     /**
+     * The {@code FlyingHermit} semantic space that is being operated on for
+     * this class.  This instance is created by the {@link #getSpace()} method
+     * after all the parameters have been established.
+     */
+    private FlyingHermit flyingHermit;
+
+    /**
      * The {@link PermutationFunction} for {@link TernaryVector}s to use while
      * generating contexts.  This may be either a new function, or one
      * deserialized from a file.
@@ -332,6 +344,11 @@ public class FlyingHermitMain extends GenericMain {
                           "Load index vectors and permutation function from " +
                           "binary files",
                           true, "FILE", "Pre Processing");
+        options.addOption('Y', "computePositionalSimilarities",
+                          "For all the accepted words, finds the most similar "
+                          + "index vectors for each position.  The value is " +
+                          "+/- position window size", true,
+                          "INT", "Post Processing");
     }
 
     /**
@@ -476,15 +493,79 @@ public class FlyingHermitMain extends GenericMain {
             SerializableUtil.save(permFunction,
                                   new File(filename + ".permutation"));
         }
+        if (argOptions.hasOption("computePositionalSimilarities")) {
+            int positionWindowSize = 
+                argOptions.getIntOption("computePositionalSimilarities");
+            try {
+                computePositionalSimilarities(positionWindowSize);
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
+            }
+        }
+    }
+    
+    /**
+     * For each sense cluster, examines each position within a window around it
+     * and finds the index vector that is most similar to that position.
+     */
+    private void computePositionalSimilarities(int positionWindowSize) 
+            throws IOException {
+        // For each of the words in the accepted list, for which multiple sense
+        // are being generated
+        for (String word : acceptedWords) {
+            Vector senseVector = flyingHermit.getVector(word);
+            // Generate a single write to contain all of the results for the
+            // current word
+            //
+            // NOTE: the directory to which this file is written should be a
+            // configurable parameter
+            PrintWriter pw = new PrintWriter(word + "-positional-similarity.txt");
+
+            // For each of the positions that would occur around the target word
+            for (int pos = -positionWindowSize; pos <= positionWindowSize;
+                     ++pos) {
+                // skip the unpermuted position
+                if (pos == 0)
+                    continue;
+
+                // Retain only the top 10 words whose permuted index vectors are
+                // most similar.  REMINDER: this might be a useful configurable
+                // parameter in the future.
+                MultiMap<Double,String> mostSimilar = 
+                    new BoundedSortedMultiMap<Double,String>(
+                        10, true, true, true);
+                
+                // Examine each of the index vectors as permuted by the position
+                for (Map.Entry<String,TernaryVector> e : vectorMap.entrySet()) {
+                    TernaryVector indexVector = e.getValue();
+                    TernaryVector permuted = 
+                        permFunction.permute(indexVector, pos);
+                    double similarity = 
+                        Similarity.cosineSimilarity(senseVector, permuted);
+                    mostSimilar.put(similarity, e.getKey());
+                }
+                
+                // Once the top-10 most similar have been found, print out the
+                // similar word and its similarity score
+                StringBuilder sb = new StringBuilder(1000);
+                sb.append("For position: ").append(pos).append("\n");
+                for (Map.Entry<Double,String> e : mostSimilar.entrySet())
+                    sb.append(e.getKey()).append(" ").
+                        append(e.getValue()).append("\n");
+                pw.println(sb.toString());
+            }
+            pw.close();
+        }
     }
 
     /**
      * {@inheritDoc}
      */
-    public SemanticSpace getSpace() {
-        return new FlyingHermit(vectorMap, permFunction, clusterGenerator,
-                                replacementMap, acceptedWords, dimension,
-                                prevWordsSize, nextWordsSize);
+    public SemanticSpace getSpace() {        
+        return flyingHermit = 
+            new FlyingHermit(vectorMap, permFunction, clusterGenerator,
+                             replacementMap, acceptedWords, dimension,
+                             prevWordsSize, nextWordsSize);
     }
 
     /**

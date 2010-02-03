@@ -42,6 +42,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A simple online implementation of K-Means clustering for {@code Vector}s,
@@ -86,7 +87,7 @@ public class OnlineKMeansClustering<T extends Vector>
                                   double dropThreshold,
                                   int maxNumClusters,
                                   double clusterWeight) {
-        elements = new ArrayList<Cluster>();
+        elements = new CopyOnWriteArrayList<Cluster>();
         this.clusterThreshold = mergeThreshold;
         this.dropThreshold = dropThreshold;
         this.maxNumClusters = maxNumClusters;
@@ -102,12 +103,7 @@ public class OnlineKMeansClustering<T extends Vector>
         // First make a shallow copy of the cluster list to work on.  Note that
         // by making this shallow copy, if new clusters are added while
         // assigning this instance, the new cluster will be skipped.
-        List<Cluster> copiedElements = null;
-        synchronized (elements) {
-            copiedElements = new ArrayList<Cluster>(elements.size());
-            for (Cluster c : elements)
-                copiedElements.add(c);
-        }
+        List<Cluster> copiedElements = new ArrayList<Cluster>(elements);
 
         // Find the centriod with the best similarity.
         Cluster bestMatch = null;
@@ -126,15 +122,28 @@ public class OnlineKMeansClustering<T extends Vector>
         }
 
         // Add the current term vector if the similarity is high enough, or set
-        // it as a new centroid.
-        synchronized (elements) {
-            if (similarity >= clusterThreshold ||
+        // it as a new centroid.        
+        if (similarity >= clusterThreshold ||
                 elements.size() >= maxNumClusters) {
-                bestMatch.addVector(value);
-                return bestIndex;
-            } else {
-                elements.add(getNewCluster(value));
-                return elements.size() - 1;
+            bestMatch.addVector(value);
+            return bestIndex;
+        } else {
+            // lock to ensure that the number of clusters doesn't change while
+            // we add this one
+            synchronized(elements) {
+                // Perform an additional check to see whether the number of
+                // elements changed while we waiting on the lock
+                if (elements.size() < maxNumClusters) {
+                    elements.add(getNewCluster(value));
+                    return elements.size() - 1;
+                }
+                // Otherwise, while we were waiting, another thread increased
+                // the number of elements to more than the max number of
+                // clusters, so this element should be merged instead.
+                else {
+                    bestMatch.addVector(value);
+                    return bestIndex;
+                }
             }
         }
     }
@@ -192,12 +201,10 @@ public class OnlineKMeansClustering<T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public synchronized List<List<T>> getClusters() {
-        List<List<T>> clusters =
-            new ArrayList<List<T>>(elements.size());
-        for (Cluster cluster : elements) {
+    public List<List<T>> getClusters() {
+        List<List<T>> clusters = new ArrayList<List<T>>(elements.size());
+        for (Cluster cluster : elements) 
             clusters.add(cluster.getMembers());
-        }
         return clusters;
     }
 
@@ -220,14 +227,14 @@ public class OnlineKMeansClustering<T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public synchronized int getMaxNumClusters() {
+    public int getMaxNumClusters() {
         return maxNumClusters;
     }
 
     /**
      * {@inheritDoc}
      */
-    public synchronized Map<Integer, Integer> finalizeClustering() {
+    public Map<Integer, Integer> finalizeClustering() {
         Set<Integer> droppedList = dropClusters();
         Map<Integer, Integer> mapping = mergeClusters(droppedList);
         for (Integer dropped : droppedList)
@@ -392,7 +399,7 @@ public class OnlineKMeansClustering<T extends Vector>
                 VectorMath.add(centroid, vector);
             else 
                 VectorMath.addWithScalars(centroid, oldValueWeight,
-                                       vector, newValueWeight);
+                                          vector, newValueWeight);
             ++itemCount;
         }
 
@@ -428,7 +435,7 @@ public class OnlineKMeansClustering<T extends Vector>
          * Returns the total number of items represented by this {@code
          * Cluster}.
          */
-        public synchronized int getTotalMemberCount() {
+        public int getTotalMemberCount() {
             return itemCount;
         }
 
