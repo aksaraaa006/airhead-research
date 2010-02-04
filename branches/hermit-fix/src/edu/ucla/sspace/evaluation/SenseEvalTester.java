@@ -48,7 +48,9 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
@@ -125,82 +127,118 @@ public class SenseEvalTester {
                 (PermutationFunction<TernaryVector>) SerializableUtil.load(
                         new File(options.getStringOption('p')),
                         PermutationFunction.class);
-        System.out.println(permFunc);
         
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder db = dbf.newDocumentBuilder();
-        Document doc = db.parse(new File(options.getStringOption('S')));
-        NodeList instances = doc.getElementsByTagName("instance");
-        for (int i = 0; i < instances.getLength(); ++i) {
-            Element instanceNode = (Element) instances.item(i);
-            String instanceId = instanceNode.getAttribute("id");
-            String[] wordPosNum = instanceId.split("\\.");
-
-            Queue<String> prevWords = extractContext(
-                    instanceNode.getFirstChild().getNodeValue());
-            Queue<String> nextWords = extractContext(
-                    instanceNode.getLastChild().getNodeValue());
-            // Create a new Vector that will contain the sum of all the
-            // index vectors for the context.  This will compared with each
-            // sense of the target word.
-            DoubleVector contextVector = 
-                new DenseVector(senseInducedSpace.getVectorLength());
-
-            // Extract the TernaryVector and permute in the same way that
-            // FlyingHermit would for the words before and after the head
-            // token.
-            int distance = -1 * prevWords.size();
-            for (String term : prevWords) {
-                if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                    TernaryVector termVector = wordToIndexVector.get(term);
-                    if (permFunc != null)
-                        termVector = permFunc.permute(termVector, distance);
-                    add(contextVector, termVector);
-                }
-                ++distance;
-            }
-
-            distance = 1;
-            for (String term : nextWords) {
-                if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                    TernaryVector termVector = wordToIndexVector.get(term);
-                    if (permFunc != null)
-                        termVector = permFunc.permute(termVector, distance);
-                    add(contextVector, termVector);
-                }
-                ++distance;
-            }
-
-            // Once the context vector has been build, determine which sense
-            // of the word is most similar to the context
-            double closestSimilarity = -1;
-            String clusterName = null;
-            String word = wordPosNum[0];
-            String wordPos = word + "." + wordPosNum[1];
-
-            for (int sense = 0; sense < Integer.MAX_VALUE; ++sense) {
-                String senseWord = (sense == 0) ? word : word + "-" + sense;
-                Vector semanticVector = 
-                    senseInducedSpace.getVector(senseWord);
-                if (semanticVector == null)
-                    break;
-
-                double similarity = Similarity.cosineSimilarity(
-                    semanticVector, contextVector);
-                if (similarity > closestSimilarity) {
-                    closestSimilarity = similarity;
-                    // Use the Part of Speech as a part of the cluster name
-                    // to avoid confusing noun and verb clusters in the
-                    // results.
-                    clusterName = wordPos + "." + sense;
-                }
-            }
-
-            if (clusterName != null)
-                answers.println(wordPos + " " + instanceId + " " + clusterName);
+        final Iterator<SenseEvalInstance> iter =
+            new InstanceIterator(options.getStringOption('S'));
+        Collection<Thread> threads = new LinkedList<Thread>();
+        int numThreads = Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < numThreads; ++i) {
+            Thread t = addThread(iter, answers, permFunc, 
+                                 senseInducedSpace, wordToIndexVector);
+            threads.add(t);
         }
+
+        for (Thread t : threads)
+            t.start();
+
+        for (Thread t : threads)
+            t.join();
+
         answers.flush();
         answers.close();
+    }
+
+    private Thread addThread(
+            final Iterator<SenseEvalInstance> iter,
+            final PrintWriter answers,
+            final PermutationFunction<TernaryVector> permFunc,
+            final SemanticSpace senseInducedSpace,
+            final Map<String, TernaryVector> wordToIndexVector) {
+        return new Thread() {
+            public void run() {
+                while (iter.hasNext()) {
+                    SenseEvalInstance instance = iter.next();
+                    processInstance(instance, answers, permFunc,
+                            senseInducedSpace, wordToIndexVector);
+                }
+            }
+        };
+    }
+    public void processInstance(SenseEvalInstance instance,
+                                PrintWriter answers,
+                                PermutationFunction<TernaryVector> permFunc,
+                                SemanticSpace senseInducedSpace,
+                                Map<String, TernaryVector> wordToIndexVector) {
+        Queue<String> prevWords = instance.prevWords;
+        Queue<String> nextWords = instance.nextWords;
+
+        // Create a new Vector that will contain the sum of all the
+        // index vectors for the context.  This will compared with each
+        // sense of the target word.
+        DoubleVector contextVector = 
+            new DenseVector(senseInducedSpace.getVectorLength());
+
+        // Extract the TernaryVector and permute in the same way that
+        // FlyingHermit would for the words before and after the head
+        // token.
+        int distance = -1 * prevWords.size();
+        for (String term : prevWords) {
+            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                TernaryVector termVector = wordToIndexVector.get(term);
+                if (permFunc != null)
+                    termVector = permFunc.permute(termVector, distance);
+                add(contextVector, termVector);
+            }
+            ++distance;
+        }
+
+        distance = 1;
+        for (String term : nextWords) {
+            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                TernaryVector termVector = wordToIndexVector.get(term);
+                if (permFunc != null)
+                    termVector = permFunc.permute(termVector, distance);
+                add(contextVector, termVector);
+            }
+            ++distance;
+        }
+
+        // Once the context vector has been build, determine which sense
+        // of the word is most similar to the context
+        double closestSimilarity = -1;
+        String clusterName = null;
+
+        String word = instance.word;
+        String wordPos = instance.wordPos;
+        String instanceId = instance.instanceId;
+
+        for (int sense = 0; sense < Integer.MAX_VALUE; ++sense) {
+            String senseWord = (sense == 0) ? word : word + "-" + sense;
+            Vector semanticVector = 
+                senseInducedSpace.getVector(senseWord);
+            if (semanticVector == null)
+                break;
+
+            double similarity = Similarity.cosineSimilarity(
+                semanticVector, contextVector);
+            if (similarity > closestSimilarity) {
+                closestSimilarity = similarity;
+                // Use the Part of Speech as a part of the cluster name
+                // to avoid confusing noun and verb clusters in the
+                // results.
+                clusterName = wordPos + "." + sense;
+            }
+        }
+
+        try {
+            if (clusterName != null)
+                synchronized (answers) {
+                    answers.printf("%s %s %s\n",
+                                   wordPos, instanceId, clusterName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void add(DoubleVector dest, TernaryVector src) {
@@ -217,5 +255,68 @@ public class SenseEvalTester {
         while (contextTokens.hasNext())
             words.offer(contextTokens.next());
         return words;
+    }
+
+    public class InstanceIterator implements Iterator<SenseEvalInstance> {
+        
+        private NodeList instances;
+        private int index;
+        private SenseEvalInstance next;
+
+        public InstanceIterator(String filename) throws Exception {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(new File(filename));
+            instances = doc.getElementsByTagName("instance");
+            index = 0;
+            next = advance();
+        }
+
+        private SenseEvalInstance advance() throws Exception {
+            if (index >= instances.getLength())
+                return null;
+            SenseEvalInstance instance = new SenseEvalInstance(
+                    (Element) instances.item(index));
+            index++;
+            return instance;
+        }
+
+        public synchronized boolean hasNext() {
+            return next != null;
+        }
+
+        public synchronized SenseEvalInstance next() {
+            try {
+                SenseEvalInstance instance = next;
+                next = advance();
+                return instance;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        public synchronized void remove() {
+        }
+    }
+
+    public class SenseEvalInstance {
+        Queue<String> prevWords;
+        Queue<String> nextWords;
+        String instanceId;
+        String wordPos;
+        String word;
+
+        public SenseEvalInstance(Element instanceNode) throws Exception {
+            instanceId = instanceNode.getAttribute("id");
+            String[] wordPosNum = instanceId.split("\\.");
+            word = wordPosNum[0];
+            wordPos = word + "." + wordPosNum[1];
+
+            prevWords = extractContext(
+                    instanceNode.getFirstChild().getNodeValue());
+            nextWords = extractContext(
+                    instanceNode.getLastChild().getNodeValue());
+       }
     }
 }

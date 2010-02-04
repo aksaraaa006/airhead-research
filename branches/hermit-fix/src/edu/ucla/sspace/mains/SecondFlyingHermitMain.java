@@ -476,7 +476,6 @@ public class SecondFlyingHermitMain extends GenericMain {
 
     /**
      * {@inheritDoc}
-     */
     protected void processDocumentsAndSpace(SemanticSpace space,
                                             Iterator<Document> docIter,
                                             int numThreads,
@@ -513,4 +512,5 @@ public class SecondFlyingHermitMain extends GenericMain {
         verbose("processed space in %.3f seconds",
                 ((endTime - startTime) / 1000d));
     }
+     */
 }

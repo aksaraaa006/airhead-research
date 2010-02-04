@@ -413,6 +413,7 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
             }
             HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
             HERMIT_LOGGER.info("Emitting Accuracy Counts");
+            compacted = true;
         }
     }
 
@@ -468,6 +469,9 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
             List<List<String>> senseInstances = wordToSenseInstances.get(word);
             int senseNum = 0;
             for (List<String> instancesInSense : senseInstances) {
+                if (instancesInSense.size() == 0)
+                    continue;
+
                 for (String instance : instancesInSense) {
                     String baseInstance = instance.substring(
                             0, instance.lastIndexOf("."));
