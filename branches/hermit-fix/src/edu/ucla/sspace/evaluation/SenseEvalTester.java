@@ -80,6 +80,10 @@ public class SenseEvalTester {
         options.addOption('s', "sspaceFile",
                           "The SSpace file to test against",
                           true, "FILE", "Required");
+        options.addOption('w', "windowSize",
+                          "The size of the sliding window on both sides of " +
+                          "the focus word",
+                          true, "INT", "Optional");
         options.addOption('p', "permutationFunctionFile",
                           "A file specifying a serialized PermutationFunction",
                           true, "FILE", "Optional");
@@ -116,6 +120,10 @@ public class SenseEvalTester {
 
         PrintWriter answers = new PrintWriter(options.getPositionalArg(0));
 
+        int windowSize = Integer.MAX_VALUE;
+        if (options.hasOption("windowSize"))
+            windowSize = options.getIntOption("windowSize");
+
         SemanticSpace senseInducedSpace =
             SemanticSpaceIO.load(options.getStringOption('s'));
         Map<String, TernaryVector> wordToIndexVector =
@@ -129,7 +137,7 @@ public class SenseEvalTester {
                         PermutationFunction.class);
         
         final Iterator<SenseEvalInstance> iter =
-            new InstanceIterator(options.getStringOption('S'));
+            new InstanceIterator(options.getStringOption('S'), windowSize);
         Collection<Thread> threads = new LinkedList<Thread>();
         int numThreads = Runtime.getRuntime().availableProcessors();
         for (int i = 0; i < numThreads; ++i) {
@@ -262,13 +270,16 @@ public class SenseEvalTester {
         private NodeList instances;
         private int index;
         private SenseEvalInstance next;
+        private int windowSize;
 
-        public InstanceIterator(String filename) throws Exception {
+        public InstanceIterator(String filename, int windowSize) 
+                throws Exception {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(new File(filename));
             instances = doc.getElementsByTagName("instance");
             index = 0;
+            this.windowSize = windowSize;
             next = advance();
         }
 
@@ -276,7 +287,7 @@ public class SenseEvalTester {
             if (index >= instances.getLength())
                 return null;
             SenseEvalInstance instance = new SenseEvalInstance(
-                    (Element) instances.item(index));
+                    (Element) instances.item(index), windowSize);
             index++;
             return instance;
         }
@@ -307,7 +318,8 @@ public class SenseEvalTester {
         String wordPos;
         String word;
 
-        public SenseEvalInstance(Element instanceNode) throws Exception {
+        public SenseEvalInstance(Element instanceNode, int windowSize)
+                throws Exception {
             instanceId = instanceNode.getAttribute("id");
             String[] wordPosNum = instanceId.split("\\.");
             word = wordPosNum[0];
@@ -315,8 +327,14 @@ public class SenseEvalTester {
 
             prevWords = extractContext(
                     instanceNode.getFirstChild().getNodeValue());
-            nextWords = extractContext(
+            while (prevWords.size() > windowSize)
+                prevWords.remove();
+
+            nextWords = new ArrayDeque<String>();
+            Queue<String> w = extractContext(
                     instanceNode.getLastChild().getNodeValue());
-       }
+            while (w.size() > 0 && nextWords.size() < windowSize)
+                nextWords.offer(w.remove());
+        }
     }
 }
