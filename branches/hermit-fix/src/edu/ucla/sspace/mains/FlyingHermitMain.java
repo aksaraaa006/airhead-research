@@ -406,7 +406,7 @@ public class FlyingHermitMain extends GenericMain {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
         // Process the window size arguments;
-        String windowValue = argOptions.getStringOption('w', "5,5");
+        String windowValue = argOptions.getStringOption('s', "5,5");
         String[] prevNext = windowValue.split(",");
         prevWordsSize = Integer.parseInt(prevNext[0]);
         nextWordsSize = Integer.parseInt(prevNext[1]);

@@ -350,10 +350,15 @@ public class SecondFlyingHermitMain extends GenericMain {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
         // Process the window size arguments;
-        String windowValue = argOptions.getStringOption('w', "5,5");
-        String[] prevNext = windowValue.split(",");
-        prevWordsSize = Integer.parseInt(prevNext[0]);
-        nextWordsSize = Integer.parseInt(prevNext[1]);
+        if (argOptions.hasOption('s')) {
+            String windowValue = argOptions.getStringOption('s');
+            String[] prevNext = windowValue.split(",");
+            prevWordsSize = Integer.parseInt(prevNext[0]);
+            nextWordsSize = Integer.parseInt(prevNext[1]);
+        } else {
+            prevWordsSize = Integer.MAX_VALUE;
+            nextWordsSize = Integer.MAX_VALUE;
+        }
 
         if (argOptions.hasOption('A'))
             prepareAcceptanceList(argOptions.getStringOption('A'));

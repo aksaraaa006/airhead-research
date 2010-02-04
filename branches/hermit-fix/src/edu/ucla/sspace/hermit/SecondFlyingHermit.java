@@ -290,9 +290,13 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
             prevWords.offer(term.intern());
         }
 
+        // Eliminate the first set of words that we don't want to inspect.
+        while (prevWords.size() > prevSize)
+            prevWords.remove();
+
         String focusWord = it.next().intern();
 
-        while (it.hasNext())
+        while (it.hasNext() && nextWords.size() < nextSize)
             nextWords.offer(it.next().intern());
 
         // Incorporate the context into the semantic vector for the
