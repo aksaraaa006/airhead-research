@@ -320,15 +320,28 @@ public class Matrices {
 
     /**
      * Returns a synchronized (thread-safe) matrix backed by the provided
-     * matrix.
+     * {@code Matrix}.
      *
      * @param m the matrix to be made thread-safe
      *
      * @return a synchronized (thread-safe) view of the provided
      *         matrix.
      */
-    public static Matrix synchronizedMatrix(Matrix m) {
+    public static AtomicMatrix synchronizedMatrix(Matrix m) {
         return new SynchronizedMatrix(m);
+    }
+
+    /**
+     * Returns a synchronized (thread-safe) matrix backed by the provided
+     * {@code SparseMatrix}.
+     *
+     * @param m the matrix to be made thread-safe
+     *
+     * @return a synchronized (thread-safe) view of the provided sparse matrix.
+     *         The returned matrix will also be a {@link SparseMatrix}
+     */
+    public static AtomicMatrix synchronizedSparseMatrix(SparseMatrix m) {
+        return new SynchronizedSparseMatrix(m);
     }
 
     /**
@@ -336,28 +349,10 @@ public class Matrices {
      * in the output has the value of the element at (j,i) in the input.
      */
     public static Matrix transpose(Matrix matrix) {
-        // REMINDER: this should be augmented to determine whether the tranpose
-        // can be computed in memory (e.g. using File.size() and
-        // Runtime.freeMemory()), or whether the operation needs to be completed
-        // on disk.
-    
-        int rows = matrix.rows();
-        int cols = matrix.columns();
-
-        // MAJOR HACK: need to use reflection or some other hint
-        Matrix transpose = null;
-        if (matrix instanceof SparseMatrix) 
-            transpose = new YaleSparseMatrix(cols, rows);
-        else if (matrix instanceof ArrayMatrix) 
-            transpose = new ArrayMatrix(cols, rows);
-        else
-            transpose = new OnDiskMatrix(cols, rows);
-
-        for (int row = 0; row < rows; ++row) {
-            for (int col = 0; col < cols; ++col)
-                transpose.set(col, row, matrix.get(row, col));
-        }
-
-        return transpose;
+        // Create a transposed view of the data.  If the data was already
+        // transposed, return the original matrix
+        return (matrix instanceof TransposedMatrix)
+            ? ((TransposedMatrix)matrix).m
+            : new TransposedMatrix(matrix);
     }
 }
