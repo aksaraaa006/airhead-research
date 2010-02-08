@@ -61,6 +61,20 @@ public class SparseDoubleArrayTests {
 	new SparseDoubleArray(-1);
     }
 
+    @Test public void testAdd() {
+	SparseDoubleArray arr = new SparseDoubleArray(100);
+        arr.addPrimitive(5, 5);
+        assertEquals(5, arr.get(5), 0.01d);
+        arr.addPrimitive(5, 5);
+        assertEquals(10, arr.get(5), 0.01d);
+        arr.addPrimitive(5, -5);
+        assertEquals(5, arr.get(5), 0.01d);
+        arr.addPrimitive(5, -5);
+        assertEquals(0, arr.get(5), 0.01d);
+        arr.addPrimitive(5, -5);
+        assertEquals(-5, arr.get(5), 0.01d);
+    }
+
     @Test public void testGet() {
 	int size = 1024;
 	double[] control = new double[size];

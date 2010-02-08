@@ -24,7 +24,8 @@ package edu.ucla.sspace.hal;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
-import edu.ucla.sspace.matrix.AtomicGrowingSparseMatrix;
+import edu.ucla.sspace.matrix.AtomicMatrix;
+import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
@@ -34,6 +35,8 @@ import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.MultiMap;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
@@ -227,7 +230,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * The matrix used for storing weight co-occurrence statistics of those
      * words that occur both before and after.
      */
-    private AtomicGrowingSparseMatrix cooccurrenceMatrix;
+    private AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
 
     /**
      * The reduced matrix, if columns are to be dropped.
@@ -246,7 +249,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
      * configuration.
      */
     public HyperspaceAnalogueToLanguage(Properties properties) {
-        cooccurrenceMatrix = new AtomicGrowingSparseMatrix();
+        cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
         reduced = null;
         termToIndex = new ConcurrentHashMap<String,Integer>();
         
@@ -404,7 +407,7 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         // will be the combination of the word's row and column
         else if (reduced == null) {
             return new ConcatenatedSparseDoubleVector(
-                cooccurrenceMatrix.getRowVectorUnsafe(index),
+                cooccurrenceMatrix.getRowVector(index),
                 cooccurrenceMatrix.getColumnVector(index));
         }
         // The co-occurrence matrix has had columns dropped so the vector is

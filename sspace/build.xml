@@ -258,6 +258,7 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
+
       <!-- Comment block for excluding the testing a specific set of files. -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
 
@@ -270,8 +271,11 @@
       <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.hal.ConcatenatedSparseDoubleVectorTests" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrixTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.CorrelationTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
