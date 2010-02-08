@@ -25,6 +25,7 @@ import java.io.Serializable;
 
 import java.util.Arrays;
 
+
 /**
  * A sparse {@code double} array.  This class trades increased space efficiency
  * at the cost of decreased performance.<p>
@@ -47,7 +48,8 @@ import java.util.Arrays;
  *
  * @see SparseArray
  */
-public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
+public class SparseDoubleArray 
+        implements SparseNumericArray<Double>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -145,6 +147,82 @@ public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
     }
 
     /**
+     * Adds the specified value to the index.  This call is more effecient than
+     * calling {@code get} and {@code set}.
+     *
+     * @param index the position in the array
+     * @param delta the change in value at the index
+     */
+    public double addPrimitive(int index, double delta) {
+        if (index < 0 || index >= maxLength) 
+            throw new ArrayIndexOutOfBoundsException(
+                    "invalid index: " + index);
+
+        // Return immediately if this call would not change the array
+        if (delta == 0)
+            return get(index);
+        
+        int pos = Arrays.binarySearch(indices, index);
+        
+        // The add operation is putting a new value in the array, so we need to
+        // make room in the indices array
+        if (pos < 0) {
+            int newPos = 0 - (pos + 1);
+            int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
+            double[] newValues = Arrays.copyOf(values, values.length + 1);
+            
+            // shift the elements down by one to make room
+            for (int i = newPos; i < values.length; ++i) {
+                newValues[i+1] = values[i];
+                newIndices[i+1] = indices[i];
+            }
+            
+            // swap the arrays
+            indices = newIndices;
+            values = newValues;
+            pos = newPos;
+            
+            // update the position of the pos in the values array
+            indices[pos] = index;
+            values[pos] = delta;
+            return delta;
+        }
+        else {
+            double newValue = values[pos] + delta;
+
+            // The new value is zero, so remove its position and shift
+            // everything over
+            if (newValue == 0) {
+                int newLength = indices.length - 1;
+                int[] newIndices = new int[newLength];
+                double[] newValues = new double[newLength];
+                for (int i = 0, j = 0; i < indices.length; ++i) {
+                    if (i != pos) {
+                        newIndices[j] = indices[i];
+                        newValues[j] = values[i];            
+                        j++;
+                    }
+                }
+                // swap the arrays
+                indices = newIndices;
+                values = newValues;
+            }
+            // Otherwise, the new value is still non-zero, so update it in the
+            // array
+            else
+                values[pos] = newValue;
+            return newValue;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Double add(int index, Double delta) {
+        return add(index, delta.doubleValue());
+    }
+
+    /**
      * {@inheritDoc}
      */
     public int cardinality() {
@@ -232,8 +310,8 @@ public class SparseDoubleArray implements SparseArray<Double>,  Serializable {
             }
             values[pos] = value;
         }
-        // The value is zero but previously held a spot in the matrix, so
-        // remove its position and shift everything over
+        // The value is zero but previously held a spot in the array, so remove
+        // its position and shift everything over
         else if (value == 0 && pos >= 0) {
             int newLength = indices.length - 1;
             int[] newIndices = new int[newLength];

@@ -173,11 +173,31 @@ public class AtomicGrowingSparseMatrix implements AtomicMatrix, SparseMatrix {
         rowReadLock.lock();
         SparseDoubleVector values = new SparseHashDoubleVector(rows.get());
         for (int row = 0; row < rows.get(); ++row) {
-            double value = get(row, column);
-            if (value != 0d)
-                values.set(row, get(row, column));
+            AtomicSparseVector rowEntry = getRow(row, -1, false);            
+            double value = 0;
+            if (rowEntry != null && (value = rowEntry.get(column)) != 0)
+                values.set(row, value);
         }
         rowReadLock.unlock();
+        return values;
+    }
+
+    /**
+     * Returns an immutable view of the columns's data as a non-atomic vector,
+     * which may present an inconsistent view of the data if this matrix is
+     * being concurrently modified.  This method should only be used in special
+     * cases where the vector is being accessed at a time when the matrix (or
+     * this particular row) will not be modified.
+     */
+    public SparseDoubleVector getColumnVectorUnsafe(int column) {
+        checkIndices(0, column);
+        SparseDoubleVector values = new SparseHashDoubleVector(rows.get());
+        for (int row = 0; row < rows.get(); ++row) {
+            AtomicSparseVector rowEntry = getRow(row, -1, false);            
+            double value = 0;
+            if (rowEntry != null && (value = rowEntry.get(column)) != 0)
+                values.set(row, value);
+        }
         return values;
     }
 

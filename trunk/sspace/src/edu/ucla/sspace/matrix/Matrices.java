@@ -80,6 +80,9 @@ public class Matrices {
     }
 
     /**
+     * Creates a matrix of the given dimensions and selects the matrix
+     * implementation by considering the size and density of the new matrix with
+     * respect to the available memory for the JVM.
      *
      * @param rows the number of rows in the matrix
      * @param cols the number of columns in the matrix
