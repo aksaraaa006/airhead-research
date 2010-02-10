@@ -229,15 +229,15 @@ public class AtomicGrowingSparseMatrix implements AtomicMatrix, SparseMatrix {
      * @return the row at the entry or {@code null} if the row is not present
      *         and it was not to be created if absent
      */
-    private AtomicSparseVector getRow(int row, int col, boolean createIfAbsent) {
+    private AtomicSparseVector getRow(int row,
+                                      int col,
+                                      boolean createIfAbsent) {
         rowReadLock.lock();
         AtomicSparseVector rowEntry = sparseMatrix.get(row);
-        rowReadLock.unlock();
-         
-        // Update the column size if needed.
-        if (col >= cols.get()) {
+
+        if (col >= cols.get())
             cols.set(col + 1);
-        }
+        rowReadLock.unlock();
 
         // If no row existed, create one
         if (rowEntry == null && createIfAbsent) {
