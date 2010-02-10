@@ -259,7 +259,8 @@
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
 
-      <!-- Comment block for excluding the testing a specific set of files. -->
+      <!-- Comment block for excluding the testing a specific set of files.
+      -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
@@ -275,8 +276,9 @@
 
       <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
 
-      <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrixTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrixTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.CorrelationTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
