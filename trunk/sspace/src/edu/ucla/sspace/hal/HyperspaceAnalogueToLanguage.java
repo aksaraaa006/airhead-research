@@ -407,8 +407,8 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         // will be the combination of the word's row and column
         else if (reduced == null) {
             return new ConcatenatedSparseDoubleVector(
-                cooccurrenceMatrix.getRowVector(index),
-                cooccurrenceMatrix.getColumnVector(index));
+                cooccurrenceMatrix.getRowVectorUnsafe(index),
+                cooccurrenceMatrix.getColumnVectorUnsafe(index));
         }
         // The co-occurrence matrix has had columns dropped so the vector is
         // just the word's row
