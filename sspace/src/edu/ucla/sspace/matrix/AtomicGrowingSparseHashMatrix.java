@@ -362,7 +362,7 @@ public class AtomicGrowingSparseHashMatrix
     }
     
     /**
-     * Locks all the row entries for this column, thereby preventint write or
+     * Locks all the row entries for this column, thereby preventing write or
      * read access to the values.  Note that the number of rows to lock
      * <b>must</b> be the same value used with {@link #unlockColumn(int,int)},
      * otherwise the unlock may potentially unlock matrix entries associated
