@@ -37,7 +37,9 @@ public class FastFourierTransform {
     /**
      * Compute the Fast Fourier Transform of data leaving the result in data.
      */
-    public static void transform(DoubleVector data, int i0, int stride) {
+    public static void transform(DoubleVector data) {
+        int i0 = 0;
+        int stride = 1;
         checkData(data,i0,stride);
         int p, p_1, q;
   
@@ -48,11 +50,11 @@ public class FastFourierTransform {
   
         // Bit reverse the ordering of input data for decimation in time
         // algorithm.
-        bitreverse(data, i0, stride);
+        bitReverse(data, logn);
   
         // apply fft recursion
         p = 1; q = n ;
-        for (int i = 1; i <= logn; i++) {
+        for (int i = 1; i <= 1; i++) {
             int a, b;
   
             p_1 = p ;
@@ -115,7 +117,9 @@ public class FastFourierTransform {
      * data must be in the same arrangement as that produced by {@link
      * #transform transform}.
      */
-    public static void backtransform(DoubleVector data, int i0, int stride) {
+    public static void backtransform(DoubleVector data) {
+        int i0 = 0;
+        int stride = 1;
         checkData(data,i0,stride);
         int n = data.length();
         int logn = checkFactor(n);
@@ -189,7 +193,8 @@ public class FastFourierTransform {
 
         // bit reverse the ordering of output data for decimation in frequency
         // algorithm 
-        bitreverse(data, i0, stride);
+        //bitreverse(data, i0, stride);
+        bitReverse(data, logn);
     }
 
     /**
@@ -213,6 +218,27 @@ public class FastFourierTransform {
         }
     }
 
+    private static void bitReverse(DoubleVector vector, int power) {
+        try {
+        vector.set(0, 0);
+        vector.set(1, 2 << (power - 1));
+        vector.set(2, 2 << (power - 2));
+        vector.set(3, 3 * 2 << (power - 2));
+        int prevN = 3;
+        for (int k = 3; k < power - 2; ++k) {
+            int currN = (2 << k) - 1;
+            vector.set(currN, vector.get(prevN) + (2 << (power - k)));
+            for (int l = 0; l < prevN - 1; ++l)
+                vector.set(currN - l, vector.get(currN) - vector.get(l));
+            prevN = currN;
+        }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
     private static int log2(int n) {
         int log = 0;
         for (int k = 1; k < n; k *=2, log++)
@@ -222,11 +248,6 @@ public class FastFourierTransform {
 
     private static void checkData(DoubleVector data, int i0, int stride){
         int n = data.length();
-        if (i0 < 0) 
-          throw new IllegalArgumentException("The offset must be >=0 : "+i0);
-        if (stride < 1)
-          throw new IllegalArgumentException(
-                  "The stride must be >=1 : "+stride);
         if (i0+stride*(n-1)+1 > data.length())
           throw new IllegalArgumentException(
                   "The data array is too small for "+n+":"+

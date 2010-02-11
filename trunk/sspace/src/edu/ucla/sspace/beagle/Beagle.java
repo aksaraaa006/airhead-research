@@ -49,8 +49,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import java.util.logging.Logger;
 
 
 /**
@@ -85,6 +88,12 @@ public class Beagle implements SemanticSpace {
      */
     public static final String BEAGLE_SSPACE_NAME = 
         "beagle-semantic-space";
+
+    /**
+     * Logger for Beagle. 
+     */
+    private static final Logger LOGGER =
+        Logger.getLogger(Beagle.class.getName());
 
     /**
      * The class responsible for creating index vectors, and incorporating them
@@ -213,6 +222,7 @@ public class Beagle implements SemanticSpace {
                 prevWords.remove();
         }
 
+
         for (Map.Entry<String, DoubleVector> entry :
                 documentVectors.entrySet()) {
             synchronized (entry.getKey()) {
@@ -320,14 +330,14 @@ public class Beagle implements SemanticSpace {
         right = changeVector(right, permute2);
 
         // Use the Fast Fourier Transform on each vector.
-        FastFourierTransform.transform(left, 0, 1);
-        FastFourierTransform.transform(right, 0, 1);
+        FastFourierTransform.transform(left);
+        FastFourierTransform.transform(right);
 
         // Multiply the two together.
         DoubleVector result = VectorMath.multiply(left, right);
 
         // The inverse transform completes the convolution.
-        FastFourierTransform.backtransform(result, 0, 1);
+        FastFourierTransform.backtransform(result);
         return result;
     }
 
