@@ -193,12 +193,11 @@ public class FastFourierTransform {
 
         // bit reverse the ordering of output data for decimation in frequency
         // algorithm 
-        //bitreverse(data, i0, stride);
         bitReverse(data, logn);
     }
 
     /**
-     * This is the Goldrader bit-reversal algorithm
+     * This is the Gold rader bit-reversal algorithm
      */
     public static void bitreverse(DoubleVector data, int i0, int stride) {
         int n = data.length();
@@ -218,8 +217,20 @@ public class FastFourierTransform {
         }
     }
 
+    /**
+     * Reverses the bits, a step required for doing the FFT in place.  This
+     * implementation is significantly faster than {@link bitreverse}. This
+     * implementation is based on the following paper:
+     *   
+     *   </li style="font-family:Garamond, Georgia, serif">M. Rubio, P. Gomez,
+     *   and K. Drouice.  "A new superfast bit reversal algorithm"
+     *   <i>International Journal of Adaptive Control and Signal Processing</i>
+     *
+     * @param vector The vector to be permuted according to the bit reversal.
+     *               This vector's length must be a power of two
+     * @param power The log of the vector's length
+     */
     private static void bitReverse(DoubleVector vector, int power) {
-        try {
         vector.set(0, 0);
         vector.set(1, 2 << (power - 1));
         vector.set(2, 2 << (power - 2));
@@ -231,11 +242,6 @@ public class FastFourierTransform {
             for (int l = 0; l < prevN - 1; ++l)
                 vector.set(currN - l, vector.get(currN) - vector.get(l));
             prevN = currN;
-        }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
         }
     }
 
