@@ -2,4 +2,19 @@
 
 = Introduction =
 
-_Forthcoming_
+The Purandare and Pedersen (P&P) model builds a semantic space that induces different [http://en.wikipedia.org/wiki/Word_sense senses for a word] based on its different usages in the corpus.  This is a form of [http://en.wikipedia.org/wiki/Word_sense_disambiguation#Unsupervised_methods word sense induction], where the different meanings of a word are automatically extracted.  For details on this approach, see
+
+  * Amruta Purandare and Ted Pedersen.  Word Sense Discrimination by Clustering Contexts in Vector and Similarity Spaces.  Proceedings of the Conference on Computational Natural Language Learning (CoNLL), pp. 41-48, May 6-7, 2004, Boston, MA.  Available [http://www.d.umn.edu/~tpederse/Pubs/conll04-purandarep.pdf here]
+
+= Algorithm Overview =
+
+The P&P model operates in two stages.  First the corpus is processed to identify features that are likely correlated with a word.  In this model features are either co-occurring words, or co-occurring bigrams.  For example, the presence of "lawmaker" might be considered a feature for "congress."  This path computes the [http://en.wikipedia.org/wiki/Contingency_table contingency table] between a word and all the possible features that have co-occurred with it.  Those features that are deemed statistically significant are kept around.  This has the effect of not counting words such as "the" or "good" which may frequently co-occur but are necessarily semantically related to a word.
+
+The second pass of the algorithm then reconsiders all of the contexts in which a word _w_ occurs.  Each context is made of a large region around the occurrence and only those words that features of _w_ are counted in the context.  (Words that are not features are not counted; similarly, words that may be features of _other_ words are also not counted).  All of these contexts are then clustered.  The resulting clusters reveal similarities in which a word appears.  Each cluster is said to represent a distinct sense of the word, i.e. a cluster of contexts whose words indicate a specific meaning of _w_.  In the final semantic space, a word is given up to _n_ meanings depending on the number of discovered clusters, with each meaning receiving its own semantic vector.
+
+
+= Implementation = 
+
+The current S-Space implementation relies on the [http://glaros.dtc.umn.edu/gkhome/views/cluto/ CLUTO] clustering software package.  
+
+The P&P model may be run using the `edu.ucla.sspace.mains.PurandareMain` class or by using the `purandare-pedersen.jar` executable archive.  See [RunningAlgorithms Running Algorithms] page for further details on program options.
