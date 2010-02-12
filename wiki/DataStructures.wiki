@@ -1,0 +1,13 @@
+#summary S-Space custom data structures.
+
+= Data Structures =
+
+The S-Space package provides several data structures.
+
+  * Two Java [http://java.sun.com/javase/6/docs/api/java/util/Map.html Map] implementations
+    * `BoundedSortedMap` which retains only the `k`th largest elements that are stored in it.
+    * `TrieMap` a [http://en.wikipedia.org/wiki/Trie trie] data structure for storing `CharSequence` keys using the `Map` interface.
+  * a `MultiMap` interface for defining one-to-many mapping semantics and a hash-table based implementation, `HashMultiMap`.
+  * a `Pair` class for storing two objects of a kind.
+
+Additional utilities, data structures, and interface implementations are likely to be added, or split off into a related package if they grow to be significant enough to warrant a branching.
