@@ -1,0 +1,9 @@
+#Covers methods of comparing semantic vectors
+
+= Similarity Functions =
+
+The S-Space package provides several `static` similarity functions in the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/Similarity.java Similarity] class.
+  * [http://en.wikipedia.org/wiki/Cosine_similarity Cosine similarity]
+  * [http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient Pearson product-moment correlation coefficient]
+  * Euclidean distance/similarity
+  * [http://en.wikipedia.org/wiki/Spearman_rank_correlation Spearman rank correlation coefficient]
