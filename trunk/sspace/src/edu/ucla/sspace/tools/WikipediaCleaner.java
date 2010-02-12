@@ -122,7 +122,7 @@ public class WikipediaCleaner {
 
         String rawArticleName = doc.name;        
         String articleName = StringUtils.unescapeHTML(rawArticleName);
-        articleName = articleName.trim();
+        articleName = articleName.trim().toLowerCase();
 
         // skip articles that are not text-based or are
         // wikipedia-specific
