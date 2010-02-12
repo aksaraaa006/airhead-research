@@ -85,12 +85,12 @@
     </javac>
   </target>
 
-  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar">
+  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
   
   <target name="sspace-jar" depends="compile">
-    <jar destfile="${bin.dir}/sspace-lib.jar" basedir="classes">
+    <jar destfile="${lib.dir}/sspace-lib.jar" basedir="classes">
       <include name="edu/**/*.class"/>
       <exclude name="jnt/*"/>
       <manifest>
@@ -106,7 +106,7 @@
   </target>
 
   <target name="sspace-src-jar" depends="compile">
-    <jar destfile="${bin.dir}/sspace-src.jar" basedir="src">
+    <jar destfile="${lib.dir}/sspace-src.jar" basedir="src">
       <include name="edu/**/*.java"/>
       <manifest>
         <!-- Who is building this jar? -->
@@ -248,6 +248,23 @@
       </manifest>
     </jar>
   </target>
+
+  <target name="vsm-jar" depends="compile">
+    <jar destfile="${bin.dir}/vsm.jar" basedir="classes">
+      <include name="edu/**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Vector Space Model"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.VsmMain"/>
+      </manifest>
+    </jar>
+  </target>
+
 
   <target name="test" depends="compile-tests">
     <delete dir="reports"/>
