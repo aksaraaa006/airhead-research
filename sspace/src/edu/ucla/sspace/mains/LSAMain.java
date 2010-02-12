@@ -152,11 +152,11 @@ public class LSAMain extends GenericMain {
     }
     
     protected SemanticSpace getSpace() {
-      try {
-        return new LatentSemanticAnalysis();
-      } catch (IOException ioe) {
-        throw new IOError(ioe);
-      }
+        try {
+            return new LatentSemanticAnalysis();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
