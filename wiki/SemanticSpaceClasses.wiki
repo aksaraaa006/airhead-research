@@ -1,0 +1,5 @@
+#summary Types of sspaces.
+
+= `SemanticSpace` classes =
+
+The [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/SemanticSpace.java SemanticSpace] interface defines the basic functionality which all Semantic Space models should implement for uniformity of use.  Various utilities are then provided for any implemented `SemanticSpace`, such as storing the sspace as a binary or text file, and retrieving the sspace from a binary or text file for evaluation purposes.
