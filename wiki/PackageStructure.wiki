@@ -42,8 +42,8 @@ In addition to the `Matrix` classes, the code base supports several common opera
   * transposing a matrix
   * getting a `synchronized` instance of any other `Matrix` instance
   * automatically selecting and instantiating the right `Matrix` class to use based on user-provided parameters and available system resources.
-  * several normalization methods, such as row sum, correlation, column sum, and row length normalization are currently provided.  
-Since the matrices are intended for very large datasets, multiplication, division, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date.
+    
+Since the matrices are intended for very large datasets, division, addition, subtraction, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date. Multiplication is supported by the 'Matrices' class.
 
 The S-Space package also provides support for I/O operations on `Matrix` instances through the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/MatrixIO.java MatrixIO] class.  This allows easy conversion between multiple on-disk matrix storage formats. 
 
@@ -60,7 +60,7 @@ Additionally, several similarity measures are provided:
 
 = Document Parsing Utilities = 
 
-The Document interface, and it's iterators and implemented classes provides a uniform method of interacting with corpora so that methods calling `processDocument` have a uniform means of iterating through many document files.  The provided Document related classes are:
+The Document interface, and it's iterators and implemented classes provides a uniform method of interacting with corpora so that methods calling `reader` have a uniform means of iterating through many document files.  The provided Document related classes are:
    * `FileDocument`, for single file with a single document
    * `StringDocument`, for documents represented as a single string
    * `FileListDocumentIterator`, for single file which is a list of other files, each containing documents
