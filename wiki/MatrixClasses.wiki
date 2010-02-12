@@ -1,0 +1,17 @@
+#Covers matrix related classes and operations
+
+= `Matrix` Classes =
+
+The [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/Matrix.java Matrix] interface defines a consistent set of access and retrieval methods for all `Matrix` implementations, thereby allowing applications to easily switch between different `Matrix` implementations as needed.  Three implementations are currently provided.
+   * `SparseMatrix`, using the [http://en.wikipedia.org/wiki/Sparse_matrix Yale Sparse Matrix Format].  This matrix is ideal for sparse matrices that can fit in memory.
+   * `ArrayMatrix`, a dense, in memory matrix for reasonably small matrices.
+   * `OnDiskMatrix`, which stores all values on disk, suitable for extremely large matrices.
+Each of these have an intended use case, depending on the the amount of data produced, it's sparseness, and the desired run-time of operations.
+In addition to the `Matrix` classes, the code base supports several common operations on matrices using the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/Matrices.java Matrices] class.  This class provides methods for:
+  * transposing a matrix
+  * getting a `synchronized` instance of any other `Matrix` instance
+  * automatically selecting and instantiating the right `Matrix` class to use based on user-provided parameters and available system resources.
+    
+Since the matrices are intended for very large datasets, division, addition, subtraction, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date. Multiplication is supported by the 'Matrices' class.
+
+The S-Space package also provides support for I/O operations on `Matrix` instances through the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/MatrixIO.java MatrixIO] class.  This allows easy conversion between multiple on-disk matrix storage formats. 
