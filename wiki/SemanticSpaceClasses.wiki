@@ -14,17 +14,12 @@ Various utilities are then provided for any implemented `SemanticSpace`, such as
 =Implementations of `SemanticSpace`=
 
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/beagle/Beagle.html Beagle]
-  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/common/CachingOnDiskSemanticSpace.html CachingOnDiskSemanticSpace]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/coals/Coals.html Coals]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/esa/ExplicitSemanticAnalysis.html ExplicitSemanticAnalysis]
-  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/temporal/FileBasedTemporalSemanticSpace.html FileBasedTemporalSemanticSpace] 
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/tri/FixedDurationTemporalRandomIndexing.html FixedDurationTemporalRandomIndexing]
-  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/grefenstette/Grefenstette.html Grefenstette]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/hal/HyperspaceAnalogueToLanguage.html HyperspaceAnalogueToLanguage]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/isa/IncrementalSemanticAnalysis.html IncrementalSemanticAnalysis]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/lsa/LatentSemanticAnalysis.html LatentSemanticAnalysis]
-  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/common/OnDiskSemanticSpace.html OnDiskSemanticSpace]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/tri/OrderedTemporalRandomIndexing.html OrderedTemporalRandomIndexing]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/purandare/PurandareFirstOrder.html PurandareFirstOrder]
   * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/ri/RandomIndexing.html RandomIndexing]
-  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/common/StaticSemanticSpace.html StaticSemanticSpace]
