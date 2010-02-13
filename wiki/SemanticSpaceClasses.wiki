@@ -2,7 +2,7 @@
 
 = `SemanticSpace` interface =
 
-[http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/SemanticSpace.java SemanticSpace] is an `interface` that defines the basic functionality which all Semantic Space models should implement for uniformity of use. It is designed so that a `SemanticSpace` is a multi-step process:
+[http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/common/SemanticSpace.java SemanticSpace] is an `interface` that defines the basic functionality which all Semantic Space models should implement for uniformity of use. It is designed so that a `SemanticSpace` is a multi-step process:
   # `processDocument()` - run for each document to add it to the sspace
   # `processSpace()` - run after all documents have been added, for post-processing (e.g. SVD)
   # `getWords()` - call to obtain a `Set` of words in the sspace
@@ -13,18 +13,18 @@ Various utilities are then provided for any implemented `SemanticSpace`, such as
 
 =Implementations of `SemanticSpace`=
 
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/beagle/Beagle.java Beagle]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/CachingOnDiskSemanticSpace.java CachingOnDiskSemanticSpace]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/coals/Coals.java Coals]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/esa/ExplicitSemanticAnalysis.java ExplicitSemanticAnalysis]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/temporal/FileBasedTemporalSemanticSpace.java FileBasedTemporalSemanticSpace]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/tri/FixedDurationTemporalRandomIndexing.java FixedDurationTemporalRandomIndexing]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/grefenstette/Grefenstette.java Grefenstette]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/hal/HyperspaceAnalogueToLanguage.java HyperspaceAnalogueToLanguage]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/isa/IncrementalSemanticAnalysis.java IncrementalSemanticAnalysis]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/lsa/LatentSemanticAnalysis.java LatentSemanticAnalysis]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/OnDiskSemanticSpace.java OnDiskSemanticSpace]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/tri/OrderedTemporalRandomIndexing.java OrderedTemporalRandomIndexing]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/purandare/PurandareFirstOrder.java PurandareFirstOrder]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/ri/RandomIndexing.java RandomIndexing]
-  * [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/StaticSemanticSpace.java StaticSemanticSpace]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/beagle/Beagle.java Beagle]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/common/CachingOnDiskSemanticSpace.java CachingOnDiskSemanticSpace]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/coals/Coals.java Coals]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/esa/ExplicitSemanticAnalysis.java ExplicitSemanticAnalysis]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/temporal/FileBasedTemporalSemanticSpace.java FileBasedTemporalSemanticSpace]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/tri/FixedDurationTemporalRandomIndexing.java FixedDurationTemporalRandomIndexing]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/grefenstette/Grefenstette.java Grefenstette]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/hal/HyperspaceAnalogueToLanguage.java HyperspaceAnalogueToLanguage]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/isa/IncrementalSemanticAnalysis.java IncrementalSemanticAnalysis]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/lsa/LatentSemanticAnalysis.java LatentSemanticAnalysis]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/common/OnDiskSemanticSpace.java OnDiskSemanticSpace]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/tri/OrderedTemporalRandomIndexing.java OrderedTemporalRandomIndexing]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/purandare/PurandareFirstOrder.java PurandareFirstOrder]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/ri/RandomIndexing.java RandomIndexing]
+  * [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/src/edu/ucla/sspace/common/StaticSemanticSpace.java StaticSemanticSpace]
