@@ -42,18 +42,67 @@ user@machine$ ant javadoc-dev
 }}}
 This is primarily intended for developers working on the project itself or for those interested in how parts of the project are implemented.
 
-==custom models==
-Each Semantic Space model is given it's own directory under {{{sspace/}}}, so that they can each be relatively self contained and be free to use other public package classes freely.  New models should follow this pattern by choosing a short abbreviation of the s-space.
+==Java Packages==
+The S-Space package is split up into several Java packages.  Each Semantic Space model is given it's own package so that they can be self contained and free to use package private classes.  In general, the package name is an abbreviation of the models name, such as lsa, hal, tri, beagle, etc.
 
-==`common`==
-Since many Semantic Space models should have a reasonable number of things in common, these things have been collected together and stored in the {{{sspace/common/}}} directory.  These will by far the most re-used classes in the package for those implementing their own semantic space model.
+Below are each of the other packages that provide shared functionality to Semantic Space models.
 
-Common provides a mixture of several interfaces which make designing models easier, along with some already implemented sub-classes which fit particular use cases. 
+===`common`===
 
-The Utilities provided can broadly be split up into the following categories
-   * `SemanticSpace` interface and utilities
-   * `Matrix` interface and implementations
-   * Similarity and Normalization implementations
-   * Common useful data structures
-   * the `SingularValueDecomposition` class
-   * `Document` interface and implementations
+Semantic Space models have a number of things in common, and these similarities are defined by a simple [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/common/SemanticSpace.java SemanticSpace] interface, several related interfaces, and some utility classes.  Several core Semantic Space utilites are provided in this package:
+  * Similarity metrics such as Cosine Similarity, Lin Similarity, K-L Divergence, Jaccard Index, Spearkman Rank Correlation, Pearson Correlation, and Euclidian distance.
+  * Statistics such as entropy.
+  * Serialization and De-serialization toolsfor Semantic Spaces.
+  * A word comparator that finds the most similar terms in a semantic space.
+  * A utility class for parsing command line options.
+
+===`clustering`===
+
+This package provides implementations or wrappers for several clustering algorithms.  Access to the popular [http://glaros.dtc.umn.edu/gkhome/views/cluto/ CLUTO] clustering package is provided along with an implementation of Hierarchical Agglomerative Clustering that provides clusters based on a similarity threshold as opposed to a desired number of clusters.
+
+===`evaluation`===
+
+This package provides interfaces for two types of Semantic Space evaluations: similarity tests and synonymy tests.  Implementations for several of the must popular tests have been provided that take a properly formatted data file and return a list of similarity pairs and similarity ratings or questions paired with options of words to select from.  Using a generated Semantic Space model, evaluation runners will attempt to create similarity ratings for pairs of words or select the word option that is most similar to the question term.  These evaluations return a brief report detailing the score of the model on the particular test.  
+
+===`fft`===
+
+A simple modification of the [http://math.nist.gov/~BMiller/java/jnt/doc/ JNT.FFT] package for fast fourier transforms of [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/vector/DoubleVector.java DoubleVector]s is provided in this package.
+
+===`index`===
+
+Several Semantic Space models utilize `index vectors` to approximate high dimensional word co-occurrence spaces.  This package provides vector generators, where the generated vectors are intended to be used as `index vectors`.  A set of `permutation functions` are also provided.  These have been shown to encode and approximation of word ordering by shuffling the values in an `index vector`.
+
+===`mains`===
+
+This package provides runnable mains for each of the implemented Semantic Space models.  Developers of new models should inspect the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/mains/GenericMain.java GenericMain] abstract class that provides a bulk of the work needed to write a Semantic Space main.  Developers should also inspect the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/common/ArgOptions.java ArgOptions] class for simple parsing of command line options.
+
+===`matrix`===
+
+A collection of interfaces and implementations of matrix related classes.  This package is discussed in more detail in MatrixClasses.
+
+===`text`===
+
+This package provides a collection of corpus iterators and document iterators.  Documents may be tokenized and traversed allowing for a collection of transformations including
+   * Stemming
+   * Use of compound words
+   * Term replacement
+   * Term filtering
+
+In addition, collections of documents can be iterated over with and filtered using a growing collection of corpus iterators that are designed for large corpora that cannot be pre-processed and saved to disk.
+
+===`tools`===
+
+A collection of runnable mains that perform various tasks is provided in this package such as
+   * Similarity list generation
+   * Cleaning of various corpora types
+   * Token counting
+   * Bigram extraction
+   * Exploration of a serialized semantic space
+
+===`util`===
+
+A collection of efficient data structures are collected into this package.
+
+===`vector`===
+
+This package provides several interfaces and implementations of vectors for various number types.   This package is described in more detail in VectorClasses
