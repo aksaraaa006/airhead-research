@@ -12,6 +12,6 @@ In addition to the `Matrix` classes, the code base supports several common opera
   * getting a `synchronized` instance of any other `Matrix` instance
   * automatically selecting and instantiating the right `Matrix` class to use based on user-provided parameters and available system resources.
     
-Since the matrices are intended for very large datasets, division, addition, subtraction, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date. Multiplication is supported by the 'Matrices' class.
+Since the matrices are intended for very large datasets, division, addition, subtraction, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date. Multiplication is supported by the `Matrices` class.
 
 The S-Space package also provides support for I/O operations on `Matrix` instances through the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/MatrixIO.java MatrixIO] class.  This allows easy conversion between multiple on-disk matrix storage formats. 
