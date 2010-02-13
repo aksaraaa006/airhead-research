@@ -1,4 +1,4 @@
-# Covers matrix related classes and operations
+#summary Covers matrix related classes and operations
 
 = `Matrix` Package =
 
