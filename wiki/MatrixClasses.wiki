@@ -4,8 +4,8 @@
 
 The matrix package consists of several interfaces and implementations to facilitate representing a high dimensional word space.  Several utility functions are provided that can produce a synchronized matrix, serialize a matrix to disk, de-serialize a matrix from disk, transform a the values in a matrix and compute the SingularValueDecomposition of a matrix.  Three interfaces are currently provided:
    * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/matrix/Matrix.java Matrix]', the base interface for all matrices.  This interface provides consistent access and retrieval of cell values, rows, and columns.
-   * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/SparseMatrix.java SparseMatrix]`, a sub interface that can return a [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/vector/SparseDoubleVector.java SparseDoubleVector] for a row or column.
-   * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/AtomicMatrix.java AtomicMatrix]', a sub interface that allows for atomic guarantees for all matrix operations.
+   * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/matrix/SparseMatrix.java SparseMatrix]`, a sub interface that can return a [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/vector/SparseDoubleVector.java SparseDoubleVector] for a row or column.
+   * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/matrix/AtomicMatrix.java AtomicMatrix]', a sub interface that allows for atomic guarantees for all matrix operations.
 
 The following matrix implementations are provided:
    * `YaleSparseMatrix`, using the [http://en.wikipedia.org/wiki/Sparse_matrix Yale Sparse Matrix Format].  This matrix is ideal for sparse matrices that can fit in memory.
@@ -19,12 +19,12 @@ The following matrix implementations are provided:
 
 
 Each of these have an intended use case, depending on the the amount of data produced, it's sparseness, and the desired run-time of operations.
-In addition to the `Matrix` classes, the code base supports several common operations on matrices using the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/Matrices.java Matrices] class.  This class provides methods for:
+In addition to the `Matrix` classes, the code base supports several common operations on matrices using the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/matrix/Matrices.java Matrices] class.  This class provides methods for:
   * transposing a matrix.
   * getting a `synchronized` instance of any other `Matrix` instance.
-  * generating a matrix from a list of [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/vector/SparseDoubleVector.java SparseDoubleVector]s or [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/vector/DoubleVector.java DoubleVector]s.
+  * generating a matrix from a list of [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/vector/SparseDoubleVector.java SparseDoubleVector]s or [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/vector/DoubleVector.java DoubleVector]s.
   * automatically selecting and instantiating the right `Matrix` class to use based on user-provided parameters and available system resources.
     
 Since the matrices are intended for very large datasets, division, addition, subtraction, and other common linear algebra abilities are not yet provided, but are likely to be added at a later date. Multiplication is supported by the `Matrices` class.
 
-The S-Space package also provides support for I/O operations on `Matrix` instances through the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/MatrixIO.java MatrixIO] class.  This allows easy conversion between multiple on-disk matrix storage formats.
+The S-Space package also provides support for I/O operations on `Matrix` instances through the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/matrix/MatrixIO.java MatrixIO] class.  This allows easy conversion between multiple on-disk matrix storage formats.
