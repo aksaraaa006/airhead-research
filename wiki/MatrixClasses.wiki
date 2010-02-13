@@ -3,7 +3,7 @@
 = `Matrix` Package =
 
 The matrix package consists of several interfaces and implementations to facilitate representing a high dimensional word space.  Several utility functions are provided that can produce a synchronized matrix, serialize a matrix to disk, de-serialize a matrix from disk, transform a the values in a matrix and compute the SingularValueDecomposition of a matrix.  Three interfaces are currently provided:
-   * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/Matrix.java Matrix]', the base interface for all matrices.  This interface provides consistent access and retrieval of cell values, rows, and columns.
+   * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/matrix/Matrix.java Matrix]', the base interface for all matrices.  This interface provides consistent access and retrieval of cell values, rows, and columns.
    * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/SparseMatrix.java SparseMatrix]`, a sub interface that can return a [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/vector/SparseDoubleVector.java SparseDoubleVector] for a row or column.
    * '[http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/matrix/AtomicMatrix.java AtomicMatrix]', a sub interface that allows for atomic guarantees for all matrix operations.
 
