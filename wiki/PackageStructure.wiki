@@ -101,7 +101,7 @@ A collection of runnable mains that perform various tasks is provided in this pa
 
 ===`util`===
 
-A collection of efficient data structures are collected into this package.
+A collection of efficient data structures are collected into this package.  This package is discussed in further detail in DataStructures
 
 ===`vector`===
 
