@@ -25,7 +25,6 @@ import edu.ucla.sspace.clustering.ClutoClustering;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity.SimType;
-import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
 import edu.ucla.sspace.matrix.AtomicMatrix;

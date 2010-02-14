@@ -24,7 +24,6 @@ package edu.ucla.sspace.hal;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
-import edu.ucla.sspace.matrix.AtomicMatrix;
 import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;

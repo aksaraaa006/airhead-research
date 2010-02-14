@@ -23,8 +23,6 @@ package edu.ucla.sspace.lra;
 
 import static edu.ucla.sspace.common.Similarity.cosineSimilarity;
 
-import edu.ucla.sspace.common.Index;
-
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
