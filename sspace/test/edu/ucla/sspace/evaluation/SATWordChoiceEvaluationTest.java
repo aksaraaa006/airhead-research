@@ -33,33 +33,35 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class ESLSynonymEvaluationTest {
+public class SATWordChoiceEvaluationTest {
 
     @Test public void testRAndG() throws IOException {
-        File temp = File.createTempFile("ESLEvalTest", ".tst");
+        File temp = File.createTempFile("SATEvalTest", ".tst");
         temp.deleteOnExit();
         PrintWriter writer = new PrintWriter(temp);
-        String[][] choices= {{"a", "b", "c", "d", "e"},
-                             {"1", "2", "3", "4", "5"},
-                             {"f", "g", "h", "i", "j"}};
+        String[][] choices= {{"a", "b", "c", "d", "e", "f", "a"},
+                             {"1", "2", "3", "4", "5", "6", "c"},
+                             {"f", "g", "h  cat", "i", "j", "k", "e"}};
 
         for (int i = 0; i < choices.length; ++i) {
-            StringBuilder sb = new StringBuilder();
-            for (int j = 0; j < 5; ++j)
-                sb.append(choices[i][j]).append(" | ");
-            writer.println(sb.toString());
+            writer.println("");
+            writer.println("BLAAAAAAAAHASHFHDSHF this bull");
+
+            for (int j = 0; j < 7; ++j)
+                writer.println(choices[i][j]);
         }
         writer.flush();
         writer.close();
 
-        ESLSynonymEvaluation eval = new ESLSynonymEvaluation(temp);
+        SATWordChoiceEvaluation eval = new SATWordChoiceEvaluation(temp);
 
-        Collection<MultipleChoiceQuestion> words = eval.getQuestions();
+        Collection<MultipleChoiceQuestion> questions = eval.getQuestions();
         int i = 0;
-        for (MultipleChoiceQuestion sim : words) {
+        for (MultipleChoiceQuestion sim : questions) {
+            int answer = choices[i][6].charAt(0) - 'a';
             assertEquals(choices[i][0], sim.getPrompt());
-            assertEquals(0, sim.getCorrectAnswer());
-            ++i;
+            assertEquals(answer, sim.getCorrectAnswer());
+            i++;
         }
     }
 }
