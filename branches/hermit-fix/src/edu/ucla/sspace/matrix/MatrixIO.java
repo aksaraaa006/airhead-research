@@ -209,6 +209,27 @@ public class MatrixIO {
                         "implemented.");
         }
     }
+
+    public static FileTransformer fileTransformer(Format format) {
+        switch (format) {
+            case MATLAB_SPARSE:
+                return new MatlabSparseFileTransformer();
+            case SVDLIBC_SPARSE_TEXT:
+                return new SvdlibcSparseTextFileTransformer();
+            case SVDLIBC_DENSE_TEXT:
+                return new SvdlibcDenseTextFileTransformer();
+            case SVDLIBC_SPARSE_BINARY:
+                return new SvdlibcSparseBinaryFileTransformer();
+            case SVDLIBC_DENSE_BINARY:
+                return new SvdlibcDenseBinaryFileTransformer();
+            default:
+                throw new UnsupportedOperationException(
+                        "Transforming format " + format + " is currently " +
+                        "not implemented.  Please email " +
+                        "s-space-research-dev@googlegroups.com to have this " +
+                        "implemented.");
+        }
+    }
     /**
      * Converts the format of the input {@code matrix}, returning a temporary
      * file containing the matrix's data in the desired format.

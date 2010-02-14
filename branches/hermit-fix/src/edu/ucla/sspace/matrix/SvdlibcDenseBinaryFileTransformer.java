@@ -45,7 +45,7 @@ class SvdlibcDenseBinaryFileTransformer implements FileTransformer {
      */
     public File transform(File inputFile,
                           File outFile,
-                          AltTransform transform) {
+                          GlobalTransform transform) {
         try {
             DataInputStream dis = new DataInputStream(
                 new BufferedInputStream(new FileInputStream(inputFile)));

@@ -44,7 +44,7 @@ class SvdlibcSparseTextFileTransformer implements FileTransformer {
      */
     public File transform(File inputFile,
                           File outFile,
-                          AltTransform transform) {
+                          GlobalTransform transform) {
         try {
             BufferedReader br = new BufferedReader(new FileReader(inputFile));
             PrintWriter writer = new PrintWriter(new BufferedWriter(

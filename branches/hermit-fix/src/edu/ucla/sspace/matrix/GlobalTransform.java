@@ -30,7 +30,7 @@ package edu.ucla.sspace.matrix;
  *
  * @author Keith Stevens
  */
-public interface AltTransform {
+public interface GlobalTransform {
 
     /**
      * Returns the transformed value for a given matrix entry.

@@ -47,7 +47,7 @@ public class MatlabSparseFileTransformer implements FileTransformer {
      */
     public File transform(File inputFile,
                           File outputFile,
-                          AltTransform transform) {
+                          GlobalTransform transform) {
         try {
             BufferedReader br = new BufferedReader(new FileReader(inputFile));
             PrintWriter writer = new PrintWriter(new BufferedWriter(

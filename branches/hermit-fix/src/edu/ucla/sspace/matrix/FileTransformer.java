@@ -28,7 +28,7 @@ import java.io.File;
  * An interface for transforming matrix files of a particular format.  Since
  * each format has specific details regarding iteration, immplementations can
  * efficiently do a transform simply by iterating through the file once and
- * request the transformed value for each entry from an {@code AltTransform}
+ * request the transformed value for each entry from an {@code GlobalTransform}
  * instance.
  *
  * @author Keith Stevens
@@ -37,7 +37,7 @@ public interface FileTransformer {
 
     /**
      * Transforms a given matrix file into a new matrix file using the provided
-     * {@code AltTransform} method provided.
+     * {@code GlobalTransform} method provided.
      *
      * @param inputMatrixFile The input matrix file of a specific format that
      *                        will be transformed
@@ -50,5 +50,5 @@ public interface FileTransformer {
      */
     File transform(File inputMatrixFile,
                    File outputMatrixFile,
-                   AltTransform transform);
+                   GlobalTransform transform);
 }
