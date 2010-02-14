@@ -44,15 +44,19 @@ import edu.ucla.sspace.evaluation.WordSimilarityReport;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOError;
 import java.io.IOException;
+import java.io.PrintStream;
 
 import java.lang.reflect.Constructor;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -90,6 +94,16 @@ public class EvaluatorMain {
     private Collection<WordSimilarityEvaluation> wordSimilarityTests;
 
     /**
+     * The reporter for emitting the results of each evaluation.
+     */
+    private ResultReporter reporter;
+
+    /**
+     * The writer for emitting similarity and word choice results.
+     */
+    private PrintStream resultWriter;
+
+    /**
      * Creates the {@code EvaluatorMain}.
      */
     public EvaluatorMain() {
@@ -117,6 +131,11 @@ public class EvaluatorMain {
                               true, "FILE", "Required (at least one of)");
         
         // program options
+        argOptions.addOption('l', "latexOutput",
+                             "writes the results to a file in a latex " +
+                             "table format",
+                             false, null, "Program Options");
+
         argOptions.addOption('o', "outputFile",
                              "writes the results to this file",
                              true, "FILE", "Program Options");
@@ -167,6 +186,14 @@ public class EvaluatorMain {
         wordSimilarityTests = (wsTests == null)
             ? new LinkedList<WordSimilarityEvaluation>()
             : loadWordSimilarityEvaluations(wsTests);
+
+        resultWriter = (argOptions.hasOption("outputFile"))
+            ? new PrintStream(argOptions.getStringOption("outputFile"))
+            : System.out;
+
+        reporter = (argOptions.hasOption('l'))
+            ? new LatexReporter()
+            : new DefaultReporter();
 
         // Load any Parse the config file for test types.  The configuration
         // file formatted as pairs of evaluations paired with data
@@ -248,6 +275,7 @@ public class EvaluatorMain {
                 verbose("Done evaluating.");
             }
         }
+        reporter.printResults();
     }
     
     /**
@@ -256,18 +284,33 @@ public class EvaluatorMain {
      */
     private void evaluateSemanticSpace(SemanticSpace sspace,
                                        SimType similarity) {
+        double[] results = new double[wordChoiceTests.size() +
+                                      wordSimilarityTests.size()];
+        int resultIndex = 0;
+
+        // Run the word choice tests.
         for (WordChoiceEvaluation wordChoice : wordChoiceTests) {
             WordChoiceReport report = WordChoiceEvaluationRunner.evaluate(
                         sspace, wordChoice, similarity);
-            System.out.printf("Results for %s:%n%s%n", wordChoice, report);
+            verbose("Results for %s:%n%s%n", wordChoice, report);
+            double score =
+                (report.correctAnswers() - report.unanswerableQuestions()) /
+                ((double) report.numberOfQuestions());
+            results[resultIndex++] = score;
         }
+
+        // Run the word similarity tests.
         for (WordSimilarityEvaluation wordSimilarity : 
                  wordSimilarityTests) {
             WordSimilarityReport report =
                 WordSimilarityEvaluationRunner.evaluate(
                         sspace, wordSimilarity, similarity);
-            System.out.printf("Results for %s:%n%s%n", wordSimilarity, report);
+            verbose("Results for %s:%n%s%n", wordSimilarity, report);
+            results[resultIndex++] = report.correlation();
         }
+
+        reporter.addResults(sspace.getSpaceName(),
+                            similarity.toString(), results);
     }
 
     /**
@@ -385,5 +428,115 @@ public class EvaluatorMain {
             e.printStackTrace();
         }
         return wordSimTests;
+    }
+
+    /**
+     * A simple interface for reporting the word choice and word similarity
+     * tests.
+     */
+    private interface ResultReporter {
+
+        /**
+         * Adds a set of results for a particular semantic space.
+         */
+        void addResults(String sspaceName, String simType, double[] results);
+
+        /**
+         * Prints the set of results.
+         */
+        void printResults();
+    }
+
+    /**
+     * A default {@link ResultReporter} that simply reports the semantic space
+     * name, the evaluation name, and the result.
+     */
+    private class DefaultReporter implements ResultReporter {
+
+        /**
+         * {@inheritDoc}
+         */
+        public void addResults(String sspaceName,
+                               String simType,
+                               double[] results) {
+            int index = 0;
+            for (WordChoiceEvaluation choice : wordChoiceTests)
+                resultWriter.printf(
+                        "Result for sspace %s-%s on synonymy test %s: %f\n",
+                        sspaceName, simType, choice, results[index++]);
+
+            for (WordSimilarityEvaluation similarity : wordSimilarityTests)
+                resultWriter.printf(
+                        "Result for sspace %s-%s on similarity test %s: %f\n",
+                        sspaceName, simType, similarity, results[index++]);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void printResults() {
+            resultWriter.close();
+        }
+    }
+
+    /**
+     * A {@link ResultReporter} that emits results for a simple latex table.
+     */
+    private class LatexReporter implements ResultReporter {
+
+        /**
+         * The list of semantic space titles as their results are reported.
+         */
+        private List<String> titleList;
+
+        /**
+         * The list of results as they are reported.
+         */
+        private List<double[]> resultList;
+
+        /**
+         * Creates a new {@link LatexReporter}.
+         */
+        public LatexReporter() {
+            titleList = new ArrayList<String>();
+            resultList = new ArrayList<double[]>();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void addResults(String sspaceName, 
+                               String simType,
+                               double[] results) {
+            titleList.add(sspaceName + "-" + simType);
+            resultList.add(results);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void printResults() {
+            // Print out the title.
+            StringBuilder sb = new StringBuilder();
+            sb.append("SSpace Name  ");
+            for (WordChoiceEvaluation choice : wordChoiceTests)
+                sb.append("  &  ").append(choice.toString());
+            for (WordSimilarityEvaluation similarity : wordSimilarityTests)
+                sb.append("  &  ").append(similarity.toString());
+            sb.append("  \\");
+            resultWriter.println(sb.toString());
+
+            // Print out the results for each semantic space algorithm tested.
+            for (int i = 0; i < titleList.size(); ++i) {
+                sb = new StringBuilder();
+                sb.append(titleList.get(i)).append("  ");
+                double[] results = resultList.get(i);
+                for (double result : results)
+                    sb.append("  &  ").append(result);
+                sb.append(" \\");
+                resultWriter.println(sb.toString());
+            }
+            resultWriter.close();
+        }
     }
 }

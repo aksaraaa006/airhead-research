@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.coals;
 
-import edu.ucla.sspace.common.Index;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.ArrayMatrix;
