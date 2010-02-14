@@ -132,7 +132,7 @@ public class ClutoClustering {
             }
             LOGGER.fine(output.toString());
         }
-	    
+
         int exitStatus = 0;
         try {
             exitStatus = cluto.waitFor();
