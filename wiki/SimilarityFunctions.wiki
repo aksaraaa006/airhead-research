@@ -1,4 +1,4 @@
-#Covers methods of comparing semantic vectors
+#summary Covers methods of comparing semantic vectors
 
 = Similarity Functions =
 
