@@ -288,7 +288,6 @@
       <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.evaluation.SATWordChoiceEvaluationTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.hal.ConcatenatedSparseDoubleVectorTests" todir="${report.dir}"/>
 
