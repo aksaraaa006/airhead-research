@@ -105,11 +105,11 @@ public class EvaluatorMain {
          argOptions.addOption('c', "wordChoice",
                               "a list of WordChoiceEvaluation " +
                               "class names and their data files", 
-                              true, "CLASS=FILE[=FILE2...][,CLASS=FILE...]", 
+                              true, "CLASS[=FILE][=FILE2...][,CLASS=FILE...]", 
                               "Required (at least one of)");
          argOptions.addOption('s', "wordSimilarity",
                               "a list of WordSimilarityEvaluation class names", 
-                              true, "CLASS=FILE[=FILE2...][,CLASS=FILE...]", 
+                              true, "CLASS[=FILE][=FILE2...][,CLASS=FILE...]", 
                               "Required (at least one of)");        
          argOptions.addOption('g', "testConfiguration",
                               "a file containing a list of test " +
