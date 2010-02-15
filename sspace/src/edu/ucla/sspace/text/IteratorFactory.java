@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.text;
 
+import edu.ucla.sspace.util.Misc;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -136,9 +138,10 @@ public class IteratorFactory {
         PROPERTY_PREFIX + ".tokenFilter";
 
     /**
-     * Specifies whether or not steming should be done on tokens.
+     * Specifies the {@link Stemmer} to use on tokens.  If not set, no stemming
+     * is done.
      */
-    public static final String USE_STEMMING_PROPERTY =
+    public static final String STEMMER_PROPERTY =
         PROPERTY_PREFIX + ".stemmer";
 
     /**
@@ -220,9 +223,9 @@ public class IteratorFactory {
         
         // NOTE: future implementations may interpret the value of this property
         // to decide which stemmer to use
-        String stemmerProp = props.getProperty(USE_STEMMING_PROPERTY);
+        String stemmerProp = props.getProperty(STEMMER_PROPERTY);
         if (stemmerProp != null)
-            stemmer = new PorterStemmer();
+            stemmer = (Stemmer) Misc.getObjectInstance(stemmerProp);
 
         String compoundTokensProp = 
             props.getProperty(COMPOUND_TOKENS_FILE_PROPERTY);
