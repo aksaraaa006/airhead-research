@@ -24,6 +24,7 @@ package edu.ucla.sspace.tools;
 import edu.ucla.sspace.common.ArgOptions;
 
 import edu.ucla.sspace.mains.LoggerUtil;
+import edu.ucla.sspace.mains.OptionDescriptions;
 
 import edu.ucla.sspace.text.DocumentPreprocessor;
 import edu.ucla.sspace.text.IteratorFactory;
@@ -153,9 +154,10 @@ public class TokenCounter {
 
     public static void main(String[] args) {
         ArgOptions options = new ArgOptions();
-        options.addOption('Z', "useStemming", "Set to true if words should " + 
-                          "be stemmed using the Porter Stemming algorithm",
-                          false, null, "Tokenizing Options");
+        options.addOption('Z', "stemmingAlgorithm",
+                          "specifices the stemming algorithm to use on " +
+                          "tokens while iterating.  (default: none)",
+                          true, "CLASSNAME", "Tokenizing Options");
         options.addOption('F', "tokenFilter", "filters to apply to the input " +
                           "token stream", true, "FILTER_SPEC", 
                           "Tokenizing Options");
@@ -173,8 +175,12 @@ public class TokenCounter {
                           false, null, "Optional");
         options.parseOptions(args);
         if (options.numPositionalArgs() < 2) {
-            System.out.println("usage java [OPTIONS] <output-file> <input-file> [<input-file>] ...\n"
-                               + options.prettyPrint());
+            System.out.println(
+                "usage: java TokenCounter" 
+                + " [options] <output-dir> <input-file> [<input-file>]*\n"
+                + options.prettyPrint() 
+                + "\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
+                + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION);
             return;
         }
 
@@ -191,8 +197,9 @@ public class TokenCounter {
             props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
                               options.getStringOption("tokenFilter"));
         // Set any tokenizing options.
-        if (options.hasOption("useStemming"))
-            props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
+        if (options.hasOption("stemmingAlgorithm"))
+            props.setProperty(IteratorFactory.STEMMER_PROPERTY,
+                              options.getStringOption("stemmingAlgorithm"));
          
         if (options.hasOption("compoundWords")) 
             props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,

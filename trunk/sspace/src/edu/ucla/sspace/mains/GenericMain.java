@@ -256,9 +256,10 @@ public abstract class GenericMain {
                           false, null, "Program Options");
 
         // Add tokenizing options.
-        options.addOption('Z', "useStemming", "Set to true if words should " + 
-                          "be stemmed using the Porter Stemming algorithm",
-                          false, null, "Tokenizing Options");
+        options.addOption('Z', "stemmingAlgorithm",
+                          "specifices the stemming algorithm to use on " +
+                          "tokens while iterating.  (default: none)",
+                          true, "CLASSNAME", "Tokenizing Options");
         options.addOption('F', "tokenFilter", "filters to apply to the input " +
                           "token stream", true, "FILTER_SPEC", 
                           "Tokenizing Options");
@@ -378,8 +379,9 @@ public abstract class GenericMain {
         }
 
         // Set any tokenizing options.
-        if (argOptions.hasOption("useStemming"))
-            props.setProperty(IteratorFactory.USE_STEMMING_PROPERTY, "");
+        if (argOptions.hasOption("stemmingAlgorithm"))
+            props.setProperty(IteratorFactory.STEMMER_PROPERTY,
+                              argOptions.getStringOption("stemmingAlgorithm"));
 
         if (argOptions.hasOption("compoundWords")) {
             props.setProperty(IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
