@@ -1,12 +1,20 @@
-#Java Frequently Asked Questions
+#summary Java Frequently Asked Questions when using the S-Space Package
 
 = FAQ =
 
-Q: What would be a useful classpath?
+== Q: What would be a useful classpath? ==
 
-A: For Linux users using bash, one can do:
+A: For Linux users using `bash`, one can do:
+{{{
 export CLASSPATH=bin/:classes/:.
-for csh one can do:
+}}}
+for `csh` one can do:
+{{{
 setenv CLASSPATH "bin/:classes/:."
+}}}
 
 This will allow you to easily run ant at the base of the sspace directory, and immediate run any of the runnable classes produced from the same directory.
+
+== What are good JVM options to use? ==
+
+We recommend running with the largest maximum heap allowable on the system.  For example, for a machine with 4 gigabytes of memory, the JVM would be invoked with the `-Xmx4g` option.  We also recommend using the latest server JVM.
