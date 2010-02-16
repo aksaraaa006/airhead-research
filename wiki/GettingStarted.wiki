@@ -202,4 +202,19 @@ The S-Space package supports both human readable and binary `.sspace` formats.  
 
 = Evaluating a Semantic Space =
 
+A modified semantic space can be compared against the original. This may be done to ensure that dimension reduction, or other modifications have not greatly altered the meaning of words. One way to accomplish this is to measure the average word similarity between the original and modified vectors. Several [SimilarityFunctions similarity measures] have been implemented in the [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/index.html Similarity] class. Iterating through the `SemanticSpace` word collection (obtained using `getWords()`) and measuring each similarity:
+{{{
+double measure_similarity(SemanticSpace before, SemanticSpace after){
+    Set<String> words = after.getWords();
+    double sum=0.0;
+    Iterator<String> i = words.iterator();
+    while(i.hasNext()){
+        String word = i.next();
+        sum += Similarity.getSimilarity(Similarity.SimType.COSINE,
+                                        before.getVector(word),
+                                        after.getVector(word));
+    }
+    return sum/words.size();
+}
+}}}
 _to do_.
