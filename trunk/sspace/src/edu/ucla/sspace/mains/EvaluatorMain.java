@@ -293,8 +293,7 @@ public class EvaluatorMain {
             WordChoiceReport report = WordChoiceEvaluationRunner.evaluate(
                         sspace, wordChoice, similarity);
             verbose("Results for %s:%n%s%n", wordChoice, report);
-            double score =
-                (report.correctAnswers() - report.unanswerableQuestions()) /
+            double score = 100 * report.correctAnswers() /
                 ((double) report.numberOfQuestions());
             results[resultIndex++] = score;
         }

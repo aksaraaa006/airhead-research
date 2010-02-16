@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.text;
+package edu.ucla.sspace.util;
 
 import java.util.Iterator;
 
@@ -31,45 +31,45 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Keith Stevens
  */
-public class LimitedWordIterator implements Iterator<String> {
+public class LimitedIterator <T> implements Iterator<T> {
 
     /**
      * The base iterator to decorate.
      */
-    private final Iterator<String> iter;
+    private final Iterator<T> iter;
 
     /**
-     * The current number of words returned by this iterator so far.
+     * The current number of items returned by this iterator so far.
      */
-    private final AtomicInteger wordCount;
+    private int itemCount;
 
     /**
-     * The maximum number of words to return by this iterator.
+     * The maximum number of items to return by this iterator.
      */
-    private final int maxWords;
+    private final int maxItems;
 
     /**
-     * Constructs an iterator for the first {@code maxWords} tokens contained in
+     * Constructs an iterator for the first {@code maxItems} tokens contained in
      * given iterator. 
      */
-    public LimitedWordIterator(Iterator<String> iter, int maxWords) {
+    public LimitedIterator(Iterator<T> iter, int maxItems) {
         this.iter = iter;
-        this.maxWords = maxWords;
-        wordCount = new AtomicInteger();
+        this.maxItems = maxItems;
+        itemCount = 0;
     }
 
     /**
-     * Returns {@code true} if there is another word to return.
+     * Returns {@code true} if there is another item to return.
      */
-    public boolean hasNext() {
-        return wordCount.get() < maxWords && iter.hasNext();
+    public synchronized boolean hasNext() {
+        return itemCount < maxItems && iter.hasNext();
     }
 
     /**
-     * Returns the next word from the reader.
+     * Returns the next item from the reader.
      */
-    public String next() {
-        wordCount.incrementAndGet();
+    public synchronized T next() {
+        itemCount++;
         return iter.next();
     }
 

@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.text;
 
+import edu.ucla.sspace.util.LimitedIterator;
 import edu.ucla.sspace.util.Misc;
 
 import java.io.BufferedReader;
@@ -415,7 +416,8 @@ public class IteratorFactory {
 
         // STEP 3: APPLY TOKEN LIMITING
         if (wordLimit > 0)
-            finalIterator = new LimitedWordIterator(finalIterator, wordLimit);
+            finalIterator = new LimitedIterator<String>(
+                    finalIterator, wordLimit);
 
         // STEP 4: APPLY TOKEN FILTERING
         if (filter != null) {

@@ -32,6 +32,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.LimitedIterator;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -241,6 +242,10 @@ public abstract class GenericMain {
         options.addOption('d', "docFile", 
                           "a file where each line is a document", true,
                           "FILE[,FILE...]", "Required (at least one of)");
+        options.addOption('X', "docLimit",
+                          "The maximum number of documents from the corpus " + 
+                          "to use (default: infinit)",
+                          true, "INT", "Program Options");
 
         // Add run time options.
         options.addOption('o', "outputFormat", "the .sspace format to use",
@@ -322,6 +327,13 @@ public abstract class GenericMain {
 
         // combine all of the document iterators into one iterator.
         docIter = new CombinedIterator<Document>(docIters);
+
+        // Return a limited iterator if requested.
+        if (argOptions.hasOption("docLimit"))
+            return new LimitedIterator<Document>(
+                    docIter, argOptions.getIntOption("docLimit"));
+
+        // Otherwise return the standard iterator.
         return docIter;
     }
 
