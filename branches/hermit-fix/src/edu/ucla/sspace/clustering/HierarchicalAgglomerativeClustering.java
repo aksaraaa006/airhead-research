@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -60,6 +61,42 @@ import java.util.logging.Logger;
  * This class provides static accessors to several variations of agglomerative
  * clustering and conforms to the {@link OfflineClustering} interface, which
  * allows this method to be used in place of other clustering algorithms.
+ *
+ * </p>
+ *
+ * The following properties are provided:
+ *
+ * <dl style="margin-left: 1em">
+ * <dt> <i>Property:</i> <code><b>{@value #CLUSTER_SIMILARITY_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_CLUSTER_SIMILARITY_PROPERTY }
+ *
+ * <dd style="padding-top: .5em"> This property specifies the cluster similarity
+ * threshold at which two clusters are merged together.  Merging will continue
+ * until either all clusters have similarities below this threshold or the
+ * number of desired clusters has been reached. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #CLUSTER_LINKAGE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_CLUSTER_LINKAGE_PROPERTY}
+ *
+ * <dd style="padding-top: .5em"> This property specifies the {@link
+ * ClusterLinkage} to use when computing cluster similarity. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #SIMILARITY_FUNCTION_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_SIMILARITY_FUNCTION_PROPERTY}
+ *
+ * <dd style="padding-top: .5em"> This property specifies the {@link SimType} to
+ * use when comparing the similarity between data points. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #NUM_CLUSTER_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_NUM_CLUSTER_PROPERTY}
+ *
+ * <dd style="padding-top: .5em"> The desired number of clusters. </p>
+ *
+ * </dl>
  *
  * @author David Jurgens
  */
@@ -98,6 +135,58 @@ public class HierarchicalAgglomerativeClustering implements OfflineClustering {
     }
 
     /**
+     * A prefix for specifying properties.
+     */
+    public static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering";
+
+    /**
+     * The property for specifying the cluster similarity threshold.
+     */
+    public static final String CLUSTER_SIMILARITY_PROPERTY =
+        PROPERTY_PREFIX + ".clusterThreshold";
+
+    /**
+     * The property for specifying the cluster linkage to use.
+     */
+    public static final String CLUSTER_LINKAGE_PROPERTY =
+        PROPERTY_PREFIX + ".clusterLinkage";
+
+    /**
+     * The property for specifying the similarity function to use.
+     */
+    public static final String SIMILARITY_FUNCTION_PROPERTY =
+        PROPERTY_PREFIX + ".simFunc";
+
+    /**
+     * The property for specifying the number of clusters to use.
+     */
+    public static final String NUM_CLUSTER_PROPERTY =
+        PROPERTY_PREFIX + ".numClusters";
+
+    /**
+     * The default similarity threshold to use.
+     */
+    private static final String DEFAULT_CLUSTER_SIMILARITY_PROPERTY = "-1";
+
+    /**
+     * The default linkage method to use.
+     */
+    private static final String DEFAULT_CLUSTER_LINKAGE_PROPERTY =
+        "COMPLETE_LINKAGE";
+
+    /**
+     * The default similarity function to use.
+     */
+    private static final String DEFAULT_SIMILARITY_FUNCTION_PROPERTY =
+        "cosineSimilarity";
+
+    /**
+     * The default number of clusters to use.
+     */
+    private static final String DEFAULT_NUM_CLUSTER_PROPERTY = "-1";
+
+    /**
      * The logger to which clustering status updates will be written.
      */
     private static final Logger LOGGER =
@@ -127,79 +216,41 @@ public class HierarchicalAgglomerativeClustering implements OfflineClustering {
     private final SimType similarityFunction;
 
     /**
-     * Creates a {@link HierarchicalAgglomerativeClustering} that will cluster
-     * all rows in the matrix using the specified cluster similarity measure for
-     * comparison and stopping when the number of clusters is equal to the
-     * specified number.
-     *
-     * @param numClusters the number of clusters into which the matrix should
-     *        divided
-     * @param linkage the method to use for computing the similarity of two
-     *        clusters
-     * @param similarityFunction the similarity function to use when computing
-     *         similarity between data points
+     * Creates a {@link HierarchicalAgglomerativeClustering} using the system 
+     * properties that will cluster all rows in the matrix using the specified
+     * cluster similarity measure for comparison and threshold for when to stop
+     * clustering.  Clusters will be repeatedly merged until the desired number
+     * of clusters is reached or no clusters are more similar than the threshold
+     * specified.
      */
-    public HierarchicalAgglomerativeClustering(int numClusters,
-                                               ClusterLinkage linkage,
-                                               SimType similarityFunction) {
-        this(-1, linkage, similarityFunction, numClusters);
+    public HierarchicalAgglomerativeClustering() {
+        this(System.getProperties());
     }
 
     /**
-     * Creates a {@link HierarchicalAgglomerativeClustering} that will cluster
-     * all rows in the matrix using the specified cluster similarity
-     * measure for comparison and threshold for when to stop clustering.
-     * Clusters will be repeatedly merged until the highest cluster similarity
-     * is below the threshold.
-     *
-     * @param clusterSimilarityThreshold the threshold to use when deciding
-     *        whether two clusters should be merged.  If the similarity of the
-     *        clusters is below this threshold, they will not be merged and the
-     *        clustering process will be stopped.
-     * @param linkage the method to use for computing the similarity of two
-     *        clusters
-     * @param similarityFunction the similarity function to use when computing
-     *         similarity between data points
+     * Creates a {@link HierarchicalAgglomerativeClustering} using the provided
+     * properties that will cluster all rows in the matrix using the specified
+     * cluster similarity measure for comparison and threshold for when to stop
+     * clustering.  Clusters will be repeatedly merged until the desired number
+     * of clusters is reached or no clusters are more similar than the threshold
+     * specified.
      */
-    public HierarchicalAgglomerativeClustering(
-            double clusterSimilarityThreshold,
-            ClusterLinkage linkage,
-            SimType similarityFunction) {
-        this(clusterSimilarityThreshold, linkage, similarityFunction, -1);
-    }
+    public HierarchicalAgglomerativeClustering(Properties props) {
+        clusterSimilarityThreshold = Double.parseDouble(props.getProperty(
+                    CLUSTER_SIMILARITY_PROPERTY,
+                    DEFAULT_CLUSTER_SIMILARITY_PROPERTY));
 
-    /**
-     * Creates a {@link HierarchicalAgglomerativeClustering} that will cluster
-     * all rows in the matrix using the specified cluster similarity
-     * measure for comparison and threshold for when to stop clustering.
-     * Clusters will be repeatedly merged until the desired number of clusters
-     * is reached.
-     *
-     * @param clusterSimilarityThreshold the optional parameter for specifying
-     *        the minimum inter-cluster similarity to use when deciding whether
-     *        two clusters should be merged.  If {@code maxNumberOfClusters} is
-     *        positive, this value is discarded in order to cluster to a fixed
-     *        number.  Otherwise all clusters will be merged until the minimum
-     *        distance is less than this threshold.
-     * @param linkage the method to use for computing the similarity of two
-     *        clusters
-     * @param similarityFunction the similarity function to use when computing
-     *         similarity between data points
-     * @param maxNumberOfClusters an optional parameter to specify the maximum
-     *        number of clusters to have.  If this value is non-positive,
-     *        clusters will be merged until the inter-cluster similarity is
-     *        below the threshold, otherwise; if the value is positive, clusters
-     *        are merged until the desired number of clusters are reached
-     */
-    public HierarchicalAgglomerativeClustering(
-            double clusterSimilarityThreshold,
-            ClusterLinkage linkage, 
-            SimType similarityFunction,
-            int maxNumberOfClusters) {
-        this.clusterSimilarityThreshold = clusterSimilarityThreshold;
-        this.linkage = linkage;
-        this.similarityFunction = similarityFunction;
-        this.numClusters = maxNumberOfClusters;
+        linkage = ClusterLinkage.valueOf(props.getProperty(
+                    CLUSTER_LINKAGE_PROPERTY,
+                    DEFAULT_CLUSTER_LINKAGE_PROPERTY));
+
+        similarityFunction = SimType.valueOf(props.getProperty(
+                    SIMILARITY_FUNCTION_PROPERTY,
+                    DEFAULT_SIMILARITY_FUNCTION_PROPERTY));
+
+        numClusters = Integer.parseInt(props.getProperty(
+                    NUM_CLUSTER_PROPERTY,
+                    DEFAULT_NUM_CLUSTER_PROPERTY));
     }
 
     /**
