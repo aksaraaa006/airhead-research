@@ -14,7 +14,7 @@ We notice that foobar occurs with words that give strong indications of what the
 
 There are many types of semantic space algorithms that move beyond the simple co-occurrence model described above.  Popular variations include:
   * limiting the context to a fixed-size window around a word
-  * syntactic relationships, e.g. adjective-noun, as co-occurence
+  * syntactic relationships, e.g. adjective-noun, as co-occurrence
   * semantic relationships, e.g. subject-verb, as co-occurrence 
   * performing dimensionality reduction on the co-occurrence matrix, e.g. [SingularValueDecomposition SVD]
   * identifying patterns between _pairs_ of words
@@ -30,7 +30,7 @@ svn checkout http://airhead-research.googlecode.com/svn/trunk/sspace sspace-read
 If successfully checked out, you should see a directory layout as follows:
 {{{
 user@machine$ ls
-bin  build.xml	classes  data  javadoc	lib  reports  src  test
+bin  build.xml	classes  data  javadoc	lib  licenses  src  test
 }}}
 The directories contain the following information:
   * `bin` - any stand-alone executables
@@ -68,7 +68,9 @@ Each algorithm in the S-Space package implements the [http://code.google.com/p/a
 
   * `getSpaceName()` - Returns a unique string describing the name and configuration of this algorithm.  Any configurable parameters that would affect the resulting semantic space should be expressed as a part of this name.
 
-  * `getVectorFor(String word)` - Returns the semantic vector for the provided word.
+  * `getVector(String word)` - Returns the semantic vector for the provided word.
+
+  * `getVectorLength()` - Returns the length of the semantic vector.
 
   * `getWords()` - Returns the set of words that are represented in this semantic space.
 
@@ -76,7 +78,7 @@ Each algorithm in the S-Space package implements the [http://code.google.com/p/a
 
   * `processSpace(Properties properties)` - Once all the documents have been processed, performs any post-processing steps on the data.  For example, in [LatentSemanticAnalysis LSA], after all of the documents have been processed, this method is called to perform the matrix normalization and [SingularValueDecomposition SVD].
 
-The `getWords()` and `getVectorFor()` methods are designed with the intent that an algorithm can generate vectors for words on the fly.  Instead of keeping all of the vectors in memory at once (or on disk), the algorithm may instead generate a full vector from an internal possibly compressed or sparse representation.
+The `getWords()` and `getVector()` methods are designed with the intent that an algorithm can generate vectors for words on the fly.  Instead of keeping all of the vectors in memory at once (or on disk), the algorithm may instead generate a full vector from an internal possibly compressed or sparse representation.
 
 We follow the convention that an algorithm should be designed as a library, rather than as an executable.  For example, we would expect that any algorithm could be used as follows:
 {{{
@@ -106,7 +108,7 @@ pubic void myFunction(Collection<BufferedReader> documents) {
     // to compare vectors at this point.
     for (String word : algo.getWords()) {
         System.out.printf("%s maps to %s%n", word, 
-             java.util.Arrays.toString(algo.getVectorFor(word)));
+             java.util.Arrays.toString(algo.getVector(word)));
     }
 }}}
 For this reason, we have two files for each algorithm: one that contains all of the algorithm's code for creating the semantic space, and a second file that contains code for running that algorithm as a stand-alone program.  For example, see [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/lsa/LatentSemanticAnalysis.java LatentSemanticAnalysis.java] and [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/mains/LSAMain.java LSAMain.java].
@@ -183,7 +185,7 @@ Not all of these steps will be used at once.  We encourage users to look at thei
 Last, the corpus needs to be converted into a format that the S-Space package can read in.  We currently recommend one of two formats: 
   * a single corpus file - the entire corpus is contained in a single file with one document per line
   * one file per document - a list is then generated for each file (document) in the corpus
-See the [FileFormat file formats] wiki page for full details.  Briefly, the first option is preferred for improved I/O efficiency.  However, if your corpus is already in document format, the second input format is easy to generate, but may have worse performance for large corpora.
+See the [FileFormats file formats] wiki page for full details.  Briefly, the first option is preferred for improved I/O efficiency.  However, if your corpus is already in document format, the second input format is easy to generate, but may have worse performance for large corpora.
 
 == Creating a Reusable Semantic Space == 
 
