@@ -72,6 +72,16 @@ public final class OptionDescriptions {
         "  --tokenFilter=english-dictionary.txt=include," +
         "stop-list.txt=exclude";
  
+    /**
+     * A description of the use of a {@link edu.ucla.sspace.text.Stemmer
+     * Stemmer}.
+     */
+    public static final String TOKEN_STEMMING_DESCRIPTION =
+        "Tokens can be stemmed for various languages using wrappers for " +
+        "the snoball\n" +
+        "stemming algorithms.  Each language has it's own stemmer, following " +
+        "a simple naming\n " +
+        "convention: LanguagenameStemmer.";
  
     /**
      * A description of the output file format produced by {@link
