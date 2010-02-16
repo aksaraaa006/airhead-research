@@ -19,15 +19,6 @@ import java.util.Random;
 
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.StaticSemanticSpace;
-import edu.ucla.sspace.matrix.Matrices;
-import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.Vectors;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 
 /**
  * A {@link} OfflineClustering} implementation that iteratively computes the
@@ -203,11 +194,12 @@ public class AutomaticStopClustering implements OfflineClustering {
     }
 
     /**
-     * Creates a new {@code AutomaticStopClustering} that will compute k-means iteratively
-     * were k ranges from {@code start} to {@code end} with {@code measure}
-     * defining what {@link Measure} will be used to determine where the knee in
-     * the objective method scores occurs.  If the {@link PK1} measure is used,
-     * {@code threshold} defines the threshold that needs to be met.
+     * Creates a new {@code AutomaticStopClustering} that will compute k-means
+     * iteratively were k ranges from {@code start} to {@code end} with {@code
+     * measure} defining what {@link Measure} will be used to determine where
+     * the knee in the objective method scores occurs.  If the {@link PK1}
+     * measure is used, {@code threshold} defines the threshold that needs to be
+     * met.
      */
     public AutomaticStopClustering(int start, 
                                    int end,
@@ -405,41 +397,5 @@ public class AutomaticStopClustering implements OfflineClustering {
             }
         }
         return 0;
-    }
-
-    public static void main(String[] args) throws IOException {
-        SemanticSpace sspace = new StaticSemanticSpace(args[0]);
-        List<DoubleVector> vectors = new ArrayList<DoubleVector>();
-
-        Set<String> words = sspace.getWords();
-        int i = 0;
-        for (String word : words) {
-            /*
-            if (i == 100)
-                break;
-            i++;
-            */
-            vectors.add(Vectors.asDouble(sspace.getVector(word)));
-        }
-
-        OfflineClustering clustering = null;
-        if (args.length > 1)
-            clustering = new AutomaticStopClustering(
-                    1, Integer.parseInt(args[1]), Measure.PK3, 0);
-        else 
-            clustering = new AutomaticStopClustering(
-                    1, 5, Measure.PK3, 0);
-
-        System.out.println("Clustering Start");
-        int[] assignments = clustering.cluster(Matrices.asMatrix(vectors));
-        System.out.println("Clustering Done");
-        i = 0;
-        for (String word : words) {
-            /*
-            if (i == 100)
-                break;
-                */
-            System.out.printf("%s %d\n", word, assignments[i++]);
-        }
     }
 }

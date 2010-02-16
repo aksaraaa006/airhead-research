@@ -22,16 +22,6 @@ import java.util.Set;
 
 import java.util.logging.Logger;
 
-import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.StaticSemanticSpace;
-import edu.ucla.sspace.matrix.Matrices;
-import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.Vectors;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 
 /**
  * A {@link} OfflineClustering} implementation that iteratively computes the
@@ -389,14 +379,6 @@ public class GapStatistic implements OfflineClustering {
             builder.finish();
             return builder.getFile();
         }
-    }
-
-    public static void main(String[] args) throws IOException {
-        Matrix m = MatrixIO.readMatrix(new File(args[0]),
-                                       Format.SVDLIBC_SPARSE_TEXT,
-                                       Type.SPARSE_IN_MEMORY);
-        OfflineClustering cluster = new GapStatistic();
-        int[] assignments = cluster.cluster(m);
     }
 
     protected void verbose(String msg) {

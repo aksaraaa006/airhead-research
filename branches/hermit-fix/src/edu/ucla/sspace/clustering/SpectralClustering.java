@@ -40,6 +40,7 @@ import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.VectorIO;
 
@@ -54,18 +55,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import java.util.logging.Logger;
-
-// Temp for testing
-import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.StaticSemanticSpace;
-import edu.ucla.sspace.matrix.Matrices;
-import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.Vectors;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 
 /**
@@ -169,34 +158,13 @@ public class SpectralClustering implements OfflineClustering {
      * Divide-and-Merge Methodology for Clustering" when applicable.
      */
     public int[] cluster(Matrix matrix) {
-        // First compute the pair wise similarities between every row vector
-        // given.
-        PairDistances pairDistances = new PairDistances();
-        /*
-        verbose("Computing pair wise similarities");
-        for (int r = 0; r < matrix.rows(); ++r) {
-            for (int c = r+1; c < matrix.rows(); ++c) {
-                double sim = Similarity.cosineSimilarity(
-                        matrix.getRowVector(r),
-                        matrix.getRowVector(c));
-                // Scale the similarity so that it is between the range of 0 and
-                // 1.
-                sim = (sim + 1) / 2;
-                pairDistances.set(r, c, sim);
-            }
-        }
-        verbose("Pair wise similarities done");
-        */
-
         // Cluster the matrix recursively.
-        ClusterResult r = realCluster(matrix, pairDistances, 0);
+        ClusterResult r = realCluster(matrix, 0);
         verbose("Created " + r.numClusters + " clusters");
         return r.assignments;
     }
 
-    private ClusterResult realCluster(Matrix matrix,
-                                      PairDistances pairDistances,
-                                      int depth) {
+    private ClusterResult realCluster(Matrix matrix, int depth) {
         verbose("Clustering at depth " + depth);
 
         // If the matrix has only one element or the depth is equal to the
@@ -271,19 +239,13 @@ public class SpectralClustering implements OfflineClustering {
         }
 
         verbose(String.format("Splitting into two matricies %d-%d",
-                                  leftMatrix.rows(), rightMatrix.rows()));
-
-        // Create the new masked distance maps.
-        PairDistances leftDistances =
-            new PairDistances(pairDistances, elementIndices, cutIndex, true);
-        PairDistances rightDistances =
-            new PairDistances(pairDistances, elementIndices, cutIndex, false);
+                              leftMatrix.rows(), rightMatrix.rows()));
 
         // Do clustering on the left and right branches.
         ClusterResult leftResult =
-            realCluster(leftMatrix, leftDistances, depth+1);
+            realCluster(leftMatrix, depth+1);
         ClusterResult rightResult =
-            realCluster(rightMatrix, rightDistances, depth+1);
+            realCluster(rightMatrix, depth+1);
 
         verbose("Merging at depth " + depth);
 
@@ -551,14 +513,6 @@ public class SpectralClustering implements OfflineClustering {
      * Normalizes using the the largest value in the vector.
      */
     private void normalize(DoubleVector v) {
-        /*
-        double maxValue = Double.MAX_VALUE;
-        for (int i = 0; i < v.length(); ++i) {
-            double val = v.get(i);
-            if (val > maxValue)
-                maxValue = val;
-        }
-        */
         double maxValue = 0;
         for (int i = 0; i < v.length(); ++i)
             maxValue += Math.pow(v.get(i), 2);
@@ -633,216 +587,6 @@ public class SpectralClustering implements OfflineClustering {
     }
 
     /**
-     * A map storing the pair wise similarites between row vectors.  This map
-     * can be masked with a set of row to row replacements.
-     */
-    private class PairDistances implements Map<Pair<Integer>, Double> {
-
-        /**
-         * The masked set of distances.
-         */
-        private PairDistances distances;
-
-        /**
-         * An original map storing similarities.  Only the original map will use
-         * this memeber.
-         */
-        private Map<Pair<Integer>, Double> map;
-
-        /**
-         * The set of mappings from a given index to the real index in {@code
-         * distances}.
-         */
-        private int[] replacementIndices;
-
-        /**
-         * The offset of values in {@code replacementIndices}.
-         */
-        private int offset;
-
-        /**
-         * Constructs an original {@code PairDistances}.
-         */
-        public PairDistances() {
-            map = new HashMap<Pair<Integer>, Double>();
-            replacementIndices = null;
-            distances = null;
-        }
-
-        /**
-         * Constructs a masked {@code PairDistances} by using the given set of
-         * index mappings.  This will either compute a masked using the first
-         * {@code cut+1} elements in {@code elementIndices} or it will compute
-         * the mask using the last elements in {@code elementIndices}.
-         */
-        public PairDistances(PairDistances distances,
-                             Index[] elementIndices,
-                             int cut,
-                             boolean useUpToCut) {
-            this.distances = distances;
-            if (useUpToCut) {
-                replacementIndices = new int[cut+1];
-                offset = 0;
-                for (int i = 0; i < cut+1; ++i)
-                    replacementIndices[i] = elementIndices[i].index;
-            } else {
-                replacementIndices = new int[elementIndices.length - cut - 1];
-                offset = cut + 1;
-                for (int i = cut + 1; i < elementIndices.length; i++)
-                    replacementIndices[i-offset] =
-                        elementIndices[i-offset].index;
-            }
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public void clear() {
-            map.clear();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public boolean containsKey(Object key) {
-            return map.containsKey(key);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public boolean containsValue(Object value) {
-            return map.containsValue(value);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public Set<Map.Entry<Pair<Integer>, Double>> entrySet() {
-            throw new UnsupportedOperationException("not implemented");
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public boolean equals(Object o) {
-            return map.equals(o);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public Double get(Object key) {
-            return map.get(key);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public int hashCode() {
-            return map.hashCode();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public boolean isEmpty() {
-            return map.isEmpty();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public Set<Pair<Integer>> keySet() {
-            throw new UnsupportedOperationException(
-                    "A masked map does not support new insertions");
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public Double put(Pair<Integer> key, Double value) {
-            return map.put(key, value);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public void putAll(Map<? extends Pair<Integer>, ? extends Double> m) {
-            throw new UnsupportedOperationException(
-                    "A masked map does not support new insertions");
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public Double remove(Object key) {
-            throw new UnsupportedOperationException(
-                    "A masked map does not support removes");
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public int size() {
-            return map.size();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public Collection<Double> values() {
-            return map.values();
-        }
-
-        /**
-         * A setter that switches the indices so that they lowest is the first
-         * in the pair and replaces indices if needed.
-         */
-        public void set(int i, int j, double value) {
-            if (i > j) {
-                int swap = j;
-                j = i;
-                i = swap;
-            }
-            if (distances == null)
-                put(getPair(i, j), value);
-            else
-                distances.set(replacementIndices[i],
-                              replacementIndices[j],
-                              value);
-        }
-
-        /**
-         * A getter that switches the indices so that they lowest is the first
-         * in the pair and replaces indices if needed.
-         */
-        public double get(int i, int j) {
-            if (i > j) {
-                int swap = j;
-                j = i;
-                i = swap;
-            }
-            if (distances == null)
-                return get(getPair(i, j));
-            else
-                return distances.get(replacementIndices[i],
-                                     replacementIndices[j]);
-        }
-
-        /**
-         * Generate a new {@code Pair}
-         */
-        private Pair<Integer> getPair(int i, int j) {
-            if (replacementIndices == null)
-                return new Pair<Integer>(i, j);
-            return new Pair<Integer>(
-                    replacementIndices[i],
-                    replacementIndices[j]);
-        }
-    }
-
-    /**
      * A simple struct holding the cluster assignments and the number of
      * unique clusters generated.
      */
@@ -855,15 +599,5 @@ public class SpectralClustering implements OfflineClustering {
             this.assignments = assignments;
             this.numClusters = numClusters;
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        Matrix m = MatrixIO.readMatrix(new File(args[0]),
-                                       Format.SVDLIBC_SPARSE_TEXT,
-                                       Type.SPARSE_IN_MEMORY);
-        //File t = File.createTempFile("eigen-spectral", ".dat");
-        //MatrixIO.writeMatrix(m, t, Format.EIGEN_SPARSE);
-        OfflineClustering cluster = new SpectralClustering();
-        int[] assignments = cluster.cluster(m);
     }
 }

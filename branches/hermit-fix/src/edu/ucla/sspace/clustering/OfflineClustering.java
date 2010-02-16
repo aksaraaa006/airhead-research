@@ -26,7 +26,7 @@ import edu.ucla.sspace.matrix.SparseMatrix;
 
 
 /**
- * An interface for any Ofline clustering implementation.  Immplementations must
+ * An interface for any Ofline clustering implementation.  Implementations must
  * take in a {@code Matrix} and return the set of cluster assignments for each
  * row in the matrix.  Immplementations should not modify the contents of a
  * {@code Matrix} to cluster.   Implementations should set up any specific

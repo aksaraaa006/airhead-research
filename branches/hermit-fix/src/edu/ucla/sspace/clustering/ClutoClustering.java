@@ -146,7 +146,8 @@ public class ClutoClustering implements OfflineClustering {
      */
     public ClutoClustering(Properties props) {
         numClusters = Integer.parseInt(props.getProperty(
-                    OfflineProperties.MAX_NUM_CLUSTER_PROPERTY, DEFAULT_NUM_CLUSTERS));
+                    OfflineProperties.MAX_NUM_CLUSTER_PROPERTY,
+                    DEFAULT_NUM_CLUSTERS));
         clusterMethod = props.getProperty(CLUSTER_METHOD_PROPERTY,
                                           DEFAULT_CLUSTER_METHOD);
         clusterSimilarity = props.getProperty(CLUSTER_SIMILARITY_PROPERTY,
@@ -187,11 +188,13 @@ public class ClutoClustering implements OfflineClustering {
 
     /**
      * Clusters the rows of the matrix into the specified number of clusters
-     * using a the algorithm specified during construction.  Rows that have
+     * using a hierarchical agglomerative clustering algorithm.  Rows that have
      * no distinguishing features will not be clustered and instead assigned to
      * a cluster index of -1.
      *
      * @param m a matrix whose rows are to be clustered
+     * @param numClusters the number of clusters into which the matrix should
+     *        divided
      *
      * @return an array where each element corresponds to a row and the value is
      *         the cluster number to which that row was assigned.  Cluster
@@ -199,14 +202,14 @@ public class ClutoClustering implements OfflineClustering {
      *         be clustered will be assigned a -1 value.
      *
      * @throws IOError if any {@link IOException} occurs when marshalling data
+     *         to and from Cluto, or during Cluto's execution.
      */
-    public int[] cluster(SparseMatrix m) {
+    public static int[] agglomerativeCluster(Matrix m, int numClusters) {
         try {
-            return cluster(m, numClusters, clusterMethod);
+            return cluster(m, numClusters, "agglo");
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
-
     }
 
     /**
