@@ -64,13 +64,18 @@ public final class OptionDescriptions {
      * TokenFilter}.
      */
     public static final String TOKEN_FILTER_DESCRIPTION =
-        "Token filter configurations are specified as a comma-separated " +
-        "list of file\nnames, where each file name has an optional string" +
-        " with values: inclusive or\nexclusive, which species whether the" +
-        " token are to be used for an exclusive\nfilter. The default " +
-        "value is include. An example configuration might look like:\n" +
-        "  --tokenFilter=english-dictionary.txt=include," +
-        "stop-list.txt=exclude";
+        "token configuration lists sets of files that contain tokens to be " +
+        "included or\n" +
+        "excluded.  The behavior, \"include\" or \"exclude\" is specified\n" +
+        "first, followed by one or more file names, each separated by " +
+        "colons.\n" +
+        "Multiple behaviors may be specified one after the other using a ','\n"+
+        "character to separate them.  For example, a typicaly configuration " +
+        "may\n" +
+        "look like: " +
+        "include=top-tokens.txt:test-words.txt,exclude=stop-words.txt\n" +
+        "Note behaviors are applied in the order they are presented on the " +
+        "command-line.";
  
     /**
      * A description of the use of a {@link edu.ucla.sspace.text.Stemmer

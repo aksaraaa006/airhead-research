@@ -317,6 +317,7 @@
       <test name="edu.ucla.sspace.text.PorterStemmerTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestWordIterator" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.TestCompoundWordIterator" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.TokenFilterTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.util.CharMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.HashMultiMapTests" todir="${report.dir}"/>
