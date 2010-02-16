@@ -64,7 +64,7 @@ We also officially support the following targets:
 
 = Building Your Own Semantic Space Algorithm =
 
-Each algorithm in the S-Space package implements the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/common/SemanticSpace.java  SemanticSpace] interface.   This allows a common API for interacting with the algorithm.  The interface defines 5 methods:
+Each algorithm in the S-Space package implements the [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/common/SemanticSpace.java  SemanticSpace] interface.   This allows a common API for interacting with the algorithm.  The interface defines 5 methods:
 
   * `getSpaceName()` - Returns a unique string describing the name and configuration of this algorithm.  Any configurable parameters that would affect the resulting semantic space should be expressed as a part of this name.
 
@@ -111,7 +111,7 @@ pubic void myFunction(Collection<BufferedReader> documents) {
              java.util.Arrays.toString(algo.getVector(word)));
     }
 }}}
-For this reason, we have two files for each algorithm: one that contains all of the algorithm's code for creating the semantic space, and a second file that contains code for running that algorithm as a stand-alone program.  For example, see [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/lsa/LatentSemanticAnalysis.java LatentSemanticAnalysis.java] and [http://code.google.com/p/airhead-research/source/browse/trunk/sspace#sspace/src/edu/ucla/sspace/mains/LSAMain.java LSAMain.java].
+For this reason, we have two files for each algorithm: one that contains all of the algorithm's code for creating the semantic space, and a second file that contains code for running that algorithm as a stand-alone program.  For example, see [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/lsa/LatentSemanticAnalysis.java LatentSemanticAnalysis.java] and [http://code.google.com/p/airhead-research/source/browse/trunk/sspace/src/edu/ucla/sspace/mains/LSAMain.java LSAMain.java].
 
 For an introduction to the various libraries the S-Space package offers, see the [PackageStructure code overview] page.
 
