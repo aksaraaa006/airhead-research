@@ -305,7 +305,7 @@ public class EvaluatorMain {
                 WordSimilarityEvaluationRunner.evaluate(
                         sspace, wordSimilarity, similarity);
             verbose("Results for %s:%n%s%n", wordSimilarity, report);
-            results[resultIndex++] = report.correlation();
+            results[resultIndex++] = 100d * report.correlation();
         }
 
         reporter.addResults(sspace.getSpaceName(),
@@ -527,13 +527,11 @@ public class EvaluatorMain {
 
             // Print out the results for each semantic space algorithm tested.
             for (int i = 0; i < titleList.size(); ++i) {
-                sb = new StringBuilder();
-                sb.append(titleList.get(i)).append("  ");
+                resultWriter.printf("%s ", titleList.get(i));
                 double[] results = resultList.get(i);
                 for (double result : results)
-                    sb.append("  &  ").append(result);
-                sb.append(" \\");
-                resultWriter.println(sb.toString());
+                    resultWriter.printf("  &  %4.2f", result);
+                resultWriter.printf("  \\\\\n");
             }
             resultWriter.close();
         }
