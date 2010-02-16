@@ -24,6 +24,7 @@ package edu.ucla.sspace.coals;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
 import edu.ucla.sspace.matrix.CorrelationTransform;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
@@ -67,6 +68,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import java.util.concurrent.atomic.AtomicInteger;
+;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -170,6 +173,12 @@ public class Coals implements SemanticSpace {
     private DataOutputStream rawOccuranceWriter;
 
     /**
+     * The matrix used for storing weight co-occurrence statistics of those
+     * words that occur both before and after.
+     */
+    private AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
+
+    /**
      * A mapping from word to index number.
      */
     private Map<String, Integer> termToIndex;
@@ -177,7 +186,7 @@ public class Coals implements SemanticSpace {
     /**
      * A map containg the total frequency counts of each word.
      */
-    private ConcurrentMap<String, Integer> totalWordFreq;
+    private ConcurrentMap<String, AtomicInteger> totalWordFreq;
 
     /**
      * The final reduced matrix.
@@ -205,7 +214,8 @@ public class Coals implements SemanticSpace {
      */
     public Coals() {
         termToIndex = new HashMap<String, Integer>();
-        totalWordFreq = new ConcurrentHashMap<String, Integer>();
+        totalWordFreq = new ConcurrentHashMap<String, AtomicInteger>();
+        cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
         try {
             rawDataFile =
                 File.createTempFile("coals-occurance-values", "dat");
@@ -277,6 +287,7 @@ public class Coals implements SemanticSpace {
 
             // Get the focus word
             String focusWord = nextWords.remove();
+            int focusIndex = getIndexFor(focusWord); 
             if (focusWord.equals(IteratorFactory.EMPTY_TOKEN))
                 continue;
 
@@ -291,7 +302,8 @@ public class Coals implements SemanticSpace {
                 offset++;
                 if (word.equals(IteratorFactory.EMPTY_TOKEN))
                     continue;
-                addIfMissing(wordDocumentCounts, focusWord, word, offset);
+                int index = getIndexFor(word); 
+                cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
             }
 
             offset = 5;
@@ -299,7 +311,8 @@ public class Coals implements SemanticSpace {
                 offset--;
                 if (word.equals(IteratorFactory.EMPTY_TOKEN))
                     continue;
-                addIfMissing(wordDocumentCounts, focusWord, word, offset);
+                int index = getIndexFor(word); 
+                cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
             }
 
             prevWords.offer(focusWord);
@@ -307,31 +320,14 @@ public class Coals implements SemanticSpace {
                 prevWords.remove();
         }
 
-        // Write out the raw occurrance counts out to disk.
-        for (Map.Entry<String, Map<String, Integer>> entry :
-                wordDocumentCounts.entrySet()) {
-            int firstIndex = getIndexFor(entry.getKey());
-            for (Map.Entry<String, Integer> subEntry :
-                    entry.getValue().entrySet()) {
-                int secondIndex = getIndexFor(subEntry.getKey());
-                synchronized (rawOccuranceWriter) {
-                    rawOccuranceWriter.writeInt(firstIndex);
-                    rawOccuranceWriter.writeInt(secondIndex);
-                    rawOccuranceWriter.writeInt(subEntry.getValue());
-                }
-            }
-        }
-
         // Store the total frequency counts of the words seen in this document
         // so far.
-        synchronized (totalWordFreq) {
-            for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
-                Integer freq = totalWordFreq.get(entry.getKey());
-                int newValue = entry.getValue().intValue();
-                totalWordFreq.put(entry.getKey(), (freq == null)
-                        ? newValue
-                        : freq.intValue() + newValue);
-            }
+        for (Map.Entry<String, Integer> entry : wordFreq.entrySet()) {
+            int count = entry.getValue().intValue();
+            AtomicInteger freq = totalWordFreq.putIfAbsent(
+                    entry.getKey(), new AtomicInteger(count));
+            if (freq != null)
+                freq.addAndGet(count);
         }
     }
 
@@ -358,27 +354,6 @@ public class Coals implements SemanticSpace {
         return index;
     }
                 
-    /**
-     * Adds the {@code value} to the frequency count of the two words.
-     */
-    private void addIfMissing(Map<String, Map<String, Integer>> map,
-                              String firstKey,
-                              String secondKey,
-                              int value) {
-        Map<String, Integer> secondMap = map.get(firstKey);
-        if (secondMap == null) {
-            secondMap = new HashMap<String, Integer>();
-            secondMap.put(secondKey, value);
-            map.put(firstKey, secondMap);
-            return;
-        }
-        Integer freqCount = secondMap.get(secondKey);
-        int newValue = (freqCount == null)
-            ? value
-            : freqCount.intValue() + value;
-        secondMap.put(secondKey, newValue);
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -448,72 +423,61 @@ public class Coals implements SemanticSpace {
 
         // Calculate the new indices for each word that will be kept based on
         // the frequency count, where the most frequent word will be first.
-        ArrayList<Map.Entry<String, Integer>> wordCountList =
-            new ArrayList<Map.Entry<String, Integer>>(totalWordFreq.entrySet());
+        ArrayList<Map.Entry<String, AtomicInteger>> wordCountList =
+            new ArrayList<Map.Entry<String, AtomicInteger>>(
+                    totalWordFreq.entrySet());
         Collections.sort(wordCountList, new EntryComp());
 
+        // Calculate the new term to index mapping based on the order of the
+        // word frequencies.
         termToIndex.clear();
         int i = 0;
-        for (Map.Entry<String, Integer> entry : wordCountList) {
+        for (Map.Entry<String, AtomicInteger> entry : wordCountList)
             termToIndex.put(entry.getKey(), i++);
-        }
 
-        // Finalize all output to the co-occurrance data file.
-        totalWordFreq.clear();
-        synchronized (rawOccuranceWriter) {
-            try {
-                rawOccuranceWriter.close();
-            } catch (IOException ioe) {
-                throw new IOError(ioe);
-            }
-        }
-        
+        // Compute the number of dimensions to maintain. 
         int wordCount = (wordCountList.size() > maxDimensions)
             ? maxDimensions 
             : wordCountList.size();
 
+        // Traverse the old matrix and drop rows if their new indices are beyond
+        // the maximum word count and drop columns if their new indices are
+        // beyond the maximum dimension size.
         Matrix correl = new YaleSparseMatrix(wordCountList.size(), wordCount);
-        try {
-            DataInputStream inStream = new DataInputStream(
-                    new BufferedInputStream(new FileInputStream(rawDataFile)));
+        for (int row = 0; row < cooccurrenceMatrix.rows(); ++row) {
+            // Get the new index for this row.
+            String termForFirstIndex = indexToTerm[row];
+            int newRow = termToIndex.get(termForFirstIndex).intValue();
 
-            try {
-                while (true) {
-                    // Get a data point from the stored occurrance file.
-                    int firstIndex = inStream.readInt();
-                    int secondIndex = inStream.readInt();
-                    int count = inStream.readInt();
+            // Drop it if it's not frequent enough.
+            if (newRow >= maxWords)
+                continue;
 
-                    // Compute the new index for each of the terms.
-                    String termForFirstIndex = indexToTerm[firstIndex];
-                    String termForSecondIndex = indexToTerm[secondIndex];
-                    int newFirstIndex =
-                        termToIndex.get(termForFirstIndex).intValue();
-                    int newSecondIndex =
-                        termToIndex.get(termForSecondIndex).intValue();
+            // Traverse the columns.
+            for (int col = 0; col < cooccurrenceMatrix.columns(); ++col) {
 
-                    // Drop any occurrance counts where the second term is not
-                    // in the most frequent N terms (dimensions).
-                    if (newFirstIndex >= maxWords ||
-                        newSecondIndex >= wordCount)
-                        continue;
-                    double oldValue = correl.get(newFirstIndex, newSecondIndex);
-                    correl.set(newFirstIndex, newSecondIndex, count + oldValue);
-                }
-            } catch (EOFException eof) {
-                inStream.close();
+                // Get the new index for this column.
+                String termForSecondIndex = indexToTerm[col];
+                int newCol = termToIndex.get(termForSecondIndex);
+
+                // Drop it if it's not frequent enough.
+                if (newCol >= wordCount)
+                    continue;
+
+                // Copy over the value to the new matrix.
+                double oldValue = cooccurrenceMatrix.get(row, col);
+                correl.set(newRow, newCol, oldValue);
             }
-            rawDataFile.delete();
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
         }
+
         return correl;
     }
 
-    private class EntryComp implements Comparator<Map.Entry<String,Integer>> {
-        public int compare(Map.Entry<String, Integer> o1,
-                           Map.Entry<String, Integer> o2) {
-            int diff = o2.getValue().intValue() - o1.getValue().intValue();
+    private class EntryComp
+            implements Comparator<Map.Entry<String,AtomicInteger>> {
+        public int compare(Map.Entry<String, AtomicInteger> o1,
+                           Map.Entry<String, AtomicInteger> o2) {
+            int diff = o2.getValue().get() - o1.getValue().get();
             return (diff != 0) ? diff : o2.getKey().compareTo(o1.getKey());
         }
     }
@@ -521,14 +485,13 @@ public class Coals implements SemanticSpace {
     public Matrix compareToMatrix(Matrix testMatrix) {
         if (testMatrix.rows() != finalCorrelation.rows() ||
             testMatrix.columns() != finalCorrelation.columns()) {
-            System.out.println(testMatrix.rows() + " " + testMatrix.columns());
-            System.out.println(finalCorrelation.rows() + " " + finalCorrelation.columns());
             throw new IllegalArgumentException(
                     "The given test matrix size does not match");
-            }
+        }
 
         Matrix result = new ArrayMatrix(testMatrix.rows(),
                                         testMatrix.columns());
+
         for (int row = 0; row < testMatrix.rows(); ++row) {
             for (int col = 0; col < testMatrix.columns(); ++col) {
                 result.set(row, col, finalCorrelation.get(row, col) -
