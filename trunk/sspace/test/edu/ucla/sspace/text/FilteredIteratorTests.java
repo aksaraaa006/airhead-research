@@ -34,7 +34,7 @@ public class FilteredIteratorTests {
 
     @Test public void testIncludeFromConfig() throws IOException {
         File toInclude = createFileWithText("include\nthree\nwords");
-        String filterSpec = toInclude.getAbsolutePath() + "=include";
+        String filterSpec = "include=" + toInclude.getAbsolutePath();
         TokenFilter filter = TokenFilter.loadFromSpecification(filterSpec);
         Iterator<String> it =
             new FilteredIterator("include foo bar three include baz words", filter);
@@ -47,7 +47,7 @@ public class FilteredIteratorTests {
 
     @Test public void testExcludeFromConfig() throws IOException {
         File toInclude = createFileWithText("include\nthree\nwords");
-        String filterSpec = toInclude.getAbsolutePath() + "=exclude";
+        String filterSpec = "exclude=" + toInclude.getAbsolutePath();
         TokenFilter filter = TokenFilter.loadFromSpecification(filterSpec);
         Iterator<String> it =
             new FilteredIterator("include foo bar three include baz words", filter);
@@ -68,5 +68,4 @@ public class FilteredIteratorTests {
 	pw.close();
 	return tmp;
     }
-
 }

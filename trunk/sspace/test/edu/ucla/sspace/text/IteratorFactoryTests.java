@@ -43,7 +43,7 @@ public class IteratorFactoryTests {
 
     @Test public void testWithFilter() throws IOException {
 	File validTokens = createFileWithText("this\nmy\nexample\nsentence");
-	String filterProp = validTokens.getAbsolutePath() + "=include";
+	String filterProp = "include=" + validTokens.getAbsolutePath();
 	Properties props = new Properties();
 	props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY, filterProp);
 	IteratorFactory.setProperties(props);
@@ -71,7 +71,7 @@ public class IteratorFactoryTests {
 
     @Test public void testWithCompoundsAndFilter() throws IOException {
 	File validTokens = createFileWithText("this\nmy\nexample sentence");
-	String filterProp = validTokens.getAbsolutePath() + "=include";
+	String filterProp = "include=" + validTokens.getAbsolutePath();
 	Properties props = new Properties();
 	props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY, filterProp);
 
@@ -98,5 +98,4 @@ public class IteratorFactoryTests {
     public static BufferedReader getReader() {
 	return new BufferedReader(new StringReader("this is my example sentence"));
     }
-
 }

@@ -54,13 +54,9 @@ import java.util.Set;
  * This class also provides a static utility function {@link
  * #loadFromSpecification(String) loadFromSpecification} for initializing a
  * chain of filters from a text configuration.  This is intended to facility
- * command-line tools that want to provide easily configurable filters.  Token
- * filter configurations are specified as a comman-separated list of file names,
- * where each file name has an optional string with values: {@code inclusive} or
- * {@code exclusive}, which species whether the token are to be used for an
- * exclusive filter.  <b>The default value is include</b>.  An example
- * configuration might look like:
- * <tt>english-dictionary.txt=include,stop-list.txt=exclude</tt>
+ * command-line tools that want to provide easily configurable filters.  An
+ * example configuration might look like:
+ * <tt>include=top-tokens.txt:test-words.txt,exclude=stop-words.txt</tt>
  *
  * @see FilteredIterator
  */
@@ -155,18 +151,18 @@ public class TokenFilter {
     
     /**
      * Loads a series of chained {@code TokenFilter} instances from the
-     * specified configuration string.
+     * specified configuration string.<p>
      * 
-     * Token filter configurations are specified as a file name containing a list
-     * of tokens, with an optional boolean value specifying whether the file is
-     * to be used to exclude all tokens not in the file, or exclude those that
-     * are in the file (i.e. a stop list). The format specified as:
-     * <tt>file[=boolean][,file...]</tt> where each file to be used is separated
-     * by a <b>,</b>, and the boolean value is appended with an <b>=</b> sign.
+     * A configuration lists sets of files that contain tokens to be included or
+     * excluded.  The behavior, {@code include} or {@code exclude} is specified
+     * first, followed by one or more file names, each separated by colons.
+     * Multiple behaviors may be specified one after the other using a {@code ,}
+     * character to separate them.  For example, a typicaly configuration may
+     * look like: "include=top-tokens.txt,test-words.txt:exclude=stop-words.txt"
+     * <b>Note</b> behaviors are applied in the order they are presented on the
+     * command-line.
      *
-     * @param configuration a comman-separated list of file names, where each
-     *        file name has an optional <tt>=boolean</tt> flag that is {@code
-     *        true} if the token are to be used for an exclusive filter
+     * @param configuration a token filter configuration
      *
      * @return the chained TokenFilter instance made of all the specification,
      *         or {@code null} if the configuration did not specify any filters
@@ -177,47 +173,39 @@ public class TokenFilter {
 
 	TokenFilter toReturn = null;
 
-	// multiple filter files are specified using a ',' to separate them
-	String[] fileAndOptionalFlag = configuration.split(",");
+	// multiple filter are separated by a ':'
+	String[] filters = configuration.split(",");
 
-	for (String s : fileAndOptionalFlag) {
-	    // If the words in the file are manually specified to be applied in
-	    // a specific way, then the string will contain a '='.  Look for the
-	    // last index of '=' in case the file name itself contains that
-	    // character
-	    int eqIndex = s.lastIndexOf('=');
-	    String filename = null;
-	    boolean exclude = false;
-	    if (eqIndex > 0) {
-		filename = s.substring(0, eqIndex);
-		String flag = s.substring(eqIndex + 1);
-		if (flag.equals("include"))
-		    exclude = false;
-		else if (flag.equals("exclude"))
-		    exclude = true;
-		else {
-		    throw new IllegalArgumentException(
-			"unknown filter parameter: " + s);
-		}
-	    }
-	    else {
-		filename = s;
-	    }
-	    
-	    // load the words in the file
+	for (String s : filters) {
+            String[] optionAndFiles = s.split("=");
+            if (optionAndFiles.length != 2)
+                throw new IllegalArgumentException(
+                    "Invalid number of filter parameters: " + s);
+            
+            String behavior = optionAndFiles[0];
+            boolean exclude = behavior.equals("exclude");
+            // Sanity check that the behavior was include
+            if (!exclude && !behavior.equals("include"))
+                throw new IllegalArgumentException(
+                    "Invalid filter behavior: " + behavior);
+                
+            String[] files = optionAndFiles[1].split(":");
+            
+	    // Load the words in the file(s)
 	    Set<String> words = new HashSet<String>();
 	    try {
-		BufferedReader br = 
-		    new BufferedReader(new FileReader(filename));
-		for (String line = null; (line = br.readLine()) != null; ) {
-		    words.add(line);
-		}
-		br.close();
+                for (String f : files) {
+                    BufferedReader br = new BufferedReader(new FileReader(f));
+                    for (String line = null; (line = br.readLine()) != null; ) 
+                        words.add(line);
+                    br.close();
+                }
 	    } catch (IOException ioe) {
 		// rethrow since filter error is fatal to correct execution
 		throw new IOError(ioe);
 	    }
 	    
+            // Chain the filters on top of each other
 	    toReturn = new TokenFilter(words, exclude, toReturn);
 	}
 
