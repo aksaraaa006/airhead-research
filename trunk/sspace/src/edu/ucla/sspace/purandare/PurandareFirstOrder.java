@@ -33,7 +33,7 @@ import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
-import edu.ucla.sspace.matrix.RowMaskedMatrix;
+import edu.ucla.sspace.matrix.SparseRowMaskedMatrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
@@ -558,7 +558,7 @@ public class PurandareFirstOrder implements SemanticSpace {
             BitSet randomContexts = Statistics.randomDistribution(
                 maxContextsPerWord, contextsForCurTerm.rows());
             contextsForCurTerm = 
-                new RowMaskedMatrix(contextsForCurTerm, randomContexts);
+                new SparseRowMaskedMatrix(contextsForCurTerm, randomContexts);
         }
         
         return contextsForCurTerm;
