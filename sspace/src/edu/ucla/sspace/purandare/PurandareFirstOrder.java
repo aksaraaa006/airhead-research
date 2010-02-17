@@ -449,10 +449,11 @@ public class PurandareFirstOrder implements SemanticSpace {
                             "processing term %6d/%d: %s", i, uniqueTerms,term));
                         Matrix contexts = getTermContexts(i, termFeatures[i]);
                         senseInduce(term, contexts);
-                        termsProcessed.release();
                         } catch (IOException ioe) {
                             ioe.printStackTrace();
-                        }
+                        } finally {
+                            termsProcessed.release();
+                        }                       
                     }
                 });
         }
