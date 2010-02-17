@@ -115,6 +115,10 @@ public class RowMaskedMatrix implements Matrix {
         rows = rowArr.length;
     }
 
+    /**
+     * Returns the row in the backing matrix that the {@code virtualRow} value
+     * is mapped to in the row-masked matrix.
+     */
     private int getRealRow(int virtualRow) {
         if (virtualRow < 0 || virtualRow >= rows)
             throw new IndexOutOfBoundsException(
