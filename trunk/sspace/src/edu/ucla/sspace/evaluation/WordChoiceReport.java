@@ -46,5 +46,11 @@ public interface WordChoiceReport {
      * prompt or the options.
      */
     int unanswerableQuestions();
+
+    /**
+     * Returns the score, ranged between 0 and 100, achieved on a particlar
+     * evaluation.
+     */
+    double score();
 }
 
