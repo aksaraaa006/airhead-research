@@ -168,15 +168,21 @@ public class WordChoiceEvaluationRunner {
         }
 
         /**
+         * {@inheritDoc}
+         */
+        public double score() {
+            return (unanswerable == numQuestions) 
+             ? 0d
+             : ((100d * (double)correct) / (numQuestions - unanswerable));
+        }
+
+        /**
          * Returns a string describing the three values represented by this
          * {@link report}, with the accuracy reported as a percentage
          */
         public String toString() {
             return String.format("%.2f correct; %d/%d unanswered",
-                    ((unanswerable == numQuestions) 
-                     ? 0d
-                     : ((((double)correct) / 
-                             (numQuestions - unanswerable)) * 100)),
+                    score(), 
                     unanswerable, numQuestions);
         }
     }

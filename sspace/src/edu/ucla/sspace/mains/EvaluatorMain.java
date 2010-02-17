@@ -293,9 +293,7 @@ public class EvaluatorMain {
             WordChoiceReport report = WordChoiceEvaluationRunner.evaluate(
                         sspace, wordChoice, similarity);
             verbose("Results for %s:%n%s%n", wordChoice, report);
-            double score = 100 * report.correctAnswers() /
-                ((double) report.numberOfQuestions());
-            results[resultIndex++] = score;
+            results[resultIndex++] = report.score();
         }
 
         // Run the word similarity tests.
@@ -305,7 +303,7 @@ public class EvaluatorMain {
                 WordSimilarityEvaluationRunner.evaluate(
                         sspace, wordSimilarity, similarity);
             verbose("Results for %s:%n%s%n", wordSimilarity, report);
-            results[resultIndex++] = 100d * report.correlation();
+            results[resultIndex++] = report.correlation();
         }
 
         reporter.addResults(sspace.getSpaceName(),
