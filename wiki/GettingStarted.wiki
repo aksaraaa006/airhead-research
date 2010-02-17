@@ -217,4 +217,4 @@ double measure_similarity(SemanticSpace before, SemanticSpace after){
     return sum/words.size();
 }
 }}}
-Generally you are not concerned with the entire collection of words in the sspace, but only the well defined ones (frequently used, non stop words).
+Generally you are not concerned with the entire collection of words in the sspace, but only the well defined ones (frequently used, non stop words). To manually inspect an sspace try using the [SemanticSpaceExplorer].
