@@ -230,14 +230,14 @@
   </target>
 
   <target name="purandare-jar" depends="compile">
-    <jar destfile="${bin.dir}/purandare-petersen.jar" basedir="classes">
+    <jar destfile="${bin.dir}/purandare-pedersen.jar" basedir="classes">
       <include name="**/*.class"/>
       <manifest>
 	<!-- Who is building this jar? -->
 	<attribute name="Built-By" value="${user.name}"/>
 	<!-- Information about the program itself -->
 	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
-	<attribute name="Implementation-Title" value="Purandare and Petersen"/>
+	<attribute name="Implementation-Title" value="Purandare and Pedersen"/>
 	<attribute name="Implementation-Version" value="${version}"/>
 	<attribute name="Main-Class" value="edu.ucla.sspace.mains.PurandareMain"/>
       </manifest>
@@ -278,6 +278,7 @@
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.StatisticsTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>

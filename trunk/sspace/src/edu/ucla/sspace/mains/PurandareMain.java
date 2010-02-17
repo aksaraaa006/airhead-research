@@ -56,7 +56,10 @@ public class PurandareMain extends GenericMain {
     /**
      * Adds all of the options to the {@link ArgOptions}.
      */
-    protected void addExtraOptions(ArgOptions options) { }
+    protected void addExtraOptions(ArgOptions options) {
+        options.addOption('m', "maxContexts", "The maximum number of contexts "
+                          +"to use per word", true, "INT", "Algorithm Options");
+    }
 
     public static void main(String[] args) {
         PurandareMain lsa = new PurandareMain();
@@ -81,5 +84,20 @@ public class PurandareMain extends GenericMain {
      */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected Properties setupProperties() {
+        Properties props = System.getProperties();
+        // Use the command line options to set the desired properites in the
+        // constructor.  Use the system properties in case these properties were
+        // set using -Dprop=<value>
+        if (argOptions.hasOption("maxContexts")) {
+            props.setProperty(PurandareFirstOrder.MAX_CONTEXTS_PER_WORD,
+                              argOptions.getStringOption("maxContexts"));
+        }
+        return props;
     }
 }
