@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.common;
 
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -95,4 +96,43 @@ public class Statistics {
         return Math.log1p(d) / Math.log(2);
     }
 
+    /**
+     * Randomly sets {@code valuesToSet} values to {@code true} for a sequence
+     * from [0:{@code range}).
+     *
+     * @param valuesToSet the number of values that are to be set to {@code
+     *        true} in the distribution
+     * @param range the total number of values in the sequence.
+     */
+    public static BitSet randomDistribution(int valuesToSet, int range) {
+        if (valuesToSet >= range)
+            throw new IllegalArgumentException("too many values for range");
+        BitSet values = new BitSet(range);
+        // We will be setting fewer than half of the values, so set everything
+        // to false, and mark true until the desired number is reached
+        if (valuesToSet < (range / 2)) {
+            int set = 0;
+            while (set < valuesToSet) {
+                int i = (int)(Math.random() * range);
+                if (!values.get(i)) {
+                    values.set(i, true);
+                    set++;
+                }
+            }
+        }
+        // We will be setting more than half of the values, so set everything to
+        // true, and mark false until the desired number is reached
+        else {
+            values.set(0, range, true);
+            int set = range;
+            while (set > valuesToSet) {
+                int i = (int)(Math.random() * range);
+                if (values.get(i)) {
+                    values.set(i, false);
+                    set--;
+                }
+            }
+        }
+        return values;
+    }
 }

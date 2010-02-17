@@ -25,6 +25,7 @@ import edu.ucla.sspace.clustering.ClutoClustering;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity.SimType;
+import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.AtomicGrowingMatrix;
 import edu.ucla.sspace.matrix.AtomicMatrix;
@@ -32,6 +33,7 @@ import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.RowMaskedMatrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
 
@@ -99,6 +101,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  * </ul> 
  *
+ *
+ * This class offers one configurable parameter.
+ *
+ * <dl style="margin-left: 1em">
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #MAX_CONTEXT_PER_WORD}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link Integer.MAX_VALUE}
+ *
+ * <dd style="padding-top: .5em">This property sets the upper-bound on the
+ *      maximum number of contexts to be clustered for a single word.  If there
+ *      are fewer of contexts than this value, all of the contexts will be used.
+ *      Users should consider setting this value if a large corpus is to be
+ *      used, or if the corpus contains many frequently used words after
+ *      filtering.<p>
+ *
+ * </dl></p> 
+ *
  * @author David Jurgens
  */
 public class PurandareFirstOrder implements SemanticSpace {
@@ -108,6 +128,13 @@ public class PurandareFirstOrder implements SemanticSpace {
 
     private static final String PROPERTY_PREFIX =
         "edu.ucla.sspace.purandare.PurandareFirstOrder";
+
+    /**
+     * The property to set the upper-bound on the maximum number of contexts to
+     * be clustered for a single word.
+     */
+    public static final String MAX_CONTEXTS_PER_WORD = 
+        PROPERTY_PREFIX + ".maxContexts";
 
     /**
      * Map that pairs the word with its position in the original term-document
@@ -166,21 +193,45 @@ public class PurandareFirstOrder implements SemanticSpace {
     private final AtomicInteger documentCounter;
 
     /**
+     * The maximum number of contexts allowable for any word.
+     */
+    private final int maxContextsPerWord;
+
+    /**
      * The number that keeps track of the index values of words
      */
     private int wordIndexCounter;
 
     /**
-     * Creates a new instance of {@code PurandareFirstOrder}.
+     * Creates a new instance of {@code PurandareFirstOrder} using the system
+     * properties for configuration
      */
     public PurandareFirstOrder() {
+        this(System.getProperties());
+    }
+
+    /**
+     * Creates a new instance of {@code PurandareFirstOrder} using the provided
+     * properties for configuration
+     */
+    public PurandareFirstOrder(Properties props) {
 	cooccurrenceMatrix = new AtomicGrowingMatrix();
         termToIndex = new ConcurrentHashMap<String,Integer>();
         termToVector = new ConcurrentHashMap<String,DoubleVector>();
         termCounts = new CopyOnWriteArrayList<AtomicInteger>();
         windowSize = 5;
         contextWindowSize = 20;
-        documentCounter = new AtomicInteger(0);
+        documentCounter = new AtomicInteger(0);        
+        String maxContextsProp = props.getProperty(MAX_CONTEXTS_PER_WORD);
+        if (maxContextsProp == null)
+            maxContextsPerWord = Integer.MAX_VALUE;
+        else {
+            int i = Integer.parseInt(maxContextsProp);
+            if (i <= 0)
+                throw new IllegalArgumentException(
+                    "The number of contexts must be a positive number");
+            maxContextsPerWord = i;
+        }
         try {
             compressedDocuments = 
                 File.createTempFile("petersen-documents",".dat");
@@ -396,7 +447,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                         try {
                         LOGGER.fine(String.format(
                             "processing term %6d/%d: %s", i, uniqueTerms,term));
-                        Matrix contexts = processTerm(i, termFeatures[i]);
+                        Matrix contexts = getTermContexts(i, termFeatures[i]);
                         senseInduce(term, contexts);
                         termsProcessed.release();
                         } catch (IOException ioe) {
@@ -458,7 +509,9 @@ public class PurandareFirstOrder implements SemanticSpace {
     /**
      * For the specified term, reprocesses the entire corpus using the term's
      * features to construct a matrix of all the contexts in which the term
-     * appears.
+     * appears.  If the term occurs in more contexts than is allowed in the
+     * {@link #maxContextsPerWord}, the random subset of the contexts is
+     * returned.
      *
      * @param termIndex the index of the term for which the context matrix
      *        should be generated
@@ -468,7 +521,7 @@ public class PurandareFirstOrder implements SemanticSpace {
      * @return a {@code Matrix} where each row is a different context for the
      *         term in the corpus
      */
-    private Matrix processTerm(int termIndex, BitSet termFeatures) 
+    private Matrix getTermContexts(int termIndex, BitSet termFeatures) 
             throws IOException {
         // Reprocess the corpus in binary format to generate the set of context
         // with the appropriate feature vectors
@@ -497,6 +550,17 @@ public class PurandareFirstOrder implements SemanticSpace {
             contextsSeen += contextsInDoc;
         }
         corpusReader.close();
+
+        // If the term is to be processed using fewer than all of its contexts,
+        // then randomly select the maximum allowable contexts from the matrix
+        if (maxContextsPerWord < Integer.MAX_VALUE &&
+                contextsForCurTerm.rows() > maxContextsPerWord) {
+            BitSet randomContexts = Statistics.randomDistribution(
+                maxContextsPerWord, contextsForCurTerm.rows());
+            contextsForCurTerm = 
+                new RowMaskedMatrix(contextsForCurTerm, randomContexts);
+        }
+        
         return contextsForCurTerm;
     }
 
