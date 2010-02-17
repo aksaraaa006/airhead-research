@@ -586,11 +586,13 @@ public abstract class GenericMain {
     }
 
     protected void verbose(String msg) {
-        LOGGER.fine(msg);
+        if (LOGGER.isLoggable(Level.FINE))
+            LOGGER.logp(Level.FINE, getClass().getName(), "verbose", msg);
     }
 
     protected void verbose(String format, Object... args) {
         if (LOGGER.isLoggable(Level.FINE))
-            LOGGER.fine(String.format(format, args));        
+            LOGGER.logp(Level.FINE, getClass().getName(), "verbose", 
+                        String.format(format, args));
     }
 }
