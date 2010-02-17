@@ -28,9 +28,12 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
+
 /**
  * An {@code Iterator} implemntation that combines multiple iterators into a
- * single instance.
+ * single instance.<p>
+ *
+ * This class is thread-safe.
  *
  * @author David Jurgens
  */ 
@@ -84,14 +87,14 @@ public class CombinedIterator<T> implements Iterator<T> {
      * Returns true if there are still elements in at least one of the backing
      * iterators.
      */
-    public boolean hasNext() {
+    public synchronized boolean hasNext() {
 	return current != null && current.hasNext();
     }
 
     /**
      * Returns the next element from some iterator.
      */
-    public T next() {
+    public synchronized T next() {
 	if (current == null) {
 	    throw new NoSuchElementException();
 	}
@@ -104,7 +107,7 @@ public class CombinedIterator<T> implements Iterator<T> {
      * Removes the previously returned element using the backing iterator's
      * {@code remove} method.
      */
-    public void remove() {
+    public synchronized void remove() {
 	if (prev == null) {
 	    throw new NoSuchElementException();
 	}	
