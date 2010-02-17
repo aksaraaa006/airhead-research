@@ -71,6 +71,10 @@ public class CoalsMain extends GenericMain {
                             "Set the number of columns to keep in the raw " +
                             "co-occurance matrix.",
                             true, "INT", "Optional"); 
+          options.addOption('m', "maxWords",
+                            "Set the maximum number of words to keep in the " +
+                            "space, ordered by frequency",
+                            true, "INT", "Optional");
           options.addOption('s', "reducedDimension", 
                             "Set the number of dimension to reduce to " +
                             "using the Singular Value Decompositon.  This is " +
@@ -120,6 +124,9 @@ public class CoalsMain extends GenericMain {
           if (argOptions.hasOption("dimensions"))
               props.setProperty(Coals.MAX_DIMENSIONS_PROPERTY,
                                 argOptions.getStringOption("dimensions"));
+          if (argOptions.hasOption("maxWords"))
+              props.setProperty(Coals.MAX_WORDS_PROPERTY,
+                                argOptions.getStringOption("maxWords"));
           return props;
     }
 }
