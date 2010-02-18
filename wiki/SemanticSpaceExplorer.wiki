@@ -1,0 +1,52 @@
+#summary Tool for manually inspecting sspaces.
+
+= Introduction =
+
+The SemanticSpaceExplorer tool is a quick and easy way to check the contents of one or more sspaces. It is useful for gaining access to sspaces, especially those in [FileFormats binary format]. Another useful feature is its ability to act as a scripting engine.
+
+= Using SemanticSpaceExplorer ==
+SemanticSpaceExplorer understands the following commands:
+    * load file1.sspace [file2.sspace...]
+    * unload file1.sspace [file2.sspace...]
+    * get-neighbors word [number (default 10)] [similarity measure]
+    * get-similarity word1 word2 [similarity measure (default cosine)]
+    * compare-sspace-vectors word sspace1 sspace2 [similarity measure (default: cosine)]
+    * help
+    * set-current-sspace filename.sspace
+    * get-current-sspace
+    * alias filename.sspace name
+    * write-command-results output-file command...
+    * print-vector word
+    * print-words [string-prefix]
+Note: most of these commands can be used in abbreviated form, using the first letter of each word (e.g. get-neighbors can be invoked using gn).
+
+== Run commands from prompt ==
+Running:
+{{{
+java -cp classes/ edu.ucla.sspace.tools.SemanticSpaceExplorer
+}}}
+will open up a prompt for direct keyboard input. Use `ctrl-c` to exit.
+
+== Run commands from script ==
+Running:
+{{{
+java -cp classes/ edu.ucla.sspace.tools.SemanticSpaceExplorer --executeFile awesome.script
+}}}
+will run the commands in `awesome.script`, allowing you to easily reproduce your work.
+
+== Examples ==
+Generally the first step is to load the sspace:
+{{{
+load processed.sspace
+}}}
+
+To test that a word retained its meaning one could check:
+{{{
+get-neighbors violin 5 COSINE
+}}}
+To ensure they are all valid common words.
+
+Or to test that two words are related:
+{{{
+get-similarity violin guitar COSINE
+}}}
