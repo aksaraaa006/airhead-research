@@ -22,18 +22,23 @@
 package edu.ucla.sspace.hermit;
 
 import edu.ucla.sspace.clustering.ClusterMap;
+import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
+import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
+import edu.ucla.sspace.clustering.OnlineClustering;
 import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
 
-import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.common.Similarity.SimType;
 
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseHashIntegerVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
@@ -42,6 +47,7 @@ import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
 
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.Matrices;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -70,7 +76,12 @@ import java.util.logging.Logger;
 
 
 /**
- * An implementation of the {@code SecondFlyingHermit} Semantic Space model. 
+ * An implementation of the Hermit WSI Semantic Space model that is specificly
+ * geared towards processing the SenseEval07 dataset.  Each document is expected
+ * to be the context of a single instance of a test term, with the focus word
+ * preceeded by a "|".  This class has several special cases and is not the
+ * general purpose hermit implementation.  See {@link FlyingHermit} for a more
+ * general implementation. 
  *
  * </p>
  *
@@ -90,38 +101,21 @@ import java.util.logging.Logger;
  *
  * </p>
  *
- * This class implements {@link Filterable}, which allows for fine-grained
- * control of which semantics are retained.  The {@link #setSemanticFilter(Set)}
- * method can be used to speficy which words should have their semantics
- * retained.  Note that the words that are filtered out will still be used in
- * computing the semantics of <i>other</i> words.  This behavior is intended for
- * use with a large corpora where retaining the semantics of all words in memory
- * is infeasible.
- *
- * </p>
- *
  * This class is thread-safe for concurrent calls of {@link
  * #processDocument(BufferedReader) processDocument}.  At any given point in
  * processing, the {@link #getVectorFor(String) getVector} method may be used
  * to access the current semantics of a word.  This allows callers to track
  * incremental changes to the semantics as the corpus is processed.  <p>
  *
- * The {@link #processSpace(Properties) processSpace} method does nothing for
- * This class is thread-safe for concurrent calls of {@link
- * #processDocument(BufferedReader) processDocument}.  At any given point in
- * processing, the {@link #getVectorFor(String) getVector} method may be used
- * to access the current semantics of a word.  This allows callers to track
- * incremental changes to the semantics as the corpus is processed.  
- *
  * @author Keith Stevens
  */
-public class SecondFlyingHermit implements SemanticSpace, Filterable {
+public class SenseEvalFlyingHermit implements SemanticSpace {
 
     /**
-     * The base prefix for all {@code SecondFlyingHermit} properties.
+     * The base prefix for all {@code SenseEvalFlyingHermit} properties.
      */
     public static final String PROPERTY_PREFIX =
-        "edu.ucla.sspace.hermit.SecondFlyingHermit";
+        "edu.ucla.sspace.hermit.SenseEvalFlyingHermit";
 
     /**
      * The property for specifying the threshold for merging clusters.
@@ -130,28 +124,21 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
         PROPERTY_PREFIX + ".mergeThreshold";
 
     /**
-     * The property for specifying the number of threads to use when processing
-     * the space.
-     */
-    public static final String THREADS_PROPERTY = 
-        PROPERTY_PREFIX + ".numThreads";
-
-    /**
      * An empty token representing a lack of a valid replacement mapping.
      */
     public static final String EMPTY_TOKEN = "";
 
     /**
-     * The Semantic Space name for SecondFlyingHermit
+     * The Semantic Space name for SenseEvalFlyingHermit
      */
     public static final String FLYING_HERMIT_SSPACE_NAME = 
-        "flying-hermit-semantic-space";
+        "senseEval-hermit-semantic-space";
 
     /**
      * The logger used to record all output
      */
     private static final Logger HERMIT_LOGGER =
-        Logger.getLogger(SecondFlyingHermit.class.getName());
+        Logger.getLogger(SenseEvalFlyingHermit.class.getName());
 
     /**
      * A mapping from strings to {@code IntegerVector}s which represent an index
@@ -171,22 +158,12 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
      * representations.  This {@code Map} is used after {@code processSpace} is
      * called.
      */
-    private ConcurrentMap<String, Vector> splitSenses;
+    private ConcurrentMap<String, SparseIntegerVector> splitSenses;
 
     /**
-     * The set of words to produce semantics for.
-     */
-    private Set<String> acceptedWords; 
-
-    /**
-     * An accuracy map to record the frequency statistics for each word cluster.
-     * This is used to label the clusters once they have been formed.
-     */
-    private AssignmentMap assignmentMap;
-
-    /**
-     * The type of clustering used for {@code SecondFlyingHermit}.  This specifies how
-     * hermit will merge it's context vectors into different senses.
+     * The type of clustering used for {@code SenseEvalFlyingHermit}.  This
+     * specifies how hermit will merge it's context vectors into different
+     * senses.
      */
     private ClusterMap<SparseIntegerVector> clusterMap;
 
@@ -206,31 +183,22 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
     private final int nextSize;
 
     /**
-     * A flag specifying if this {@code SecondFlyingHermit} instance has been
-     * compacted, and should enter testing mode.
+     * Create a new instance of {@code SenseEvalFlyingHermit} which takes
+     * ownership
      */
-    private boolean compacted;
-
-    /**
-     * Create a new instance of {@code SecondFlyingHermit} which takes ownership
-     */
-    public SecondFlyingHermit(
+    public SenseEvalFlyingHermit(
             Map<String, TernaryVector> indexGeneratorMap,
             PermutationFunction<TernaryVector> permFunction,
             OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator,
-            Set<String> accepted,
             int vectorSize,
             int prevWordsSize,
             int nextWordsSize) {
         indexVectorSize = vectorSize;
         indexMap = indexGeneratorMap;
         permFunc = permFunction;
-        acceptedWords = accepted;
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
-        compacted = false;
 
-        assignmentMap = new AssignmentMap();
         clusterMap = new ClusterMap<SparseIntegerVector>(clusterGenerator);
     }
 
@@ -296,6 +264,7 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
 
         String focusWord = it.next().intern();
 
+        // Extract the set of words to consider after the focus word.
         while (it.hasNext() && nextWords.size() < nextSize)
             nextWords.offer(it.next().intern());
 
@@ -332,162 +301,109 @@ public class SecondFlyingHermit implements SemanticSpace, Filterable {
             ++distance;
         }
 
-        // Compare the most recent vector to all the saved vectors.  If
-        // the vector with the highest similarity has a similarity over
-        // a threshold, incorporate this {@code IntegerVector} to that
-        // winner.  Otherwise add this {@code IntegerVector} as a new
-        // vector for the term.
-        int clusterNum;
-        clusterNum = clusterMap.addVector(focusWord, meaning);
-        assignmentMap.addInstance(focusWord, clusterNum, instanceId);
+        // Add the current context vector to the cluster for the focusWord that
+        // is most similar.
+        clusterMap.addVector(focusWord, meaning);
     }
     
-    /**
-     * Extracts the next word from a token iterator and add the token, and it's
-     * replacement to the two provided queues.  If the {@code replacementMap}
-     * exists, and the map contains a replacement mapping for the next token, it
-     * will store that token in {@code nextOriginals}.  If the map exists and
-     * no replacement is found the empty token will be stored in {@code
-     * nextOriginals}.  Lastly, if the map does not exist, the current token
-     * will also be stored in {@code nextOriginals}
-     *
-     * @param it The token iterator to extract a token from.
-     * @param nextWords The {@code Queue} which contains the set of words to the
-     *                  right of the focus word.
-     * @param nextOriginals The {@code Queue} which contains replacement
-     *                         tokens for the set of words to the right of 
-     *                         the focus word.
-     */
-    private void addNextWord(Iterator<String> it,
-                             Queue<String> nextWords,
-                             Queue<String> nextOriginals) {
-    }
-
     /**
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
         Set<String> terms = new TreeSet<String>(clusterMap.keySet());
-        if (!compacted) {
-            double mergeThreshold = Double.parseDouble(
-                properties.getProperty(MERGE_THRESHOLD_PROPERTY, ".25"));
+        double mergeThreshold = Double.parseDouble(
+            properties.getProperty(MERGE_THRESHOLD_PROPERTY, ".25"));
 
-            splitSenses = new ConcurrentHashMap<String, Vector>();
+        splitSenses = new ConcurrentHashMap<String, SparseIntegerVector>();
 
-            // Merge the clusters for each of the words being tracked.
-            for (String term : terms) {
-                HERMIT_LOGGER.info("Mering clusters for : " + term);
-                Map<Integer, Integer> mergedMap =
-                    clusterMap.finalizeClustering(term);
-                for (Map.Entry<Integer, Integer> mapping :
-                        mergedMap.entrySet())
-                    assignmentMap.moveInstances(
-                            term, mapping.getKey(), mapping.getValue());
-                assignmentMap.emitResults(term);
+        // Merge the clusters for each of the words being tracked.
+        for (String term : terms) {
+            // Extract the set of clusters from the map for the term.
+            OnlineClustering<SparseIntegerVector> clustering =
+                clusterMap.getClustering(term);
+            List<SparseIntegerVector> centroids = clustering.getCentroids();
+
+            // Convert the centroids to double vectors so they can be turned
+            // into a matrix.
+            List<SparseDoubleVector> centroidDoubles =
+                new ArrayList<SparseDoubleVector>(centroids.size());
+            for (SparseIntegerVector centroid : centroids)
+                centroidDoubles.add(Vectors.asDouble(centroid));
+
+            // Cluster the centroids using HAC with the average link
+            // critera.
+            int[] assignments =
+                HierarchicalAgglomerativeClustering.clusterRows(
+                        Matrices.asSparseMatrix(centroidDoubles), 
+                        mergeThreshold,
+                        ClusterLinkage.MEAN_LINKAGE,
+                        SimType.COSINE);
+
+            SparseIntegerVector[] newCentroids =
+                mergeCentroids(term, centroids, assignments);
+
+            // Save each of the new centroids into the word space map.
+            int i = 0;
+            for (SparseIntegerVector centroid : newCentroids) {
+                String sense = (i == 0) ? term : term + "-" + i;
+                splitSenses.put(sense, centroid);
+                i++;
             }
+            HERMIT_LOGGER.info("term " + term + " has " + newCentroids.length +
+                    " senses.");
 
-            // Extract the list of clusters for each word mapped in the cluster
-            // map and save it in the semantic space map.  The first sense will
-            // simply be stored as the mapped term and additional senses will
-            // have -SENSE_NUM appended to the token.  After this is done, the
-            // clusters will be removed from the map to clear up space.
-            for (String term : terms) {
-                List<List<SparseIntegerVector>> clusters =
-                    clusterMap.getClusters(term);
-                int i = 0;
-                for (List<SparseIntegerVector> cluster : clusters) {
-                    SparseIntegerVector sense = null;
-                    for (SparseIntegerVector v : cluster) {
-                        if (sense == null)
-                            sense = (SparseIntegerVector) Vectors.copyOf(v);
-                        else
-                            VectorMath.add(sense, v);
-                    }
-                    String senseName = term;
-                    if (i != 0)
-                        senseName += "-" + i;
-                    splitSenses.put(senseName, sense);
-                    HERMIT_LOGGER.info("There are " + cluster.size() +
-                                       " instances for sense: " + i + 
-                                       " of word " + term + 
-                                       " stored as: " + senseName);
-                    ++i;
-                }
-                clusterMap.removeClusters(term);
-            }
-            HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
-            HERMIT_LOGGER.info("Emitting Accuracy Counts");
-            compacted = true;
+            clusterMap.removeClusters(term);
         }
+
+        HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
     }
 
-    public void setSemanticFilter(Set<String> wordsToProcess) {
-        if (acceptedWords == null)
-            acceptedWords = new HashSet<String>();
+    /**
+     * Merges the centroids into new centroids based on the assignments
+     * provided.
+     *
+     * @param term them the centroids correspond to
+     * @param centroids the original set of centroids to merge
+     * @param assignments the clustering assignment of each original centroid
+     *
+     * @return an array of new centroids that are the sum of each original
+     *         centroid in a merged cluster.
+     */
+    private SparseIntegerVector[] mergeCentroids(
+            String term,
+            List<SparseIntegerVector> centroids,
+            int[] assignments) {
+        // Compute the number of new custers.
+        int numAssignments = 0;
+        for (int assignment : assignments)
+            if (assignment >= numAssignments)
+                numAssignments = assignment+1;
 
-        acceptedWords.clear();
-        acceptedWords.addAll(wordsToProcess);
+        SparseIntegerVector[] newCentroids =
+            new SparseIntegerVector[numAssignments];
+
+        // Sum each original centroid into the new centroid.
+        for (int i = 0; i < centroids.size(); ++i) {
+            int assignment = assignments[i];
+            SparseIntegerVector oldCentroid = centroids.get(i);
+
+            if (newCentroids[assignment] == null)
+                newCentroids[assignment] =
+                    new CompactSparseIntegerVector(indexVectorSize);
+
+            // Merge the old centroid into the new one.
+            VectorMath.add(newCentroids[assignment], oldCentroid);
+        }
+        return newCentroids;
     }
 
-    private boolean acceptWord(String focusWord) {
-        if (acceptedWords == null)
-            return !focusWord.equals(EMPTY_TOKEN);
-        return acceptedWords.contains(focusWord);
-    }
-
+    /**
+     * Adds a {@link TernaryVector} to a {@link IntegerVector}
+     */
     private void add(IntegerVector dest, TernaryVector src) {
         for (int p : src.positiveDimensions())
             dest.add(p, 1);
         for (int n : src.negativeDimensions())
             dest.add(n, -1);
-    }
-
-    private class AssignmentMap {
-
-        Map<String, List<List<String>>> wordToSenseInstances;
-
-        public AssignmentMap() {
-            wordToSenseInstances = new HashMap<String, List<List<String>>>();
-        }
-
-        public synchronized void addInstance(String word,
-                                             int sense,
-                                             String instanceId) {
-            List<List<String>> senseInstances = wordToSenseInstances.get(word);
-            if (senseInstances == null) {
-                senseInstances = new ArrayList<List<String>>();
-                wordToSenseInstances.put(word, senseInstances);
-            }
-            for (int i = senseInstances.size(); i <= sense; ++i)
-                senseInstances.add(new ArrayList<String>());
-            senseInstances.get(sense).add(instanceId);
-        }
-
-        public void moveInstances(String word, int fromSense, int toSense) {
-            List<List<String>> senseInstances = wordToSenseInstances.get(word);
-            senseInstances.get(toSense).addAll(senseInstances.get(fromSense));
-            senseInstances.get(fromSense).clear();
-        }
-
-        public void emitResults(String word) {
-            List<List<String>> senseInstances = wordToSenseInstances.get(word);
-            int senseNum = 0;
-            for (List<String> instancesInSense : senseInstances) {
-                if (instancesInSense.size() == 0)
-                    continue;
-
-                for (String instance : instancesInSense) {
-                    String baseInstance = instance.substring(
-                            0, instance.lastIndexOf("."));
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(baseInstance).append(" ");
-                    sb.append(instance).append(" ");
-                    sb.append(baseInstance).append(".");
-                    sb.append(Integer.toString(senseNum));
-                    System.out.println(sb.toString());
-                }
-                senseNum++;
-            }
-        }
     }
 }

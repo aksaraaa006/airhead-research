@@ -33,7 +33,7 @@ import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
-import edu.ucla.sspace.hermit.SecondFlyingHermit;
+import edu.ucla.sspace.hermit.SenseEvalFlyingHermit;
 
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
@@ -158,7 +158,7 @@ import java.util.Properties;
  *
  * @author Keith Stevens 
  */
-public class SecondFlyingHermitMain extends GenericMain {
+public class SenseEvalFlyingHermitMain extends GenericMain {
 
     /**
      * The default {@link PermutationFunction} to use.
@@ -236,7 +236,7 @@ public class SecondFlyingHermitMain extends GenericMain {
     /**
      * Uninstantiable.
      */
-    public SecondFlyingHermitMain() {
+    public SenseEvalFlyingHermitMain() {
     }
 
     /**
@@ -445,16 +445,16 @@ public class SecondFlyingHermitMain extends GenericMain {
      * {@inheritDoc}
      */
     public SemanticSpace getSpace() {
-        return new SecondFlyingHermit(vectorMap, permFunction, clusterGenerator,
-                                acceptedWords, dimension,
-                                prevWordsSize, nextWordsSize);
+        return new SenseEvalFlyingHermit(vectorMap, permFunction,
+                                         clusterGenerator, dimension,
+                                         prevWordsSize, nextWordsSize);
     }
 
     /**
      * Begin processing with {@code FlyingHermit}.
      */
     public static void main(String[] args) {
-        SecondFlyingHermitMain hermit = new SecondFlyingHermitMain();
+        SenseEvalFlyingHermitMain hermit = new SenseEvalFlyingHermitMain();
         try {
             hermit.run(args);
         }

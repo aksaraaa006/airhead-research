@@ -73,14 +73,6 @@ public class OnlineClusteringGenerator<T extends Vector> {
         "edu.ucla.sspace.cluster.OnlineKMeansClustering";
 
     /**
-     * The property for setting the weight of an exponential weighted moving
-     * average.  This weight will be given to the historical data, and this
-     * weight subtracted from 1 will be given to the new data points.
-     */
-    public static final String WEIGHTING_PROPERTY =
-        PROPERTY_PREFIX + ".weights";
-
-    /**
      * The property for setting the threshold for merging two clusters.
      */
     public static final String MERGE_THRESHOLD_PROPERTY =
@@ -97,11 +89,6 @@ public class OnlineClusteringGenerator<T extends Vector> {
      */
     public static final String MAX_CLUSTERS_PROPERTY =
         PROPERTY_PREFIX + ".maxClusters";
-
-    /**
-     * The default weight, which will use no weighted average.
-     */
-    public static final String DEFAULT_WEIGHT = "0";
 
     /**
      * The default merge threshold.
@@ -134,12 +121,6 @@ public class OnlineClusteringGenerator<T extends Vector> {
     private final double dropThreshold;
 
     /**
-     * A weight for an exponential weighted moving average.  If this value is
-     * not set in the constructor, no moving average will be used.
-     */
-    private final double clusterWeight;
-
-    /**
      * Creates a new generator using the system properties.
      */
     public OnlineClusteringGenerator() {
@@ -156,8 +137,6 @@ public class OnlineClusteringGenerator<T extends Vector> {
                     DROP_THRESHOLD_PROPERTY, DEFAULT_DROP_THREHSHOLD));
         maxNumClusters = Integer.parseInt(props.getProperty(
                     MAX_CLUSTERS_PROPERTY, DEFAULT_MAX_CLUSTERS));
-        clusterWeight = Double.parseDouble(props.getProperty(
-                    WEIGHTING_PROPERTY, DEFAULT_WEIGHT));
     }
 
     /**
@@ -166,10 +145,10 @@ public class OnlineClusteringGenerator<T extends Vector> {
      */
     public OnlineClustering<T> getNewClusteringInstance() {
         return new OnlineKMeansClustering<T>(clusterThreshold, dropThreshold,
-                                             maxNumClusters, clusterWeight);
+                                             maxNumClusters);
     }
 
     public String toString() {
-        return "OnLineKMeans_" + maxNumClusters + "c_" + clusterWeight + "h";
+        return "OnLineKMeans_" + maxNumClusters + "c_";
     }
 }

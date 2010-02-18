@@ -109,27 +109,22 @@ public class ClusterMap<T extends Vector> {
     }
 
     /**
-     * Returns the cluster index of {@code key} that {@code value} is most
-     * similar to.
-     */
-    public int assignVector(String key, T value) {
-        OnlineClustering<T> clustering = vectorClusters.get(key);
-        return (clustering == null) ? -1 : clustering.assignVector(value);
-    }
-
-    /**
      * Clears the set of cluster mappings.
      */
     public synchronized void clear() {
         vectorClusters.clear();
     }
 
+    public synchronized OnlineClustering<T> getClustering(String key) {
+        return vectorClusters.get(key);
+    }
+
     /**
      * Returns the set of clustered {@code Vector}s that {@code key} maps to.
      */
-    public synchronized List<List<T>> getClusters(String key) {
+    public synchronized List<T> getCentroids(String key) {
         OnlineClustering<T> clustering = vectorClusters.get(key);
-        return (clustering == null) ? null : clustering.getClusters();
+        return (clustering == null) ? null : clustering.getCentroids();
     }
 
     /**
@@ -159,18 +154,6 @@ public class ClusterMap<T extends Vector> {
      */
     public synchronized int size() {
         return vectorClusters.size();
-    }
-
-    /**
-     * Finalizes any clustering for the clusters mapped to by {@code term}.
-     * Returns a mapping that describes any cluster indexes that were dropped or
-     * merged.  Keys will be cluster indexes that were relocated, and mapped
-     * values will be -1 if the cluster was dropped.  Positive values will be
-     * the new cluster index values stored at the key index are stored at.
-     */
-    public Map<Integer, Integer> finalizeClustering(String term) {
-        OnlineClustering<T> clustering = vectorClusters.get(term);
-        return clustering.finalizeClustering();
     }
 
     public String toString() {

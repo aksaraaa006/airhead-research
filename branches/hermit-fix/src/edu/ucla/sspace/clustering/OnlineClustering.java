@@ -26,6 +26,7 @@ import edu.ucla.sspace.vector.Vector;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * An interface for any Online clustering implementation.  These
  * implementations should support adding of new vectors, finding the most
@@ -43,28 +44,20 @@ public interface OnlineClustering<T extends Vector> {
     int addVector(T value);
 
     /**
-     * Returns the unique index of the cluster {@code value} is most similar to.
-     */
-    int assignVector(T value);
-
-    /**
-     * Finalizes any clustering.  Returns a mapping that describes any cluster
-     * indexes that were dropped or merged.  Keys will be cluster indexes that
-     * were relocated, and mapped values will be -1 if the cluster was dropped.
-     * Positive values will be the new cluster index values stored at the key
-     * index are stored at.
-     */
-    Map<Integer, Integer> finalizeClustering();
-
-    /**
      * Returns the list of {@code Vector}s in the given cluster.
      */
-    List<T> getCluster(int clusterIndex);
+    T getCentroid(int clusterIndex);
+
+    /**
+     * Returns the number of items represented by the centroid at the given
+     * index.
+     */
+    int getCentroidSize(int clusterIndex);
 
     /**
      * Returns the list of all clustered {@code Vector}s.
      */
-    List<List<T>> getClusters();
+    List<T> getCentroids();
 
     /**
      * Returns the numeber of clusters.

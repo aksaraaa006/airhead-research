@@ -44,6 +44,7 @@ import java.util.TreeSet;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+
 /**
  * A simple online implementation of K-Means clustering for {@code Vector}s,
  * with the option to perform agglomerative clustering once all elements have
@@ -70,12 +71,6 @@ public class OnlineKMeansClustering<T extends Vector>
     private final double dropThreshold;
 
     /**
-     * A weight for an exponential weighted moving average.  If this value is
-     * not set in the constructor, no moving average will be used.
-     */
-    private final double clusterWeight;
-
-    /**
      * The set of clusters.
      */
     private final List<Cluster> elements;
@@ -85,13 +80,11 @@ public class OnlineKMeansClustering<T extends Vector>
      */
     public OnlineKMeansClustering(double mergeThreshold,
                                   double dropThreshold,
-                                  int maxNumClusters,
-                                  double clusterWeight) {
+                                  int maxNumClusters) {
         elements = new CopyOnWriteArrayList<Cluster>();
         this.clusterThreshold = mergeThreshold;
         this.dropThreshold = dropThreshold;
         this.maxNumClusters = maxNumClusters;
-        this.clusterWeight = clusterWeight;
     }
 
     /**
@@ -134,7 +127,7 @@ public class OnlineKMeansClustering<T extends Vector>
                 // Perform an additional check to see whether the number of
                 // elements changed while we waiting on the lock
                 if (elements.size() < maxNumClusters) {
-                    elements.add(getNewCluster(value));
+                    elements.add(new Cluster(value));
                     return elements.size() - 1;
                 }
                 // Otherwise, while we were waiting, another thread increased
@@ -151,60 +144,19 @@ public class OnlineKMeansClustering<T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public int assignVector(T value) {
-        // First make a shallow copy of the cluster list to work on.  Note that
-        // by making this shallow copy, if new clusters are added while
-        // assigning this instance, the new cluster will be skipped.
-        List<Cluster> copiedElements = null;
-        synchronized (elements) {
-            copiedElements = new ArrayList<Cluster>(elements.size());
-            for (Cluster c : elements)
-                copiedElements.add(c);
-        }
-
-        // Find the centriod with the best similarity.
-        Cluster bestMatch = null;
-        int bestIndex = copiedElements.size();
-        double bestScore = -1;
-        double similarity = -1;
-        int i = 0;
-        for (Cluster cluster : copiedElements) {
-            similarity = cluster.compareWithVector(value);
-            if (similarity > bestScore) {
-                bestScore = similarity;
-                bestMatch = cluster;
-                bestIndex = i;
-            }
-            ++i;
-        }
-        return bestIndex;
-    }
-
-    /**
-     * Generates a new {@code Cluster} for the given {@code Vector}.
-     */
-    private Cluster getNewCluster(T vector) {
-        return (clusterWeight == 0d)
-            ? new Cluster(vector)
-            : new Cluster(vector, clusterWeight, 1-clusterWeight);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public synchronized List<T> getCluster(int clusterIndex) {
+    public T getCentroid(int clusterIndex) {
         if (elements.size() <= clusterIndex)
             return null;
-        return elements.get(clusterIndex).getMembers();
+        return elements.get(clusterIndex).getCentroid();
     }
 
     /**
      * {@inheritDoc}
      */
-    public List<List<T>> getClusters() {
-        List<List<T>> clusters = new ArrayList<List<T>>(elements.size());
+    public List<T> getCentroids() {
+        List<T> clusters = new ArrayList<T>(elements.size());
         for (Cluster cluster : elements) 
-            clusters.add(cluster.getMembers());
+            clusters.add(cluster.getCentroid());
         return clusters;
     }
 
@@ -220,7 +172,6 @@ public class OnlineKMeansClustering<T extends Vector>
      */
     public String toString() {
         return "OnlineKMeansClustering-maxNumClusters" + maxNumClusters +
-               "-clusterWeight" + clusterWeight +
                "-threshold" + clusterThreshold;
     }
 
@@ -234,113 +185,8 @@ public class OnlineKMeansClustering<T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public Map<Integer, Integer> finalizeClustering() {
-        Set<Integer> droppedList = dropClusters();
-        Map<Integer, Integer> mapping = mergeClusters(droppedList);
-        for (Integer dropped : droppedList)
-            mapping.put(dropped, -1);
-        return mapping;
-    }
-
-    /**
-     * Merges all existing clusters using the average link criteria
-     * Agglomerative Clustering algorithm.  A mapping representing how clusters
-     * were merged is returned.
-     *
-     * @return The a mapping from merged cluster to the new destination cluster
-     *         index.
-     */
-    private Map<Integer, Integer> mergeClusters(Set<Integer> droppedList) {
-        MultiMap<Integer, Integer> mergeMap =
-            new HashMultiMap<Integer, Integer>();
-        Set<Integer> skipList = new TreeSet<Integer>(droppedList);
-
-        boolean merged = true;
-        while (merged) {
-            merged = false;
-
-            // For each cluster found, try to merge it with other clusters
-            // which are similar enough.
-            for (int i = 0; i < elements.size(); ++i) {
-                // Skip any clusters which have already been merged.
-                if (skipList.contains(i))
-                    continue;
-
-                for (int j = i+1; j < elements.size(); ++j) {
-                    // Skip any clusters which have already been merged.
-                    if (skipList.contains(j))
-                        continue;
-
-                    // Compute the similarity between these two clusters.
-                    double similarity =
-                        elements.get(i).clusterSimilarity(elements.get(j));
-
-                    // If the similarity is high enough, add cluster j to
-                    // cluster i.
-                    if (similarity >= clusterThreshold) {
-                        elements.get(i).addCluster(elements.get(j));
-
-                        // Mark cluster j as merged so that it gets skipped.
-                        skipList.add(j);
-                        mergeMap.put(i, j);
-
-                        // Check if any values are already merged into j.
-                        // If so, merge them to i and remove the mapping to
-                        // j.
-                        Set<Integer> mergedValues = mergeMap.get(j);
-                        if (mergedValues != null) {
-                            for (Integer index : mergedValues)
-                                mergeMap.put(i, index);
-                            mergeMap.remove(j);
-                        }
-
-                        merged = true;
-                    }
-                }
-            }
-        }
-
-        // Drop any merged clusters.
-        int dropped = 0;
-        for (Integer dropIndex : skipList) {
-            elements.remove(dropIndex.intValue() - dropped);
-            dropped++; 
-        }
-
-        // Compute which clusters were merged and provide a mapping from merged
-        // cluster to result cluster index.
-        Map<Integer, Integer> resultMergeMap = new IntegerMap<Integer>();
-        if (mergeMap.size() != 0) {
-            for (Map.Entry<Integer, Integer> merges : mergeMap.entrySet())
-                resultMergeMap.put(merges.getValue(), merges.getKey());
-        }
-        return resultMergeMap;
-    }
-
-    /**
-     * Drops any clusters that do not meet a size threshold.
-     *
-     * @return The list of cluster indexes dropped.
-     */
-    private Set<Integer> dropClusters() {
-        Set<Integer> dropped = new HashSet<Integer>();
-
-        double[] clusterSizes = new double[elements.size()];
-        int i = 0;
-        int sum = 0;
-        for (Cluster cluster : elements) {
-            clusterSizes[i] = cluster.getTotalMemberCount();
-            sum += clusterSizes[i];
-            i++;
-        }
-
-        int dropCount = 0;
-        for (i = 0; i < clusterSizes.length; ++i) {
-            if (clusterSizes[i]/sum < dropThreshold) {
-                dropped.add(i);
-            }
-        }
-        return dropped;
+    public int getCentroidSize(int clusterIndex) {
+        return elements.get(clusterIndex).getTotalMemberCount();
     }
 
     /**
@@ -359,33 +205,11 @@ public class OnlineKMeansClustering<T extends Vector>
         protected int itemCount;
 
         /**
-         * The weight given to the current centroid when computing an average
-         * centroid.
-         */
-        protected double oldValueWeight;
-
-        /**
-         * The weight given to new {@code Vector}s when computing an average
-         * centroid.
-         */
-        protected double newValueWeight;
-
-        /**
          * Creates a new {@code Cluster} with {@code firstVector} as the
          * centroid, and no weighting.
          */
         public Cluster(T firstVector) {
-            this(firstVector, 0, 0);
-        }
-
-        /**
-         * Creates a new {@code Cluster} with {@code firstVector} as the
-         * centroid, and the given weights.
-         */
-        public Cluster(T firstVector, double oldWeight, double newWeight) {
             centroid = firstVector; 
-            oldValueWeight = oldWeight;
-            newValueWeight = newWeight;
             itemCount = 1;
         }
 
@@ -395,22 +219,8 @@ public class OnlineKMeansClustering<T extends Vector>
          * @param vector The vector to add.
          */
         public synchronized void addVector(T vector) {
-            if (oldValueWeight == 0 || newValueWeight == 0)
-                VectorMath.add(centroid, vector);
-            else 
-                VectorMath.addWithScalars(centroid, oldValueWeight,
-                                          vector, newValueWeight);
+            VectorMath.add(centroid, vector);
             ++itemCount;
-        }
-
-        /**
-         * Adds all the elements in a given cluster to the current {@code
-         * Cluster}.
-         *
-         * @param cluster The cluster to add into the current cluster.
-         */
-        public synchronized void addCluster(Cluster cluster) {
-            addVector(cluster.centroid);
         }
 
         /**
@@ -425,10 +235,8 @@ public class OnlineKMeansClustering<T extends Vector>
          * Returns a list of members in this {@code Cluster} as a list of {@code
          * Vector}s.
          */
-        public synchronized List<T> getMembers() {
-            List<T> members = new ArrayList<T>(1);
-            members.add(centroid);
-            return members;
+        public synchronized T getCentroid() {
+            return centroid;
         }
 
         /**
@@ -437,14 +245,6 @@ public class OnlineKMeansClustering<T extends Vector>
          */
         public int getTotalMemberCount() {
             return itemCount;
-        }
-
-        /**
-         * Returns the cosine similarity of the given cluster to the current
-         * {@code Cluster}
-         */
-        public synchronized double clusterSimilarity(Cluster cluster) {
-            return Similarity.cosineSimilarity(centroid, cluster.centroid);
         }
     }
 }
