@@ -48,7 +48,8 @@ import java.util.Arrays;
  *
  * @see SparseArray
  */
-public class SparseIntArray implements SparseArray<Integer>, Serializable {
+public class SparseIntArray 
+        implements SparseNumericArray<Integer>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -140,6 +141,82 @@ public class SparseIntArray implements SparseArray<Integer>, Serializable {
                 throw new IllegalArgumentException(
                     "Indices must be sorted and unique");
         }
+    }
+
+    /**
+     * Adds the specified value to the index.  This call is more effecient than
+     * calling {@code get} and {@code set}.
+     *
+     * @param index the position in the array
+     * @param delta the change in value at the index
+     */
+    public int addPrimitive(int index, int delta) {
+        if (index < 0 || index >= maxLength) 
+            throw new ArrayIndexOutOfBoundsException(
+                    "invalid index: " + index);
+
+        // Return immediately if this call would not change the array
+        if (delta == 0)
+            return get(index);
+        
+        int pos = Arrays.binarySearch(indices, index);
+        
+        // The add operation is putting a new value in the array, so we need to
+        // make room in the indices array
+        if (pos < 0) {
+            int newPos = 0 - (pos + 1);
+            int[] newIndices = Arrays.copyOf(indices, indices.length + 1);
+            int[] newValues = Arrays.copyOf(values, values.length + 1);
+            
+            // shift the elements down by one to make room
+            for (int i = newPos; i < values.length; ++i) {
+                newValues[i+1] = values[i];
+                newIndices[i+1] = indices[i];
+            }
+            
+            // swap the arrays
+            indices = newIndices;
+            values = newValues;
+            pos = newPos;
+            
+            // update the position of the pos in the values array
+            indices[pos] = index;
+            values[pos] = delta;
+            return delta;
+        }
+        else {
+            int newValue = values[pos] + delta;
+
+            // The new value is zero, so remove its position and shift
+            // everything over
+            if (newValue == 0) {
+                int newLength = indices.length - 1;
+                int[] newIndices = new int[newLength];
+                int[] newValues = new int[newLength];
+                for (int i = 0, j = 0; i < indices.length; ++i) {
+                    if (i != pos) {
+                        newIndices[j] = indices[i];
+                        newValues[j] = values[i];            
+                        j++;
+                    }
+                }
+                // swap the arrays
+                indices = newIndices;
+                values = newValues;
+            }
+            // Otherwise, the new value is still non-zero, so update it in the
+            // array
+            else
+                values[pos] = newValue;
+            return newValue;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Integer add(int index, Integer delta) {
+        return add(index, delta.intValue());
     }
 
     /**

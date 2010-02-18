@@ -94,7 +94,8 @@ public class AtomicGrowingSparseHashMatrix
     private final AtomicInteger rows;
 
     /**
-     * The number of columns represented in this {@code AtomicGrowingSparseMatrix}.
+     * The number of columns represented in this {@code
+     * AtomicGrowingSparseMatrix}.
      */
     private final AtomicInteger cols;
 
@@ -143,8 +144,10 @@ public class AtomicGrowingSparseHashMatrix
         // which assumes that all use cases use this value as a hint for
         // concurrency
         int threads = Runtime.getRuntime().availableProcessors();
-        lockedEntries = new ConcurrentHashMap<Entry,Object>(1000, .75f,threads);
-        matrixEntries = new ConcurrentHashMap<Entry,Double>(10000, 4f, threads);
+        lockedEntries = new ConcurrentHashMap<Entry,Object>(
+            1000, .75f, threads * 16);
+        matrixEntries = new ConcurrentHashMap<Entry,Double>(
+            10000, 4f, threads * 16);
     }
     
     /**
@@ -336,7 +339,7 @@ public class AtomicGrowingSparseHashMatrix
         for (int column : colArr)
             rowVec.set(column, matrixEntries.get(new Entry(row, column)));
         if (shouldLock)
-            unlockColumn(row, c);
+            unlockRow(row, c);
         return rowVec;
     }
 

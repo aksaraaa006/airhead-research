@@ -32,6 +32,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.MultiMap;
+import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseHashDoubleVector;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -294,6 +296,13 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
             IteratorFactory.tokenizeOrdered(document);
             
         String focus = null;
+
+        // Rather than updating the matrix every time an occurrence is seen,
+        // keep a thread-local count of what needs to be modified in the matrix
+        // and update after the document has been processed.  This saves
+        // potential contention from concurrent writes.
+        Map<Pair<Integer>,Double> matrixEntryToCount = 
+            new HashMap<Pair<Integer>,Double>();
             
         //Load the first windowSize words into the Queue        
         for(int i = 0;  i < windowSize && documentTokens.hasNext(); i++)
@@ -333,8 +342,11 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
                     // Get the current number of times that the focus word has
                     // co-occurred with this word appearing after it.  Weightb
                     // the word appropriately baed on distance
-                    cooccurrenceMatrix.addAndGet(focusIndex, index,
-                            weighting.weight(wordDistance, windowSize));
+                    Pair<Integer> p = new Pair<Integer>(focusIndex, index);
+                    double value = weighting.weight(wordDistance, windowSize);
+                    Double curCount = matrixEntryToCount.get(p);
+                    matrixEntryToCount.put(p, (curCount == null)
+                                           ? value : value + curCount);
                 }
              
                 wordDistance++;        
@@ -350,8 +362,11 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
                     // Get the current number of times that the focus word has
                     // co-occurred with this word before after it.  Weight the
                     // word appropriately baed on distance
-                    cooccurrenceMatrix.addAndGet(index, focusIndex,
-                            weighting.weight(wordDistance, windowSize));
+                    Pair<Integer> p = new Pair<Integer>(index, focusIndex);
+                    double value = weighting.weight(wordDistance, windowSize);
+                    Double curCount = matrixEntryToCount.get(p);
+                    matrixEntryToCount.put(p, (curCount == null)
+                                           ? value : value + curCount);
                 }
                 wordDistance--;
             }
@@ -362,6 +377,13 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
             if (prevWords.size() > windowSize)
                 prevWords.remove();
         }
+
+        // Once the document has been processed, update the co-occurrence matrix
+        // accordingly.
+        for (Map.Entry<Pair<Integer>,Double> e : matrixEntryToCount.entrySet()){
+            Pair<Integer> p = e.getKey();
+            cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
+        }                    
     }
 
     /**
