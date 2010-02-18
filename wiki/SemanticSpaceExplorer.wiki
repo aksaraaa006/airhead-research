@@ -6,18 +6,18 @@ The SemanticSpaceExplorer tool is a quick and easy way to check the contents of 
 
 = Using SemanticSpaceExplorer ==
 SemanticSpaceExplorer understands the following commands:
-    * load file1.sspace [file2.sspace...]
-    * unload file1.sspace [file2.sspace...]
-    * get-neighbors word [number (default 10)] [similarity measure]
-    * get-similarity word1 word2 [similarity measure (default cosine)]
-    * compare-sspace-vectors word sspace1 sspace2 [similarity measure (default: cosine)]
-    * help
-    * set-current-sspace filename.sspace
-    * get-current-sspace
-    * alias filename.sspace name
-    * write-command-results output-file command...
-    * print-vector word
-    * print-words [string-prefix]
+    * `load file1.sspace [file2.sspace...]`
+    * `unload file1.sspace [file2.sspace...]`
+    * `get-neighbors word [number (default 10)] [similarity measure]`
+    * `get-similarity word1 word2 [similarity measure (default cosine)]`
+    * `compare-sspace-vectors word sspace1 sspace2 [similarity measure (default: cosine)]`
+    * `help`
+    * `set-current-sspace filename.sspace`
+    * `get-current-sspace`
+    * `alias filename.sspace name`
+    * `write-command-results output-file command...`
+    * `print-vector word`
+    * `print-words [string-prefix]`
 Note: most of these commands can be used in abbreviated form, using the first letter of each word (e.g. get-neighbors can be invoked using gn).
 
 == Run commands from prompt ==
