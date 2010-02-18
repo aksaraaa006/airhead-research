@@ -26,11 +26,12 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.fft.FastFourierTransform;
 
-import edu.ucla.sspace.index.DoubleVectorGenerator;
-import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
 import edu.ucla.sspace.index.GaussianVectorGenerator;
 
 import edu.ucla.sspace.text.IteratorFactory;
+
+import edu.ucla.sspace.util.Generator;
+import edu.ucla.sspace.util.GeneratorMap;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
@@ -90,7 +91,7 @@ public class Beagle implements SemanticSpace {
      * The class responsible for creating index vectors, and incorporating them
      * into a semantic vector.
      */
-    private final DoubleVectorGeneratorMap vectorMap;
+    private final GeneratorMap<DoubleVector> vectorMap;
 
     /**
      * A mapping for terms to their semantic vector representation. A {@code
@@ -132,10 +133,11 @@ public class Beagle implements SemanticSpace {
     public Beagle(int vectorSize) {
         indexVectorSize = vectorSize;
         termHolographs = new ConcurrentHashMap<String, DoubleVector>();
-        DoubleVectorGenerator generator = new GaussianVectorGenerator();
-        vectorMap = new DoubleVectorGeneratorMap(generator, indexVectorSize);
+        Generator<DoubleVector> generator =
+            new GaussianVectorGenerator(indexVectorSize);
+        vectorMap = new GeneratorMap<DoubleVector>(generator);
 
-        placeHolder = generator.generateRandomVector(indexVectorSize);
+        placeHolder = generator.generate();
 
         // Generate the permutation arrays.
         permute1 = new int[indexVectorSize];

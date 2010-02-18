@@ -30,7 +30,6 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
-import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
@@ -40,6 +39,7 @@ import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.GeneratorMap;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 import edu.ucla.sspace.util.MultiMap;
@@ -54,6 +54,8 @@ import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.PrintWriter;
+
+import java.lang.reflect.Constructor;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -217,10 +219,10 @@ public class FlyingHermitMain extends GenericMain {
     private int nextWordsSize;
 
     /**
-     * The {@link IntegerVectorGeneratorMap} to use.  This may be either a new
+     * The {@link GeneratorMap} to use.  This may be either a new
      * map, or one deserialized from a file.
      */
-    private IntegerVectorGeneratorMap<TernaryVector> vectorMap;
+    private GeneratorMap<TernaryVector> vectorMap;
 
     /**
      * The {@code FlyingHermit} semantic space that is being operated on for
@@ -427,9 +429,15 @@ public class FlyingHermitMain extends GenericMain {
         // Setup the generator.
         String generatorType = 
             argOptions.getStringOption("generator", DEFAULT_GENERATOR);
-        IntegerVectorGenerator<TernaryVector> generator =
-            (IntegerVectorGenerator<TernaryVector>) getObjectInstance(
-                    generatorType);
+        IntegerVectorGenerator<TernaryVector> generator;
+        try {
+            Class clazz = Class.forName(generatorType);
+            Constructor<?> c = clazz.getConstructor(new Class[]{int.class});
+            Object o = c.newInstance(new Object[] {dimension});
+            generator = (IntegerVectorGenerator<TernaryVector>) o;
+        } catch (Exception e) {
+            throw new Error(e);
+        }
 
         // Setup the use of dense vectors.
         boolean useDense = argOptions.hasOption("useDenseSemantics");
@@ -437,17 +445,16 @@ public class FlyingHermitMain extends GenericMain {
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadIndexes");
-            vectorMap = (IntegerVectorGeneratorMap<TernaryVector>)
+            vectorMap = (GeneratorMap<TernaryVector>)
                 SerializableUtil.load(new File(savedIndexName + ".index"),
-                                      IntegerVectorGeneratorMap.class);
+                                      GeneratorMap.class);
             if (argOptions.hasOption("usePermutations"))
                 permFunction = (PermutationFunction<TernaryVector>) 
                     SerializableUtil.load(
                             new File(savedIndexName + ".permutation"),
                             PermutationFunction.class);
         } else
-            vectorMap = new IntegerVectorGeneratorMap<TernaryVector>(
-                    generator, dimension);
+            vectorMap = new GeneratorMap<TernaryVector>(generator);
 
         // Setup the clustering generator.
         int maxSenseCount = argOptions.getIntOption("senseCount",

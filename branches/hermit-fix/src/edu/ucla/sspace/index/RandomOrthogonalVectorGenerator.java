@@ -140,23 +140,25 @@ public class RandomOrthogonalVectorGenerator
      * Constructs this instance using the system properties and no initial
      * vector.
      */
-    public RandomOrthogonalVectorGenerator() {
-        this(System.getProperties(), null);
+    public RandomOrthogonalVectorGenerator(int vectorLength) {
+        this(vectorLength, System.getProperties(), null);
     }
 
     /**
      * Contructs this instance using the system properties and the provided
      * intial vector.
      */
-    public RandomOrthogonalVectorGenerator(DoubleVector originalVector) {
-        this(System.getProperties(), originalVector);
+    public RandomOrthogonalVectorGenerator(int vectorLength, 
+                                           DoubleVector originalVector) {
+        this(vectorLength, System.getProperties(), originalVector);
     }
 
     /**
      * Constructs this instance using the provided properties and uses an
      * initial vector.
      */
-    public RandomOrthogonalVectorGenerator(Properties properties,
+    public RandomOrthogonalVectorGenerator(int vectorLength,
+                                           Properties properties,
                                            DoubleVector originalVector) {
         String meanProp = 
             properties.getProperty(VECTOR_MEAN_PROPERTY);
@@ -170,11 +172,7 @@ public class RandomOrthogonalVectorGenerator
             ? Double.parseDouble(varianceProp)
             : DEFAULT_VECTOR_VARIANCE;
 
-        String vectorLengthProp = 
-            properties.getProperty(VECTOR_LENGTH_PROPERTY);
-        vectorLength = (vectorLengthProp != null)
-            ? Integer.parseInt(vectorLengthProp)
-            : DEFAULT_VECTOR_LENGTH;
+        vectorLength = this.vectorLength;
 
         generatedVectors = new ArrayList<DoubleVector>();
         if (originalVector == null) 
@@ -216,7 +214,7 @@ public class RandomOrthogonalVectorGenerator
      * @return A random vector that is orthogonal to all previously created
      *         vectors
      */
-    public DoubleVector generateRandomVector(int indexVectorLength) {
+    public DoubleVector generate() {
         if (generatedVectors.size() == vectorLength)
             throw new IllegalArgumentException(
                     "Too many vectors have been generated");

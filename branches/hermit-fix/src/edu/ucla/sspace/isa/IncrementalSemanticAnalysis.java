@@ -24,13 +24,13 @@ package edu.ucla.sspace.isa;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
-import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
 import edu.ucla.sspace.index.PermutationFunction;
 import edu.ucla.sspace.index.RandomIndexVectorGenerator;
 import edu.ucla.sspace.index.TernaryPermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.GeneratorMap;
 import edu.ucla.sspace.util.SparseDoubleArray;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
@@ -364,7 +364,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             : new TernaryPermutationFunction();
 
         RandomIndexVectorGenerator indexVectorGenerator = 
-            new RandomIndexVectorGenerator(properties);
+            new RandomIndexVectorGenerator(vectorLength, properties);
 
         String useSparseProp = 
             properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -384,8 +384,8 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             ? Double.parseDouble(impactRateProp)
             : DEFAULT_IMPACT_RATE;
             
-        wordToIndexVector = new IntegerVectorGeneratorMap<TernaryVector>(
-                indexVectorGenerator, vectorLength);
+        wordToIndexVector = 
+            new GeneratorMap<TernaryVector>(indexVectorGenerator);
         wordToMeaning = new HashMap<String,SemanticVector>();
         wordToOccurrences = new HashMap<String,Integer>();
     }

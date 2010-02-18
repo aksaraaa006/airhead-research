@@ -46,7 +46,8 @@ import java.util.Random;
  *
  * @author Keith Stevens
  */
-public class GaussianVectorGenerator implements DoubleVectorGenerator {
+public class GaussianVectorGenerator
+        implements DoubleVectorGenerator<DoubleVector> {
 
     /**
      * The base property prefix.
@@ -67,6 +68,8 @@ public class GaussianVectorGenerator implements DoubleVectorGenerator {
      */
     private double stdev;
 
+    private final int indexVectorLength;
+
     /**
      * A random number generator which produces values for index vectors.
      */
@@ -76,8 +79,8 @@ public class GaussianVectorGenerator implements DoubleVectorGenerator {
      * Create a {@code GaussianVectorGenerator} that uses the system properties
      * for setup.
      */
-    public GaussianVectorGenerator() {
-        this(System.getProperties());
+    public GaussianVectorGenerator(int indexVectorLength) {
+        this(indexVectorLength, System.getProperties());
     }
 
     /**
@@ -87,9 +90,11 @@ public class GaussianVectorGenerator implements DoubleVectorGenerator {
      * @param vectorLength The length of each index and semantic {@code Vector}
      *                     used in this {@code IndexVectorGenerator}.
      */
-    public GaussianVectorGenerator(Properties prop) {
+    public GaussianVectorGenerator(int indexVectorLength, Properties prop) {
         // Generate utility classes.
         randomGenerator = new Random();
+
+        this.indexVectorLength = indexVectorLength;
 
         String stdevProp = prop.getProperty(
                 STANDARD_DEVIATION_PROPERTY);
@@ -102,8 +107,7 @@ public class GaussianVectorGenerator implements DoubleVectorGenerator {
      * Generate a new random vector using a guassian distribution for each
      * value.
      */
-    public synchronized DoubleVector generateRandomVector(
-            int indexVectorLength) {
+    public synchronized DoubleVector generate() {
         DoubleVector termVector = new DenseVector(indexVectorLength);
         for (int i = 0; i < indexVectorLength; i++)
             termVector.set(i, randomGenerator.nextGaussian() * stdev);

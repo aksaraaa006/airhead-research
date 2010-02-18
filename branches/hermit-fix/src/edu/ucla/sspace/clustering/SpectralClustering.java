@@ -258,13 +258,9 @@ public class SpectralClustering implements Clustering {
         int vectorLength = piDInverse.length();
         // Step 1, generate a random vector, v,  that is orthogonal to
         // pi*D-Inverse.
-        System.setProperty(
-                RandomOrthogonalVectorGenerator.VECTOR_LENGTH_PROPERTY,
-                String.format("%d", vectorLength));
         DoubleVectorGenerator<DoubleVector> generator =
-            new RandomOrthogonalVectorGenerator(piDInverse);
-        DoubleVector v =
-            generator.generateRandomVector(vectorLength);
+            new RandomOrthogonalVectorGenerator(vectorLength, piDInverse);
+        DoubleVector v = generator.generate();
 
         int log = 1; //(int) Statistics.log2(vectorLength);
         for (int k = 0; k < log; ++k) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2010 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,29 +19,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.index;
-
-import edu.ucla.sspace.util.Generator;
-
-import edu.ucla.sspace.vector.DoubleVector;
+package edu.ucla.sspace.util;
 
 
 /**
- * An interface for classes which will maintain and generate random {@code
- * DoubleVector}s.  The main purpose of this of this class is to allow any
- * algorithm that makes use of some sort of random vector, such as Random
- * Indexing, can easily swap out the type of indexing used for experimentation
- * purposes.
+ * An interface for classes which will maintain and generate new instances of
+ * classes that require several parameters that will be used consistently
+ * several times.  Implementations of this interface are also used to be used
+ * in conjunction with a {@link GeneratorMap}, which will create new instances
+ * for keys not currently in the map by using an instance of a {@link
+ * Generator}.
+ *
+ * @see GeneratorMap
+ *
+ * @author Keith Stevens
  */
-public interface DoubleVectorGenerator<T extends DoubleVector>
-        extends Generator<T> {
+public interface Generator<T> {
 
     /**
-     * Creates an {@code VectorVector} with the provided length.
-     *
-     * @param length the length of the index vector
-     *
-     * @return an index vector
+     * Creates a new instance of type {@code T}.
      */
     public T generate();
 }

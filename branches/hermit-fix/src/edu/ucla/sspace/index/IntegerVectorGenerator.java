@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.index;
 
+import edu.ucla.sspace.util.Generator;
+
 import edu.ucla.sspace.vector.IntegerVector;
 
 
@@ -31,7 +33,8 @@ import edu.ucla.sspace.vector.IntegerVector;
  * Indexing, can easily swap out the type of indexing used for experimentation
  * purposes.
  */
-public interface IntegerVectorGenerator<T extends IntegerVector> {
+public interface IntegerVectorGenerator<T extends IntegerVector>
+        extends Generator<T> {
 
     /**
      * Creates an {@code VectorVector} with the provided length.
@@ -40,5 +43,5 @@ public interface IntegerVectorGenerator<T extends IntegerVector> {
      *
      * @return an index vector
      */
-    public T generateRandomVector(int length);
+    public T generate();
 }
