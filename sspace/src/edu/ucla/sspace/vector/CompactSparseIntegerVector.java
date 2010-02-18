@@ -86,9 +86,7 @@ public class CompactSparseIntegerVector
      * {@inheritDoc}
      */
     public int add(int index, int delta) {
-        int newValue = intArray.getPrimitive(index) +  delta;
-        intArray.set(index, newValue);
-        return newValue;
+        return intArray.addPrimitive(index, delta);
     }
 
     /**
