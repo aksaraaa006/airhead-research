@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Keith Stevens 
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,22 +21,39 @@
 
 package edu.ucla.sspace.clustering;
 
+
 /**
- * A collection of properties that are used throughout several clustering
- * implementations.
+ * A simple implementation of a {@link Assignment} that only supports
+ * hard assignments.
  */
-public class OfflineProperties {
+public class HardAssignment implements Assignment {
 
     /**
-     * A simple property prefix.
+     * The array holding the single assignment.
      */
-    public static final String PROPERTY_PREFIX =
-        "edu.ucla.sspace.clustering.OfflineProperties";
+    private int[] assignments;
 
     /**
-     * A property for specifying the number of clusters to generate, or an upper
-     * limit on the number of clusters to generate.
+     * Creates a new {@link HardAssignment} where there is no
+     * assignment provided.
      */
-    public static final String MAX_NUM_CLUSTER_PROPERTY =
-        PROPERTY_PREFIX + ".numClusters";
+    public HardAssignment() {
+        assignments = new int[0];
+    }
+
+    /**
+     * Creates a new {@link HardAssignment} where there is only one
+     * assignment provided.
+     */
+    public HardAssignment(int assignment) {
+        assignments = new int[1];
+        assignments[0] = assignment;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int[] assignments() {
+        return assignments;
+    }
 }

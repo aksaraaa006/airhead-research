@@ -21,26 +21,14 @@
 
 package edu.ucla.sspace.clustering;
 
-import edu.ucla.sspace.matrix.Matrix;
-import edu.ucla.sspace.matrix.SparseMatrix;
-
 
 /**
- * An interface for any Ofline clustering implementation.  Implementations must
- * take in a {@code Matrix} and return the set of cluster assignments for each
- * row in the matrix.  Immplementations should not modify the contents of a
- * {@code Matrix} to cluster.   Implementations should set up any specific
- * variables such as thresholds, number of clusters, weighting parameters, or
- * any others through a constructor.
- *
- * @author Keith Stevens
+ * An interface for a data points assignment.
  */
-public interface OfflineClustering {
+public interface Assignment {
 
     /**
-     * Clusters the set of rows in the given {@code Matrix} and returns a unique
-     * integer specifying the cluster the row to which the row vectors has been
-     * assigned.
+     * Returns the cluster id's that a specific data point was assigned to.
      */
-    int[] cluster(Matrix vectors);
+    int[] assignments();
 }

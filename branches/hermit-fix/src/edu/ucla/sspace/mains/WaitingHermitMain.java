@@ -21,8 +21,7 @@
 
 package edu.ucla.sspace.mains;
 
-import edu.ucla.sspace.clustering.OfflineClustering;
-import edu.ucla.sspace.clustering.OfflineProperties;
+import edu.ucla.sspace.clustering.Clustering;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -376,16 +375,13 @@ public class WaitingHermitMain extends GenericMain {
 
     protected Properties setupProperties() {
         Properties props = System.getProperties();
-        OfflineClustering clustering = null;
-        if (argOptions.hasOption("maxNumClusters"))
-            props.setProperty(OfflineProperties.MAX_NUM_CLUSTER_PROPERTY,
-                              argOptions.getStringOption("maxNumClusters"));
+        Clustering clustering = null;
 
         if (argOptions.hasOption("clusterMethod"))
-            clustering = (OfflineClustering) getObjectInstance(
+            clustering = (Clustering) getObjectInstance(
                     argOptions.getStringOption("clusterMethod"));
         else
-            clustering = (OfflineClustering) getObjectInstance(
+            clustering = (Clustering) getObjectInstance(
                     DEFAULT_CLUSTERING_METHOD);
 
         props.put(WaitingHermit.CLUSTERING_PROPERTY, clustering);

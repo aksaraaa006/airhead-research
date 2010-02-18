@@ -21,7 +21,8 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.clustering.OfflineClustering;
+import edu.ucla.sspace.clustering.Clustering;
+import edu.ucla.sspace.clustering.Assignment;
 
 import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -311,8 +312,8 @@ public class WaitingHermit implements SemanticSpace, Filterable {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-        OfflineClustering clustering =
-            (OfflineClustering) properties.get(CLUSTERING_PROPERTY);
+        Clustering clustering =
+            (Clustering) properties.get(CLUSTERING_PROPERTY);
 
         splitSenses = new ConcurrentHashMap<String, Vector>();
 
@@ -322,20 +323,24 @@ public class WaitingHermit implements SemanticSpace, Filterable {
 
             HERMIT_LOGGER.info("Clustering term: " + senseName);
             List<SparseDoubleVector> contexts = entry.getValue();
-            int[] assignments = clustering.cluster(
-                    Matrices.asSparseMatrix(contexts));
+            Assignment[] assignments = clustering.cluster(
+                    Matrices.asSparseMatrix(contexts), properties);
             HERMIT_LOGGER.info("Finished clustering term: " + senseName);
 
             HERMIT_LOGGER.info("Creating centroids for term: " + senseName);
             ArrayList<SparseDoubleVector> centroids = 
                 new ArrayList<SparseDoubleVector>();
-            int index = 0;
+            int index = -1;
             for (SparseDoubleVector context : contexts) {
-                for (int i = centroids.size(); i <= assignments[index]; ++i)
-                    centroids.add(new CompactSparseVector(indexVectorSize));
-                VectorMath.add(centroids.get(assignments[index]),
-                               context);
                 index++;
+                int[] itemAssignments = assignments[index].assignments();
+                if (itemAssignments.length == 0)
+                    continue;
+
+                int assignment = itemAssignments[0];
+                for (int i = centroids.size(); i <= assignment; ++i)
+                    centroids.add(new CompactSparseVector(indexVectorSize));
+                VectorMath.add(centroids.get(assignment), context);
             }
             HERMIT_LOGGER.info("Finished creating centroids for term: " +
                                senseName);

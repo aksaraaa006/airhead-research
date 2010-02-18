@@ -21,7 +21,8 @@
 
 package edu.ucla.sspace.matrix;
 
-import edu.ucla.sspace.clustering.OfflineClustering;
+import edu.ucla.sspace.clustering.Clustering;
+import edu.ucla.sspace.clustering.Assignment;
 
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
@@ -66,7 +67,7 @@ public class SemanticClusterTransform implements Transform {
         "edu.ucla.sspace.matrix.SemanticClusterTransform";
 
     /**
-     * The property for setting the {@link OfflineClustering} method to use.
+     * The property for setting the {@link Clustering} method to use.
      */
     public static final String CLUSTERING_PROPERTY =
         PROPERTY_PREFIX + ".clustering";
@@ -78,7 +79,7 @@ public class SemanticClusterTransform implements Transform {
         PROPERTY_PREFIX + ".simType";
 
     /**
-     * The default {@link OfflineClustering} method to use.
+     * The default {@link Clustering} method to use.
      */
     public static final String DEFAULT_CLUSTERING =
         "edu.ucla.sspace.clustering.ClutoClustering";
@@ -90,9 +91,9 @@ public class SemanticClusterTransform implements Transform {
         "COSINE";
 
     /**
-     * The {@link OfflineClustering} method to use for each matrix.
+     * The {@link Clustering} method to use for each matrix.
      */
-    private final OfflineClustering clustering;
+    private final Clustering clustering;
 
     /**
      * The similarity type to use when computing the pairwise similarities
@@ -112,7 +113,7 @@ public class SemanticClusterTransform implements Transform {
      * {@code Properties}.
      */
     public SemanticClusterTransform(Properties props) {
-        clustering = (OfflineClustering) Misc.getObjectInstance(
+        clustering = (Clustering) Misc.getObjectInstance(
                 props.getProperty(CLUSTERING_PROPERTY, DEFAULT_CLUSTERING));
         simType = SimType.valueOf(
                 props.getProperty(SIM_TYPE_PROPERTY, DEFAULT_SIM_TYPE));
@@ -148,12 +149,17 @@ public class SemanticClusterTransform implements Transform {
         int rows = input.rows();
 
         // Cluster the elements in the matrix.
-        int[] assignments = clustering.cluster(input);
+        Assignment[] assignments =
+            clustering.cluster(input, System.getProperties());
 
         // Split up the items into their clusters.
         List<Cluster> clusters = new ArrayList<Cluster>();
         for (int item = 0; item < assignments.length; ++item) {
-            int assignment = assignments[item];
+            int[] itemAssignments = assignments[item].assignments();
+            if (itemAssignments.length == 0)
+                continue;
+
+            int assignment = itemAssignments[0];
             for (int size = assignment; size <= clusters.size(); ++size)
                 clusters.add(new Cluster(input));
             clusters.get(assignment).addItem(item);

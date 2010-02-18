@@ -79,7 +79,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class SpectralClustering implements OfflineClustering {
+public class SpectralClustering implements Clustering {
 
     public static final String PROPERTY_PREFIX = 
         "edu.ucla.sspace.clustering.SpectralClustering";
@@ -98,73 +98,35 @@ public class SpectralClustering implements OfflineClustering {
      */
     private static final Double DEFAULT_ALPHA = .4;
 
-    /**
-     * When using the relaxed correlational objective function, this variable
-     * specifies the weight for inter cluster similarity. 
-     */
-    private final double beta;
-
-    /**
-     * When using the relaxed correlational objective function, this variable
-     * specifies the weight for intra cluster similarity. 
-     */
-    private final double alpha;
-
-    /**
-     * The maximum number of clusters that should be created.  This implicitly
-     * puts a limit on the depth of the splitting that gets done since no
-     * element below a depth of {@code maxClusters} would be in a separate
-     * cluster.
-     */
-    private final int maxClusters;
-
-    /**
-     * Constructs a new {@code SpectralClustering} instance with default weights
-     * for relaxed correlation.
-     */
-    public SpectralClustering() {
-        this(System.getProperties());
+    public Assignment[] cluster(Matrix matrix, Properties props) {
+        return cluster(matrix, Integer.MAX_VALUE, props);
     }
 
-    public SpectralClustering(Properties props) {
+    public Assignment[] cluster(Matrix matrix,
+                                int maxClusters,
+                                Properties props) {
         String alphaProp = props.getProperty(ALPHA_PROPERTY);
-        alpha = (alphaProp == null)
+        double alpha = (alphaProp == null)
             ? DEFAULT_ALPHA
             : Double.parseDouble(alphaProp);
 
-        beta = 1 - alpha;
+        double beta = 1 - alpha;
 
-        String maxClusterProp =
-            props.getProperty(OfflineProperties.MAX_NUM_CLUSTER_PROPERTY);
-        maxClusters = (maxClusterProp == null)
-            ? Integer.MAX_VALUE 
-            : Integer.parseInt(maxClusterProp);
-    }
-
-    /**
-     * Constructs a new {@code SpectralClustering} instance with give weights
-     * for relaxed correlation.
-     */
-    public SpectralClustering(double alpha, int maxClusters) {
-        this.alpha = alpha;
-        this.beta = 1 - alpha;
-        this.maxClusters = maxClusters;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * Variables are given notation similar to that of those in "A
-     * Divide-and-Merge Methodology for Clustering" when applicable.
-     */
-    public int[] cluster(Matrix matrix) {
         // Cluster the matrix recursively.
-        ClusterResult r = realCluster(matrix, 0);
+        ClusterResult r = realCluster(matrix, alpha, beta, maxClusters, 0);
         verbose("Created " + r.numClusters + " clusters");
-        return r.assignments;
+        Assignment[] assignments = new HardAssignment[r.assignments.length];
+        for (int i = 0; i < r.assignments.length; ++i)
+            assignments[i] = new HardAssignment(r.assignments[i]);
+
+        return assignments;
     }
 
-    private ClusterResult realCluster(Matrix matrix, int depth) {
+    private ClusterResult realCluster(Matrix matrix,
+                                      double alpha,
+                                      double beta,
+                                      int maxClusters,
+                                      int depth) {
         verbose("Clustering at depth " + depth);
 
         // If the matrix has only one element or the depth is equal to the
@@ -243,9 +205,9 @@ public class SpectralClustering implements OfflineClustering {
 
         // Do clustering on the left and right branches.
         ClusterResult leftResult =
-            realCluster(leftMatrix, depth+1);
+            realCluster(leftMatrix, alpha, beta, maxClusters, depth+1);
         ClusterResult rightResult =
-            realCluster(rightMatrix, depth+1);
+            realCluster(rightMatrix, alpha, beta, maxClusters, depth+1);
 
         verbose("Merging at depth " + depth);
 

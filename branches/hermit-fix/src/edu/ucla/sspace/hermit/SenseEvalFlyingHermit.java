@@ -79,7 +79,7 @@ import java.util.logging.Logger;
  * An implementation of the Hermit WSI Semantic Space model that is specificly
  * geared towards processing the SenseEval07 dataset.  Each document is expected
  * to be the context of a single instance of a test term, with the focus word
- * preceeded by a "|".  This class has several special cases and is not the
+ * preceeded by a "||||".  This class has several special cases and is not the
  * general purpose hermit implementation.  See {@link FlyingHermit} for a more
  * general implementation. 
  *

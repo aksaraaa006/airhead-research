@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 
 
 /**
- * A {@link} OfflineClustering} implementation that iteratively computes the
+ * A {@link Clustering} implementation that iteratively computes the
  * k-means clustering of a data set and compares it to a random sample of
  * reference data points.  This will recompute k-means with incresing values of
  * k until the difference between the original data set and the reference data
@@ -41,7 +41,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class GapStatistic implements OfflineClustering {
+public class GapStatistic implements Clustering {
 
     /**
      * The logger used to record all output.
@@ -93,55 +93,10 @@ public class GapStatistic implements OfflineClustering {
     private static final String METHOD = ClutoClustering.KMEANS;
 
     /**
-     * The number of k clusters to start evaluating at.
+     * {@inheritDoc}
      */
-    private final int startSize;
-
-    /**
-     * The number of iterations to evaluate.
-     */
-    private final int numIterations;
-
-    /**
-     * The number of reference data sets to use.
-     */
-    private final int numGaps;
-
-    /**
-     * Creates a new instance of the {@code GapStatistic} using system
-     * properties.
-     */
-    public GapStatistic() {
-        this(System.getProperties());
-    }
-
-    /**
-     * Creates a new instance of the {@code GapStatistic} using the provided
-     * properties.
-     */
-    public GapStatistic(Properties props) {
-        startSize = Integer.parseInt(props.getProperty(
-                NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
-
-        int endSize = Integer.parseInt(props.getProperty(
-                OfflineProperties.MAX_NUM_CLUSTER_PROPERTY,
-                DEFAULT_NUM_CLUSTERS_END));
-
-        numIterations = endSize - startSize;
-
-        numGaps = Integer.parseInt(props.getProperty(
-                NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
-    }
-
-    /**
-     * Creates a new {@code GapStatistic} that will compute k-means iteratively
-     * were k ranges from {@code start} to {@code end} and {@code gaps}
-     * reference data sets are used.
-     */
-    public GapStatistic(int start, int end, int gaps) {
-        startSize = start;
-        numIterations = end - start;
-        numGaps = gaps;
+    public Assignment[] cluster(Matrix matrix, Properties props) {
+        return cluster(matrix, Integer.MAX_VALUE, props);
     }
 
     /**
@@ -152,7 +107,15 @@ public class GapStatistic implements OfflineClustering {
      * Iteratively computes the k-means clustering of the dataset {@code m}
      * using the the Gap Statistic .
      */
-    public int[] cluster(Matrix m) {
+    public Assignment[] cluster(Matrix m,
+                                int maxClusters,
+                                Properties props) {
+        int startSize = Integer.parseInt(props.getProperty(
+                NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
+        int numGaps = Integer.parseInt(props.getProperty(
+                NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
+        int numIterations = maxClusters - startSize;
+
         verbose("Generating the reference data set");
         // Generate the reference data sets.
         ReferenceDataGenerator generator = new ReferenceDataGenerator(m);
@@ -229,7 +192,7 @@ public class GapStatistic implements OfflineClustering {
         }
 
         // Extract the cluster assignments based on the best found value of k.
-        int[] assignments = new int[m.rows()];
+        Assignment[] assignments = new Assignment[m.rows()];
         try {
             ClutoClustering.extractAssignment(previousFile, assignments);
         } catch (IOException ioe) {

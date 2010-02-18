@@ -45,7 +45,7 @@ import java.util.logging.Logger;
  *
  * @author David Jurgens
  */
-public class ClutoClustering implements OfflineClustering {
+public class ClutoClustering implements Clustering {
 
     /**
      * A property prefix for specifiying options when using Cluto.
@@ -97,19 +97,9 @@ public class ClutoClustering implements OfflineClustering {
     public static String BAGGLO = "bagglo";
 
     /**
-     * The default number of clusters to be created by Cluto.
-     */
-    private static String DEFAULT_NUM_CLUSTERS = "10";
-
-    /**
      * The default clustering method to be used by Cluto.
      */
     private static String DEFAULT_CLUSTER_METHOD = "agglo";
-
-    /**
-     * The default similarity measure to be used by Cluto.
-     */
-    private static String DEFAULT_CLUSTER_SIMILARITY = "";
 
     /**
      * A logger to track the status of Cluto.
@@ -118,67 +108,21 @@ public class ClutoClustering implements OfflineClustering {
         Logger.getLogger(ClutoClustering.class.getName());
 
     /**
-     * The number of clusters to use during this instance of Cluto clustering.
+     * {@inheritDoc}
      */
-    private int numClusters;
-
-    /**
-     * The clustering method to use during this instance of Cluto clustering.
-     */
-    private String clusterMethod;
-
-    /**
-     * The similarity measure to use during this instance of Cluto clustering.
-     */
-    private String clusterSimilarity;
-
-    /**
-     * Creates a new {@code ClutoClustering} instance using the System provided 
-     * properties.
-     */
-    public ClutoClustering() {
-        this(System.getProperties());
+    public Assignment[] cluster(Matrix matrix, Properties props) {
+        throw new UnsupportedOperationException(
+                "The number of clusters must be specified");
     }
 
     /**
-     * Creates a new {@code ClutoClustering} instance using the given set of
-     * properties.
+     * {@inheritDoc}
      */
-    public ClutoClustering(Properties props) {
-        numClusters = Integer.parseInt(props.getProperty(
-                    OfflineProperties.MAX_NUM_CLUSTER_PROPERTY,
-                    DEFAULT_NUM_CLUSTERS));
-        clusterMethod = props.getProperty(CLUSTER_METHOD_PROPERTY,
-                                          DEFAULT_CLUSTER_METHOD);
-        clusterSimilarity = props.getProperty(CLUSTER_SIMILARITY_PROPERTY,
-                                              DEFAULT_CLUSTER_SIMILARITY);
-    }
-
-    /**
-     * Creates a new {@code ClutoClustering} instance using the given arguments.
-     */
-    public ClutoClustering(int numClusters, String clusterMethod) {
-        this.numClusters = numClusters;
-        this.clusterMethod = clusterMethod;
-    }
-
-    /**
-     * Clusters the rows of the matrix into the specified number of clusters
-     * using a the algorithm specified during construction.  Rows that have
-     * no distinguishing features will not be clustered and instead assigned to
-     * a cluster index of -1.
-     *
-     * @param m a matrix whose rows are to be clustered
-     *
-     * @return an array where each element corresponds to a row and the value is
-     *         the cluster number to which that row was assigned.  Cluster
-     *         numbers will start at 0 and increase.  Rows that were not able to
-     *         be clustered will be assigned a -1 value.
-     *
-     * @throws IOError if any {@link IOException} occurs when marshalling data
-     *         to and from Cluto, or during Cluto's execution.
-     */
-    public int[] cluster(Matrix m) {
+    public Assignment[] cluster(Matrix m,
+                                int numClusters,
+                                Properties props) {
+        String clusterMethod = props.getProperty(
+                CLUSTER_METHOD_PROPERTY, DEFAULT_CLUSTER_METHOD);
         try {
             return cluster(m, numClusters, clusterMethod);
         } catch (IOException ioe) {
@@ -204,7 +148,7 @@ public class ClutoClustering implements OfflineClustering {
      * @throws IOError if any {@link IOException} occurs when marshalling data
      *         to and from Cluto, or during Cluto's execution.
      */
-    public static int[] agglomerativeCluster(Matrix m, int numClusters) {
+    public static Assignment[] agglomerativeCluster(Matrix m, int numClusters) {
         try {
             return cluster(m, numClusters, "agglo");
         } catch (IOException ioe) {
@@ -228,14 +172,14 @@ public class ClutoClustering implements OfflineClustering {
      *         numbers will start at 0 and increase.  Rows that were not able to
      *         be clustered will be assigned a -1 value.
      */
-    public static int[] cluster(Matrix m, int numClusters, String method)
+    public static Assignment[] cluster(Matrix m, int numClusters, String method)
             throws IOException {
         File matrixFile = File.createTempFile("cluto-input",".matrix");
         matrixFile.deleteOnExit();
         MatrixIO.writeMatrix(m, matrixFile, MatrixIO.Format.CLUTO_SPARSE);
         File outputFile = File.createTempFile("cluto-output", ".matrix");
         outputFile.deleteOnExit();
-        int[] assignments = new int[m.rows()];
+        Assignment[] assignments = new Assignment[m.rows()];
         cluster(assignments, matrixFile, outputFile, numClusters, method);
         return assignments;
     }
@@ -261,7 +205,7 @@ public class ClutoClustering implements OfflineClustering {
      *
      * @return A string containing the standard output created by Cluto.
      */
-    public static String cluster(int[] clusterAssignment,
+    public static String cluster(Assignment[] clusterAssignment,
                                  File matrixFile, 
                                  File outputFile,
                                  int numClusters,
@@ -319,13 +263,14 @@ public class ClutoClustering implements OfflineClustering {
      * Extract the set of assignemnts from a Cluto assignment file.
      */
     public static void extractAssignment(File outputFile,
-                                         int[] clusterAssignment)
+                                         Assignment[] clusterAssignment)
             throws IOException {
         // The cluster assignmnet file is formatted as each row (data point)
         // having its cluster label specified on a separate line.  We can
         // read these in sequence to generate the output array.
         BufferedReader br = new BufferedReader(new FileReader(outputFile));
         for (int i = 0; i < clusterAssignment.length; ++i)
-            clusterAssignment[i] = Integer.parseInt(br.readLine());
+            clusterAssignment[i] =
+                new HardAssignment(Integer.parseInt(br.readLine()));
     }
 }

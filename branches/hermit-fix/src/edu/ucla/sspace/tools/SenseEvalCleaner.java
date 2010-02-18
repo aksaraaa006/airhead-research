@@ -37,10 +37,28 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 
+/**
+ * A tool for cleaning the word sense induction test corpus from <a
+ * href="http://nlp.cs.swarthmore.edu/semeval/tasks/task02/summary.shtml">
+ * SenseEval07 Task 2</a>.  By default this cleaner simply extracts the text
+ * from the senseEval xml data file, but it can optionaly add a separator token
+ * before the instance word.  This is extra token is required when using the
+ * {@link edu.ucla.sspace.hermit.SenseEvalFlyingHermit SenseEvalFlyingHermit}
+ * semantic space model.
+ *
+ * @author Keith Stevens
+ */
 public class SenseEvalCleaner {
 
     public static void main(String[] args) throws Exception {
+        // Set up the options.
         ArgOptions options = new ArgOptions();
+        options.addOption('i', "includeSeparator",
+                           "include a simple separator token before the " +
+                           "focus word",
+                           false, null, "Optional");
+
+        // Parse the options and check that the required arguments are provided.
         options.parseOptions(args);
         if (options.numPositionalArgs() != 2) {
             System.out.println("usage: SenseEvalCleaner [options] " +
@@ -51,20 +69,27 @@ public class SenseEvalCleaner {
 
         PrintWriter writer = new PrintWriter(options.getPositionalArg(1));
 
+        // Extract the xml.
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
         Document doc = db.parse(new File(options.getPositionalArg(0)));
+
+        // Each instance context is in a "instance" tag.
         NodeList instances = doc.getElementsByTagName("instance");
         for (int i = 0; i < instances.getLength(); ++i) {
             Element instanceNode = (Element) instances.item(i);
+            // Extract the instance id, and stemmed word.
             String instanceId = instanceNode.getAttribute("id").trim();
             String[] wordPosNum = instanceId.split("\\.");
 
             String prevContext = instanceNode.getFirstChild().getNodeValue();
             prevContext = prevContext.substring(1);
             String nextContext = instanceNode.getLastChild().getNodeValue();
-            writer.printf("%s %s |||| %s %s",
-                          instanceId, prevContext, wordPosNum[0], nextContext);
+            String extraToken = (options.hasOption('i')) ? "||||" : "";
+
+            // Print out the extracted corpus.
+            writer.printf("%s %s %s %s",
+                          prevContext, extraToken, wordPosNum[0], nextContext);
         }
         writer.flush();
         writer.close();

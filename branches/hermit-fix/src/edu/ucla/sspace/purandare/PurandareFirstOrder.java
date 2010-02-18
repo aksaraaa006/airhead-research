@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.purandare;
 
+import edu.ucla.sspace.clustering.Assignment;
 import edu.ucla.sspace.clustering.ClutoClustering;
 
 import edu.ucla.sspace.common.SemanticSpace;
@@ -521,9 +522,10 @@ public class PurandareFirstOrder implements SemanticSpace {
         // not purely alphabetic (i.e. contains number of other symbols), don't
         // bother clustering it.  This is done to reduce the computation time,
         // and to avoid clustering non-meaningful terms such as '.' or '''
-        int[] clusterAssignment = (term.matches("[a-zA-z]+") && numClusters > 6)
+        Assignment[] clusterAssignment = 
+            (term.matches("[a-zA-z]+") && numClusters > 6)
             ? ClutoClustering.agglomerativeCluster(contexts, numClusters)
-            : new int[contexts.rows()];
+            : new Assignment[contexts.rows()];
         
         LOGGER.info("Generative sense vectors for " + term);
         
@@ -537,7 +539,14 @@ public class PurandareFirstOrder implements SemanticSpace {
             meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
         for (int row = 0; row < clusterAssignment.length; ++row) {
             DoubleVector contextVector = contexts.getRowVector(row);
-            int assignment = clusterAssignment[row];
+            int assignment;
+            if (clusterAssignment[row] == null)
+                assignment = 0;
+            else if (clusterAssignment[row].assignments().length == 0)
+                assignment = -1;
+            else 
+                assignment = clusterAssignment[row].assignments()[0];
+
             // CLUTO will return -1 for vectors that could not be clustered.
             // Just skip adding these rows to a specific sense
             if (assignment < 0) 

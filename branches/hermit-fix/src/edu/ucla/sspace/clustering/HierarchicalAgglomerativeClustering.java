@@ -59,7 +59,7 @@ import java.util.logging.Logger;
  * </p>
  *
  * This class provides static accessors to several variations of agglomerative
- * clustering and conforms to the {@link OfflineClustering} interface, which
+ * clustering and conforms to the {@link Clustering} interface, which
  * allows this method to be used in place of other clustering algorithms.
  *
  * </p>
@@ -100,7 +100,7 @@ import java.util.logging.Logger;
  *
  * @author David Jurgens
  */
-public class HierarchicalAgglomerativeClustering implements OfflineClustering {
+public class HierarchicalAgglomerativeClustering implements Clustering {
 
     /**
      * The method to use when comparing the similarity of two clusters.  See <a
@@ -159,12 +159,6 @@ public class HierarchicalAgglomerativeClustering implements OfflineClustering {
         PROPERTY_PREFIX + ".simFunc";
 
     /**
-     * The property for specifying the number of clusters to use.
-     */
-    public static final String NUM_CLUSTER_PROPERTY =
-        PROPERTY_PREFIX + ".numClusters";
-
-    /**
      * The default similarity threshold to use.
      */
     private static final String DEFAULT_CLUSTER_SIMILARITY_PROPERTY = "-1";
@@ -182,83 +176,47 @@ public class HierarchicalAgglomerativeClustering implements OfflineClustering {
         "cosineSimilarity";
 
     /**
-     * The default number of clusters to use.
-     */
-    private static final String DEFAULT_NUM_CLUSTER_PROPERTY = "-1";
-
-    /**
      * The logger to which clustering status updates will be written.
      */
     private static final Logger LOGGER =
         Logger.getLogger(HierarchicalAgglomerativeClustering.class.getName());
 
     /**
-     * The desired number of clusters to generate, if negative then the number
-     * will be inferred based on data similarity.
+     * {@inheritDoc}
      */
-    private final int numClusters;
+    public Assignment[] cluster(Matrix matrix, Properties props) {
+        if (props.getProperty(CLUSTER_SIMILARITY_PROPERTY) == null)
+            throw new IllegalArgumentException("The number of clusters or a " +
+                    "threshold must be specified.");
 
-    /**
-     * The similarity threshold for merging.  Any two clusters more similar than
-     * this threshold will be merged together until either no clusters are above
-     * this threshold or the desired number of clusters has been reached.
-     */
-    private final double clusterSimilarityThreshold;
-
-    /**
-     * The linkage type to use when comparing clusters.
-     */
-    private final ClusterLinkage linkage;
-
-    /**
-     * The similarity function to use when comparing data points.
-     */
-    private final SimType similarityFunction;
-
-    /**
-     * Creates a {@link HierarchicalAgglomerativeClustering} using the system 
-     * properties that will cluster all rows in the matrix using the specified
-     * cluster similarity measure for comparison and threshold for when to stop
-     * clustering.  Clusters will be repeatedly merged until the desired number
-     * of clusters is reached or no clusters are more similar than the threshold
-     * specified.
-     */
-    public HierarchicalAgglomerativeClustering() {
-        this(System.getProperties());
-    }
-
-    /**
-     * Creates a {@link HierarchicalAgglomerativeClustering} using the provided
-     * properties that will cluster all rows in the matrix using the specified
-     * cluster similarity measure for comparison and threshold for when to stop
-     * clustering.  Clusters will be repeatedly merged until the desired number
-     * of clusters is reached or no clusters are more similar than the threshold
-     * specified.
-     */
-    public HierarchicalAgglomerativeClustering(Properties props) {
-        clusterSimilarityThreshold = Double.parseDouble(props.getProperty(
-                    CLUSTER_SIMILARITY_PROPERTY,
-                    DEFAULT_CLUSTER_SIMILARITY_PROPERTY));
-
-        linkage = ClusterLinkage.valueOf(props.getProperty(
-                    CLUSTER_LINKAGE_PROPERTY,
-                    DEFAULT_CLUSTER_LINKAGE_PROPERTY));
-
-        similarityFunction = SimType.valueOf(props.getProperty(
-                    SIMILARITY_FUNCTION_PROPERTY,
-                    DEFAULT_SIMILARITY_FUNCTION_PROPERTY));
-
-        numClusters = Integer.parseInt(props.getProperty(
-                    NUM_CLUSTER_PROPERTY,
-                    DEFAULT_NUM_CLUSTER_PROPERTY));
+        return cluster(matrix, -1, props);
     }
 
     /**
      * {@inheritDoc}
      */
-    public int[] cluster(Matrix m) {
-        return cluster(m, clusterSimilarityThreshold, linkage,
-                       similarityFunction, numClusters);
+    public Assignment[] cluster(Matrix m,
+                                int numClusters,
+                                Properties props) {
+        double clusterSimilarityThreshold =
+            Double.parseDouble(props.getProperty(
+                        CLUSTER_SIMILARITY_PROPERTY,
+                        DEFAULT_CLUSTER_SIMILARITY_PROPERTY));
+
+        ClusterLinkage linkage = ClusterLinkage.valueOf(props.getProperty(
+                    CLUSTER_LINKAGE_PROPERTY,
+                    DEFAULT_CLUSTER_LINKAGE_PROPERTY));
+
+        SimType similarityFunction = SimType.valueOf(props.getProperty(
+                    SIMILARITY_FUNCTION_PROPERTY,
+                    DEFAULT_SIMILARITY_FUNCTION_PROPERTY));
+        int[] rawAssignments = cluster(m, clusterSimilarityThreshold, linkage,
+                                       similarityFunction, numClusters);
+
+        Assignment[] assignments = new Assignment[rawAssignments.length];
+        for (int i = 0; i < rawAssignments.length; ++i)
+            assignments[i] = new HardAssignment(rawAssignments[i]);
+        return assignments;
     }
 
     /**

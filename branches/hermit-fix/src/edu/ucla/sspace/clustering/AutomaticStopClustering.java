@@ -42,7 +42,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class AutomaticStopClustering implements OfflineClustering {
+public class AutomaticStopClustering implements Clustering {
 
     /**
      * The logger used to record all output.
@@ -146,69 +146,18 @@ public class AutomaticStopClustering implements OfflineClustering {
     private static final String METHOD = ClutoClustering.KMEANS;
 
     /**
-     * The number of k clusters to start evaluating at.
+     * {@inheritDoc}
+     *
+     * </p>
+     *
+     * Iteratively computes the k-means clustering of the dataset {@code m}
+     * using a specified method for determineing when to automaticaly stop
+     * clustering.
      */
-    private final int startSize;
-
-    /**
-     * The number of iterations to evaluate.
-     */
-    private final int numIterations;
-
-    /**
-     * The evalution measure to use to determine the optimal value of k.
-     */
-    private final Measure measure;
-
-    /**
-     * If the {@code PK1} measure is used, this specifies the threshold used.
-     */
-    private final double pk1Threshold;
-
-    /**
-     * Creates a new instance of the {@code AutomaticStopClustering} using
-     * system properties.
-     */
-    public AutomaticStopClustering() {
-        this(System.getProperties());
-    }
-
-    /**
-     * Creates a new instance of the {@code AutomaticStopClustering} using
-     * provided properties.
-     */
-    public AutomaticStopClustering(Properties props) {
-        startSize = Integer.parseInt(props.getProperty(
-                NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
-
+    public Assignment[] cluster(Matrix matrix, Properties props) {
         int endSize = Integer.parseInt(props.getProperty(
                 NUM_CLUSTERS_END, DEFAULT_NUM_CLUSTERS_END));
-
-        numIterations = endSize - startSize;
-
-        measure = Measure.valueOf(props.getProperty(
-                    CLUSTERING_METHOD, DEFAULT_CLUSTERING_METHOD));
-
-        pk1Threshold = Double.parseDouble(props.getProperty(
-                    PK1_THRESHOLD, DEFAULT_PK1_THRESHOLD));
-    }
-
-    /**
-     * Creates a new {@code AutomaticStopClustering} that will compute k-means
-     * iteratively were k ranges from {@code start} to {@code end} with {@code
-     * measure} defining what {@link Measure} will be used to determine where
-     * the knee in the objective method scores occurs.  If the {@link PK1}
-     * measure is used, {@code threshold} defines the threshold that needs to be
-     * met.
-     */
-    public AutomaticStopClustering(int start, 
-                                   int end,
-                                   Measure measure,
-                                   double threshold) {
-        startSize = start;
-        numIterations = end - start;
-        this.measure = measure;
-        pk1Threshold = threshold;
+        return cluster(matrix, endSize, props);
     }
 
     /**
@@ -220,7 +169,20 @@ public class AutomaticStopClustering implements OfflineClustering {
      * using a specified method for determineing when to automaticaly stop
      * clustering.
      */
-    public int[] cluster(Matrix m) {
+    public Assignment[] cluster(Matrix m,
+                                int numClusters,
+                                Properties props) {
+        int startSize = Integer.parseInt(props.getProperty(
+                NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
+
+        int numIterations = numClusters - startSize;
+
+        Measure measure = Measure.valueOf(props.getProperty(
+                    CLUSTERING_METHOD, DEFAULT_CLUSTERING_METHOD));
+
+        double pk1Threshold = Double.parseDouble(props.getProperty(
+                    PK1_THRESHOLD, DEFAULT_PK1_THRESHOLD));
+
         // Transfer the data set to a cluto matrix file.
         File matrixFile = null;
         try {
@@ -259,7 +221,7 @@ public class AutomaticStopClustering implements OfflineClustering {
         int bestK = -1;
         switch (measure) {
             case PK1:
-                bestK = computePk1Measure(objectiveWeights);
+                bestK = computePk1Measure(objectiveWeights, pk1Threshold);
                 break;
             case PK2:
                 bestK = computePk2Measure(objectiveWeights);
@@ -270,7 +232,7 @@ public class AutomaticStopClustering implements OfflineClustering {
         }
 
         // Extract the cluster assignments based on the best found value of k.
-        int[] assignments = new int[m.rows()];
+        Assignment[] assignments = new HardAssignment[m.rows()];
         try {
             ClutoClustering.extractAssignment(outFiles[bestK], assignments);
         } catch (IOException ioe) {
@@ -283,7 +245,8 @@ public class AutomaticStopClustering implements OfflineClustering {
     /**
      * Compute the smallest k that satisfies the Pk1 method.
      */
-    private int computePk1Measure(double[] objectiveScores) {
+    private int computePk1Measure(double[] objectiveScores,
+                                  double pk1Threshold) {
         // Compute the average of the objective scores.
         double average = 0;
         for (int k = 0; k < objectiveScores.length; ++k)
