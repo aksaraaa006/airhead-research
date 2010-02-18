@@ -25,6 +25,8 @@ import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 
+import java.io.Serializable;
+
 import java.util.Properties;
 import java.util.Random;
 
@@ -46,7 +48,10 @@ import java.util.Random;
  *
  * @author Keith Stevens
  */
-public class GaussianVectorGenerator implements DoubleVectorGenerator {
+public class GaussianVectorGenerator
+        implements DoubleVectorGenerator, Serializable  {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The base property prefix.

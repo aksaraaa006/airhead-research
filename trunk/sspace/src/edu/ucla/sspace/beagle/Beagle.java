@@ -26,9 +26,7 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.fft.FastFourierTransform;
 
-import edu.ucla.sspace.index.DoubleVectorGenerator;
 import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
-import edu.ucla.sspace.index.GaussianVectorGenerator;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -138,13 +136,12 @@ public class Beagle implements SemanticSpace {
      */
     private int[] permute2;
 
-    public Beagle(int vectorSize) {
-        indexVectorSize = vectorSize;
+    public Beagle(int vectorSize, DoubleVectorGeneratorMap vectorMap) {
+        this.indexVectorSize = vectorSize;
+        this.vectorMap = vectorMap;
         termHolographs = new ConcurrentHashMap<String, DoubleVector>();
-        DoubleVectorGenerator generator = new GaussianVectorGenerator();
-        vectorMap = new DoubleVectorGeneratorMap(generator, indexVectorSize);
 
-        placeHolder = generator.generateRandomVector(indexVectorSize);
+        placeHolder = vectorMap.get("");
 
         // Generate the permutation arrays.
         permute1 = new int[indexVectorSize];

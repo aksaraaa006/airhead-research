@@ -31,6 +31,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -46,7 +47,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Keith Stevens
  */
-public class DoubleVectorGeneratorMap implements Map<String, DoubleVector> {
+public class DoubleVectorGeneratorMap 
+        implements Map<String, DoubleVector>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The {@code DoubleVectorGenerator} for generating new vectors.

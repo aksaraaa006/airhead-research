@@ -27,6 +27,14 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
+import edu.ucla.sspace.index.DoubleVectorGenerator;
+import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
+import edu.ucla.sspace.index.GaussianVectorGenerator;
+
+import edu.ucla.sspace.util.SerializableUtil;
+
+import java.io.File;
+
 import java.util.Properties;
 
 
@@ -63,12 +71,18 @@ public class BeagleMain extends GenericMain {
      * If no dimension size is given, this will be the size of index vectors and
      * semantic vectors.
      */
-    private static final int DEFAULT_DIMENSION = 512;
+    private static final int DEFAULT_DIMENSION = 2048;
 
     /**
      * The dimensionality of each index and semantic vector.
      */
     private int dimension;
+
+    /**
+     * The generator map for automatically creating and retrieving index vectors
+     * for beagle.
+     */
+    private DoubleVectorGeneratorMap generatorMap;
 
     private BeagleMain() {
     }
@@ -89,7 +103,13 @@ public class BeagleMain extends GenericMain {
     public void addExtraOptions(ArgOptions options) {
         options.addOption('n', "dimension",
                           "the length of each beagle vector",
-                          true, "INT");
+                          true, "INT", "Options");
+        options.addOption('S', "saveVectors", 
+                          "save word-to-IndexVector mapping after processing",
+                          true, "FILE", "Options");
+        options.addOption('L', "loadVectors",
+                          "load word-to-IndexVector mapping before processing",
+                          true, "FILE", "Options");
     }
 
     /**
@@ -99,13 +119,32 @@ public class BeagleMain extends GenericMain {
         dimension = (argOptions.hasOption("dimension"))
           ? argOptions.getIntOption("dimension")
           : DEFAULT_DIMENSION;
+        if (argOptions.hasOption("loadVectors")) {
+            generatorMap = SerializableUtil.load(
+                    new File(argOptions.getStringOption("loadVectors")),
+                    DoubleVectorGeneratorMap.class);
+        } else {
+            DoubleVectorGenerator generator = new GaussianVectorGenerator();
+            generatorMap = new DoubleVectorGeneratorMap(generator, dimension);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected void postProcessing() {
+        if (argOptions.hasOption("saveVectors")) {
+            SerializableUtil.save(
+                    generatorMap,
+                    new File(argOptions.getStringOption("saveVectors")));
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public SemanticSpace getSpace() {
-        return new Beagle(dimension);
+        return new Beagle(dimension, generatorMap);
     }
 
     /**
