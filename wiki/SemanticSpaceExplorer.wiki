@@ -1,4 +1,5 @@
 #summary Tool for manually inspecting sspaces.
+#labels Featured
 
 = Introduction =
 
@@ -10,7 +11,7 @@ SemanticSpaceExplorer understands the following commands:
     * `unload file1.sspace [file2.sspace...]`
     * `get-neighbors word [number (default 10)] [similarity measure]`
     * `get-similarity word1 word2 [similarity measure (default cosine)]`
-    * `compare-sspace-vectors word sspace1 sspace2 [similarity measure (default: cosine)]`
+    * `compare-sspace-vectors word sspace1 sspace2 [similarity measure (default: COSINE)]`
     * `help`
     * `set-current-sspace filename.sspace`
     * `get-current-sspace`
@@ -18,7 +19,8 @@ SemanticSpaceExplorer understands the following commands:
     * `write-command-results output-file command...`
     * `print-vector word`
     * `print-words [string-prefix]`
-Note: most of these commands can be used in abbreviated form, using the first letter of each word (e.g. get-neighbors can be invoked using gn).
+Note 1: most of these commands can be used in abbreviated form, using the first letter of each word (e.g. get-neighbors can be invoked using gn).
+Note 2: `similarity measure` is the string equivalent of the [http://airhead-research.googlecode.com/svn/trunk/javadoc/1.0/edu/ucla/sspace/common/Similarity.SimType.html Similarity.SimType] enumeration. These can be abbreviated with any unique prefix of the string.
 
 == Run commands from prompt ==
 Running:
@@ -35,7 +37,7 @@ java -cp classes/ edu.ucla.sspace.tools.SemanticSpaceExplorer --executeFile awes
 will run the commands in `awesome.script`, allowing you to easily reproduce your work.
 
 == Examples ==
-Generally the first step is to load the sspace:
+The first step is to load the sspace:
 {{{
 load processed.sspace
 }}}
@@ -44,7 +46,7 @@ To test that a word retained its meaning one could check:
 {{{
 get-neighbors violin 5 COSINE
 }}}
-To ensure they are all valid common words.
+to ensure that all 5 words are valid neighbors (semantically speaking).
 
 Or to test that two words are related:
 {{{
