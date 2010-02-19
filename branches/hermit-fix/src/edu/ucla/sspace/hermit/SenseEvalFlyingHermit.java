@@ -21,11 +21,9 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.clustering.ClusterMap;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 import edu.ucla.sspace.clustering.OnlineClustering;
-import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
@@ -34,6 +32,9 @@ import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
+
+import edu.ucla.sspace.util.Generator;
+import edu.ucla.sspace.util.GeneratorMap;
 
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.IntegerVector;
@@ -95,9 +96,9 @@ import java.util.logging.Logger;
  * </p>
  *
  * This implementation relies heavily on a {@link IntegerVectorGenerator} and a
- * {@link ClusterMap} for it's functionaltiy.  The {@link
+ * {@link GeneratorMap} for it's functionaltiy.  The {@link
  * IntegerVectorGenerator} provided defines how index vectors are created.  The
- * {@link ClusterMap} defines how contexts are clustered together.
+ * {@link OnlineClustering} defines how contexts are clustered together.
  *
  * </p>
  *
@@ -165,7 +166,7 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
      * specifies how hermit will merge it's context vectors into different
      * senses.
      */
-    private ClusterMap<SparseIntegerVector> clusterMap;
+    private GeneratorMap<OnlineClustering<SparseIntegerVector>> clusterMap;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -189,7 +190,7 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
     public SenseEvalFlyingHermit(
             Map<String, TernaryVector> indexGeneratorMap,
             PermutationFunction<TernaryVector> permFunction,
-            OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator,
+            Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator,
             int vectorSize,
             int prevWordsSize,
             int nextWordsSize) {
@@ -199,7 +200,8 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
 
-        clusterMap = new ClusterMap<SparseIntegerVector>(clusterGenerator);
+        clusterMap = new GeneratorMap<OnlineClustering<SparseIntegerVector>>(
+                clusterGenerator);
     }
 
     /**
@@ -303,7 +305,9 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
 
         // Add the current context vector to the cluster for the focusWord that
         // is most similar.
-        clusterMap.addVector(focusWord, meaning);
+        OnlineClustering<SparseIntegerVector> clustering =
+            clusterMap.get(focusWord);
+        clustering.addVector(meaning);
     }
     
     /**
@@ -320,7 +324,7 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
         for (String term : terms) {
             // Extract the set of clusters from the map for the term.
             OnlineClustering<SparseIntegerVector> clustering =
-                clusterMap.getClustering(term);
+                clusterMap.get(term);
             List<SparseIntegerVector> centroids = clustering.getCentroids();
 
             // Convert the centroids to double vectors so they can be turned
@@ -352,7 +356,7 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
             HERMIT_LOGGER.info("term " + term + " has " + newCentroids.length +
                     " senses.");
 
-            clusterMap.removeClusters(term);
+            clusterMap.remove(term);
         }
 
         HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");

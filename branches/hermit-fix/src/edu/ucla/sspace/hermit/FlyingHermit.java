@@ -21,11 +21,9 @@
 
 package edu.ucla.sspace.hermit;
 
-import edu.ucla.sspace.clustering.ClusterMap;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 import edu.ucla.sspace.clustering.OnlineClustering;
-import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
 
 import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -35,6 +33,9 @@ import edu.ucla.sspace.common.Similarity.SimType;
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
+
+import edu.ucla.sspace.util.Generator;
+import edu.ucla.sspace.util.GeneratorMap;
 
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.IntegerVector;
@@ -90,9 +91,10 @@ import java.util.logging.Logger;
  * </p>
  *
  * This implementation relies heavily on a {@link IntegerVectorGenerator} and a
- * {@link ClusterMap} for it's functionaltiy.  The {@link
+ * {@link GeneratorMap} for it's functionaltiy.  The {@link
  * IntegerVectorGenerator} provided defines how index vectors are created.  The
- * {@link ClusterMap} defines how contexts are clustered together.
+ * {@link OnlineClusteringGenerator} defines how contexts are clustered
+ * together.
  *
  * </p>
  *
@@ -188,7 +190,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
      * The type of clustering used for {@code FlyingHermit}.  This specifies how
      * hermit will merge it's context vectors into different senses.
      */
-    private ClusterMap<SparseIntegerVector> clusterMap;
+    private GeneratorMap<OnlineClustering<SparseIntegerVector>> clusterMap;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -217,7 +219,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
     public FlyingHermit(
             Map<String, TernaryVector> indexGeneratorMap,
             PermutationFunction<TernaryVector> permFunction,
-            OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator,
+            Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator,
             Map<String, String> remap,
             Set<String> accepted,
             int vectorSize,
@@ -233,7 +235,8 @@ public class FlyingHermit implements SemanticSpace, Filterable {
         compacted = false;
 
         accuracyMap = new AccuracyMap();
-        clusterMap = new ClusterMap<SparseIntegerVector>(clusterGenerator);
+        clusterMap = new GeneratorMap<OnlineClustering<SparseIntegerVector>>(
+                clusterGenerator);
     }
 
     /**
@@ -331,9 +334,12 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                 // winner.  Otherwise add this {@code IntegerVector} as a new
                 // vector for the term.
                 int clusterNum;
-                if (!compacted)
-                    clusterNum = clusterMap.addVector(focusWord, meaning);
-                else
+
+                if (!compacted) {
+                    OnlineClustering<SparseIntegerVector> clustering =
+                        clusterMap.get(focusWord);
+                    clusterNum = clustering.addVector(meaning);
+                } else
                     clusterNum = assignVector(focusWord, meaning);
 
                 // Count the accuracy of the current cluster assignment for
@@ -426,7 +432,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
             for (String term : terms) {
                 // Extract the set of clusters from the map for the term.
                 OnlineClustering<SparseIntegerVector> clustering =
-                    clusterMap.getClustering(term);
+                    clusterMap.get(term);
                 List<SparseIntegerVector> centroids = clustering.getCentroids();
                 int[] centroidSizes = new int[centroids.size()];
                 for (int i = 0; i < centroids.size(); ++i)
@@ -459,7 +465,7 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                     i++;
                 }
 
-                clusterMap.removeClusters(term);
+                clusterMap.remove(term);
                 accuracyMap.setClusterNames(term);
             }
 

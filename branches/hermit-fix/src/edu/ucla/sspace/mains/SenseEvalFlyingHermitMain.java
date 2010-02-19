@@ -21,7 +21,8 @@
 
 package edu.ucla.sspace.mains;
 
-import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
+import edu.ucla.sspace.clustering.OnlineClustering;
+import edu.ucla.sspace.clustering.OnlineKMeans;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -38,6 +39,7 @@ import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
@@ -101,20 +103,8 @@ import java.util.Properties;
  *   </li> {@code -P}, {@code --userPermutations} Set if permutations should be
  *         used
  *
- *   </li> {@code -u}, {@code --useDenseSemantics} Set to true if dense vectors
- *         should be used
- *
  *   </ul>
  *
- * <li><u>Tokenizing Options</u>
- *
- *   <ul>
- *
- *   </li> {@code -A}, {@code --acceptanceList=FILE} A File with one word per
- *        line listing terms to generate semantics for.  This is separate from
- *        filtering and will override the replacementMap option
- *
- *   </ul>
  * <li><u>Cluster Properties</u>
  *
  *   <ul>
@@ -124,9 +114,6 @@ import java.util.Properties;
  *
  *   </li> {@code -c}, {@code --senseCount=INT} The maximum number of senses
  *         {@link FlyingHermit} should produce
- *
- *   </li> {@code -G}, {@code --clusterGenerator=CLASSNAME} The cluster
- *         generator to use
  *
  *   </ul>
  *
@@ -173,12 +160,6 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
      */
     public static final String DEFAULT_GENERATOR =
         "edu.ucla.sspace.index.RandomIndexVectorGenerator";
-
-    /**
-     * The default {@link OnlineClusteringGenerator} to use.
-     */
-    public static final String DEFAULT_CLUSTER =
-        "edu.ucla.sspace.clustering.OnlineClusteringGenerator";
 
     /**
      * The default number of dimensions the space will have.
@@ -228,12 +209,7 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
      * The {@link OnLineClusteringGenerator} to use for creating new cluster
      * instances.
      */
-    private OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator;
-
-    /**
-     * The set of words to generate semantic vectors for.
-     */
-    private Set<String> acceptedWords;
+    private Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator;
 
     /**
      * Uninstantiable.
@@ -282,19 +258,7 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
                           false, null, "Process Properties");
-        options.addOption('u', "useDenseSemantics",
-                          "Set to true if dense vectors should be used",
-                          false, null, "Process Properties");
         
-        // Add more tokenizing options.
-        options.addOption('A', "acceptanceList",
-                          "A File with one word per line listing terms to " +
-                          "generate semantics for.  This is separate from " + 
-                          "filtering and will override the replacementMap " +
-                          "option",
-                          true, "FILE", "Tokenizing Options");
-
-        // Add arguments for setting clustering properties such as the
         // similarity threshold, maximum number of senses to create, and the
         // clustering mechanism to use. 
         options.addOption('h', "threshold",
@@ -304,13 +268,6 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
                           "The maximum number of senses FlyingHermit should " +
                           "produce",
                           true, "INT", "Cluster Properties");
-        options.addOption('G', "clusterGenerator",
-                          "The cluster generator to use",
-                          true, "CLASSNAME", "Cluster Properties");
-        options.addOption('W', "minPercentage",
-                          "The minimum percentage of items a cluster must " +
-                          "have to be maintained",
-                          true, "DOUBLE", "Cluster Properties");
 
         // Additional processing steps.
         options.addOption('S', "saveIndexes",
@@ -323,27 +280,6 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
                           true, "FILE", "Pre Processing");
     }
 
-    /**
-     * Prepare the acceptance list for {@code FlyingHermit} based on the
-     * contents of {@code filename}.  The expected input format is:
-     *   word
-     *
-     * @param filename The filename specifying a set of words to accept.
-     */
-    private void prepareAcceptanceList(String filename) {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(filename));
-            String line = null;
-            acceptedWords = new HashSet<String>();
-            while ((line = br.readLine()) != null) {
-                String word = line.trim();
-                acceptedWords.add(word);
-            }
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-    }
-        
     /**
      * {@inheritDoc}
      */
@@ -361,9 +297,6 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
             prevWordsSize = Integer.MAX_VALUE;
             nextWordsSize = Integer.MAX_VALUE;
         }
-
-        if (argOptions.hasOption('A'))
-            prepareAcceptanceList(argOptions.getStringOption('A'));
 
         // Setup the PermutationFunction.
         String permType = argOptions.getStringOption("permutationFunction",
@@ -385,9 +318,6 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
             throw new Error(e);
         }
 
-        // Setup the use of dense vectors.
-        boolean useDense = argOptions.hasOption("useDenseSemantics");
-
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadIndexes");
@@ -407,19 +337,11 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
                                                     DEFAULT_SENSE_COUNT);
         double threshold = argOptions.getDoubleOption("threshold",
                                                       DEFAULT_THRESHOLD);
-        String clusterName =
-            argOptions.getStringOption("clusterGenerator", DEFAULT_CLUSTER);
-        System.setProperty(OnlineClusteringGenerator.MAX_CLUSTERS_PROPERTY,
+        System.setProperty(OnlineKMeans.MAX_CLUSTERS_PROPERTY,
                            Integer.toString(maxSenseCount));
-        System.setProperty(OnlineClusteringGenerator.MERGE_THRESHOLD_PROPERTY,
+        System.setProperty(OnlineKMeans.MERGE_THRESHOLD_PROPERTY,
                            Double.toString(threshold));
-        if (argOptions.hasOption('W'))
-            System.setProperty(
-                    OnlineClusteringGenerator.DROP_THRESHOLD_PROPERTY,
-                    argOptions.getStringOption('W'));
-        clusterGenerator =
-            (OnlineClusteringGenerator<SparseIntegerVector>) getObjectInstance(
-                    clusterName);
+        clusterGenerator = new OnlineKMeans();
     }
 
     /**
@@ -485,44 +407,4 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
     }
-
-    /**
-     * {@inheritDoc}
-    protected void processDocumentsAndSpace(SemanticSpace space,
-                                            Iterator<Document> docIter,
-                                            int numThreads,
-                                            Properties props) throws Exception {
-        int docSize = Integer.MAX_VALUE;
-        if (argOptions.hasOption("trainSize"))
-            docSize = argOptions.getIntOption("trainSize");
-        else if (argOptions.hasOption("documentCount"))
-            docSize = argOptions.getIntOption("documentCount");
-
-        LimitedOneLinePerDocumentIterator trainTestIter = 
-            new LimitedOneLinePerDocumentIterator(docIter, docSize, false);
-
-        parseDocumentsMultiThreaded(space, trainTestIter, numThreads);
-
-        long startTime = System.currentTimeMillis();
-        space.processSpace(props);
-        long endTime = System.currentTimeMillis();
-        verbose("processed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
-
-        // If we are using a test/train set, process the test set now.
-        // Otherwise we are finished.
-        if (argOptions.hasOption("trainSize")) {
-            // Reset the iterator so that the rest of the corpus is used for
-            // testing.
-            trainTestIter.reset();
-            parseDocumentsMultiThreaded(space, trainTestIter, numThreads);
-        }
-            
-        startTime = System.currentTimeMillis();
-        space.processSpace(props);
-        endTime = System.currentTimeMillis();
-        verbose("processed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
-    }
-     */
 }

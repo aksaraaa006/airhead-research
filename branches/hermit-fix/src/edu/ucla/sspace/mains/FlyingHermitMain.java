@@ -21,7 +21,8 @@
 
 package edu.ucla.sspace.mains;
 
-import edu.ucla.sspace.clustering.OnlineClusteringGenerator;
+import edu.ucla.sspace.clustering.OnlineClustering;
+import edu.ucla.sspace.clustering.OnlineKMeans;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -39,6 +40,7 @@ import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
@@ -104,9 +106,6 @@ import java.util.Properties;
  *
  *   </li> {@code -P}, {@code --userPermutations} Set if permutations should be
  *         used
- *
- *   </li> {@code -u}, {@code --useDenseSemantics} Set to true if dense vectors
- *         should be used
  *
  *   </ul>
  *
@@ -242,7 +241,7 @@ public class FlyingHermitMain extends GenericMain {
      * The {@link OnLineClusteringGenerator} to use for creating new cluster
      * instances.
      */
-    private OnlineClusteringGenerator<SparseIntegerVector> clusterGenerator;
+    private Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator;
 
     /**
      * The replacement map, mapping original terms to conflated terms, for
@@ -303,9 +302,6 @@ public class FlyingHermitMain extends GenericMain {
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
                           false, null, "Process Properties");
-        options.addOption('u', "useDenseSemantics",
-                          "Set to true if dense vectors should be used",
-                          false, null, "Process Properties");
         
         // Add more tokenizing options.
         options.addOption('m', "replacementMap",
@@ -329,13 +325,6 @@ public class FlyingHermitMain extends GenericMain {
                           "The maximum number of senses FlyingHermit should " +
                           "produce",
                           true, "INT", "Cluster Properties");
-        options.addOption('G', "clusterGenerator",
-                          "The cluster generator to use",
-                          true, "CLASSNAME", "Cluster Properties");
-        options.addOption('W', "minPercentage",
-                          "The minimum percentage of items a cluster must " +
-                          "have to be maintained",
-                          true, "DOUBLE", "Cluster Properties");
 
         // Additional processing steps.
         options.addOption('S', "saveIndexes",
@@ -413,9 +402,8 @@ public class FlyingHermitMain extends GenericMain {
         prevWordsSize = Integer.parseInt(prevNext[0]);
         nextWordsSize = Integer.parseInt(prevNext[1]);
 
-        if (argOptions.hasOption('m')) {
+        if (argOptions.hasOption('m'))
             prepareReplacementMap(argOptions.getStringOption('m'));
-        }
         if (argOptions.hasOption('A'))
             prepareAcceptanceList(argOptions.getStringOption('A'));
 
@@ -439,9 +427,6 @@ public class FlyingHermitMain extends GenericMain {
             throw new Error(e);
         }
 
-        // Setup the use of dense vectors.
-        boolean useDense = argOptions.hasOption("useDenseSemantics");
-
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadIndexes");
@@ -461,19 +446,11 @@ public class FlyingHermitMain extends GenericMain {
                                                     DEFAULT_SENSE_COUNT);
         double threshold = argOptions.getDoubleOption("threshold",
                                                       DEFAULT_THRESHOLD);
-        String clusterName =
-            argOptions.getStringOption("clusterGenerator", DEFAULT_CLUSTER);
-        System.setProperty(OnlineClusteringGenerator.MAX_CLUSTERS_PROPERTY,
+        System.setProperty(OnlineKMeans.MAX_CLUSTERS_PROPERTY,
                            Integer.toString(maxSenseCount));
-        System.setProperty(OnlineClusteringGenerator.MERGE_THRESHOLD_PROPERTY,
+        System.setProperty(OnlineKMeans.MERGE_THRESHOLD_PROPERTY,
                            Double.toString(threshold));
-        if (argOptions.hasOption('W'))
-            System.setProperty(
-                    OnlineClusteringGenerator.DROP_THRESHOLD_PROPERTY,
-                    argOptions.getStringOption('W'));
-        clusterGenerator =
-            (OnlineClusteringGenerator<SparseIntegerVector>) getObjectInstance(
-                    clusterName);
+        clusterGenerator = new OnlineKMeans();
     }
 
     /**
@@ -526,7 +503,8 @@ public class FlyingHermitMain extends GenericMain {
             //
             // NOTE: the directory to which this file is written should be a
             // configurable parameter
-            PrintWriter pw = new PrintWriter(word + "-positional-similarity.txt");
+            PrintWriter pw =
+                new PrintWriter(word + "-positional-similarity.txt");
 
             // For each of the positions that would occur around the target word
             for (int pos = -positionWindowSize; pos <= positionWindowSize;
