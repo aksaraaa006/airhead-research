@@ -32,7 +32,8 @@ import java.util.Random;
 
 
 /**
- * Generate guassian index vectors.  This class supports the following
+ * A Generator for vectors where each entry is from a guassian distribution
+ * having some mean and standard deviation.  This class supports the following
  * properties:
  *
  * <dl style="margin-left: 1em">
@@ -43,6 +44,13 @@ import java.util.Random;
  *
  * <dd style="padding-top: .5em">This variable is the standard deviation used
  * when generating random numbers from a gaussian distribution</p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #MEAN_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_MEAN}
+ *
+ * <dd style="padding-top: .5em">This variable is the mean used for generating
+ * values from gaussian distribution for vectors</p>
  *
  * </dl>
  *
@@ -65,12 +73,25 @@ public class GaussianVectorGenerator
     public static final String STANDARD_DEVIATION_PROPERTY =
         PROPERTY_PREFIX + ".stdev";
 
+    /**
+     * The property for setting the standard deviation.
+     */
+    public static final String MEAN_PROPERTY =
+        PROPERTY_PREFIX + ".mean";
+
     public static final double DEFAULT_STANDARD_DEVIATION = 1;
+
+    public static final String DEFAULT_MEAN = "0";
 
     /**
      * The standard deviation used for generating a new index vector for terms.
      */
     private double stdev;
+
+    /**
+     * The mean used each element in an generated {@link Vector}.
+     */
+    private double mean;
 
     /**
      * A random number generator which produces values for index vectors.
@@ -101,6 +122,8 @@ public class GaussianVectorGenerator
         stdev = (stdevProp != null)
             ? Double.parseDouble(stdevProp)
             : DEFAULT_STANDARD_DEVIATION;
+        mean = Double.parseDouble(prop.getProperty(
+                    MEAN_PROPERTY, DEFAULT_MEAN));
     }
 
     /**
@@ -111,7 +134,7 @@ public class GaussianVectorGenerator
             int indexVectorLength) {
         DoubleVector termVector = new DenseVector(indexVectorLength);
         for (int i = 0; i < indexVectorLength; i++)
-            termVector.set(i, randomGenerator.nextGaussian() * stdev);
+            termVector.set(i, mean + (randomGenerator.nextGaussian() * stdev));
         return termVector;
     }
 }
