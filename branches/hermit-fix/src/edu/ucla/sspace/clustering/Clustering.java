@@ -35,11 +35,16 @@ import java.util.Properties;
  * </p>
  *
  * Implementations should not modify the contents of a {@code Matrix} to
- * cluster.   Implementations may use a passed in properties object to get any
- * additional parameters that are required for clustering.  If a clustering
- * algorithm requires the number of clusters to be specified the implementations
- * may throw {@link UnsupportedOperationException} when the number of clusters
- * is not specified.
+ * cluster.  Implementations may use a passed in properties object to support
+ * additional parameters that for clustering.  By convention, implementations
+ * should specify a set of default values such that the matrix rows can be
+ * clustered if no properties are specified. 
+ *
+ * </p>
+ *
+ * If a clustering algorithm requires the number of clusters to be specified, an
+ * implementation may throw an {@link UnsupportedOperationException} when the
+ * number of clusters is not specified.
  *
  * @author Keith Stevens
  */
@@ -47,8 +52,8 @@ public interface Clustering {
 
     /**
      * Clusters the set of rows in the given {@code Matrix} without a specified
-     * number of clusters.  The set of cluster assignments are returned for each
-     * row in the matrix.  (Optional)
+     * number of clusters (optional operation).  The set of cluster assignments
+     * are returned for each row in the matrix.
      *
      * @param matrix the {@link Matrix} containing data points to cluster
      * @param props the properties to use for any parameters each clustering
@@ -60,7 +65,7 @@ public interface Clustering {
     Assignment[] cluster(Matrix matrix, Properties props);
 
     /**
-     * Clusters the set of rows in the given {@code Matrix} without a specified
+     * Clusters the set of rows in the given {@code Matrix} into the specified
      * number of clusters.  The set of cluster assignments are returned for each
      * row in the matrix.
      *
@@ -72,5 +77,5 @@ public interface Clustering {
      * @return an array of {@link ClusterAssignment}s that may contain only one
      *         assignment or multiple
      */
-    Assignment[] cluster(Matrix vectors, int numClusters, Properties props);
+    Assignment[] cluster(Matrix matrix, int numClusters, Properties props);
 }

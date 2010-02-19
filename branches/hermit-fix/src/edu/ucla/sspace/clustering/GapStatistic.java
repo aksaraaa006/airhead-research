@@ -1,5 +1,7 @@
 package edu.ucla.sspace.clustering;
 
+import edu.ucla.sspace.clustering.ClutoClustering.Method;
+
 import edu.ucla.sspace.matrix.ClutoDenseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
@@ -90,7 +92,7 @@ public class GapStatistic implements Clustering {
     /**
      * The cluto clustering method name for k-means clustering.
      */
-    private static final String METHOD = ClutoClustering.KMEANS;
+    private static final Method METHOD = Method.KMEANS;
 
     /**
      * {@inheritDoc}
@@ -151,11 +153,11 @@ public class GapStatistic implements Clustering {
                 for (int j = 0; j < numGaps; ++j) {
                     File outputFile = 
                         File.createTempFile("gap-clustering-output", ".matrix");
-                    result = ClutoClustering.cluster(null,
-                                                     gapFiles[j],
-                                                     outputFile,
-                                                     k,
-                                                     METHOD);
+                    result = ClutoWrapper.cluster(null,
+                                                  gapFiles[j],
+                                                  METHOD.getClutoName(),
+                                                  outputFile,
+                                                  k);
                     outputFile.delete();
 
                     gapScore += Math.log(extractScore(result));
@@ -167,11 +169,11 @@ public class GapStatistic implements Clustering {
                 File outFile =
                     File.createTempFile("gap-clustering-output", ".matrix");
                 outFile.deleteOnExit();
-                result = ClutoClustering.cluster(null,
-                                                 matrixFile,
-                                                 outFile,
-                                                 i + startSize,
-                                                 METHOD);
+                result = ClutoWrapper.cluster(null,
+                                              matrixFile,
+                                              METHOD.getClutoName(),
+                                              outFile,
+                                              i + startSize);
 
                 // Compute the difference between the two scores.  If the
                 // current score is less than the previous score, then the
@@ -194,7 +196,7 @@ public class GapStatistic implements Clustering {
         // Extract the cluster assignments based on the best found value of k.
         Assignment[] assignments = new Assignment[m.rows()];
         try {
-            ClutoClustering.extractAssignment(previousFile, assignments);
+            ClutoWrapper.extractAssignments(previousFile, assignments);
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

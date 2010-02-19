@@ -54,52 +54,44 @@ public class ClutoClustering implements Clustering {
         "edu.ucla.sspace.clustering.ClutoClustering";
 
     /**
-     * The property to set the clustering method used by Cluto.
+     * The property to set the name of a {@link #Method} that Cluto should use
+     * in clustering the data.
      */
-    public static String CLUSTER_METHOD_PROPERTY = 
-        PROPERTY_PREFIX + ".clusterMethod";
-
-    /**
-     * The property to set the similarity measurement used by Cluto.
-     */
-    public static String CLUSTER_SIMILARITY_PROPERTY = 
+    public static String CLUSTER_METHOD = 
         PROPERTY_PREFIX + ".clusterSimilarity";
 
-
     /**
-     * The method value for using repeated bisections.
+     * The method by which CLUTO should cluster the data points
      */
-    public static String REPEATED_BISECTIONS = "rb";
+    public enum Method {
+        
+        REPEATED_BISECTIONS_REPEATED("rbr"),
+        KMEANS("direct"),
+        AGGLOMERATIVE("agglo"),
+        NEAREST_NEIGHBOOR("graph"),
+        BAGGLO("bagglo");       
 
-    /**
-     * The method vlaue for using repeated bisections.
-     */
-    public static String REPEATED_BISECTIONS_REPEATED = "rbr";
+        /**
+         * The string abbreviation for each clustering method
+         */
+        private final String name;
 
-    /**
-     * The method value for using K-Means.
-     */
-    public static String KMEANS = "direct";
+        Method(String name) {
+            this.name = name;
+        }
 
-    /**
-     * The method value for using agglomerative clustering.
-     */
-    public static String AGGLOMERATIVE = "agglo";
-
-    /**
-     * The method value for using nearest neighboor clustering.
-     */
-    public static String NEAREST_NEIGHBOOR = "graph";
-
-    /**
-     * The method value for using bagglo clustering.
-     */
-    public static String BAGGLO = "bagglo";
+        /**
+         * Returns the name for this method that CLUTO uses on the command line.
+         */
+        String getClutoName() {
+            return name;
+        }
+    }
 
     /**
      * The default clustering method to be used by Cluto.
      */
-    private static String DEFAULT_CLUSTER_METHOD = "agglo";
+    private static Method DEFAULT_CLUSTER_METHOD = Method.AGGLOMERATIVE;
 
     /**
      * A logger to track the status of Cluto.
@@ -108,169 +100,53 @@ public class ClutoClustering implements Clustering {
         Logger.getLogger(ClutoClustering.class.getName());
 
     /**
-     * {@inheritDoc}
+     * Creates a new {@code ClutoClustering} instance.
      */
-    public Assignment[] cluster(Matrix matrix, Properties props) {
-        throw new UnsupportedOperationException(
-                "The number of clusters must be specified");
-    }
+    public ClutoClustering() { }
 
     /**
      * {@inheritDoc}
+     *
+     * @param props the properties to use for clustering with CLUTO.  See {@link
+     *        ClutoClustering} for the list of supported properties.
      */
-    public Assignment[] cluster(Matrix m,
-                                int numClusters,
-                                Properties props) {
-        String clusterMethod = props.getProperty(
-                CLUSTER_METHOD_PROPERTY, DEFAULT_CLUSTER_METHOD);
+    public Assignment[] cluster(Matrix matrix, Properties properties) {
+        return cluster(matrix, System.getProperties());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param props the properties to use for clustering with CLUTO.  See {@link
+     *        ClutoClustering} for the list of supported properties.
+     */
+    public Assignment[] cluster(Matrix matrix, int numClusters, 
+                                Properties properties) {
+        Method clmethod = DEFAULT_CLUSTER_METHOD;
+        String methodProp = properties.getProperty(CLUSTER_METHOD);
+        if (methodProp != null) 
+            clmethod = Method.valueOf(methodProp);
+        return cluster(matrix, numClusters, clmethod);
+    }
+
+    /**
+     * Clusters the set of rows in the given {@code Matrix} into a specified
+     * number of clusters using the specified CLUTO clustering method.
+     *
+     * @param matrix the {@link Matrix} containing data points to cluster
+     * @param numClusters the number of clusters to generate
+     * @param clusterMethod the method by which cluto should cluster the rows
+     *
+     * @return an array of {@link ClusterAssignment}s that may contain only one
+     *         assignment or multiple
+     */
+    public Assignment[] cluster(Matrix matrix, int numClusters, 
+                                Method clusterMethod) {
         try {
-            return cluster(m, numClusters, clusterMethod);
+            String clmethod = clusterMethod.getClutoName();
+            return ClutoWrapper.cluster(matrix, clmethod, numClusters);
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
-    }
-
-    /**
-     * Clusters the rows of the matrix into the specified number of clusters
-     * using a hierarchical agglomerative clustering algorithm.  Rows that have
-     * no distinguishing features will not be clustered and instead assigned to
-     * a cluster index of -1.
-     *
-     * @param m a matrix whose rows are to be clustered
-     * @param numClusters the number of clusters into which the matrix should
-     *        divided
-     *
-     * @return an array where each element corresponds to a row and the value is
-     *         the cluster number to which that row was assigned.  Cluster
-     *         numbers will start at 0 and increase.  Rows that were not able to
-     *         be clustered will be assigned a -1 value.
-     *
-     * @throws IOError if any {@link IOException} occurs when marshalling data
-     *         to and from Cluto, or during Cluto's execution.
-     */
-    public static Assignment[] agglomerativeCluster(Matrix m, int numClusters) {
-        try {
-            return cluster(m, numClusters, "agglo");
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-    }
-
-    /**
-     * Clusters the rows of the matrix into the specified number of clusters
-     * using the string {@code method} to indicate to Cluto which type of
-     * clustering to use.
-     *
-     * @param m a matrix whose rows are to be clustered
-     * @param numClusters the number of clusters into which the matrix should
-     *        divided
-     * @param method a string recognized by Cluto that indicates which
-     *        clustering algorithm should be used
-     *
-     * @return an array where each element corresponds to a row and the value is
-     *         the cluster number to which that row was assigned.  Cluster
-     *         numbers will start at 0 and increase.  Rows that were not able to
-     *         be clustered will be assigned a -1 value.
-     */
-    public static Assignment[] cluster(Matrix m, int numClusters, String method)
-            throws IOException {
-        File matrixFile = File.createTempFile("cluto-input",".matrix");
-        matrixFile.deleteOnExit();
-        MatrixIO.writeMatrix(m, matrixFile, MatrixIO.Format.CLUTO_SPARSE);
-        File outputFile = File.createTempFile("cluto-output", ".matrix");
-        outputFile.deleteOnExit();
-        Assignment[] assignments = new Assignment[m.rows()];
-        cluster(assignments, matrixFile, outputFile, numClusters, method);
-        return assignments;
-    }
-
-    /**
-     * Clusters the rows of the give file into the specified number of clusters
-     * using the string {@code method} to indicate to Cluto which type of
-     * clustering to use.
-     *
-     * @param clusterAssignment An array where each element corresponds to a row
-     *                          and the filled in value will be  the cluster
-     *                          number to which that row was assigned.  Cluster
-     *                          numbers will start at 0 and increase.  Rows that
-     *                          were not able to be clustered will be assigned a
-     *                          -1 value.
-     * @param matrixFile The data file containing the data points to cluster.
-     * @param outputFile The data file that will store the cluster assignments
-     *                   made by cluto.
-     * @param numClusters The number of clusters into which the matrix should
-     *                    divided.
-     * @param method A string recognized by Cluto that indicates which
-     *               clustering algorithm should be used.
-     *
-     * @return A string containing the standard output created by Cluto.
-     */
-    public static String cluster(Assignment[] clusterAssignment,
-                                 File matrixFile, 
-                                 File outputFile,
-                                 int numClusters,
-                                 String method) throws IOException {
-        // NOTE: the defaults for Agglomerative clustering are cosine similarity
-        // and using mean-link (UPGMA) clustering, which is what we want.
-        String commandLine = "vcluster " +
-            "-clmethod=" + method + " " +
-            "-clustfile=" + outputFile  +
-            " " + matrixFile +
-            " " + numClusters;
-        LOGGER.fine("executing: " + commandLine);
-        Process cluto = Runtime.getRuntime().exec(commandLine);
-        
-        BufferedReader stdout = new BufferedReader(
-            new InputStreamReader(cluto.getInputStream()));
-        BufferedReader stderr = new BufferedReader(
-            new InputStreamReader(cluto.getErrorStream()));
-        
-        String clutoOutput = null;
-        StringBuilder output = new StringBuilder("Cluto output:\n");
-        for (String line = null; (line = stdout.readLine()) != null; ) 
-            output.append(line).append("\n");
-        clutoOutput = output.toString();
-        if (LOGGER.isLoggable(Level.FINE))
-            LOGGER.fine(clutoOutput);
-	    
-        int exitStatus = 0;
-        try {
-            exitStatus = cluto.waitFor();
-        } catch (InterruptedException ie) {
-            LOGGER.log(Level.SEVERE, "Cluto", ie);
-        }
-        
-        LOGGER.finer("Cluto exit status: " + exitStatus);
-
-        // If Cluto was successful in generating the clustering the rows, read
-        // in the results file to generate the output.
-        if (exitStatus == 0 && clusterAssignment != null)
-            extractAssignment(outputFile, clusterAssignment);
-        else if (exitStatus != 0) {
-            StringBuilder sb = new StringBuilder();
-            for (String line = null; (line = stderr.readLine()) != null; )
-                sb.append(line).append("\n");
-
-            // warning or error?
-            LOGGER.warning("Cluto exited with error status.  " + exitStatus +
-                               " stderr:\n" + sb.toString());
-            throw new Error("Clustering failed");
-        }
-        return clutoOutput;
-    }
-
-    /**
-     * Extract the set of assignemnts from a Cluto assignment file.
-     */
-    public static void extractAssignment(File outputFile,
-                                         Assignment[] clusterAssignment)
-            throws IOException {
-        // The cluster assignmnet file is formatted as each row (data point)
-        // having its cluster label specified on a separate line.  We can
-        // read these in sequence to generate the output array.
-        BufferedReader br = new BufferedReader(new FileReader(outputFile));
-        for (int i = 0; i < clusterAssignment.length; ++i)
-            clusterAssignment[i] =
-                new HardAssignment(Integer.parseInt(br.readLine()));
     }
 }

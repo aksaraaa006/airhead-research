@@ -1,5 +1,7 @@
 package edu.ucla.sspace.clustering;
 
+import edu.ucla.sspace.clustering.ClutoClustering.Method;
+
 import edu.ucla.sspace.matrix.ClutoDenseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
@@ -141,9 +143,9 @@ public class AutomaticStopClustering implements Clustering {
     private static final Random random = new Random();
 
     /**
-     * The cluto clustering method name for k-means clustering.
+     * The CLUTO clustering method name for k-means clustering.
      */
-    private static final String METHOD = ClutoClustering.KMEANS;
+    private static final Method METHOD = Method.KMEANS;
 
     /**
      * {@inheritDoc}
@@ -205,11 +207,11 @@ public class AutomaticStopClustering implements Clustering {
                 outFiles[i] = 
                     File.createTempFile("autostop-clustering-out", ".matrix");
                 outFiles[i].deleteOnExit();
-                result = ClutoClustering.cluster(null,
-                                                 matrixFile,
-                                                 outFiles[i],
-                                                 i + startSize,
-                                                 METHOD);
+                result = ClutoWrapper.cluster(null,
+                                              matrixFile,
+                                              METHOD.getClutoName(),
+                                              outFiles[i],
+                                              i + startSize);
 
                 objectiveWeights[i] = extractScore(result);
             } catch (IOException ioe) {
@@ -234,7 +236,7 @@ public class AutomaticStopClustering implements Clustering {
         // Extract the cluster assignments based on the best found value of k.
         Assignment[] assignments = new HardAssignment[m.rows()];
         try {
-            ClutoClustering.extractAssignment(outFiles[bestK], assignments);
+            ClutoWrapper.extractAssignments(outFiles[bestK], assignments);
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

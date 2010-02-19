@@ -522,15 +522,25 @@ public class PurandareFirstOrder implements SemanticSpace {
         // not purely alphabetic (i.e. contains number of other symbols), don't
         // bother clustering it.  This is done to reduce the computation time,
         // and to avoid clustering non-meaningful terms such as '.' or '''
+        if (!(term.matches("[a-zA-z]+") && numClusters > 6)) { // special case            
+            SparseDoubleVector meanSenseVector = 
+                new CompactSparseVector(termToIndex.size());            
+            int rows = contexts.rows();
+            for (int row = 0; row < rows; ++row) 
+                VectorMath.add(meanSenseVector, contexts.getRowVector(row));
+            termToVector.put(term, meanSenseVector);
+            return;
+        }
+
         Assignment[] clusterAssignment = 
-            (term.matches("[a-zA-z]+") && numClusters > 6)
-            ? ClutoClustering.agglomerativeCluster(contexts, numClusters)
-            : new Assignment[contexts.rows()];
+            new ClutoClustering().cluster(contexts, numClusters, 
+                                          ClutoClustering.Method.AGGLOMERATIVE);
         
         LOGGER.info("Generative sense vectors for " + term);
         
         // For each of the clusters, compute the mean sense vector
         int[] clusterSize = new int[numClusters];
+
         // Use CompactSparseVector to conserve memory given the potentially
         // large number of sense vectors
         SparseDoubleVector[] meanSenseVectors =
@@ -538,20 +548,13 @@ public class PurandareFirstOrder implements SemanticSpace {
         for (int i = 0; i < meanSenseVectors.length; ++i)
             meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
         for (int row = 0; row < clusterAssignment.length; ++row) {
-            DoubleVector contextVector = contexts.getRowVector(row);
-            int assignment;
-            if (clusterAssignment[row] == null)
-                assignment = 0;
-            else if (clusterAssignment[row].assignments().length == 0)
-                assignment = -1;
-            else 
-                assignment = clusterAssignment[row].assignments()[0];
-
-            // CLUTO will return -1 for vectors that could not be clustered.
-            // Just skip adding these rows to a specific sense
-            if (assignment < 0) 
-                continue;
+            // Check whether this row was assigned a cluster
+            if (clusterAssignment[row].assignments().length == 0)
+                continue;                
+            int assignment = clusterAssignment[row].assignments()[0];                
             clusterSize[assignment]++;
+
+            DoubleVector contextVector = contexts.getRowVector(row);
             VectorMath.add(meanSenseVectors[assignment], contextVector);
         }
         

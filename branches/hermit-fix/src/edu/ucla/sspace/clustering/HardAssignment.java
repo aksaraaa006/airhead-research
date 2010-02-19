@@ -23,27 +23,27 @@ package edu.ucla.sspace.clustering;
 
 
 /**
- * A simple implementation of a {@link Assignment} that only supports
- * hard assignments.
+ * An implementation of a {@link Assignment} where a data point may be assigned
+ * to at most <i>one</i> cluster, i.e. a hard assignment policy.
  */
 public class HardAssignment implements Assignment {
 
     /**
      * The array holding the single assignment.
      */
-    private int[] assignments;
+    private final int[] assignments;
 
     /**
-     * Creates a new {@link HardAssignment} where there is no
-     * assignment provided.
+     * Creates a new {@link HardAssignment} the data point is not assigned to
+     * any cluster.
      */
     public HardAssignment() {
         assignments = new int[0];
     }
 
     /**
-     * Creates a new {@link HardAssignment} where there is only one
-     * assignment provided.
+     * Creates a new {@link HardAssignment} where the data point is assigned to
+     * the specified cluster value.
      */
     public HardAssignment(int assignment) {
         assignments = new int[1];

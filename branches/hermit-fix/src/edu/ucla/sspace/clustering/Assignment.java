@@ -23,7 +23,9 @@ package edu.ucla.sspace.clustering;
 
 
 /**
- * An interface for a data points assignment.
+ * A cluster assignment for a data point.  
+ *
+ * @see Clustering
  */
 public interface Assignment {
 
