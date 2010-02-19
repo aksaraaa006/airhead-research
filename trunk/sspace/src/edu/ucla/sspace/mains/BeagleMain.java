@@ -124,6 +124,10 @@ public class BeagleMain extends GenericMain {
                     new File(argOptions.getStringOption("loadVectors")),
                     DoubleVectorGeneratorMap.class);
         } else {
+            double stdev = 1 / Math.sqrt(dimension);
+            System.setProperty(
+                    GaussianVectorGenerator.STANDARD_DEVIATION_PROPERTY,
+                    Double.toString(stdev));
             DoubleVectorGenerator generator = new GaussianVectorGenerator();
             generatorMap = new DoubleVectorGeneratorMap(generator, dimension);
         }
