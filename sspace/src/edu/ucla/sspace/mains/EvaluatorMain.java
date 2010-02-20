@@ -528,7 +528,7 @@ public class EvaluatorMain {
                 resultWriter.printf("%s ", titleList.get(i));
                 double[] results = resultList.get(i);
                 for (double result : results)
-                    resultWriter.printf("  &  %4.2f", result);
+                    resultWriter.printf("  &  %4.3f", result);
                 resultWriter.printf("  \\\\\n");
             }
             resultWriter.close();

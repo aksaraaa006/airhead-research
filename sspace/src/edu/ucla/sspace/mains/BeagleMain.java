@@ -22,6 +22,7 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.beagle.Beagle;
+import edu.ucla.sspace.beagle.Beagle.SemanticType;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
@@ -44,7 +45,7 @@ import java.util.Properties;
  *
  * <ul>
  * <li> {@code --dimensions=<int>} how many dimensions to use for the Beagle
- *      vectors.  512 is the default value.
+ *      vectors.  2048 is the default value.
  * </ul>
  *
  * <p>
@@ -104,6 +105,9 @@ public class BeagleMain extends GenericMain {
         options.addOption('n', "dimension",
                           "the length of each beagle vector",
                           true, "INT", "Options");
+        options.addOption('s', "semanticType",
+                          "The type of semantic vectors to generate",
+                          true, "SemanticType", "Options"); 
         options.addOption('S', "saveVectors", 
                           "save word-to-IndexVector mapping after processing",
                           true, "FILE", "Options");
@@ -148,7 +152,12 @@ public class BeagleMain extends GenericMain {
      * {@inheritDoc}
      */
     public SemanticSpace getSpace() {
-        return new Beagle(dimension, generatorMap);
+        SemanticType type = (argOptions.hasOption('s'))
+            ? SemanticType.valueOf(
+                    argOptions.getStringOption('s').toUpperCase())
+            : SemanticType.COMPOSITE;
+
+        return new Beagle(dimension, type, generatorMap);
     }
 
     /**
