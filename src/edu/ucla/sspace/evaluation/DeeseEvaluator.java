@@ -10,7 +10,7 @@ public class DeeseEvaluator {
         for (String file : args) {
             SemanticSpace sspace = new StaticSemanticSpace(file);
             WordAssociationReport report = evaluator.evaluate(sspace);
-            System.out.printf("%s: %f\n", file, 100*report.correlation());
+            System.out.printf("%s: %.3f\n", file, report.correlation());
         }
     }
 }
