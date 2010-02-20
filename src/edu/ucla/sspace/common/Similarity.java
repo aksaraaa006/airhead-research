@@ -439,6 +439,10 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+
+        if (numerator == 0d || xSqSum == 0d || ySqSum == 0d)
+            return 0;
+
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
