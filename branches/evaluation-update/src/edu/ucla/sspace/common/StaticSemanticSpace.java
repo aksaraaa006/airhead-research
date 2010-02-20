@@ -23,8 +23,10 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
+import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.Vector;
@@ -217,7 +219,7 @@ public class StaticSemanticSpace implements SemanticSpace {
         // reusable array for writing rows into the matrix
         double[] row = new double[columns];
         
-        matrix = Matrices.create(rows, columns, true);
+        matrix = new ArrayMatrix(rows, columns);
         while ((line = br.readLine()) != null) {
             if (index >= rows)
                 throw new IOException("More rows than specified");
@@ -265,7 +267,7 @@ public class StaticSemanticSpace implements SemanticSpace {
         int row = 0;
         
         // create a sparse matrix
-        matrix = Matrices.create(rows, columns, false);
+        matrix = new YaleSparseMatrix(rows, columns);
         while ((line = br.readLine()) != null) {
             String[] termVectorPair = line.split("\\|");
             String[] values = termVectorPair[1].split(",");
@@ -295,7 +297,7 @@ public class StaticSemanticSpace implements SemanticSpace {
         int cols = dis.readInt();
 
         // create a dense matrix
-        Matrix m = Matrices.create(rows, cols, true);
+        Matrix m = new ArrayMatrix(rows, cols);
         double[] d = new double[cols];
         for (int row = 0; row < rows; ++row) {
             String word = dis.readUTF();

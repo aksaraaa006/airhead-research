@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.vector.Vector;
+import edu.ucla.sspace.vector.VectorIO;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,6 +83,8 @@ public abstract class AbstractWordAssociationTest
 
         int unanswerable = 0;        
         double testRange = getHighestScore() - getLowestScore();
+        double meanComputedRating = 0;
+        double answered = 0;
 
         // Compute the word pair similarity using the given Semantic Space for
         // each word.
@@ -96,24 +99,14 @@ public abstract class AbstractWordAssociationTest
                 continue;
             }
             // Scale the associated result to within the test's range of values
-            double scaled = (association * testRange) + getLowestScore();
-            // Mark that the words have both computed and human scores
-            computedVals.add(scaled);
-            humanVals.add(e.getValue());
+            meanComputedRating += (association * testRange) + getLowestScore();
+            answered++;
         }
 
-        // Transform the Lists into arrays so we can use the correlation code
-        double[] h = new double[humanVals.size()];
-        for (int i = 0; i < h.length; ++i)
-            h[i] = humanVals.get(i);
-        double[] s = new double[computedVals.size()];
-        for (int i = 0; i < s.length; ++i)
-            s[i] = computedVals.get(i);
-        
-        double correlation = Similarity.correlation(h, s);
+        meanComputedRating /= answered;
 
         return new SimpleWordAssociationReport(
-            wordPairToHumanJudgement.size(), correlation, unanswerable);
+            wordPairToHumanJudgement.size(), meanComputedRating, unanswerable);
     }
 
     /**
