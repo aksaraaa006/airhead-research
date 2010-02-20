@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.beagle;
 
+import jnt.FFT.ComplexDoubleFFT_Radix2; 
+
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
@@ -74,6 +76,12 @@ import java.util.logging.Logger;
  * @author Keith Stevens
  */
 public class Beagle implements SemanticSpace {
+
+    public enum SemanticType {
+        CONTEXT,
+        ORDERING,
+        COMPOSITE,
+    };
 
     /**
      * The full context size used when scanning the corpus. This is the
@@ -136,10 +144,19 @@ public class Beagle implements SemanticSpace {
      */
     private int[] permute2;
 
+    private final SemanticType semanticType;
+
     public Beagle(int vectorSize, DoubleVectorGeneratorMap vectorMap) {
+        this(vectorSize, SemanticType.COMPOSITE, vectorMap);
+    }
+
+    public Beagle(int vectorSize,
+                  SemanticType semanticType,
+                  DoubleVectorGeneratorMap vectorMap) {
         this.indexVectorSize = vectorSize;
         this.vectorMap = vectorMap;
         termHolographs = new ConcurrentHashMap<String, DoubleVector>();
+        this.semanticType = semanticType;
 
         placeHolder = vectorMap.get("");
 
@@ -171,7 +188,9 @@ public class Beagle implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-        return BEAGLE_SSPACE_NAME + "-" + indexVectorSize;
+        return BEAGLE_SSPACE_NAME + "-" +
+               indexVectorSize + "-" +
+               semanticType.toString();
     }
 
     /**
@@ -188,7 +207,7 @@ public class Beagle implements SemanticSpace {
         Queue<String> prevWords = new ArrayDeque<String>();
         Queue<String> nextWords = new ArrayDeque<String>();
 
-        Iterator<String> it = IteratorFactory.tokenize(document);
+        Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
         Map<String, DoubleVector> documentVectors =
             new HashMap<String, DoubleVector>();
 
@@ -196,33 +215,40 @@ public class Beagle implements SemanticSpace {
         // starts, the context is fully prepared.
         for (int i = 0 ; i < nextSize && it.hasNext(); ++i)
             nextWords.offer(it.next().intern());
-        prevWords.offer("");
+        prevWords.offer(IteratorFactory.EMPTY_TOKEN);
 
         String focusWord = null;
         while (!nextWords.isEmpty()) {
             focusWord = nextWords.remove();
+
             if (it.hasNext())
                 nextWords.offer(it.next().intern());
 
-            // Incorporate the context into the semantic vector for the focus
-            // word.  If the focus word has no semantic vector yet, create a new
-            // one, as determined by the index builder.
-            DoubleVector meaning = termHolographs.get(focusWord);
-            if (meaning == null) {
-                meaning = new DenseVector(indexVectorSize);
-                documentVectors.put(focusWord, meaning);
+            if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                // Incorporate the context into the semantic vector for the
+                // focus word.  If the focus word has no semantic vector yet,
+                // create a new one, as determined by the index builder.
+                DoubleVector meaning = termHolographs.get(focusWord);
+                if (meaning == null) {
+                    meaning = new DenseVector(indexVectorSize);
+                    documentVectors.put(focusWord, meaning);
+                }
+                updateMeaning(meaning, prevWords, nextWords);
             }
 
-            updateMeaning(meaning, prevWords, nextWords);
             prevWords.offer(focusWord);
             if (prevWords.size() > 1)
                 prevWords.remove();
         }
 
-
+        // Add the local cached semantics to the global term semantics.
         for (Map.Entry<String, DoubleVector> entry :
                 documentVectors.entrySet()) {
             synchronized (entry.getKey()) {
+                // Get the global semantic representation of each word.  If it
+                // does not currently exist, then just put the local copies
+                // representation, otherwise add the local copy to the global
+                // version.
                 DoubleVector existingVector =
                     termHolographs.get(entry.getKey());
                 if (existingVector == null)
@@ -251,14 +277,57 @@ public class Beagle implements SemanticSpace {
     private void updateMeaning(DoubleVector meaning,
                                Queue<String> prevWords,
                                Queue<String> nextWords) {
-        // Sum the index vectors for co-occuring words into {@code meaning}.
-        for (String term: prevWords)
-            VectorMath.add(meaning, vectorMap.get(term));
-        for (String term: nextWords)
-            VectorMath.add(meaning, vectorMap.get(term));
+        // Generate the semantics of the context using summation of index
+        // vectors.
+        if (semanticType == SemanticType.COMPOSITE ||
+            semanticType == SemanticType.CONTEXT) {
+            DoubleVector context = new DenseVector(indexVectorSize);
 
-        // Generate the semantics of the circular convolution of n-grams.
-        VectorMath.add(meaning, groupConvolution(prevWords, nextWords));
+            // Sum the words prior to the focus word, skipping filtered tokens.
+            for (String term: prevWords) {
+                if (term.equals(IteratorFactory.EMPTY_TOKEN))
+                    continue;
+                VectorMath.add(context, vectorMap.get(term));
+            }
+
+            // Sum the words after the focus word, skipping filtered tokens.
+            for (String term: nextWords) {
+                if (term.equals(IteratorFactory.EMPTY_TOKEN))
+                    continue;
+                VectorMath.add(context, vectorMap.get(term));
+            }
+
+            // Normalize the context vector and add it to the meaning.
+            normalize(context);
+            VectorMath.add(meaning, context);
+        }
+
+        // Generate the semantics of the ordering using circular convolution of
+        // n-grams.
+        if (semanticType == SemanticType.COMPOSITE ||
+            semanticType == SemanticType.ORDERING) {
+            DoubleVector order = groupConvolution(prevWords, nextWords);
+
+            // Normalize the order vector and add it to the meaning.
+            normalize(order);
+            VectorMath.add(meaning, order);
+        }
+    }
+
+    /**
+     * Performs l2-normalization on the vector in place.  If the magnitude of
+     * the vector is 0, the values are left unchanged.
+     */
+    private void normalize(DoubleVector v) {
+        double magnitude = 0;
+        for (int i = 0; i < v.length(); ++i)
+            magnitude += Math.pow(v.get(i), 2);
+        if (magnitude == 0)
+            return;
+
+        magnitude = Math.sqrt(magnitude);
+        for (int i = 0; i < v.length(); ++i)
+            v.set(i, v.get(i)/magnitude);
     }
 
     /**
@@ -277,12 +346,20 @@ public class Beagle implements SemanticSpace {
         DoubleVector result = new DenseVector(indexVectorSize);
 
         // Do the convolutions starting at index 0.
-        DoubleVector tempConvolution =
-            convolute(vectorMap.get(prevWords.peek()), placeHolder);
+        String prevWord = prevWords.peek();
+        DoubleVector tempConvolution;
+        if (!prevWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+            tempConvolution =
+                convolute(vectorMap.get(prevWords.peek()), placeHolder);
+            VectorMath.add(result, tempConvolution);
+        } else
+            tempConvolution = placeHolder;
 
-        VectorMath.add(result, tempConvolution);
 
         for (String term : nextWords) {
+            if (term.equals(IteratorFactory.EMPTY_TOKEN))
+                continue;
+
             tempConvolution = convolute(tempConvolution, vectorMap.get(term));
             VectorMath.add(result, tempConvolution);
         }
@@ -291,6 +368,9 @@ public class Beagle implements SemanticSpace {
 
         // Do the convolutions starting at index 1.
         for (String term : nextWords) {
+            if (term.equals(IteratorFactory.EMPTY_TOKEN))
+                continue;
+
             tempConvolution = convolute(tempConvolution, vectorMap.get(term));
             VectorMath.add(result, tempConvolution);
         }
@@ -312,15 +392,6 @@ public class Beagle implements SemanticSpace {
         }
     }
 
-    /**
-     * Perform the circular convolution of two vectors.    The resulting vector
-     * is returned.
-     *
-     * @param left The left vector.
-     * @param right The right vector.
-     *
-     * @return The circular convolution of {@code left} and {@code right}.
-     */
     private DoubleVector convolute(DoubleVector left, DoubleVector right) {
         // Permute both vectors.
         left = changeVector(left, permute1);

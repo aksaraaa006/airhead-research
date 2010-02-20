@@ -50,7 +50,8 @@ public class FastFourierTransform {
   
         // Bit reverse the ordering of input data for decimation in time
         // algorithm.
-        bitReverse(data, logn);
+        bitreverse(data, i0, stride);
+        //bitReverse(data, logn);
   
         // apply fft recursion
         p = 1; q = n ;
@@ -193,7 +194,8 @@ public class FastFourierTransform {
 
         // bit reverse the ordering of output data for decimation in frequency
         // algorithm 
-        bitReverse(data, logn);
+        //bitReverse(data, logn);
+        bitreverse(data, i0, stride);
     }
 
     /**
