@@ -25,14 +25,18 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.util.Pair;
+import edu.ucla.sspace.util.SynchronizedIterator;
 
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
 
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -72,41 +76,73 @@ public abstract class AbstractWordAssociationTest
      *
      * @return A {@link WordSimilarityReport} detailing the performance
      */
-    public WordAssociationReport evaluate(SemanticSpace sspace) {
+    public WordAssociationReport evaluate(final SemanticSpace sspace) {
 
-        // Use lists here to keep track of the judgements for each word pair
-        // that the SemanticSpace has vectors for.  This allows us to skip
-        // trying to correlate human judgements for pairs that the S-Space
-        // cannot handle.
-        List<Double> humanVals = new ArrayList<Double>();
-        List<Double> computedVals = new ArrayList<Double>();
+        Collection<Thread> threads = new LinkedList<Thread>();
+        int numThreads = Runtime.getRuntime().availableProcessors();
 
-        int unanswerable = 0;        
-        double testRange = getHighestScore() - getLowestScore();
-        double meanComputedRating = 0;
-        double answered = 0;
+        final double testRange = getHighestScore() - getLowestScore();
+        final int[] unanswered = new int[numThreads];
+        final int[] answered = new int[numThreads];
+        final double[] totalScore = new double[numThreads];
 
-        // Compute the word pair similarity using the given Semantic Space for
-        // each word.
-        for (Map.Entry<Pair<String>,Double> e :
-                 wordPairToHumanJudgement.entrySet()) {
-            Pair<String> p = e.getKey();
-            Double association = computeAssociation(sspace, p.x, p.y);
-            // Skip questions that cannot be answered with the provided semantic
-            // space
-            if (association == null) {
-                unanswerable++;
-                continue;
-            }
-            // Scale the associated result to within the test's range of values
-            meanComputedRating += (association * testRange) + getLowestScore();
-            answered++;
+        final Iterator<Map.Entry<Pair<String>, Double>> questionIter = 
+            new SynchronizedIterator<Map.Entry<Pair<String>, Double>>(
+                 wordPairToHumanJudgement.entrySet().iterator());
+
+        for (int i = 0; i < numThreads; ++i) {
+            final int index = i;
+            Thread t = new Thread() {
+                public void run() {
+                    while (questionIter.hasNext()) {
+                        Map.Entry<Pair<String>,Double> e  =
+                            questionIter.next();
+
+                        Pair<String> p = e.getKey();
+                        Double association =
+                            computeAssociation(sspace, p.x, p.y);
+                        // Skip questions that cannot be answered with the
+                        // provided semantic space
+                        if (association == null) {
+                            unanswered[index]++;
+                            continue;
+                        }
+                        answered[index]++;
+
+                        // Scale the associated result to within the test's
+                        // range of values
+                        double score =
+                            (association * testRange) + getLowestScore();
+                        totalScore[index] += score;
+                    }
+                }
+            };
+            threads.add(t);
         }
 
-        meanComputedRating /= answered;
+        for (Thread t : threads)
+            t.start();
+
+        try { 
+            for (Thread t : threads)
+                t.join();
+        } catch (InterruptedException ie) {
+            throw new Error(ie);
+        }
+
+        double meanScore = 0;
+        int totalAnswered = 0;
+        int totalUnanswered = 0;
+        for (int i = 0; i < numThreads; i++) {
+            meanScore += totalScore[i];
+            totalAnswered += answered[i]; 
+            totalUnanswered += unanswered[i];
+        }
+
+        meanScore /= totalAnswered;
 
         return new SimpleWordAssociationReport(
-            wordPairToHumanJudgement.size(), meanComputedRating, unanswerable);
+            wordPairToHumanJudgement.size(), meanScore, totalUnanswered);
     }
 
     /**
