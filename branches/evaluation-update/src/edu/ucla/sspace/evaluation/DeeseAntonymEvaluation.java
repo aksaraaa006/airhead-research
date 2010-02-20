@@ -128,9 +128,9 @@ public class DeeseAntonymEvaluation extends AbstractWordAssociationTest {
             return null;
         
         // Find the ranks of each of the two words to each other
-        int rank1 = findRank(sspace, word1, word2);
-        int rank2 = findRank(sspace, word2, word1);
-        return 1 - ((rank1 + rank2) / (sspace.getWords().size() * 2d));
+        double rank1 = findRank(sspace, word1, word2);
+        double rank2 = findRank(sspace, word2, word1);
+        return 2d / (rank1 + rank2);
     }
 
     /**
