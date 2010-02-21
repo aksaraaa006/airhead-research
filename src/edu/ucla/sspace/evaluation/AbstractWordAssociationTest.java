@@ -26,6 +26,7 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SynchronizedIterator;
+import edu.ucla.sspace.util.WorkerThread;
 
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
@@ -39,6 +40,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -78,71 +85,104 @@ public abstract class AbstractWordAssociationTest
      */
     public WordAssociationReport evaluate(final SemanticSpace sspace) {
 
-        Collection<Thread> threads = new LinkedList<Thread>();
+        // setup concurrent data structures so that the similarity questions can
+        // be run in parallel.
         int numThreads = Runtime.getRuntime().availableProcessors();
 
-        final double testRange = getHighestScore() - getLowestScore();
-        final int[] unanswered = new int[numThreads];
-        final int[] answered = new int[numThreads];
-        final double[] totalScore = new double[numThreads];
-
-        final Iterator<Map.Entry<Pair<String>, Double>> questionIter = 
-            new SynchronizedIterator<Map.Entry<Pair<String>, Double>>(
-                 wordPairToHumanJudgement.entrySet().iterator());
-
+        final BlockingQueue<Runnable> workQueue =
+            new LinkedBlockingQueue<Runnable>();
         for (int i = 0; i < numThreads; ++i) {
-            final int index = i;
-            Thread t = new Thread() {
-                public void run() {
-                    while (questionIter.hasNext()) {
-                        Map.Entry<Pair<String>,Double> e  =
-                            questionIter.next();
-
-                        Pair<String> p = e.getKey();
-                        Double association =
-                            computeAssociation(sspace, p.x, p.y);
-                        // Skip questions that cannot be answered with the
-                        // provided semantic space
-                        if (association == null) {
-                            unanswered[index]++;
-                            continue;
-                        }
-                        answered[index]++;
-
-                        // Scale the associated result to within the test's
-                        // range of values
-                        double score =
-                            (association * testRange) + getLowestScore();
-                        totalScore[index] += score;
-                    }
-                }
-            };
-            threads.add(t);
-        }
-
-        for (Thread t : threads)
+            Thread t = new WorkerThread(workQueue);
             t.start();
+        }
+        final Semaphore itemsProcessed = new Semaphore(0); 
 
+        // Set up thread safe counters for the final data points we need to
+        // report.
+        final double testRange = getHighestScore() - getLowestScore();
+        final AtomicInteger unanswered = new AtomicInteger();
+        final AtomicInteger answered = new AtomicInteger();
+
+        // Set up the data structures for storing the human and computed scores.
+        int numQuestions = wordPairToHumanJudgement.size();
+        final double[] compScores = new double[numQuestions];
+        final double[] humanScores = new double[numQuestions];
+        
+        // Iterate over each of the questions, offering each one to the work
+        // queue so that question evaluations can be done in parrallel.
+        int question = 0;
+        for (Map.Entry<Pair<String>, Double> e :
+                wordPairToHumanJudgement.entrySet()) {
+
+            // Set up final variables for the work queue.
+            final Pair<String> p = e.getKey();
+            final int index = question;
+            final double humanScore = e.getValue();
+            question++;
+
+            humanScores[index] = humanScore;
+
+            // Offer a new question to the work queue.
+            workQueue.offer(new Runnable() {
+                public void run() {
+                    Double association = computeAssociation(sspace, p.x, p.y);
+
+                    // Skip questions that cannot be answered with the provided
+                    // semantic space.  Store the score for this question as the
+                    // minimum double value.
+                    if (association == null) {
+                        unanswered.incrementAndGet();
+                        compScores[index] = Double.MIN_VALUE;
+                        return;
+                    }
+
+                    answered.incrementAndGet();
+
+                    // Scale the associated result to within the test's
+                    // range of values
+                    compScores[index] =
+                        (association * testRange) + getLowestScore();
+                }
+            });
+        }
+                
+        // Wait 
         try { 
-            for (Thread t : threads)
-                t.join();
+            itemsProcessed.acquire(numQuestions);
         } catch (InterruptedException ie) {
             throw new Error(ie);
         }
 
-        double meanScore = 0;
-        int totalAnswered = 0;
-        int totalUnanswered = 0;
-        for (int i = 0; i < numThreads; i++) {
-            meanScore += totalScore[i];
-            totalAnswered += answered[i]; 
-            totalUnanswered += unanswered[i];
+        // Copy over the answered questions to a smaller array so that
+        // unanswered questions do not affect the overal rating for this test. 
+        // Note that since all unanswered questions are given a minimum double
+        // value, by just skipping those scores we will have observed the
+        // correct number of answered questions.
+        double[] finalHumanScores = new double[answered.get()];
+        double[] finalCompScores = new double[answered.get()];
+        for (int i = 0, index = 0; i < numQuestions; ++i) {
+            if (compScores[i] == Double.MIN_VALUE)
+                continue;
+            finalHumanScores[index] = humanScores[i];
+            finalCompScores[index] = compScores[i];
+            index++;
         }
 
-        meanScore /= totalAnswered;
+        // Compute the final score for this test.
+        double score = computeScore(humanScores, compScores);
 
         return new SimpleWordAssociationReport(
-            wordPairToHumanJudgement.size(), meanScore, totalUnanswered);
+            wordPairToHumanJudgement.size(), score, unanswered.get());
+    }
+
+    /**
+     * Returns the correlation between the computer generated scores and the
+     * human evaluated scores.  Sub-classes can override this if the correlation
+     * metric is not suitable for the data set.  Possible alternatives are mean
+     * square error or simply the average computer generated score.
+     */
+    protected double computeScore(double[] humanScores, double[] compScores) {
+        return Similarity.correlation(humanScores, compScores);
     }
 
     /**
