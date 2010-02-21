@@ -134,6 +134,16 @@ public class DeeseAntonymEvaluation extends AbstractWordAssociationTest {
     }
 
     /**
+     * Returns the average computer generated score on the Deese Antonymy test.
+     */
+    protected double computeScore(double[] humanScores, double[] compScores) {
+        double average = 0;
+        for (double score : compScores)
+            average += score;
+        return average / compScores.length;
+    }
+
+    /**
      * Returns the ranking <i>k</i> such that {@code other} is the k<sup>th</th>
      * most similar word to {@code target} in the semantic space.
      */
