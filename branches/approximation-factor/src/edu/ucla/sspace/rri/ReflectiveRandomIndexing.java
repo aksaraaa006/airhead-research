@@ -412,12 +412,12 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
                 semanticFilter.isEmpty() || semanticFilter.contains(focusWord)
                 && !focusWord.equals(IteratorFactory.EMPTY_TOKEN);
 
-	    // If the filter does not accept this word, skip the semantic
-	    // processing, continue with the next word
+            // If the filter does not accept this word, skip the semantic
+            // processing, continue with the next word
             if (!calculateSemantics) {
                 // Do not write out any removed tokens to save space
-		continue;
-	    }
+                continue;
+            }
 
             // Update the occurrences of this token
             unfilteredTokens++;
@@ -428,7 +428,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
             // NOTE: this call to termToIndex *must* come after the
             // getTermIndexVector() call, which is responsible for adding this
             // mapping if it doesn't already exist.
-	    int focusIndex = termToIndex.get(focusWord);
+            int focusIndex = termToIndex.get(focusWord);
 
             // write the term index into the compressed for the document for
             // later corpus reprocessing

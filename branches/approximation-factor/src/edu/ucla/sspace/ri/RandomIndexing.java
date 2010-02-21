@@ -21,8 +21,8 @@
 
 package edu.ucla.sspace.ri;
 
+import edu.ucla.sspace.common.ApproximationSpace;
 import edu.ucla.sspace.common.Filterable;
-import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
@@ -185,7 +185,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @author David Jurgens
  */
-public class RandomIndexing implements SemanticSpace, Filterable {
+public class RandomIndexing 
+        implements ApproximationSpace<TernaryVector>, Filterable {
 
     public static final String RI_SSPACE_NAME =
         "random-indexing";
@@ -255,7 +256,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
     /**
      * A mapping from each word to its associated index vector
      */
-    private final Map<String,TernaryVector> wordToIndexVector;
+    private Map<String,TernaryVector> wordToIndexVector;
 
     /**
      * A mapping from each word to the vector the represents its semantics
@@ -333,8 +334,6 @@ public class RandomIndexing implements SemanticSpace, Filterable {
             ? loadPermutationFunction(permutationFuncProp)
             : new TernaryPermutationFunction();
 
-        RandomIndexVectorGenerator indexVectorGenerator = 
-            new RandomIndexVectorGenerator(properties);
 
         String useSparseProp = 
         properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -342,10 +341,9 @@ public class RandomIndexing implements SemanticSpace, Filterable {
             ? Boolean.parseBoolean(useSparseProp)
             : true;
 
-        wordToIndexVector = new IntegerVectorGeneratorMap<TernaryVector>(
-                indexVectorGenerator, vectorLength);
         wordToMeaning = new ConcurrentHashMap<String,IntegerVector>();
         semanticFilter = new HashSet<String>();
+        wordToIndexVector  = null;
     }
 
     /**
@@ -568,8 +566,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
      *        used represent it when calculating other word's semantics
      */
     public void setWordToIndexVector(Map<String,TernaryVector> m) {
-        wordToIndexVector.clear();
-        wordToIndexVector.putAll(m);
+        wordToIndexVector = m;
     }
 
     /**

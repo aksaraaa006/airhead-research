@@ -25,7 +25,7 @@ import edu.ucla.sspace.beagle.Beagle;
 import edu.ucla.sspace.beagle.Beagle.SemanticType;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.ApproximationSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.index.DoubleVectorGenerator;
@@ -34,8 +34,11 @@ import edu.ucla.sspace.index.GaussianVectorGenerator;
 
 import edu.ucla.sspace.util.SerializableUtil;
 
+import edu.ucla.sspace.vector.DoubleVector;
+
 import java.io.File;
 
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -66,7 +69,7 @@ import java.util.Properties;
  *
  * @author Keith Stevens 
  */
-public class BeagleMain extends GenericMain {
+public class BeagleMain extends GenericApproximationMain<DoubleVector> {
 
     /**
      * If no dimension size is given, this will be the size of index vectors and
@@ -80,13 +83,9 @@ public class BeagleMain extends GenericMain {
     private int dimension;
 
     /**
-     * The generator map for automatically creating and retrieving index vectors
-     * for beagle.
+     * Uninstantiable
      */
-    private DoubleVectorGeneratorMap generatorMap;
-
-    private BeagleMain() {
-    }
+    private BeagleMain() {}
 
     public static void main(String[] args) {
         BeagleMain hMain = new BeagleMain();
@@ -102,18 +101,14 @@ public class BeagleMain extends GenericMain {
      * {@inheritDoc}
      */
     public void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
+
         options.addOption('n', "dimension",
                           "the length of each beagle vector",
                           true, "INT", "Options");
         options.addOption('s', "semanticType",
                           "The type of semantic vectors to generate",
                           true, "SemanticType", "Options"); 
-        options.addOption('S', "saveVectors", 
-                          "save word-to-IndexVector mapping after processing",
-                          true, "FILE", "Options");
-        options.addOption('L', "loadVectors",
-                          "load word-to-IndexVector mapping before processing",
-                          true, "FILE", "Options");
     }
 
     /**
@@ -123,41 +118,30 @@ public class BeagleMain extends GenericMain {
         dimension = (argOptions.hasOption("dimension"))
           ? argOptions.getIntOption("dimension")
           : DEFAULT_DIMENSION;
-        if (argOptions.hasOption("loadVectors")) {
-            generatorMap = SerializableUtil.load(
-                    new File(argOptions.getStringOption("loadVectors")),
-                    DoubleVectorGeneratorMap.class);
-        } else {
-            double stdev = 1 / Math.sqrt(dimension);
-            System.setProperty(
-                    GaussianVectorGenerator.STANDARD_DEVIATION_PROPERTY,
-                    Double.toString(stdev));
-            DoubleVectorGenerator generator = new GaussianVectorGenerator();
-            generatorMap = new DoubleVectorGeneratorMap(generator, dimension);
-        }
     }
 
     /**
      * {@inheritDoc}
      */
-    protected void postProcessing() {
-        if (argOptions.hasOption("saveVectors")) {
-            SerializableUtil.save(
-                    generatorMap,
-                    new File(argOptions.getStringOption("saveVectors")));
-        }
+    protected Map<String, DoubleVector> getDefaultMap() {
+        double stdev = 1 / Math.sqrt(dimension);
+        System.setProperty(
+                GaussianVectorGenerator.STANDARD_DEVIATION_PROPERTY,
+                Double.toString(stdev));
+        DoubleVectorGenerator generator = new GaussianVectorGenerator();
+        return new DoubleVectorGeneratorMap(generator, dimension);
     }
 
     /**
      * {@inheritDoc}
      */
-    public SemanticSpace getSpace() {
+    public ApproximationSpace<DoubleVector> getApproximationSpace() {
         SemanticType type = (argOptions.hasOption('s'))
             ? SemanticType.valueOf(
                     argOptions.getStringOption('s').toUpperCase())
             : SemanticType.COMPOSITE;
 
-        return new Beagle(dimension, type, generatorMap);
+        return new Beagle(dimension, type);
     }
 
     /**

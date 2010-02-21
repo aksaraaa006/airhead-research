@@ -22,20 +22,21 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.ApproximationSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
+
+import edu.ucla.sspace.index.RandomIndexVectorGenerator;
+import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
 
 import edu.ucla.sspace.isa.IncrementalSemanticAnalysis;
 
 import edu.ucla.sspace.vector.TernaryVector;
-import edu.ucla.sspace.ri.IndexVectorUtil;
-
-import java.io.File;
 
 import java.util.Map;
 import java.util.Properties;
 
 import java.util.logging.Logger;
+
 
 /**
  * An executable class for running {@link IncrementalSemanticAnalysis} (ISA)
@@ -131,28 +132,24 @@ import java.util.logging.Logger;
  *
  * @author David Jurgens
  */
-public class IsaMain extends GenericMain {
+public class IsaMain extends GenericApproximationMain<TernaryVector> {
 
     private static final Logger LOGGER 
         = Logger.getLogger(IsaMain.class.getName());
     
+    /**
+     * The vector length of index vectors used by ISA.
+     */
+    private int vectorLength;
+
     /**
      * The properties that were used to configure the {@link
      * IncrementalSemanticAnalysis} instance
      */
     private Properties props;    
 
-    /**
-     * The {@link IncrementalSemanticAnalysis} instance used by this runnable.
-     * This variable is assigned after {@link #getSpace()} is called.
-     */
-    private IncrementalSemanticAnalysis isa;
-
-
     private IsaMain() {
         super(false);
-        props = null;
-        isa = null;
     }
 
     /**
@@ -167,9 +164,6 @@ public class IsaMain extends GenericMain {
                           "Algorithm Options");
         options.addOption('l', "vectorLength", "length of semantic vectors",
                           true, "INT", "Algorithm Options");
-        options.addOption('L', "loadVectors",
-                          "load word-to-TernaryVector mapping before " +
-                          "processing", true, "FILE", "Algorithm Options");
         options.addOption('n', "permutationFunction",
                           "permutation function to use.  This should be " +
                           "generic for TernaryVectors", true,
@@ -183,9 +177,6 @@ public class IsaMain extends GenericMain {
         options.addOption('s', "windowSize", "how many words to consider " +
                           "in each direction", true,
                           "INT", "Algorithm Options");
-        options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
-                          + " after processing", true,
-                          "FILE", "Algorithm Options");
     }
 
     public static void main(String[] args) {
@@ -198,19 +189,21 @@ public class IsaMain extends GenericMain {
         }
     }
     
-    protected SemanticSpace getSpace() {
-        isa = new IncrementalSemanticAnalysis();
+    /**
+     * Returns an instance of {@link RandomIndexing}.
+     */
+    protected ApproximationSpace<TernaryVector> getApproximationSpace() {
+        return new IncrementalSemanticAnalysis(props);
+    }
 
-        // note that getSpace() is called after the arg options have been
-        // parsed, so this call is safe.
-        if (argOptions.hasOption("loadVectors")) {
-            String fileName = argOptions.getStringOption("loadVectors");
-            LOGGER.info("loading index vectors from " + fileName);
-            Map<String,TernaryVector> wordToIndexVector = 
-                IndexVectorUtil.load(new File(fileName));
-            isa.setWordToIndexVector(wordToIndexVector);
-        }
-        return isa;
+    /**
+     * {@inheritDoc}
+     */
+    protected Map<String, TernaryVector> getDefaultMap() {
+        RandomIndexVectorGenerator indexVectorGenerator = 
+            new RandomIndexVectorGenerator(props);
+        return new IntegerVectorGeneratorMap<TernaryVector>(
+                indexVectorGenerator, vectorLength);
     }
 
     protected Properties setupProperties() {
@@ -239,7 +232,9 @@ public class IsaMain extends GenericMain {
                     argOptions.getStringOption("windowSize"));
         }
 
+        vectorLength = IncrementalSemanticAnalysis.DEFAULT_VECTOR_LENGTH;
         if (argOptions.hasOption("vectorLength")) {
+            vectorLength = argOptions.getIntOption("vectorLength");
             props.setProperty(
                     IncrementalSemanticAnalysis.VECTOR_LENGTH_PROPERTY,
                     argOptions.getStringOption("vectorLength"));
@@ -264,20 +259,6 @@ public class IsaMain extends GenericMain {
         }
 
         return props;
-    }
-
-
-    /**
-     * If {@code --saveVectors} was specified, write the accumulated
-     * word-to-index vector mapping to file.
-     */
-    @Override protected void postProcessing() {
-        if (argOptions.hasOption("saveVectors")) {
-            String fileName = argOptions.getStringOption("saveVectors");
-            LOGGER.info("saving index vectors to " + fileName);
-            IndexVectorUtil.save(isa.getWordToIndexVector(), 
-                                 new File(fileName));
-        }        
     }
 
     /**

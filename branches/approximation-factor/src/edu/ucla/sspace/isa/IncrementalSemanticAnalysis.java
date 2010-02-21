@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.isa;
 
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.ApproximationSpace;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
@@ -186,7 +186,8 @@ import java.util.logging.Logger;
  * 
  * @author David Jurgens
  */
-public class IncrementalSemanticAnalysis implements SemanticSpace {
+public class IncrementalSemanticAnalysis 
+        implements ApproximationSpace<TernaryVector> {
 
     /**
      * The prefix for naming public properties.
@@ -311,7 +312,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     /**
      * A mapping from each word to its associated index vector
      */
-    private final Map<String,TernaryVector> wordToIndexVector;
+    private Map<String,TernaryVector> wordToIndexVector;
 
     /**
      * A mapping from each word to the vector the represents its semantics
@@ -364,9 +365,6 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             ? loadPermutationFunction(permutationFuncProp)
             : new TernaryPermutationFunction();
 
-        RandomIndexVectorGenerator indexVectorGenerator = 
-            new RandomIndexVectorGenerator(properties);
-
         String useSparseProp = 
             properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
         useSparseSemantics = (useSparseProp != null)
@@ -385,8 +383,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
             ? Double.parseDouble(impactRateProp)
             : DEFAULT_IMPACT_RATE;
             
-        wordToIndexVector = new IntegerVectorGeneratorMap<TernaryVector>(
-                indexVectorGenerator, vectorLength);
+        wordToIndexVector = null;
         wordToMeaning = new HashMap<String,SemanticVector>();
         wordToOccurrences = new HashMap<String,Integer>();
     }
@@ -596,17 +593,10 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
     public void processSpace(Properties properties) { }
 
     /**
-     * Assigns the token to {@link IntegerVector} mapping to be used by this
-     * instance.  The contents of the map are copied, so any additions of new
-     * index words by this instance will not be reflected in the parameter's
-     * mapping.
-     *
-     * @param m a mapping from token to the {@code IntegerVector} that should be
-     *        used represent it when calculating other word's semantics
+     * {@inheritDoc}
      */
     public void setWordToIndexVector(Map<String,TernaryVector> m) {
-        wordToIndexVector.clear();
-        wordToIndexVector.putAll(m);
+        wordToIndexVector = m;
     }
 
     /**

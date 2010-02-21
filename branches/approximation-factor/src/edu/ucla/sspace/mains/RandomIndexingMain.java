@@ -22,22 +22,22 @@
 package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.ApproximationSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
-import edu.ucla.sspace.ri.IndexVectorUtil;
+import edu.ucla.sspace.index.RandomIndexVectorGenerator;
+import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
+
 import edu.ucla.sspace.ri.RandomIndexing;
 
 import edu.ucla.sspace.vector.TernaryVector;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.IOError;
 
 import java.util.Map;
 import java.util.Properties;
 
 import java.util.logging.Logger;
+
 
 /**
  * An executable class for running {@link RandomIndexing} from the command line.
@@ -134,27 +134,33 @@ import java.util.logging.Logger;
  * 
  * @author David Jurgens
  */
-public class RandomIndexingMain extends GenericMain {
+public class RandomIndexingMain 
+        extends GenericApproximationMain<TernaryVector> {
 
     private static final Logger LOGGER 
        = Logger.getLogger(RandomIndexingMain.class.getName());
 
-    private Properties props;    
-
     /**
-     * The {@link RandomIndexing} instance used by this runnable.  This variable
-     * is assigned after {@link #getSpace()} is called.
+     * The length of index vectors used by {@link RandomIndexing}.
      */
-    private RandomIndexing ri;
-
-    private RandomIndexingMain() {
-        ri = null;
-    }
+    private int vectorLength;
 
     /**
-     * Adds all of the options to the {@link ArgOptions}.
+     * The {@link Properties} instance used to initialze {@link RandomIndexing}.
+     */
+    private Properties props;
+
+    /**
+     * Uninstantiable.
+     */
+    private RandomIndexingMain() {}
+
+    /**
+     * {@inheritDoc}
      */
     protected void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
+
         options.addOption('l', "vectorLength", "length of semantic vectors",
                           true, "INT", "Algorithm Options");
         options.addOption('n', "permutationFunction",
@@ -162,20 +168,14 @@ public class RandomIndexingMain extends GenericMain {
                           "genric for TernaryVectors",
                           true, "CLASSNAME", "Advanced Algorithm Options");
         options.addOption('p', "usePermutations", "whether to permute " +
-                        "index vectors based on word order", true,
-                        "BOOL", "Algorithm Options");
+                          "index vectors based on word order", true,
+                          "BOOL", "Algorithm Options");
         options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
                           + "semantics to save memory", true,
-                         "BOOL", "Algorithm Options");
+                          "BOOL", "Algorithm Options");
         options.addOption('s', "windowSize", "how many words to consider " +
-                         "in each direction", true,
-                         "INT", "Algorithm Options");
-        options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
-                          + " after processing", true,
-                          "FILE", "Algorithm Options");
-        options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
-                          + " before processing", true,
-                          "FILE", "Algorithm Options");
+                          "in each direction", true,
+                          "INT", "Algorithm Options");
     }
 
     public static void main(String[] args) {
@@ -211,7 +211,9 @@ public class RandomIndexingMain extends GenericMain {
                               argOptions.getStringOption("windowSize"));
         }
 
+        vectorLength = RandomIndexing.DEFAULT_VECTOR_LENGTH;
         if (argOptions.hasOption("vectorLength")) {
+            vectorLength = argOptions.getIntOption("vectorLength");
             props.setProperty(RandomIndexing.VECTOR_LENGTH_PROPERTY,
                               argOptions.getStringOption("vectorLength"));
         }
@@ -225,26 +227,20 @@ public class RandomIndexingMain extends GenericMain {
     }
 
     /**
-     * Returns an instance of {@link RandomIndexing}.  If {@code loadVectors} is
-     * specified in the command line options, this method will also initialize
-     * the word-to-{@link TernaryVector} mapping.
+     * Returns an instance of {@link RandomIndexing}.
      */
-    protected SemanticSpace getSpace() {
-        // Once all the optional properties are known and set, create the
-        // RandomIndexing algorithm using them
-        ri = new RandomIndexing(props);
+    protected ApproximationSpace<TernaryVector> getApproximationSpace() {
+        return new RandomIndexing(props);
+    }
 
-        // note that getSpace() is called after the arg options have been
-        // parsed, so this call is safe.
-        if (argOptions.hasOption("loadVectors")) {
-            String fileName = argOptions.getStringOption("loadVectors");
-            LOGGER.info("loading index vectors from " + fileName);
-            Map<String,TernaryVector> wordToIndexVector = 
-                IndexVectorUtil.load(new File(fileName));
-            ri.setWordToIndexVector(wordToIndexVector);
-        }
-
-        return ri;
+    /**
+     * {@inheritDoc}
+     */
+    protected Map<String, TernaryVector> getDefaultMap() {
+        RandomIndexVectorGenerator indexVectorGenerator = 
+            new RandomIndexVectorGenerator(props);
+        return new IntegerVectorGeneratorMap<TernaryVector>(
+                indexVectorGenerator, vectorLength);
     }
 
     /**
@@ -253,18 +249,5 @@ public class RandomIndexingMain extends GenericMain {
      */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
-    }
-
-    /**
-     * If {@code --saveVectors} was specified, write the accumulated
-     * word-to-index vector mapping to file.
-     */
-    @Override protected void postProcessing() {
-        if (argOptions.hasOption("saveVectors")) {
-            String fileName = argOptions.getStringOption("saveVectors");
-            LOGGER.info("saving index vectors to " + fileName);
-            IndexVectorUtil.save(ri.getWordToIndexVector(), 
-                                 new File(fileName));
-        }
     }
 }

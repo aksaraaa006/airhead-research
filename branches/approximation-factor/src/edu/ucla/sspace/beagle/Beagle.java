@@ -21,14 +21,13 @@
 
 package edu.ucla.sspace.beagle;
 
-import jnt.FFT.ComplexDoubleFFT_Radix2; 
+import edu.ucla.sspace.common.ApproximationSpace;
 
-import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.fft.FastFourierTransform;
 
-import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
+import edu.ucla.sspace.index.GaussianVectorGenerator;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -43,6 +42,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -75,7 +75,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class Beagle implements SemanticSpace {
+public class Beagle implements ApproximationSpace<DoubleVector> {
 
     public enum SemanticType {
         CONTEXT,
@@ -105,7 +105,7 @@ public class Beagle implements SemanticSpace {
      * The class responsible for creating index vectors, and incorporating them
      * into a semantic vector.
      */
-    private final DoubleVectorGeneratorMap vectorMap;
+    private Map<String, DoubleVector> vectorMap;
 
     /**
      * A mapping for terms to their semantic vector representation. A {@code
@@ -146,19 +146,15 @@ public class Beagle implements SemanticSpace {
 
     private final SemanticType semanticType;
 
-    public Beagle(int vectorSize, DoubleVectorGeneratorMap vectorMap) {
-        this(vectorSize, SemanticType.COMPOSITE, vectorMap);
+    public Beagle(int vectorSize) {
+        this(vectorSize, SemanticType.COMPOSITE);
     }
 
     public Beagle(int vectorSize,
-                  SemanticType semanticType,
-                  DoubleVectorGeneratorMap vectorMap) {
+                  SemanticType semanticType) {
         this.indexVectorSize = vectorSize;
-        this.vectorMap = vectorMap;
         termHolographs = new ConcurrentHashMap<String, DoubleVector>();
         this.semanticType = semanticType;
-
-        placeHolder = vectorMap.get("");
 
         // Generate the permutation arrays.
         permute1 = new int[indexVectorSize];
@@ -191,6 +187,21 @@ public class Beagle implements SemanticSpace {
         return BEAGLE_SSPACE_NAME + "-" +
                indexVectorSize + "-" +
                semanticType.toString();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setWordToIndexVector(Map<String,DoubleVector> m) {
+        vectorMap = m;
+        placeHolder = m.get("");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Map<String, DoubleVector> getWordToIndexVector() {
+        return Collections.unmodifiableMap(vectorMap);
     }
 
     /**
