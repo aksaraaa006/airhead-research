@@ -28,10 +28,16 @@ import java.util.Map;
 
 
 /**
- * An interface for any Online clustering implementation.  These
- * implementations should support adding of new vectors, finding the most
- * similar cluster for a vector, returning clustered vectors, and optionally a
- * finalization step that may drop or merge clusters.
+ * An interface for any Online clustering implementation.  When a vector is
+ * added to a specific cluster, implementations are suggested to return a unique
+ * cluster id specifying what cluster the item was assigned to.  At any time,
+ * users of an {@link OnlineCustering} instance may request one or all of the
+ * centroids.  These centroids may be created per request or maintained
+ * internally at all times.
+ *
+ * </p>
+ *
+ * Implementations are expected to be thread-safe.
  *
  * @author Keith Stevens
  */
@@ -44,18 +50,18 @@ public interface OnlineClustering<T extends Vector> {
     int addVector(T value);
 
     /**
-     * Returns the list of {@code Vector}s in the given cluster.
+     * Returns the centroid at with id {@code clusterIndex}.
      */
     T getCentroid(int clusterIndex);
 
     /**
-     * Returns the number of items represented by the centroid at the given
-     * index.
+     * Returns the number of items represented by the centroid with id {@code
+     * clusterIndex}.
      */
     int getCentroidSize(int clusterIndex);
 
     /**
-     * Returns the list of all clustered {@code Vector}s.
+     * Returns the list of all cluster centroids.
      */
     List<T> getCentroids();
 

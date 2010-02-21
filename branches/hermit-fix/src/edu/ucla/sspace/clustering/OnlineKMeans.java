@@ -229,7 +229,8 @@ public class OnlineKMeans<T extends Vector>
                     // increased the number of elements to more than the max
                     // number of clusters, so this element should be merged
                     // instead.
-                    else { bestMatch.addVector(value);
+                    else {
+                        bestMatch.addVector(value);
                         return bestIndex;
                     }
                 }

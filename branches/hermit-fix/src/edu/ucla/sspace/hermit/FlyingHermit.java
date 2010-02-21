@@ -688,18 +688,29 @@ public class FlyingHermit implements SemanticSpace, Filterable {
          * times originalTerm occured and was mapped to senseNum.
          */
         public void printCounts() {
+            // Emit the observations for each conflated word.
             for (Map.Entry<String, List<Map<String, Integer>>> entry :
                     wordMap.entrySet()) {
                 String conflated = entry.getKey();
+                
+                // Maintain the cluster id based on ordering and non empty
+                // sets of assignments.
                 int i = 0;
+
+                // Emit the number of times each original term was observed for
+                // each generated sense of the conflated term.
                 for (Map<String, Integer> originalMap : entry.getValue()) {
+
+                    // Ignore any assignment maps that are emtpy.
                     if (originalMap.isEmpty()) 
                         continue;
 
+                    // Emit the name of the cluster.
                     String title = clusterTitleMap.get(conflated + ":" + i);
-                    System.out.println("# " + conflated + " " + i + 
-                                       " " + title);
+                    System.out.printf("# %s %d %s", conflated, i, title);
 
+                    // Emit the number of occurances observed for each original
+                    // term in the conflation for this sense.
                     for (Map.Entry<String, Integer> e :
                             originalMap.entrySet()) {
                         String original = e.getKey();
@@ -727,10 +738,16 @@ public class FlyingHermit implements SemanticSpace, Filterable {
             if (senseCounts == null)
                 return;
 
+            // Iterate over the counts for each original word to find the one
+            // that occured most frequently in each sense.
             int i = 0;
             for (Map<String, Integer> senseCount : senseCounts) {
+
+                // Ignore senses that have no words observed.
                 if (senseCount.isEmpty())
                     continue;
+
+                // Find the original term that occured most frequently.
                 int maxCount = -1;
                 String bestTitle = null;
                 for (Map.Entry<String, Integer> e : senseCount.entrySet()) {
@@ -739,6 +756,9 @@ public class FlyingHermit implements SemanticSpace, Filterable {
                         bestTitle = e.getKey();
                     }
                 }
+
+                // Set the title to be the most frequently occuring original
+                // temr.
                 clusterTitleMap.put(term + ":" + i, bestTitle);
                 ++i;
             }

@@ -87,18 +87,20 @@ public abstract class BaseTransform implements Transform {
      * @return the transformed version of the input matrix
      */
     public Matrix transform(Matrix matrix) {
+        GlobalTransform transform = getTransform(matrix);
+
         // NOTE: as of 0.9.9, there is no good way to create a new matrix of the
         // same type unless you already know the type or use reflection.  In
         // addition, there's no way to access the Matrix.Type for a given
         // instance, further obfuscating what class should be instantiated.
         // Therefore, we just make a guess.  This is definitely a case for
         // concern in the API.  -jurgens
-        Matrix transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-                                             Matrix.Type.DENSE_IN_MEMORY);
-        GlobalTransform transform = getTransform(matrix);
+        Matrix transformed;
 
         if (matrix instanceof SparseMatrix) {
             SparseMatrix smatrix = (SparseMatrix) matrix;
+            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+                                          Matrix.Type.SPARSE_IN_MEMORY);
 
             for (int row = 0; row < matrix.rows(); ++row) {
                 SparseDoubleVector rowVec = smatrix.getRowVector(row);
@@ -109,6 +111,8 @@ public abstract class BaseTransform implements Transform {
                 }
             }
         } else {
+            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+                                          Matrix.Type.DENSE_IN_MEMORY);
             for (int row = 0; row < matrix.rows(); ++row) {
                 for (int col = 0; col < matrix.columns(); ++col) {
                     double newValue = 
