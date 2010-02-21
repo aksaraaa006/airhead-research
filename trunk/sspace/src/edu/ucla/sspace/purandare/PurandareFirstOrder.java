@@ -593,15 +593,13 @@ public class PurandareFirstOrder implements SemanticSpace {
         // For each of the clusters, compute the mean sense vector
         int[] clusterSize = new int[numClusters];
 
-        SparseDoubleVector[] meanSenseVectors =
+        SparseDoubleVector[] meanSenseVectors = 
             new SparseDoubleVector[numClusters];
-        // Initially set the vectors to be sparse hash vectors to improve
-        // performance when summing (due to the O(1) access time).  Once the
-        // mean has been computed, convert back to compact vectors to save
-        // space.
         for (int i = 0; i < meanSenseVectors.length; ++i)
-            meanSenseVectors[i] = 
-                new SparseHashDoubleVector(termToIndex.size());
+            meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
+
+        // For each of the contexts, determine which cluster it was in and sum
+        // it value with the other contexts
         for (int row = 0; row < clusterAssignment.length; ++row) {
             DoubleVector contextVector = contexts.getRowVector(row);
             int assignment = clusterAssignment[row];
@@ -611,15 +609,6 @@ public class PurandareFirstOrder implements SemanticSpace {
                 continue;
             clusterSize[assignment]++;
             VectorMath.add(meanSenseVectors[assignment], contextVector);
-        }
-
-        // Once the mean has been computed, convert the hash vectors to
-        // CompactSparseVector in order to conserve memory, given the
-        // potentially large number of sense vectors.
-        SparseDoubleVector[] hashVectors = meanSenseVectors;
-        for (int i = 0; i < meanSenseVectors.length; ++i) {
-            meanSenseVectors[i] = new CompactSparseVector(termToIndex.size());
-            Vectors.copy(meanSenseVectors[i], hashVectors[i]);
         }
         
         // For each of the clusters with more than 2% of the contexts, generage
@@ -632,13 +621,7 @@ public class PurandareFirstOrder implements SemanticSpace {
                 String termWithSense = (senseCounter == 0)
                     ? term : term + "-" + senseCounter;
                 senseCounter++;
-                SparseDoubleVector senseVector = meanSenseVectors[i];
-                // Normalize the values in the vector based on the number of
-                // data points
-                for (int nz : senseVector.getNonZeroIndices()) 
-                    senseVector.set(i, senseVector.get(nz) / size);
-                
-                termToVector.put(termWithSense,senseVector);
+                termToVector.put(termWithSense,meanSenseVectors[i]);
             }
         }
         LOGGER.fine("Discovered " + senseCounter + " senses for " + term);
