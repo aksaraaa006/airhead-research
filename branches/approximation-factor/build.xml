@@ -1,0 +1,385 @@
+<!--
+ * Copyright 2009 Keith Stevens 
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ -->
+
+<project name="semanticspaces" default="compile">
+  <property file="build.properties"/>
+
+  <property name="lib.dir" value="lib"/>
+  <property name="build.dir" value="classes"/>
+  <property name="report.dir" value="reports"/>
+  <property name="src.dir" value="src"/>
+  <property name="package" value="edu.ucla.sspace"/>
+  <property name="bin.dir" value="bin"/>
+  <property name="version" value="1.0"/>
+  
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="**/*.jar"/>
+  </path>
+
+  <path id="run-classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.dir}"/>
+  </path>
+
+  <target name="all">
+    <!-- put in dependencies here -->
+  </target>
+  
+  <target name="compile">
+    <!-- Ensure that the build output directories are always present -->
+    <!-- REMINDER: since these are present in the svn repository, do we really
+	 need to do this? -->
+    <mkdir dir="classes"/>
+    
+    <!-- remove old jars and classes -->
+    <delete>
+      <fileset dir="classes" includes="**"/>
+    </delete>
+
+    <!-- Compile all of the classes and put the results in the classes
+	 directory -->
+     <javac srcdir="./" destdir="classes" classpathref="classpath" 
+	    debug="true" debuglevel="lines,source">
+       <compilerarg value="-Xlint"/>
+       <compilerarg value="-g"/>
+       <include name="src/**"/>
+       <include name="lib/**"/>
+    </javac>  
+  </target>
+
+  <!-- Removes all class files and built jar executables -->
+  <target name="clean">
+    <delete>
+      <fileset dir="bin" includes="**"/>
+      <fileset dir="classes" includes="**"/>
+      <fileset dir="javadoc" includes="**"/>
+    </delete>
+  </target>
+
+  <target name="compile-tests" description="Compile test Classes" 
+	  depends="compile">
+    <mkdir dir="classes"/>
+    <!-- <ivy:cachepath conf="test" pathid="test.refid"/> -->
+    <javac srcdir="test" destdir="classes" debug="true"
+      classpathref="classpath" debuglevel="lines,source">	   
+      <compilerarg value="-Xlint"/>
+      <compilerarg value="-g"/>
+    </javac>
+  </target>
+
+  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar">
+    <!-- TODO: Create jar executables for all of the major algorithms -->
+  </target>
+  
+  <target name="sspace-jar" depends="compile">
+    <jar destfile="${lib.dir}/sspace-lib.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+        <!-- Who is building this jar? -->
+        <attribute name="Built-By" value="${user.name}"/>
+        <!-- Information about the program itself -->
+        <attribute name="Implementation-Vendor" value="AIRhead Research"/>
+        <attribute name="Implementation-Title" value="Full release of the
+          S-Space package"/>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="sspace-src-jar" depends="compile">
+    <jar destfile="${lib.dir}/sspace-src.jar" basedir="src">
+      <include name="**/*.java"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+        <!-- Who is building this jar? -->
+        <attribute name="Built-By" value="${user.name}"/>
+        <!-- Information about the program itself -->
+        <attribute name="Implementation-Vendor" value="AIRhead Research"/>
+        <attribute name="Implementation-Title" value="Full release of the
+          S-Space package source code"/>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+    </jar>
+  </target>
+
+
+  <target name="lsa-jar" depends="compile">
+    <jar destfile="${bin.dir}/lsa.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Latent Semantic Analysis"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.LSAMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="coals-jar" depends="compile">
+    <jar destfile="${bin.dir}/coals.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Coals"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.CoalsMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="isa-jar" depends="compile">
+    <jar destfile="${bin.dir}/isa.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <exclude name="jnt/*"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Incremental Semantic Analysis"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.IsaMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="esa-jar" depends="compile">
+    <jar destfile="${bin.dir}/esa.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Incremental Semantic Analysis"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.ESAMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="ri-jar" depends="compile">
+    <jar destfile="${bin.dir}/random-indexing.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Random Indexing"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.RandomIndexingMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="fdtri-jar" depends="compile">
+    <jar destfile="${bin.dir}/fd-tri.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Fixed Duration Temporal Random Indexing"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.FixedDurationTemporalRandomIndexingMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="hal-jar" depends="compile">
+    <jar destfile="${bin.dir}/hal.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Hyperspace Analogue to Language"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.HALMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="purandare-jar" depends="compile">
+    <jar destfile="${bin.dir}/purandare-pedersen.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Purandare and Pedersen"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.PurandareMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="vsm-jar" depends="compile">
+    <jar destfile="${bin.dir}/vsm.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Vector Space Model"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.VsmMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+
+  <target name="test" depends="compile-tests">
+    <delete dir="reports"/>
+    <mkdir dir="reports"/>
+
+    <junit printsummary="yes" fork="yes" haltonfailure="no">
+      <jvmarg value="-Xmx1g"/>
+      <jvmarg value="-debug"/>
+      <classpath refid="run-classpath"/> 
+      <formatter type="plain"/>
+
+      <!-- Comment block for excluding the testing a specific set of files.
+      -->
+      <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.StatisticsTests" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.hal.ConcatenatedSparseDoubleVectorTests" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrixTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.CorrelationTransformTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.MatricesTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.MatlabSparseFileIteratorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>      
+      <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.SvdlibcSparseBinaryFileIteratorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.text.DocumentPreprocessorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.FilteredIteratorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.IteratorFactoryTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.StringUtilsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.PatPhoTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.PorterStemmerTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.TestWordIterator" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.TestCompoundWordIterator" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.text.TokenFilterTests" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.util.CharMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.HashMultiMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.IntegerMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.SparseIntArrayTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.SparseDoubleArrayTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.TreeMultiMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.TrieSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
+
+      <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
+      <!-- -->      
+    </junit>
+  </target>
+
+  <target name="javadoc" description="Create Javadocs" depends="compile">
+    <javadoc destdir="javadoc/" classpathref="classpath" access="public">
+      <link href="http://java.sun.com/javase/6/docs/api/"/>
+      <fileset dir="${src.dir}/" includes="**/*.java"/>
+      <bottom><![CDATA[
+   <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
+   <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shCore.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushJava.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushXml.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushSql.js"></script>  
+   <script language="javascript">  
+   dp.SyntaxHighlighter.ClipboardSwf = 'http://howard.ross.work.googlepages.com/clipboard.swf';  
+   dp.SyntaxHighlighter.HighlightAll('code');  
+   </script>  
+   ]]>
+	</bottom>
+      <footer><![CDATA[
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-6063773-2");
+pageTracker._trackPageview();
+} catch(err) {}</script>]]>
+      </footer>
+    </javadoc>
+  </target>
+
+  <!-- The full javadoc for all methods and fields -->
+  <target name="javadoc-dev" description="Create Javadocs" depends="compile">
+    <javadoc destdir="javadoc/" classpathref="classpath" access="private">
+      <link href="http://java.sun.com/javase/6/docs/api/"/>
+      <fileset dir="${src.dir}/" includes="**/*.java"/>
+      <bottom><![CDATA[
+   <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
+   <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shCore.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushJava.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushXml.js"></script>  
+   <script language="javascript" src="http://howard.ross.work.googlepages.com/shBrushSql.js"></script>  
+   <script language="javascript">  
+   dp.SyntaxHighlighter.ClipboardSwf = 'http://howard.ross.work.googlepages.com/clipboard.swf';  
+   dp.SyntaxHighlighter.HighlightAll('code');  
+   </script>  
+   ]]>
+	</bottom>
+    </javadoc>
+  </target>
+
+</project>
