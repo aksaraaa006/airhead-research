@@ -26,14 +26,17 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
 import edu.ucla.sspace.matrix.CorrelationTransform;
+import edu.ucla.sspace.matrix.MatlabSparseMatrixBuilder;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Normalize;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
-import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 
@@ -403,6 +406,8 @@ public class Coals implements SemanticSpace {
                     totalWordFreq.entrySet());
         Collections.sort(wordCountList, new EntryComp());
 
+        MatrixBuilder builder = new MatlabSparseMatrixBuilder(true);
+
         // Calculate the new term to index mapping based on the order of the
         // word frequencies.
         termToIndex.clear();
@@ -418,7 +423,6 @@ public class Coals implements SemanticSpace {
         // Traverse the old matrix and drop rows if their new indices are beyond
         // the maximum word count and drop columns if their new indices are
         // beyond the maximum dimension size.
-        Matrix correl = new YaleSparseMatrix(wordCountList.size(), wordCount);
         for (int row = 0; row < cooccurrenceMatrix.rows(); ++row) {
             // Get the new index for this row.
             String termForFirstIndex = indexToTerm[row];
@@ -428,6 +432,7 @@ public class Coals implements SemanticSpace {
             if (newRow >= maxWords)
                 continue;
 
+            SparseDoubleVector v = new SparseHashDoubleVector(wordCount);
             // Traverse the columns.
             for (int col = 0; col < cooccurrenceMatrix.columns(); ++col) {
 
@@ -439,13 +444,17 @@ public class Coals implements SemanticSpace {
                 if (newCol >= wordCount)
                     continue;
 
-                // Copy over the value to the new matrix.
                 double oldValue = cooccurrenceMatrix.get(row, col);
-                correl.set(newRow, newCol, oldValue);
+                v.set(newCol, oldValue);
+                builder.addColumn(v);
             }
         }
 
-        return correl;
+        try {
+            return MatrixIO.readMatrix(builder.getFile(), Format.MATLAB_SPARSE);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     private class EntryComp
