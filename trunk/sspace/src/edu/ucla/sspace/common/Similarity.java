@@ -26,11 +26,13 @@ import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.lang.reflect.Method;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +62,7 @@ public class Similarity {
         JACCARD_INDEX,
         LIN,
         KL_DIVERGENCE,
+        AVERAGE_COMMON_FEATURE_RANK
     }
 
     /**
@@ -91,6 +94,9 @@ public class Similarity {
             break;
         case JACCARD_INDEX:
             methodName = "jaccardIndex";
+            break;
+        case AVERAGE_COMMON_FEATURE_RANK:
+            methodName = "averageCommonFeatureRank";
             break;
         case LIN:
             methodName = "linSimilarity";
@@ -137,6 +143,8 @@ public class Similarity {
                 return spearmanRankCorrelationCoefficient(a, b);
             case JACCARD_INDEX:
                 return jaccardIndex(a, b);
+            case AVERAGE_COMMON_FEATURE_RANK:
+                return averageCommonFeatureRank(a, b);
             case LIN:
                 return linSimilarity(a, b);
             case KL_DIVERGENCE:
@@ -169,6 +177,8 @@ public class Similarity {
                 return spearmanRankCorrelationCoefficient(a, b);
             case JACCARD_INDEX:
                 return jaccardIndex(a, b);
+            case AVERAGE_COMMON_FEATURE_RANK:
+                return averageCommonFeatureRank(a, b);
             case LIN:
                 return linSimilarity(a, b);
             case KL_DIVERGENCE:
@@ -1021,6 +1031,166 @@ public class Similarity {
         return spearmanRankCorrelationCoefficient(Vectors.asDouble(a),
                                                   Vectors.asDouble(b));
     }
+
+    /**
+     * Computes the Average Common Feature Rank between the two feature arrays.
+     * Uses the top 20 features for comparison.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double averageCommonFeatureRank(double[] a, 
+                                                  double[] b) {
+
+        class Pair{
+            public int i;
+            public double v;
+            public Pair(int index, double value){i=index;v=value;}
+            public void set(int index, double value){
+                i=index;
+                v=value;
+            }
+        }
+        class PairCompare implements Comparator<Pair>{
+            // note that 1 and -1 have been switched so that sort will sort in
+            // descending order
+            // this method sorts by value first, then by index
+            public int compare(Pair o1, Pair o2){
+                if(o1.v < o2.v) return 1;
+                else if(o1.v > o2.v) return -1;
+                else{
+                    if(o1.i < o2.i) return 1;
+                    else if(o1.i > o2.i) return -1;
+                    return 0;
+                }
+            }
+
+            public boolean equals(Pair o1, Pair o2){
+                return (compare(o1,o2)==0)?true:false;
+            }
+        }
+
+
+        check(a, b);
+        int size=a.length;
+
+        // number of features to compare
+        // calculate how much 10% is, rounded up.
+        //int n = (int)Math.ceil(a.length/10.0);
+        int n = 20;
+
+        // generate array of index-value pairs for a
+        Pair[] a_index = new Pair[size];
+        for(int i=0;i<size;i++)
+            a_index[i] = new Pair(i,a[i]);
+        // generate array of index-value pairs for b
+        Pair[] b_index = new Pair[size];
+        for(int i=0;i<size;i++)
+            b_index[i] = new Pair(i,b[i]);
+
+        // sort the features in a_rank by weight
+        Arrays.sort(a_index, new PairCompare());
+        // sort the features in b_rank by weight
+        Arrays.sort(b_index, new PairCompare());
+
+        // a_index are index-value pairs, ordered by rank
+        // this loop changes to a_rank which are rank-value, ordered by index
+        // make indices start at 1 so inv(ind) is defined for all indices
+        Pair[] a_rank = new Pair[size];
+        int last_i = 1;
+        for(int i=0;i<size;i++){
+            Pair x = a_index[i];
+            // share rank if tied
+            if(i>0 && a_index[i].v==a_index[i-1].v)
+                a_rank[x.i] = new Pair(last_i,x.v);
+            else{
+                a_rank[x.i] = new Pair(i+1,x.v);
+                last_i=i+1;
+            }
+        }
+        // do the same for b_index and b_rank
+        last_i=1;
+        Pair[] b_rank = new Pair[size];
+        for(int i=0;i<size;i++){
+            Pair x = b_index[i];
+            // share rank if tied
+            if(i>0 && b_index[i].v==b_index[i-1].v)
+                b_rank[x.i] = new Pair(last_i,x.v);
+            else{
+                b_rank[x.i] = new Pair(i+1,x.v);
+                last_i=i+1;
+            }
+        }
+
+        // get best ranked n elements
+        // nTop will be the top n ranking dimensions by weight
+        // where nTop[i] is the ith highest ranking dimension (i.e. feature)
+        int[] nTop = new int[n];
+        boolean[] seenbefore = new boolean[size];
+        Arrays.fill(seenbefore,false);
+        int a_i=0;
+        int b_i=0;
+        for(int i=0;i<n;i++){
+            // skip over features already encountered
+            while(a_i<size && seenbefore[a_index[a_i].i])
+                a_i++;
+            while(b_i<size && seenbefore[b_index[b_i].i])
+                b_i++;
+
+            // assign rank by highest weight
+            //  select the index from A when max(A)>max(B)
+            if(a_i<size
+                && 1 == (new PairCompare()).compare(a_index[a_i],b_index[b_i])
+              ){
+                nTop[i] = a_index[a_i].i;
+                seenbefore[nTop[i]]=true;
+                a_i++;
+            }
+            else{
+                nTop[i] = b_index[b_i].i;
+                seenbefore[nTop[i]]=true;
+                b_i++;
+            }
+        }
+
+        // computer the sum of the average rank for each top feature and divide
+        //    by the number of top features
+        double sum = 0;
+        for(int i=0;i<n;i++){
+            sum += 0.5*(a_rank[nTop[i]].i+b_rank[nTop[i]].i);
+        }
+        //return sum/n;
+        return n/sum;
+
+    }
+
+    /**
+     * Computes the Average Common Feature Rank between the two feature arrays.
+     * Uses the top 20 features for comparison. Converts types and calls
+     * averageCommonFeatureRank(double[],double[])
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double averageCommonFeatureRank(Vector a, Vector b) {
+        return averageCommonFeatureRank(Vectors.asDouble(a),
+                                        Vectors.asDouble(b));
+    }
+
+    /**
+     * Computes the Average Common Feature Rank between the two feature arrays.
+     * Uses the top 20 features for comparison. Converts types and calls
+     * averageCommonFeatureRank(Vector,Vector)
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double averageCommonFeatureRank(int[] a, 
+                                                  int[] b) {
+        return averageCommonFeatureRank(Vectors.asVector(a),
+                                        Vectors.asVector(b));
+    }
+
 
     /**
      * Computes the lin similarity measure, which is motivated by information
