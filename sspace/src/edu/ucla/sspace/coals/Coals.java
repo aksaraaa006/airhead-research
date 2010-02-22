@@ -376,13 +376,13 @@ public class Coals implements SemanticSpace {
                 coalsMatrixFile.deleteOnExit();
                 MatrixIO.writeMatrix(finalCorrelation,
                                      coalsMatrixFile,
-                                     Format.SVDLIBC_DENSE_BINARY);
+                                     Format.SVDLIBC_SPARSE_TEXT);
                 if (reducedDimensions > finalCorrelation.columns())
                     reducedDimensions = finalCorrelation.columns();
 
                 Matrix[] usv = SVD.svd(coalsMatrixFile,
                                        SVD.Algorithm.ANY,
-                                       Format.SVDLIBC_DENSE_BINARY,
+                                       Format.SVDLIBC_SPARSE_TEXT,
                                        reducedDimensions);
                 finalCorrelation = usv[0];
             } catch (IOException ioe) {
