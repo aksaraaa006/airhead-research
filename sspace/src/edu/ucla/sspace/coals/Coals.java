@@ -451,6 +451,7 @@ public class Coals implements SemanticSpace {
         }
 
         cooccurrenceMatrix = null;
+        builder.finish();
         try {
             return MatrixIO.readMatrix(builder.getFile(), Format.MATLAB_SPARSE);
         } catch (IOException ioe) {
