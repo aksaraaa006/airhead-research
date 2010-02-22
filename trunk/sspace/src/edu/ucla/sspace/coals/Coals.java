@@ -162,17 +162,6 @@ public class Coals implements SemanticSpace {
         Logger.getLogger(Coals.class.getName());
 
     /**
-     * A temporary file containing temprorary word co-occurance counts from each
-     * document.
-     */
-    private File rawDataFile;
-
-    /**
-     * The writer to the {@code rawTermDocMatrix}.
-     */
-    private DataOutputStream rawOccuranceWriter;
-
-    /**
      * The matrix used for storing weight co-occurrence statistics of those
      * words that occur both before and after.
      */
@@ -216,14 +205,6 @@ public class Coals implements SemanticSpace {
         termToIndex = new HashMap<String, Integer>();
         totalWordFreq = new ConcurrentHashMap<String, AtomicInteger>();
         cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
-        try {
-            rawDataFile =
-                File.createTempFile("coals-occurance-values", "dat");
-            rawOccuranceWriter = new DataOutputStream(new BufferedOutputStream(
-                    new FileOutputStream(rawDataFile)));
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
         finalCorrelation = null;
     }
 
@@ -261,8 +242,6 @@ public class Coals implements SemanticSpace {
      */
     public void processDocument(BufferedReader document) throws IOException {
         Map<String, Integer> wordFreq = new HashMap<String, Integer>();
-        Map<String, Map<String, Integer>> wordDocumentCounts =
-            new HashMap<String, Map<String, Integer>>();
 
         // Setup queues to track the set of previous and next words in a
         // context.
@@ -274,9 +253,6 @@ public class Coals implements SemanticSpace {
         for (int i = 0; i < 4 && it.hasNext(); ++i)
             nextWords.offer(it.next());
 
-        if (nextWords.size() < 4)
-            return;
-
         // Compute the co-occurrance statistics of each focus word in the
         // document.
         while (!nextWords.isEmpty()) {
@@ -287,32 +263,31 @@ public class Coals implements SemanticSpace {
 
             // Get the focus word
             String focusWord = nextWords.remove();
-            int focusIndex = getIndexFor(focusWord); 
-            if (focusWord.equals(IteratorFactory.EMPTY_TOKEN))
-                continue;
+            if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                int focusIndex = getIndexFor(focusWord); 
+                // Update the frequency count of the focus word.
+                Integer focusFreq = wordFreq.get(focusWord);
+                wordFreq.put(focusWord, (focusFreq == null)
+                        ? 1
+                        : 1 + focusFreq.intValue());
 
-            // Update the frequency count of the focus word.
-            int updatedFreq = 1;
-            if (wordFreq.containsKey(focusWord))
-                updatedFreq += wordFreq.get(focusWord).intValue();
-            wordFreq.put(focusWord, updatedFreq);
+                int offset = 4 - prevWords.size();
+                for (String word : prevWords) {
+                    offset++;
+                    if (word.equals(IteratorFactory.EMPTY_TOKEN))
+                        continue;
+                    int index = getIndexFor(word); 
+                    cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
+                }
 
-            int offset = 4 - prevWords.size();
-            for (String word : prevWords) {
-                offset++;
-                if (word.equals(IteratorFactory.EMPTY_TOKEN))
-                    continue;
-                int index = getIndexFor(word); 
-                cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
-            }
-
-            offset = 5;
-            for (String word : nextWords) {
-                offset--;
-                if (word.equals(IteratorFactory.EMPTY_TOKEN))
-                    continue;
-                int index = getIndexFor(word); 
-                cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
+                offset = nextWords.size() + 1;
+                for (String word : nextWords) {
+                    offset--;
+                    if (word.equals(IteratorFactory.EMPTY_TOKEN))
+                        continue;
+                    int index = getIndexFor(word); 
+                    cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
+                }
             }
 
             prevWords.offer(focusWord);
