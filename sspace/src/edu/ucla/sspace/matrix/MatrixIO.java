@@ -1096,6 +1096,49 @@ public class MatrixIO {
             break;
         }
 
+        case SVDLIBC_SPARSE_BINARY: {
+            DataOutputStream outStream = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(output)));          
+            
+            // count the number of non-zero values for each column as well as
+            // the total
+            int nonZero = 0;
+            int[] nonZeroPerCol = new int[matrix.columns()];
+            for (int i = 0; i < matrix.rows(); ++i) {
+                for (int j = 0; j < matrix.columns(); ++j) {
+                    if (matrix.get(i, j) != 0) {
+                        nonZero++;
+                        nonZeroPerCol[j]++;
+                    }
+                }
+            }
+
+            // Write the 12 byte header data
+            outStream.writeInt(matrix.rows());
+            outStream.writeInt(matrix.columns());
+            outStream.writeInt(nonZero);
+            
+            // loop through the matrix a second time, printing out the number of
+            // non-zero values for each column, followed by those values and
+            // their associated row
+            for (int col = 0; col < matrix.columns(); ++col) {
+                outStream.writeInt(nonZeroPerCol[col]);
+                if (nonZeroPerCol[col] > 0) {
+                    for (int row = 0; row < matrix.rows(); ++row) {
+                        double val = matrix.get(row, col);
+                        if (val != 0) {
+                            // NOTE: need to convert to float since this is what
+                            // SVDLIBC uses
+                            outStream.writeInt(row);
+                            outStream.writeFloat((float)val);
+                        }
+                    }
+                }
+            }
+            outStream.close();
+            break;
+        }
+
         case MATLAB_SPARSE: {
             PrintWriter pw = new PrintWriter(output);
             for (int j = 0; j < matrix.columns(); ++j) {
