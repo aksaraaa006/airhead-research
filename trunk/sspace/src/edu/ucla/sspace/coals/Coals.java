@@ -446,8 +446,8 @@ public class Coals implements SemanticSpace {
 
                 double oldValue = cooccurrenceMatrix.get(row, col);
                 v.set(newCol, oldValue);
-                builder.addColumn(v);
             }
+            builder.addColumn(v);
         }
 
         try {
