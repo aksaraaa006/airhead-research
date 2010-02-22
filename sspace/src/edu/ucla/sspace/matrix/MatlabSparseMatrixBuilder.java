@@ -248,7 +248,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     public synchronized File getFile() {
         if (!isFinished)
             throw new IllegalStateException(
-                "Cannot access matrix file until finished has been called");
+                "Cannot access matrix file until finish has been called");
         return matrixFile;
     }
 
