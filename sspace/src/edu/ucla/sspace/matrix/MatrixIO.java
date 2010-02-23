@@ -663,7 +663,7 @@ public class MatrixIO {
             return readDenseTextMatrix(matrix, matrixType, transposeOnRead);
             
         case MATLAB_SPARSE:
-            break;
+            return readMatlabSparse(matrix, matrixType, transposeOnRead);
 
         case CLUTO_SPARSE:
             break;
@@ -909,6 +909,37 @@ public class MatrixIO {
 
         return m;
     }    
+
+    /**
+     * Creates a {@code Matrix} from the data encoded as {@link
+     * Format#SVDLIBC_SPARSE_TEXT} in provided file.
+     *
+     * @param matrix
+     * @param matrixType
+     * @param transposeOnRead
+     *
+     * @return a matrix whose data was specified by the provided file
+     */
+     private static Matrix readMatlabSparse(
+             File matrixFile,
+             Type matrixType,
+             boolean transposeOnRead) throws IOException {
+
+         Matrix matrix = new GrowingSparseMatrix();
+         BufferedReader br = new BufferedReader(new FileReader(matrixFile));
+         for (String line = null; (line = br.readLine()) != null; ) {
+             String[] rowColVal = line.split("\\s+");
+             int row = Integer.parseInt(rowColVal[0]) - 1;
+             int col = Integer.parseInt(rowColVal[1]) - 1;
+             double value = Double.parseDouble(rowColVal[2]);
+             if (transposeOnRead)
+                 matrix.set(col, row, value);
+             else
+                 matrix.set(row, col, value);
+         }
+         return matrix;
+     }
+
 
     /**
      * Creates a {@code Matrix} from the data encoded as {@link
