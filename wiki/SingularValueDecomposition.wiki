@@ -7,7 +7,8 @@ The S-Space package provides a simple interface to using a variety of singular v
   # [http://tedlab.mit.edu/~dr/SVDLIBC/ SVDLIBC]
   # [http://www.mathworks.com/products/matlab Matlab]
   # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
-  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.
+  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable.  In addition, if used from within a `.jar`, the `jama.path` property must be set to the jar file.
+  # [http://acs.lbl.gov/~hoschek/colt/ COLT]  Note that should COLT be used, it needs to be specified in the {{{CLASSPATH}}} variable.  In addition, if used from within a `.jar`, the `colt.path` property must be set to the jar file.
 
 All S-Space implementations are permitted to use any of the tools above.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.  Additionally, any user of S-Space releases are only required to have at least one of the implementations install.
 
@@ -21,6 +22,8 @@ The Interface to the various SVD implementations is designed to be as worry free
   # [http://tedlab.mit.edu/~dr/svdlibc/SVD_F_DB.html SVDLIBC_DENSE_BINARY]
   # [http://bebop.cs.berkeley.edu/smc/formats/matlab.html MATLAB_SPARSE]
   # DENSE_TEXT, Each row has it's own line, with all column values specified
+  # [http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf CLUTO_DENSE_TEXT] (same format as matlab dense text)
+  # [http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf CLUTO_SPARSE_TEXT]
 
 The S-Space implementation should make an informed decision based on the sparseness of it's data in order save disk space.  
 
