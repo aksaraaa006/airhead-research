@@ -57,7 +57,7 @@ import java.util.Random;
  * @author Keith Stevens
  */
 public class GaussianVectorGenerator
-        implements DoubleVectorGenerator, Serializable  {
+        implements DoubleVectorGenerator<DoubleVector>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -88,6 +88,8 @@ public class GaussianVectorGenerator
      */
     private double stdev;
 
+    private final int indexVectorLength;
+
     /**
      * The mean used each element in an generated {@link Vector}.
      */
@@ -102,8 +104,8 @@ public class GaussianVectorGenerator
      * Create a {@code GaussianVectorGenerator} that uses the system properties
      * for setup.
      */
-    public GaussianVectorGenerator() {
-        this(System.getProperties());
+    public GaussianVectorGenerator(int indexVectorLength) {
+        this(indexVectorLength, System.getProperties());
     }
 
     /**
@@ -113,9 +115,11 @@ public class GaussianVectorGenerator
      * @param vectorLength The length of each index and semantic {@code Vector}
      *                     used in this {@code IndexVectorGenerator}.
      */
-    public GaussianVectorGenerator(Properties prop) {
+    public GaussianVectorGenerator(int indexVectorLength, Properties prop) {
         // Generate utility classes.
         randomGenerator = new Random();
+
+        this.indexVectorLength = indexVectorLength;
 
         String stdevProp = prop.getProperty(
                 STANDARD_DEVIATION_PROPERTY);
@@ -130,8 +134,7 @@ public class GaussianVectorGenerator
      * Generate a new random vector using a guassian distribution for each
      * value.
      */
-    public synchronized DoubleVector generateRandomVector(
-            int indexVectorLength) {
+    public synchronized DoubleVector generate() {
         DoubleVector termVector = new DenseVector(indexVectorLength);
         for (int i = 0; i < indexVectorLength; i++)
             termVector.set(i, mean + (randomGenerator.nextGaussian() * stdev));

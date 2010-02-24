@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -55,9 +56,51 @@ import java.util.logging.Logger;
  * href="http://en.wikipedia.org/wiki/Cluster_analysis#Agglomerative_hierarchical_clustering">Hierarchical
  * Agglomerative Clustering</a> on matrix data in a file.
  *
+ * </p>
+ *
+ * This class provides static accessors to several variations of agglomerative
+ * clustering and conforms to the {@link Clustering} interface, which
+ * allows this method to be used in place of other clustering algorithms.
+ *
+ * </p>
+ *
+ * The following properties are provided:
+ *
+ * <dl style="margin-left: 1em">
+ * <dt> <i>Property:</i> <code><b>{@value #CLUSTER_SIMILARITY_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_CLUSTER_SIMILARITY_PROPERTY }
+ *
+ * <dd style="padding-top: .5em"> This property specifies the cluster similarity
+ * threshold at which two clusters are merged together.  Merging will continue
+ * until either all clusters have similarities below this threshold or the
+ * number of desired clusters has been reached. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #CLUSTER_LINKAGE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_CLUSTER_LINKAGE_PROPERTY}
+ *
+ * <dd style="padding-top: .5em"> This property specifies the {@link
+ * ClusterLinkage} to use when computing cluster similarity. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #SIMILARITY_FUNCTION_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_SIMILARITY_FUNCTION_PROPERTY}
+ *
+ * <dd style="padding-top: .5em"> This property specifies the {@link SimType} to
+ * use when comparing the similarity between data points. </p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #NUM_CLUSTER_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@value #DEFAULT_NUM_CLUSTER_PROPERTY}
+ *
+ * <dd style="padding-top: .5em"> The desired number of clusters. </p>
+ *
+ * </dl>
+ *
  * @author David Jurgens
  */
-public class HierarchicalAgglomerativeClustering {
+public class HierarchicalAgglomerativeClustering implements Clustering {
 
     /**
      * The method to use when comparing the similarity of two clusters.  See <a
@@ -92,15 +135,89 @@ public class HierarchicalAgglomerativeClustering {
     }
 
     /**
+     * A prefix for specifying properties.
+     */
+    public static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering";
+
+    /**
+     * The property for specifying the cluster similarity threshold.
+     */
+    public static final String CLUSTER_SIMILARITY_PROPERTY =
+        PROPERTY_PREFIX + ".clusterThreshold";
+
+    /**
+     * The property for specifying the cluster linkage to use.
+     */
+    public static final String CLUSTER_LINKAGE_PROPERTY =
+        PROPERTY_PREFIX + ".clusterLinkage";
+
+    /**
+     * The property for specifying the similarity function to use.
+     */
+    public static final String SIMILARITY_FUNCTION_PROPERTY =
+        PROPERTY_PREFIX + ".simFunc";
+
+    /**
+     * The default similarity threshold to use.
+     */
+    private static final String DEFAULT_CLUSTER_SIMILARITY_PROPERTY = "-1";
+
+    /**
+     * The default linkage method to use.
+     */
+    private static final String DEFAULT_CLUSTER_LINKAGE_PROPERTY =
+        "COMPLETE_LINKAGE";
+
+    /**
+     * The default similarity function to use.
+     */
+    private static final String DEFAULT_SIMILARITY_FUNCTION_PROPERTY =
+        "cosineSimilarity";
+
+    /**
      * The logger to which clustering status updates will be written.
      */
     private static final Logger LOGGER =
         Logger.getLogger(HierarchicalAgglomerativeClustering.class.getName());
 
     /**
-     * Uninstantiable
+     * {@inheritDoc}
      */
-    private HierarchicalAgglomerativeClustering() { }
+    public Assignment[] cluster(Matrix matrix, Properties props) {
+        if (props.getProperty(CLUSTER_SIMILARITY_PROPERTY) == null)
+            throw new IllegalArgumentException("The number of clusters or a " +
+                    "threshold must be specified.");
+
+        return cluster(matrix, -1, props);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Assignment[] cluster(Matrix m,
+                                int numClusters,
+                                Properties props) {
+        double clusterSimilarityThreshold =
+            Double.parseDouble(props.getProperty(
+                        CLUSTER_SIMILARITY_PROPERTY,
+                        DEFAULT_CLUSTER_SIMILARITY_PROPERTY));
+
+        ClusterLinkage linkage = ClusterLinkage.valueOf(props.getProperty(
+                    CLUSTER_LINKAGE_PROPERTY,
+                    DEFAULT_CLUSTER_LINKAGE_PROPERTY));
+
+        SimType similarityFunction = SimType.valueOf(props.getProperty(
+                    SIMILARITY_FUNCTION_PROPERTY,
+                    DEFAULT_SIMILARITY_FUNCTION_PROPERTY));
+        int[] rawAssignments = cluster(m, clusterSimilarityThreshold, linkage,
+                                       similarityFunction, numClusters);
+
+        Assignment[] assignments = new Assignment[rawAssignments.length];
+        for (int i = 0; i < rawAssignments.length; ++i)
+            assignments[i] = new HardAssignment(rawAssignments[i]);
+        return assignments;
+    }
 
     /**
      * Clusters all rows in the matrix using the specified cluster similarity
@@ -148,7 +265,6 @@ public class HierarchicalAgglomerativeClustering {
         return cluster(m, clusterSimilarityThreshold, linkage, 
                        similarityFunction, -1);
     }
-
 
     /**
      * 

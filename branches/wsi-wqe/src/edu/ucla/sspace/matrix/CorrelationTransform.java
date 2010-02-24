@@ -30,11 +30,11 @@ import java.util.logging.Logger;
 
 
 /**
- * Transforms a matrix using row correlation weighting.  The input matrix is assumed
- * to be formatted as rows representing terms and columns representing
- * co-occuring terms.  Each matrix cell indicates the number of times the row's word
- * occurs the other term.  See the following paper for details
- * and analysis:
+ * Transforms a matrix using row correlation weighting.  The input matrix is
+ * assumed to be formatted as rows representing terms and columns representing
+ * co-occuring terms.  Each matrix cell indicates the number of times the row's
+ * word occurs the other term.  See the following paper for details and
+ * analysis:
  *
  * <p style="font-family:Garamond, Georgia, serif"> Rohde, D. L. T., Gonnerman,
  * L. M., Plaut, D. C. (2005).  An Improved Model of Semantic Similarity Based

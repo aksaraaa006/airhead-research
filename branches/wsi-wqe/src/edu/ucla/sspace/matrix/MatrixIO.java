@@ -23,8 +23,9 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
 
-import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -190,9 +191,45 @@ public class MatrixIO {
          * href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf">
          * CLUTO manual</a>.
          */
-        CLUTO_SPARSE
+        CLUTO_SPARSE,
+
+        EIGEN_SPARSE,
+        EIGEN_DENSE,
+
     }
 
+    public static Iterator<MatrixEntry> iterate(File inputMatrixFile,
+                                                Format format) {
+        switch (format) {
+            default:
+                throw new UnsupportedOperationException(
+                        "Iterating over format " + format + " is currently " +
+                        "not implemented.  Please email " +
+                        "s-space-research-dev@googlegroups.com to have this " +
+                        "implemented.");
+        }
+    }
+
+    public static FileTransformer fileTransformer(Format format) {
+        switch (format) {
+            case MATLAB_SPARSE:
+                return new MatlabSparseFileTransformer();
+            case SVDLIBC_SPARSE_TEXT:
+                return new SvdlibcSparseTextFileTransformer();
+            case SVDLIBC_DENSE_TEXT:
+                return new SvdlibcDenseTextFileTransformer();
+            case SVDLIBC_SPARSE_BINARY:
+                return new SvdlibcSparseBinaryFileTransformer();
+            case SVDLIBC_DENSE_BINARY:
+                return new SvdlibcDenseBinaryFileTransformer();
+            default:
+                throw new UnsupportedOperationException(
+                        "Transforming format " + format + " is currently " +
+                        "not implemented.  Please email " +
+                        "s-space-research-dev@googlegroups.com to have this " +
+                        "implemented.");
+        }
+    }
     /**
      * Converts the format of the input {@code matrix}, returning a temporary
      * file containing the matrix's data in the desired format.
@@ -561,8 +598,8 @@ public class MatrixIO {
             }
         }
 
-        throw new Error("Convert matrix files of " + format + " format " +
-                        "to an array is not currently supported. Email " + 
+        throw new Error("Reading matrices of " + format + " format is not "+
+                        "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its" +
                         "inclusion and it will be quickly added");
     }
@@ -1040,7 +1077,8 @@ public class MatrixIO {
             outStream.writeInt(matrix.columns());
             for (int i = 0; i < matrix.rows(); ++i) {
                 for (int j = 0; j < matrix.columns(); ++j) {
-                    outStream.writeFloat(new Double(matrix.get(i,j)).floatValue());
+                    outStream.writeFloat(
+                            new Double(matrix.get(i,j)).floatValue());
                 }
             }
             outStream.close();
@@ -1177,15 +1215,49 @@ public class MatrixIO {
                     if (matrix.get(i,j) == 0)
                         continue;
                     StringBuffer sb = new StringBuffer(32);
-                    sb.append(i).append(" ").append(j)
+                    sb.append(i+1).append(" ").append(j+1)
                         .append(" ").append(matrix.get(i,j));
-                    System.out.println(sb.toString());
                     pw.println(sb.toString());
                 }
             }
             pw.close();
             break;                        
         }
+
+        case EIGEN_SPARSE: {
+            PrintWriter pw = new PrintWriter(output);
+            if (matrix instanceof SparseMatrix) {
+                SparseMatrix smat = (SparseMatrix) matrix;
+                pw.printf("%d %d\n", matrix.rows(), matrix.columns());
+                for (int r = 0; r < matrix.rows(); ++r) {
+                    SparseDoubleVector v = smat.getRowVector(r);
+                    int[] nonZeros = v.getNonZeroIndices();
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(nonZeros.length).append(" ");
+                    for (int index : nonZeros) {
+                        sb.append(index).append(" ");
+                        sb.append(v.get(index)).append(" ");
+                    }
+                    pw.println(sb.toString());
+                }
+            }
+            pw.close();
+            break;
+        }
+
+        case EIGEN_DENSE: {
+            PrintWriter pw = new PrintWriter(output);
+            pw.printf("%d %d\n", matrix.rows(), matrix.columns());
+            for (int r = 0; r < matrix.rows(); ++r) {
+                StringBuilder sb = new StringBuilder();
+                for (int c = 0; c < matrix.columns(); ++c)
+                    sb.append(matrix.get(r, c)).append(" ");
+                pw.println(sb.toString());
+            }
+            pw.close();
+            break;
+        }
+
         default:
             throw new UnsupportedOperationException(
                 "writing to " + format + " is currently unsupported");
