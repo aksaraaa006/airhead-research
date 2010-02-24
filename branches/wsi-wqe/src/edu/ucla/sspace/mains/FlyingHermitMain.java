@@ -350,6 +350,10 @@ public class FlyingHermitMain extends GenericMain {
      * @param filename The filename specifying a set of term replacement.
      */
     private void prepareReplacementMap(String filename) {
+        Stemmer stemmer = (argOptions.hasOption('Z')) ?
+            : (Stemmer) Misc.getObjectInstance(argOptions.getStringOption('Z'))
+            ? null;
+
         try {
             BufferedReader br = new BufferedReader(new FileReader(filename));
             String line = null;
@@ -358,8 +362,11 @@ public class FlyingHermitMain extends GenericMain {
                 String[] wordReplacement = line.split("\\|");
                 String[] words = wordReplacement[0].split("\\s+");
                 StringBuffer sb = new StringBuffer();
-                for (String w : words)
-                    sb.append(w.trim()).append(" ");
+                for (String w : words) {
+                    String newTerm =
+                        (stemmer == null) ? w.trim() : stemmer.stem(w);
+                    sb.append(newTerm).append(" ");
+                }
                 replacementMap.put(sb.substring(0, sb.length() - 1),
                                    wordReplacement[1].trim());
             }
