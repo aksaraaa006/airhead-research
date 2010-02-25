@@ -183,7 +183,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
             if (linkAccepted) {
                 linkDeque.addLast(new Pair<String>(
                             term.word(), link.relation()));
-                List<Pair<String>> path =
+                LinkedList<Pair<String>> path =
                     new LinkedList<Pair<String>>(linkDeque);
                 path.add(new Pair<String>(neighbor.word(), ""));
 
@@ -230,7 +230,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         /**
          * The list of terms and relations.
          */
-        private List<Pair<String>> path;
+        private LinkedList<Pair<String>> path;
 
         /**
          * The score of the path.
@@ -240,7 +240,8 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         /**
          * Creates a {@link SimpleDependencyPath}.
          */
-        public SimpleDependencyPath(List<Pair<String>> path, double score) {
+        public SimpleDependencyPath(LinkedList<Pair<String>> path,
+                                    double score) {
             this.path = path;
             this.score = score;
         }
@@ -248,7 +249,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         /**
          * {@inheritDoc}
          */
-        public List<Pair<String>> path() {
+        public LinkedList<Pair<String>> path() {
             return path;
         }
 

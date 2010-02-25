@@ -23,7 +23,7 @@ package edu.ucla.sspace.dependency;
 
 import edu.ucla.sspace.util.Pair;
 
-import java.util.List;
+import java.util.LinkedList;
 
 
 /**
@@ -31,7 +31,7 @@ import java.util.List;
  */
 public interface DependencyPath {
 
-    List<Pair<String>> path();
+    LinkedList<Pair<String>> path();
 
     double score();
 }
