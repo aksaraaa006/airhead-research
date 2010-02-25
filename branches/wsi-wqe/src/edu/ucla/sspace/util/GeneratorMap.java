@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.util;
 
+import java.io.Serializable;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Keith Stevens
  */
-public class GeneratorMap<T> implements Map<String, T> {
+public class GeneratorMap<T> implements Map<String, T>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The {@code Generator} for generating new map values.

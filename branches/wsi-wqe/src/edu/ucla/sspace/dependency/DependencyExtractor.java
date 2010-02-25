@@ -236,11 +236,16 @@ public class DependencyExtractor {
             id++;
         }
 
-        // Process all the child links that were not handled during the
-        // processing of the words.
-        for (Map.Entry<Integer, DependencyLink> childLink :
-                childrenToAdd.entrySet())
-            relations.get(childLink.getKey()).addNeighbor(childLink.getValue());
+        if (childrenToAdd.size() == 0) {
+            // Process all the child links that were not handled during the
+            // processing of the words.
+            for (Map.Entry<Integer, DependencyLink> childLink :
+                    childrenToAdd.entrySet()) {
+                int childIndex = childLink.getKey();
+                DependencyLink link = childLink.getValue();
+                relations.get(childIndex).addNeighbor(link);
+            }
+        }
 
         return relations.toArray(
                 new SimpleDependencyRelation[relations.size()]);

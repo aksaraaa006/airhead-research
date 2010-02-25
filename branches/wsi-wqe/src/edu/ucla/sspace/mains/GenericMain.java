@@ -288,7 +288,6 @@ public abstract class GenericMain {
      *
      * @throws Error if no document source is specified
      */
-
     protected Iterator<Document> getDocumentIterator() throws IOException {
         Iterator<Document> docIter = null;
 

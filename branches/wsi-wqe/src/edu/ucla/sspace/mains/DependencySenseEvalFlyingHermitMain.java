@@ -38,11 +38,13 @@ import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.DependencySenseEvalFlyingHermit;
 
 import edu.ucla.sspace.text.Document;
-import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
+import edu.ucla.sspace.text.DependencyFileDocumentIterator;
+
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
+import edu.ucla.sspace.util.LimitedIterator;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 
@@ -57,6 +59,8 @@ import java.io.IOException;
 
 import java.lang.reflect.Constructor;
 
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -408,5 +412,49 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
      */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
+    }
+
+    /**
+     * Returns the iterator for all of the documents specified on the command
+     * line or throws an {@code Error} if no documents are specified.
+     * Subclasses should override this method if they provide document input by
+     * some other manner than a file list or document list.
+     *
+     * @throws Error if no document source is specified
+     */
+    protected Iterator<Document> getDocumentIterator() throws IOException {
+        Iterator<Document> docIter = null;
+
+        String docFile = (argOptions.hasOption("docFile"))
+            ? argOptions.getStringOption("docFile")
+            : null;
+
+        if (docFile == null) {
+            throw new Error("must specify document sources");
+        }
+
+        // Second, determine where the document input sources will be coming
+        // from.
+        Collection<Iterator<Document>> docIters = 
+            new LinkedList<Iterator<Document>>();
+
+        if (docFile != null) {
+            String[] fileNames = docFile.split(",");
+            // all the documents are listed in one file, with one document per
+            // line
+            for (String s : fileNames)
+                docIters.add(new DependencyFileDocumentIterator(s));
+        }
+
+        // combine all of the document iterators into one iterator.
+        docIter = new CombinedIterator<Document>(docIters);
+
+        // Return a limited iterator if requested.
+        if (argOptions.hasOption("docLimit"))
+            return new LimitedIterator<Document>(
+                    docIter, argOptions.getIntOption("docLimit"));
+
+        // Otherwise return the standard iterator.
+        return docIter;
     }
 }
