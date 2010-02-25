@@ -316,12 +316,21 @@ public class SemanticSpaceExplorer {
             }
             Similarity.SimType simType = Similarity.SimType.COSINE;
             if (commandTokens.hasNext()) {
-                String simTypeStr = commandTokens.next();
+                // Upper case since it's an enum
+                String simTypeStr = commandTokens.next().toUpperCase();
                 try {
                     simType = Similarity.SimType.valueOf(simTypeStr);
                 } catch (IllegalArgumentException iae) {
-                    out.println("invalid similarity measure: " + simTypeStr);
-                    return false;
+                    // See if the user provided a prefix of the similarity
+                    // measure's name
+                    for (Similarity.SimType t : Similarity.SimType.values())
+                        if (t.name().startsWith(simTypeStr)) 
+                            simType = t;
+                    // If no prefix was found, report an error
+                    if (simType == null) {
+                        out.println("invalid similarity measure: " +simTypeStr);
+                        return false;
+                    }
                 }
             }
             
