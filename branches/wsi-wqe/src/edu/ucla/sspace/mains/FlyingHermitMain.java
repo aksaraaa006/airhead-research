@@ -37,11 +37,13 @@ import edu.ucla.sspace.hermit.FlyingHermit;
 
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.LimitedOneLinePerDocumentIterator;
+import edu.ucla.sspace.text.Stemmer;
 
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
+import edu.ucla.sspace.util.Misc;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 import edu.ucla.sspace.util.MultiMap;
@@ -350,9 +352,9 @@ public class FlyingHermitMain extends GenericMain {
      * @param filename The filename specifying a set of term replacement.
      */
     private void prepareReplacementMap(String filename) {
-        Stemmer stemmer = (argOptions.hasOption('Z')) ?
-            : (Stemmer) Misc.getObjectInstance(argOptions.getStringOption('Z'))
-            ? null;
+        Stemmer stemmer = (argOptions.hasOption('Z'))
+            ? (Stemmer) Misc.getObjectInstance(argOptions.getStringOption('Z'))
+            : null;
 
         try {
             BufferedReader br = new BufferedReader(new FileReader(filename));
