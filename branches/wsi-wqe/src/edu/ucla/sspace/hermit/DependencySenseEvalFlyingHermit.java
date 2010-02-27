@@ -36,8 +36,6 @@ import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyRelation;
-import edu.ucla.sspace.dependency.FlatPathWeight;
-import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.index.PermutationFunction;
 
@@ -194,6 +192,8 @@ public class DependencySenseEvalFlyingHermit
             PermutationFunction<TernaryVector> permFunction,
             Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator,
             DependencyExtractor parser,
+            DependencyPathAcceptor acceptor,
+            DependencyPathWeight weighter,
             int vectorSize,
             int pathLength) {
         indexVectorSize = vectorSize;
@@ -202,8 +202,8 @@ public class DependencySenseEvalFlyingHermit
         this.parser = parser;
         this.pathLength = pathLength;
         acceptedWords = null;
-        acceptor = new UniversalPathAcceptor();
-        weighter = new FlatPathWeight();
+        this.acceptor = acceptor;
+        this.weighter = weighter;
 
         clusterMap = new GeneratorMap<OnlineClustering<SparseIntegerVector>>(
                 clusterGenerator);

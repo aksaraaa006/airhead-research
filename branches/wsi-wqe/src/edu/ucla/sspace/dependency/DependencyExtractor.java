@@ -195,6 +195,17 @@ public class DependencyExtractor {
         // word in the sentence.
         int id = 0;
         for (String line = null; ((line = reader.readLine()) != null); ) {
+            // If a new line is encountered and no lines have been handled yet,
+            // skip all new lines.
+            if (line.length() == 0 && relations.size() == 0)
+                continue;
+
+            // If a new line is encountered and lines have already been
+            // processed, we have finished processing the entire sentence and
+            // can stop.
+            if (line.length() == 0)
+                break;
+
             // CoNLL formats using tabs between features.
             String[] nodeFeatures = line.split("\\s+");
 

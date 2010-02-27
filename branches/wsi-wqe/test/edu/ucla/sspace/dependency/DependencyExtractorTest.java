@@ -49,6 +49,14 @@ public class DependencyExtractorTest {
         "11  London  _   NNP NNP _   10  PMOD    _   _\n" +
         "12  .   _   .   .   _   3   P   _   _";
 
+    public static final String DOUBLE_PARSE =
+        "\n\n" +
+        SINGLE_PARSE +
+        "\n\n" +
+        "1   Individuell _   AJ  AJ  _   2   AT  _   _\n" +
+        "2   beskattning _   N   VN  _   0   ROOT    _   _\n" +
+        "3   av  _   PR  PR  _   2   ET  _   _\n" +
+        "4   arbetsinkomster _   N   NN  SS  3   PA  _   _\n";
 
     /**
      * A simple function that tests the neighbors for a given relation.  The
@@ -87,6 +95,22 @@ public class DependencyExtractorTest {
                                       "PMOD", "NMOD", "NMOD", "", "ADV"};
 
         evaluateRelations(relations[8], expectedRelations, 4);
+    }
+
+    @Test public void testDoubleExtraction() throws Exception {
+        DependencyExtractor extractor = new DependencyExtractor();
+        Document doc = new StringDocument(DOUBLE_PARSE);
+        DependencyRelation[] relations = extractor.parse(doc.reader());
+        assertTrue(relations != null);
+        assertEquals(12, relations.length);
+
+        relations = extractor.parse(doc.reader());
+        assertTrue(relations != null);
+        assertEquals(4, relations.length);
+
+        // Test expected relation for each of the links for "Review".
+        String[] expectedRelations = {"AT", "", "ET"};
+        evaluateRelations(relations[1], expectedRelations, 2);
     }
 
     @Test public void testRootNode() throws Exception {

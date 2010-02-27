@@ -30,6 +30,10 @@ import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyPathAcceptor;
+import edu.ucla.sspace.dependency.DependencyPathWeight;
+import edu.ucla.sspace.dependency.FlatPathWeight;
+import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.PermutationFunction;
@@ -45,6 +49,7 @@ import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
 import edu.ucla.sspace.util.LimitedIterator;
+import edu.ucla.sspace.util.Misc;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 
@@ -197,6 +202,9 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
      */
     private Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator;
 
+    private DependencyPathAcceptor acceptor;
+    private DependencyPathWeight weighter;
+
     /**
      * Uninstantiable.
      */
@@ -231,6 +239,12 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
                           false, null, "Process Properties");
+        options.addOption('a', "pathAcceptor",
+                          "The DependencyPathAcceptor to use",
+                          true, "CLASSNAME", "Optional");
+        options.addOption('W', "pathWeighter",
+                          "The DependencyPathWeight to use",
+                          true, "CLASSNAME", "Optional");
         
         // similarity threshold, maximum number of senses to create, and the
         // clustering mechanism to use. 
@@ -272,6 +286,16 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
         pathLength = (argOptions.hasOption('s'))
             ? argOptions.getIntOption('s')
             : Integer.MAX_VALUE;
+
+        // Set up the path acceptor and the weight function.
+        acceptor = (argOptions.hasOption('a'))
+            ? (DependencyPathAcceptor) Misc.getObjectInstance(
+                    argOptions.getStringOption('a'))
+            : new UniversalPathAcceptor();
+        weighter = (argOptions.hasOption('W'))
+            ? (DependencyPathWeight) Misc.getObjectInstance(
+                    argOptions.getStringOption('W'))
+            : new FlatPathWeight();
 
         // Setup the PermutationFunction.
         String permType = argOptions.getStringOption("permutationFunction",
@@ -355,7 +379,8 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
 
         DependencySenseEvalFlyingHermit hermit = 
             new DependencySenseEvalFlyingHermit(vectorMap, permFunction,
-                    clusterGenerator, parser, dimension, pathLength);
+                    clusterGenerator, parser, acceptor, weighter, 
+                    dimension, pathLength);
         hermit.setSemanticFilter(prepareAcceptanceList(
                     argOptions.getStringOption('A')));
         return hermit;
