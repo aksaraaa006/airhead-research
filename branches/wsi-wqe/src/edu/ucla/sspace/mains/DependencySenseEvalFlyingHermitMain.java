@@ -42,8 +42,7 @@ import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.DependencySenseEvalFlyingHermit;
 
 import edu.ucla.sspace.text.Document;
-import edu.ucla.sspace.text.DependencyFileDocumentIterator;
-
+import edu.ucla.sspace.text.SenseEvalDependencyCorpusReader;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.Generator;
@@ -270,10 +269,6 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
                           "XML configuration file for the format of a " +
                           "dependency parse",
                           true, "FILE", "Process Properties");
-        options.addOption('A', "acceptedWords", 
-                          "A file specifying the words for which semantics " +
-                          "should be built",
-                          true, "FILE", "Process Properties");
     }
 
     /**
@@ -381,32 +376,7 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
             new DependencySenseEvalFlyingHermit(vectorMap, permFunction,
                     clusterGenerator, parser, acceptor, weighter, 
                     dimension, pathLength);
-        hermit.setSemanticFilter(prepareAcceptanceList(
-                    argOptions.getStringOption('A')));
         return hermit;
-    }
-
-    /**
-     * Prepare the acceptance list for {@code FlyingHermit} based on the
-     * contents of {@code filename}.  The expected input format is:
-     *   word
-     *
-     * @param filename The filename specifying a set of words to accept.
-     */
-    private Set<String> prepareAcceptanceList(String filename) {
-        Set<String> acceptedWords = null;
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(filename));
-            String line = null;
-            acceptedWords = new HashSet<String>();
-            while ((line = br.readLine()) != null) {
-                String word = line.trim();
-                acceptedWords.add(word);
-            }
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-        return acceptedWords;
     }
 
     /**
@@ -440,46 +410,19 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
     }
 
     /**
-     * Returns the iterator for all of the documents specified on the command
-     * line or throws an {@code Error} if no documents are specified.
-     * Subclasses should override this method if they provide document input by
-     * some other manner than a file list or document list.
+     * Returns a {@link SenseEvalDependencyCorpusReader} for a specified
+     * dependency parsed senseEval xml file.
      *
-     * @throws Error if no document source is specified
+     * @throws IllegalArgumentException if the {@code --docFile} argument isn't
+     *         set.
      */
     protected Iterator<Document> getDocumentIterator() throws IOException {
-        Iterator<Document> docIter = null;
+        if (!argOptions.hasOption("docFile"))
+            throw new IllegalArgumentException(
+                    "must specify an dependency parsed xml " +
+                    "senseEval file with the -d (--docFile) option.");
 
-        String docFile = (argOptions.hasOption("docFile"))
-            ? argOptions.getStringOption("docFile")
-            : null;
-
-        if (docFile == null) {
-            throw new Error("must specify document sources");
-        }
-
-        // Second, determine where the document input sources will be coming
-        // from.
-        Collection<Iterator<Document>> docIters = 
-            new LinkedList<Iterator<Document>>();
-
-        if (docFile != null) {
-            String[] fileNames = docFile.split(",");
-            // all the documents are listed in one file, with one document per
-            // line
-            for (String s : fileNames)
-                docIters.add(new DependencyFileDocumentIterator(s));
-        }
-
-        // combine all of the document iterators into one iterator.
-        docIter = new CombinedIterator<Document>(docIters);
-
-        // Return a limited iterator if requested.
-        if (argOptions.hasOption("docLimit"))
-            return new LimitedIterator<Document>(
-                    docIter, argOptions.getIntOption("docLimit"));
-
-        // Otherwise return the standard iterator.
-        return docIter;
+        return new SenseEvalDependencyCorpusReader(
+                argOptions.getStringOption("docFile"));
     }
 }

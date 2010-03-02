@@ -25,7 +25,6 @@ import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 import edu.ucla.sspace.clustering.OnlineClustering;
 
-import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Similarity.SimType;
@@ -111,8 +110,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class DependencySenseEvalFlyingHermit
-        implements SemanticSpace, Filterable {
+public class DependencySenseEvalFlyingHermit implements SemanticSpace {
 
     /**
      * The base prefix for all {@code DependencySenseEvalFlyingHermit}
@@ -180,7 +178,6 @@ public class DependencySenseEvalFlyingHermit
     private final DependencyPathAcceptor acceptor;
     private final DependencyPathWeight weighter;
 
-    private Set<String> acceptedWords;
     private final int pathLength;
 
     /**
@@ -201,19 +198,11 @@ public class DependencySenseEvalFlyingHermit
         permFunc = permFunction;
         this.parser = parser;
         this.pathLength = pathLength;
-        acceptedWords = null;
         this.acceptor = acceptor;
         this.weighter = weighter;
 
         clusterMap = new GeneratorMap<OnlineClustering<SparseIntegerVector>>(
                 clusterGenerator);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void setSemanticFilter(Set<String> semanticsToRetain) {
-        acceptedWords = semanticsToRetain;
     }
 
     /**
@@ -250,43 +239,51 @@ public class DependencySenseEvalFlyingHermit
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        DependencyRelation[] relations = parser.parse(document); 
+        String instanceId = document.readLine();
+        String instanceWord = document.readLine();
 
-        // Skip empty documents.
-        if (relations.length == 0)
-            return;
+        for (DependencyRelation[] relations = null;
+                (relations = parser.parse(document)) != null; ) {
 
-        for (int i = 0; i < relations.length; ++i) {
-            String focusWord = relations[i].word();
-            if (!accept(focusWord))
+            // Skip empty documents.
+            if (relations.length == 0)
                 continue;
 
-            // Incorporate the context into the semantic vector for the
-            // focus word.  If the focus word has no semantic vector yet,
-            // create a new one, as determined by the index builder.
-            SparseIntegerVector meaning = 
-                new SparseHashIntegerVector(indexVectorSize);
+            for (int i = 0; i < relations.length; ++i) {
+                String focusWord = relations[i].word();
 
-            Iterator<DependencyPath> pathIter = new DependencyIterator(
-                    relations, acceptor, weighter, i, pathLength);
+                // Skip paths for words that are not anchored on the instance's
+                // word.
+                if (!focusWord.equals(instanceWord))
+                    continue;
 
-            while (pathIter.hasNext()) {
-                LinkedList<Pair<String>> path = pathIter.next().path();
-                TernaryVector termVector = indexMap.get(path.peekLast().x);
-                int distance = path.size();
-                if (permFunc != null)
-                    termVector = permFunc.permute(termVector, distance);
-                add(meaning, termVector);
+                // Incorporate the context into the semantic vector for the
+                // focus word.  If the focus word has no semantic vector yet,
+                // create a new one, as determined by the index builder.
+                SparseIntegerVector meaning = 
+                    new SparseHashIntegerVector(indexVectorSize);
+
+                Iterator<DependencyPath> pathIter = new DependencyIterator(
+                        relations, acceptor, weighter, i, pathLength);
+
+                while (pathIter.hasNext()) {
+                    LinkedList<Pair<String>> path = pathIter.next().path();
+                    TernaryVector termVector = indexMap.get(path.peekLast().x);
+                    int distance = path.size();
+                    if (permFunc != null)
+                        termVector = permFunc.permute(termVector, distance);
+                    add(meaning, termVector);
+                }
+
+                // Add the current context vector to the cluster for the focusWord
+                // that is most similar.
+                OnlineClustering<SparseIntegerVector> clustering =
+                    clusterMap.get(focusWord);
+                clustering.addVector(meaning);
             }
-
-            // Add the current context vector to the cluster for the focusWord
-            // that is most similar.
-            OnlineClustering<SparseIntegerVector> clustering =
-                clusterMap.get(focusWord);
-            clustering.addVector(meaning);
         }
     }
-    
+        
     /**
      * {@inheritDoc}
      */
@@ -337,10 +334,6 @@ public class DependencySenseEvalFlyingHermit
         }
 
         HERMIT_LOGGER.info("Split into " + splitSenses.size() + " terms.");
-    }
-
-    private boolean accept(String term) {
-        return (acceptedWords == null) ? true : acceptedWords.contains(term);
     }
 
     /**

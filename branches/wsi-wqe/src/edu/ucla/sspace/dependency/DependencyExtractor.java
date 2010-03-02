@@ -191,6 +191,8 @@ public class DependencyExtractor {
         MultiMap<Integer, DependencyLink> childrenToAdd =
             new HashMultiMap<Integer, DependencyLink>();
 
+        StringBuilder sb = new StringBuilder();
+
         // Read each line in the document to extract the feature set for each
         // word in the sentence.
         int id = 0;
@@ -205,6 +207,8 @@ public class DependencyExtractor {
             // can stop.
             if (line.length() == 0)
                 break;
+
+            sb.append(line).append("\n");
 
             // CoNLL formats using tabs between features.
             String[] nodeFeatures = line.split("\\s+");
@@ -247,14 +251,23 @@ public class DependencyExtractor {
             id++;
         }
 
-        if (childrenToAdd.size() == 0) {
+        if (relations.size() == 0)
+            return null;
+
+        if (childrenToAdd.size() != 0) {
             // Process all the child links that were not handled during the
             // processing of the words.
             for (Map.Entry<Integer, DependencyLink> childLink :
                     childrenToAdd.entrySet()) {
+            try{ 
                 int childIndex = childLink.getKey();
                 DependencyLink link = childLink.getValue();
                 relations.get(childIndex).addNeighbor(link);
+            } catch (IndexOutOfBoundsException npe) {
+                System.out.println(sb.toString());
+                System.out.println(childLink.getKey());
+                System.exit(1);
+            }
             }
         }
 
