@@ -188,10 +188,7 @@ public class OnlineKMeans<T extends Vector>
         public int addVector(T value) {
             // Update the set of centriods.
 
-            // First make a shallow copy of the cluster list to work on.  Note
-            // that by making this shallow copy, if new clusters are added while
-            // assigning this instance, the new cluster will be skipped.
-            List<Cluster> copiedElements = new ArrayList<Cluster>(elements);
+            Iterator<Cluster> elementIter = elements.iterator();
 
             // Find the centriod with the best similarity.
             Cluster bestMatch = null;
@@ -199,7 +196,8 @@ public class OnlineKMeans<T extends Vector>
             double bestScore = -1;
             double similarity = -1;
             int i = 0;
-            for (Cluster cluster : copiedElements) {
+            while (elementIter.hasNext()) {
+                Cluster cluster = iter.next();
                 similarity = cluster.compareWithVector(value);
                 if (similarity > bestScore) {
                     bestScore = similarity;
@@ -230,8 +228,14 @@ public class OnlineKMeans<T extends Vector>
                     // number of clusters, so this element should be merged
                     // instead.
                     else {
+                        try {
                         bestMatch.addVector(value);
                         return bestIndex;
+                        } catch (NullPointerException npe) {
+                            System.out.println(elements.size() + " with best being " + bestIndex);
+                            System.exit(1);
+                            return 1;
+                        }
                     }
                 }
             }

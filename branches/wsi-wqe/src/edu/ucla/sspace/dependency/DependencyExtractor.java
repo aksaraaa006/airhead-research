@@ -259,15 +259,9 @@ public class DependencyExtractor {
             // processing of the words.
             for (Map.Entry<Integer, DependencyLink> childLink :
                     childrenToAdd.entrySet()) {
-            try{ 
                 int childIndex = childLink.getKey();
                 DependencyLink link = childLink.getValue();
                 relations.get(childIndex).addNeighbor(link);
-            } catch (IndexOutOfBoundsException npe) {
-                System.out.println(sb.toString());
-                System.out.println(childLink.getKey());
-                System.exit(1);
-            }
             }
         }
 

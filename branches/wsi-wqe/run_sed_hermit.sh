@@ -33,13 +33,13 @@ function run() {
   trainKey=$corpusDir/key/keys/senseinduction_train.key
 
   echo "Running FlyingHermit with $1 clusters and .$2 threshold."
-  java -Xmx8g -server edu.ucla.sspace.mains.DependencySecondFlyingHermitMain \
+  java -Xmx8g -server edu.ucla.sspace.mains.DependencySenseEvalFlyingHermitMain \
        -d $CORPUS -l 5000 -c $1 -h .$2 -P $3 $INDEX \
        -v $outDir/hermit.sspace 2> hermit.log 
 
   echo "Running the senseval tester"
   java -Xmx8g -server edu.ucla.sspace.evaluation.SenseEvalDependencyTester \
-       -m $indexPrefix.index -p $indexPrefix.permutation
+       -m $indexPrefix.index -p $indexPrefix.permutation \
        -s $outDir/hermit.sspace -S $CORPUS $systemKey
 
   echo "Evaluating FlyingHermit with SenseEval07"
@@ -58,4 +58,8 @@ function run() {
   $semEvalUnSup $systemKey $testKey | tail -n 1 > $senseEvalName.vmeasure
 }
 
-run 15 30
+#run 15 45
+for threshold in $(seq 05 5 95)
+do
+  run 15 $threshold
+done
