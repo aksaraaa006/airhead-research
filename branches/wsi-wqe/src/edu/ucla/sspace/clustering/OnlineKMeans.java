@@ -34,7 +34,7 @@ import edu.ucla.sspace.util.MultiMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -192,12 +192,12 @@ public class OnlineKMeans<T extends Vector>
 
             // Find the centriod with the best similarity.
             Cluster bestMatch = null;
-            int bestIndex = copiedElements.size();
+            int bestIndex = elements.size();
             double bestScore = -1;
             double similarity = -1;
             int i = 0;
             while (elementIter.hasNext()) {
-                Cluster cluster = iter.next();
+                Cluster cluster = elementIter.next();
                 similarity = cluster.compareWithVector(value);
                 if (similarity > bestScore) {
                     bestScore = similarity;
