@@ -31,11 +31,10 @@ import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
+import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
 import edu.ucla.sspace.dependency.FlatPathWeight;
 import edu.ucla.sspace.dependency.UniversalPathAcceptor;
-
-import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -90,7 +89,7 @@ public class SenseEvalDependencyTester {
     private final PrintWriter answers;
     private final SemanticSpace senseInducedSpace;
     private final Map<String, TernaryVector> wordToIndexVector;
-    private final PermutationFunction<TernaryVector> permFunc;
+    private final DependencyPermutationFunction<TernaryVector> permFunc;
     private final Iterator<SenseEvalInstance> iter;
     private final int windowSize;
 
@@ -107,8 +106,8 @@ public class SenseEvalDependencyTester {
             SerializableUtil.load(new File(options.getStringOption('m')));
 
         permFunc = (options.hasOption('p'))
-            ? (PermutationFunction<TernaryVector>) SerializableUtil.load(
-                    new File(options.getStringOption('p')))
+            ? (DependencyPermutationFunction<TernaryVector>)
+                SerializableUtil.load(new File(options.getStringOption('p')))
             : null;
 
         extractor = new DependencyExtractor();
@@ -209,9 +208,8 @@ public class SenseEvalDependencyTester {
         while (pathIter.hasNext()) {
             LinkedList<Pair<String>> path = pathIter.next().path();
             TernaryVector termVector = wordToIndexVector.get(path.peekLast().x);
-            int distance = path.size();
             if (permFunc != null)
-                termVector = permFunc.permute(termVector, distance);
+                termVector = permFunc.permute(termVector, path);
             add(contextVector, termVector);
         }
 

@@ -29,14 +29,16 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
+import edu.ucla.sspace.dependency.DefaultDependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
+import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.FlatPathWeight;
 import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
-import edu.ucla.sspace.index.PermutationFunction;
+import edu.ucla.sspace.index.TernaryPermutationFunction;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
 import edu.ucla.sspace.hermit.DependencySenseEvalFlyingHermit;
@@ -93,10 +95,6 @@ import java.util.Properties;
  *   </li> {@code -s}, {@code --windowSize=INT,INT} The number of words before,
  *         and after the focus term to inspect
  *
- *   </li> {@code -p}, {@code --permutationFunction=CLASSNAME} The class name of
- *         the permutation function to use.  Note that this {@link
- *         PermutationFunction} should be for {@link TernaryVector}s
- *
  *   </li> {@code -P}, {@code --userPermutations} Set if permutations should be
  *         used
  *
@@ -147,12 +145,6 @@ import java.util.Properties;
 public class DependencySenseEvalFlyingHermitMain extends GenericMain {
 
     /**
-     * The default {@link PermutationFunction} to use.
-     */
-    public static final String DEFAULT_FUNCTION = 
-        "edu.ucla.sspace.index.TernaryPermutationFunction";
-
-    /**
      * The default {@link IntegerVectorGenerator} to use.
      */
     public static final String DEFAULT_GENERATOR =
@@ -193,7 +185,7 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
      * generating contexts.  This may be either a new function, or one
      * deserialized from a file.
      */
-    private PermutationFunction<TernaryVector> permFunction;
+    private DependencyPermutationFunction<TernaryVector> permFunction;
 
     /**
      * The {@link OnLineClusteringGenerator} to use for creating new cluster
@@ -230,11 +222,6 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
                           "The maximum number of link in a dependency path " +
                           "to accept",
                           true, "INT", "Process Properties");
-        options.addOption('p', "permutationFunction",
-                          "The class name of the permutation function to use." +
-                          "  Note that this permutation function should be " +
-                          "for TernaryVectors",
-                          true, "CLASSNAME", "Process Properties");
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
                           false, null, "Process Properties");
@@ -293,11 +280,8 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
             : new FlatPathWeight();
 
         // Setup the PermutationFunction.
-        String permType = argOptions.getStringOption("permutationFunction",
-                                                     DEFAULT_FUNCTION);
-        permFunction = (argOptions.hasOption("usePermutations"))
-            ? (PermutationFunction<TernaryVector>) getObjectInstance(permType)
-            : null;
+        permFunction = new DefaultDependencyPermutationFunction<TernaryVector>(
+                new TernaryPermutationFunction());
 
         // Setup the generator.
         String generatorType = 
@@ -319,10 +303,9 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
                 SerializableUtil.load(new File(savedIndexName + ".index"),
                                       GeneratorMap.class);
             if (argOptions.hasOption("usePermutations"))
-                permFunction = (PermutationFunction<TernaryVector>) 
+                permFunction = (DependencyPermutationFunction<TernaryVector>) 
                     SerializableUtil.load(
-                            new File(savedIndexName + ".permutation"),
-                            PermutationFunction.class);
+                            new File(savedIndexName + ".permutation"));
         } else
             vectorMap = new GeneratorMap<TernaryVector>(generator);
 

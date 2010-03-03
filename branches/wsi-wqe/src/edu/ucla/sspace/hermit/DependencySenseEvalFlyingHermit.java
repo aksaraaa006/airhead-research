@@ -34,6 +34,7 @@ import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
+import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
 
 import edu.ucla.sspace.index.PermutationFunction;
@@ -151,7 +152,7 @@ public class DependencySenseEvalFlyingHermit implements SemanticSpace {
     /**
      * The {@code PermutationFunction} to use for co-occurrances.
      */
-    private final PermutationFunction<TernaryVector> permFunc;
+    private final DependencyPermutationFunction<TernaryVector> permFunc;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -186,7 +187,7 @@ public class DependencySenseEvalFlyingHermit implements SemanticSpace {
      */
     public DependencySenseEvalFlyingHermit(
             Map<String, TernaryVector> indexGeneratorMap,
-            PermutationFunction<TernaryVector> permFunction,
+            DependencyPermutationFunction<TernaryVector> permFunction,
             Generator<OnlineClustering<SparseIntegerVector>> clusterGenerator,
             DependencyExtractor parser,
             DependencyPathAcceptor acceptor,
@@ -223,9 +224,7 @@ public class DependencySenseEvalFlyingHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public String getSpaceName() {
-        String permName = (permFunc == null) ? "" : permFunc.toString();
-        return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize + 
-               "-" + permName + "-" + clusterMap.toString();
+        return FLYING_HERMIT_SSPACE_NAME + "-" + indexVectorSize;
     }
 
     /**
@@ -257,9 +256,6 @@ public class DependencySenseEvalFlyingHermit implements SemanticSpace {
                 if (!focusWord.equals(instanceWord))
                     continue;
 
-                // Incorporate the context into the semantic vector for the
-                // focus word.  If the focus word has no semantic vector yet,
-                // create a new one, as determined by the index builder.
                 SparseIntegerVector meaning = 
                     new SparseHashIntegerVector(indexVectorSize);
 
@@ -269,14 +265,13 @@ public class DependencySenseEvalFlyingHermit implements SemanticSpace {
                 while (pathIter.hasNext()) {
                     LinkedList<Pair<String>> path = pathIter.next().path();
                     TernaryVector termVector = indexMap.get(path.peekLast().x);
-                    int distance = path.size();
                     if (permFunc != null)
-                        termVector = permFunc.permute(termVector, distance);
+                        termVector = permFunc.permute(termVector, path);
                     add(meaning, termVector);
                 }
 
-                // Add the current context vector to the cluster for the focusWord
-                // that is most similar.
+                // Add the current context vector to the cluster for the
+                // focusWord that is most similar.
                 OnlineClustering<SparseIntegerVector> clustering =
                     clusterMap.get(focusWord);
                 clustering.addVector(meaning);
