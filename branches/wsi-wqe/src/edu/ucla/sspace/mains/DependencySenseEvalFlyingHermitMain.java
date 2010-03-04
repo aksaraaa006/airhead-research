@@ -38,6 +38,7 @@ import edu.ucla.sspace.dependency.FlatPathWeight;
 import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
+import edu.ucla.sspace.index.PermutationFunction;
 import edu.ucla.sspace.index.TernaryPermutationFunction;
 
 import edu.ucla.sspace.hermit.FlyingHermit;
@@ -225,6 +226,9 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
                           false, null, "Process Properties");
+        options.addOption('p', "permutationFunction",
+                          "The DependencyPermutationFunction to use.",
+                          true, "CLASSNAME", "Process Properties");
         options.addOption('a', "pathAcceptor",
                           "The DependencyPathAcceptor to use",
                           true, "CLASSNAME", "Optional");
@@ -258,6 +262,24 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
                           true, "FILE", "Process Properties");
     }
 
+    @SuppressWarnings("unchecked")
+    private DependencyPermutationFunction getPermutationFunction() {
+        try {
+            if (!argOptions.hasOption('P'))
+                return null;
+
+            if (!argOptions.hasOption('p'))
+                return new DefaultDependencyPermutationFunction<TernaryVector>(
+                        new TernaryPermutationFunction());
+            Class clazz = Class.forName(argOptions.getStringOption('p'));
+            Constructor<?> c = clazz.getConstructor(PermutationFunction.class);                
+            return (DependencyPermutationFunction<TernaryVector>)
+                c.newInstance(new TernaryPermutationFunction());
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -279,9 +301,6 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
                     argOptions.getStringOption('W'))
             : new FlatPathWeight();
 
-        // Setup the PermutationFunction.
-        permFunction = new DefaultDependencyPermutationFunction<TernaryVector>(
-                new TernaryPermutationFunction());
 
         // Setup the generator.
         String generatorType = 
@@ -296,6 +315,7 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
             throw new Error(e);
         }
 
+        permFunction = null;
         // Setup the generator map.
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadIndexes");
@@ -306,8 +326,12 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
                 permFunction = (DependencyPermutationFunction<TernaryVector>) 
                     SerializableUtil.load(
                             new File(savedIndexName + ".permutation"));
-        } else
+        } else {
             vectorMap = new GeneratorMap<TernaryVector>(generator);
+
+            // Setup the PermutationFunction.
+            permFunction = getPermutationFunction();
+        }
 
         // Setup the clustering generator.
         int maxSenseCount = argOptions.getIntOption("senseCount",
