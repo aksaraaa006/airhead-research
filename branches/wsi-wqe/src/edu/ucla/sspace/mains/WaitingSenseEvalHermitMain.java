@@ -69,16 +69,6 @@ import java.util.Properties;
  *
  * <ul>
  *
- * <li><u>Optional (At most one of)</u>
- *   <ul> 
- *
- *   </li> {@code -D}, {@code --trainSize=INT} The number of documents to use as
- *         a training set, All other documents will be considered a test set.
- *
- *   </li> {@code -C}, {@code --documentCount=INT} The number of documents
- *         within the document set to process
- *   </ul>
- *
  * <li><u>Process Properties</u>
  *   <ul>
  *
@@ -90,9 +80,6 @@ import java.util.Properties;
  *
  *   </li> {@code -s}, {@code --windowSize=INT,INT} The number of words before,
  *         and after the focus term to inspect
- *
- *   </li> {@code -X}, {@code --windowLimit=INT} The bucket size to use for
- *         context windows
  *
  *   </li> {@code -p}, {@code --permutationFunction=CLASSNAME} The class name of
  *         the permutation function to use.  Note that this {@link
@@ -239,7 +226,7 @@ public class WaitingSenseEvalHermitMain extends GenericMain {
                           "The maximum number of senses FlyingHermit should " +
                           "produce",
                           true, "INT", "Cluster Properties");
-        options.addOption('C', "clusteringAlgorithm",
+        options.addOption('G', "clusteringAlgorithm",
                           "The clustering algorithm to use", 
                           true, "CLASSNAME", "Cluster Properties");
 
@@ -316,9 +303,9 @@ public class WaitingSenseEvalHermitMain extends GenericMain {
         if (argOptions.hasOption("senseCount"))
             props.setProperty(WaitingSenseEvalHermit.NUM_CLUSTERS_PROPERTY,
                               argOptions.getStringOption("senseCount"));
-        if (argOptions.hasOption('C'))
+        if (argOptions.hasOption('G'))
             props.setProperty(WaitingSenseEvalHermit.CLUSTERING_PROPERTY,
-                              argOptions.getStringOption('C'));
+                              argOptions.getStringOption('G'));
         return props;
     }
 
