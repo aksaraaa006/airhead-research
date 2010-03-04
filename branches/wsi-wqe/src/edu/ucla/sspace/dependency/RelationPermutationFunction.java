@@ -43,7 +43,7 @@ import java.util.LinkedList;
  *
  * @author Keith Stevens
  */
-public class DefaultDependencyPermutationFunction <T extends Vector>
+public class RelationPermutationFunction <T extends Vector>
         implements DependencyPermutationFunction<T>, Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -57,7 +57,7 @@ public class DefaultDependencyPermutationFunction <T extends Vector>
      * Creates a new {@link DefaultDependencyPermutationFunction} that wraps an
      * existing {@link PermutationFunction}.
      */
-    public DefaultDependencyPermutationFunction(
+    public RelationPermutationFunction(
             PermutationFunction<T> permFunc) {
         this.permFunc = permFunc;
     }
@@ -66,6 +66,29 @@ public class DefaultDependencyPermutationFunction <T extends Vector>
      * {@inheritDoc}
      */
     public T permute(T vector, LinkedList<Pair<String>> path) {
-        return permFunc.permute(vector, path.size());
+        int bestRelationScore = 0; 
+        for (Pair<String> link : path) {
+            int relationScore = getRelationScore(link.y);
+            if (relationScore > bestRelationScore)
+                bestRelationScore = relationScore;
+        }
+        return permFunc.permute(vector, bestRelationScore);
+    }
+
+    private static int getRelationScore(String relation) {
+        if (relation.length() == 0)
+            return 0;
+
+        if (relation.equals("SBJ"))
+            return 6;
+        if (relation.equals("OBJ"))
+            return 5;
+        if (relation.equals("NMOD"))
+            return 4;
+        if (relation.equals("VMOD"))
+            return 3;
+        if (relation.equals("ADV"))
+            return 2;
+        return 1;
     }
 }
