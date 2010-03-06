@@ -154,7 +154,8 @@ public class GapStatistic implements Clustering {
 
                 // Compute the score for the reference data sets with k
                 // clusters.
-                double gapScore = 0;
+                double referenceScore = 0;
+                double[] referenceScores = new double[numGaps];
                 for (int j = 0; j < numGaps; ++j) {
                     File outputFile = 
                         File.createTempFile("gap-clustering-output", ".matrix");
@@ -166,9 +167,17 @@ public class GapStatistic implements Clustering {
                                                   k);
                     outputFile.delete();
 
-                    gapScore += Math.log(extractScore(result));
+                    referenceScores[i] = Math.log(extractScore(result));
+                    referenceScore += referenceScores[i];
                 }
-                gapScore = gapScore / numGaps;
+                referenceScore /= numGaps;
+
+                // Compute the standard deviation for the reference scores.
+                double referenceStdev = 0;
+                for (double score : referenceScores)
+                    referenceStdev += Math.pow(score - referenceScore, 2);
+                referenceStdev /= numGaps;
+                referenceStdev = Math.sqrt(referenceStdev);
 
                 verbose("Clustering original data for %d clusters\n", k);
                 // Compute the score for the original data set with k clusters.
@@ -185,8 +194,8 @@ public class GapStatistic implements Clustering {
                 // current score is less than the previous score, then the
                 // previous assignment is considered best.
                 double gap = Math.log(extractScore(result));
-                gap = gapScore - gap;
-                if (previousGap >= gap) {
+                gap = referenceScore - gap;
+                if (previousGap >= (gap - referenceStdev)) {
                     verbose("Found best clustering with %d clusters\n", (k-1));
                     break;
                 }
