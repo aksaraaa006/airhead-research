@@ -3,7 +3,7 @@ package edu.ucla.sspace.clustering;
 import edu.ucla.sspace.clustering.ClutoClustering.Criterion;
 import edu.ucla.sspace.clustering.ClutoClustering.Method;
 
-import edu.ucla.sspace.matrix.ClutoDenseMatrixBuilder;
+import edu.ucla.sspace.matrix.ClutoSparseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
@@ -13,6 +13,7 @@ import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
 import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseHashDoubleVector ;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -330,33 +331,33 @@ public class GapStatistic implements Clustering {
          * original.
          */
         public File generateTestData() {
-            MatrixBuilder builder = new ClutoDenseMatrixBuilder();
+            verbose("Generating a new reference set");
+
+            // Assume that data is sparse.
+            MatrixBuilder builder = new ClutoSparseMatrixBuilder();
             for (int i = 0; i < rows; ++i) {
                 int cols = minValues.length;
-                double[] values = new double[cols];
+                //double[] values = new double[cols];
 
                 // If the average number of values per row is significantly
                 // smaller than the total number of columns then select a subset
                 // to be non zero.
-                if (averageNumValuesPerRow < cols / 2) {
-                    Set<Integer> nonZeros = new HashSet<Integer>();
-                    int numNonZeros =
-                        (int) (random.nextGaussian() * stdevNumValuesPerRow +
-                               averageNumValuesPerRow);
-                    for (int j = 0; j < numNonZeros; ++j) {
-                        // Get the next index to set.
-                        int col = -1;
-                        while (!nonZeros.contains(col = random.nextInt(cols)))
-                            ;
-
-                        // Set the column's value.
-                        nonZeros.add(col);
-                        double value = random.nextDouble();
-                        values[col] = value *
-                                      (maxValues[col] - minValues[col]) + 
-                                      minValues[col];
-                    }
-                } else {
+                //if (averageNumValuesPerRow < cols / 2) {
+                verbose("Setting sparse values");
+                SparseHashDoubleVector column =
+                    new SparseHashDoubleVector(cols);
+                int numNonZeros =
+                    (int) (random.nextGaussian() * stdevNumValuesPerRow +
+                           averageNumValuesPerRow);
+                for (int j = 0; j < numNonZeros; ++j) {
+                    // Get the next index to set.
+                    int col = random.nextInt(cols);
+                    double value = random.nextDouble() *
+                            (maxValues[col] - minValues[col]) + minValues[col];
+                    column.set(col, value);
+                }
+                builder.addColumn(column);
+                /*} else {
                     // Set all values in the column.
                     for (int j = 0; j < cols; ++j) {
                         double value = random.nextDouble();
@@ -364,7 +365,7 @@ public class GapStatistic implements Clustering {
                                     minValues[j];
                     }
                 }
-                builder.addColumn(values);
+                */
             }
             builder.finish();
             return builder.getFile();

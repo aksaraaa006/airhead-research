@@ -169,7 +169,7 @@ class ClutoWrapper {
         // and using mean-link (UPGMA) clustering, which is what we want.
         String commandLine = "vcluster " +
             "-clmethod=" + clmethod + " " +
-            "-clustfile=" + outputFile  +
+            "-clustfile=" + outputFile  + " " +
             "-crfun=" + crtFun +
             " " + matrixFile +
             " " + numClusters;

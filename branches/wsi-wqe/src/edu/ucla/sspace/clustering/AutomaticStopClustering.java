@@ -203,7 +203,7 @@ public class AutomaticStopClustering implements Clustering {
         // Compute the gap statistic for each iteration.
         String result = null;
         for (int i = 0; i < numIterations; ++i) {
-            LOGGER.fine("Clustering with " + (startSize + 1) + " clusters");
+            LOGGER.fine("Clustering with " + (startSize + i) + " clusters");
 
             try {
                 // Compute the score for the original data set with k clusters.
@@ -253,6 +253,8 @@ public class AutomaticStopClustering implements Clustering {
      */
     private int computePk1Measure(double[] objectiveScores,
                                   double pk1Threshold) {
+        LOGGER.fine("Computing the PK1 measure");
+
         // Compute the average of the objective scores.
         double average = 0;
         for (int k = 0; k < objectiveScores.length; ++k)
@@ -280,6 +282,8 @@ public class AutomaticStopClustering implements Clustering {
      * Compute the smallest k that satisfies the Pk3 method.
      */
     private int computePk2Measure(double[] objectiveScores) {
+        LOGGER.fine("Computing the PK2 measure");
+
         // Compute each Pk2 score and the average score.
         double average = 0;
         for (int k = objectiveScores.length - 1; k > 0; --k) {
@@ -315,6 +319,8 @@ public class AutomaticStopClustering implements Clustering {
      * Compute the smallest k that satisfies the Pk3 method.
      */
     private int computePk3Measure(double[] objectiveScores) {
+        LOGGER.fine("Computing the PK3 measure");
+
         // Compute each Pk3 score and the average score.
         double average = 0;
         double[] weightedScores = new double[objectiveScores.length - 2];
