@@ -228,14 +228,10 @@ public class OnlineKMeans<T extends Vector>
                     // number of clusters, so this element should be merged
                     // instead.
                     else {
-                        try {
-                        bestMatch.addVector(value);
+                        // Why does this end up being null sometimes?
+                        if (bestMatch != null)
+                            bestMatch.addVector(value);
                         return bestIndex;
-                        } catch (NullPointerException npe) {
-                            System.out.println(elements.size() + " with best being " + bestIndex);
-                            System.exit(1);
-                            return 1;
-                        }
                     }
                 }
             }

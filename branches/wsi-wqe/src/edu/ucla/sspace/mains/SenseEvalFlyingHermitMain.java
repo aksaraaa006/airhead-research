@@ -247,9 +247,6 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
                           "The number of words before, and after the focus " +
                           "term to inspect",
                           true, "INT,INT", "Process Properties");
-        options.addOption('X', "windowLimit",
-                          "The bucket size to use for windows",
-                           true, "INT", "Process Properties");
         options.addOption('p', "permutationFunction",
                           "The class name of the permutation function to use." +
                           "  Note that this permutation function should be " +
@@ -289,10 +286,8 @@ public class SenseEvalFlyingHermitMain extends GenericMain {
 
         // Process the window size arguments;
         if (argOptions.hasOption('s')) {
-            String windowValue = argOptions.getStringOption('s');
-            String[] prevNext = windowValue.split(",");
-            prevWordsSize = Integer.parseInt(prevNext[0]);
-            nextWordsSize = Integer.parseInt(prevNext[1]);
+            prevWordsSize = argOptions.getIntOption('s');
+            nextWordsSize = argOptions.getIntOption('s');
         } else {
             prevWordsSize = Integer.MAX_VALUE;
             nextWordsSize = Integer.MAX_VALUE;

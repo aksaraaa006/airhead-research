@@ -219,6 +219,9 @@ public class WaitingSenseEvalHermitMain extends GenericMain {
         options.addOption('P', "usePermutations",
                           "Set if permutations should be used",
                           false, null, "Process Properties");
+        options.addOption('p', "permutationFunction",
+                          "The permutation function to be used",
+                          true, "CLASSNAME", "Process Properties");
         
         // similarity threshold, maximum number of senses to create, and the
         // clustering mechanism to use. 

@@ -287,8 +287,8 @@ public class DependencySenseEvalFlyingHermitMain extends GenericMain {
     protected void handleExtraOptions() {
         dimension = argOptions.getIntOption("vectorLength", DEFAULT_DIMENSION);
 
-        pathLength = (argOptions.hasOption('s'))
-            ? argOptions.getIntOption('s')
+        pathLength = (argOptions.hasOption("windowSize"))
+            ? argOptions.getIntOption("windowSize")
             : Integer.MAX_VALUE;
 
         // Set up the path acceptor and the weight function.

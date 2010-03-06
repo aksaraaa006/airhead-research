@@ -172,7 +172,7 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
      */
     private final ConcurrentMap<String, SparseDoubleVector> splitSenses;
 
-    private Map<String, List<SparseDoubleVector>> termContexts;
+    private ConcurrentMap<String, List<SparseDoubleVector>> termContexts;
 
     /**
      * The size of each index vector, as set when the sspace is created.
@@ -205,6 +205,8 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
         prevSize = prevWordsSize;
         nextSize = nextWordsSize;
         splitSenses = new ConcurrentHashMap<String, SparseDoubleVector>();
+        termContexts =
+            new ConcurrentHashMap<String, List<SparseDoubleVector>>();
     }
 
     /**
