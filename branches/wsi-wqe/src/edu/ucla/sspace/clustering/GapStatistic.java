@@ -167,7 +167,7 @@ public class GapStatistic implements Clustering {
                                                   k);
                     outputFile.delete();
 
-                    referenceScores[i] = Math.log(extractScore(result));
+                    referenceScores[j] = Math.log(extractScore(result));
                     referenceScore += referenceScores[i];
                 }
                 referenceScore /= numGaps;
@@ -361,7 +361,6 @@ public class GapStatistic implements Clustering {
                 // smaller than the total number of columns then select a subset
                 // to be non zero.
                 //if (averageNumValuesPerRow < cols / 2) {
-                verbose("Setting sparse values");
                 SparseHashDoubleVector column =
                     new SparseHashDoubleVector(cols);
                 int numNonZeros =
