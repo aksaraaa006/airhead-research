@@ -47,11 +47,11 @@ import java.util.Random;
  * <dd style="padding-top: .5em">This variable sets the gaussian mean for
  *      generating values in random vectors. </p>
  *
- * <dt> <i>Property:</i> <code><b>{@value #VECTOR_VARIANCE_PROPERTY}
+ * <dt> <i>Property:</i> <code><b>{@value #VECTOR_STANDARD_DEVIATION_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@value #DEFAULT_VECTOR_VARIANCE}
+ *      <i>Default:</i> {@value #DEFAULT_VECTOR_STANDARD_DEVIATION}
  *
- * <dd style="padding-top: .5em">This variable sets the variance when generating
+ * <dd style="padding-top: .5em">This variable sets the std when generating
  *      gaussian values for random vectors. </p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
@@ -89,11 +89,11 @@ public class RandomOrthogonalVectorGenerator
         PROPERTY_PREFIX + ".mean";
 
     /**
-     * The property to specify the variance in the number of values to set in an
+     * The property to specify the std in the number of values to set in an
      * {@link TernaryVector}.
      */
-    public static final String VECTOR_VARIANCE_PROPERTY = 
-        PROPERTY_PREFIX + ".variance";
+    public static final String VECTOR_STANDARD_DEVIATION_PROPERTY = 
+        PROPERTY_PREFIX + ".std";
 
     public static final String VECTOR_LENGTH_PROPERTY = 
         PROPERTY_PREFIX + ".length";
@@ -109,10 +109,10 @@ public class RandomOrthogonalVectorGenerator
     public static final int DEFAULT_VECTOR_LENGTH = 1000;
 
     /**
-     * The default random variance in the number of values that are set in an
+     * The default random std in the number of values that are set in an
      * {@code TernaryVector}.
      */
-    public static final int DEFAULT_VECTOR_VARIANCE = 1;
+    public static final int DEFAULT_VECTOR_STANDARD_DEVIATION = 1;
 
     /**
      * The mean of random values to generate.
@@ -120,10 +120,10 @@ public class RandomOrthogonalVectorGenerator
     private double mean;
 
     /**
-     * The variance in the number of values that are set in an {@link
+     * The std in the number of values that are set in an {@link
      * DoubleVector}
      */
-    private double variance;
+    private double std;
 
     /**
      * The length for each vector to generate.  This also limits the number of
@@ -166,18 +166,18 @@ public class RandomOrthogonalVectorGenerator
             ? Double.parseDouble(meanProp)
             : DEFAULT_VECTOR_MEAN;
 
-        String varianceProp =
-            properties.getProperty(VECTOR_VARIANCE_PROPERTY);
-        variance = (varianceProp != null)
-            ? Double.parseDouble(varianceProp)
-            : DEFAULT_VECTOR_VARIANCE;
+        String stdProp =
+            properties.getProperty(VECTOR_STANDARD_DEVIATION_PROPERTY);
+        std = (stdProp != null)
+            ? Double.parseDouble(stdProp)
+            : DEFAULT_VECTOR_STANDARD_DEVIATION;
 
-        vectorLength = this.vectorLength;
+        this.vectorLength = vectorLength;
 
         generatedVectors = new ArrayList<DoubleVector>();
         if (originalVector == null) 
             originalVector =
-                generateInitialVector(vectorLength, mean, variance);
+                generateInitialVector(vectorLength, mean, std);
         generatedVectors.add(originalVector);
     }
 
@@ -186,11 +186,11 @@ public class RandomOrthogonalVectorGenerator
      */
     private static DoubleVector generateInitialVector(int length,
                                                       double mean,
-                                                      double variance) {
+                                                      double std) {
         DoubleVector vector = new DenseVector(length);
         for (int i = 0; i < length; ++i) {
             double v = RANDOM.nextGaussian();
-            v = variance * v + mean;
+            v = std * v + mean;
             vector.set(i, v);
         }
         return vector;
@@ -202,8 +202,11 @@ public class RandomOrthogonalVectorGenerator
     private static double dotProduct(DoubleVector u,
                                      DoubleVector v) {
         double dot = 0;
-        for (int i = 0; i < u.length(); ++i)
+        for (int i = 0; i < u.length(); ++i) {
+            double a = u.get(i);
+            double b = v.get(i);
             dot += u.get(i) * v.get(i);
+        }
         return dot;
     }
 
@@ -220,7 +223,8 @@ public class RandomOrthogonalVectorGenerator
                     "Too many vectors have been generated");
 
         DoubleVector vector =
-            generateInitialVector(vectorLength, mean, variance);
+            generateInitialVector(vectorLength, mean, std);
+        System.out.println(vector.length());
         for (DoubleVector otherVector : generatedVectors) {
             double uDotV = dotProduct(otherVector, vector);
             double uDotU = dotProduct(otherVector, otherVector);

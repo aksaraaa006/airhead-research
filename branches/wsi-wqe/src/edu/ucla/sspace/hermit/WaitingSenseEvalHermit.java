@@ -339,6 +339,7 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
 
             workQueue.offer(new Runnable() {
                     public void run() {
+                        try {
                         // First cluster the context set as a sparse matrix.
                         HERMIT_LOGGER.info("Clustering term: " + senseName);
                         Assignment[] assignments = clustering.cluster(
@@ -383,7 +384,11 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
                                 : senseName;
                             splitSenses.put(senseName, centroids.get(index));
                         }
-                        termsProcessed.release();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            termsProcessed.release();
+                        }
                     }
             });
         }

@@ -61,6 +61,21 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
                 vector.set(i, values[i]);
     }
 
+    public SparseHashDoubleVector(DoubleVector values) {
+        super(values.length());
+        if (values instanceof SparseVector) {
+            int[] nonZeros = ((SparseVector) values).getNonZeroIndices();
+            for (int index : nonZeros)
+                vector.set(index, values.get(index));
+        } else {
+            for (int index = 0; index < values.length(); ++index) {
+                double value = values.get(index);
+                if (value != 0d)
+                    vector.set(index, value);
+            }
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
