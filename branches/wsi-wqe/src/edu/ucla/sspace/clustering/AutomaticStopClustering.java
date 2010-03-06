@@ -1,5 +1,6 @@
 package edu.ucla.sspace.clustering;
 
+import edu.ucla.sspace.clustering.ClutoClustering.Criterion;
 import edu.ucla.sspace.clustering.ClutoClustering.Method;
 
 import edu.ucla.sspace.matrix.ClutoDenseMatrixBuilder;
@@ -147,6 +148,8 @@ public class AutomaticStopClustering implements Clustering {
      */
     private static final Method METHOD = Method.KMEANS;
 
+    private static final Criterion CRITERION = Criterion.H2;
+
     /**
      * {@inheritDoc}
      *
@@ -210,6 +213,7 @@ public class AutomaticStopClustering implements Clustering {
                 result = ClutoWrapper.cluster(null,
                                               matrixFile,
                                               METHOD.getClutoName(),
+                                              CRITERION.getClutoName(),
                                               outFiles[i],
                                               i + startSize);
 

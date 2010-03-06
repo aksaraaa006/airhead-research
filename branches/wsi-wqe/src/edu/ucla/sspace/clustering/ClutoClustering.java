@@ -61,6 +61,13 @@ public class ClutoClustering implements Clustering {
         PROPERTY_PREFIX + ".clusterSimilarity";
 
     /**
+     * The property to set the name of a {@link #Criterion} that Cluto should
+     * use in clustering the data.
+     */
+    public static String CLUSTER_CRITERION = 
+        PROPERTY_PREFIX + ".clusterCriterion";
+
+    /**
      * The method by which CLUTO should cluster the data points
      */
     public enum Method {
@@ -89,9 +96,48 @@ public class ClutoClustering implements Clustering {
     }
 
     /**
+     * The crition function by which CLUTO should evaluate the clustering
+     * assignment.
+     */
+    public enum Criterion  {
+        
+        I1("i1"),
+        I2("i2"),
+        E1("e1"),
+        G1("g1"),
+        G1P("g1p"),
+        H1("h1"),
+        H2("h2"),
+        SLINK("slink"),
+        WSLINK("wslink"),
+        CLINK("clink"),
+        WCLINK("wclink"),
+        UPGMA("upgma"),
+        WUPGMA("wupgma");
+
+        /**
+         * The string abbreviation for each clustering method
+         */
+        private final String name;
+
+        Criterion(String name) {
+            this.name = name;
+        }
+
+        /**
+         * Returns the name for this method that CLUTO uses on the command line.
+         */
+        String getClutoName() {
+            return name;
+        }
+    }
+
+    /**
      * The default clustering method to be used by Cluto.
      */
     private static Method DEFAULT_CLUSTER_METHOD = Method.AGGLOMERATIVE;
+
+    private static Criterion DEFAULT_CRITERION = Criterion.UPGMA; 
 
     /**
      * A logger to track the status of Cluto.
@@ -126,7 +172,11 @@ public class ClutoClustering implements Clustering {
         String methodProp = properties.getProperty(CLUSTER_METHOD);
         if (methodProp != null) 
             clmethod = Method.valueOf(methodProp);
-        return cluster(matrix, numClusters, clmethod);
+        Criterion criterion = DEFAULT_CRITERION;
+        String criterionProp = properties.getProperty(CLUSTER_CRITERION);
+        if (criterionProp != null)
+            criterion = Criterion.valueOf(criterionProp);
+        return cluster(matrix, numClusters, clmethod, criterion);
     }
 
     /**
@@ -141,10 +191,13 @@ public class ClutoClustering implements Clustering {
      *         assignment or multiple
      */
     public Assignment[] cluster(Matrix matrix, int numClusters, 
-                                Method clusterMethod) {
+                                Method clusterMethod,
+                                Criterion criterionMethod) {
         try {
             String clmethod = clusterMethod.getClutoName();
-            return ClutoWrapper.cluster(matrix, clmethod, numClusters);
+            String crtmethod = criterionMethod.getClutoName();
+            return ClutoWrapper.cluster(matrix, clmethod,
+                                        crtmethod, numClusters);
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

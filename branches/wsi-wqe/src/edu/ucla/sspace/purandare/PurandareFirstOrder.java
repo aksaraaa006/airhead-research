@@ -597,7 +597,8 @@ public class PurandareFirstOrder implements SemanticSpace {
 
         Assignment[] clusterAssignment = 
             new ClutoClustering().cluster(contexts, numClusters, 
-                                          ClutoClustering.Method.AGGLOMERATIVE);
+                                          ClutoClustering.Method.AGGLOMERATIVE,
+                                          ClutoClustering.Criterion.UPGMA);
         
         LOGGER.fine("Generative sense vectors for " + term);
         

@@ -70,7 +70,9 @@ class ClutoWrapper {
      * @param numClusters The number of clusters into which the matrix should
      *                    divided.
      * @param clmethod A string recognized by Cluto that indicates which
-     *               clustering algorithm should be used.
+     *                 clustering algorithm should be used.
+     * @param crtFunction A string recognized by Cluto that indiicates which
+     *                    criterion method should be used.
      *
      * @return clusterAssignment An array where each element corresponds to a
      *         row and the filled in value will be the cluster number to which
@@ -78,12 +80,14 @@ class ClutoWrapper {
      *         increase.  Rows that were not able to be clustered will be
      *         assigned a -1 value.
      */
-    static Assignment[] cluster(Matrix matrix, String clmethod, int numClusters)
+    static Assignment[] cluster(Matrix matrix, String clmethod,
+                                String crtFunction, int numClusters)
             throws IOException {
         Assignment[] assignments = new Assignment[matrix.rows()];        
         File outputFile = File.createTempFile("cluto-output", ".matrix");
         outputFile.deleteOnExit();
-        cluster(assignments, matrix, clmethod, numClusters, outputFile);
+        cluster(assignments, matrix, clmethod, crtFunction,
+                numClusters, outputFile);
         extractAssignments(outputFile, assignments);
         return assignments;
     }
@@ -109,8 +113,12 @@ class ClutoWrapper {
      *
      * @return A string containing the standard output created by Cluto.
      */
-    static String cluster(Assignment[] clusterAssignment, Matrix matrix, 
-                          String clmethod, int numClusters, File outputFile) 
+    static String cluster(Assignment[] clusterAssignment,
+                          Matrix matrix, 
+                          String clmethod,
+                          String crtFun,
+                          int numClusters,
+                          File outputFile) 
             throws IOException {
 
         LOGGER.log(Level.FINE, "clustering {0} data points with {1} features",
@@ -124,7 +132,7 @@ class ClutoWrapper {
                              ((matrix instanceof SparseMatrix) 
                               ? MatrixIO.Format.CLUTO_SPARSE
                               : MatrixIO.Format.CLUTO_DENSE));
-        return cluster(clusterAssignment, matrix, clmethod,
+        return cluster(clusterAssignment, matrix, clmethod, crtFun,
                        numClusters, outputFile);
     }
 
@@ -146,18 +154,23 @@ class ClutoWrapper {
      *        divided.
      * @param clmethod A string recognized by Cluto that indicates which
      *        clustering algorithm should be used.
+     * @param crtFun The criterion function to use.
      *
      * @return A string containing the standard output created by Cluto.
      */
     public static String cluster(Assignment[] clusterAssignment, 
-                                 File matrixFile, String clmethod, 
-                                 File outputFile, int numClusters) 
+                                 File matrixFile,
+                                 String clmethod,
+                                 String crtFun,
+                                 File outputFile,
+                                 int numClusters) 
             throws IOException {
         // NOTE: the defaults for Agglomerative clustering are cosine similarity
         // and using mean-link (UPGMA) clustering, which is what we want.
         String commandLine = "vcluster " +
             "-clmethod=" + clmethod + " " +
             "-clustfile=" + outputFile  +
+            "-crfun=" + crtFun +
             " " + matrixFile +
             " " + numClusters;
         LOGGER.fine("executing: " + commandLine);

@@ -1,5 +1,6 @@
 package edu.ucla.sspace.clustering;
 
+import edu.ucla.sspace.clustering.ClutoClustering.Criterion;
 import edu.ucla.sspace.clustering.ClutoClustering.Method;
 
 import edu.ucla.sspace.matrix.ClutoDenseMatrixBuilder;
@@ -10,6 +11,8 @@ import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.SparseMatrix;
+
+import edu.ucla.sspace.vector.SparseDoubleVector;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -94,6 +97,8 @@ public class GapStatistic implements Clustering {
      */
     private static final Method METHOD = Method.KMEANS;
 
+    private static final Criterion CRITERION = Criterion.H2;
+
     /**
      * {@inheritDoc}
      */
@@ -156,6 +161,7 @@ public class GapStatistic implements Clustering {
                     result = ClutoWrapper.cluster(null,
                                                   gapFiles[j],
                                                   METHOD.getClutoName(),
+                                                  CRITERION.getClutoName(),
                                                   outputFile,
                                                   k);
                     outputFile.delete();
@@ -172,6 +178,7 @@ public class GapStatistic implements Clustering {
                 result = ClutoWrapper.cluster(null,
                                               matrixFile,
                                               METHOD.getClutoName(),
+                                              CRITERION.getClutoName(),
                                               outFile,
                                               i + startSize);
 
@@ -268,19 +275,37 @@ public class GapStatistic implements Clustering {
             int[] numNonZeros = new int[m.rows()];
             double averageNumNonZeros = 0;
 
-            for (int r = 0; r < m.rows(); ++r) {
-                for (int c = 0; c < m.columns(); ++c) {
-                    double value = m.get(r, c);
-                    // Get the max and minimum value for the row.
-                    if (value < minValues[c])
-                        minValues[c] = value;
-                    if (value > maxValues[c])
-                        maxValues[c] = value;
+            if (m instanceof SparseMatrix) {
+                SparseMatrix sm = (SparseMatrix) m;
+                for (int r = 0; r < m.rows(); ++r) {
+                    SparseDoubleVector v = sm.getRowVector(r);
+                    int[] nonZeros = v.getNonZeroIndices();
+                    numNonZeros[r] += nonZeros.length;
+                    averageNumNonZeros += nonZeros.length;
+                    for (int column : nonZeros) {
+                        double value = v.get(column);
+                        // Get the max and minimum value for the row.
+                        if (value < minValues[column])
+                            minValues[column] = value;
+                        if (value > maxValues[column])
+                            maxValues[column] = value;
+                    }
+                }
+            } else {
+                for (int r = 0; r < m.rows(); ++r) {
+                    for (int c = 0; c < m.columns(); ++c) {
+                        double value = m.get(r, c);
+                        // Get the max and minimum value for the row.
+                        if (value < minValues[c])
+                            minValues[c] = value;
+                        if (value > maxValues[c])
+                            maxValues[c] = value;
 
-                    // Calculate the number of non zeros per row.
-                    if (value != 0d) {
-                        numNonZeros[r]++;
-                        averageNumNonZeros++;
+                        // Calculate the number of non zeros per row.
+                        if (value != 0d) {
+                            numNonZeros[r]++;
+                            averageNumNonZeros++;
+                        }
                     }
                 }
             }
