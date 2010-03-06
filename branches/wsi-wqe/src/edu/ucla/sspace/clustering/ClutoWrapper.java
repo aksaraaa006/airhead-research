@@ -212,6 +212,10 @@ class ClutoWrapper {
                                " stderr:\n" + sb.toString());
             throw new Error("Clustering failed");
         }
+
+        stdout.close();
+        stderr.close();
+
         return clutoOutput;
     }
 
@@ -235,5 +239,6 @@ class ClutoWrapper {
                 ? new HardAssignment()   // no cluster assignment 
                 : new HardAssignment(j); // specific cluster
         }
+        br.close();
     }
 }

@@ -135,7 +135,7 @@ public class GapStatistic implements Clustering {
         File matrixFile = null;
         try {
             matrixFile = File.createTempFile("cluto-input",".matrix");
-            MatrixIO.writeMatrix(m, matrixFile, Format.CLUTO_DENSE);
+            MatrixIO.writeMatrix(m, matrixFile, Format.CLUTO_SPARSE);
         } catch (IOException ioe) {
             throw new IOError(ioe); 
         }
@@ -217,7 +217,6 @@ public class GapStatistic implements Clustering {
         matrixFile.delete();
         for (File gapFile : gapFiles)
             gapFile.delete();
-
 
         return assignments;
     }
