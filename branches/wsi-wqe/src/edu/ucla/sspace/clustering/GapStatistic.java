@@ -168,7 +168,7 @@ public class GapStatistic implements Clustering {
                     outputFile.delete();
 
                     referenceScores[j] = Math.log(extractScore(result));
-                    referenceScore += referenceScores[i];
+                    referenceScore += referenceScores[j];
                 }
                 referenceScore /= numGaps;
 
