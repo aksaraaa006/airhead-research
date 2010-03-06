@@ -135,7 +135,6 @@ public class GapStatistic implements Clustering {
         File matrixFile = null;
         try {
             matrixFile = File.createTempFile("cluto-input",".matrix");
-            matrixFile.deleteOnExit();
             MatrixIO.writeMatrix(m, matrixFile, Format.CLUTO_DENSE);
         } catch (IOException ioe) {
             throw new IOError(ioe); 
@@ -175,7 +174,6 @@ public class GapStatistic implements Clustering {
                 // Compute the score for the original data set with k clusters.
                 File outFile =
                     File.createTempFile("gap-clustering-output", ".matrix");
-                outFile.deleteOnExit();
                 result = ClutoWrapper.cluster(null,
                                               matrixFile,
                                               METHOD.getClutoName(),
@@ -193,6 +191,11 @@ public class GapStatistic implements Clustering {
                     break;
                 }
 
+                // Delete the contents of the previous file so that there isn't
+                // an overflow of open files.
+                if (previousFile != null)
+                    previousFile.delete();
+
                 // Otherwise, continue clustering with higher values of k.
                 previousGap = gap;
                 previousFile = outFile;
@@ -208,6 +211,13 @@ public class GapStatistic implements Clustering {
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
+
+        // Delete the matrix files so that there is not an abundance of open
+        // files.
+        matrixFile.delete();
+        for (File gapFile : gapFiles)
+            gapFile.delete();
+
 
         return assignments;
     }

@@ -192,7 +192,6 @@ public class AutomaticStopClustering implements Clustering {
         File matrixFile = null;
         try {
             matrixFile = File.createTempFile("cluto-input",".matrix");
-            matrixFile.deleteOnExit();
             MatrixIO.writeMatrix(m, matrixFile, Format.CLUTO_DENSE);
         } catch (IOException ioe) {
             throw new IOError(ioe); 
@@ -209,7 +208,6 @@ public class AutomaticStopClustering implements Clustering {
                 // Compute the score for the original data set with k clusters.
                 outFiles[i] = 
                     File.createTempFile("autostop-clustering-out", ".matrix");
-                outFiles[i].deleteOnExit();
                 result = ClutoWrapper.cluster(null,
                                               matrixFile,
                                               METHOD.getClutoName(),
@@ -244,6 +242,12 @@ public class AutomaticStopClustering implements Clustering {
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
+
+        // Delete all the data files so that there are not too many open files
+        // later on.
+        matrixFile.delete();
+        for (File outFile : outFiles)
+            outFile.delete();
 
         return assignments;
     }
