@@ -382,7 +382,7 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
                             String sense = (index > 0)
                                 ? senseName + "-" + index
                                 : senseName;
-                            splitSenses.put(senseName, centroids.get(index));
+                            splitSenses.put(sense, centroids.get(index));
                         }
                         } catch (Exception e) {
                             e.printStackTrace();
