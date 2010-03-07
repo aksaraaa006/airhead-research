@@ -224,7 +224,6 @@ public class RandomOrthogonalVectorGenerator
 
         DoubleVector vector =
             generateInitialVector(vectorLength, mean, std);
-        System.out.println(vector.length());
         for (DoubleVector otherVector : generatedVectors) {
             double uDotV = dotProduct(otherVector, vector);
             double uDotU = dotProduct(otherVector, otherVector);
