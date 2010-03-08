@@ -101,6 +101,10 @@ For JAMA and COLT, check that the .jar files are specified in the path.  If you 
 
 If you can't get any of these to work, let us know so we can help strategize.  The SVD is a particular pain point for us as well, so we want to make sure "it just works."
 
+== When I run with Octave, I see something like "error: `svds undefined near line 5 column 14 error: near line 5 of file /tmp/octave-svds8621483587696991940.m`" ==
+
+It looks like your Octave installation doesn't have the optional ARPACK bindings installed, which is why it cant find the `svds` function.  You can get the bindings at [http://octave.sourceforge.net/arpack/index.html]
+
 = Corpus Questions =
 
 == I want to filter out certain words in my corpus (i.e. stop words) ==
