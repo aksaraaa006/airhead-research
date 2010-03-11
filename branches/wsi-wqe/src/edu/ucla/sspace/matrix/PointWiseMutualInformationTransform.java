@@ -196,8 +196,9 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
          * @return log(value) / (rowSum[row] * colSum[col])
          */
         public double transform(int row, int col, double value) {
-            return Math.log(value) / 
-                   (rowCounts[row] * colCounts[col]);
+            return (value >= 0) 
+                ? Math.log(value) / (rowCounts[row] * colCounts[col])
+                : 0;
         }
     }
 }

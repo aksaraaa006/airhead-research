@@ -95,34 +95,34 @@ public abstract class BaseTransform implements Transform {
         // instance, further obfuscating what class should be instantiated.
         // Therefore, we just make a guess.  This is definitely a case for
         // concern in the API.  -jurgens
-        Matrix transformed;
+        //Matrix transformed;
 
         if (matrix instanceof SparseMatrix) {
             SparseMatrix smatrix = (SparseMatrix) matrix;
-            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-                                          Matrix.Type.SPARSE_IN_MEMORY);
+            //transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+            //                              Matrix.Type.SPARSE_IN_MEMORY);
 
             for (int row = 0; row < matrix.rows(); ++row) {
                 SparseDoubleVector rowVec = smatrix.getRowVector(row);
                 for (int col : rowVec.getNonZeroIndices()) {
                     double newValue = 
                             transform.transform(row, col, rowVec.get(col));
-                    transformed.set(row, col, newValue);
+                    matrix.set(row, col, newValue);
                 }
             }
         } else {
-            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-                                          Matrix.Type.DENSE_IN_MEMORY);
+            //transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+            //                              Matrix.Type.DENSE_IN_MEMORY);
             for (int row = 0; row < matrix.rows(); ++row) {
                 for (int col = 0; col < matrix.columns(); ++col) {
                     double newValue = 
                             transform.transform(row, col, matrix.get(row, col));
-                    transformed.set(row, col, newValue);
+                    matrix.set(row, col, newValue);
                 }
             }
         }
 
-        return transformed;
+        return matrix;
     }
 
     /**
