@@ -283,7 +283,7 @@ public class Coals implements SemanticSpace {
                     cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
                 }
 
-                offset = nextWords.size() + 1;
+                offset = 5;
                 for (String word : nextWords) {
                     offset--;
                     if (word.equals(IteratorFactory.EMPTY_TOKEN))
