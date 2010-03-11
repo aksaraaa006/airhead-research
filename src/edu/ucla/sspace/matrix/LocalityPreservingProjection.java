@@ -144,7 +144,7 @@ public class LocalityPreservingProjection {
         "data = spconvert(Tmp);\n" +
         "%% Remove the raw data file to save space\n" +
         "clear Tmp;\n" +   
-        "[nSmp,nFea] = size(data);\n"
+        "[nSmp,nFea] = size(data);\n" +
         // NOTE: the following 5 lines subtract out the mean from the data.
         // This process might not be feasible for very large data sets, so it
         // might be worth making this configurable in the future
