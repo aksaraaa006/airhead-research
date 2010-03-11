@@ -71,6 +71,9 @@ public class Similarity {
     private Similarity() { }
 
     /**
+     * @deprecated The {@link #getSimilarity(SimType,double[],double[])} method
+     * should be used instead.
+     *
      * Returns the {@link Method} for getting the similarity of two {@code
      * double[]} based on the specified similarity type.
      *
