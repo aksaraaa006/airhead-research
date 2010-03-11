@@ -208,17 +208,46 @@ public class MatrixIO {
      */
     public static File convertFormat(File matrix, Format current, 
                                      Format desired) throws IOException {
-        if (current.equals(desired)) {
+        return convertFormat(matrix, current, desired, false);
+    }       
+
+    /**
+     * Converts the format of the input {@code matrix}, returning a temporary
+     * file containing the matrix's data in the desired format.
+     *
+     * @param matrix a file containing a matrix to convert
+     * @param current the format of the {@code matrix} file
+     * @param desired the format of the returned matrix file
+     * @param transpose {@code true} if data in the input matrix should be
+     *        transposed while converting formats to the output matrix.
+     *
+     * @returns a matrix file with the same data in the desired format
+     *
+     * @throws IOException if any error occurs while reading the input matrix or
+     *         wring the output matrix
+     */
+    public static File convertFormat(File matrix, Format current, 
+                                     Format desired, boolean transpose) 
+            throws IOException {
+        if (!transpose && current.equals(desired)) {
             return matrix;
         }
         
+        // Special cases for optimized formats
         switch (current) {
         case MATLAB_SPARSE: {
             if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
                 File output = File.createTempFile(
                     "matlab-to-SVDLIBC-sparse-text",".dat");
                 output.deleteOnExit();
-                matlabToSVDLIBCsparse(matrix, output);
+                matlabToSvdlibcSparseText(matrix, output, transpose);
+                return output;
+            }
+            if (desired.equals(Format.SVDLIBC_SPARSE_BINARY)) {
+                File output = File.createTempFile(
+                    "matlab-to-SVDLIBC-sparse-binary",".dat");
+                output.deleteOnExit();
+                matlabToSvdlibcSparseBinary(matrix, output, transpose);
                 return output;
             }
             break;
@@ -228,14 +257,22 @@ public class MatrixIO {
                 File output = File.createTempFile(
                     "SVDLIBC-sparse-binary-to-Matlab",".dat");
                 output.deleteOnExit();
-                svdlibcSparseBinaryToMatlab(matrix, output);
+                svdlibcSparseBinaryToMatlab(matrix, output, transpose);
                 return output;
             }
         }
         }
-        throw new UnsupportedOperationException(
-            "converting from " + current + " to " + desired + 
-            " is not currently supported");
+
+        // NOTE: the current default implementation does not try to keep the
+        // matrix data on disk, which could present a memory bottleneck.
+        File output = File.createTempFile("transposed",".dat");            
+        // NOTE: the matrix type is not intelligently selected.  Futher work is
+        // needed to switch based on the format.
+        Matrix transposed = readMatrix(matrix, current, 
+                                       Matrix.Type.SPARSE_IN_MEMORY, true);
+        writeMatrix(transposed, output, desired);
+        transposed = null; // for explicit GC
+        return output;
     }       
 
     /**
@@ -268,22 +305,28 @@ public class MatrixIO {
      * Reads in a matrix in the {@link Format#MATLAB_SPARSE} format and writes
      * it to the output file in {@link Format#SVDLIBC_SPARSE_TEXT} format.
      */
-    private static void matlabToSVDLIBCsparse(File input, File output) 
-        throws IOException {
+    private static void matlabToSvdlibcSparseText(File input, File output, 
+                                                  boolean transpose) 
+            throws IOException {
         MATRIX_IO_LOGGER.info("Converting from Matlab double values to " +
-                      "SVDLIBC float values; possible loss of " +
-                      "precision");
-
+                              "SVDLIBC float values; possible loss of " +
+                              "precision");            
         BufferedReader br = new BufferedReader(new FileReader(input));
-
         Map<Integer,Integer> colToNonZero = new HashMap<Integer,Integer>();
 
         // read through once to get matrix dimensions
         int rows = 0, cols = 0, nonZero = 0;        
         for (String line = null; (line = br.readLine()) != null; ) {
             String[] rowColVal = line.split("\\s+");
-            int row = Integer.parseInt(rowColVal[0]);
-            int col = Integer.parseInt(rowColVal[1]);
+            int row, col;
+            if (transpose) {
+                 row = Integer.parseInt(rowColVal[1]);
+                 col = Integer.parseInt(rowColVal[0]);
+            } 
+            else {
+                 row = Integer.parseInt(rowColVal[0]);
+                 col = Integer.parseInt(rowColVal[1]);
+            }
             if (row > rows)
                 rows = row;
             if (col > cols)
@@ -335,8 +378,15 @@ public class MatrixIO {
 
             for (String line = null; (line = br.readLine()) != null; ) {
                 String[] rowColVal = line.split("\\s+");
-                int row = Integer.parseInt(rowColVal[0]) - 1;
-                int col = Integer.parseInt(rowColVal[1]) - 1;
+                int row, col;
+                if (transpose) {
+                    row = Integer.parseInt(rowColVal[1]) - 1;
+                    col = Integer.parseInt(rowColVal[0]) - 1;
+                }
+                else {
+                    row = Integer.parseInt(rowColVal[0]) - 1;
+                    col = Integer.parseInt(rowColVal[1]) - 1;
+                }
                 // NOTE: SVDLIBC uses floats instead of doubles, which can cause
                 // a loss of precision
                 float val = Double.valueOf(rowColVal[2]).floatValue();
@@ -395,11 +445,159 @@ public class MatrixIO {
         pw.close();
     }
 
+
+    /**
+     * Reads in a matrix in the {@link Format#MATLAB_SPARSE} format and writes
+     * it to the output file in {@link Format#SVDLIBC_SPARSE_BINARY} format.
+     */
+    private static void matlabToSvdlibcSparseBinary(File input, File output, 
+                                                    boolean transpose) 
+            throws IOException {
+        MATRIX_IO_LOGGER.info("Converting from Matlab double values to " +
+                              "SVDLIBC float values; possible loss of " +
+                              "precision");            
+        BufferedReader br = new BufferedReader(new FileReader(input));
+        Map<Integer,Integer> colToNonZero = new HashMap<Integer,Integer>();
+
+        // read through once to get matrix dimensions
+        int rows = 0, cols = 0, nonZero = 0;        
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] rowColVal = line.split("\\s+");
+            int row, col;
+            if (transpose) {
+                 row = Integer.parseInt(rowColVal[1]);
+                 col = Integer.parseInt(rowColVal[0]);
+            } 
+            else {
+                 row = Integer.parseInt(rowColVal[0]);
+                 col = Integer.parseInt(rowColVal[1]);
+            }
+            if (row > rows)
+                rows = row;
+            if (col > cols)
+                cols = col;
+            ++nonZero;
+
+            // NOTE: subtract by 1 here because Matlab arrays start at 1, while
+            // SVDLIBC arrays start at 0.
+            Integer colCount = colToNonZero.get(col-1);
+            colToNonZero.put(col-1, (colCount == null) ? 1 : colCount + 1);
+        }
+        br.close();
+
+        // Print out the header information 
+        DataOutputStream dos = new DataOutputStream(
+            new BufferedOutputStream(new FileOutputStream(output)));
+        dos.writeInt(rows);
+        dos.writeInt(cols);
+        dos.writeInt(nonZero);
+
+        // Process the entire array in chunks in case the matlab array is too
+        // big to fit into memory.
+
+        // REMINDER: this should probably be chosen based on the number of rows
+        // and their expected density
+        int chunkSize = 1000; 
+
+        // This keeps track of the last columns printed.  We need this outside
+        // the loop to ensure that blank columns at the end of a chunk are still
+        // printed by the next non-zero chunk
+        int lastCol = -1;
+        
+        // lower bound inclusive, upper bound exclusive
+        for (int lowerBound = 0, upperBound = chunkSize ; lowerBound < rows; 
+                 lowerBound = upperBound, upperBound += chunkSize) {
+            // Once the dimensions and number of non-zero values are known,
+            // reprocess the matrix, storing the rows and values for each column
+            // that are inside the bounds 
+            br = new BufferedReader(new FileReader(input));
+
+            // for each column, keep track of which in the next index into the
+            // rows array that should be used to store the row index.  Also keep
+            // track of the value associated for that row
+            int[] colIndices = new int[cols];
+
+            // columns are kept in sorted order
+            SortedMap<Integer,int[]> colToRowIndex = 
+                new TreeMap<Integer,int[]>();
+            SortedMap<Integer,float[]> colToRowValues = 
+                new TreeMap<Integer,float[]>();
+
+            for (String line = null; (line = br.readLine()) != null; ) {
+                String[] rowColVal = line.split("\\s+");
+                int row, col;
+                if (transpose) {
+                    row = Integer.parseInt(rowColVal[1]) - 1;
+                    col = Integer.parseInt(rowColVal[0]) - 1;
+                }
+                else {
+                    row = Integer.parseInt(rowColVal[0]) - 1;
+                    col = Integer.parseInt(rowColVal[1]) - 1;
+                }
+                // NOTE: SVDLIBC uses floats instead of doubles, which can cause
+                // a loss of precision
+                float val = Double.valueOf(rowColVal[2]).floatValue();
+                
+                // check that the current column is within the current chunk
+                if (col < lowerBound || col >= upperBound)
+                    continue;
+
+                // get the arrays used to store the non-zero row indices for
+                // this column and the parallel array that stores the
+                // row-index's value
+                int[] rowIndices = colToRowIndex.get(col);
+                float[] rowValues = colToRowValues.get(col);
+                if (rowIndices == null) {
+                    rowIndices = new int[colToNonZero.get(col)];
+                    rowValues = new float[colToNonZero.get(col)];
+                    colToRowIndex.put(col,rowIndices);
+                    colToRowValues.put(col,rowValues);
+                }
+                
+                // determine what is the current index in the non-zero row array
+                // that can be used to store this row.
+                int curColIndex = colIndices[col];
+                rowIndices[curColIndex] = row;
+                rowValues[curColIndex] = val;
+                colIndices[col] += 1;
+            }    
+            br.close();
+
+            // loop through the stored column and row values, printing out for
+            // each column, the number of non zero rows, followed by each row
+            // index and the value.  This is the SVDLIBC sparse text format.
+            for (Map.Entry<Integer,int[]> e : colToRowIndex.entrySet()) {
+                int col = e.getKey().intValue();
+                int[] nonZeroRows = e.getValue();
+                float[] values = colToRowValues.get(col);
+            
+                if (col != lastCol) {
+                    // print any missing columns in case not all the columns
+                    // have data
+                    for (int i = lastCol + 1; i < col; ++i)
+                        dos.writeInt(0);
+
+                    // print the new header
+                    int colCount = colToNonZero.get(col);
+                    lastCol = col;
+                    dos.writeInt(colCount);            
+                }
+            
+                for (int i = 0; i < nonZeroRows.length; ++i) {
+                    dos.writeInt(nonZeroRows[i]);
+                    dos.writeFloat(values[i]);
+                }
+            }
+        }
+        dos.close();
+    }
+
     /**
      * Reads in a matrix in the {@link Format#SVDLIBC_SPARSE_BINARY} format and
      * writes it to the output file in the {@link Format#MATLAB_SPARSE} format.
      */
-    private static void svdlibcSparseBinaryToMatlab(File input, File output) 
+    private static void svdlibcSparseBinaryToMatlab(File input, File output,
+                                                    boolean transpose) 
             throws IOException {
         
         DataInputStream dis = new DataInputStream(
@@ -420,7 +618,10 @@ public class MatrixIO {
             for (int i = 0; i < nonZero; ++i, ++entriesSeen) {
                 int row = dis.readInt();
                 float val = dis.readFloat();
-                pw.println((1 + row) + " " + (1 + col) + " " + val);
+                if (transpose)
+                    pw.println((1 + col) + " " + (1 + row) + " " + val);
+                else
+                    pw.println((1 + row) + " " + (1 + col) + " " + val);
             }
         }
         

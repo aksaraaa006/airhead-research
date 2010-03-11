@@ -40,6 +40,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -64,11 +65,6 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
         Logger.getLogger(SvdlibcSparseBinaryMatrixBuilder.class.getName());
 
     /**
-     * The file to which the matrix will be written
-     */
-    private final File matrixFile;
-
-    /**
      * The writer used to add data to the transposed matrix file
      */
     private final DataOutputStream matrixDos;
@@ -90,6 +86,11 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
      * the matrix.
      */
     private int curCol;
+
+    /**
+     * The file to which the matrix will be written
+     */
+    private File matrixFile;
 
     /**
      * The total number of columns in the matrix.  This value is continuously
@@ -376,6 +377,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
             // form.  Issue a call to SVDLIBC to transposed the file contents
             // for us.
             if (transposeData) {
+                boolean svdlibcFailed = false;
                 try {                    
                     String commandLine = "svd  -r sb " + " -w sb -t -c " 
                         + transposedMatrixFile + " " + matrixFile;
@@ -402,17 +404,27 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
                         // warning or error?
                         LOGGER.warning("svdlibc exited with error status.  " + 
                                        "stderr:\n" + sb.toString());
-                        throw new IllegalStateException(
-                            "Matrix final state is inconsistent");
+                        svdlibcFailed = true;
                     } 
                 }
-                catch (InterruptedException ise) {
-                    throw new IllegalStateException(
-                        "Matrix final state is inconsistent");
+                catch (Exception e) {
+                    svdlibcFailed = true;
+                    LOGGER.log(Level.WARNING,
+                               "an exception occurred when trying to transpose " + 
+                               "with svdlibc; retrying with Java code", e);
                 }
-                catch (IOException ioe) {
-                    throw new IllegalStateException(
-                        "Matrix final state is inconsistent");
+                // If SVDLIBC failed in any way, use MatrixIO to transpose the
+                // data for us.
+                if (svdlibcFailed) {
+                    LOGGER.fine("retrying failed svdlibc transpose " + 
+                                "with MatrixIO transpose");
+                    try {
+                        matrixFile = MatrixIO.convertFormat(
+                            transposedMatrixFile, Format.SVDLIBC_SPARSE_BINARY,
+                            Format.SVDLIBC_SPARSE_BINARY, true);
+                    } catch (IOException ioe) {
+                        throw new IOError(ioe);
+                    }
                 }
             }
         }
