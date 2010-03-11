@@ -295,7 +295,7 @@ public class TfIdfTransform implements Transform {
         int docs = matrix.columns();
 
         // How many terms were in each document
-        int[] docToTermCount = new int[terms];
+        int[] docToTermCount = new int[docs];
         // A count of how many different documents a term appeared in
         int[] termToDocCount = new int[terms];
 
@@ -336,7 +336,7 @@ public class TfIdfTransform implements Transform {
                     double termFreq =
                         occurrences / docToTermCount[doc];
                     double invDocFreq = 
-                        Math.log(docs / (1 + termToDocCount[term]));
+                        Math.log(docs / (1d + termToDocCount[term]));
                     transformed.set(term, doc, termFreq * invDocFreq);
                 }
             }
@@ -347,7 +347,7 @@ public class TfIdfTransform implements Transform {
                         double termFreq =
                             occurrences / docToTermCount[doc];
                         double invDocFreq = 
-                            Math.log(docs / (1 + termToDocCount[term]));
+                            Math.log(docs / (1d + termToDocCount[term]));
                         transformed.set(term, doc, termFreq * invDocFreq);
                     }
                 }
