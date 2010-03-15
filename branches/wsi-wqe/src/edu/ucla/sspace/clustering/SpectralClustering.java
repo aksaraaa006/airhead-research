@@ -44,6 +44,8 @@ import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
 import edu.ucla.sspace.vector.VectorIO;
 
+import java.io.File;
+
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -262,12 +264,8 @@ public class SpectralClustering implements Clustering {
             new RandomOrthogonalVectorGenerator(vectorLength, piDInverse);
         DoubleVector v = generator.generate();
 
-        int log = 1; //(int) Statistics.log2(vectorLength);
+        int log = (int) Statistics.log2(vectorLength);
         for (int k = 0; k < log; ++k) {
-            double average = 0;
-            double minValue = Double.MAX_VALUE;
-            double maxValue = Double.MIN_VALUE;
-
             // Step 2, repeated, (a) normalize v (b) set v = Q*v, where Q = D *
             // R-Inverse * matrix * matrix-Transpose * D-Inverse.
             normalize(v);
@@ -278,7 +276,7 @@ public class SpectralClustering implements Clustering {
             for (int i = 0; i < vectorLength; ++ i)
                 if (D.get(i) != 0d)
                     v.set(i, v.get(i) / D.get(i));
-            
+
             // Step 2b-2) v = matrix-Transpose * v.
             DoubleVector newV = computeMatrixTransposeV(matrix, v);
 
@@ -293,6 +291,10 @@ public class SpectralClustering implements Clustering {
                 v.set(i, newValue);
             }
         }
+
+        System.out.println(VectorIO.toString(v));
+        for (int i = 0; i < vectorLength; ++i)
+            v.set(i, v.get(i) / D.get(i));
 
         return v;
     }
@@ -372,7 +374,7 @@ public class SpectralClustering implements Clustering {
         }
         v2Magnitude = Math.sqrt(v2Magnitude);
 
-        return ((dot / (v1Magnitude * v2Magnitude)) + 1) / 2;
+        return dot ;/// (v1Magnitude * v2Magnitude);
     }
 
     /**

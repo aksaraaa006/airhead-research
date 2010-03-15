@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Keith Stevens 
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -27,6 +27,14 @@ import edu.ucla.sspace.clustering.ClusterUtil;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyIterator;
+import edu.ucla.sspace.dependency.DependencyPath;
+import edu.ucla.sspace.dependency.DependencyPathAcceptor;
+import edu.ucla.sspace.dependency.DependencyPathWeight;
+import edu.ucla.sspace.dependency.DependencyPermutationFunction;
+import edu.ucla.sspace.dependency.DependencyRelation;
+
 import edu.ucla.sspace.index.PermutationFunction;
 
 import edu.ucla.sspace.matrix.Matrix;
@@ -36,35 +44,32 @@ import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.Misc;
+import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.WorkerThread;
 
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseHashIntegerVector;
-import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.VectorIO;
 import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
 
+import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.Matrices;
+
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -111,13 +116,14 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class WaitingSenseEvalHermit implements SemanticSpace {
+public class DependencyWaitingSenseEvalHermit implements SemanticSpace {
 
     /**
-     * The base prefix for all {@code SenseEvalFlyingHermit} properties.
+     * The base prefix for all {@code DependencyWaitingSenseEvalHermit}
+     * properties.
      */
     public static final String PROPERTY_PREFIX =
-        "edu.ucla.sspace.hermit.SenseEvalFlyingHermit";
+        "edu.ucla.sspace.hermit.DependencyWaitingSenseEvalHermit";
 
     public static final String CLUSTERING_PROPERTY = 
         PROPERTY_PREFIX + ".offlineClustering";
@@ -136,16 +142,16 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
     public static final String EMPTY_TOKEN = "";
 
     /**
-     * The Semantic Space name for SenseEvalFlyingHermit
+     * The Semantic Space name for DependencyWaitingSenseEvalHermit
      */
     public static final String FLYING_HERMIT_SSPACE_NAME = 
-        "senseEval-waiting-hermit-semantic-space";
+        "senseEval-hermit-semantic-space";
 
     /**
      * The logger used to record all output
      */
-    private static final Logger LOGGER =
-        Logger.getLogger(SenseEvalFlyingHermit.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(
+            DependencyWaitingSenseEvalHermit.class.getName());
 
     /**
      * A mapping from strings to {@code IntegerVector}s which represent an index
@@ -156,7 +162,7 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
     /**
      * The {@code PermutationFunction} to use for co-occurrances.
      */
-    private final PermutationFunction<TernaryVector> permFunc;
+    private final DependencyPermutationFunction<TernaryVector> permFunc;
 
     /**
      * A mapping from a term sense to it's semantic representation.  This
@@ -165,7 +171,7 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
      * representations.  This {@code Map} is used after {@code processSpace} is
      * called.
      */
-    private final ConcurrentMap<String, SparseDoubleVector> splitSenses;
+    private ConcurrentMap<String, SparseDoubleVector> splitSenses;
 
     private ConcurrentMap<String, List<SparseDoubleVector>> termContexts;
 
@@ -174,31 +180,32 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
      */
     private final int indexVectorSize;
 
-    /**
-     * The number of words in the context to save prior to the focus word.
-     */
-    private final int prevSize;
+    private final DependencyExtractor parser;
+    private final DependencyPathAcceptor acceptor;
+    private final DependencyPathWeight weighter;
+
+    private final int pathLength;
 
     /**
-     * The number of words in the context to save after the focus word.
+     * Create a new instance of {@code DependencyWaitingSenseEvalHermit}
+     * which takes ownership
      */
-    private final int nextSize;
-
-    /**
-     * Create a new instance of {@code SenseEvalFlyingHermit} which takes
-     * ownership
-     */
-    public WaitingSenseEvalHermit(
+    public DependencyWaitingSenseEvalHermit(
             Map<String, TernaryVector> indexGeneratorMap,
-            PermutationFunction<TernaryVector> permFunction,
+            DependencyPermutationFunction<TernaryVector> permFunction,
+            DependencyExtractor parser,
+            DependencyPathAcceptor acceptor,
+            DependencyPathWeight weighter,
             int vectorSize,
-            int prevWordsSize,
-            int nextWordsSize) {
+            int pathLength) {
         indexVectorSize = vectorSize;
         indexMap = indexGeneratorMap;
         permFunc = permFunction;
-        prevSize = prevWordsSize;
-        nextSize = nextWordsSize;
+        this.parser = parser;
+        this.pathLength = pathLength;
+        this.acceptor = acceptor;
+        this.weighter = weighter;
+
         splitSenses = new ConcurrentHashMap<String, SparseDoubleVector>();
         termContexts =
             new ConcurrentHashMap<String, List<SparseDoubleVector>>();
@@ -236,70 +243,58 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        Queue<String> prevWords = new ArrayDeque<String>();
-        Queue<String> nextWords = new ArrayDeque<String>();
+        String instanceId = document.readLine();
+        String instanceWord = document.readLine();
 
-        Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
+        for (DependencyRelation[] relations = null;
+                (relations = parser.parse(document)) != null; ) {
 
-        // Skip empty documents.
-        if (!it.hasNext())
-            return;
+            // Skip empty documents.
+            if (relations.length == 0)
+                continue;
 
-        // Fill up the words after the context so that when the real processing
-        // starts, the context is fully prepared.
-        for (int i = 0 ; it.hasNext(); ++i) {
-            String term = it.next();
-            if (term.equals("||||"))
-                break;
-            prevWords.offer(term.intern());
-        }
+            for (int i = 0; i < relations.length; ++i) {
+                String focusWord = relations[i].word();
 
-        // Eliminate the first set of words that we don't want to inspect.
-        while (prevWords.size() > prevSize)
-            prevWords.remove();
+                // Skip paths for words that are not anchored on the instance's
+                // word.
+                if (!focusWord.equals(instanceWord))
+                    continue;
 
-        String focusWord = it.next().intern();
+                SparseIntegerVector meaning = 
+                    new SparseHashIntegerVector(indexVectorSize);
 
-        // Extract the set of words to consider after the focus word.
-        while (it.hasNext() && nextWords.size() < nextSize)
-            nextWords.offer(it.next().intern());
+                Iterator<DependencyPath> pathIter = new DependencyIterator(
+                        relations, acceptor, weighter, i, pathLength);
 
-        // Incorporate the context into the semantic vector for the
-        // focus word.  If the focus word has no semantic vector yet,
-        // create a new one, as determined by the index builder.
-        SparseIntegerVector meaning = 
-            new SparseHashIntegerVector(indexVectorSize);
+                while (pathIter.hasNext()) {
+                    LinkedList<Pair<String>> path = pathIter.next().path();
+                    TernaryVector termVector = indexMap.get(path.peekLast().x);
+                    if (permFunc != null)
+                        termVector = permFunc.permute(termVector, path);
+                    add(meaning, termVector);
+                }
 
-        // Process the previous words, specifying their distance from
-        // the focus word.
-        int distance = -1 * prevWords.size();
-        for (String term : prevWords) {
-            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                TernaryVector termVector = indexMap.get(term);
-                if (permFunc != null)
-                    termVector = permFunc.permute(termVector, distance);
-                add(meaning, termVector);
+                getTermContext(focusWord).add(Vectors.asDouble(meaning));
             }
-            ++distance;
         }
-
-        distance = 1;
-
-        // Process the next words, specifying the distance from the
-        // focus word.
-        for (String term : nextWords) {
-            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-                TernaryVector termVector = indexMap.get(term);
-                if (permFunc != null)
-                    termVector = permFunc.permute(termVector, distance);
-                add(meaning, termVector);
-            }
-            ++distance;
-        }
-
-        getTermContext(focusWord).add(Vectors.asDouble(meaning));
     }
-    
+
+    private List<SparseDoubleVector> getTermContext(String term) {
+        List<SparseDoubleVector> termContextList = termContexts.get(term);
+        if (termContextList == null) {
+            synchronized (termContexts) {
+                termContextList = termContexts.get(term);
+                if (termContextList == null) {
+                    termContextList = Collections.synchronizedList(
+                            new ArrayList<SparseDoubleVector>());
+                    termContexts.put(term, termContextList);
+                }
+            }
+        }
+        return termContextList;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -379,21 +374,6 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
         }
 
         LOGGER.info("Finished creating centroids for term: " + senseName);
-    }
-
-    private List<SparseDoubleVector> getTermContext(String term) {
-        List<SparseDoubleVector> termContextList = termContexts.get(term);
-        if (termContextList == null) {
-            synchronized (termContexts) {
-                termContextList = termContexts.get(term);
-                if (termContextList == null) {
-                    termContextList = Collections.synchronizedList(
-                            new ArrayList<SparseDoubleVector>());
-                    termContexts.put(term, termContextList);
-                }
-            }
-        }
-        return termContextList;
     }
 
     /**
