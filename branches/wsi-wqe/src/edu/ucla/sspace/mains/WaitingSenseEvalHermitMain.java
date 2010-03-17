@@ -309,6 +309,9 @@ public class WaitingSenseEvalHermitMain extends GenericMain {
         if (argOptions.hasOption('G'))
             props.setProperty(WaitingSenseEvalHermit.CLUSTERING_PROPERTY,
                               argOptions.getStringOption('G'));
+        if (argOptions.hasOption('t'))
+            props.setProperty(WaitingSenseEvalHermit.NUM_THREADS_PROPERTY,
+                              argOptions.getStringOption('t'));
         return props;
     }
 

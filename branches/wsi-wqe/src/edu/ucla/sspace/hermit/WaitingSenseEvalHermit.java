@@ -125,6 +125,9 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
     public static final String NUM_CLUSTERS_PROPERTY = 
         PROPERTY_PREFIX + ".numClusters";
 
+    public static final String NUM_THREADS_PROPERTY = 
+        PROPERTY_PREFIX + ".numThreads";
+
     public static final String DEFAULT_CLUSTERING =
         "edu.ucla.sspace.clustering.SpectralClustering";
 
@@ -316,7 +319,11 @@ public class WaitingSenseEvalHermit implements SemanticSpace {
         // concurrently
         final BlockingQueue<Runnable> workQueue =
             new LinkedBlockingQueue<Runnable>();
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
+        String threadProp = properties.getProperty(NUM_THREADS_PROPERTY);
+        int numThreads = (threadProp != null)
+            ? Integer.parseInt(threadProp)
+            : Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < numThreads; ++i) {
             Thread t = new WorkerThread(workQueue);
             t.start();
         }

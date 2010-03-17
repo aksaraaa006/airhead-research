@@ -292,7 +292,6 @@ public class SpectralClustering implements Clustering {
             }
         }
 
-        System.out.println(VectorIO.toString(v));
         for (int i = 0; i < vectorLength; ++i)
             v.set(i, v.get(i) / D.get(i));
 
@@ -374,7 +373,7 @@ public class SpectralClustering implements Clustering {
         }
         v2Magnitude = Math.sqrt(v2Magnitude);
 
-        return dot ;/// (v1Magnitude * v2Magnitude);
+        return dot / (v1Magnitude * v2Magnitude);
     }
 
     /**
