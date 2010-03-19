@@ -342,4 +342,87 @@ public class Statistics {
         }
         return averageMatrix;
     }
+
+    public static void anova(Matrix dataSums,
+                      Matrix dataSumSquares,
+                      int numDataPointsPerExperiment) {
+        // Set up the count values.
+        int firstFactorLevels = dataSums.rows();
+        int secondFactorLevels = dataSums.columns();
+        int numDataPoints = firstFactorLevels * secondFactorLevels;
+        int totalDataPoints = numDataPoints * numDataPointsPerExperiment;
+
+        // Initialize the data points for anova.
+        double averageFactorStrength  = 0;
+        double ssBetween = 0;
+        double ssA = 0;
+        double ssB = 0;
+        double ssTotal = 0;
+
+        double[] ssBSums = new double[secondFactorLevels];
+        for (int row = 0; row < firstFactorLevels; ++row) {
+            double rowSS = 0;
+            for (int col = 0; col < secondFactorLevels; ++col) {
+                averageFactorStrength += dataSums.get(row, col);
+                ssBetween += Math.pow(dataSums.get(row, col), 2) /
+                             numDataPointsPerExperiment;
+                rowSS += dataSums.get(row, col);
+                ssBSums[col] += dataSums.get(row,col);
+                ssTotal += dataSumSquares.get(row, col);
+            }
+            ssA += Math.pow(rowSS, 2) /
+                   (secondFactorLevels * numDataPointsPerExperiment);
+        }
+
+        for (int col = 0; col < secondFactorLevels; ++col)
+            ssB += Math.pow(ssBSums[col], 2) /
+                   (firstFactorLevels * numDataPointsPerExperiment);
+
+        // Normaize the average factor stength.
+        averageFactorStrength =
+            Math.pow(averageFactorStrength, 2) / totalDataPoints;
+
+        // Subtract the average factor strength from eath data point.
+        ssA -= averageFactorStrength;
+        ssB -= averageFactorStrength;
+        ssTotal -= averageFactorStrength;
+        ssBetween -= averageFactorStrength;
+
+        // Compute the within variance and cross factor variance.
+        double ssAxB = ssBetween - ssA - ssB;
+        double ssWithin = ssTotal - ssBetween;
+
+        // compute the degrees of freedom for each factor.
+        int totalDegreesOfFreedom = totalDataPoints - 1;
+        int aDegreesOfFreedom = firstFactorLevels - 1;
+        int bDegreesOfFreedom = secondFactorLevels - 1;
+        int aXbDegreesOfFreedom = aDegreesOfFreedom * bDegreesOfFreedom;
+        int withinDegreesOfFreedom = totalDataPoints - 
+            (firstFactorLevels * secondFactorLevels);
+
+        // Compute the mean squares.
+        double meanSquareA = ssA / aDegreesOfFreedom;
+        double meanSquareB = ssB / bDegreesOfFreedom;
+        double meanSquareAxB = ssAxB / aXbDegreesOfFreedom;
+        double meanSquareWithin = ssWithin / withinDegreesOfFreedom;
+
+        // Compute the F values for each factor.
+        double fValueAxB = meanSquareAxB / meanSquareWithin;
+        double fValueA = meanSquareA / meanSquareWithin;
+        double fValueB = meanSquareB / meanSquareWithin;
+
+        System.out.println(averageFactorStrength);
+        System.out.println(ssA);
+        System.out.println(ssB);
+        System.out.println(ssTotal);
+        System.out.println(ssBetween);
+        System.out.println(meanSquareA);
+        System.out.println(meanSquareB);
+        System.out.println(meanSquareAxB);
+        System.out.println(meanSquareWithin);
+
+        System.out.println(fValueAxB);
+        System.out.println(fValueA);
+        System.out.println(fValueB);
+    }
 }
