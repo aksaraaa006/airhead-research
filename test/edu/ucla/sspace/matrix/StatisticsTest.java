@@ -81,4 +81,12 @@ public class StatisticsTest {
       }
     }
   }
+
+  @Test public void testAnova() {
+      double[] sums = {11, 25, 40, 40, 30, 14};
+      double[] sumSquares = {43, 161, 408, 442, 230, 62};
+      Matrix dataSums = new ArrayMatrix(2, 3, sums);
+      Matrix dataSumSquares = new ArrayMatrix(2, 3, sumSquares);
+      Statistics.anova(dataSums, dataSumSquares, 4);
+  }
 }
