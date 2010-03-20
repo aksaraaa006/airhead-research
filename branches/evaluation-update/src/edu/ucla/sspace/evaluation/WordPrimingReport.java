@@ -34,10 +34,6 @@ public interface WordPrimingReport {
      */
     int numberOfWordPairs();
 
-    /**
-     */
-    String relation();
-
     double relatedPriming();
 
     double unrelatedPriming();

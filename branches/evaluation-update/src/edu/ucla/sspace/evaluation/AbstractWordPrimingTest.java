@@ -61,7 +61,7 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
     /**
      * A mapping from a word pair to the human association judgement for it
      */
-    protected final Map<String, Set<Pair<String>>> relationToPrimeTargetPairs;
+    protected final Set<Pair<String>> primeTargetPairs;
 
     /** 
      *
@@ -69,8 +69,8 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
      *        association judgement for it
      */
     public AbstractWordPrimingTest(
-            Map<String, Set<Pair<String>>> relationToPrimeTargetPairs) {
-        this.relationToPrimeTargetPairs = relationToPrimeTargetPairs;
+            Set<Pair<String>> primeTargetPairs) {
+        this.primeTargetPairs = primeTargetPairs;
     }
 
     /**
@@ -84,66 +84,30 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
      *
      * @return A {@link WordSimilarityReport} detailing the performance
      */
-    public Set<WordPrimingReport> evaluate(final SemanticSpace sspace) {
-        // Setup concurrent data structures so that the similarity questions can
-        // be run in parallel.
-        int numThreads = Runtime.getRuntime().availableProcessors();
+    public WordPrimingReport evaluate(final SemanticSpace sspace) {
+        Pair<double[]> scores = evaluateRelation(sspace, primeTargetPairs);
 
-        final BlockingQueue<Runnable> workQueue =
-            new LinkedBlockingQueue<Runnable>();
-        for (int i = 0; i < numThreads; ++i) {
-            Thread t = new WorkerThread(workQueue);
-            t.start();
+        int numItems = scores.x.length;
+        double relatedSum = 0;
+        double unrelatedSum = 0;
+        for (int i = 0; i < numItems; ++i) {
+            relatedSum += scores.x[i];
+            unrelatedSum += scores.y[i];
         }
-        final Semaphore itemsProcessed = new Semaphore(0); 
-
-        int numRelations = relationToPrimeTargetPairs.size();
-
-        final Set<WordPrimingReport> reports = Collections.synchronizedSet(
-                new HashSet<WordPrimingReport>());
-        for (Map.Entry<String, Set<Pair<String>>> relationPairs :
-                relationToPrimeTargetPairs.entrySet()) {
-            final String relation = relationPairs.getKey();
-            final Set<Pair<String>> pairs = relationPairs.getValue();
-
-            workQueue.offer(new Runnable() {
-                public void run() {
-                    Pair<double[]> scores = evaluateRelation(sspace, pairs);
-                    itemsProcessed.release();
-
-                    int numItems = scores.x.length;
-                    double relatedSum = 0;
-                    double unrelatedSum = 0;
-                    for (int i = 0; i < numItems; ++i) {
-                        relatedSum += scores.x[i];
-                        unrelatedSum += scores.y[i];
-                    }
-                    relatedSum /= numItems;
-                    unrelatedSum /= numItems;
-                    reports.add(new SimpleWordPrimingReport(
-                            relation, numItems, relatedSum, unrelatedSum));
-                }
-            });
-        }
-
-        // Wait 
-        try { 
-            itemsProcessed.acquire(numRelations);
-        } catch (InterruptedException ie) {
-            throw new Error(ie);
-        }
-        return reports;
+        relatedSum /= numItems;
+        unrelatedSum /= numItems;
+        return new SimpleWordPrimingReport(numItems, relatedSum, unrelatedSum);
     }
 
     private Pair<double[]> evaluateRelation(
-            SemanticSpace sspace, Set<Pair<String>> primeTargetPairs) {
+            SemanticSpace sspace, Set<Pair<String>> pairs) {
         final Set<String> sspaceWords = sspace.getWords();
 
         // Set up the set of prime words in the list.  This will be used later
         // on to compute the average distance between a target and all primes.
         // Only include primes that are in the semantic space.
         final Set<String> primes = new HashSet<String>();
-        for (Pair<String> primeTargetPair : primeTargetPairs) {
+        for (Pair<String> primeTargetPair : pairs) {
             if (sspaceWords.contains(primeTargetPair.x) &&
                 sspaceWords.contains(primeTargetPair.y))
                 primes.add(primeTargetPair.x);
@@ -160,7 +124,7 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
         // the related comparison and use the average distance between the
         // target and all valid primes as the unrelated case.
         int scoreIndex = 0;
-        for (final Pair<String> pair: primeTargetPairs) {
+        for (final Pair<String> pair: pairs) {
             // Skip pairs where either word is not in the list.
             if (!sspaceWords.contains(pair.x) ||
                 !sspaceWords.contains(pair.y))
@@ -214,29 +178,18 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
 
     public class SimpleWordPrimingReport implements WordPrimingReport {
 
-        private String relation;
-
         private int numDataPoints;
 
         private double relatedScore;
 
         private double unrelatedScore;
 
-        public SimpleWordPrimingReport(String relation, 
-                                       int numDataPoints,
+        public SimpleWordPrimingReport(int numDataPoints,
                                        double relatedScore,
                                        double unrelatedScore) {
-            this.relation = relation;
             this.numDataPoints = numDataPoints;
             this.relatedScore = relatedScore;
             this.unrelatedScore = unrelatedScore;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public String relation() {
-            return relation;
         }
 
         /**

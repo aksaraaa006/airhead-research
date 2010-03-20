@@ -23,13 +23,12 @@ package edu.ucla.sspace.evaluation;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
-import java.util.Set;
-
 
 /**
  * @author Keith Stevens
  */
 public interface WordPrimingTest {
-    public Set<WordPrimingReport> evaluate(SemanticSpace sspace);
+
+    public WordPrimingReport evaluate(SemanticSpace sspace);
 }
 
