@@ -276,8 +276,8 @@
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
 
-      <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
       <!-- Comment block for excluding the testing a specific set of files.
+      -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
@@ -305,6 +305,7 @@
       <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SvdlibcSparseBinaryFileIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
 
@@ -329,7 +330,6 @@
 
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-      -->
       <!-- -->      
     </junit>
   </target>

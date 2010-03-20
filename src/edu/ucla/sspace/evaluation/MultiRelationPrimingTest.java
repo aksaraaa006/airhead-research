@@ -46,28 +46,20 @@ public class MultiRelationPrimingTest extends AbstractWordPrimingTest {
         super(prepareRelationMap(relationFileName));
     }
 
-    public static Map<String, Set<Pair<String>>> prepareRelationMap(
+    public static Set<Pair<String>> prepareRelationMap(
             String relationFileName) {
-        Map<String, Set<Pair<String>>> relationMap = 
-            new HashMap<String, Set<Pair<String>>>();
-        Set<Pair<String>> currentSet = null;
+        Set<Pair<String>> wordPairSet = new HashSet<Pair<String>>();
         try {
             BufferedReader br =
                 new BufferedReader(new FileReader(relationFileName));
             for (String line = null; (line = br.readLine()) != null; ) {
-                if (line.endsWith(":")) {
-                    currentSet = new HashSet<Pair<String>>();
-                    relationMap.put(line.substring(0, line.length()-1),
-                                    currentSet);
-                } else {
-                    String[] pair = line.split("\\s+");
-                    currentSet.add(new Pair<String>(pair[0], pair[1]));
-                }
+                String[] pair = line.split("\\s+");
+                wordPairSet.add(new Pair<String>(pair[0], pair[1]));
             }
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
-        return relationMap;
+        return wordPairSet;
     }
 
     /**
