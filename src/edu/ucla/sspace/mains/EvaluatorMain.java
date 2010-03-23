@@ -40,6 +40,8 @@ import edu.ucla.sspace.evaluation.WordChoiceReport;
 import edu.ucla.sspace.evaluation.WordSimilarityEvaluation;
 import edu.ucla.sspace.evaluation.WordSimilarityEvaluationRunner;
 import edu.ucla.sspace.evaluation.WordSimilarityReport;
+import edu.ucla.sspace.evaluation.WordPrimingReport;
+import edu.ucla.sspace.evaluation.WordPrimingTest;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -94,6 +96,12 @@ public class EvaluatorMain {
     private Collection<WordSimilarityEvaluation> wordSimilarityTests;
 
     /**
+     * The collection of {@link WordPrimingEvaluation} tests that will be run
+     * on the {@link SemanticSpace} instances.
+     */
+    private Collection<WordPrimingTest> wordPrimingTests;
+
+    /**
      * The reporter for emitting the results of each evaluation.
      */
     private ResultReporter reporter;
@@ -124,6 +132,10 @@ public class EvaluatorMain {
          argOptions.addOption('s', "wordSimilarity",
                               "a list of WordSimilarityEvaluation class names", 
                               true, "CLASS=FILE[=FILE2...][,CLASS=FILE...]", 
+                              "Required (at least one of)");        
+         argOptions.addOption('p', "wordPriming",
+                              "a list of WordPrimingTest class names", 
+                              true, "CLASS[=FILE][=FILE2...][,CLASS=FILE...]", 
                               "Required (at least one of)");        
          argOptions.addOption('g', "testConfiguration",
                               "a file containing a list of test " +
@@ -166,12 +178,17 @@ public class EvaluatorMain {
             ? argOptions.getStringOption("wordSimilarity")
             : null;
 
+        String wpTests = (argOptions.hasOption("wordPriming"))
+            ? argOptions.getStringOption("wordPriming")
+            : null;
+
         String configFile = (argOptions.hasOption("testConfiguration"))
             ? argOptions.getStringOption("testConfiguration")
             : null;
 
         // check that the user provided some input
-        if (wcTests == null && wsTests == null && configFile == null) {
+        if (wcTests == null && wsTests == null &&
+            wpTests == null && configFile == null) {
             usage();
             System.out.println("no tests specified");
             System.exit(1);
@@ -194,6 +211,11 @@ public class EvaluatorMain {
         reporter = (argOptions.hasOption('l'))
             ? new LatexReporter()
             : new DefaultReporter();
+
+        // Load the word similarity tests.
+        wordPrimingTests = (wpTests == null)
+            ? new LinkedList<WordPrimingTest>()
+            : loadWordPrimingTests(wpTests);
 
         // Load any Parse the config file for test types.  The configuration
         // file formatted as pairs of evaluations paired with data
@@ -225,6 +247,10 @@ public class EvaluatorMain {
                 else if (o instanceof WordSimilarityEvaluation) {
                     wordSimilarityTests.add((WordSimilarityEvaluation)o);
                     verbose("Loaded word similarity test " + className);
+                }
+                else if (o instanceof WordPrimingTest) {
+                    wordPrimingTests.add((WordPrimingTest)o);
+                    verbose("Loaded word priming test " + className);
                 }
                 else {
                     throw new IllegalStateException(
@@ -304,6 +330,13 @@ public class EvaluatorMain {
                         sspace, wordSimilarity, similarity);
             verbose("Results for %s:%n%s%n", wordSimilarity, report);
             results[resultIndex++] = report.correlation();
+        }
+
+        // Run the word priming tests.
+        for (WordPrimingTest wordPrimingTest : wordPrimingTests) {
+            WordPrimingReport report = wordPrimingTest.evaluate(sspace);
+            verbose("Results for %s:%n%s%n", wordPrimingTest , report);
+            System.out.printf("Results for %s:%n%s%n", wordPrimingTest, report);
         }
 
         reporter.addResults(sspace.getSpaceName(),
@@ -533,5 +566,36 @@ public class EvaluatorMain {
             }
             resultWriter.close();
         }
+    }
+
+    /**
+     * Dynamically loads the set of specified {@link WordPrimingTest}s
+     * and returns them as a {@link Collection}.
+     */
+    private Collection<WordPrimingTest> loadWordPrimingTests(String wpTests) {
+        String[] testsAndFiles = wpTests.split(",");
+        Collection<WordPrimingTest> wordPrimingTests = 
+            new LinkedList<WordPrimingTest>();
+        try { 
+            for (String s : testsAndFiles) {
+                String[] testAndFile = s.split("=");
+                Class<?> clazz = Class.forName(testAndFile[0]);
+                // Base the number of constructor arguments on the number of
+                // String parameters specified
+                Class[] constructorArgs = new Class[testAndFile.length - 1];
+                for (int i = 0; i < constructorArgs.length; ++i)
+                    constructorArgs[i] = String.class;
+                Constructor<?> c = clazz.getConstructor(constructorArgs);                
+                Object[] args = new String[testAndFile.length - 1];
+                for (int i = 1; i < testAndFile.length; ++i)
+                    args[i - 1] = testAndFile[i];
+                WordPrimingTest eval = (WordPrimingTest)(c.newInstance(args));
+                verbose("Loaded word priming test " + testAndFile[0]);
+                wordPrimingTests.add(eval);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return wordPrimingTests;
     }
 }
