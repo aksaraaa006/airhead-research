@@ -171,5 +171,21 @@ public class SparseDoubleArrayTests {
 	    assertEquals(i, arr.cardinality());
 	}
     }
-    
+
+    @Test public void testIterator() {
+        int size = 100;
+	SparseDoubleArray arr = new SparseDoubleArray();
+	for (int i = 0; i < size; ++i) {
+	    arr.set(i, (double)i);
+	}
+        
+        // NOTE: start at 1 since the zero'th position has a 0 value
+        int i = 1;
+        for (DoubleEntry e : arr) {            
+            assertEquals(i, e.index());
+            assertEquals(i, e.value(), 0.001);
+            i++;
+        }
+        assertEquals(i, size);
+    }
 }

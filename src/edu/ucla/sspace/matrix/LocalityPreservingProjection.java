@@ -130,6 +130,49 @@ public class LocalityPreservingProjection {
 	Logger.getLogger(LocalityPreservingProjection.class.getName());
 
     /**
+     * The generic Matlab/Octave implementation of SR-LPP where the files and
+     * language-specific I/O calls have been left open as printf formatting
+     * arguments to be later specified.
+     */
+    private static final String SR_LPP_M =
+        "%% This code requires the SR-LPP implementation by Deng Cai (dengcai2 AT\n" +
+        "%% cs.uiuc.edu) available at\n" +
+        "%% http://www.cs.uiuc.edu/homes/dengcai2/SR/index.html\n" +
+        "\n" +
+        "%% Load the data matrix from file\n" +
+        "Tmp = load('%s','-ascii');\n" +
+        "data = spconvert(Tmp);\n" +
+        "%% Remove the raw data file to save space\n" +
+        "clear Tmp;\n" +   
+        "\n" +
+        "%% Load the affinity matrix from file\n" +
+        "Tmp = load('%s','-ascii');\n" +
+        "W = spconvert(Tmp);\n" +
+        "%% Remove the raw data file to save space\n" +
+        "clear Tmp;\n" +
+        "\n" +
+        "%% If 0, all of the dimensions in the adj. matrix are used\n" +
+        "Dim = %d\n" +
+        "\n" +
+        "options = [];\n" +
+        "options.W = W;\n" +
+        "options.ReguAlpha = 0.01;\n" +
+        "options.ReguType = 'Ridge';\n" +
+        "options.ReducedDim = Dim;\n" +
+        "%% Call the SR code\n" +
+        "[eigvector] = SR_caller(options, fea);\n" +
+        "[nSmp,nFea] = size(data);\n" +
+        "if size(eigvector,1) == nFea + 1\n" +
+        "    Projection = [data ones(nSmp,1)]*eigvector;\n" +
+        "else\n" +
+        "    Projection = data*eigvector;\n" +
+        "end\n" +
+        "%% Save the projection as a matrix\n" +
+        "%s\n" +
+        "fprintf(1,'Finished\\n');\n" +
+        "\n";
+
+    /**
      * The generic Matlab/Octave implementation of LPP where the files and
      * language-specific I/O calls have been left open as printf formatting
      * arguments to be later specified.
@@ -149,6 +192,7 @@ public class LocalityPreservingProjection {
         // This process might not be feasible for very large data sets, so it
         // might be worth making this configurable in the future
         "%% Subtract out the mean fromm the data.  See page 7 of the LPI paper\n" +
+        "printf('Subtracting out the mean\\n');\n" +
         "if issparse(data)\n" +
         "    data = full(data);\n" +
         "end\n" +
@@ -157,22 +201,24 @@ public class LocalityPreservingProjection {
         "\n" +
         "%% Load the affinity matrix from file\n" +
         "Tmp = load('%s','-ascii');\n" +
-        "data = spconvert(Tmp);\n" +
+        "W = spconvert(Tmp);\n" +
         "%% Remove the raw data file to save space\n" +
         "clear Tmp;\n" +
         "\n" +
         "%% If 0, all of the dimensions in the adj. matrix are used\n" +
-        "ReducedDim = %d\n" +
+        "Dim = %d\n" +
         "\n" +
         "options = [];\n" +
         "\n" +
         "D = full(sum(W,2));\n" +
-        "options.ReguAlpha = options.ReguAlpha*sum(D)/length(D);\n" +
+        "%%options.ReguAlpha = options.ReguAlpha*sum(D)/length(D);\n" +
         "D = sparse(1:nSmp,1:nSmp,D,nSmp,nSmp);\n" +
         "\n" +
+        "printf('Computing D prime\\n');\n" +
         "DPrime = data'*D*data;\n" +
         "DPrime = max(DPrime,DPrime');\n" +
         "\n" +
+        "printf('Computing W prime\\n');\n" +
         "WPrime = data'*W*data;\n" +
         "WPrime = max(WPrime,WPrime');\n" +
         "\n" +
@@ -182,16 +228,27 @@ public class LocalityPreservingProjection {
         "    Dim = dimMatrix;\n" + 
         "end\n" +
         "\n" +
-        "if (dimMatrix > 1000 & Dim < dimMatrix/10) | (dimMatrix > 500 & Dim < dimMatrix/20) | (dimMatrix > 250 & Dim < dimMatrix/30)\n" +
-        "    bEigs = 1;\n" +
-        "else\n" +
+        "%% Before using eigs, check whether the affinity matrix is positive and definite\n" +
+        "%%printf('Testing if DPrime is pos. def.\\n');\n" +
+        "%%isposdef = true;\n" +
+        "%%for i=1:length(DPrime)\n" +
+        "%%     if ( det( DPrime(1:i, 1:i) ) <= 0 )\n" +
+        "%%          isposdef = false;\n" +
+        "%%          break;\n" +
+        "%%      end\n" +
+        "%%end\n" +
+        "\n" +
+        "%%if (isposdef & dimMatrix > 1000 & Dim < dimMatrix/10) | (dimMatrix > 500 & Dim < dimMatrix/20) | (dimMatrix > 250 & Dim < dimMatrix/30)\n" +
+        "%%    bEigs = 1;\n" +
+        "%%else\n" +
         "    bEigs = 0;\n" +
-        "end\n" +
+        "%%end\n" +
         "\n" +
         "\n" +
+        "printf('Computing Eigenvectors\\n');\n" +
         "if bEigs\n" +
-        "    %disp('using eigs to speed up!');\n" +
-        "    [eigvector, eigvalue] = eigs(WPrime,DPrime,Dim,'la',option);\n" +
+        "    %%disp('using eigs to speed up!');\n" +
+        "    [eigvector, eigvalue] = eigs(WPrime,DPrime,Dim,'la');\n" +
         "    eigvalue = diag(eigvalue);\n" +
         "else\n" +
         "    [eigvector, eigvalue] = eig(WPrime,DPrime);\n" +
@@ -216,7 +273,8 @@ public class LocalityPreservingProjection {
         "eigvector(:,eigIdx) = [];\n" +
         "\n" +
         "%% Compute the projection\n" +
-        "projection = fea*eigvector;\n" +
+        "printf('Computing projection matrix\\n');\n" +
+        "projection = data*eigvector;\n" +
         "\n" +
         "%% Save the projection as a matrix\n" +
         "%s\n" +
@@ -346,8 +404,11 @@ public class LocalityPreservingProjection {
             // Read off the matrix dimensions
             DataInputStream dis = new DataInputStream(
                 new BufferedInputStream(new FileInputStream(converted)));
-            int rows = dis.readInt();
+            // CRITICAL NOTE: because we are interpreting the columns as rows,
+            // the dimensions are read in *reverse order* from how they are
+            // stored in the file.
             int cols = dis.readInt();
+            int rows = dis.readInt();
             dis.close();
             
             // Once we know the matrix dimensions, create an iterator over the
@@ -355,15 +416,18 @@ public class LocalityPreservingProjection {
             // rows in the original matrix) to create the affinity matrix.
             File affMatrixFile = File.createTempFile("lcc-adj-matrix",".dat");
             PrintWriter affMatrixWriter = new PrintWriter(affMatrixFile);
-            
+
             // Keep track of the first row and have a reference to the next row.
             // The nextRow reference avoid us having to advance into data
             // unnecessarily to retrieval the vector for processing to start
             SparseDoubleVector curRow = null;
             SparseDoubleVector nextRow = null;
+
+            SvdlibcSparseBinaryFileRowIterator matrixIter = 
+                new SvdlibcSparseBinaryFileRowIterator(converted);
+            
             for (int row = 0; row < rows; ++row) {
-                Iterator<SparseDoubleVector> matrixIter = 
-                    new SvdlibcSparseBinaryFileRowIterator(converted);
+                LOGGER.fine("computing affinity for row " + row);
 
                 // This map is only used if k-nearest neighbors option is being
                 // used.  The map is to the row and its weighted affinity
@@ -379,11 +443,13 @@ public class LocalityPreservingProjection {
                 // Loop through each of the rows, gathering the statistics
                 // necessary to compute the affinity matrix.
                 for (int other = 0; other < rows; ++other) {
+                    //System.out.printf("cur: %d, other %d%n", row, other);
                     // Special case for the very first row
-                    if (row == 0) {
+                    if (row == 0 && curRow == null) {
                         curRow = matrixIter.next();
                         continue;
                     }
+                    
                     SparseDoubleVector otherRow = matrixIter.next();
                     // Special case for the similarity threshold, which is
                     // symmetric.  In this case, we can skip over processing any
@@ -423,9 +489,9 @@ public class LocalityPreservingProjection {
                                           weighting, edgeWeightParam);
                             // Print out the symmetric edges
                             affMatrixWriter.println(
-                                row + " " + other  + " " + edgeWeight);
+                                                    (row + 1) + " " + (other + 1) + " " + edgeWeight);
                             affMatrixWriter.println(
-                                other + " " + row  + " " + edgeWeight);
+                                                    (other + 1) + " " + (row + 1) + " " + edgeWeight);
                         }
                         break;
                     }
@@ -439,14 +505,24 @@ public class LocalityPreservingProjection {
                     for (Duple<Integer,Double> t : neighbors.values()) {
                         // Note that the two rows may not have a symmetric
                         // connection so only one value needs to be written
-                        affMatrixWriter.println(row + " " + t.x  + " " + t.y);
+                        affMatrixWriter.println((row + 1) + " " + (t.x + 1) + " " + t.y);
                     }
                 }
                 curRow = nextRow;
+                matrixIter.reset();
             }
+            // Finish writing the matrix
+            affMatrixWriter.close();
 
+            // Rewrite the input matrix for Matlab to use, optionally
+            // transposing it if the original data was transposed to ease
+            // building the affinity matrix
+            LOGGER.fine("Converting input matrix into Matlab format");
+            File inputFile = MatrixIO.convertFormat(
+                matrixFile, format, MatrixIO.Format.MATLAB_SPARSE, 
+                isDataTransposed);            
             File outputFile = File.createTempFile("lcc-output-matrix", ".dat");
-            execute(matrixFile, affMatrixFile, dimensions, outputFile);
+            execute(inputFile, affMatrixFile, dimensions, outputFile);
             return outputFile;
         } catch (IOException ioe) { 
             throw new IOError(ioe);
@@ -470,6 +546,7 @@ public class LocalityPreservingProjection {
             case NEAREST_NEIGHBORS: {
                 RowComparator rc = new RowComparator();
                 for (int i = 0; i < rows; ++i) {
+                    LOGGER.fine("computing affinity for row " + i);
                     MultiMap<Double,Integer> neighborMap = 
                         rc.getMostSimilar(m, i, (int)edgeTypeParam, 
                                           dataSimilarityMetric);
@@ -478,13 +555,15 @@ public class LocalityPreservingProjection {
                         double edgeWeight = 
                             getWeight(row, m.getRowVector(n),
                                       weighting, edgeWeightParam);
-                        affMatrixWriter.println(i + " " + n  + " " +edgeWeight);
+                        affMatrixWriter.println((i + 1) +  " " 
+                                                + (n + 1) + " " +edgeWeight);
                     }
                 }
                 break;
             }
             case MIN_SIMILARITY: {
                 for (int i = 0; i < rows; ++i) {
+                    LOGGER.fine("computing affinity for row " + i);
                     Vector row1 = m.getRowVector(i);
                     // NOTE: we can compute the upper triangular and report the
                     // symmetric values.
@@ -500,9 +579,9 @@ public class LocalityPreservingProjection {
                                           weighting, edgeWeightParam);
                             // Print out the symmetric edges
                             affMatrixWriter.println(
-                                i + " " + j  + " " + edgeWeight);
+                                (i + 1) + " " + (j + 1) + " " + edgeWeight);
                             affMatrixWriter.println(
-                                j + " " + i  + " " + edgeWeight);
+                                (j + 1) + " " + (i + 1) + " " + edgeWeight);
                         }
                     }
                 }
@@ -534,12 +613,12 @@ public class LocalityPreservingProjection {
                                   int dims) throws IOException {
         // Write the input matrix to a file for Matlab/Octave to use
         File mInput = File.createTempFile("lpp-intput-matrix",".dat");
-        mInput.deleteOnExit();
+        //mInput.deleteOnExit();
         MatrixIO.writeMatrix(dataMatrix, mInput, MatrixIO.Format.MATLAB_SPARSE);
         // Upon finishing, read the matrix back into memory.
         File output = File.createTempFile("lpp-output-matrix",".dat");
         execute(mInput, affMatrixFile, dims, output);
-        return MatrixIO.readMatrix(output, MatrixIO.Format.MATLAB_SPARSE);
+        return MatrixIO.readMatrix(output, MatrixIO.Format.DENSE_TEXT);
     }
 
     /**
@@ -567,18 +646,14 @@ public class LocalityPreservingProjection {
                 "Cannot find Matlab or Octave to invoke LPP");
     }
 
-    private static void invokeMatlab(File dataMatrixFile, File affMatrixFile, 
-                                     int dimensions, File outputFile) 
+    protected static void invokeMatlab(File dataMatrixFile, File affMatrixFile, 
+                                       int dimensions, File outputFile) 
             throws IOException {
 
         String commandLine = "matlab -nodisplay -nosplash -nojvm";
         LOGGER.fine(commandLine);
         Process matlab = Runtime.getRuntime().exec(commandLine);
 	    
-        // Capture the input so we know then Matlab is finished
-        BufferedReader br = new BufferedReader(
-            new InputStreamReader(matlab.getInputStream()));
-
         // Create the Matlab-specified output code for the saving the matrix
         String outputStr =
             "save " + outputFile.getAbsolutePath() + " projection -ASCII\n";
@@ -630,8 +705,7 @@ public class LocalityPreservingProjection {
         }
     }
 
-
-    private static void invokeOctave(File dataMatrixFile, File affMatrixFile, 
+    protected static void invokeOctave(File dataMatrixFile, File affMatrixFile, 
                                      int dimensions, File outputFile) 
             throws IOException {
 
@@ -642,11 +716,17 @@ public class LocalityPreservingProjection {
             "save(\"-ascii\", \"" + outputFile.getAbsolutePath()
             + "\", \"projection\");\n";
         
-        // Fill in the Matlab-specific I/O 
-        String octaveProgram = LPP_M.format(dataMatrixFile.getAbsolutePath(), 
-                                            affMatrixFile.getAbsolutePath(),
-                                            dimensions, outputStr);
-        
+        String octaveProgram = null;
+        try {
+            // Fill in the Matlab-specific I/O 
+            octaveProgram = String.format(LPP_M,
+                                          dataMatrixFile.getAbsolutePath(), 
+                                          affMatrixFile.getAbsolutePath(),
+                                          dimensions, outputStr);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        System.out.println(octaveProgram);
         PrintWriter pw = new PrintWriter(octaveFile);
         pw.println(octaveProgram);
         pw.close();

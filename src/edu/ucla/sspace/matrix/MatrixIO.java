@@ -23,6 +23,7 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.Matrix.Type;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 
@@ -39,6 +40,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -239,14 +241,14 @@ public class MatrixIO {
             if (desired.equals(Format.SVDLIBC_SPARSE_TEXT)) {
                 File output = File.createTempFile(
                     "matlab-to-SVDLIBC-sparse-text",".dat");
-                output.deleteOnExit();
+                //output.deleteOnExit();
                 matlabToSvdlibcSparseText(matrix, output, transpose);
                 return output;
             }
             if (desired.equals(Format.SVDLIBC_SPARSE_BINARY)) {
                 File output = File.createTempFile(
                     "matlab-to-SVDLIBC-sparse-binary",".dat");
-                output.deleteOnExit();
+                //output.deleteOnExit();
                 matlabToSvdlibcSparseBinary(matrix, output, transpose);
                 return output;
             }
@@ -256,7 +258,7 @@ public class MatrixIO {
             if (desired.equals(Format.MATLAB_SPARSE)) {
                 File output = File.createTempFile(
                     "SVDLIBC-sparse-binary-to-Matlab",".dat");
-                output.deleteOnExit();
+                //output.deleteOnExit();
                 svdlibcSparseBinaryToMatlab(matrix, output, transpose);
                 return output;
             }
@@ -1083,21 +1085,34 @@ public class MatrixIO {
         System.out.printf("Creating %s matrix %d rows, %d cols, %d nz%n",
                           ((transposeOnRead) ? "transposed" : ""),
                           rows, cols, nz);
-        Matrix m = (transposeOnRead)
-            ? Matrices.create(cols, rows, matrixType)
-            : Matrices.create(rows, cols, matrixType);
+        Matrix m = null;
         
+        // Special case for reading transposed data.  This avoids the log(n)
+        // overhead from resorting the row data for the matrix, which can be
+        // significant in large matrices.
         if (transposeOnRead) {
+            DoubleVector[] rowArr = new DoubleVector[cols];
             int entriesSeen = 0;
             int col = 0;
+            int curRow = 0;
             for (; entriesSeen < nz; ++col) {
                 int nzInCol = dis.readInt();
+                int[] indices = new int[nzInCol];
+                double[] vals = new double[nzInCol];
                 for (int i = 0; i < nzInCol; ++i, ++entriesSeen) {
-                    m.set(col, dis.readInt(), dis.readFloat());
+                    indices[i] = dis.readInt();
+                    vals[i] = dis.readFloat();
                 }
+                DoubleVector rowVec = 
+                    new CompactSparseVector(indices, vals, rows);
+                rowArr[curRow] = rowVec;
+                System.out.println("read row " + curRow);
+                ++curRow;                
             }
+            m = Matrices.asMatrix(Arrays.asList(rowArr));
         }
         else {
+            m = Matrices.create(rows, cols, matrixType);
             int entriesSeen = 0;
             int col = 0;
             for (; entriesSeen < nz; ++col) {
@@ -1378,9 +1393,10 @@ public class MatrixIO {
                     if (matrix.get(i,j) == 0)
                         continue;
                     StringBuffer sb = new StringBuffer(32);
-                    sb.append(i).append(" ").append(j)
+                    // Add 1 to index values since Matlab arrays are 1-based,
+                    // not 0-based
+                    sb.append(i+1).append(" ").append(j+1)
                         .append(" ").append(matrix.get(i,j));
-                    System.out.println(sb.toString());
                     pw.println(sb.toString());
                 }
             }

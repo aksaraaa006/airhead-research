@@ -448,7 +448,26 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
             }
 
             LOGGER.info("reducing to " + dimensions + " dimensions");
+            File tiMap = new File("term-index.map");
+            PrintWriter pw = new PrintWriter(tiMap);
+//             edu.ucla.sspace.util.SerializableUtil.save(termToIndex, tiMap);
+            for (Map.Entry<String,Integer> e : termToIndex.entrySet())
+                pw.println(e.getKey() + "\t" + e.getValue());
+            pw.close();
+            LOGGER.info("wrote term-index map to " + tiMap);
 
+            
+            Matrix termDocMatrix = MatrixIO.readMatrix(
+                transformedMatrix, 
+                termDocumentMatrixBuilder.getMatrixFormat(), 
+                Matrix.Type.SPARSE_IN_MEMORY, true);
+            wordSpace = LocalityPreservingProjection.project(
+                 termDocMatrix,
+                 dimensions,
+                 Similarity.SimType.COSINE, 
+                 edgeType, edgeTypeParam, weighting, edgeWeightParam);
+            
+            /*
             File projectedFile = LocalityPreservingProjection.project(
                 transformedMatrix, 
                 termDocumentMatrixBuilder.getMatrixFormat(),
@@ -458,8 +477,8 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
                 edgeType, edgeTypeParam, weighting, edgeWeightParam);
                 
             // Load the word space as sparse in memory
-            Matrix wordSpace = MatrixIO.readMatrix(
-                projectedFile, Format.MATLAB_SPARSE);
+            wordSpace = MatrixIO.readMatrix(projectedFile, Format.DENSE_TEXT);
+            */
 
         } catch (IOException ioe) {
             //rethrow as Error
