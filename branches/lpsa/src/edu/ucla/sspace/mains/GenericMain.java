@@ -242,10 +242,10 @@ public abstract class GenericMain {
         options.addOption('d', "docFile", 
                           "a file where each line is a document", true,
                           "FILE[,FILE...]", "Required (at least one of)");
-        options.addOption('X', "docLimit",
-                          "The maximum number of documents from the corpus " + 
-                          "to use (default: infinit)",
-                          true, "INT", "Program Options");
+//         options.addOption('X', "docLimit",
+//                           "The maximum number of documents from the corpus " + 
+//                           "to use (default: infinit)",
+//                           true, "INT", "Program Options");
 
         // Add run time options.
         options.addOption('o', "outputFormat", "the .sspace format to use",

@@ -160,7 +160,7 @@ public class LpsaMain extends GenericMain {
             "MIN_SIMILARITY.  Each takes a parameter specified by the " + 
             "--edgeTypeParam\n" +
             "option.  For NEAREST_NEIGHBORS, the parameter specifies how " + 
-            "many words will" +
+            "many words will\n" +
             "be counted as edges in the affinity matrix.  For MIN_SIMILARITY, "+
             "the parameter\n" +
             "specifies the minimum similarity for two words to have an " +

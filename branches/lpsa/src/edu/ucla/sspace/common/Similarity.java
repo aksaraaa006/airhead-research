@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.util.DoubleEntry;
+
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -280,6 +282,7 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
+    @SuppressWarnings("unchecked")
     public static double cosineSimilarity(DoubleVector a, DoubleVector b) {
         check(a,b);
 
@@ -287,9 +290,56 @@ public class Similarity {
         double aMagnitude = 0.0;
         double bMagnitude = 0.0;
 
+        // Check whether both vectors support fast iteration over their non-zero
+        // values.  If so, use only the non-zero indices to speed up the
+        // computation by avoiding zero multiplications
+        if (a instanceof Iterable && b instanceof Iterable) {
+            // Check whether we can easily determine how many non-zero values
+            // are in each vector.  This value is used to select the iteration
+            // order, which affects the number of get(value) calls.
+            boolean useA =
+                (a instanceof SparseVector && b instanceof SparseVector)
+                && ((SparseVector)a).getNonZeroIndices().length <
+                   ((SparseVector)b).getNonZeroIndices().length;
+            
+            // Choose the smaller of the two to use in computing the dot
+            // product.  Because it would be more expensive to compute the
+            // intersection of the two sets, we assume that any potential
+            // misses would be less of a performance hit.
+            if (useA) {
+                // Compute A's maginitude and the dot product
+                for (DoubleEntry e : ((Iterable<DoubleEntry>)a)) {
+                    int index = e.index();                    
+                    double aValue = e.value();
+                    double bValue = b.get(index);
+                    aMagnitude += aValue * aValue;
+                    dotProduct += aValue * bValue;
+                }
+                // Then compute B's magnitude
+                for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
+                    double bValue = e.value();
+                    bMagnitude += bValue * bValue;                                
+                }
+            }
+            else {
+                // Compute B's maginitude and the dot product
+                for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
+                    int index = e.index();                    
+                    double aValue = a.get(index);
+                    double bValue = e.value();
+                    bMagnitude += bValue * bValue;
+                    dotProduct += aValue * bValue;
+                }
+                // Then compute A's magnitude
+                for (DoubleEntry e : ((Iterable<DoubleEntry>)a)) {
+                    double aValue = e.value();
+                    aMagnitude += aValue * aValue;                                
+                }
+            }            
+        }
         // Check whether both vectors are sparse.  If so, use only the non-zero
         // indices to speed up the computation by avoiding zero multiplications
-        if (a instanceof SparseVector && b instanceof SparseVector) {
+        else if (a instanceof SparseVector && b instanceof SparseVector) {
             SparseVector svA = (SparseVector)a;
             SparseVector svB = (SparseVector)b;
             int[] nzA = svA.getNonZeroIndices();
@@ -420,7 +470,12 @@ public class Similarity {
      *                                   not the same.
      */
     public static double cosineSimilarity(Vector a, Vector b) {
-        return cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
+        return 
+//             (a instanceof IntegerVector 
+//              && b instanceof IntegerVector)
+//             ? cosineSimilarity((IntegerVector)a, (IntegerVector)b)
+//             :
+            cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
     }
 
     /**

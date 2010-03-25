@@ -232,6 +232,7 @@ public class SemanticSpaceExplorer {
                 // Catch Throwable since this method may throw an IOError
                 out.println("an error occurred while loading the semantic " +
                             "space from " + sspaceFileName + ":\n" + t);
+                t.printStackTrace();
             }
             fileNameToSSpace.put(sspaceFileName, sspace);
             current = sspace;

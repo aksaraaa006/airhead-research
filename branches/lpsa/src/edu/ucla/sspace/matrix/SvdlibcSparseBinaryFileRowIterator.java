@@ -30,6 +30,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+
+import java.nio.ByteBuffer;
+
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -39,10 +45,11 @@ import java.util.NoSuchElementException;
  * An iterator for sequentially accessing the columns of a {@link
  * MatrixIO.Format.SVDLIBC_SPARSE_BINARY} formatted file.
  */
-class SvdlibcSparseBinaryFileRowIterator 
+class SvdlibcSparseBinaryFileRowIterator
     implements Iterator<SparseDoubleVector> {
 
-    private final DataInputStream dis;
+    //private final DataInputStream dis;
+    private final ByteBuffer data;
 
     private SparseDoubleVector next;
     
@@ -67,11 +74,16 @@ class SvdlibcSparseBinaryFileRowIterator
 
     public SvdlibcSparseBinaryFileRowIterator(File matrixFile) 
             throws IOException {
-        dis = new DataInputStream(
-            new BufferedInputStream(new FileInputStream(matrixFile)));
-        this.rows = dis.readInt();
-        this.cols = dis.readInt();
-        nzEntriesInMatrix = dis.readInt();
+//         dis = new DataInputStream(
+//             new BufferedInputStream(new FileInputStream(matrixFile), 
+//                                     1024 * 4));
+        RandomAccessFile raf = new RandomAccessFile(matrixFile, "r");
+        FileChannel fc = raf.getChannel();
+        data = fc.map(MapMode.READ_ONLY, 0, fc.size());
+        fc.close();
+        this.rows = data.getInt();
+        this.cols = data.getInt();
+        nzEntriesInMatrix = data.getInt();
         curCol = 0;
         advance();
     }
@@ -79,16 +91,14 @@ class SvdlibcSparseBinaryFileRowIterator
     private void advance() throws IOException {        
         if (entry >= nzEntriesInMatrix) {
             next = null;
-            // If the end of the file has been reached, close the reader
-            dis.close();
         }
         else {
             next = new SparseHashDoubleVector(rows);
-            int nzInCol = dis.readInt();
+            int nzInCol = data.getInt();
             for (int i = 0; i < nzInCol; ++i, ++entry) {
-                int row = dis.readInt();
-                double value = dis.readFloat();
-                next.set(row, value);            
+                int row = data.getInt();
+                double value = data.getFloat();
+                next.set(row, value);          
             }
             curCol++;
         }
@@ -115,5 +125,23 @@ class SvdlibcSparseBinaryFileRowIterator
      */
     public void remove() {
         throw new UnsupportedOperationException("Cannot remove from file");
+    }
+
+    /**
+     * Resets the iterator to the start of the file's data.
+     */
+    public void reset() {
+        data.rewind();
+        // read off the rows, columns, and non-zero elements
+        data.getInt();
+        data.getInt();
+        data.getInt();
+        curCol = 0;
+        entry = 0;
+        try {
+            advance();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 }

@@ -21,20 +21,25 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.DoubleEntry;
+import edu.ucla.sspace.util.SparseDoubleArray;
+
 import java.io.Serializable;
 
-import edu.ucla.sspace.util.SparseDoubleArray;
+import java.util.Iterator;
+
 
 /**
  * A {@code Vector} instance that keeps only the non-zero values in memory,
  * thereby saving space at the expense of time.
  *
  * <p> See {@link SparseDoubleArray} for details on how the sparse
- * representation is implemented
+ * representation is implemented.
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector implements SparseDoubleVector, Serializable {
+public class CompactSparseVector implements SparseDoubleVector, Serializable, 
+                                            Iterable<DoubleEntry> {
 
     private static final long serialVersionUID = 1L;
 
@@ -110,6 +115,14 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      */
     public double add(int index, double delta) {
         return vector.addPrimitive(index, delta);
+    }
+
+    /**
+     * Returns an iterator over all the non-zero indices and values in this
+     * vector.
+     */
+    public Iterator<DoubleEntry> iterator() {
+        return vector.iterator();
     }
 
     /**
