@@ -176,6 +176,9 @@ public class SenseEvalTester {
                                 PermutationFunction<TernaryVector> permFunc,
                                 SemanticSpace senseInducedSpace,
                                 Map<String, TernaryVector> wordToIndexVector) {
+        if (instance == null)
+            return;
+
         Queue<String> prevWords = instance.prevWords;
         Queue<String> nextWords = instance.nextWords;
 

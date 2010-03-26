@@ -1,7 +1,7 @@
 #!/bin/bash
 
 corpusDir=/fomor/corpora/senseEval07
-baseDir=$1
+baseDir=/fomor/sed07/$1
 CORPUS=$corpusDir/dependency_senseEval.xml
 gsKey=$corpusDir/key/keys/senseinduction_test.key
 INDEX=""
@@ -9,10 +9,9 @@ VALUES=""
 
 senseEvalUnSup=$corpusDir/key/scripts/unsup_eval.pl
 semEvalUnSup="java -jar $corpusDir/unsupvmeasure.jar"
-
+indexPrefix=$baseDir/senseEval-dependency-hermit
 
 function run() {
-  indexPrefix=$outDir/senseEval-dependency-hermit
   if [[ "$VALUES" -eq "" ]]
   then
     INDEX="-S $indexPrefix"

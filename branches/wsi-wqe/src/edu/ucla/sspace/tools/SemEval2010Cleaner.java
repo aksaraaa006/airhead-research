@@ -35,7 +35,7 @@ public class SemEval2010Cleaner {
         options.parseOptions(args);
 
         // Validate that the expected number of arguments are given.
-        if (options.numPositionalArgs() <= 2) {
+        if (options.numPositionalArgs() < 2) {
             System.out.println("usage: SemEval2010Cleaner [options]" +
                                "<out-file> <training-file.xml>+\n" +
                                options.prettyPrint());
@@ -81,7 +81,7 @@ public class SemEval2010Cleaner {
             Element instanceNode = (Element) instances.item(i);
             String instanceId = instanceNode.getNodeName();
             String[] wordPosNum = instanceId.split("\\.");
-            String word = stemmer.stem(wordPosNum[0]);
+            String word = stemmer.stem(wordPosNum[0].toLowerCase());
             String text = instanceNode.getTextContent();
 
             // Split the instance text and find the instance of the actual word
@@ -94,6 +94,9 @@ public class SemEval2010Cleaner {
             // separator at different positions.
             String[] tokens = text.split("\\s+");
             StringBuilder prevContext = new StringBuilder();
+            for (int k = 0; k < tokens.length; ++k)
+                tokens[k] = tokens[k].toLowerCase();
+
             for (int k = 0; k < tokens.length; ++k) {
                 // Find where the instance word occurs.
                 String stem = stemmer.stem(tokens[k]);
@@ -105,7 +108,7 @@ public class SemEval2010Cleaner {
 
                     // Output the previous context, a separator, the instance
                     // stem, and the next context.
-                    writer.printf("%s %s %s %s %s\n", instanceId,
+                    writer.printf("%s %s %s %s\n", 
                                   prevContext.toString(), separator, stem,
                                   nextContext.toString());
 

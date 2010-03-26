@@ -178,11 +178,6 @@ public class DependencyWaitingSenseEvalHermitMain extends GenericMain {
                           "Load index vectors and permutation function from " +
                           "binary files",
                           true, "FILE", "Pre Processing");
-
-        options.addOption('X', "configFile",
-                          "XML configuration file for the format of a " +
-                          "dependency parse",
-                          true, "FILE", "Process Properties");
     }
 
     /**
@@ -291,9 +286,7 @@ public class DependencyWaitingSenseEvalHermitMain extends GenericMain {
      * {@inheritDoc}
      */
     public SemanticSpace getSpace() {
-        DependencyExtractor parser = (argOptions.hasOption('G'))
-            ? new DependencyExtractor(argOptions.getStringOption('G'))
-            : new DependencyExtractor();
+        DependencyExtractor parser = new DependencyExtractor();
 
         DependencyWaitingSenseEvalHermit hermit = 
             new DependencyWaitingSenseEvalHermit(

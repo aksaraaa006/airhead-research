@@ -248,9 +248,6 @@ public class SenseEvalFlyingHermit implements SemanticSpace {
         if (!it.hasNext())
             return;
 
-        // Get the instance id as the first token.
-        String instanceId = it.next();
-
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
         for (int i = 0 ; it.hasNext(); ++i) {

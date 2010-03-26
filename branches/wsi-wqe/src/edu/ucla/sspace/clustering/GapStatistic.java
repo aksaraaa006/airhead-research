@@ -159,6 +159,7 @@ public class GapStatistic implements Clustering {
                 for (int j = 0; j < numGaps; ++j) {
                     File outputFile = 
                         File.createTempFile("gap-clustering-output", ".matrix");
+                    try {
                     result = ClutoWrapper.cluster(null,
                                                   gapFiles[j],
                                                   METHOD.getClutoName(),
@@ -166,6 +167,17 @@ public class GapStatistic implements Clustering {
                                                   outputFile,
                                                   k);
                     outputFile.delete();
+                    } catch (Error e) {
+                        // The ClutoWrapper throws an error when cluto crashes.
+                        // If this happens, we don't want the system to crash
+                        // and die, so assume that larger values of K cannot be
+                        // used and use the previous clustering solutition as
+                        // the best.
+                        verbose("Cluto experienced an error clustering with " +
+                                "%d clusters.  Returning %d as the best " +
+                                "clusteirng solution", k+1, k+1);
+                        break;
+                    }
 
                     referenceScores[j] = Math.log(extractScore(result));
                     referenceScore += referenceScores[j];
@@ -183,12 +195,25 @@ public class GapStatistic implements Clustering {
                 // Compute the score for the original data set with k clusters.
                 File outFile =
                     File.createTempFile("gap-clustering-output", ".matrix");
+
+                try {
                 result = ClutoWrapper.cluster(null,
                                               matrixFile,
                                               METHOD.getClutoName(),
                                               CRITERION.getClutoName(),
                                               outFile,
                                               i + startSize);
+                } catch (Error e) {
+                    // The ClutoWrapper throws an error when cluto crashes.
+                    // If this happens, we don't want the system to crash
+                    // and die, so assume that larger values of K cannot be
+                    // used and use the previous clustering solutition as
+                    // the best.
+                    verbose("Cluto experienced an error clustering with " +
+                            "%d clusters.  Returning %d as the best " +
+                            "clusteirng solution", k+1, k+1);
+                    break;
+                }
 
                 // Compute the difference between the two scores.  If the
                 // current score is less than the previous score, then the
@@ -282,6 +307,8 @@ public class GapStatistic implements Clustering {
          */
         private final int rows;
 
+        private Set<Integer> nonZeroFeatures;
+
         /**
          * Creates a new {@code ReferenceDataGenerator} based on the given
          * matrix {@code m}.
@@ -291,6 +318,7 @@ public class GapStatistic implements Clustering {
             rows = m.rows();
             minValues = new double[m.columns()];
             maxValues = new double[m.columns()];
+            nonZeroFeatures = new HashSet<Integer>();
             int[] numNonZeros = new int[m.rows()];
             double averageNumNonZeros = 0;
 
@@ -302,6 +330,7 @@ public class GapStatistic implements Clustering {
                     numNonZeros[r] += nonZeros.length;
                     averageNumNonZeros += nonZeros.length;
                     for (int column : nonZeros) {
+                        nonZeroFeatures.add(column);
                         double value = v.get(column);
                         // Get the max and minimum value for the row.
                         if (value < minValues[column])
@@ -324,6 +353,7 @@ public class GapStatistic implements Clustering {
                         if (value != 0d) {
                             numNonZeros[r]++;
                             averageNumNonZeros++;
+                            nonZeroFeatures.add(c);
                         }
                     }
                 }
@@ -366,9 +396,12 @@ public class GapStatistic implements Clustering {
                 int numNonZeros =
                     (int) (random.nextGaussian() * stdevNumValuesPerRow +
                            averageNumValuesPerRow);
+                if (numNonZeros == 0)
+                    numNonZeros++;
+
                 for (int j = 0; j < numNonZeros; ++j) {
                     // Get the next index to set.
-                    int col = random.nextInt(cols);
+                    int col = getNonZeroColumn();
                     double value = random.nextDouble() *
                             (maxValues[col] - minValues[col]) + minValues[col];
                     column.set(col, value);
@@ -387,6 +420,19 @@ public class GapStatistic implements Clustering {
             builder.finish();
             return builder.getFile();
         }
+
+        /**
+         * Returns a randomly chosen, with replacement, column that has a non
+         * zero feature in the original data set.
+         */
+        private int getNonZeroColumn() {
+            while (true) {
+                int col = random.nextInt(minValues.length);
+                if (nonZeroFeatures.contains(col))
+                    return col;
+            }
+        }
+
     }
 
     protected void verbose(String msg) {
