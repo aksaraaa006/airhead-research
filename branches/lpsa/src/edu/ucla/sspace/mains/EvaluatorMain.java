@@ -311,7 +311,8 @@ public class EvaluatorMain {
     private void evaluateSemanticSpace(SemanticSpace sspace,
                                        SimType similarity) {
         double[] results = new double[wordChoiceTests.size() +
-                                      wordSimilarityTests.size()];
+                                      wordSimilarityTests.size() +
+                                      wordPrimingTests.size()];
         int resultIndex = 0;
 
         // Run the word choice tests.
