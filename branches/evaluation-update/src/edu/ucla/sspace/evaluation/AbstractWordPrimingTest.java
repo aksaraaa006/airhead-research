@@ -212,5 +212,14 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
         public double unrelatedPriming() {
             return unrelatedScore;
         }
+
+        public double effect() {
+            return relatedScore - unrelatedScore;
+        }
+
+        public String toString() {
+            return String.format("Primed Pairs: %f\nUnrelated Pairs: %f\n",
+                                 relatedScore, unrelatedScore);
+        }
     }
 }
