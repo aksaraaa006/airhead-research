@@ -37,4 +37,6 @@ public interface WordPrimingReport {
     double relatedPriming();
 
     double unrelatedPriming();
+
+    double effect();
 }
