@@ -337,6 +337,7 @@ public class EvaluatorMain {
             WordPrimingReport report = wordPrimingTest.evaluate(sspace);
             verbose("Results for %s:%n%s%n", wordPrimingTest , report);
             System.out.printf("Results for %s:%n%s%n", wordPrimingTest, report);
+            results[resultIndex++] = report.effect();
         }
 
         reporter.addResults(sspace.getSpaceName(),
@@ -499,6 +500,11 @@ public class EvaluatorMain {
                 resultWriter.printf(
                         "Result for sspace %s-%s on similarity test %s: %f\n",
                         sspaceName, simType, similarity, results[index++]);
+
+            for (WordPrimingTest priming : wordPrimingTests)
+                resultWriter.printf(
+                        "Result for sspace %s-%s on priming test %s: %f\n",
+                        sspaceName, simType, priming , results[index++]);
         }
 
         /**
@@ -553,6 +559,8 @@ public class EvaluatorMain {
                 sb.append("  &  ").append(choice.toString());
             for (WordSimilarityEvaluation similarity : wordSimilarityTests)
                 sb.append("  &  ").append(similarity.toString());
+            for (WordPrimingTest priming : wordPrimingTests)
+                sb.append("  &  ").append(priming.toString());
             sb.append("  \\");
             resultWriter.println(sb.toString());
 
