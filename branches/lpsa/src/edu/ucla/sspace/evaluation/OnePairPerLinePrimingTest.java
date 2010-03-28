@@ -39,6 +39,13 @@ import java.util.Set;
 
 
 /**
+ * A simple {@link WordPrimingTest} that extracts priming pairs from a text
+ * file.  This text file should have one line for each priming pair where the
+ * first the two words are separated by white space.  The first word is the
+ * priming cue.  The second word is the priming target.  This class computes
+ * priming strength by using the cosine similarity between semantic vectors.
+ *
+ * @see AbstractWordPrimingTest
  * @author Keith Stevens
  */ 
 public class OnePairPerLinePrimingTest extends AbstractWordPrimingTest {
@@ -48,20 +55,34 @@ public class OnePairPerLinePrimingTest extends AbstractWordPrimingTest {
      */
     private final String dataFileName;
     
+    /**
+     * Creates a new {@link OnePairPerLinePrimingTest} from a string containing
+     * a file name.
+     */
     public OnePairPerLinePrimingTest(String testPairFileName) {
         this(new File(testPairFileName));
     }
 
+    /**
+     * Creates a new {@link OnePairPerLinePrimingTest} from a {@link File}.
+     */
     public OnePairPerLinePrimingTest(File testPairFile) {
         super(prepareRelationMap(testPairFile));
         dataFileName = testPairFile.getName();
     }
 
+    /**
+     * Returns a set of prime, target word pairs that are extracted from a text
+     * file.
+     */
     public static Set<Pair<String>> prepareRelationMap(File testPairFile) {
         Set<Pair<String>> wordPairSet = new HashSet<Pair<String>>();
         try {
             BufferedReader br = 
                 new BufferedReader(new FileReader(testPairFile));
+            // Each line is expected to contain a space delimited pair of words.
+            // The first word is the prime cue and the second word is the target
+            // word.
             for (String line = null; (line = br.readLine()) != null; ) {
                 if (line.length() == 0 || line.startsWith("#"))
                     continue;

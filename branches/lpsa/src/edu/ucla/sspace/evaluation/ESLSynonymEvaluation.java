@@ -100,7 +100,7 @@ public class ESLSynonymEvaluation implements WordChoiceEvaluation {
                 }
 
                 String prompt = promptAndOptions[0];
-                String[] options = new String[4];
+                String[] options = new String[promptAndOptions.length - 1];
                 List<String> optionsAsList = Arrays.asList(Arrays.copyOfRange(
                     promptAndOptions, 1, promptAndOptions.length - 1));
                 questions.add(
