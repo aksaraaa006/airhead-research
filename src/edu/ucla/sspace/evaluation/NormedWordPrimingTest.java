@@ -21,32 +21,13 @@
 
 package edu.ucla.sspace.evaluation;
 
+import edu.ucla.sspace.common.SemanticSpace;
+
+
 /**
- * A report of the performance of a {@link SemanticSpace} on a particular
- * {@link WordPrimingTest}.
- *
  * @author Keith Stevens
  */
-public interface WordPrimingReport {
+public interface NormedWordPrimingTest {
 
-    /**
-     * Returns the total number of word pairs.
-     */
-    int numberOfWordPairs();
-
-    /**
-     * Returns the priming score for related word pairs.
-     */
-    double relatedPriming();
-
-    /**
-     * Returns the priming score for unrelated word pairs.
-     */
-    double unrelatedPriming();
-
-    /**
-     * Returns the effect of priming, which is the difference bewtween the
-     * priming score for related and unrelated pairs.
-     */
-    double effect();
+    public NormedWordPrimingReport evaluate(SemanticSpace sspace);
 }

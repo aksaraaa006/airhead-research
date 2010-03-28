@@ -25,10 +25,20 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 
 /**
+ * An interface for performing priming tests where there is no normed set of
+ * responses to compare against.  These tests simply measure the associational
+ * strength between a prime,target pair and prime, unrelated target pairs.  The
+ * key result is the effect of related primes, where a high effect suggests that
+ * that semantic space models the particular form of priming modeled by some
+ * implemented test.
+ *
  * @author Keith Stevens
  */
 public interface WordPrimingTest {
 
+    /**
+     * Evaluates a {@link SemanticSpace} on a particular test of word priming
+     * pairs.
+     */
     public WordPrimingReport evaluate(SemanticSpace sspace);
 }
-

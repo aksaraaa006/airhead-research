@@ -67,6 +67,7 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
     public WordPrimingReport evaluate(final SemanticSpace sspace) {
         Pair<double[]> scores = evaluateRelation(sspace, primeTargetPairs);
 
+        // Compute the total sum of the related and unrelated priming scores.
         int numItems = scores.x.length;
         double relatedSum = 0;
         double unrelatedSum = 0;
@@ -74,11 +75,20 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
             relatedSum += scores.x[i];
             unrelatedSum += scores.y[i];
         }
+
+        // Compute the average related and unrelated priming score.
         relatedSum /= numItems;
         unrelatedSum /= numItems;
+
+        // Return a basic report.
         return new SimpleWordPrimingReport(numItems, relatedSum, unrelatedSum);
     }
 
+    /**
+     * Returns a pair of double arrays that contain the priming scores for
+     * related and unrelated word pairs.  Each index in the arrays correponds to
+     * a specific priming word pair.
+     */
     private Pair<double[]> evaluateRelation(
             SemanticSpace sspace, Set<Pair<String>> pairs) {
         final Set<String> sspaceWords = sspace.getWords();
@@ -135,35 +145,39 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
     }
 
     /**
-     * Returns the correlation between the computer generated scores and the
-     * human evaluated scores.  Sub-classes can override this if the correlation
-     * metric is not suitable for the data set.  Possible alternatives are mean
-     * square error or simply the average computer generated score.
-     */
-    protected double computeScore(double[] humanScores, double[] compScores) {
-        return Similarity.correlation(humanScores, compScores);
-    }
-
-    /**
      * Returns the association of the two words on a scale of 0 to 1.
      * Subclasses should override this method to provide specific ways of
      * determining the association of two words in the semantic space, but
      * should ensure that the return value falls with the predefined scale.
      *
-     * @return the assocation or {@code null} if either {@code word1} or {@code
-     *         word2} are not in the semantic space
+     * @return the assocation between {@code word1} and {@code word2}
      */
     protected abstract Double computePriming(SemanticSpace sspace, 
                                              String word1, String word2);
 
+    /**
+     * A simple struct serving as a {@link WordPrimingReport}.
+     */
     public class SimpleWordPrimingReport implements WordPrimingReport {
 
+        /**
+         * The number of word pairs.
+         */
         private int numDataPoints;
 
+        /**
+         * The priming score for related primes.
+         */
         private double relatedScore;
 
+        /**
+         * The priming score for unrelated primes.
+         */
         private double unrelatedScore;
 
+        /**
+         * Creates a new {@link SimpleWordPrimingReport}.
+         */
         public SimpleWordPrimingReport(int numDataPoints,
                                        double relatedScore,
                                        double unrelatedScore) {
@@ -193,6 +207,9 @@ public abstract class AbstractWordPrimingTest implements WordPrimingTest {
             return unrelatedScore;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         public double effect() {
             return relatedScore - unrelatedScore;
         }

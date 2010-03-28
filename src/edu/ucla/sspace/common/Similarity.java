@@ -507,6 +507,9 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+        if (xSqSum == 0 || ySqSum == 0)
+            return 0;
+
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 

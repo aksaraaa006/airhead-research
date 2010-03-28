@@ -21,32 +21,32 @@
 
 package edu.ucla.sspace.evaluation;
 
+import java.util.List;
+
+
 /**
- * A report of the performance of a {@link SemanticSpace} on a particular
- * {@link WordPrimingTest}.
- *
  * @author Keith Stevens
  */
-public interface WordPrimingReport {
+public interface NormedPrimingQuestion {
 
     /**
-     * Returns the total number of word pairs.
+     * Returns the priming cue.
      */
-    int numberOfWordPairs();
+    String getCue();
 
     /**
-     * Returns the priming score for related word pairs.
+     * Returns the number of targets associated with the cue.
      */
-    double relatedPriming();
+    int numberOfTargets();
 
     /**
-     * Returns the priming score for unrelated word pairs.
+     * Returns the {@code i}th target assicated with the cue.
      */
-    double unrelatedPriming();
+    String getTarget(int i);
 
     /**
-     * Returns the effect of priming, which is the difference bewtween the
-     * priming score for related and unrelated pairs.
+     * Returns the {@code i}th target strength assicated with the cue.
      */
-    double effect();
+    double getStrength(int i);
 }
+
