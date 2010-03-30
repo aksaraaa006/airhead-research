@@ -128,7 +128,8 @@ public abstract class AbstractNormedWordPrimingTest
         }
 
         // Return the correlation between the known and computed strengths.
-        return Similarity.correlation(knownStrengths, computedStrengths);
+        return Similarity.spearmanRankCorrelationCoefficient(
+                knownStrengths, computedStrengths);
     }
 
 
