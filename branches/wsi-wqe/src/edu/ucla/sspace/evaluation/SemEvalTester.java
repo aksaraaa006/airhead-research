@@ -208,7 +208,6 @@ public class SemEvalTester {
             // Find where the instance word occurs.
             String stem = stemmer.stem(tokens[k]);
             if (stem.equals(instanceStem)) {
-                System.out.printf("Evaluating instance %s\n", instanceId);
                 nextWords = new LinkedList<String>();
                 for (int j = k + 1; j < tokens.length &&
                                     nextWords.size() < windowSize; ++j)
@@ -244,8 +243,6 @@ public class SemEvalTester {
                     }
                     ++distance;
                 }
-                System.out.printf("Finding closest word for instance %s\n",
-                                  instanceId);
                 for (int sense = 0; sense < Integer.MAX_VALUE; ++sense) {
                     String senseWord = (sense == 0)
                         ? instanceStem
@@ -278,9 +275,7 @@ public class SemEvalTester {
                 synchronized (answers) {
                     answers.printf("%s %s %s\n",
                                    wordPos, instanceId, clusterName);
-            } else 
-                System.out.printf("No matching word found for instance %s\n",
-                                  instanceId);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -361,7 +356,8 @@ public class SemEvalTester {
             word = wordPosNum[0];
             stem = stemmer.stem(wordPosNum[0].toLowerCase());
             wordPos = word + "." + wordPosNum[1];
-            instanceText = instanceNode.getTextContent();
+            NodeList sent = instanceNode.getElementsByTagName("TargetSentence");
+            instanceText = sent.item(0).getTextContent();
         }
     }
 }
