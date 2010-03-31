@@ -357,7 +357,10 @@ public class SemEvalTester {
             stem = stemmer.stem(wordPosNum[0].toLowerCase());
             wordPos = word + "." + wordPosNum[1];
             NodeList sent = instanceNode.getElementsByTagName("TargetSentence");
-            instanceText = sent.item(0).getTextContent();
+            if (sent.getLength() > 0)
+                instanceText = sent.item(0).getTextContent();
+            else
+                instanceText = instanceNode.getTextContent();
         }
     }
 }
