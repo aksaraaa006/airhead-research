@@ -16,15 +16,15 @@ A compound token exists when multiple tokens are joined as a single unit.  Examp
 
 Often when processing documents, certain tokens may need to be excluded.  For example, a user may want to remove frequent [http://en.wikipedia.org/wiki/Closed_class closed classes] of words such as articles and prepositions, or possibly all punctuation (also commonly known as stop words).  The S-Space supports removing these tokens via the `TokenFilter` class and related `FilteredIterator` class.
 
-Token filter configurations are specified as a comma-separated list of file names, where each file name has an optional string with values:inclusive or exclusive, which species whether the token are to be used for an exclusive filter. The default value is include. An example configuration might look like:  `--tokenFilter=english-dictionary.txt=include,stop-list.txt=exclude`
+Token filter configurations are specified as a comma-separated list of file names, where each file name has an optional string with values:inclusive or exclusive, which species whether the token are to be used for an exclusive filter. The default value is include. An example configuration might look like:  `--tokenFilter=include=english-dictionary.txt,exclude=stop-list.txt`
 
 When running an algorithm, this filter may be set using the `edu.ucla.sspace.text.TokenizerFactory.tokenFilter` property.  
 
 = Stemming =
 
-Tokens may also be [http://en.wikipedia.org/wiki/Stemming stemmed].  This process attempts to remove morphological changes to a word to reduce it to a base form.  For example "fishing," "fishes," "fished" might be reduced to the base form of "fish."  This behavior is often used to simplify the term co-occurrences and has other applications in information retrieval.  However, not all algorithms perform better when stemming is enabled, since it conflates multiple word meanings into a single token (i.e. increases [http://en.wikipedia.org/wiki/Polysemy polysemy]).  The S-Space package current supports the Porter Stemmer.  
+Tokens may also be [http://en.wikipedia.org/wiki/Stemming stemmed].  This process attempts to remove morphological changes to a word to reduce it to a base form.  For example "fishing," "fishes," "fished" might be reduced to the base form of "fish."  This behavior is often used to simplify the term co-occurrences and has other applications in information retrieval.  However, not all algorithms perform better when stemming is enabled, since it conflates multiple word meanings into a single token (i.e. increases [http://en.wikipedia.org/wiki/Polysemy polysemy]).  The S-Space package provides wrappers for the [http://snowball.tartarus.org/ Snoball stemmers].
 
-Users may enable stemming by setting the `edu.ucla.sspace.text.TokenizerFactory.stem` property to a non-null value.  Note that we reserve the right to interpret the value of this property in the future, possibly to select a different stemmer implementation.
+Users may enable stemming by setting the `edu.ucla.sspace.text.TokenizerFactory.stem` property to a non-null value.  The value passed via this property is expected to correspond to a full class descriptor, such as `edu.ucla.sspace.text.EnglihStemmer`, which will be dynamically loaded.
 
 = Document Token Limiting =
 
