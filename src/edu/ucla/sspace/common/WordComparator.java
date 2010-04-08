@@ -24,6 +24,7 @@ package edu.ucla.sspace.common;
 import edu.ucla.sspace.util.BoundedSortedMultiMap;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.SortedMultiMap;
+import edu.ucla.sspace.util.WorkerThread;
 
 import edu.ucla.sspace.vector.Vector;
 
@@ -73,7 +74,7 @@ public class WordComparator {
     public WordComparator(int numThreads) {
         workQueue = new LinkedBlockingQueue<Runnable>();
         for (int i = 0; i < numThreads; ++i) {
-            new WorkerThread(workQueue).start();            
+            new WorkerThread(workQueue, 10).start();            
         }
     }
 
@@ -193,34 +194,6 @@ public class WordComparator {
                 // notify that the word has been processed regardless of whether
                 // an error occurred
                 semaphore.release();
-            }
-        }
-    }
-
-    /**
-     * A daemon thread that continuously dequeues {@code Runnable} instances
-     * from a queue and executes them.
-     */
-    protected static final class WorkerThread extends Thread {
-
-        static int threadInstanceCount;
-
-        private final BlockingQueue<Runnable> workQueue;
-
-        public WorkerThread(BlockingQueue<Runnable> workQueue) {
-            this.workQueue = workQueue;
-            setDaemon(true);
-            setName("WordComparator-WorkerThread-" + (threadInstanceCount++));
-        }
-
-        public void run() {
-            while (true) {
-                try {
-                    Runnable r = workQueue.take();
-                    r.run();
-                } catch (InterruptedException ie) {
-                    throw new Error(ie);
-                }
             }
         }
     }

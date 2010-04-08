@@ -90,6 +90,16 @@ class IntArrayAsVector implements IntegerVector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        double m = 0;
+        for (int i : array)
+            m += i * i;
+        return Math.sqrt(m);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public int[] toArray() {
         return Arrays.copyOf(array, array.length);
     }

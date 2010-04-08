@@ -499,6 +499,7 @@ public class LocalityPreservingProjection {
                         assert false : "unhandled edge type: " + edgeType;
                     }
                 }
+                curRow = nextRow;
                 if (edgeType.equals(EdgeType.NEAREST_NEIGHBORS)) {
                     // If using k-nearest neighbors, once the row has been
                     // processed, report all the k-nearest as being adjacent
@@ -508,7 +509,6 @@ public class LocalityPreservingProjection {
                         affMatrixWriter.println((row + 1) + " " + (t.x + 1) + " " + t.y);
                     }
                 }
-                curRow = nextRow;
                 matrixIter.reset();
             }
             // Finish writing the matrix
@@ -537,7 +537,8 @@ public class LocalityPreservingProjection {
                                  EdgeWeighting weighting,
                                  double edgeWeightParam) {
         try {
-            File affMatrixFile = File.createTempFile("lcc-aff-matrix",".dat");
+            File affMatrixFile = 
+                File.createTempFile("lpp-input-aff-matrix",".dat");
             PrintWriter affMatrixWriter = new PrintWriter(affMatrixFile);
             
             int rows = m.rows();
@@ -612,7 +613,7 @@ public class LocalityPreservingProjection {
     private static Matrix execute(Matrix dataMatrix, File affMatrixFile, 
                                   int dims) throws IOException {
         // Write the input matrix to a file for Matlab/Octave to use
-        File mInput = File.createTempFile("lpp-intput-matrix",".dat");
+        File mInput = File.createTempFile("lpp-input-data-matrix",".dat");
         //mInput.deleteOnExit();
         MatrixIO.writeMatrix(dataMatrix, mInput, MatrixIO.Format.MATLAB_SPARSE);
         // Upon finishing, read the matrix back into memory.
@@ -726,7 +727,6 @@ public class LocalityPreservingProjection {
         } catch (Throwable t) {
             t.printStackTrace();
         }
-        System.out.println(octaveProgram);
         PrintWriter pw = new PrintWriter(octaveFile);
         pw.println(octaveProgram);
         pw.close();

@@ -95,6 +95,22 @@ class ConcatenatedSparseDoubleVector implements SparseDoubleVector,
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        double m = 0;
+        for (int nz : v1.getNonZeroIndices()) {
+            double d = v1.get(nz);
+            m += d * d;
+        }
+        for (int nz : v2.getNonZeroIndices()) {
+            double d = v2.get(nz);
+            m += d * d;
+        }
+        return Math.sqrt(m);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(int index, Number value) {
         if (index < v1.length())             
             v1.set(index, index);

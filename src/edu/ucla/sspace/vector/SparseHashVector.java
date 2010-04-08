@@ -44,6 +44,12 @@ public class SparseHashVector<T extends Number>
      */
     protected SparseHashArray<Number> vector;
 
+    /**
+     * The magnitude of the vector or -1 if the value is currently invalid needs
+     * to be recomputed
+     */
+    private double magnitude;
+
     /** 
      * Create a {@code SparseHashVector} with the given size, having no
      * non-zero values.
@@ -52,6 +58,7 @@ public class SparseHashVector<T extends Number>
      */
     public SparseHashVector(int length) {
         vector = new SparseHashArray<Number>(length);
+        magnitude = 0;
     }
 
     /**
@@ -62,6 +69,7 @@ public class SparseHashVector<T extends Number>
      */
     public SparseHashVector(T[] array) {
         vector = new SparseHashArray<Number>(array);
+        magnitude = -1;
     }
 
     /** 
@@ -89,7 +97,24 @@ public class SparseHashVector<T extends Number>
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            magnitude = 0;
+            for (int nz : getNonZeroIndices()) {
+                double d = vector.get(nz).doubleValue();
+                magnitude += d * d;
+            }
+            magnitude = Math.sqrt(magnitude);
+        }
+        return magnitude;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(int index, Number value) {
         vector.set(index, (value.doubleValue() == 0d) ? null : value);
+        magnitude = -1;
     }
 }

@@ -46,6 +46,11 @@ public interface Vector<T extends Number> {
     int length();
 
     /**
+     * Returns the magnitude of this vector
+     */
+    double magnitude();
+
+    /**
      * Set the value in the vector (optional operation).
      *
      * @param index index to set.
