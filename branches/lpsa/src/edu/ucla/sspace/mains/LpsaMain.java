@@ -82,7 +82,7 @@ public class LpsaMain extends GenericMain {
                           "the method for weighting edges in the affinity " +
                           "matrix",
                           true, "EdgeWeighting", "Algorithm Options"); 
-        options.addOption('X', "edgeWeightingParam", 
+        options.addOption('G', "edgeWeightingParam", 
                           "a parameter for the edge weighting process",
                           true, "DOUBLE", "Algorithm Options");         
     }

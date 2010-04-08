@@ -133,6 +133,16 @@ public class AtomicSparseVector implements SparseDoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        readLock.lock();
+        double m = vector.magnitude();
+        readLock.unlock();
+        return m;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(int index, double value) {
         writeLock.lock();
         vector.set(index, value);

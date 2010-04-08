@@ -287,8 +287,8 @@ public class Similarity {
         check(a,b);
 
         double dotProduct = 0.0;
-        double aMagnitude = 0.0;
-        double bMagnitude = 0.0;
+        double aMagnitude = a.magnitude();
+        double bMagnitude = b.magnitude();
 
         // Check whether both vectors support fast iteration over their non-zero
         // values.  If so, use only the non-zero indices to speed up the
@@ -307,33 +307,19 @@ public class Similarity {
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (useA) {
-                // Compute A's maginitude and the dot product
                 for (DoubleEntry e : ((Iterable<DoubleEntry>)a)) {
                     int index = e.index();                    
                     double aValue = e.value();
                     double bValue = b.get(index);
-                    aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute B's magnitude
-                for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
-                    double bValue = e.value();
-                    bMagnitude += bValue * bValue;                                
                 }
             }
             else {
-                // Compute B's maginitude and the dot product
                 for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
                     int index = e.index();                    
                     double aValue = a.get(index);
                     double bValue = e.value();
-                    bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute A's magnitude
-                for (DoubleEntry e : ((Iterable<DoubleEntry>)a)) {
-                    double aValue = e.value();
-                    aMagnitude += aValue * aValue;                                
                 }
             }            
         }
@@ -349,31 +335,17 @@ public class Similarity {
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (nzA.length < nzB.length) {
-                // Compute A's maginitude and the dot product
                 for (int nz : nzA) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute B's magnitude
-                for (int nz : nzB) {
-                    double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;                                
                 }
             }
             else {
-                // Compute B's maginitude and the dot product
                 for (int nz : nzB) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute A's magnitude
-                for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    aMagnitude += aValue * aValue;                                
                 }
             }
         }
@@ -382,13 +354,9 @@ public class Similarity {
             for (int i = 0; i < b.length(); i++) {
                 double aValue = a.get(i);
                 double bValue = b.get(i);
-                aMagnitude += aValue * aValue;
-                bMagnitude += bValue * bValue;
                 dotProduct += aValue * bValue;
             }
         }
-        aMagnitude = Math.sqrt(aMagnitude);
-        bMagnitude = Math.sqrt(bMagnitude);
         return (aMagnitude == 0 || bMagnitude == 0)
             ? 0 : dotProduct / (aMagnitude * bMagnitude);
     }
@@ -403,8 +371,8 @@ public class Similarity {
         check(a,b);
 
         double dotProduct = 0.0;
-        double aMagnitude = 0.0;
-        double bMagnitude = 0.0;
+        double aMagnitude = a.magnitude();
+        double bMagnitude = b.magnitude();
 
         // Check whether both vectors are sparse.  If so, use only the non-zero
         // indices to speed up the computation by avoiding zero multiplications
@@ -418,31 +386,17 @@ public class Similarity {
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (nzA.length < nzB.length) {
-                // Compute A's maginitude and the dot product
                 for (int nz : nzA) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute B's magnitude
-                for (int nz : nzB) {
-                    double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;                                
                 }
             }
             else {
-                // Compute B's maginitude and the dot product
                 for (int nz : nzB) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute A's magnitude
-                for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    aMagnitude += aValue * aValue;                                
                 }
             }
         }
@@ -452,13 +406,9 @@ public class Similarity {
             for (int i = 0; i < b.length(); i++) {
                 double aValue = a.get(i);
                 double bValue = b.get(i);
-                aMagnitude += aValue * aValue;
-                bMagnitude += bValue * bValue;
                 dotProduct += aValue * bValue;
             }
         }
-        aMagnitude = Math.sqrt(aMagnitude);
-        bMagnitude = Math.sqrt(bMagnitude);
         return (aMagnitude == 0 || bMagnitude == 0)
             ? 0 : dotProduct / (aMagnitude * bMagnitude);
     }
