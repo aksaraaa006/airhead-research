@@ -133,15 +133,15 @@ public abstract class AbstractWordAssociationTest
                     if (association == null) {
                         unanswered.incrementAndGet();
                         compScores[index] = Double.MIN_VALUE;
-                        return;
+                    } else {
+                        answered.incrementAndGet();
+
+                        // Scale the associated result to within the test's
+                        // range of values
+                        compScores[index] =
+                            (association * testRange) + getLowestScore();
                     }
-
-                    answered.incrementAndGet();
-
-                    // Scale the associated result to within the test's
-                    // range of values
-                    compScores[index] =
-                        (association * testRange) + getLowestScore();
+                    itemsProcessed.release();
                 }
             });
         }

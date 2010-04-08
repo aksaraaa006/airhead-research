@@ -28,15 +28,27 @@ import java.io.File;
 
 
 /**
+ * Transforms a matrix using the log-likelihood weight.  The input matrix is
+ * assumed to have non-negative values and be formatted as rows representing
+ * terms and columns representing terms.  Each matrix cell indicates the number
+ * of times the row's word occurs within the some range of the column's word.
+ * Although the log likelihood typically requires much more than this, an
+ * estimation is used that utilizes only the occurrence frequency counts based.
+ * See the following papers for details and analysis:
+ *
+ * </li style="font-family:Garamond, Georgia, serif"> Pado, S. and Lapata, M.
+ * (2007) Dependnecy-Based COnstruction of Semantic Space Models.
+ * <i>Association of Computational Linguistics</i>, <b>33</b>.
+ 
  * @author Keith Stevens
  */
-public class PointWiseMutualInformationTransform extends BaseTransform {
+public class LogLikelihoodTransform extends BaseTransform {
 
     /**
      * {@inheritDoc}
      */
     protected GlobalTransform getTransform(Matrix matrix) {
-        return new PointWiseMutualInformationGlobalTransform(matrix);
+        return new LogLikelihoodGlobalTransform(matrix);
     }
 
     /**
@@ -44,7 +56,7 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
      */
     protected GlobalTransform getTransform(File inputMatrixFile,
                                            MatrixIO.Format format) {
-        return new PointWiseMutualInformationGlobalTransform(
+        return new LogLikelihoodGlobalTransform(
                 inputMatrixFile, format);
     }
 
@@ -52,10 +64,10 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
      * Returns the name of this transform.
      */
     public String toString() {
-        return "PMI";
+        return "LogLikelihood";
     }
 
-    public class PointWiseMutualInformationGlobalTransform
+    public class LogLikelihoodGlobalTransform
             implements GlobalTransform {
 
         /**
@@ -69,15 +81,15 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
         private double[] colCounts;
 
         /**
-         * The total summation of the entire matrix.
+         * The total sum of all values in the matrix.
          */
         private double matrixSum;
 
         /**
-         * Creates an instance of {@code PointWiseMutualInformationTransform}
-         * from a given {@link Matrix}.
+         * Creates an instance of {@code LogLikelihoodTransform} from a given
+         * {@link Matrix}.
          */
-        public PointWiseMutualInformationGlobalTransform(Matrix matrix) {
+        public LogLikelihoodGlobalTransform(Matrix matrix) {
             MatrixStatistics stats =
                 TransformStatistics.extractStatistics(matrix);
             rowCounts = stats.rowSums;
@@ -86,10 +98,10 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
         }
 
         /**
-         * Creates an instance of {@code PointWiseMutualInformationTransform}
+         * Creates an instance of {@code LogLikelihoodTransform}
          * from a matrix {@code File} of format {@code format}.
          */
-        public PointWiseMutualInformationGlobalTransform(
+        public LogLikelihoodGlobalTransform(
                 File inputMatrixFile,
                 MatrixIO.Format format) {
             MatrixStatistics stats =
@@ -100,7 +112,7 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
         }
 
         /**
-         * Computes the point wise-mutual information between the {@code row}
+         * Computes the Log Likelihood information between the {@code row}
          * and {@code col} with {@code value} specifying the number of
          * occurances of {@code row} with {@code col}.   This is
          * approximated based on the occurance counts for each {@code row} and
@@ -109,12 +121,20 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
          * @param row The index specifying the row being observed
          * @param col The index specifying the col being observed
          * @param value The number of ocurrances of row and col together
-         *
-         * @return log(value * matrixSum / (rowSum[row] * colSum[col]))
          */
         public double transform(int row, int col, double value) {
-            return Math.log(value * matrixSum /
-                            (rowCounts[row] * colCounts[col] ));
+            double l = colCounts[col] - value;
+            double m = rowCounts[row] - value;
+            double n = matrixSum - (value + l + m);
+            double likelihood = value * Math.log(value) + l * Math.log(l) +
+                                m * Math.log(m) + n * Math.log(n);
+            likelihood -= ((value + l) * Math.log(value+l) - 
+                           (value + m) * Math.log(value+m));
+            likelihood -= ((l + n) * Math.log(l + n) - 
+                           (m + n) * Math.log(m + n));
+            likelihood += ((value + l + m + n) * Math.log(value + l + m + n));
+            return 2 * likelihood;
         }
     }
 }
+
