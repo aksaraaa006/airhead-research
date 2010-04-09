@@ -1082,9 +1082,10 @@ public class MatrixIO {
         int rows = dis.readInt();
         int cols = dis.readInt();
         int nz = dis.readInt();
-        System.out.printf("Creating %s matrix %d rows, %d cols, %d nz%n",
+        MATRIX_IO_LOGGER.fine(
+            String.format("Creating %s matrix %d rows, %d cols, %d nz%n",
                           ((transposeOnRead) ? "transposed" : ""),
-                          rows, cols, nz);
+                          rows, cols, nz));
         Matrix m = null;
         
         // Special case for reading transposed data.  This avoids the log(n)
@@ -1106,7 +1107,6 @@ public class MatrixIO {
                 DoubleVector rowVec = 
                     new CompactSparseVector(indices, vals, rows);
                 rowArr[curRow] = rowVec;
-                System.out.println("read row " + curRow);
                 ++curRow;                
             }
             m = Matrices.asMatrix(Arrays.asList(rowArr));
@@ -1409,6 +1409,7 @@ public class MatrixIO {
         }
     }
 
+    @Deprecated 
     public static void writeMatrixArray(double[][] matrix, File output) 
         throws IOException {
         if (matrix.length == 0 || matrix[0].length == 0)
