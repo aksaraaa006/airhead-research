@@ -27,6 +27,8 @@ import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.util.TreeMultiMap;
+import edu.ucla.sspace.util.MultiMap;
 
 import java.lang.reflect.Method;
 
@@ -40,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.Collections;
 
 
 /**
@@ -62,7 +65,8 @@ public class Similarity {
         JACCARD_INDEX,
         LIN,
         KL_DIVERGENCE,
-        AVERAGE_COMMON_FEATURE_RANK
+        AVERAGE_COMMON_FEATURE_RANK,
+        WEIGHTED_FEATURE_RATIO
     }
 
     /**
@@ -103,6 +107,9 @@ public class Similarity {
             break;
         case KL_DIVERGENCE:
             methodName = "klDivergence";
+            break;
+        case WEIGHTED_FEATURE_RATIO:
+            methodName = "weightedFeatureRatio";
             break;
         default:
             assert false : similarityType;
@@ -149,6 +156,8 @@ public class Similarity {
                 return linSimilarity(a, b);
             case KL_DIVERGENCE:
                 return klDivergence(a, b);
+            case WEIGHTED_FEATURE_RATIO:
+                return weightedFeatureRatio(a, b);
         }
         return 0;
     }
@@ -183,6 +192,8 @@ public class Similarity {
                 return linSimilarity(a, b);
             case KL_DIVERGENCE:
                 return klDivergence(a, b);
+            case WEIGHTED_FEATURE_RATIO:
+                return weightedFeatureRatio(a, b);
         }
         return 0;
     }
@@ -449,6 +460,8 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+        if(numerator == 0)
+            return 0;
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
@@ -481,6 +494,8 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+        if(numerator == 0)
+            return 0;
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
@@ -515,6 +530,8 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+        if(numerator == 0)
+            return 0;
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
@@ -547,6 +564,8 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+        if(numerator == 0)
+            return 0;
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
@@ -803,21 +822,22 @@ public class Similarity {
         check(a, b);
         SortedMap<Double,Double> ranking = new TreeMap<Double,Double>();
         for (int i = 0; i < a.length; ++i) {
-            ranking.put(a[i], b[i]);
+            if (null != ranking.put(a[i], b[i])) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
         double[] sortedB = Arrays.copyOf(b, b.length);
         Arrays.sort(sortedB);
         Map<Double,Integer> otherRanking = new HashMap<Double,Integer>();
         for (int i = 0; i < b.length; ++i) {
-            otherRanking.put(sortedB[i], i);
+            if (null != otherRanking.put(sortedB[i], i)) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
-        // keep track of the last value we saw in the key set so we can check
-        // for ties.  If there are ties then the Pearson's product-moment
-        // coefficient should be returned instead.
-        Double last = null;
-
         // sum of the differences in rank
         double diff = 0d;
 
@@ -827,14 +847,6 @@ public class Similarity {
         for (Map.Entry<Double,Double> e : ranking.entrySet()) {
             Double x = e.getKey();
             Double y = e.getValue();
-            // check that there are no tied rankings
-            if (last == null)
-                last = x;
-            else if (last.equals(x))
-                // if there was a tie, return the correlation instead.
-                return correlation(a,b);
-            else 
-                last = x;
 
             // determine the difference in the ranks for both values
             int rankDiff = curRank - otherRanking.get(y).intValue();
@@ -859,20 +871,22 @@ public class Similarity {
 
         SortedMap<Integer,Integer> ranking = new TreeMap<Integer,Integer>();
         for (int i = 0; i < a.length; ++i) {
-            ranking.put(a[i], b[i]);
+            if (null != ranking.put(a[i], b[i])) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
         int[] sortedB = Arrays.copyOf(b, b.length);
         Arrays.sort(sortedB);
         Map<Integer,Integer> otherRanking = new HashMap<Integer,Integer>();
-        for (int i = 0; i < b.length; ++i)
-            otherRanking.put(sortedB[i], i);
+        for (int i = 0; i < b.length; ++i) {
+            if (null != otherRanking.put(sortedB[i], i)) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
+        }
         
-        // keep track of the last value we saw in the key set so we can check
-        // for ties.  If there are ties then the Pearson's product-moment
-        // coefficient should be returned instead.
-        Integer last = null;
-
         // sum of the differences in rank
         double diff = 0d;
 
@@ -882,14 +896,6 @@ public class Similarity {
         for (Map.Entry<Integer,Integer> e : ranking.entrySet()) {
             Integer x = e.getKey();
             Integer y = e.getValue();
-            // check that there are no tied rankings
-            if (last == null)
-                last = x;
-            else if (last.equals(x))
-                // if there was a tie, return the correlation instead.
-                return correlation(a,b);
-            else
-                last = x;
 
             // determine the difference in the ranks for both values
             int rankDiff = curRank - otherRanking.get(y).intValue();
@@ -918,21 +924,22 @@ public class Similarity {
 
         SortedMap<Double,Double> ranking = new TreeMap<Double,Double>();
         for (int i = 0; i < a.length(); ++i) {
-            ranking.put(a.get(i), b.get(i));
+            if (null != ranking.put(a.get(i), b.get(i))) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
         double[] sortedB = b.toArray();
         Arrays.sort(sortedB);
         Map<Double,Integer> otherRanking = new HashMap<Double,Integer>();
         for (int i = 0; i < b.length(); ++i) {
-            otherRanking.put(sortedB[i], i);
+            if (null != otherRanking.put(sortedB[i], i)) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
-        // keep track of the last value we saw in the key set so we can check
-        // for ties.  If there are ties then the Pearson's product-moment
-        // coefficient should be returned instead.
-        Double last = null;
-
         // sum of the differences in rank
         double diff = 0d;
 
@@ -942,14 +949,6 @@ public class Similarity {
         for (Map.Entry<Double,Double> e : ranking.entrySet()) {
             Double x = e.getKey();
             Double y = e.getValue();
-            // check that there are no tied rankings
-            if (last == null)
-                last = x;
-            else if (last.equals(x))
-                // if there was a tie, return the correlation instead.
-                return correlation(a,b);
-            else 
-                last = x;
 
             // determine the difference in the ranks for both values
             int rankDiff = curRank - otherRanking.get(y).intValue();
@@ -975,21 +974,22 @@ public class Similarity {
 
         SortedMap<Integer,Integer> ranking = new TreeMap<Integer,Integer>();
         for (int i = 0; i < a.length(); ++i) {
-            ranking.put(a.get(i), b.get(i));
+            if (null != ranking.put(a.get(i), b.get(i))) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
         int[] sortedB = b.toArray();
         Arrays.sort(sortedB);
         Map<Integer,Integer> otherRanking = new HashMap<Integer,Integer>();
         for (int i = 0; i < b.length(); ++i) {
-            otherRanking.put(sortedB[i], i);
+            if (null != otherRanking.put(sortedB[i], i)) {
+                // if there are ties, must compute the more expensive way
+                return rankedCorrelation(a, b);
+            }
         }
         
-        // keep track of the last value we saw in the key set so we can check
-        // for ties.  If there are ties then the Pearson's product-moment
-        // coefficient should be returned instead.
-        Integer last = null;
-
         // sum of the differences in rank
         double diff = 0d;
 
@@ -999,14 +999,6 @@ public class Similarity {
         for (Map.Entry<Integer,Integer> e : ranking.entrySet()) {
             Integer x = e.getKey();
             Integer y = e.getValue();
-            // check that there are no tied rankings
-            if (last == null)
-                last = x;
-            else if (last.equals(x))
-                // if there was a tie, return the correlation instead.
-                return correlation(a,b);
-            else 
-                last = x;
 
             // determine the difference in the ranks for both values
             int rankDiff = curRank - otherRanking.get(y).intValue();
@@ -1173,8 +1165,8 @@ public class Similarity {
      *                                   not the same.
      */
     public static double averageCommonFeatureRank(Vector a, Vector b) {
-        return averageCommonFeatureRank(Vectors.asDouble(a),
-                                        Vectors.asDouble(b));
+        return averageCommonFeatureRank(Vectors.asDouble(a).toArray(),
+                                        Vectors.asDouble(b).toArray());
     }
 
     /**
@@ -1728,5 +1720,415 @@ public class Similarity {
         }
 
         return divergence;
+    }
+
+    /**
+     * Computes the ranking of two variables, then finds the Pearson's
+     * product-moment coefficient.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double rankedCorrelation(double[] a, double[] b) {
+   
+        check(a, b);
+
+        MultiMap<Double,Integer> sortingTreeA =
+            new TreeMultiMap<Double,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < a.length; ++i) {
+            sortingTreeA.put(a[i], i);
+        }
+        double[] ranksA = new double[a.length];
+        int index = 1;
+        for (Double key : sortingTreeA.keySet()) {
+            Set<Integer> ties = sortingTreeA.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksA[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        MultiMap<Double,Integer> sortingTreeB =
+            new TreeMultiMap<Double,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < b.length; ++i) {
+            sortingTreeB.put(b[i], i);
+        }
+        double[] ranksB = new double[b.length];
+        index = 1;
+        for (Double key : sortingTreeB.keySet()) {
+            Set<Integer> ties = sortingTreeB.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksB[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        for(int i=0;i<ranksA.length;i++){
+            System.out.print(ranksA[i]+"\t");
+            System.out.print(ranksB[i]+"\n");
+        }
+
+        return correlation(ranksA,ranksB);
+
+    }
+
+    /**
+     * Computes the ranking of two variables, then finds the Pearson's
+     * product-moment coefficient.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double rankedCorrelation(int[] a, int[] b) {
+        check(a, b);
+
+        MultiMap<Integer,Integer> sortingTreeA =
+            new TreeMultiMap<Integer,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < a.length; ++i) {
+            sortingTreeA.put(a[i], i);
+        }
+        double[] ranksA = new double[a.length];
+        int index = 1;
+        for (Integer key : sortingTreeA.keySet()) {
+            Set<Integer> ties = sortingTreeA.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksA[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        MultiMap<Integer,Integer> sortingTreeB =
+            new TreeMultiMap<Integer,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < b.length; ++i) {
+            sortingTreeB.put(b[i], i);
+        }
+        double[] ranksB = new double[b.length];
+        index = 1;
+        for (Integer key : sortingTreeB.keySet()) {
+            Set<Integer> ties = sortingTreeB.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksB[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        return correlation(ranksA,ranksB);
+
+    }
+
+    /**
+     * Computes the ranking of two variables, then finds the Pearson's
+     * product-moment coefficient.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double rankedCorrelation(DoubleVector a, DoubleVector b) {
+        check(a, b);
+
+        MultiMap<Double,Integer> sortingTreeA =
+            new TreeMultiMap<Double,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < a.length(); ++i) {
+            sortingTreeA.put(a.get(i), i);
+        }
+        double[] ranksA = new double[a.length()];
+        int index = 1;
+        for (Double key : sortingTreeA.keySet()) {
+            Set<Integer> ties = sortingTreeA.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksA[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        MultiMap<Double,Integer> sortingTreeB =
+            new TreeMultiMap<Double,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < b.length(); ++i) {
+            sortingTreeB.put(b.get(i), i);
+        }
+        double[] ranksB = new double[b.length()];
+        index = 1;
+        for (Double key : sortingTreeB.keySet()) {
+            Set<Integer> ties = sortingTreeB.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksB[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        return correlation(ranksA,ranksB);
+
+    }
+
+    /**
+     * Computes the ranking of two variables, then finds the Pearson's
+     * product-moment coefficient.
+     *
+     * @throws IllegaleArgumentException when the length of the two vectors are
+     *                                   not the same.
+     */
+    public static double rankedCorrelation(IntegerVector a, IntegerVector b) {
+        check(a, b);
+
+        MultiMap<Integer,Integer> sortingTreeA =
+            new TreeMultiMap<Integer,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < a.length(); ++i) {
+            sortingTreeA.put(a.get(i), i);
+        }
+        double[] ranksA = new double[a.length()];
+        int index = 1;
+        for (Integer key : sortingTreeA.keySet()) {
+            Set<Integer> ties = sortingTreeA.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksA[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        MultiMap<Integer,Integer> sortingTreeB =
+            new TreeMultiMap<Integer,Integer>(Collections.reverseOrder());
+        for (int i = 0; i < b.length(); ++i) {
+            sortingTreeB.put(b.get(i), i);
+        }
+        double[] ranksB = new double[b.length()];
+        index = 1;
+        for (Integer key : sortingTreeB.keySet()) {
+            Set<Integer> ties = sortingTreeB.get(key);
+            int size = ties.size();
+            // calculate the average rank of tied entries
+            // which are consectuive ints in the range [i,i+n-1]
+            // using the fact that the sum of 1 through n is (n^2+n)/2
+            // and [i,i+n-1] = i-1 + sum([1,n])
+            // sum([i,i+n-1) = i-1 + (n^2+n)/2
+            // avg([i,i+n-1) = i-1 + (n^2+n)/(2n)
+            double rank = (index-1.0d) + size*(size+1)/(2.0d*size);
+            for (Integer i : ties) {
+                // write the average rank to each of the tied values
+                ranksB[i] = rank;
+                // skip over the tied ranks
+                index++;
+            }
+        }
+
+        return correlation(ranksA,ranksB);
+
+    }
+
+    public static double weightedFeatureRatio(Vector a, Vector b) {
+        check(a, b);
+
+        // special handling for Sparse Vectors
+        if (a instanceof SparseVector && b instanceof SparseVector) {
+            SparseVector svA = (SparseVector)a;
+            SparseVector svB = (SparseVector)b;
+
+            HashSet<Integer> nzCom = new HashSet<Integer>();
+
+            int[] nzA = svA.getNonZeroIndices();
+            double max_a = 0;
+            for (int i=0; i<nzA.length; i++) {
+                double val = Math.abs(a.getValue(nzA[i]).doubleValue());
+                if (max_a < val) {
+                    max_a = val;
+                }
+                nzCom.add(nzA[i]);
+            }
+            int[] nzB = svB.getNonZeroIndices();
+            double max_b = 0;
+            for (int i=0; i<nzB.length; i++) {
+                double val = Math.abs(b.getValue(nzB[i]).doubleValue());
+                if (max_b < val) {
+                    max_b = val;
+                }
+                nzCom.add(nzB[i]);
+            }
+            // prevent divide by zero
+            if (max_a==0) max_a=1;
+            if (max_b==0) max_b=1;
+
+            // sum weighted ratio
+            // sum is over the union of all nonzero elements
+            // the intersection would suffice since the ratio is 0 when one of
+            // the elements is zero, but this is more flexible if this changes
+            double sum = 0;
+            for (Integer i : nzCom) {
+                double ai = Math.abs(a.getValue(i).doubleValue())/max_a;
+                double bi = Math.abs(b.getValue(i).doubleValue())/max_b;
+                double ratio = 0;
+                if (bi==0 && ai==0) {
+                    ratio = 0;
+                }
+                else if (ai < bi) {
+                    ratio = ai/bi;
+                }
+                else if (bi < ai) {
+                    ratio = bi/ai;
+                }
+                else {
+                    ratio = 1;
+                }
+
+                double weight = Math.exp((ai+bi)/2 - Math.abs(ai-bi) - 1);
+
+                sum += ratio*weight;
+            }
+            return sum;
+        }
+
+        // calculate the normalization factor
+        // using the max scales the vector to fit in the unit hypercube
+        double max_a = 0;
+        double max_b = 0;
+        for (int i=0; i<a.length(); i++) {
+            if (max_a < Math.abs(a.getValue(i).doubleValue())) {
+                max_a = Math.abs(a.getValue(i).doubleValue());
+            }
+            if (max_b < Math.abs(b.getValue(i).doubleValue())) {
+                max_b = Math.abs(b.getValue(i).doubleValue());
+            }
+        }
+        // prevent divide by zero
+        if (max_a==0) max_a=1;
+        if (max_b==0) max_b=1;
+
+        // sum weighted ratio
+        double sum = 0;
+        for (int i=0; i<a.length(); i++) {
+            double ai = Math.abs(a.getValue(i).doubleValue())/max_a;
+            double bi = Math.abs(b.getValue(i).doubleValue())/max_b;
+            double ratio = 0;
+            if (bi==0 && ai==0) {
+                ratio = 0;
+            }
+            else if (ai < bi) {
+                ratio = ai/bi;
+            }
+            else if (bi < ai) {
+                ratio = bi/ai;
+            }
+            else {
+                ratio = 1;
+            }
+
+            double weight = Math.exp((ai+bi)/2 - Math.abs(ai-bi) - 1);
+
+            sum += ratio*weight;
+        }
+        return sum;
+    }
+
+    public static double weightedFeatureRatio(double[] a, double[] b) {
+        check(a, b);
+
+        // calculate the normalization factor
+        // using the max scales the vector to fit in the unit hypercube
+        double max_a = 0;
+        double max_b = 0;
+        for (int i=0; i<a.length; i++) {
+            if (max_a < Math.abs(a[i])) {
+                max_a = Math.abs(a[i]);
+            }
+            if (max_b < Math.abs(b[i])) {
+                max_b = Math.abs(b[i]);
+            }
+        }
+        // prevent divide by zero
+        if (max_a==0) max_a=1;
+        if (max_b==0) max_b=1;
+
+        // sum weighted ratio
+        double sum = 0;
+        for (int i=0; i<a.length; i++) {
+            double ai = Math.abs(a[i])/max_a;
+            double bi = Math.abs(b[i])/max_b;
+            double ratio = 0;
+            if (bi==0 && ai==0) {
+                ratio = 0;
+            }
+            else if (ai < bi) {
+                ratio = ai/bi;
+            }
+            else if (bi < ai) {
+                ratio = bi/ai;
+            }
+            else {
+                ratio = 1;
+            }
+
+            double weight = Math.exp((ai+bi)/2 - Math.abs(ai-bi) - 1);
+
+            sum += ratio*weight;
+        }
+        return sum;
     }
 }
