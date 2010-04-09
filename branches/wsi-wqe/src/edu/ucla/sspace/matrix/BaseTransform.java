@@ -54,7 +54,7 @@ public abstract class BaseTransform implements Transform {
              throws IOException {
         // create a temp file for the output
         File output = File.createTempFile(
-                inputMatrixFile.getName() + ".log-entropy-transform", ".dat");
+                inputMatrixFile.getName() + ".matrix-transform", ".dat");
         transform(inputMatrixFile, format, output);
         return output;
     }
@@ -89,40 +89,34 @@ public abstract class BaseTransform implements Transform {
     public Matrix transform(Matrix matrix) {
         GlobalTransform transform = getTransform(matrix);
 
-        // NOTE: as of 0.9.9, there is no good way to create a new matrix of the
-        // same type unless you already know the type or use reflection.  In
-        // addition, there's no way to access the Matrix.Type for a given
-        // instance, further obfuscating what class should be instantiated.
-        // Therefore, we just make a guess.  This is definitely a case for
-        // concern in the API.  -jurgens
-        //Matrix transformed;
+        Matrix transformed;
 
         if (matrix instanceof SparseMatrix) {
             SparseMatrix smatrix = (SparseMatrix) matrix;
-            //transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-            //                              Matrix.Type.SPARSE_IN_MEMORY);
+            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+                                          Matrix.Type.SPARSE_IN_MEMORY);
 
             for (int row = 0; row < matrix.rows(); ++row) {
                 SparseDoubleVector rowVec = smatrix.getRowVector(row);
                 for (int col : rowVec.getNonZeroIndices()) {
                     double newValue = 
                             transform.transform(row, col, rowVec.get(col));
-                    matrix.set(row, col, newValue);
+                    transformed.set(row, col, newValue);
                 }
             }
         } else {
-            //transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-            //                              Matrix.Type.DENSE_IN_MEMORY);
+            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
+                                          Matrix.Type.DENSE_IN_MEMORY);
             for (int row = 0; row < matrix.rows(); ++row) {
                 for (int col = 0; col < matrix.columns(); ++col) {
                     double newValue = 
                             transform.transform(row, col, matrix.get(row, col));
-                    matrix.set(row, col, newValue);
+                    transformed.set(row, col, newValue);
                 }
             }
         }
 
-        return matrix;
+        return transformed;
     }
 
     /**
