@@ -21,9 +21,12 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.IntegerEntry;
 import edu.ucla.sspace.util.SparseIntArray;
 
 import java.io.Serializable;
+
+import java.util.Iterator;
 
 /**
  * A sparse {@code IntegerVector} class whose data is back by a compact sparse
@@ -33,7 +36,7 @@ import java.io.Serializable;
  * @author David Jurgens
  */
 public class CompactSparseIntegerVector
-    implements SparseIntegerVector, Serializable {
+        implements SparseIntegerVector, Serializable, Iterable<IntegerEntry> {
 
     private static final long serialVersionUID = 1L;
 
@@ -118,6 +121,14 @@ public class CompactSparseIntegerVector
      */
     public int[] getNonZeroIndices() {
         return intArray.getElementIndices();
+    }
+
+    /**
+     * Returns an iterator over all the non-zero indices and values in this
+     * vector.
+     */
+    public Iterator<IntegerEntry> iterator() {
+        return intArray.iterator();
     }
 
     /**

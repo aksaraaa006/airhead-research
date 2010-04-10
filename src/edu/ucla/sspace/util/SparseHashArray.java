@@ -21,8 +21,11 @@
 
 package edu.ucla.sspace.util;
 
+import java.io.Serializable;
+
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 
@@ -44,7 +47,10 @@ import java.util.Map;
  * @see SparseArray
  * @see IntegerMap
  */
-public class SparseHashArray<T> implements SparseArray<T> {
+public class SparseHashArray<T> 
+        implements SparseArray<T>, Iterable<ObjectEntry<T>>, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The maximum length of this array
@@ -130,6 +136,15 @@ public class SparseHashArray<T> implements SparseArray<T> {
     }
     
     /**
+     * Returns an iterator over the non-{@code null} values in this array.  This
+     * method makes no guarantee about the order in which the indices are
+     * returned.
+     */
+    public Iterator<ObjectEntry<T>> iterator() {
+        return new SparseHashArrayIterator();
+    }   
+     
+    /**
      * Returns the maximum length of this array.
      */
     public int length() {
@@ -147,16 +162,12 @@ public class SparseHashArray<T> implements SparseArray<T> {
             if (indexToValue.put(index, value) == null)
                 indices = null;
         }
-        else {
-            T existing = indexToValue.get(index);
-            // Otherwise, check whether an existing element was there and if so,
-            // remove that index from the array, thereby maintaining sparseness.
-            if (existing != null) {
-                indexToValue.remove(index);
-                // Since we removed something from the map, invalidate the memoized
-                // indices
-                indices = null;
-            }
+        // Otherwise, check whether an existing element was there and if so,
+        // remove that index from the array, thereby maintaining sparseness.
+        else if (indexToValue.remove(index) != null) {                
+            // Since we removed something from the map, invalidate the
+            // memoized indices
+            indices = null;
         }
     }
 
@@ -172,4 +183,35 @@ public class SparseHashArray<T> implements SparseArray<T> {
 	}
 	return array;
     }
+
+    /**
+     * A private iterator over the non-zero values of the array.  Note that this
+     * iterator is <i>not</i> thread safe.
+     */
+    private class SparseHashArrayIterator implements Iterator<ObjectEntry<T>> {
+        
+        Iterator<Map.Entry<Integer,T>> arrayIter;
+      
+        public SparseHashArrayIterator() {
+            arrayIter = indexToValue.entrySet().iterator();
+        }
+
+        public boolean hasNext() {
+            return arrayIter.hasNext();
+        }
+
+        public ObjectEntry<T> next() {
+            final Map.Entry<Integer,T> e = arrayIter.next();
+            // Return a one-off instance of the entry
+            return new ObjectEntry<T>() {
+                public int index() { return e.getKey(); }
+                public T value() { return e.getValue(); }
+            };
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+    
 }

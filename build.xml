@@ -28,7 +28,8 @@
   <property name="src.dir" value="src"/>
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
-  <property name="version" value="1.0"/>
+  <property name="tools.dir" value="tools"/>
+  <property name="version" value="1.1"/>
   
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -39,9 +40,19 @@
     <pathelement location="${build.dir}"/>
   </path>
 
-  <target name="all">
+  <target name="all" depends="dist,tools,lib">
     <!-- put in dependencies here -->
   </target>
+
+  <!--
+    **
+    ** 
+    ** TOP LEVEL BUILD TARGETS
+    **
+    **
+    **-->
+
+  <target name="lib" depends="sspace-jar,sspace-src-jar"/>
   
   <target name="compile">
     <!-- Ensure that the build output directories are always present -->
@@ -71,6 +82,9 @@
       <fileset dir="bin" includes="**"/>
       <fileset dir="classes" includes="**"/>
       <fileset dir="javadoc" includes="**"/>
+      <fileset dir="lib" includes="sspace-lib.jar"/>
+      <fileset dir="lib" includes="sspace-src.jar"/>
+      <fileset dir="tools" includes="**"/>
     </delete>
   </target>
 
@@ -88,6 +102,18 @@
   <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar">
     <!-- TODO: Create jar executables for all of the major algorithms -->
   </target>
+
+  <target name="tools" depends="sse-jar,svd-jar,tc-jar">
+  </target>
+
+  <!--
+    **
+    ** 
+    ** LIBRARY PACKAGES
+    **
+    **
+    **-->
+
   
   <target name="sspace-jar" depends="compile">
     <jar destfile="${lib.dir}/sspace-lib.jar" basedir="classes">
@@ -120,6 +146,14 @@
       </manifest>
     </jar>
   </target>
+
+  <!--
+    **
+    ** 
+    ** EXECUTABLE JAR ALGORITHMS
+    **
+    **
+    **-->
 
 
   <target name="lsa-jar" depends="compile">
@@ -259,6 +293,66 @@
     </jar>
   </target>
 
+  <!--
+    **
+    ** 
+    ** EXECUTABLE JAR TOOLS
+    **
+    **
+    **-->
+
+  <target name="sse-jar" depends="compile">
+    <jar destfile="${tools.dir}/sse.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Semantic Space Explorer"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.tools.SemanticSpaceExplorer"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="svd-jar" depends="compile">
+    <jar destfile="${tools.dir}/svd.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="SVD"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.tools.SvdTool"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="tc-jar" depends="compile">
+    <jar destfile="${tools.dir}/tc.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="SVD"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.tools.TokenCounter"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <!--
+    **
+    ** 
+    ** UNIT TEST XML
+    **
+    **
+    **-->
 
   <target name="test" depends="compile-tests">
     <delete dir="reports"/>

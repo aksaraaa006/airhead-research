@@ -22,6 +22,7 @@
 package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.util.DoubleEntry;
+import edu.ucla.sspace.util.IntegerEntry;
 
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.IntegerVector;
@@ -323,6 +324,7 @@ public class Similarity {
                 }
             }            
         }
+
         // Check whether both vectors are sparse.  If so, use only the non-zero
         // indices to speed up the computation by avoiding zero multiplications
         else if (a instanceof SparseVector && b instanceof SparseVector) {
@@ -349,6 +351,7 @@ public class Similarity {
                 }
             }
         }
+
         // Otherwise, just assume both are dense and compute the full amount
         else {
             for (int i = 0; i < b.length(); i++) {
@@ -367,6 +370,7 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
+    @SuppressWarnings("unchecked")
     public static double cosineSimilarity(IntegerVector a, IntegerVector b) {
         check(a,b);
 
@@ -374,9 +378,42 @@ public class Similarity {
         double aMagnitude = a.magnitude();
         double bMagnitude = b.magnitude();
 
+        // Check whether both vectors support fast iteration over their non-zero
+        // values.  If so, use only the non-zero indices to speed up the
+        // computation by avoiding zero multiplications
+        if (a instanceof Iterable && b instanceof Iterable) {
+            // Check whether we can easily determine how many non-zero values
+            // are in each vector.  This value is used to select the iteration
+            // order, which affects the number of get(value) calls.
+            boolean useA =
+                (a instanceof SparseVector && b instanceof SparseVector)
+                && ((SparseVector)a).getNonZeroIndices().length <
+                   ((SparseVector)b).getNonZeroIndices().length;
+            // Choose the smaller of the two to use in computing the dot
+            // product.  Because it would be more expensive to compute the
+            // intersection of the two sets, we assume that any potential
+            // misses would be less of a performance hit.
+            if (useA) {
+                for (IntegerEntry e : ((Iterable<IntegerEntry>)a)) {
+                    int index = e.index();                    
+                    int aValue = e.value();
+                    int bValue = b.get(index);
+                    dotProduct += aValue * bValue;
+                }
+            }
+            else {
+                for (IntegerEntry e : ((Iterable<IntegerEntry>)b)) {
+                    int index = e.index();                    
+                    int aValue = a.get(index);
+                    int bValue = e.value();
+                    dotProduct += aValue * bValue;
+                }
+            }            
+        }
+
         // Check whether both vectors are sparse.  If so, use only the non-zero
         // indices to speed up the computation by avoiding zero multiplications
-        if (a instanceof SparseVector && b instanceof SparseVector) {
+        else if (a instanceof SparseVector && b instanceof SparseVector) {
             SparseVector svA = (SparseVector)a;
             SparseVector svB = (SparseVector)b;
             int[] nzA = svA.getNonZeroIndices();
@@ -766,8 +803,8 @@ public class Similarity {
      * Computes the Jaccard index comparing the similarity both {@code
      * DoubleVector}s when viewed as sets of samples.
      *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
+     * @throws IllegalArgumentException when the length of the two vectors are
+     *                                  not the same.
      */
     public static double jaccardIndex(IntegerVector a, IntegerVector b) {
         check(a, b);
