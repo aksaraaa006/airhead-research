@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 David Jurgens
+ * Copyright 2010 David Jurgens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -23,12 +23,12 @@ package edu.ucla.sspace.util;
 
 
 /**
- * An object that represents an index that has an associated {@code double}
- * value.  This class is intended to support other classes that provide iterator
- * access over their indexable values without needing to incur auto-boxing
- * overhead.
+ * An object that represents an index that has an associated typed {@code
+ * Object} value.
+ *
+ * @param <T> the type of the object that this entry maps to
  */
-public interface DoubleEntry {
+public interface ObjectEntry<T> {
 
     /**
      * Returns the index position of this entry.
@@ -36,7 +36,7 @@ public interface DoubleEntry {
     int index();
 
     /**
-     * Returns the value at this entry's index.
+     * Returns the object at this entry's index.
      */
-    double value(); 
+    T value(); 
 }

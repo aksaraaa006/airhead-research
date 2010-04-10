@@ -38,8 +38,8 @@ import java.util.Iterator;
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector implements SparseDoubleVector, Serializable, 
-                                            Iterable<DoubleEntry> {
+public class CompactSparseVector
+    implements SparseDoubleVector, Serializable, Iterable<DoubleEntry> {
 
     private static final long serialVersionUID = 1L;
 

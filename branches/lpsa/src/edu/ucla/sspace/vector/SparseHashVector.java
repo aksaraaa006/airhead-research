@@ -22,6 +22,9 @@
 package edu.ucla.sspace.vector;
 
 import edu.ucla.sspace.util.SparseHashArray;
+import edu.ucla.sspace.util.ObjectEntry;
+
+import java.util.Iterator;
 
 
 /**
@@ -117,4 +120,5 @@ public class SparseHashVector<T extends Number>
         vector.set(index, (value.doubleValue() == 0d) ? null : value);
         magnitude = -1;
     }
+
 }

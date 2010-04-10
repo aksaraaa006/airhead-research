@@ -24,7 +24,8 @@ package edu.ucla.sspace.util;
 import java.io.Serializable;
 
 import java.util.Arrays;
-
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * A sparse {@code int} array.  This class trades increased space efficiency at
@@ -44,12 +45,22 @@ import java.util.Arrays;
  * savings.  However, as the cardinality of the array grows in relation to its
  * size, a dense {@code int[]} array will offer better performance in both space
  * and time.  This is especially true if the sparse array instance approaches a
- * cardinality to size ratio of {@code .5}.
+ * cardinality to size ratio of {@code .5}.<p>
+ *
+ * This class supports iterating over the non-zero indices and values in the
+ * array via the {@link #iterator()} method.  The indices will be returned in
+ * sorted order.  In cases where both the values and indices are needed,
+ * iteration will be faster, {@code O(k)}, than using {@link
+ * #getElementIndices()} and {@link #getPrimitive(int)} together, {@code O(k *
+ * log(k))}, where {@code k} is the number of non-zero indices.  The iterator
+ * returned by this class is <i>not</t> thread-safe and will not throw an
+ * exception if the array is concurrently modified during iteration.
  *
  * @see SparseArray
  */
 public class SparseIntArray 
-        implements SparseNumericArray<Integer>, Serializable {
+         implements SparseNumericArray<Integer>, Serializable,
+                    Iterable<IntegerEntry> {
 
     private static final long serialVersionUID = 1L;
 
@@ -265,6 +276,13 @@ public class SparseIntArray
     }
 
     /**
+     * Returns an iterator over the non-zero values in this array.
+     */
+    public Iterator<IntegerEntry> iterator() {
+        return new SparseIntArrayIterator();
+    }    
+
+    /**
      * Returns the maximum length of this array.
      */
     public int length() {
@@ -372,5 +390,73 @@ public class SparseIntArray
         }
 
         return array;
+    }
+
+    /**
+     * A private iterator over the non-zero values of the array.  Note that this
+     * iterator is <i>not</i> thread safe.
+     */
+    private class SparseIntArrayIterator implements Iterator<IntegerEntry> {
+        
+        int curIndex;
+
+        IntegerEntryImpl e;
+
+        public SparseIntArrayIterator() {
+            curIndex = 0;
+            e = new IntegerEntryImpl(-1, -1); // dummy values
+        }
+
+        public boolean hasNext() {
+            return SparseIntArray.this.indices.length > curIndex;
+        }
+
+        public IntegerEntry next() {
+            if (SparseIntArray.this.indices.length <= curIndex)
+                throw new NoSuchElementException();
+            // Modify the state of the entry rather than create a new one to cut
+            // down on object allocation for faster iterating
+            e.index = indices[curIndex];
+            e.val = values[curIndex];
+            curIndex++;
+            return e;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * A mutable {@code IntegerEntry} implementation.
+         */
+        private class IntegerEntryImpl implements IntegerEntry {
+
+            public int index;
+
+            public int val;
+
+            public IntegerEntryImpl(int index, int val) {
+                this.index = index;
+                this.val = val;
+            }
+
+            /**
+             * {@inheritDoc}
+             */
+            public int index() { 
+                return index;
+            }
+
+            /**
+             * {@inheritDoc}
+             */
+            public int value() {
+                return val;
+            }
+
+            public String toString() {
+                return "[" + index + "->" + val + "]";
+            }
+        }
     }
 }
