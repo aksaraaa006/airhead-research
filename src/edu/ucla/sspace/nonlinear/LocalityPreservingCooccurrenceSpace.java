@@ -78,13 +78,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see LocalityPreservingSemanticAnalysis
  * @see WeightingFunction
  */
-public class NonlinearWordSpace implements SemanticSpace {
+public class LocalityPreservingCooccurrenceSpace implements SemanticSpace {
 
     /**
      * The prefix for naming public properties.
      */
     private static final String PROPERTY_PREFIX = 
-        "edu.ucla.sspace.lpsa.NonlinearWordSpace";
+        "edu.ucla.sspace.lpsa.LocalityPreservingCooccurrenceSpace";
     
     /**
      * The property to specify the minimum entropy theshold a word should have
@@ -112,19 +112,19 @@ public class NonlinearWordSpace implements SemanticSpace {
      * The property to set the number of dimension to which the space should be
      * reduced using the SVD
      */
-    public static final String NLWS_DIMENSIONS_PROPERTY =
+    public static final String LPCS_DIMENSIONS_PROPERTY =
         PROPERTY_PREFIX + ".dimensions";
 
-    public static final String NLWS_AFFINITY_EDGE_PROPERTY =
+    public static final String LPCS_AFFINITY_EDGE_PROPERTY =
         PROPERTY_PREFIX + ".affinityEdgeType";
 
-    public static final String NLWS_AFFINITY_EDGE_PARAM_PROPERTY =
+    public static final String LPCS_AFFINITY_EDGE_PARAM_PROPERTY =
         PROPERTY_PREFIX + ".affinityEdgeTypeParam";
 
-    public static final String NLWS_AFFINITY_EDGE_WEIGHTING_PROPERTY =
+    public static final String LPCS_AFFINITY_EDGE_WEIGHTING_PROPERTY =
         PROPERTY_PREFIX + ".affinityEdgeWeighting";
 
-    public static final String NLWS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY =
+    public static final String LPCS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY =
         PROPERTY_PREFIX + ".affinityEdgeWeightingParam";
     
     /**
@@ -142,7 +142,7 @@ public class NonlinearWordSpace implements SemanticSpace {
      * Logger for HAL
      */
     private static final Logger LOGGER = 
-        Logger.getLogger(NonlinearWordSpace.class.getName());
+        Logger.getLogger(LocalityPreservingCooccurrenceSpace.class.getName());
 
     /**
      * Map that pairs the word with it's position in the matrix
@@ -182,7 +182,7 @@ public class NonlinearWordSpace implements SemanticSpace {
     /**
      * Constructs a new instance using the system properties for configuration.
      */
-    public NonlinearWordSpace() {
+    public LocalityPreservingCooccurrenceSpace() {
         this(System.getProperties());
     }
     
@@ -190,7 +190,7 @@ public class NonlinearWordSpace implements SemanticSpace {
      * Constructs a new instance using the provided properties for
      * configuration.
      */
-    public NonlinearWordSpace(Properties properties) {
+    public LocalityPreservingCooccurrenceSpace(Properties properties) {
         cooccurrenceMatrix = new GrowingSparseMatrix();
         atomicMatrix = Matrices.synchronizedMatrix(cooccurrenceMatrix);
         reduced = null;
@@ -393,53 +393,53 @@ public class NonlinearWordSpace implements SemanticSpace {
         
         // Then load any of the user-specified properties
         String dimensionsProp = 
-            properties.getProperty(NLWS_DIMENSIONS_PROPERTY);
+            properties.getProperty(LPCS_DIMENSIONS_PROPERTY);
         if (dimensionsProp != null) {
             try {
                 dimensions = Integer.parseInt(dimensionsProp);
             } catch (NumberFormatException nfe) {
                 throw new IllegalArgumentException(
-                    NLWS_DIMENSIONS_PROPERTY + " is not an integer: " +
+                    LPCS_DIMENSIONS_PROPERTY + " is not an integer: " +
                     dimensionsProp);
             }
         }
         
         String edgeTypeProp = 
-            properties.getProperty(NLWS_AFFINITY_EDGE_PROPERTY);
+            properties.getProperty(LPCS_AFFINITY_EDGE_PROPERTY);
         if (edgeTypeProp != null) 
             edgeType = EdgeType.valueOf(edgeTypeProp.toUpperCase());
         String edgeTypeParamProp = 
-            properties.getProperty(NLWS_AFFINITY_EDGE_PARAM_PROPERTY);
+            properties.getProperty(LPCS_AFFINITY_EDGE_PARAM_PROPERTY);
         if (edgeTypeParamProp != null) {
             try {
                 edgeTypeParam = Double.parseDouble(edgeTypeParamProp);
             } catch (NumberFormatException nfe) {
                 throw new IllegalArgumentException(
-                    NLWS_AFFINITY_EDGE_PARAM_PROPERTY + 
+                    LPCS_AFFINITY_EDGE_PARAM_PROPERTY + 
                     " is not an double: " + edgeTypeParamProp);
             }
         }
         
         String edgeWeightingProp = 
-            properties.getProperty(NLWS_AFFINITY_EDGE_WEIGHTING_PROPERTY);
+            properties.getProperty(LPCS_AFFINITY_EDGE_WEIGHTING_PROPERTY);
         if (edgeWeightingProp != null) 
             weighting = EdgeWeighting.valueOf(
                 edgeWeightingProp.toUpperCase());
         String edgeWeightingParamProp = properties.getProperty(
-            NLWS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY);
+            LPCS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY);
         if (edgeWeightingParamProp != null) {
             try {
                 edgeWeightParam = Double.parseDouble(edgeWeightingParamProp);
             } catch (NumberFormatException nfe) {
                 throw new IllegalArgumentException(
-                    NLWS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY + 
+                    LPCS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY + 
                     " is not an double: " + edgeWeightingParamProp);
             }
         }
         
         try {
             LOGGER.info("reducing to " + dimensions + " dimensions");
-            File tiMap = new File("nlws-term-index." + Math.random() + ".map");
+            File tiMap = new File("lpcs-term-index." + Math.random() + ".map");
             PrintWriter pw = new PrintWriter(tiMap);
             for (Map.Entry<String,Integer> e : termToIndex.entrySet())
                 pw.println(e.getKey() + "\t" + e.getValue());

@@ -69,8 +69,15 @@ import java.util.logging.Logger;
 
 
 /**
- * An implementation of Locality Preserving Semantic Analysis (LPSA).  This
- * implementation is based on the following paper.  <ul>
+ * An implementation of Locality Preserving Semantic Analysis (LPSA).  LPSA is a
+ * non-linear reduction of the <a
+ * href="http://en.wikipedia.org/wiki/Vector_space_model">Vector Space Model</a>
+ * (VSM) through use of <a
+ * href="http://people.cs.uchicago.edu/~xiaofei/LPP.html">Locality Preserving
+ * Projections</a> (LPP).  In this sense, LPSA is related to {@link
+ * edu.ucla.sspace.lsa.LatentSemanticAnalysis LSA}, but uses a different
+ * reduction of the VSM for the final word representations.  This implementation
+ * is based on the following paper.  <ul>
  *
  *   <li style="font-family:Garamond, Georgia, serif"> <i>forthcoming</i></li>
  *
@@ -79,7 +86,7 @@ import java.util.logging.Logger;
  * <p>
  *
  * This class offers configurable preprocessing and dimensionality reduction.
- * through three parameters.
+ * through two parameters.
  *
  * <dl style="margin-left: 1em">
  *
@@ -99,6 +106,47 @@ import java.util.logging.Logger;
  *
  * <dd style="padding-top: .5em">The number of dimensions to use for the
  *       semantic space.  This value is used as input to the SVD.<p>
+ *
+ * </dl> <p>
+ *
+ * Furthermore, this class offer four configurable parameters for impacting how
+ * LPP is applied to the VSM.
+ *
+ * <dl style="margin-left: 1em">
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #LPSA_AFFINITY_EDGE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link EdgeType.NEAREST_NEIGHBORS}.
+ *
+ * <dd style="padding-top: .5em">This property sets the how the affinity matrix
+ *       is constructed from the initial vector space.  The default behavior is
+ *       to use the 20 nearest neighbors.  See {@link EdgeType} for details.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value LPSA_AFFINITY_EDGE_PARAM_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code 20}
+ *
+ * <dd style="padding-top: .5em">The property sets an optional parameter to the
+ *      {@link EdgeType} selection.  The interpretation of this parameter is
+ *      specific to the type of edge used.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value #LPSA_AFFINITY_EDGE_WEIGHTING_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@link EdgeWeighting.COSINE_SIMILARITY}.
+ *
+ * <dd style="padding-top: .5em">This property sets the type of weighting to use
+ *      for words that are connected in the affinity matrix.  The default
+ *      behavior is to use the cosine similarity of the words in the original
+ *      VSM.  See {@link EdgeWeighting} for other options.<p>
+ *
+ * <dt> <i>Property:</i> <code><b>{@value LPSA_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code 0}
+ *
+ * <dd style="padding-top: .5em">This property sets an optional parameters to
+ *      the edge weighting mechanism.  In the default cosine similarity edge
+ *      weighting, this parameter is unused.  See See {@link EdgeWeighting} for
+ *      details on other options' usage of this parameter.<p>
  *
  * </dl> <p>
  *
