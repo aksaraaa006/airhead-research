@@ -951,7 +951,7 @@ public class TrieMap<V> extends AbstractMap<String,V>
     private class KeyView extends AbstractSet<String> {
 	
 	public void clear() {
-	    clear();
+	    TrieMap.this.clear();
 	}
 
 	public boolean contains(Object o) {
@@ -977,7 +977,7 @@ public class TrieMap<V> extends AbstractMap<String,V>
     private class ValueView extends AbstractCollection<V> {
 	
 	public void clear() {
-	    clear();
+	    TrieMap.this.clear();
 	}
 
 	public boolean contains(Object o) {
@@ -999,7 +999,7 @@ public class TrieMap<V> extends AbstractMap<String,V>
     private class EntryView extends AbstractSet<Map.Entry<String,V>> {
 	
 	public void clear() {
-	    clear();
+	    TrieMap.this.clear();
 	}
 
 	public boolean contains(Object o) {

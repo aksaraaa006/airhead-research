@@ -120,6 +120,17 @@ public class AmortizedSparseVector implements SparseDoubleVector,
         return get(index);
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
+    public double magnitude() {
+        double m = 0;
+        for (IndexValue v : values) 
+            m += v.value * v.value;
+        return Math.sqrt(m);
+    }
+    
     /**
      * {@inheritDoc}
      *

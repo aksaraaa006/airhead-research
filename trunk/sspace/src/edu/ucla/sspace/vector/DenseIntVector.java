@@ -105,6 +105,16 @@ public class DenseIntVector implements IntegerVector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        double m = 0;
+        for (double i : vector)
+            m += i * i;
+        return Math.sqrt(m);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(int index, int value) {
         vector[index] = value;
     }

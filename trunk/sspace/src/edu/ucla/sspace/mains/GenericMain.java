@@ -242,10 +242,10 @@ public abstract class GenericMain {
         options.addOption('d', "docFile", 
                           "a file where each line is a document", true,
                           "FILE[,FILE...]", "Required (at least one of)");
-        options.addOption('X', "docLimit",
-                          "The maximum number of documents from the corpus " + 
-                          "to use (default: infinit)",
-                          true, "INT", "Program Options");
+         options.addOption('X', "docLimit",
+                           "The maximum number of documents from the corpus " + 
+                           "to use (default: infinit)",
+                           true, "INT", "Program Options");
 
         // Add run time options.
         options.addOption('o', "outputFormat", "the .sspace format to use",
@@ -499,7 +499,7 @@ public abstract class GenericMain {
                     docNumber, ((endTime - startTime) / 1000d));
         }
 
-        verbose("processed %d document in %.3f total seconds)",
+        verbose("Processed all %d documents in %.3f total seconds",
                 count,
                 ((System.currentTimeMillis() - processStart) / 1000d));            
     }
@@ -522,7 +522,6 @@ public abstract class GenericMain {
         Collection<Thread> threads = new LinkedList<Thread>();
 
         final AtomicInteger count = new AtomicInteger(0);
-
         
         for (int i = 0; i < numThreads; ++i) {
             Thread t = new Thread() {
@@ -548,7 +547,7 @@ public abstract class GenericMain {
             threads.add(t);
         }
 
-        long threadStart = System.currentTimeMillis();
+        long processStart = System.currentTimeMillis();
         
         // start all the threads processing
         for (Thread t : threads)
@@ -560,9 +559,9 @@ public abstract class GenericMain {
         for (Thread t : threads)
             t.join();
 
-        verbose("parsed %d document in %.3f total seconds)",
+        verbose("Processed all %d documents in %.3f total seconds",
                 count.get(),
-                ((System.currentTimeMillis() - threadStart) / 1000d));
+                ((System.currentTimeMillis() - processStart) / 1000d));            
     }
 
     /**

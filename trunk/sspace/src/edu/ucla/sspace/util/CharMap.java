@@ -336,12 +336,8 @@ public class CharMap<V> extends AbstractMap<Character,V> {
 
 	private int next;
 
-	boolean lastRemoved;
-
 	public CharMapIterator() {
-
 	    next = 0;
-	    lastRemoved = false;
 	}
 
 	public boolean hasNext() {

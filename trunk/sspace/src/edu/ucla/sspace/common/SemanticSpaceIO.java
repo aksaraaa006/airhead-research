@@ -105,8 +105,10 @@ public class SemanticSpaceIO {
             new BufferedInputStream(new FileInputStream(sspaceFile)));
         // read the expected header
         char header = dis.readChar();
-        if (header != 's')
+        if (header != 's') {
+            dis.close();
             return null;
+        }
         char encodedFormatCode = dis.readChar();
         int formatCode = encodedFormatCode - '0';
         dis.close();

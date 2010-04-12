@@ -90,6 +90,16 @@ class DoubleArrayAsVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        double m = 0;
+        for (double d : array)
+            m += d * d;
+        return Math.sqrt(m);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public double[] toArray() {
         return Arrays.copyOf(array, array.length);
     }

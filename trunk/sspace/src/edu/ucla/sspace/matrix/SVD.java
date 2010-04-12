@@ -123,6 +123,7 @@ public class SVD {
      */
     public enum Algorithm {
 	SVDLIBC,
+	SVDLIBJ,
 	MATLAB,
 	OCTAVE,
         JAMA,
@@ -145,6 +146,12 @@ public class SVD {
     static Algorithm getFastestAvailableAlgorithm() {
         if (isSVDLIBCavailable())
             return Algorithm.SVDLIBC;
+        else 
+            return Algorithm.SVDLIBJ;
+        // NOTE: commented out because SVDLIBJ is now included in the
+        // distribution and is likely faster than all of these implementations,
+        // though this should probably be tested to confirm.  -jurgens
+        /*
         else if (isMatlabAvailable())
             return Algorithm.MATLAB;
         else if (isOctaveAvailable())
@@ -155,6 +162,7 @@ public class SVD {
             return Algorithm.COLT;
         else
             return null;
+        */
     }
 
     /**
@@ -193,24 +201,31 @@ public class SVD {
     public static Matrix[] svd(Matrix m, Algorithm algorithm, int dimensions) {
         // Determine which algorithm is the fastest in order to decide which
         // format the matrix file should be written
-        Algorithm fastest = getFastestAvailableAlgorithm();
-        if (fastest == null)
+        if (algorithm.equals(Algorithm.ANY))
+            algorithm = getFastestAvailableAlgorithm();
+        if (algorithm == null)
             throw new UnsupportedOperationException(
                 "No SVD algorithm is available on this system");
         Format fmt = null;
-        switch (fastest) {
-        case SVDLIBC:
-            fmt = Format.SVDLIBC_SPARSE_BINARY;
-            break;
+        switch (algorithm) {
         // In the case of COLT or JAMA, avoid writing the matrix to disk
         // altogether, and just pass it in directly.  This avoids the I/O
         // overhead, althought both methods require that the matrix be converted
         // into arrays first.
+        case SVDLIBJ:
+            return SvdlibjDriver.svd(m, dimensions);
         case COLT:
             return coltSVD(m.toDenseArray(), !(m instanceof SparseMatrix), 
                            dimensions);
         case JAMA:
             return jamaSVD(m.toDenseArray(), dimensions);
+            
+        // Otherwise, covert to binary SVDLIBC
+        case SVDLIBC:
+            fmt = Format.SVDLIBC_SPARSE_BINARY;
+            break;
+
+        // Or to Matlab sparse to cover Matlab and Octave
         default:
             fmt = Format.MATLAB_SPARSE;
         }
@@ -218,7 +233,7 @@ public class SVD {
             File tmpFile = File.createTempFile("matrix-svd", ".dat");
             tmpFile.deleteOnExit();
             MatrixIO.writeMatrix(m, tmpFile, fmt);
-            return svd(tmpFile, fastest, fmt, dimensions);	
+            return svd(tmpFile, algorithm, fmt, dimensions);	
         }
         catch (IOException ioe) {
   	    SVD_LOGGER.log(Level.SEVERE, "convertFormat", ioe);
@@ -323,6 +338,9 @@ public class SVD {
                     break;
                 }
 		return svdlibc(converted, dimensions, format);
+            }
+            case SVDLIBJ: {
+                return SvdlibjDriver.svd(matrix, format, dimensions);
             }
 	    case JAMA: {
                 double[][] inputMatrix = 

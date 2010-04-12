@@ -49,8 +49,7 @@ public class Statistics {
         }
         
         double entropy = 0;
-
-        int symbols = a.length;
+        double symbols = a.length;
         for (Integer freq : symbolFreq.values()) {
             double symbolProbability = freq / symbols;
             entropy -= symbolProbability * log2(symbolProbability);
@@ -70,8 +69,7 @@ public class Statistics {
         }
         
         double entropy = 0;
-
-        int symbols = a.length;
+        double symbols = a.length;
         for (Integer freq : symbolFreq.values()) {
             double symbolProbability = freq / symbols;
             entropy -= symbolProbability * log2(symbolProbability);
