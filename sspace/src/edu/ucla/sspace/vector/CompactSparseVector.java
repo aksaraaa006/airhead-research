@@ -21,20 +21,25 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.DoubleEntry;
+import edu.ucla.sspace.util.SparseDoubleArray;
+
 import java.io.Serializable;
 
-import edu.ucla.sspace.util.SparseDoubleArray;
+import java.util.Iterator;
+
 
 /**
  * A {@code Vector} instance that keeps only the non-zero values in memory,
  * thereby saving space at the expense of time.
  *
  * <p> See {@link SparseDoubleArray} for details on how the sparse
- * representation is implemented
+ * representation is implemented.
  *
  * @author Keith Stevens
  */
-public class CompactSparseVector implements SparseDoubleVector, Serializable {
+public class CompactSparseVector
+    implements SparseDoubleVector, Serializable, Iterable<DoubleEntry> {
 
     private static final long serialVersionUID = 1L;
 
@@ -45,11 +50,18 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
     private SparseDoubleArray vector;
 
     /**
+     * The magnitude of the vector or -1 if the value is currently invalid needs
+     * to be recomputed
+     */
+    private double magnitude;
+
+    /**
      * Creates a {@code CompactSparseVector} that grows to the maximum size set
      * by {@link Double#MAX_VALUE}.
      */
     public CompactSparseVector() {
         vector = new SparseDoubleArray();
+        magnitude = 0;
     }
 
     /** 
@@ -60,6 +72,7 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      */
     public CompactSparseVector(int length) {
         vector = new SparseDoubleArray(length);
+        magnitude = 0;
     }
 
     /**
@@ -70,6 +83,7 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      */
     public CompactSparseVector(double[] array) {
         vector = new SparseDoubleArray(array);
+        magnitude = -1;
     }
 
     /**
@@ -85,6 +99,7 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
         for (int i = 0; i < nz.length; ++i)
             values[i] = v.get(nz[i]);
         vector = new SparseDoubleArray(nz, values, length);
+        magnitude = -1;
     }
 
     /**
@@ -103,13 +118,23 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
     public CompactSparseVector(int[] nonZeroIndices, double[] values, 
                                int length) {
         vector = new SparseDoubleArray(nonZeroIndices, values, length);
+        magnitude = -1;
     }
 
     /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
+        magnitude = -1;
         return vector.addPrimitive(index, delta);
+    }
+
+    /**
+     * Returns an iterator over all the non-zero indices and values in this
+     * vector.
+     */
+    public Iterator<DoubleEntry> iterator() {
+        return vector.iterator();
     }
 
     /**
@@ -117,6 +142,7 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      */
     public void set(double[] values) {
         vector = new SparseDoubleArray(values);
+        magnitude = -1;
     }
 
     /**
@@ -124,6 +150,7 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      */
     public void set(int index, double value) {
         vector.setPrimitive(index, value);
+        magnitude = -1;
     }
 
     /**
@@ -138,6 +165,20 @@ public class CompactSparseVector implements SparseDoubleVector, Serializable {
      */
     public int[] getNonZeroIndices() {
         return vector.getElementIndices();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            double m = 0;
+            for (DoubleEntry e : this)
+                m += e.value() * e.value();
+            magnitude = Math.sqrt(m);
+        }
+        return magnitude;
     }
 
     /**

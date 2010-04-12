@@ -281,6 +281,105 @@ public class VectorMath {
         }
         return vector1;
     }
+
+    /**
+     * Computes the dot product, {@code x}<sup>T</sup>{@code y} of the two
+     * vectors.
+     *
+     * @param x the left vector that will be transposed
+     * @param y the right vector
+     *
+     * @return the dot product of the two vectors.
+     *
+     * @throws IllegalArgumentException if the two vectors are not of equal
+     *         length
+     */
+    public static double dotProduct(Vector x, Vector y) {
+        // If both of the vectors are integer vectors, cast and special case
+        if (x instanceof IntegerVector && y instanceof IntegerVector)
+            return dotProduct((IntegerVector)x, (IntegerVector)y);
+        // Otherwise, just make both vectors double vectors and compute the dot
+        // product regardless of their internal data type.
+        else 
+            return dotProduct(Vectors.asDouble(x), Vectors.asDouble(y));
+    }
+    
+    /**
+     * Computes the dot product, {@code x}<sup>T</sup>{@code y} of the two
+     * vectors.
+     *
+     * @param x the left vector that will be transposed
+     * @param y the right vector
+     *
+     * @return the dot product of the two vectors.
+     *
+     * @throws IllegalArgumentException if the two vectors are not of equal
+     *         length
+     */
+    public static double dotProduct(DoubleVector x, DoubleVector y) {
+        if (x.length() != y.length())
+            throw new IllegalArgumentException(
+                "cannot compute dot product of vectors with different lengths");
+
+        double dotProduct = 0;
+        // Special case if either of the vectors is a sparse vectors to save on
+        // computation costs.
+        if (x instanceof SparseDoubleVector) {
+            SparseDoubleVector sdv = (SparseDoubleVector)x;
+            for (int i  : sdv.getNonZeroIndices()) 
+                dotProduct += x.get(i) * y.get(i);
+        }
+        else if (y instanceof SparseDoubleVector) {
+            SparseDoubleVector sdv = (SparseDoubleVector)y;
+            for (int i  : sdv.getNonZeroIndices()) 
+                dotProduct += x.get(i) * y.get(i);
+        }
+        else {
+            int length = x.length();
+            for (int i = 0; i < length; ++i)
+                dotProduct += x.get(i) * y.get(i);
+        }
+        return dotProduct;
+    }
+
+    /**
+     * Computes the dot product, {@code x}<sup>T</sup>{@code y} of the two
+     * vectors.
+     *
+     * @param x the left vector that will be transposed
+     * @param y the right vector
+     *
+     * @return the dot product of the two vectors.
+     *
+     * @throws IllegalArgumentException if the two vectors are not of equal
+     *         length
+     */
+    public static int dotProduct(IntegerVector x, IntegerVector y) {
+        if (x.length() != y.length())
+            throw new IllegalArgumentException(
+                "cannot compute dot product of vectors with different lengths");
+        
+        int dotProduct = 0;
+        // Special case if either of the vectors is a sparse vectors to save on
+        // computation costs.
+        if (x instanceof SparseIntegerVector) {
+            SparseIntegerVector sdv = (SparseIntegerVector)x;
+            for (int i  : sdv.getNonZeroIndices()) 
+                dotProduct += x.get(i) * y.get(i);
+        }
+        else if (y instanceof SparseIntegerVector) {
+            SparseIntegerVector sdv = (SparseIntegerVector)y;
+            for (int i  : sdv.getNonZeroIndices()) 
+                dotProduct += x.get(i) * y.get(i);
+        }
+        else {
+            int length = x.length();
+            for (int i = 0; i < length; ++i)
+                dotProduct += x.get(i) * y.get(i);
+        }
+        return dotProduct;
+    }
+
     /**
      * Mulitplies the values in {@code left} and {@code right} and store the
      * product in {@code left}.  This is an element by element multiplication.

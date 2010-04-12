@@ -21,7 +21,13 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.DoubleEntry;
+import edu.ucla.sspace.util.ObjectEntry;
+
 import java.io.Serializable;
+
+import java.util.Iterator;
+
 
 /**
  * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
@@ -34,7 +40,7 @@ import java.io.Serializable;
  * @author David Jurgens
  */
 public class SparseHashDoubleVector extends SparseHashVector<Double>
-        implements SparseDoubleVector {
+        implements SparseDoubleVector, Iterable<DoubleEntry>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -86,6 +92,15 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
     }
 
     /**
+     * Returns an iterator over the non-{@code 0} values in this vector.  This
+     * method makes no guarantee about the order in which the indices are
+     * returned.
+     */
+    public Iterator<DoubleEntry> iterator() {
+        return new DoubleIterator();
+    }
+
+    /**
      * {@inheritDoc}
      */
     public void set(int index, double value) {        
@@ -109,4 +124,33 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
         return array;
     }
 
+    /**
+     * An iterator over the {@code double} values in the vector, wrapping the
+     * backing {@code SparseHashArray}'s own iterator.
+     */
+    class DoubleIterator implements Iterator<DoubleEntry> {
+
+        Iterator<ObjectEntry<Number>> it;
+
+        public DoubleIterator() {
+            it = vector.iterator();
+        }
+
+        public boolean hasNext() {
+            return it.hasNext();
+        }
+
+        public DoubleEntry next() {
+            final ObjectEntry<Number> e = it.next();
+            return new DoubleEntry() {
+                public int index() { return e.index(); }
+                public double value() { return e.value().doubleValue(); }
+            };
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException(
+                "Cannot remove from vector");
+        }
+    }
 }

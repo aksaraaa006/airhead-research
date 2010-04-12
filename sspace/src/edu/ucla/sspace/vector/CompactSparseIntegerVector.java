@@ -21,9 +21,12 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.IntegerEntry;
 import edu.ucla.sspace.util.SparseIntArray;
 
 import java.io.Serializable;
+
+import java.util.Iterator;
 
 /**
  * A sparse {@code IntegerVector} class whose data is back by a compact sparse
@@ -33,7 +36,7 @@ import java.io.Serializable;
  * @author David Jurgens
  */
 public class CompactSparseIntegerVector
-    implements SparseIntegerVector, Serializable {
+        implements SparseIntegerVector, Serializable, Iterable<IntegerEntry> {
 
     private static final long serialVersionUID = 1L;
 
@@ -43,12 +46,19 @@ public class CompactSparseIntegerVector
     private final SparseIntArray intArray;
 
     /**
+     * The magnitude of the vector or -1 if the value is currently invalid needs
+     * to be recomputed
+     */
+    private double magnitude;
+
+    /**
      * Creates a new vector of the specified length
      *
      * @param length the length of this vector
      */
     public CompactSparseIntegerVector(int length) {
         intArray = new SparseIntArray(length);
+        magnitude = 0;
     }
 
     /**
@@ -69,6 +79,7 @@ public class CompactSparseIntegerVector
             for (int i = 0; i < v.length(); ++i)
                 intArray.set(i, v.get(i));
         }
+        magnitude = -1;
     }
 
     /**
@@ -80,12 +91,14 @@ public class CompactSparseIntegerVector
      */
     public CompactSparseIntegerVector(int[] values) {
         intArray = new SparseIntArray(values);
+        magnitude = -1;
     }
 
     /**
      * {@inheritDoc}
      */
     public int add(int index, int delta) {
+        magnitude = -1;
         return intArray.addPrimitive(index, delta);
     }
 
@@ -111,6 +124,14 @@ public class CompactSparseIntegerVector
     }
 
     /**
+     * Returns an iterator over all the non-zero indices and values in this
+     * vector.
+     */
+    public Iterator<IntegerEntry> iterator() {
+        return intArray.iterator();
+    }
+
+    /**
      * {@inheritDoc}
      */
     public int length() {
@@ -120,8 +141,25 @@ public class CompactSparseIntegerVector
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            double m = 0;
+            for (int nz : getNonZeroIndices()) {
+                int i = intArray.get(nz);
+                m += i * i;
+            }
+            magnitude = Math.sqrt(m);
+        }
+        return magnitude;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public void set(int index, int value) {
         intArray.set(index,  value);
+        magnitude = -1;
     }
 
     /**
@@ -129,6 +167,7 @@ public class CompactSparseIntegerVector
      */
     public void set(int index, Number value) {
         set(index, value.intValue());
+        magnitude = -1;
     }
 
     /**

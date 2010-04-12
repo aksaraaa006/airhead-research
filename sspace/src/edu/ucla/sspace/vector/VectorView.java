@@ -64,6 +64,12 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
     protected final int vectorOffset;
 
     /**
+     * The magnitude of the vector or -1 if the value is currently invalid needs
+     * to be recomputed
+     */
+    protected double magnitude;
+
+    /**
      * Creates a new mutable view of the {@code Vector}
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -132,6 +138,7 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
         if (offset + length > v.length())
             throw new IllegalArgumentException(
                 "Cannot create view larger than vector");
+        magnitude = -1;
     }
 
     /**
@@ -142,6 +149,7 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
             throw new UnsupportedOperationException(
                 "Cannot modify an immutable vector");           
         vector.set(getIndex(index), value);
+        magnitude = -1;
     }
 
     /**
@@ -166,6 +174,23 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
      */
     public int length() {
         return vectorLength;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            magnitude = 0;
+            for (int i = vectorOffset; i < vectorOffset + vectorLength; ++i) {
+                Number j = vector.getValue(i);
+                magnitude += j.doubleValue() * j.doubleValue();
+            }
+            magnitude = Math.sqrt(magnitude);
+        }
+        return magnitude;
     }
 
     public String toString() {

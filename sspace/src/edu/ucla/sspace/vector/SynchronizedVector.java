@@ -77,6 +77,13 @@ class SynchronizedVector implements DoubleVector, Serializable {
     /**
      * {@inheritDoc}
      */
+    public double magnitude() {
+        return vector.magnitude();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public synchronized void set(int index, double value) {
         vector.set(index, value);
     }

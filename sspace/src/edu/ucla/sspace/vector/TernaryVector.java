@@ -148,6 +148,13 @@ public class TernaryVector
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public double magnitude() {
+        return Math.sqrt(positiveDimensions.length + negativeDimensions.length);
+    }
+
+    /**
      * Throws {@link UnsupportedOperationException} if called.
      */
     public void set(int index, int value) {

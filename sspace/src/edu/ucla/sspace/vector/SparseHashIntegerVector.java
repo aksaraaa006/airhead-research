@@ -21,6 +21,13 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.IntegerEntry;
+import edu.ucla.sspace.util.ObjectEntry;
+
+import java.io.Serializable;
+
+import java.util.Iterator;
+
 
 /**
  * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
@@ -33,7 +40,7 @@ package edu.ucla.sspace.vector;
  * @author David Jurgens
  */
 public class SparseHashIntegerVector extends SparseHashVector<Integer>
-        implements SparseIntegerVector {
+         implements SparseIntegerVector, Iterable<IntegerEntry>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -85,6 +92,15 @@ public class SparseHashIntegerVector extends SparseHashVector<Integer>
     }
 
     /**
+     * Returns an iterator over the non-{@code 0} values in this vector.  This
+     * method makes no guarantee about the order in which the indices are
+     * returned.
+     */
+    public Iterator<IntegerEntry> iterator() {
+        return new IntegerIterator();
+    }
+
+    /**
      * {@inheritDoc}
      */
     public void set(int index, int value) {
@@ -106,5 +122,35 @@ public class SparseHashIntegerVector extends SparseHashVector<Integer>
         for (int i : vector.getElementIndices())
             array[i] = vector.get(i).intValue();
         return array;
+    }
+
+    /**
+     * An iterator over the {@code int} values in the vector, wrapping the
+     * backing {@code SparseHashArray}'s own iterator.
+     */
+    class IntegerIterator implements Iterator<IntegerEntry> {
+
+        Iterator<ObjectEntry<Number>> it;
+
+        public IntegerIterator() {
+            it = vector.iterator();
+        }
+
+        public boolean hasNext() {
+            return it.hasNext();
+        }
+
+        public IntegerEntry next() {
+            final ObjectEntry<Number> e = it.next();
+            return new IntegerEntry() {
+                public int index() { return e.index(); }
+                public int value() { return e.value().intValue(); }
+            };
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException(
+                "Cannot remove from vector");
+        }
     }
 }

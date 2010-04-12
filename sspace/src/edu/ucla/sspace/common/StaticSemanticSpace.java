@@ -186,7 +186,7 @@ public class StaticSemanticSpace implements SemanticSpace {
                 m = loadSparseBinary(is);
                 break;
         }
-        
+                    
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine("loaded " + format + " .sspace file in " +
                 (System.currentTimeMillis() - start) + "ms");

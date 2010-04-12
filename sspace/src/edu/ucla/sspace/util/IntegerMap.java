@@ -380,12 +380,8 @@ public class IntegerMap<V> extends AbstractMap<Integer,V>
 
 	private int next;
 
-	boolean lastRemoved;
-
 	public IntMapIterator() {
-
 	    next = 0;
-	    lastRemoved = false;
 	}
 
 	public boolean hasNext() {
@@ -430,7 +426,7 @@ public class IntegerMap<V> extends AbstractMap<Integer,V>
 	private static final long serialVersionUID = 1L;
 
 	public void clear() {
-	    clear();
+	    IntegerMap.this.clear();
 	}
 
 	public boolean contains(Object o) {

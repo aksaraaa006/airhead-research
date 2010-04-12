@@ -321,12 +321,14 @@ public class HierarchicalAgglomerativeClustering {
         // cluster, as this value has already been computed
         double mostSimilar = -1;
         Integer paired = -1;
-        for (Integer otherId : curAssignment.keySet()) {
+        for (Map.Entry<Integer,Set<Integer>> otherIdAndCluster 
+                 : curAssignment.entrySet()) {
+            Integer otherId = otherIdAndCluster.getKey();
             if (otherId.equals(curCluster))
                 continue;
             double similarity = getSimilarity(
                 similarityMatrix, curAssignment.get(curCluster),
-                    curAssignment.get(otherId), linkage);
+                otherIdAndCluster.getValue(), linkage);
             if (similarity > mostSimilar) {
                 mostSimilar = similarity;
                 paired = otherId;

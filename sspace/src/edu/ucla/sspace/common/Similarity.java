@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.common;
 
+import edu.ucla.sspace.util.DoubleEntry;
+import edu.ucla.sspace.util.IntegerEntry;
+
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.IntegerVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -71,6 +74,9 @@ public class Similarity {
     private Similarity() { }
 
     /**
+     * @deprecated The {@link #getSimilarity(SimType,double[],double[])} method
+     * should be used instead.
+     *
      * Returns the {@link Method} for getting the similarity of two {@code
      * double[]} based on the specified similarity type.
      *
@@ -268,7 +274,7 @@ public class Similarity {
         double bMagnitudeSqRt = Math.sqrt(bMagnitude);
         return (aMagnitudeSqRt == 0 || bMagnitudeSqRt == 0)
             ? 0
-            : dotProduct / (aMagnitude * bMagnitude);
+            : dotProduct / (aMagnitudeSqRt * bMagnitudeSqRt);
     }
 
     /**
@@ -277,16 +283,51 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
+    @SuppressWarnings("unchecked")
     public static double cosineSimilarity(DoubleVector a, DoubleVector b) {
         check(a,b);
 
         double dotProduct = 0.0;
-        double aMagnitude = 0.0;
-        double bMagnitude = 0.0;
+        double aMagnitude = a.magnitude();
+        double bMagnitude = b.magnitude();
+
+        // Check whether both vectors support fast iteration over their non-zero
+        // values.  If so, use only the non-zero indices to speed up the
+        // computation by avoiding zero multiplications
+        if (a instanceof Iterable && b instanceof Iterable) {
+            // Check whether we can easily determine how many non-zero values
+            // are in each vector.  This value is used to select the iteration
+            // order, which affects the number of get(value) calls.
+            boolean useA =
+                (a instanceof SparseVector && b instanceof SparseVector)
+                && ((SparseVector)a).getNonZeroIndices().length <
+                   ((SparseVector)b).getNonZeroIndices().length;
+            
+            // Choose the smaller of the two to use in computing the dot
+            // product.  Because it would be more expensive to compute the
+            // intersection of the two sets, we assume that any potential
+            // misses would be less of a performance hit.
+            if (useA) {
+                for (DoubleEntry e : ((Iterable<DoubleEntry>)a)) {
+                    int index = e.index();                    
+                    double aValue = e.value();
+                    double bValue = b.get(index);
+                    dotProduct += aValue * bValue;
+                }
+            }
+            else {
+                for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
+                    int index = e.index();                    
+                    double aValue = a.get(index);
+                    double bValue = e.value();
+                    dotProduct += aValue * bValue;
+                }
+            }            
+        }
 
         // Check whether both vectors are sparse.  If so, use only the non-zero
         // indices to speed up the computation by avoiding zero multiplications
-        if (a instanceof SparseVector && b instanceof SparseVector) {
+        else if (a instanceof SparseVector && b instanceof SparseVector) {
             SparseVector svA = (SparseVector)a;
             SparseVector svB = (SparseVector)b;
             int[] nzA = svA.getNonZeroIndices();
@@ -296,46 +337,29 @@ public class Similarity {
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (nzA.length < nzB.length) {
-                // Compute A's maginitude and the dot product
                 for (int nz : nzA) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute B's magnitude
-                for (int nz : nzB) {
-                    double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;                                
                 }
             }
             else {
-                // Compute B's maginitude and the dot product
                 for (int nz : nzB) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute A's magnitude
-                for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    aMagnitude += aValue * aValue;                                
                 }
             }
         }
+
         // Otherwise, just assume both are dense and compute the full amount
         else {
             for (int i = 0; i < b.length(); i++) {
                 double aValue = a.get(i);
                 double bValue = b.get(i);
-                aMagnitude += aValue * aValue;
-                bMagnitude += bValue * bValue;
                 dotProduct += aValue * bValue;
             }
         }
-        aMagnitude = Math.sqrt(aMagnitude);
-        bMagnitude = Math.sqrt(bMagnitude);
         return (aMagnitude == 0 || bMagnitude == 0)
             ? 0 : dotProduct / (aMagnitude * bMagnitude);
     }
@@ -346,16 +370,50 @@ public class Similarity {
      * @throws IllegaleArgumentException when the length of the two vectors are
      *                                   not the same.
      */
+    @SuppressWarnings("unchecked")
     public static double cosineSimilarity(IntegerVector a, IntegerVector b) {
         check(a,b);
 
         double dotProduct = 0.0;
-        double aMagnitude = 0.0;
-        double bMagnitude = 0.0;
+        double aMagnitude = a.magnitude();
+        double bMagnitude = b.magnitude();
+
+        // Check whether both vectors support fast iteration over their non-zero
+        // values.  If so, use only the non-zero indices to speed up the
+        // computation by avoiding zero multiplications
+        if (a instanceof Iterable && b instanceof Iterable) {
+            // Check whether we can easily determine how many non-zero values
+            // are in each vector.  This value is used to select the iteration
+            // order, which affects the number of get(value) calls.
+            boolean useA =
+                (a instanceof SparseVector && b instanceof SparseVector)
+                && ((SparseVector)a).getNonZeroIndices().length <
+                   ((SparseVector)b).getNonZeroIndices().length;
+            // Choose the smaller of the two to use in computing the dot
+            // product.  Because it would be more expensive to compute the
+            // intersection of the two sets, we assume that any potential
+            // misses would be less of a performance hit.
+            if (useA) {
+                for (IntegerEntry e : ((Iterable<IntegerEntry>)a)) {
+                    int index = e.index();                    
+                    int aValue = e.value();
+                    int bValue = b.get(index);
+                    dotProduct += aValue * bValue;
+                }
+            }
+            else {
+                for (IntegerEntry e : ((Iterable<IntegerEntry>)b)) {
+                    int index = e.index();                    
+                    int aValue = a.get(index);
+                    int bValue = e.value();
+                    dotProduct += aValue * bValue;
+                }
+            }            
+        }
 
         // Check whether both vectors are sparse.  If so, use only the non-zero
         // indices to speed up the computation by avoiding zero multiplications
-        if (a instanceof SparseVector && b instanceof SparseVector) {
+        else if (a instanceof SparseVector && b instanceof SparseVector) {
             SparseVector svA = (SparseVector)a;
             SparseVector svB = (SparseVector)b;
             int[] nzA = svA.getNonZeroIndices();
@@ -365,31 +423,17 @@ public class Similarity {
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (nzA.length < nzB.length) {
-                // Compute A's maginitude and the dot product
                 for (int nz : nzA) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    aMagnitude += aValue * aValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute B's magnitude
-                for (int nz : nzB) {
-                    double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;                                
                 }
             }
             else {
-                // Compute B's maginitude and the dot product
                 for (int nz : nzB) {
                     double aValue = a.get(nz);
                     double bValue = b.get(nz);
-                    bMagnitude += bValue * bValue;
                     dotProduct += aValue * bValue;
-                }
-                // Then compute A's magnitude
-                for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    aMagnitude += aValue * aValue;                                
                 }
             }
         }
@@ -399,13 +443,9 @@ public class Similarity {
             for (int i = 0; i < b.length(); i++) {
                 double aValue = a.get(i);
                 double bValue = b.get(i);
-                aMagnitude += aValue * aValue;
-                bMagnitude += bValue * bValue;
                 dotProduct += aValue * bValue;
             }
         }
-        aMagnitude = Math.sqrt(aMagnitude);
-        bMagnitude = Math.sqrt(bMagnitude);
         return (aMagnitude == 0 || bMagnitude == 0)
             ? 0 : dotProduct / (aMagnitude * bMagnitude);
     }
@@ -417,7 +457,12 @@ public class Similarity {
      *                                   not the same.
      */
     public static double cosineSimilarity(Vector a, Vector b) {
-        return cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
+        return 
+//             (a instanceof IntegerVector 
+//              && b instanceof IntegerVector)
+//             ? cosineSimilarity((IntegerVector)a, (IntegerVector)b)
+//             :
+            cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
     }
 
     /**
@@ -449,6 +494,9 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+        if (xSqSum == 0 || ySqSum == 0)
+            return 0;
+
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
@@ -568,11 +616,7 @@ public class Similarity {
      *                                   not the same.
      */
     public static double euclideanDistance(double[] a, double[] b) {
-        check(a, b);
-
-        if (a == null || b == null || a.length != b.length)
-            throw new IllegalArgumentException("a: " + a + "; b: " + b);
-        
+        check(a, b);        
         double sum = 0;
         for (int i = 0; i < a.length; ++i)
             sum += Math.pow((a[i] - b[i]), 2);
@@ -755,8 +799,8 @@ public class Similarity {
      * Computes the Jaccard index comparing the similarity both {@code
      * DoubleVector}s when viewed as sets of samples.
      *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
+     * @throws IllegalArgumentException when the length of the two vectors are
+     *                                  not the same.
      */
     public static double jaccardIndex(IntegerVector a, IntegerVector b) {
         check(a, b);
@@ -1173,8 +1217,8 @@ public class Similarity {
      *                                   not the same.
      */
     public static double averageCommonFeatureRank(Vector a, Vector b) {
-        return averageCommonFeatureRank(Vectors.asDouble(a),
-                                        Vectors.asDouble(b));
+        return averageCommonFeatureRank(Vectors.asDouble(a).toArray(),
+                                        Vectors.asDouble(b).toArray());
     }
 
     /**
