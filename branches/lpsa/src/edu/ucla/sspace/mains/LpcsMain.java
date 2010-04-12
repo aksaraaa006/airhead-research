@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
-import edu.ucla.sspace.lpsa.NonlinearWordSpace;
+import edu.ucla.sspace.lpsa.LocalityPreservingCooccurrenceSpace;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -33,12 +33,12 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * An executable class for running {@link NonlinearWordSpace} (LPWS) from the
+ * An executable class for running {@link LocalityPreservingCooccurrenceSpace} (LPWS) from the
  * command line.
  *
  * <p>
  *
- * An invocation will produce one file as output {@code nlws.sspace}.  If {@code
+ * An invocation will produce one file as output {@code lpcs.sspace}.  If {@code
  * overwrite} was set to {@code true}, this file will be replaced for each new
  * semantic space.  Otherwise, a new output file of the format {@code
  * lpsa-semantic-space<number>.sspace} will be created, where {@code <number>}
@@ -50,14 +50,14 @@ import java.util.Properties;
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.
  *
- * @see NonlinearWordSpace
+ * @see LocalityPreservingCooccurrenceSpace
  * @see edu.ucla.sspace.matrix.Transform Transform
  *
  * @author David Jurgens
  */
-public class NlwsMain extends GenericMain {
+public class LpcsMain extends GenericMain {
 
-    private NlwsMain() { }
+    private LpcsMain() { }
 
     /**
      * Adds all of the options to the {@link ArgOptions}.
@@ -88,7 +88,7 @@ public class NlwsMain extends GenericMain {
     }
 
     public static void main(String[] args) {
-        NlwsMain lpsa = new NlwsMain();
+        LpcsMain lpsa = new LpcsMain();
         try {
             lpsa.run(args);
         }
@@ -98,12 +98,12 @@ public class NlwsMain extends GenericMain {
     }
     
     protected SemanticSpace getSpace() {
-        return new NonlinearWordSpace();
+        return new LocalityPreservingCooccurrenceSpace();
     }
 
     /**
      * Returns the {@likn SSpaceFormat.BINARY binary} format as the default
-     * format of a {@code NonlinearWordSpace} space.
+     * format of a {@code LocalityPreservingCooccurrenceSpace} space.
      */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.BINARY;
@@ -116,31 +116,31 @@ public class NlwsMain extends GenericMain {
 
          if (argOptions.hasOption("windowSize")) {
              props.setProperty(
-                     NonlinearWordSpace.WINDOW_SIZE_PROPERTY,
+                     LocalityPreservingCooccurrenceSpace.WINDOW_SIZE_PROPERTY,
                      argOptions.getStringOption("windowSize"));
          }
         if (argOptions.hasOption("dimensions")) {
-            props.setProperty(NonlinearWordSpace.NLWS_DIMENSIONS_PROPERTY,
+            props.setProperty(LocalityPreservingCooccurrenceSpace.LPCS_DIMENSIONS_PROPERTY,
                               argOptions.getStringOption("dimensions"));
         }
         if (argOptions.hasOption("edgeType")) {
             props.setProperty(
-                NonlinearWordSpace.NLWS_AFFINITY_EDGE_PROPERTY,
+                LocalityPreservingCooccurrenceSpace.LPCS_AFFINITY_EDGE_PROPERTY,
                 argOptions.getStringOption("edgeType"));
         }
         if (argOptions.hasOption("edgeTypeParam")) {
             props.setProperty(
-                NonlinearWordSpace.NLWS_AFFINITY_EDGE_PARAM_PROPERTY,
+                LocalityPreservingCooccurrenceSpace.LPCS_AFFINITY_EDGE_PARAM_PROPERTY,
                 argOptions.getStringOption("edgeTypeParam"));
         }
         if (argOptions.hasOption("edgeWeighting")) {
             props.setProperty(
-                NonlinearWordSpace.NLWS_AFFINITY_EDGE_WEIGHTING_PROPERTY,
+                LocalityPreservingCooccurrenceSpace.LPCS_AFFINITY_EDGE_WEIGHTING_PROPERTY,
                 argOptions.getStringOption("edgeWeighting"));
         }
         if (argOptions.hasOption("edgeWeightingParam")) {
             props.setProperty(
-                NonlinearWordSpace.NLWS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY,
+                LocalityPreservingCooccurrenceSpace.LPCS_AFFINITY_EDGE_WEIGHTING_PARAM_PROPERTY,
                 argOptions.getStringOption("edgeWeightingParam"));
         }
         return props;
