@@ -674,6 +674,7 @@ public class MatrixIO {
                         array[0].length + " dense text matrix from " +
                         input);
 
+                br.close();
                 return array;
             }
                 
@@ -691,6 +692,7 @@ public class MatrixIO {
                 double[][] array = new double[matrix.rows()][0];
                 for (int i = 0; i < matrix.rows(); ++i)
                     array[i] = matrix.getRow(i);
+                br.close();
                 return array;
             }
 
@@ -718,6 +720,7 @@ public class MatrixIO {
                         array[row][j] = value;
                     }
                 }
+                br.close();
                 return array;
             }
 
@@ -734,7 +737,7 @@ public class MatrixIO {
                         array[row][col] = in.readFloat();
                     }
                 }                 
-                
+                br.close();                
                 return array;
             }
 
@@ -760,10 +763,12 @@ public class MatrixIO {
                         array[row][j] = value;
                     }
                 }
+                br.close();
                 return array;
             }
         }
 
+        br.close();
         throw new Error("Convert matrix files of " + format + " format " +
                         "to an array is not currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its" +
@@ -1022,6 +1027,7 @@ public class MatrixIO {
             }
         }
         
+        br.close();
         return m;
     }    
 
@@ -1060,7 +1066,7 @@ public class MatrixIO {
                 }
             }
         }
-
+        dis.close();
         return m;
     }    
 
@@ -1122,7 +1128,7 @@ public class MatrixIO {
                 }
             }
         }
-
+        dis.close();
         return m;
     }    
 
@@ -1153,6 +1159,7 @@ public class MatrixIO {
              else
                  matrix.set(row, col, value);
          }
+         br.close();
          return matrix;
      }
 
@@ -1199,6 +1206,7 @@ public class MatrixIO {
                  }
              }
          }
+         br.close();
          return m;
      }
  
@@ -1256,7 +1264,7 @@ public class MatrixIO {
             outStream.writeInt(matrix.columns());
             for (int i = 0; i < matrix.rows(); ++i) {
                 for (int j = 0; j < matrix.columns(); ++j) {
-                    outStream.writeFloat(new Double(matrix.get(i,j)).floatValue());
+                    outStream.writeFloat((float)matrix.get(i,j));
                 }
             }
             outStream.close();

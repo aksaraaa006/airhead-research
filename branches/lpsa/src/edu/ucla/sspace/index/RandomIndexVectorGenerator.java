@@ -164,7 +164,7 @@ public class RandomIndexVectorGenerator
             // loop to ensure we actually pick the full number of bits
             while (!picked) {
                 // pick some random index
-                int index = (int)(RANDOM.nextDouble() * indexVectorLength);
+                int index = RANDOM.nextInt(indexVectorLength);
                     
                 // check that we haven't already added this index
                 if (pos.contains(index) || neg.contains(index))

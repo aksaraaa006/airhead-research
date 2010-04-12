@@ -336,7 +336,7 @@ public class TfIdfTransform implements Transform {
                     double termFreq =
                         occurrences / docToTermCount[doc];
                     double invDocFreq = 
-                        Math.log(docs / (1 + termToDocCount[term]));
+                        Math.log(docs / (1d + termToDocCount[term]));
                     transformed.set(term, doc, termFreq * invDocFreq);
                 }
             }
@@ -347,7 +347,7 @@ public class TfIdfTransform implements Transform {
                         double termFreq =
                             occurrences / docToTermCount[doc];
                         double invDocFreq = 
-                            Math.log(docs / (1 + termToDocCount[term]));
+                            Math.log(docs / (1d + termToDocCount[term]));
                         transformed.set(term, doc, termFreq * invDocFreq);
                     }
                 }
