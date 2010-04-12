@@ -402,7 +402,8 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
 
         public void remove() {
             if (previous == null) {
-
+                throw new IllegalStateException(
+                    "No previous element to remove");
             }
             HashMultiMap.this.remove(previous.getKey(), previous.getValue());
             previous = null;

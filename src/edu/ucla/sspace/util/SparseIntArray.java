@@ -227,7 +227,7 @@ public class SparseIntArray
      * {@inheritDoc}
      */
     public Integer add(int index, Integer delta) {
-        return add(index, delta.intValue());
+        return addPrimitive(index, delta.intValue());
     }
 
     /**

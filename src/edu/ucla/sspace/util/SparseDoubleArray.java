@@ -230,7 +230,7 @@ public class SparseDoubleArray
      * {@inheritDoc}
      */
     public Double add(int index, Double delta) {
-        return add(index, delta.doubleValue());
+        return addPrimitive(index, delta.doubleValue());
     }
 
     /**

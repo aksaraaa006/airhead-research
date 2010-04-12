@@ -188,7 +188,7 @@ public class SparseLongArray
      * {@inheritDoc}
      */
     public Long add(int index, Long delta) {
-        return add(index, delta.longValue());
+        return addPrimitive(index, delta.longValue());
     }
 
     /**

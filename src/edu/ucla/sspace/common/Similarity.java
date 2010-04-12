@@ -274,7 +274,7 @@ public class Similarity {
         double bMagnitudeSqRt = Math.sqrt(bMagnitude);
         return (aMagnitudeSqRt == 0 || bMagnitudeSqRt == 0)
             ? 0
-            : dotProduct / (aMagnitude * bMagnitude);
+            : dotProduct / (aMagnitudeSqRt * bMagnitudeSqRt);
     }
 
     /**
@@ -616,11 +616,7 @@ public class Similarity {
      *                                   not the same.
      */
     public static double euclideanDistance(double[] a, double[] b) {
-        check(a, b);
-
-        if (a == null || b == null || a.length != b.length)
-            throw new IllegalArgumentException("a: " + a + "; b: " + b);
-        
+        check(a, b);        
         double sum = 0;
         for (int i = 0; i < a.length; ++i)
             sum += Math.pow((a[i] - b[i]), 2);
@@ -1221,8 +1217,8 @@ public class Similarity {
      *                                   not the same.
      */
     public static double averageCommonFeatureRank(Vector a, Vector b) {
-        return averageCommonFeatureRank(Vectors.asDouble(a),
-                                        Vectors.asDouble(b));
+        return averageCommonFeatureRank(Vectors.asDouble(a).toArray(),
+                                        Vectors.asDouble(b).toArray());
     }
 
     /**

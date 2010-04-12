@@ -536,7 +536,8 @@ public class TreeMultiMap<K,V>
 
 	public void remove() {
 	    if (previous == null) {
-
+                throw new IllegalStateException(
+                    "No previous element to remove");
 	    }
 	    TreeMultiMap.this.remove(previous.getKey(), previous.getValue());
 	    previous = null;
