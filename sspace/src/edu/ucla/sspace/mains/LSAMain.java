@@ -199,6 +199,6 @@ public class LSAMain extends GenericMain {
             "algorithm should\nbe used internally.  This option should not be" +
             " used normally, as LSA will\nselect the fastest algorithm " +
             "available.  However, in the event that it\nis needed, valid" +
-            " options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT";
+            " options are: SVDLIBC, SVDLIBJ, MATLAB, OCTAVE, JAMA and COLT\n";
     }
 }

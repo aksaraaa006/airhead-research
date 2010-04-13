@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.matrix.SVD;
+
 
 /**
  * A utility class that contains string descriptions of differnt command line
@@ -118,9 +120,15 @@ public final class OptionDescriptions {
      * A description of the configuration SVD algorithm
      */
     public static final String SVD_DESCRIPTION =
-        "Support for the SVD algorthm comes from external libraries.  If " +
-        "support comes\n" +
-        "from an external programs (svd, octave, matlab), the program must " +
+        "The SVD implmentation may select from several options:\n  " +
+        SVD.Algorithm.values() +
+        "\nSVDLIBJ is included with the S-Space Package and provides a fully "+
+        "Java\n" +
+        "implementation of a sparse SVD.  The other options provide support " +
+        "from\n" +
+        "external libraries and programs that implement the SVD.  " + 
+        "If external\n" +
+        "programs (svd, octave, matlab) are used, the program must " +
         "be invokable\n" +
         "using the current PATH environment variable.  If the library is " +
         "Java-based\n" +
