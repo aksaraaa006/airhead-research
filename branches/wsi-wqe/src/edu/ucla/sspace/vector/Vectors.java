@@ -448,9 +448,6 @@ public class Vectors {
         if (vector instanceof CompactSparseIntegerVector) {
             return (T)(new CompactSparseIntegerVector(vector.length()));
         }
-        else if (vector instanceof SparseDoubleVector) {
-            return (T)(new SparseHashVector(vector.length()));
-        }
         // Remaining cases of vector types is being left unfinished until the
         // vector name refactoring is finished.  -jurgens 12/7/09
         else {
