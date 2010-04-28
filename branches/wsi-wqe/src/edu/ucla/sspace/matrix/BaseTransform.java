@@ -31,24 +31,12 @@ import java.io.IOException;
  * An abstract {@link Transform} implemenation that most transforms can extend.
  * Any transform that can be implemented as a {@link GlobalTransform} can simply
  * define the a {@link GlobalTransform} and then subclass this abstract class to
- * adhere to the standard {@link Transform} interface.  Additionally, for
- * transforms of any {@link Matrix} instance, the transformation will be done
- * with multiple threads.
+ * adhere to the standard {@link Transform} interface.
  */
 public abstract class BaseTransform implements Transform {
 
     /**
-     * Transforms the matrix in the file using the log-entropy transform and
-     * returns a temporary file containing the result.
-     *
-     * @param inputMatrixFile a file containing a matrix in the specified format
-     * @param format the format of the matrix
-     *
-     * @return a file with the transformed version of the input.  This file is
-     *         marked to be deleted when the JVM exits.
-     *
-     * @throws IOException if any error occurs while reading the input matrix or
-     *         writing the output matrix
+     * {@inheritDoc}
      */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
              throws IOException {
@@ -60,17 +48,7 @@ public abstract class BaseTransform implements Transform {
     }
 
     /**
-     * Transforms the input matrix using the log-entropy transform and
-     * writes the result to the file for the output matrix.
-     *
-     * @param inputMatrixFile a file containing a matrix in the specified format
-     * @param format the format of the input matrix, and the format in which the
-     *        output matrix will be written
-     * @param outputMatrixFile the file to which the transformed matrix will be
-     *        written
-     *
-     * @throws IOException if any error occurs while reading the input matrix or
-     *         writing the output matrix
+     * {@inheritDoc}
      */
     public void transform(File inputMatrixFile, MatrixIO.Format format, 
                           File outputMatrixFile) throws IOException {
@@ -80,22 +58,28 @@ public abstract class BaseTransform implements Transform {
     }
     
     /**
-     * Returns the log-entropy transformm of the input matrix.
+     * {@inheritDoc}
      *
-     * @param matrix the matrix to be transformed
-     *
-     * @return the transformed version of the input matrix
+     * </p> Note that this transformation method modifies {@code matrix} in
+     * place.
      */
     public Matrix transform(Matrix matrix) {
-        GlobalTransform transform = getTransform(matrix);
+        return transform(matrix, false);
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    public Matrix transform(Matrix matrix, boolean createNewMatrix) {
+        GlobalTransform transform = getTransform(matrix);
         Matrix transformed;
 
         if (matrix instanceof SparseMatrix) {
             SparseMatrix smatrix = (SparseMatrix) matrix;
-            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-                                          Matrix.Type.SPARSE_IN_MEMORY);
+            transformed = getTransformMatrix(matrix, true, createNewMatrix);
 
+            // Transform a sparse matrix by only iterating over the non zero
+            // values in each row.
             for (int row = 0; row < matrix.rows(); ++row) {
                 SparseDoubleVector rowVec = smatrix.getRowVector(row);
                 for (int col : rowVec.getNonZeroIndices()) {
@@ -105,8 +89,10 @@ public abstract class BaseTransform implements Transform {
                 }
             }
         } else {
-            transformed = Matrices.create(matrix.rows(), matrix.columns(), 
-                                          Matrix.Type.DENSE_IN_MEMORY);
+            transformed = getTransformMatrix(matrix, true, createNewMatrix);
+
+            // Transform dense matrices by inspecting each value in the matrix
+            // and having it transformed.
             for (int row = 0; row < matrix.rows(); ++row) {
                 for (int col = 0; col < matrix.columns(); ++col) {
                     double newValue = 
@@ -117,6 +103,23 @@ public abstract class BaseTransform implements Transform {
         }
 
         return transformed;
+    }
+
+    /**
+     * Returns the matrix in which transformed values should be stored.  When
+     * {@code createNew} is false, this simply returns {@code base}.  When
+     * {@code createNew} is true, a new matrix with the same dimensions as
+     * {@code base} and the requested sparsity is returned.
+     */
+    private static Matrix getTransformMatrix(Matrix base, 
+                                             boolean isSparse,
+                                             boolean createNew) {
+        if (!createNew)
+            return base;
+        Matrix.Type type = (isSparse) 
+            ? Matrix.Type.SPARSE_IN_MEMORY 
+            : Matrix.Type.DENSE_IN_MEMORY;
+        return Matrices.create(base.rows(), base.columns(), type);
     }
 
     /**

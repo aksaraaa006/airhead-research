@@ -22,11 +22,27 @@
 package edu.ucla.sspace.matrix;
 
 /**
- * An interface for matrix transformations.  Implementations are expected to
- * gather all the required statistics through their constructor.  Afterwards,
- * users of the transform may request each entry in a matrix to be transformed
- * based on it's row, column, and value.  Each entry is welcome to interpret the
- * meaning of the row, column, and value differently.
+ * An interface for matrix transformations.  Transformations that can be done
+ * with either no knowledge of the given matrix or with only global knowledge,
+ * such as row and column summations, can be implemented with this
+ * transformation.  This is a supplement to the more general {@link Transform}
+ * interface to fascilitate.  By implementing this interface, a transformation
+ * can be done on any file type and any matrix type with little extra work.
+ *
+ * </p>Implementations are expected to gather any required statistics through
+ * their constructor.  Afterwards, users of the transform may request each entry
+ * in a matrix to be transformed based on it's row, column, and value.  Each
+ * entry is welcome to interpret the meaning of row, column, and value
+ * differently.  It is recomended that implementations be made a subclass of a
+ * {@link Transform} implementation.  A good example is the {@link
+ * TfIdfTransform}.
+ *
+ * </p> Note that most instances of a {@link GlobalTransform} should be used
+ * with only one matrix.  Training on one matrix and applying the transformation
+ * to another will often result in an unintelligible transformation.
+ * Transformations that do not need to compute any statistics can be applied to
+ * any matrix without any complications, such as a transformation that adds 5 to
+ * every entry.
  *
  * @author Keith Stevens
  */

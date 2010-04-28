@@ -76,4 +76,16 @@ public interface Transform {
      * @return the transformed version of the input matrix
      */
     Matrix transform(Matrix input);
+
+    /**
+     * Returns a transformed matrix based on the given matrix.
+     *
+     * @param matrix the matrix to be transformed
+     * @param createNewMatrix if a new matrix should be created for the
+     *        transformed values, set this to true, otherwise the given matrix
+     *        will be modified in place.
+     *
+     * @return the transformed version of the input matrix
+     */
+    Matrix transform(Matrix input, boolean createNewMatrix);
 }

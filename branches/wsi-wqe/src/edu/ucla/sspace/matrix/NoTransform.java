@@ -33,11 +33,17 @@ import java.nio.channels.FileChannel;
  */
 public class NoTransform implements Transform {
 
+    /**
+     * {@inheritDoc}
+     */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
             throws IOException {
         return inputMatrixFile;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void transform(File inputMatrixFile, MatrixIO.Format inputFormat, 
                           File outputMatrixFile) 
             throws IOException {
@@ -52,10 +58,23 @@ public class NoTransform implements Transform {
         copy.close();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Matrix transform(Matrix input) {
         return input;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public Matrix transform(Matrix input, boolean createNewMatrix) {
+        return Matrices.copy(input);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public String toString() {
         return "no";
     }    
