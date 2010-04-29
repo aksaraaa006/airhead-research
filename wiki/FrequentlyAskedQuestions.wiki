@@ -37,12 +37,11 @@ If we haven't implemented it yet, and the idea make sense, then we'll move it to
 
 As always, the easiest way to get something implemented is to email us at [mailto:s-space-research-dev@googlegroups.com s-space-research-dev@googlegroups.com] and let us know what you want to see.
 
-== Why do you require external SVD programs when you have an SVD.java class? ==
+== Why do you support external SVD programs? ==
 
-Our current code base doesn't have an actual SVD implementation.  While other all-Java SVD implementations exist (e.g. COLT and JAMA), they do not support a sparse SVD.  In almost all of the use cases, this results in a prohibitively large memory requirement.  SVDLIBC, Octave and Matlab all have sparse SVD implementations that are fast and reasonably efficient.  Our `SVD.java` class is merely a wrapper that calls the appropriate external SVD-engine to do the heavy lifting.
+Before Adrian Kuhn and David Erni released SVDLIBJ, there was no fast pure-Java implementation of a sparse SVD.  Therefore, external programs were required to scale algorithms such as [LatentSemanticAnalysis LSA] to acceptable corpora sizes.
 
-However, if there were a fast, memory efficient all-Java sparse SVD, we would use it.  If you know of one, please let us know.  We have searched extensively for one, but were unable to find any.  We have debated about implementing one, but this would detract from the current focus of the package, so any tentative plans are currently on hold.
-
+We continue to support external programs (and the COLT and JAMA libraries) as legacy code, and for those developers who find that the external programs work faster than SVDLIBJ.  In our own testing, only SVDLIBC performed faster.  However, the performance difference was less than 10%, even when SVDLIBC was compiled with [http://en.wikipedia.org/wiki/Intel_C%2B%2B_Compiler Intel's icc] compiler using all optimizations.  (We think this speaks of the JVM's compiler capabilities quite nicely.)
 
 = Running Algorithms =
 
@@ -104,6 +103,32 @@ If you can't get any of these to work, let us know so we can help strategize.  T
 == When I run with Octave, I see something like "error: `svds undefined near line 5 column 14 error: near line 5 of file /tmp/octave-svds8621483587696991940.m`" ==
 
 It looks like your Octave installation doesn't have the optional ARPACK bindings installed, which is why it cant find the `svds` function.  You can get the bindings at [http://octave.sourceforge.net/arpack/index.html]
+
+== How can I convert a .sspace file to a matrix? ==
+
+This question comes up also when a user wants to write the converted matrix to a file to interface with an external program, such as Matlab (e.g. to plot the vectors).  An .sspace file can be converted as follows:
+
+{{{
+SemanticSpace sspace = null; // Wherever you get it from
+int numVectors = sspace.getWords().size();
+DoubleVector[] vectors = new DoubleVector[numVectors];
+String[] words = new String[numWords];                          
+int i = 0;
+for (String word : sspace.getWords()) {
+    words[i] = word;
+    vectors[i] = Vectors.asDouble(sspace.getVector(word));
+    i++;
+}                                                                               
+
+Matrix m = Matrices.asMatrix(Arrays.asList(vectors));
+
+// If you then want to write the matrix out to disk, do the following
+MatrixIO.Format fmt = null;   // specify here
+File outputMatrixFile = null; // also specify
+MatrixIO.writeMatrix(m, outputMatrixFile, fmt);
+// Reminder, if you still want the word-to-row mapping, write out the words array too
+}}}
+
 
 = Corpus Questions =
 
