@@ -427,9 +427,18 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
         // If the matrix hasn't had columns dropped then the returned vector
         // will be the combination of the word's row and column
         else if (reduced == null) {
-            return new ConcatenatedSparseDoubleVector(
-                cooccurrenceMatrix.getRowVectorUnsafe(index),
-                cooccurrenceMatrix.getColumnVectorUnsafe(index));
+            // NOTE: the matrix could be asymmetric if the a word has only
+            // appeared on one side of a context (its row or column vector would
+            // never have been set).  Therefore, check the index with the matrix
+            // size first.
+            SparseDoubleVector rowVec = (index < cooccurrenceMatrix.rows())
+                ? cooccurrenceMatrix.getRowVectorUnsafe(index)
+                : new CompactSparseVector(termToIndex.size());
+            SparseDoubleVector colVec = (index < cooccurrenceMatrix.columns())
+                ? cooccurrenceMatrix.getColumnVectorUnsafe(index)
+                : new CompactSparseVector(termToIndex.size());
+
+            return new ConcatenatedSparseDoubleVector(rowVec, colVec);
         }
         // The co-occurrence matrix has had columns dropped so the vector is
         // just the word's row
