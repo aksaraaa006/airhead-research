@@ -49,7 +49,11 @@ import java.util.logging.Logger;
 /**
  * A utility class for counting tokens in one or more files.  This class also
  * supports counting compound token instances, as well as counting for only a
- * subset of the unique tokens.
+ * subset of the unique tokens.  This class is intended for token counting in
+ * very large corpora where space-efficiency is important.  The output is
+ * equivalent to the command <tt>cat <i>corpus.txt</i> | awk '{ split($0,a); for
+ * (i in a) { print a[i]; }}' | uniq -c</tt>.  However, this
+ * command is significantly more memory and CPU intensive. 
  *
  * @author David Jurgens
  */
@@ -148,7 +152,8 @@ public class TokenCounter {
             numTokens++;
             if (numTokens % UPDATE_INTERVAL == 0 
                     && LOGGER.isLoggable(Level.FINE))
-                LOGGER.fine("Processed " + numTokens + " tokens");
+                LOGGER.fine("Processed " + numTokens + " tokens.  Currently " 
+                            + tokenToCount.size() + " unique tokens");
         }
     }
 
@@ -177,7 +182,7 @@ public class TokenCounter {
         if (options.numPositionalArgs() < 2) {
             System.out.println(
                 "usage: java TokenCounter" 
-                + " [options] <output-dir> <input-file> [<input-file>]*\n"
+                + " [options] <output-file> <input-file> [<input-file>]*\n"
                 + options.prettyPrint() 
                 + "\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
                 + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION);
