@@ -2,14 +2,12 @@ package edu.ucla.sspace.dependency;
 
 import edu.ucla.sspace.vector.Vector;
 
-import edu.ucla.sspace.util.Pair;
-
 import java.util.LinkedList;
 
 
 /**
  * An interface for permuting a {@link Vector} based on a dependecny path,
- * represented as a list of word,relation {@link Pair}s.  Implemenations are
+ * represented as a list of {@link DependencyRelation}s.  Implemenations are
  * recomended to extend existing {@link
  * edu.ucla.sspace.index.PermutationFunction PermutationFunction}s but simply
  * using an existing {@link edu.ucla.sspace.index.PermutationFunction
@@ -32,5 +30,5 @@ public interface DependencyPermutationFunction <T extends Vector> {
      * @return A new permuted {@link Vector} of the same type as {@code vector}
      *         that is
      */
-    T permute(T vector, LinkedList<Pair<String>> path);
+    T permute(T vector, LinkedList<DependencyRelation> path);
 }

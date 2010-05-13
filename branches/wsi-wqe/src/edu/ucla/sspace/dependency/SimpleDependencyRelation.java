@@ -21,20 +21,55 @@
 
 package edu.ucla.sspace.dependency;
 
-import java.util.List;
-
 
 /**
- * A {@link DependencyPathWeight} that returns {@code 1} for every path.
- *
- * @author Keith Stevens
+ * A simple {@link DependencyRelation} that is created from a token string,
+ * a relation string, and a boolean specifiying if the token is a head node.
  */
-public class FlatPathWeight implements DependencyPathWeight {
+public class SimpleDependencyRelation implements DependencyRelation {
+
+    /**
+     * The token represented by this relation.
+     */
+    private String token;
+
+    /**
+     * The relation string.
+     */
+    private String relation;
+
+    /**
+     * Specifies whether or not {@code token} is a head node in the real
+     * dependency parse tree.
+     */
+    private boolean isHeadNode;
+
+    /**
+     * Creates a {@link SimpleDependencyRelation}.
+     */
+    public SimpleDependencyRelation(String token, String relation) {
+        this.token = token;
+        this.relation = relation;
+    }
 
     /**
      * {@inheritDoc}
      */
-    public double scorePath(List<DependencyRelation> path) {
-        return 1;
+    public String token() {
+        return token;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String relation() {
+        return relation;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isHeadNode() {
+        return false;
     }
 }

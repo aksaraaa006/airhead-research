@@ -24,8 +24,6 @@ package edu.ucla.sspace.dependency;
 import edu.ucla.sspace.index.DefaultPermutationFunction;
 import edu.ucla.sspace.index.PermutationFunction;
 
-import edu.ucla.sspace.util.Pair;
-
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.Serializable;
@@ -35,9 +33,9 @@ import java.util.LinkedList;
 
 /**
  * An default {@link DependencyPermutationFunction} for permuting a {@link
- * Vector} based on a dependecny path, represented as a list of word,relation
- * {@link Pair}s.  A passed in {@link PermutationFunction} is used to permute
- * the {@link Vector}s based on the path length.
+ * Vector} based on a dependecny path, represented as a list of {@link
+ * DependencyRelations}s.  A passed in {@link PermutationFunction} is used to
+ * permute the {@link Vector}s based on the path length.
  *
  * @see edu.ucla.sspace.index.PermutationFunction
  *
@@ -65,7 +63,7 @@ public class DefaultDependencyPermutationFunction <T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public T permute(T vector, LinkedList<Pair<String>> path) {
+    public T permute(T vector, LinkedList<DependencyRelation> path) {
         return permFunc.permute(vector, path.size());
     }
 }

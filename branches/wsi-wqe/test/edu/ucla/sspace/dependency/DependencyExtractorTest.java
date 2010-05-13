@@ -63,7 +63,7 @@ public class DependencyExtractorTest {
      * passed in string is expected to contain the relation for each node that
      * is connected to {@code relation}.
      */
-    private void evaluateRelations(DependencyRelation relation,
+    private void evaluateRelations(DependencyTreeNode relation,
                                    String[] expectedRelations,
                                    int expectedNumRelations) {
         // Check each of the links for "Review".  Add the link id to a set to
@@ -82,7 +82,7 @@ public class DependencyExtractorTest {
     @Test public void testSingleExtraction() throws Exception {
         DependencyExtractor extractor = new DependencyExtractor();
         Document doc = new StringDocument(SINGLE_PARSE);
-        DependencyRelation[] relations = extractor.parse(doc.reader());
+        DependencyTreeNode[] relations = extractor.parse(doc.reader());
 
         assertEquals(12, relations.length);
 
@@ -100,7 +100,7 @@ public class DependencyExtractorTest {
     @Test public void testDoubleExtraction() throws Exception {
         DependencyExtractor extractor = new DependencyExtractor();
         Document doc = new StringDocument(DOUBLE_PARSE);
-        DependencyRelation[] relations = extractor.parse(doc.reader());
+        DependencyTreeNode[] relations = extractor.parse(doc.reader());
         assertTrue(relations != null);
         assertEquals(12, relations.length);
 
@@ -116,7 +116,7 @@ public class DependencyExtractorTest {
     @Test public void testRootNode() throws Exception {
         DependencyExtractor extractor = new DependencyExtractor();
         Document doc = new StringDocument(SINGLE_PARSE);
-        DependencyRelation[] relations = extractor.parse(doc.reader());
+        DependencyTreeNode[] relations = extractor.parse(doc.reader());
 
         assertEquals(12, relations.length);
 

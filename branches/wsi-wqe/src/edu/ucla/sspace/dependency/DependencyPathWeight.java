@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import edu.ucla.sspace.util.Pair;
-
 import java.util.List;
 
 
@@ -44,5 +42,5 @@ public interface DependencyPathWeight {
      *
      * @return The score of the dependecy path
      */
-    double scorePath(List<Pair<String>> path);
+    double scorePath(List<DependencyRelation> path);
 }

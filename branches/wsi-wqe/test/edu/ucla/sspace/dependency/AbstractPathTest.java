@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import edu.ucla.sspace.util.Pair;
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -34,10 +32,10 @@ import static org.junit.Assert.*;
 
 public class AbstractPathTest {
 
-    protected List<Pair<String>> makePath(String[][] pathString) {
-        List<Pair<String>> path = new LinkedList<Pair<String>>();
+    protected List<DependencyRelation> makePath(String[][] pathString) {
+        List<DependencyRelation> path = new LinkedList<DependencyRelation>();
         for (String[] link : pathString)
-            path.add(new Pair<String>(link[0], link[1]));
+            path.add(new SimpleDependencyRelation(link[0], link[1]));
         return path;
     }
 }

@@ -179,15 +179,15 @@ public class DependencyExtractor {
      *
      * @param reader a reader for the document to parse
      *
-     * @return an array of {@link DependencyRelation}s that compose a dependency
+     * @return an array of {@link DependencyTreeNode}s that compose a dependency
      *         tree
      *
      * @throws IOException when errors are encountered during reading
      */
-    public DependencyRelation[] parse(BufferedReader reader) 
+    public DependencyTreeNode[] parse(BufferedReader reader) 
             throws IOException {
-        List<SimpleDependencyRelation> relations =
-            new ArrayList<SimpleDependencyRelation>();
+        List<SimpleDependencyTreeNode> relations =
+            new ArrayList<SimpleDependencyTreeNode>();
         MultiMap<Integer, DependencyLink> childrenToAdd =
             new HashMultiMap<Integer, DependencyLink>();
 
@@ -231,8 +231,8 @@ public class DependencyExtractor {
             String rel = nodeFeatures[relationIndex];
 
             // Create the new relation.
-            SimpleDependencyRelation relation = 
-                new SimpleDependencyRelation(word, pos, parent, rel);
+            SimpleDependencyTreeNode relation = 
+                new SimpleDependencyTreeNode(word, pos, parent, rel);
             relations.add(relation);
 
             // Set the dependency link between this node and it's parent node.
@@ -244,9 +244,9 @@ public class DependencyExtractor {
                 // in a map to be processed later.
                 if (parent < relations.size())
                     relations.get(parent).addNeighbor(
-                            new DependencyLink(id, rel));
+                            new DependencyLink(id, rel, true));
                 else
-                    childrenToAdd.put(parent, new DependencyLink(id, rel));
+                    childrenToAdd.put(parent, new DependencyLink(id, rel, true));
             }
             id++;
         }
@@ -266,39 +266,39 @@ public class DependencyExtractor {
         }
 
         return relations.toArray(
-                new SimpleDependencyRelation[relations.size()]);
+                new SimpleDependencyTreeNode[relations.size()]);
     }
 
     /**
-     * A default implementation of a {@link DependencyRelation}
+     * A default implementation of a {@link DependencyTreeNode}
      */
-    public static class SimpleDependencyRelation implements DependencyRelation {
+    public static class SimpleDependencyTreeNode implements DependencyTreeNode {
 
         /**
-         * The word stored at this node.
+         * The node's token.
          */
         private String word;
 
         /**
-         * The parent node part of speech tag.
+         * The node's part of speech tag.
          */
         private String pos;
 
         /**
-         * The list of neighbord of this node.
+         * The list of neighbors of this node.
          */
         private List<DependencyLink> neighbors;
 
         /**
-         * Creates a new {@link SimpleDependencyRelation} node for the provided
+         * Creates a new {@link SimpleDependencyTreeNode} node for the provided
          * word, with the provided parent link.  Initially the children list is
          * empty.
          */
-        public SimpleDependencyRelation(String word, String pos,
+        public SimpleDependencyTreeNode(String word, String pos,
                                         int parent, String relation) {
             neighbors = new LinkedList<DependencyLink>();
             if (parent >= 0)
-                neighbors.add(new DependencyLink(parent, relation));
+                neighbors.add(new DependencyLink(parent, relation, false));
             this.word = word;
             this.pos = pos;
         }

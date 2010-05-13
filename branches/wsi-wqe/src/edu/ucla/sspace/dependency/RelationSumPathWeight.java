@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import edu.ucla.sspace.util.Pair;
-
 import java.util.List;
 
 
@@ -44,16 +42,16 @@ public class RelationSumPathWeight implements DependencyPathWeight {
     /**
      * {@inheritDoc}
      */
-    public double scorePath(List<Pair<String>> path) {
+    public double scorePath(List<DependencyRelation> path) {
         double score = 0;
-        for (Pair<String> wordRelation : path) {
-            if (wordRelation.y.equals("SBJ"))
+        for (DependencyRelation wordRelation : path) {
+            if (wordRelation.relation().equals("SBJ"))
                 score += 5;
-            else if (wordRelation.y.equals("OBJ"))
+            else if (wordRelation.relation().equals("OBJ"))
                 score += 4;
-            else if (wordRelation.y.equals("OBL"))
+            else if (wordRelation.relation().equals("OBL"))
                 score += 3;
-            else if (wordRelation.y.equals("GEN"))
+            else if (wordRelation.relation().equals("GEN"))
                 score += 2;
             else 
                 score += 1;

@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import edu.ucla.sspace.util.Pair;
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,7 +34,7 @@ public class LengthPathWeightTest extends AbstractPathTest {
 
     @Test public void testSimplePath() {
         String[][] pathString = {{"cat", "Rel"}};
-        List<Pair<String>> path = makePath(pathString);
+        List<DependencyRelation> path = makePath(pathString);
         DependencyPathWeight weighter = new LengthPathWeight();
         assertEquals(1, weighter.scorePath(path), .000001);
     }
@@ -44,14 +42,14 @@ public class LengthPathWeightTest extends AbstractPathTest {
     @Test public void testLongPath() {
         String[][] pathString = {{"cat", "Rel"}, {"dog", "noarelation"},
                                  {"meow", "nor a relation"}};
-        List<Pair<String>> path = makePath(pathString);
+        List<DependencyRelation> path = makePath(pathString);
         DependencyPathWeight weighter = new LengthPathWeight();
         assertEquals(1d/3, weighter.scorePath(path), .000001);
     }
 
     @Test public void testEmptyPath() {
         String[][] pathString = {};
-        List<Pair<String>> path = makePath(pathString);
+        List<DependencyRelation> path = makePath(pathString);
         DependencyPathWeight weighter = new LengthPathWeight();
         assertEquals(Double.POSITIVE_INFINITY, weighter.scorePath(path),
                      .000001);

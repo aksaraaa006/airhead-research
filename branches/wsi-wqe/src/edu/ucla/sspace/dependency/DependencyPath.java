@@ -31,7 +31,14 @@ import java.util.LinkedList;
  */
 public interface DependencyPath {
 
-    LinkedList<Pair<String>> path();
+    /**
+     * Returns the sequence of (term, relation) pairs that comprise an
+     * undirected path in the dependency tree.
+     */
+    LinkedList<DependencyRelation> path();
 
+    /**
+     * Returns a score for the {@link DependencyPath}.
+     */
     double score();
 }

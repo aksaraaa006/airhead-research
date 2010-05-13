@@ -34,6 +34,7 @@ import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
+import edu.ucla.sspace.dependency.DependencyTreeNode;
 
 import edu.ucla.sspace.index.PermutationFunction;
 
@@ -246,15 +247,15 @@ public class DependencyWaitingSenseEvalHermit implements SemanticSpace {
         String instanceId = document.readLine();
         String instanceWord = document.readLine();
 
-        for (DependencyRelation[] relations = null;
-                (relations = parser.parse(document)) != null; ) {
+        for (DependencyTreeNode[] nodes = null;
+                (nodes = parser.parse(document)) != null; ) {
 
             // Skip empty documents.
-            if (relations.length == 0)
+            if (nodes.length == 0)
                 continue;
 
-            for (int i = 0; i < relations.length; ++i) {
-                String focusWord = relations[i].word();
+            for (int i = 0; i < nodes.length; ++i) {
+                String focusWord = nodes[i].word();
 
                 // Skip paths for words that are not anchored on the instance's
                 // word.
@@ -265,11 +266,13 @@ public class DependencyWaitingSenseEvalHermit implements SemanticSpace {
                     new SparseHashIntegerVector(indexVectorSize);
 
                 Iterator<DependencyPath> pathIter = new DependencyIterator(
-                        relations, acceptor, weighter, i, pathLength);
+                        nodes, acceptor, weighter, i, pathLength);
 
                 while (pathIter.hasNext()) {
-                    LinkedList<Pair<String>> path = pathIter.next().path();
-                    TernaryVector termVector = indexMap.get(path.peekLast().x);
+                    LinkedList<DependencyRelation> path =
+                        pathIter.next().path();
+                    TernaryVector termVector = 
+                        indexMap.get(path.peekLast().token());
                     if (permFunc != null)
                         termVector = permFunc.permute(termVector, path);
                     add(meaning, termVector);

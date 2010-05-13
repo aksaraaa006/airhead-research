@@ -30,6 +30,7 @@ import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
+import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.FlatPathWeight;
 import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
@@ -41,7 +42,6 @@ import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
 import edu.ucla.sspace.util.Misc;
-import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.IntegerVector;
@@ -316,16 +316,16 @@ public class DependencyRandomIndexing implements SemanticSpace {
     public void processDocument(BufferedReader document) throws IOException {
         // Iterate over all of the parseable dependency parsed sentences in the
         // document.
-        for (DependencyRelation[] relations = null;
-                (relations = parser.parse(document)) != null; ) {
+        for (DependencyTreeNode[] nodes = null;
+                (nodes = parser.parse(document)) != null; ) {
 
             // Skip empty documents.
-            if (relations.length == 0)
+            if (nodes.length == 0)
                 continue;
 
             // Examine the paths for each word in the sentence.
-            for (int i = 0; i < relations.length; ++i) {
-                String focusWord = relations[i].word();
+            for (int i = 0; i < nodes.length; ++i) {
+                String focusWord = nodes[i].word();
 
                 // Skip words that are rejected by the semantic filter.
                 if (!acceptWord(focusWord))
@@ -337,15 +337,17 @@ public class DependencyRandomIndexing implements SemanticSpace {
                 // Create the path iterator for all acceptable paths rooted at
                 // the focus word in the sentence.
                 Iterator<DependencyPath> pathIter = new DependencyIterator(
-                        relations, acceptor, weighter, i, pathLength);
+                        nodes, acceptor, weighter, i, pathLength);
 
                 // For every path, obtain the index vector of the last word in
                 // the path and add it to the semantic vector for the focus
                 // word.  The index vector is permuted if a permutation
                 // function has been provided based on the contents of the path.
                 while (pathIter.hasNext()) {
-                    LinkedList<Pair<String>> path = pathIter.next().path();
-                    TernaryVector termVector = indexMap.get(path.peekLast().x);
+                    LinkedList<DependencyRelation> path = 
+                        pathIter.next().path();
+                    TernaryVector termVector = 
+                        indexMap.get(path.peekLast().token());
                     if (permFunc != null)
                         termVector = permFunc.permute(termVector, path);
                     add(focusMeaning, termVector);

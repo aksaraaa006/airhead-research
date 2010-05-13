@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import edu.ucla.sspace.util.Pair;
-
 import java.util.List;
 
 
@@ -36,7 +34,7 @@ public class LengthPathWeight implements DependencyPathWeight {
     /**
      * {@inheritDoc}
      */
-    public double scorePath(List<Pair<String>> path) {
+    public double scorePath(List<DependencyRelation> path) {
         return 1d / path.size();
     }
 }

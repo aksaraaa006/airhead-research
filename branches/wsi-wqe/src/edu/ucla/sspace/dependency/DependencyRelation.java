@@ -21,28 +21,29 @@
 
 package edu.ucla.sspace.dependency;
 
-import java.util.List;
-
-
 /**
- * An interface for dependency relations.  This represents a node in a
- * dependency parsed tree structure containing the word, it's children, it's
- * parent, and the relation to the parent.
+ * An interface for representing a dependency relationship in the form of (term,
+ * relation) pair that composes a sequence of relations in a {@link
+ * DependencyPath}.  In addition, this node is marked as a Head node, or a
+ * governing node, if the token in this relationship governs the next token in
+ * the {@link DependencyPath} sequence in the original dependency parse tree.
  */
 public interface DependencyRelation {
 
     /**
-     * Returns the list of neighbors to the current node.
+     * Returns the token represented by this {@link DependencyRelation}.
      */
-    List<DependencyLink> neighbors();
+    public String token();
 
     /**
-     * Returns the word stored in this node.
+     * Returns the relation the the current has with the next token in a {@link
+     * DependencyPath}.
      */
-    String word();
+    public String relation();
 
     /**
-     * Returns the part of speech tag for this node.
+     * Returns true if this token is the head word for the relationship
+     * represented by this {@link DependencyRelation}.
      */
-    String pos();
+    public boolean isHeadNode();
 }

@@ -33,13 +33,13 @@ import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
+import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.FlatPathWeight;
 import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.Misc;
-import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 
 import edu.ucla.sspace.vector.DenseVector;
@@ -206,8 +206,9 @@ public class SenseEvalDependencyTester {
         Iterator<DependencyPath> pathIter = instance.paths;
 
         while (pathIter.hasNext()) {
-            LinkedList<Pair<String>> path = pathIter.next().path();
-            TernaryVector termVector = wordToIndexVector.get(path.peekLast().x);
+            LinkedList<DependencyRelation> path = pathIter.next().path();
+            TernaryVector termVector =
+                wordToIndexVector.get(path.peekLast().token());
             if (permFunc != null)
                 termVector = permFunc.permute(termVector, path);
             add(contextVector, termVector);
@@ -321,12 +322,12 @@ public class SenseEvalDependencyTester {
                         instanceNode.getFirstChild().getNodeValue()));
 
             paths = null;
-            for (DependencyRelation[] relations = null;
-                 (relations = extractor.parse(parsedText)) != null; ) {
-                for (int i = 0; i < relations.length; ++i) {
-                    if (relations[i].word().equals(word))
+            for (DependencyTreeNode[] nodes = null;
+                 (nodes = extractor.parse(parsedText)) != null; ) {
+                for (int i = 0; i < nodes.length; ++i) {
+                    if (nodes[i].word().equals(word))
                         paths = new DependencyIterator(
-                                relations, acceptor, weighter, i, windowSize);
+                                nodes, acceptor, weighter, i, windowSize);
                 }
             }
         }

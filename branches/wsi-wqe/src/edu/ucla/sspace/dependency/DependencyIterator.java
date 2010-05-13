@@ -46,7 +46,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
      * The relation graph to use for iterating through all paths rooted at term
      * {@code currentTerm}.
      */
-    private DependencyRelation[] relations;
+    private DependencyTreeNode[] relations;
 
     /**
      * The current term to traverse for neighbors.  Initially this will be the
@@ -65,7 +65,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
      * {@link DependencyPath}s.  The first string in the pairs is the word for
      * the node and the second is the word's relation to the next node.
      */
-    private LinkedList<Pair<String>> linkDeque;
+    private LinkedList<DependencyRelation> linkDeque;
 
     /**
      * The stack of terms that are being processed.  This correponds to nodes
@@ -111,7 +111,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
      *        each returned path
      * @param 
      */
-    public DependencyIterator(DependencyRelation[] relationTree,
+    public DependencyIterator(DependencyTreeNode[] relationTree,
                               DependencyPathAcceptor acceptor,
                               DependencyPathWeight weighter,
                               int startTerm,
@@ -122,7 +122,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         this.maxPathLength = maxPathLength;
         this.currentTerm = startTerm;
 
-        linkDeque = new LinkedList<Pair<String>>();
+        linkDeque = new LinkedList<DependencyRelation>();
         termDeque = new LinkedList<Integer>();
         neighboorDeque = new LinkedList<Queue<DependencyLink>>();
         termDeque.addLast(startTerm);
@@ -135,7 +135,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         int previousTerm = (termDeque.size() == 0) ? -1 : termDeque.peekLast();
 
         // Get the index and relation of the current term to be inspected.
-        DependencyRelation currentRelation = relations[currentTerm];
+        DependencyTreeNode currentRelation = relations[currentTerm];
 
         // Create a new layer.
         Queue<DependencyLink> currentLayer = new LinkedList<DependencyLink>();
@@ -174,18 +174,18 @@ public class DependencyIterator implements Iterator<DependencyPath> {
 
         while (currentLayer.size() > 0) {
             DependencyLink link = currentLayer.remove();
-            DependencyRelation term = relations[currentTerm];
+            DependencyTreeNode term = relations[currentTerm];
 
-            DependencyRelation neighbor = relations[link.neighbor()];
+            DependencyTreeNode neighbor = relations[link.neighbor()];
             boolean linkAccepted = acceptor.acceptLink(
                     term.pos(), link.relation(), neighbor.pos()) &&
                 (linkDeque.size() + 1) <= maxPathLength;
             if (linkAccepted) {
-                linkDeque.addLast(new Pair<String>(
+                linkDeque.addLast(new SimpleDependencyRelation(
                             term.word(), link.relation()));
-                LinkedList<Pair<String>> path =
-                    new LinkedList<Pair<String>>(linkDeque);
-                path.add(new Pair<String>(neighbor.word(), ""));
+                LinkedList<DependencyRelation> path =
+                    new LinkedList<DependencyRelation>(linkDeque);
+                path.add(new SimpleDependencyRelation(neighbor.word(), ""));
 
                 termDeque.addLast(currentTerm);
                 currentTerm = link.neighbor();
@@ -230,7 +230,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         /**
          * The list of terms and relations.
          */
-        private LinkedList<Pair<String>> path;
+        private LinkedList<DependencyRelation> path;
 
         /**
          * The score of the path.
@@ -240,7 +240,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         /**
          * Creates a {@link SimpleDependencyPath}.
          */
-        public SimpleDependencyPath(LinkedList<Pair<String>> path,
+        public SimpleDependencyPath(LinkedList<DependencyRelation> path,
                                     double score) {
             this.path = path;
             this.score = score;
@@ -249,7 +249,7 @@ public class DependencyIterator implements Iterator<DependencyPath> {
         /**
          * {@inheritDoc}
          */
-        public LinkedList<Pair<String>> path() {
+        public LinkedList<DependencyRelation> path() {
             return path;
         }
 

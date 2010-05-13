@@ -25,16 +25,24 @@ import java.util.List;
 
 
 /**
- * A {@link DependencyPathWeight} that returns {@code 1} for every path.
- *
- * @author Keith Stevens
+ * An interface for dependency relations.  This represents a node in a
+ * dependency parsed tree structure containing the word, it's children, it's
+ * parent, and the relation to the parent.
  */
-public class FlatPathWeight implements DependencyPathWeight {
+public interface DependencyTreeNode {
 
     /**
-     * {@inheritDoc}
+     * Returns the list of neighbors to the current node.
      */
-    public double scorePath(List<DependencyRelation> path) {
-        return 1;
-    }
+    List<DependencyLink> neighbors();
+
+    /**
+     * Returns the word stored in this node.
+     */
+    String word();
+
+    /**
+     * Returns the part of speech tag for this node.
+     */
+    String pos();
 }
