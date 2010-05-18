@@ -90,7 +90,7 @@ public class TransposedMatrix implements Matrix {
      * {@inheritDoc}
      */
     public int rows() {
-        return m.rows();
+        return m.columns();
     }
            
     /**
