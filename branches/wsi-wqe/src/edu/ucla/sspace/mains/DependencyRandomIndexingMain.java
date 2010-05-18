@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2010 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -23,52 +23,25 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
-import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.dependency.DefaultDependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyExtractor;
-import edu.ucla.sspace.dependency.DependencyPathAcceptor;
-import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 
 import edu.ucla.sspace.dri.DependencyRandomIndexing;
 
-import edu.ucla.sspace.index.IntegerVectorGenerator;
 import edu.ucla.sspace.index.PermutationFunction;
-import edu.ucla.sspace.index.RandomIndexVectorGenerator;
 import edu.ucla.sspace.index.TernaryPermutationFunction;
 
-import edu.ucla.sspace.text.DependencyFileDocumentIterator;
-import edu.ucla.sspace.text.Document;
-
-import edu.ucla.sspace.util.CombinedIterator;
-import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
-import edu.ucla.sspace.util.LimitedIterator;
-import edu.ucla.sspace.util.Misc;
-import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SerializableUtil;
 
-import edu.ucla.sspace.vector.SparseIntegerVector;
 import edu.ucla.sspace.vector.TernaryVector;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOError;
-import java.io.IOException;
 
 import java.lang.reflect.Constructor;
-
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Properties;
 
 
 /**
@@ -118,7 +91,7 @@ import java.util.Properties;
  *
  * @author Keith Stevens 
  */
-public class DependencyRandomIndexingMain extends GenericMain {
+public class DependencyRandomIndexingMain extends DependencyGenericMain {
 
     private DependencyRandomIndexing dri;
 
@@ -271,53 +244,7 @@ public class DependencyRandomIndexingMain extends GenericMain {
     /**
      * {@inheritDoc}
      */
-    public void usage() {
-         System.out.println(
-                 "usage: java FlyingHermitMain [options] <output-dir>\n" + 
-                 argOptions.prettyPrint());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     protected SSpaceFormat getSpaceFormat() {
         return SSpaceFormat.SPARSE_BINARY;
-    }
-
-    /**
-     * Returns a {@link SenseEvalDependencyCorpusReader} for a specified
-     * dependency parsed senseEval xml file.
-     *
-     * @throws IllegalArgumentException if the {@code --docFile} argument isn't
-     *         set.
-     */
-    protected Iterator<Document> getDocumentIterator() throws IOException {
-        Iterator<Document> docIter = null;
-
-        String docFile = (argOptions.hasOption("docFile"))
-            ? argOptions.getStringOption("docFile")
-            : null;
-
-        if (docFile == null) {
-            throw new Error("must specify document sources");
-        }
-
-        // Second, determine where the document input sources will be coming
-        // from.
-        Collection<Iterator<Document>> docIters = 
-            new LinkedList<Iterator<Document>>();
-
-        if (docFile != null) {
-            String[] fileNames = docFile.split(",");
-            // all the documents are listed in one file, with one document per
-            // line
-            for (String s : fileNames) {
-                docIters.add(new DependencyFileDocumentIterator(s));
-            }
-        }
-
-        // combine all of the document iterators into one iterator.
-        docIter = new CombinedIterator<Document>(docIters);
-        return docIter;
     }
 }
