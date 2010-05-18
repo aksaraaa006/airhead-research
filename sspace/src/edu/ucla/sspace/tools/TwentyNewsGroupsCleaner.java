@@ -59,6 +59,10 @@ public class TwentyNewsGroupsCleaner {
         // Iterate over the newsgroup directories in the main directory.
         for (File newsGroupDir : baseNGDir.listFiles()) {
 
+            // Skip any non-directories.
+            if (!newsGroupDir.isDirectory())
+                continue;
+
             // Iterate over the individual postings in each newsgroup.
             for (File newsGroupEntry : newsGroupDir.listFiles()) {
                 BufferedReader br = 
