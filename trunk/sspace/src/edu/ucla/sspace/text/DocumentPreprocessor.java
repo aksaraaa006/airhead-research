@@ -128,6 +128,8 @@ public class DocumentPreprocessor {
         
         // Step 2: Removing all non-standard punctuation and separating other
         //         punctuation from adjacent words.
+        document = document.replaceAll("<", " < ");
+        document = document.replaceAll(">", " > ");
 
         // Step 7: Replacing URLs, email addresses, IP addresses, numbers
         //         greater than 9, and emoticons with special word markers, such
@@ -198,6 +200,7 @@ public class DocumentPreprocessor {
         document = document.replaceAll(":", " : ");
         document = document.replaceAll("\"", " \" ");
         document = document.replaceAll("-", " - ");
+        document = document.replaceAll("=", " = ");
 
         // Step 3: Removing words over 20 characters in length.
         st = new StringTokenizer(document);
