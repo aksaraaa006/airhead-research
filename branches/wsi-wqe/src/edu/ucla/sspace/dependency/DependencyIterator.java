@@ -182,10 +182,11 @@ public class DependencyIterator implements Iterator<DependencyPath> {
                 (linkDeque.size() + 1) <= maxPathLength;
             if (linkAccepted) {
                 linkDeque.addLast(new SimpleDependencyRelation(
-                            term.word(), link.relation()));
+                            term.word(), link.relation(), link.isHeadNode()));
                 LinkedList<DependencyRelation> path =
                     new LinkedList<DependencyRelation>(linkDeque);
-                path.add(new SimpleDependencyRelation(neighbor.word(), ""));
+                path.add(new SimpleDependencyRelation(
+                            neighbor.word(), "", !link.isHeadNode()));
 
                 termDeque.addLast(currentTerm);
                 currentTerm = link.neighbor();

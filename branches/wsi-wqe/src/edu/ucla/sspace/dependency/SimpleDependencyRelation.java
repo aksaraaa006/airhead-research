@@ -47,9 +47,12 @@ public class SimpleDependencyRelation implements DependencyRelation {
     /**
      * Creates a {@link SimpleDependencyRelation}.
      */
-    public SimpleDependencyRelation(String token, String relation) {
+    public SimpleDependencyRelation(String token,
+                                    String relation,
+                                    boolean isHeadNode) {
         this.token = token;
         this.relation = relation;
+        isHeadNode = isHeadNode;
     }
 
     /**
@@ -70,6 +73,6 @@ public class SimpleDependencyRelation implements DependencyRelation {
      * {@inheritDoc}
      */
     public boolean isHeadNode() {
-        return false;
+        return isHeadNode;
     }
 }
