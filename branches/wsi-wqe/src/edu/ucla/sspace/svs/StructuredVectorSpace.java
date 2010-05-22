@@ -88,6 +88,8 @@ public class StructuredVectorSpace implements SemanticSpace {
     public static final String SSPACE_NAME = 
         "structured-vector-space";
 
+    public static final String EMPTY_STRING = "";
+
     /**
      * The logger used to record all output
      */
@@ -206,9 +208,15 @@ public class StructuredVectorSpace implements SemanticSpace {
             for (int i = 0; i < nodes.length; ++i) {
                 String focusWord = nodes[i].word();
 
+                // Skip any filtered words.
+                if (focusWord.equals(EMPTY_STRING))
+                    continue;
+
                 // Skip words that are rejected by the semantic filter.
                 if (!acceptWord(focusWord))
                     continue;
+
+                int focusIndex = getIndexFor(focusWord, termToRowIndex);
 
                 // Create the path iterator for all acceptable paths rooted at
                 // the focus word in the sentence.
@@ -229,7 +237,12 @@ public class StructuredVectorSpace implements SemanticSpace {
 
                     // Get the feature index for the co-occurring word.
                     String otherTerm = path.path().peekLast().token();
-                    Integer featureIndex = 
+
+                    // Skip any filtered features.
+                    if (otherTerm.equals(EMPTY_STRING))
+                        continue;
+
+                    int featureIndex =
                         getIndexFor(otherTerm, termToFeatureIndex);
 
                     // Determine the expectation vector name and retrieve the
@@ -238,15 +251,13 @@ public class StructuredVectorSpace implements SemanticSpace {
                     String termExpectation = (relation.isHeadNode())
                         ? focusWord + "-" + relation.relation()
                         : relation.relation() + "-" + focusWord;
-                    Integer rowIndex = 
-                        getIndexFor(termExpectation, termToRowIndex);
+                    int rowIndex = getIndexFor(termExpectation, termToRowIndex);
 
                     // Increment the score for this co-occurence.
-                    Pair<Integer> p = new Pair<Integer>(rowIndex, featureIndex);
-                    double value = path.score();
-                    Double curCount = matrixEntryToCount.get(p);
-                    matrixEntryToCount.put(p, (curCount == null)
-                                           ? value : value + curCount);
+                    incrementCount(matrixEntryToCount, rowIndex, 
+                                   featureIndex, 1);
+                    incrementCount(matrixEntryToCount, focusIndex, 
+                                   featureIndex, path.score());
                 }
             }
         }
@@ -258,6 +269,15 @@ public class StructuredVectorSpace implements SemanticSpace {
             cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
         }    
         document.close();
+    }
+
+    private void incrementCount(Map<Pair<Integer>, Double> matrixEntryToCount,
+                                int rowIndex, int featureIndex,
+                                double value) {
+        Pair<Integer> p = new Pair<Integer>(rowIndex, featureIndex);
+        Double curCount = matrixEntryToCount.get(p);
+        matrixEntryToCount.put(p, (curCount == null)
+                               ? value : value + curCount);
     }
 
     /**

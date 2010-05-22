@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.dependency;
 
+import edu.ucla.sspace.text.Stemmer;
+import edu.ucla.sspace.text.TokenFilter;
+
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.HashMultiMap;
 
@@ -63,6 +66,20 @@ import org.w3c.dom.NodeList;
  */
 public class DependencyExtractor {
 
+    public static final String EMPTY_STRING = "";
+
+    /**
+     * A {@link TokenFilter} that will accept or reject tokens before they are
+     * stored in a {@link DependencyTreeNode}, if provided.
+     */
+    private final TokenFilter filter;
+
+    /**
+     * A {@link Stemmer} that will lemmatize tokens before they are stored in a
+     * {@link DependencyTreeNode}, if provided.
+     */
+    private final Stemmer stemmer;
+
     /**
      * The feature index for the node id.
      */
@@ -99,6 +116,18 @@ public class DependencyExtractor {
      * ordering for {@code Malt} dependency parses.
      */
     public DependencyExtractor() {
+        this(null,null);
+    }
+
+    /**
+     * Creates a new {@link DependencyExtractor} that assumes the default
+     * ordering for {@code Malt} dependency parses and uses the given {@link
+     * TokenFilter} and {@link Stemmer}.
+     */
+    public DependencyExtractor(TokenFilter filter, Stemmer stemmer) {
+        this.filter = filter;
+        this.stemmer = stemmer;
+
         idIndex = 0;
         formIndex = 1;
         lemmaIndex = 2;
@@ -113,6 +142,20 @@ public class DependencyExtractor {
      * formatted.
      */
     public DependencyExtractor(String configFile) {
+        this(configFile, null, null);
+    }
+
+    /**
+     * Creates a new {@link DependencyExtractor} by parsing a {@code Malt}
+     * configuration file, which specifies the order in which the output is
+     * formatted and uses the given {@link TokenFilter} and {@link Stemmer}.
+     */
+    public DependencyExtractor(String configFile,
+                               TokenFilter filter,
+                               Stemmer stemmer) {
+        this.filter = filter;
+        this.stemmer = stemmer;
+
         // Set up non final index values for each feature of interest.
         int id = 0;
         int form = 1;
@@ -216,13 +259,7 @@ public class DependencyExtractor {
             // Get the node id and the parent node id.
             int parent = Integer.parseInt(nodeFeatures[parentIndex]) - 1;
 
-            // Get the lemma for the word.  If it is unspecified, i.e.
-            // represented with a "_", then simply get the lower case version of
-            // of the raw term.
-            String lemma = nodeFeatures[lemmaIndex];
-            String word = (lemma.equals("_"))
-                ? nodeFeatures[formIndex].toLowerCase()
-                : lemma;
+            String word = getWord(nodeFeatures);
 
             // Get the part of speech of the node.
             String pos = nodeFeatures[posIndex];
@@ -267,6 +304,26 @@ public class DependencyExtractor {
 
         return relations.toArray(
                 new SimpleDependencyTreeNode[relations.size()]);
+    }
+
+    /**
+     * Returns a string representation of the word for a given node in the
+     * dependency parse tree.  First, the original word is filtered and if the
+     * word is not accepted, the empty string is returned.  Accepted words will
+     * then be stemmed if either a lemma is provided by the parser or a {@link
+     * Stemmer} is provided with a preference given to the parser provided
+     * lemma.  If neither case holds, the original term is returned.
+     */
+    private String getWord(String[] nodeFeatures) {
+        String word = nodeFeatures[formIndex].toLowerCase();
+        // Filter if neccessary.
+        if (filter != null && !filter.accept(word))
+            return EMPTY_STRING;
+        // Get the lemma and check it's value.  Stem if needed.
+        String lemma = nodeFeatures[lemmaIndex];
+        if (lemma.equals("_"))
+            return (stemmer == null) ? word : stemmer.stem(word);
+        return lemma;
     }
 
     /**

@@ -105,6 +105,8 @@ public class DependencyRandomIndexingMain extends DependencyGenericMain {
      * {@inheritDoc}
      */
     public void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
+
         // Add process property arguements such as the size of index vectors,
         // the generator class to use, the user class to use, the window sizes
         // that should be inspected and the set of terms to replace during
@@ -138,11 +140,6 @@ public class DependencyRandomIndexingMain extends DependencyGenericMain {
                           "Load index vectors and permutation function from " +
                           "binary files",
                           true, "FILE", "Pre Processing");
-
-        options.addOption('G', "configFile",
-                          "XML configuration file for the format of a " +
-                          "dependency parse",
-                          true, "FILE", "Process Properties");
     }
 
     @SuppressWarnings("unchecked")
@@ -193,9 +190,7 @@ public class DependencyRandomIndexingMain extends DependencyGenericMain {
         else 
             permFunction = getPermutationFunction();
 
-        DependencyExtractor parser = (argOptions.hasOption('G'))
-            ? new DependencyExtractor(argOptions.getStringOption('G'))
-            : new DependencyExtractor();
+        DependencyExtractor parser = getDependencyExtractor();
 
         dri = new DependencyRandomIndexing(
                 parser, permFunction, System.getProperties());

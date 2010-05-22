@@ -122,17 +122,15 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
     /**
      * {@inheritDoc}
      */
-    protected void addExtraOptions(ArgOptions options) {
+    public void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
+
         options.addOption('a', "pathAcceptor",
                           "The DependencyPathAcceptor to use",
                           true, "CLASSNAME", "Algorithm Options");
         options.addOption('W', "pathWeighter",
                           "The DependencyPathWeight to use",
                           true, "CLASSNAME", "Algorithm Options");
-        options.addOption('G', "configFile",
-                          "XML configuration file for the format of a " +
-                          "dependency parse",
-                          true, "FILE", "Program Options");
     }
 
     public static void main(String[] args) {
@@ -156,9 +154,7 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
      * {@inheritDoc}
      */
     protected SemanticSpace getSpace() {
-        DependencyExtractor parser = (argOptions.hasOption('G'))
-            ? new DependencyExtractor(argOptions.getStringOption('G'))
-            : new DependencyExtractor();
+        DependencyExtractor parser = getDependencyExtractor();
         return new StructuredVectorSpace(parser);
     }
 

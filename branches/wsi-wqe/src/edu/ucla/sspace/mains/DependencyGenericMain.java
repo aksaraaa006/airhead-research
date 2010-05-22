@@ -21,10 +21,17 @@
 
 package edu.ucla.sspace.mains;
 
+import edu.ucla.sspace.common.ArgOptions;
+
+import edu.ucla.sspace.dependency.DependencyExtractor;
+
 import edu.ucla.sspace.text.DependencyFileDocumentIterator;
 import edu.ucla.sspace.text.Document;
+import edu.ucla.sspace.text.TokenFilter;
+import edu.ucla.sspace.text.Stemmer;
 
 import edu.ucla.sspace.util.CombinedIterator;
+import edu.ucla.sspace.util.Misc;
 
 import java.io.IOException;
 
@@ -41,6 +48,35 @@ import java.util.Iterator;
  * @author Keith Stevens 
  */
 public abstract class DependencyGenericMain extends GenericMain {
+
+    /**
+     * {@inheritDoc}
+     */
+    public void addExtraOptions(ArgOptions options) {
+        options.addOption('G', "configFile",
+                          "XML configuration file for the format of a " +
+                          "dependency parse",
+                          true, "FILE", "Process Properties");
+    }
+
+    /**
+     * Returns a new {@link DependencyExtractor} that uses a given configuration
+     * file, if it is not null, and any {@link TokenFilter}s or {@link Stemmer}s
+     * that have been specified by the command line.
+     */
+    protected DependencyExtractor getDependencyExtractor() {
+        TokenFilter filter = (argOptions.hasOption("tokenFilter"))
+            ? TokenFilter.loadFromSpecification(argOptions.getStringOption('F'))
+            : null;
+        Stemmer stemmer = (argOptions.hasOption("stemmer"))
+            ? (Stemmer) Misc.getObjectInstance(argOptions.getStringOption('Z'))
+            : null;
+
+        return (argOptions.hasOption('G'))
+            ? new DependencyExtractor(argOptions.getStringOption('G'), 
+                                      filter, stemmer)
+            : new DependencyExtractor(filter, stemmer);
+    }
 
     /**
      * Returns a {@link Document} iterator for all dependency parsed documents
