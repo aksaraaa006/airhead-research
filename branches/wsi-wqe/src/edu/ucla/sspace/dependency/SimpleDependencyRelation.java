@@ -65,6 +65,14 @@ public class SimpleDependencyRelation implements DependencyRelation {
     /**
      * {@inheritDoc}
      */
+    public String pos() {
+        // Current return nothing.
+        return "";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public String relation() {
         return relation;
     }

@@ -36,6 +36,11 @@ public interface DependencyRelation {
     public String token();
 
     /**
+     * Returns the token's part of speech tag.
+     */
+    public String pos();
+
+    /**
      * Returns the relation the the current has with the next token in a {@link
      * DependencyPath}.
      */
@@ -46,4 +51,5 @@ public interface DependencyRelation {
      * represented by this {@link DependencyRelation}.
      */
     public boolean isHeadNode();
+
 }

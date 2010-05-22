@@ -28,7 +28,6 @@ import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
-import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
 import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.FlatPathWeight;
