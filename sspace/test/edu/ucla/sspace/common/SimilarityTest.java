@@ -33,17 +33,29 @@ import static org.junit.Assert.*;
 
 public class SimilarityTest {
 
-    @Test public void testCosineSimSparseIntSame() {
-        int[] v = new int[] { 0, 1, 1, 1, 1, 1, 1, 1, 0, 0};
-        Vector a = new CompactSparseIntegerVector(10);
-        Vector b = new CompactSparseIntegerVector(10);
+    @Test public void testEuclideanDistSparseDoubleSame() {
+        double[] v = new double[] { 0, 1, 1, 1, 1, 1, 1, 1, 0, 0};
+        Vector a = new CompactSparseVector(10);
+        Vector b = new CompactSparseVector(10);
         for (int i = 0; i < v.length; ++i) {
             if (v[i] != 0) {
                 a.set(i, v[i]);
                 b.set(i, v[i]);
             }
         }
-        assertEquals(1d, Similarity.cosineSimilarity(a, b), .00000001);
+        assertEquals(0, Similarity.euclideanDistance(a, b), .00000001);
+    }
+
+    @Test public void testEuclideanDistSparseDoubleDiff() {
+        double[] v1 = new double[] { 0, 1, 0, 1, 0, 1, 0, 1, 0, 0};
+        double[] v2 = new double[] { 0, 0, 1, 1, 1, 1, 1, 1, 0, 0};
+        Vector a = new CompactSparseVector(10);
+        Vector b = new CompactSparseVector(10);
+        for (int i = 0; i < v1.length; ++i) {
+            a.set(i, v1[i]);
+            b.set(i, v2[i]);
+        }
+        assertEquals(4, Similarity.euclideanDistance(a, b), .00000001);
     }
 
     @Test public void testCosineSimDoubleSame() {

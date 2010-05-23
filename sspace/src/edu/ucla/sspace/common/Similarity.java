@@ -662,7 +662,7 @@ public class Similarity {
             }
 
             for (int nonZero : bNonZero)
-                if (!sparseIndicesA.contains(bNonZero))
+                if (!sparseIndicesA.contains(nonZero))
                     sum += Math.pow(b.get(nonZero), 2);
             return sum;
         }
