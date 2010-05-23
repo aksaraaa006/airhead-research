@@ -42,6 +42,12 @@ public class DenseVector implements DoubleVector, Serializable {
     private double[] vector;
 
     /**
+     * The magnitude of the vector or -1 if the value is currently invalid and
+     * needs to be recomputed
+     */
+    private double magnitude;
+
+    /**
      * Create an {@code DenseVector} with all values starting at 0 with
      * the given length.
      *
@@ -49,6 +55,7 @@ public class DenseVector implements DoubleVector, Serializable {
      */
     public DenseVector(int vectorLength) {
         vector = new double[vectorLength];
+        magnitude = -1;
     }
 
     /**
@@ -60,6 +67,7 @@ public class DenseVector implements DoubleVector, Serializable {
      */
     public DenseVector(double[] vector) {
         this.vector = Arrays.copyOf(vector, vector.length);
+        magnitude = -1;
     }
 	
     /**
@@ -71,14 +79,19 @@ public class DenseVector implements DoubleVector, Serializable {
     public DenseVector(DoubleVector vector) {
         this.vector = new double[vector.length()];
 
-        for (int i = 0; i < vector.length(); ++i)
-            set(i, vector.get(i));
+        magnitude = 0;
+        for (int i = 0; i < vector.length(); ++i) {
+            double v = vector.get(i);
+            set(i, v);
+            magnitude += Math.pow(v, 2);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
+        magnitude = -1;
         vector[index] += delta;
         return vector[index];
     }
@@ -87,6 +100,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, double value) {
+        magnitude = -1;
         vector[index] = value;
     }
 
@@ -94,6 +108,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
+        magnitude = -1;
         set(index, value.doubleValue());
     }
 
@@ -115,10 +130,11 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public double magnitude() {
-        double m = 0;
-        for (double d : vector)
-            m += d * d;
-        return Math.sqrt(m);
+        if (magnitude == -1) {
+            for (double d : vector)
+                magnitude += d * d;
+        }
+        return Math.sqrt(magnitude);
     }
 
     /**

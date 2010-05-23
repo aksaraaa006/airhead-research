@@ -50,8 +50,8 @@ public class CompactSparseVector
     private SparseDoubleArray vector;
 
     /**
-     * The magnitude of the vector or -1 if the value is currently invalid needs
-     * to be recomputed
+     * The magnitude of the vector or -1 if the value is currently invalid and
+     * needs to be recomputed.
      */
     private double magnitude;
 
