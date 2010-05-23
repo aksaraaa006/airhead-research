@@ -647,6 +647,26 @@ public class Similarity {
     public static double euclideanDistance(DoubleVector a, DoubleVector b) {
         check(a, b);
         
+        if (a instanceof SparseVector && b instanceof SparseVector) {
+            SparseVector svA = (SparseVector)a;
+            SparseVector svB = (SparseVector)b;
+
+            int[] aNonZero = svA.getNonZeroIndices();
+            int[] bNonZero = svB.getNonZeroIndices();
+            HashSet<Integer> sparseIndicesA = new HashSet<Integer>(
+                    aNonZero.length);
+            double sum = 0;
+            for (int nonZero : aNonZero) {
+                sum += Math.pow((a.get(nonZero) - b.get(nonZero)), 2);
+                sparseIndicesA.add(nonZero);
+            }
+
+            for (int nonZero : bNonZero)
+                if (!sparseIndicesA.contains(bNonZero))
+                    sum += Math.pow(b.get(nonZero), 2);
+            return sum;
+        }
+
         double sum = 0;
         for (int i = 0; i < a.length(); ++i)
             sum += Math.pow((a.get(i) - b.get(i)), 2);
@@ -661,7 +681,27 @@ public class Similarity {
      */
     public static double euclideanDistance(IntegerVector a, IntegerVector b) {
         check(a, b);
-        
+         
+        if (a instanceof SparseVector && b instanceof SparseVector) {
+            SparseVector svA = (SparseVector)a;
+            SparseVector svB = (SparseVector)b;
+
+            int[] aNonZero = svA.getNonZeroIndices();
+            int[] bNonZero = svB.getNonZeroIndices();
+            HashSet<Integer> sparseIndicesA = new HashSet<Integer>(
+                    aNonZero.length);
+            double sum = 0;
+            for (int nonZero : aNonZero) {
+                sum += Math.pow((a.get(nonZero) - b.get(nonZero)), 2);
+                sparseIndicesA.add(nonZero);
+            }
+
+            for (int nonZero : bNonZero)
+                if (!sparseIndicesA.contains(bNonZero))
+                    sum += Math.pow(b.get(nonZero), 2);
+            return sum;
+        }
+
         double sum = 0;
         for (int i = 0; i < a.length(); ++i)
             sum += Math.pow((a.get(i) - b.get(i)), 2);
