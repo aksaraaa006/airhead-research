@@ -35,7 +35,7 @@ public class AbstractPathTest {
     protected List<DependencyRelation> makePath(String[][] pathString) {
         List<DependencyRelation> path = new LinkedList<DependencyRelation>();
         for (String[] link : pathString)
-            path.add(new SimpleDependencyRelation(link[0], link[1]));
+            path.add(new SimpleDependencyRelation(link[0], link[1], false));
         return path;
     }
 }

@@ -349,6 +349,8 @@ public class Vectors {
      * @return A copy of {@code source} with the same type.
      */
     public static DoubleVector copyOf(DoubleVector source) {
+        if (source == null)
+            return null;
         DoubleVector result = null;
 
         if (source instanceof DenseVector) {

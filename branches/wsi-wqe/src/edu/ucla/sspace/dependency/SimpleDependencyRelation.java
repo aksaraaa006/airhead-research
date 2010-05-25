@@ -52,7 +52,7 @@ public class SimpleDependencyRelation implements DependencyRelation {
                                     boolean isHeadNode) {
         this.token = token;
         this.relation = relation;
-        isHeadNode = isHeadNode;
+        this.isHeadNode = isHeadNode;
     }
 
     /**
