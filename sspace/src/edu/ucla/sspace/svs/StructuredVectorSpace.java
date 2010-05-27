@@ -75,8 +75,8 @@ import java.util.logging.Logger;
  *
  * This model requires a dependency parsed corpus.  When processing, three types
  * of vectors: word, which represnts the co-occureences word has with all other
- * tokens via a dependency chain; REL-word, which records the set of tokens that
- * govern the REL relationship with word; and word-REL, which records the set of
+ * tokens via a dependency chain; REL|word, which records the set of tokens that
+ * govern the REL relationship with word; and word|REL, which records the set of
  * tokens that are governed by word in the REL relationship.  The first vector
  * is referred to as a lemma vector and the later two are called selectional
  * preference vectors.  In all cases REL is a dependency relationship.
@@ -356,10 +356,10 @@ public class StructuredVectorSpace implements SemanticSpace {
                 // vectors, the word will be stored in the vector corresponding
                 // to the term's expectation.  For instance, the path 
                 //   [(cat, OBJ, isHead), (play, NULL, false)]
-                // Would store the "play" co-occurrence in the "cat-OBJ" vector,
+                // Would store the "play" co-occurrence in the "cat|OBJ" vector,
                 // which states that "play" is in the OBJ expectation of cat.
                 // If cat was not the head word, then the "play" co-occurence
-                // would be stored in the "OBJ-cat" vector.
+                // would be stored in the "OBJ|cat" vector.
                 while (pathIter.hasNext()) {
                     DependencyPath path = pathIter.next();
 
@@ -377,8 +377,8 @@ public class StructuredVectorSpace implements SemanticSpace {
                     // row index for that vector.
                     DependencyRelation relation = path.path().peek();
                     String termExpectation = (relation.isHeadNode())
-                        ? focusWord + "-" + relation.relation()
-                        : relation.relation() + "-" + focusWord;
+                        ? focusWord + "|" + relation.relation()
+                        : relation.relation() + "|" + focusWord;
                     int rowIndex = getIndexFor(termExpectation, termToRowIndex);
 
                     // Increment the score for this co-occurence.
