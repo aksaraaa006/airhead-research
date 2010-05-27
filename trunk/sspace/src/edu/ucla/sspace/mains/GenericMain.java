@@ -288,7 +288,6 @@ public abstract class GenericMain {
      *
      * @throws Error if no document source is specified
      */
-
     protected Iterator<Document> getDocumentIterator() throws IOException {
         Iterator<Document> docIter = null;
 
@@ -354,7 +353,7 @@ public abstract class GenericMain {
         if (argOptions.numPositionalArgs() == 0) {
             throw new IllegalArgumentException("must specify output path");
         }
-        
+
         verbose = argOptions.hasOption('v') || argOptions.hasOption("verbose");
         // If verbose output is enabled, update all the loggers in the S-Space
         // package logging tree to output at Level.FINE (normally, it is
@@ -411,13 +410,7 @@ public abstract class GenericMain {
 
         SemanticSpace space = getSpace(); 
         
-        parseDocumentsMultiThreaded(space, docIter, numThreads);
-
-        long startTime = System.currentTimeMillis();
-        space.processSpace(props);
-        long endTime = System.currentTimeMillis();
-        verbose("processed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
+        processDocumentsAndSpace(space, docIter, numThreads, props);
 
         File outputPath = new File(argOptions.getPositionalArg(0));
         File outputFile = null;
@@ -464,15 +457,32 @@ public abstract class GenericMain {
                 argOptions.getStringOption("outputFormat").toUpperCase())
             : getSpaceFormat();
 
-        startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         SemanticSpaceIO.save(space, outputFile, format);
-        endTime = System.currentTimeMillis();
+        long endTime = System.currentTimeMillis();
+
         verbose("printed space in %.3f seconds",
                 ((endTime - startTime) / 1000d));
 
         postProcessing();
     }
 
+    /**
+     * Processes all the documents held by the iterator and process the space.
+     */
+    protected void processDocumentsAndSpace(SemanticSpace space,
+                                            Iterator<Document> docIter,
+                                            int numThreads,
+                                            Properties props) throws Exception {
+        parseDocumentsMultiThreaded(space, docIter, numThreads);
+
+        long startTime = System.currentTimeMillis();
+        space.processSpace(props);
+        long endTime = System.currentTimeMillis();
+        verbose("processed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
+    }
+        
     /**
      * Calls {@link SemanticSpace#processDocument(BufferedReader)
      * processDocument} once for every document in {@code docIter} using a

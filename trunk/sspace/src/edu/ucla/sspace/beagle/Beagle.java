@@ -28,8 +28,6 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.fft.FastFourierTransform;
 
-import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
-
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.vector.DenseVector;
@@ -105,7 +103,7 @@ public class Beagle implements SemanticSpace {
      * The class responsible for creating index vectors, and incorporating them
      * into a semantic vector.
      */
-    private final DoubleVectorGeneratorMap vectorMap;
+    private final Map<String, DoubleVector> vectorMap;
 
     /**
      * A mapping for terms to their semantic vector representation. A {@code
@@ -146,13 +144,13 @@ public class Beagle implements SemanticSpace {
 
     private final SemanticType semanticType;
 
-    public Beagle(int vectorSize, DoubleVectorGeneratorMap vectorMap) {
+    public Beagle(int vectorSize, Map<String, DoubleVector> vectorMap) {
         this(vectorSize, SemanticType.COMPOSITE, vectorMap);
     }
 
     public Beagle(int vectorSize,
                   SemanticType semanticType,
-                  DoubleVectorGeneratorMap vectorMap) {
+                  Map<String, DoubleVector> vectorMap) {
         this.indexVectorSize = vectorSize;
         this.vectorMap = vectorMap;
         termHolographs = new ConcurrentHashMap<String, DoubleVector>();

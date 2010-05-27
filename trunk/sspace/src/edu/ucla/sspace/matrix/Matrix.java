@@ -167,8 +167,8 @@ public interface Matrix {
 
     /**
      * Sets the values for the column of this {@code Matrix} using the provided
-     * {@code DoubleVector}.  Note that the {@code DoubleVector} itself is not made internal
-     * to the instance itself.
+     * {@code DoubleVector}.  Note that the {@code DoubleVector} itself is not
+     * made internal to the instance itself.
      *
      * @param column The column to update.
      * @param values The values to update into {@code column}.
@@ -187,8 +187,8 @@ public interface Matrix {
 
     /**
      * Sets the values for the row of this {@code Matrix} using the provided
-     * {@code DoubleVector}.  Note that the {@code DoubleVector} itself is not made internal
-     * to the instance itself.
+     * {@code DoubleVector}.  Note that the {@code DoubleVector} itself is not
+     * made internal to the instance itself.
      *
      * @param row The row to update.
      * @param values The values to update into {@code row}.

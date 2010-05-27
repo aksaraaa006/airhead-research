@@ -360,8 +360,6 @@ public class Coals implements SemanticSpace {
 
             // Normalize the matrix using correlation.
             int wordCount = finalCorrelation.rows();
-            System.setProperty(
-                    CorrelationTransform.USE_SQUARE_ROOT_PROPERTY, "");
             Transform correlation = new CorrelationTransform();
             finalCorrelation = correlation.transform(finalCorrelation);
 

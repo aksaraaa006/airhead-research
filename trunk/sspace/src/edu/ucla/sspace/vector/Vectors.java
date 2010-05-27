@@ -55,10 +55,12 @@ public class Vectors {
      * @return a mutable {@code DoubleVector} view of {@code v}
      */
     public static DoubleVector asDouble(Vector v) {
-        // NOTE: Special case the the sparse class first to becase the
-        // base interface of IntegerVectors matches as well.
+        // NOTE: Special case the the sparse classes first to becase the
+        // base interfaces of DoubleVectors and IntegerVectors matches as well.
         if (v instanceof SparseIntegerVector)
             return new IntAsSparseDoubleVector((SparseIntegerVector)v);
+        if (v instanceof SparseDoubleVector)
+            return (SparseDoubleVector) v;
         else if (v instanceof IntegerVector)
             return new IntAsDoubleVector((IntegerVector)v);
         else if (v instanceof DoubleVector)
@@ -67,6 +69,10 @@ public class Vectors {
         // implements Vector.  Therefore, wrap its contents using Vector's API.
         else
             return new ViewVectorAsDoubleVector(v);
+    }
+
+    public static SparseDoubleVector asDouble(SparseIntegerVector v) {
+        return new IntAsSparseDoubleVector(v);
     }
 
     /**
@@ -343,6 +349,8 @@ public class Vectors {
      * @return A copy of {@code source} with the same type.
      */
     public static DoubleVector copyOf(DoubleVector source) {
+        if (source == null)
+            return null;
         DoubleVector result = null;
 
         if (source instanceof DenseVector) {
@@ -355,6 +363,9 @@ public class Vectors {
         } else if (source instanceof AmortizedSparseVector) {
             result = new AmortizedSparseVector(source.length());
             copyFromSparseVector(result, source);
+        } else if (source instanceof DoubleVectorView) {
+            DoubleVectorView view = (DoubleVectorView) source;
+            return copyOf(view.getOriginalVector());
         } else {
             // Create a copy of the given class using reflection.  This code
             // assumes that the given implemenation of Vector has a constructor

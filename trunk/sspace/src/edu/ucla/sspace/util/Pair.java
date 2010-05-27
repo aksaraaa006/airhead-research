@@ -21,15 +21,25 @@
 
 package edu.ucla.sspace.util;
 
+
 /**
  * A utility class for holding two of the same type of object.
  */
 public class Pair<T> {
 
+    /**
+     * The first object in the pair
+     */
     public final T x;
     
+    /**
+     * The second object in the pair
+     */
     public final T y;
 
+    /**
+     * Creates a pair out of {@code x} and {@code y}
+     */
     public Pair(T x, T y) {
 	this.x = x;
 	this.y = y;

@@ -124,6 +124,39 @@ public class Matrices {
     }
 
     /**
+     * Returns a copied version of a given matrix.  The returned matrix will
+     * have the same dimensionality, values, and sparsity, but it may not have
+     * the same exact sub-type.
+     *
+     * @param matrix the matrix to be copied
+     *
+     * @return a copied version of matrix
+     */
+    public static Matrix copy(Matrix matrix) {
+        if (matrix instanceof SparseMatrix) {
+            Matrix copiedMatrix = Matrices.create(
+                    matrix.rows(), matrix.columns(), Type.SPARSE_IN_MEMORY);
+            SparseMatrix smatrix = (SparseMatrix) matrix;
+
+            // Copy a sparse matrix by only iterating over the non zero
+            // values in each row.
+            for (int row = 0; row < matrix.rows(); ++row) {
+                SparseDoubleVector rowVec = smatrix.getRowVector(row);
+                for (int col : rowVec.getNonZeroIndices())
+                    copiedMatrix.set(row, col, rowVec.get(col));
+            }
+            return copiedMatrix;
+        } else {
+            Matrix copiedMatrix = Matrices.create(
+                    matrix.rows(), matrix.columns(), Type.DENSE_IN_MEMORY);
+            for (int row = 0; row < matrix.rows(); ++row)
+                for (int col = 0; col < matrix.columns(); ++col)
+                    copiedMatrix.set(row, col, matrix.get(row, col));
+            return copiedMatrix;
+        }
+    }
+
+    /**
      * Creates a new {@code Matrix} based on the provided type, with the
      * provided dimensions
      *

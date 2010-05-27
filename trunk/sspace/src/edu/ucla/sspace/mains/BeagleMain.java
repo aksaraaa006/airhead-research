@@ -29,10 +29,13 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.index.DoubleVectorGenerator;
-import edu.ucla.sspace.index.DoubleVectorGeneratorMap;
 import edu.ucla.sspace.index.GaussianVectorGenerator;
 
 import edu.ucla.sspace.util.SerializableUtil;
+import edu.ucla.sspace.util.Generator;
+import edu.ucla.sspace.util.GeneratorMap;
+
+import edu.ucla.sspace.vector.DoubleVector;
 
 import java.io.File;
 
@@ -83,7 +86,7 @@ public class BeagleMain extends GenericMain {
      * The generator map for automatically creating and retrieving index vectors
      * for beagle.
      */
-    private DoubleVectorGeneratorMap generatorMap;
+    private GeneratorMap<DoubleVector> generatorMap;
 
     private BeagleMain() {
     }
@@ -119,21 +122,23 @@ public class BeagleMain extends GenericMain {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     public void handleExtraOptions() {
         dimension = (argOptions.hasOption("dimension"))
           ? argOptions.getIntOption("dimension")
           : DEFAULT_DIMENSION;
         if (argOptions.hasOption("loadVectors")) {
-            generatorMap = SerializableUtil.load(
+            generatorMap = (GeneratorMap<DoubleVector>) SerializableUtil.load(
                     new File(argOptions.getStringOption("loadVectors")),
-                    DoubleVectorGeneratorMap.class);
+                    GeneratorMap.class);
         } else {
             double stdev = 1 / Math.sqrt(dimension);
             System.setProperty(
                     GaussianVectorGenerator.STANDARD_DEVIATION_PROPERTY,
                     Double.toString(stdev));
-            DoubleVectorGenerator generator = new GaussianVectorGenerator();
-            generatorMap = new DoubleVectorGeneratorMap(generator, dimension);
+            Generator<DoubleVector> generator =
+                new GaussianVectorGenerator(dimension);
+            generatorMap = new GeneratorMap<DoubleVector>(generator);
         }
     }
 
