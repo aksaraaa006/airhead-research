@@ -31,10 +31,11 @@ public class Misc {
      *
      * @param className The name of a desired class to instantiate.
      */
-    public static Object getObjectInstance(String className) {
+    @SuppressWarnings("unchecked")
+    public static <T> T getObjectInstance(String className) {
         try {
             Class clazz = Class.forName(className);
-            return clazz.newInstance();
+            return (T) clazz.newInstance();
         } catch (Exception e) {
             throw new Error(e);
         }

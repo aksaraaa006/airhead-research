@@ -25,12 +25,13 @@ import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
-import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
 import edu.ucla.sspace.index.PermutationFunction;
 import edu.ucla.sspace.index.RandomIndexVectorGenerator;
 import edu.ucla.sspace.index.TernaryPermutationFunction;
 
 import edu.ucla.sspace.text.IteratorFactory;
+
+import edu.ucla.sspace.util.GeneratorMap;
 
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.DenseIntVector;
@@ -334,7 +335,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
             : new TernaryPermutationFunction();
 
         RandomIndexVectorGenerator indexVectorGenerator = 
-            new RandomIndexVectorGenerator(properties);
+            new RandomIndexVectorGenerator(vectorLength, properties);
 
         String useSparseProp = 
         properties.getProperty(USE_SPARSE_SEMANTICS_PROPERTY);
@@ -342,8 +343,8 @@ public class RandomIndexing implements SemanticSpace, Filterable {
             ? Boolean.parseBoolean(useSparseProp)
             : true;
 
-        wordToIndexVector = new IntegerVectorGeneratorMap<TernaryVector>(
-                indexVectorGenerator, vectorLength);
+        wordToIndexVector = new GeneratorMap<TernaryVector>(
+                indexVectorGenerator);
         wordToMeaning = new ConcurrentHashMap<String,IntegerVector>();
         semanticFilter = new HashSet<String>();
     }

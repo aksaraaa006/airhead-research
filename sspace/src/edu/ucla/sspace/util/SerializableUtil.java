@@ -85,4 +85,19 @@ public class SerializableUtil {
             throw new IOError(cnfe);
         }
     }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T load(File file) {
+        try {
+            FileInputStream fis = new FileInputStream(file);
+            ObjectInputStream inStream = new ObjectInputStream(fis);
+            T object = (T) inStream.readObject();
+            inStream.close();
+            return object;
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        } catch (ClassNotFoundException cnfe) {
+            throw new IOError(cnfe);
+        }
+    }
 }

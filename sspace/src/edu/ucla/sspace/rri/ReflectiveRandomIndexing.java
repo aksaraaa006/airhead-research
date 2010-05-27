@@ -24,8 +24,6 @@ package edu.ucla.sspace.rri;
 import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 
-import edu.ucla.sspace.index.IntegerVectorGenerator;
-import edu.ucla.sspace.index.IntegerVectorGeneratorMap;
 import edu.ucla.sspace.index.PermutationFunction;
 import edu.ucla.sspace.index.RandomIndexVectorGenerator;
 import edu.ucla.sspace.index.TernaryPermutationFunction;
@@ -276,7 +274,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
             : true;
 
         indexVectorGenerator = 
-            new RandomIndexVectorGenerator(properties);
+            new RandomIndexVectorGenerator(vectorLength, properties);
 
         // The various maps for keeping word and document state during
         // processing
@@ -336,8 +334,7 @@ public class ReflectiveRandomIndexing implements SemanticSpace, Filterable {
                     // filled in process space
                     termToReflectiveSemantics.put(term, createVector());
                     // last, create an index vector for the term
-                    iv = indexVectorGenerator.
-                        generateRandomVector(vectorLength);
+                    iv = indexVectorGenerator.generate();
                     termToIndexVector.put(term, iv);                    
                 }
             }

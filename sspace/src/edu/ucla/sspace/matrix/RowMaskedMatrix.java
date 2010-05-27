@@ -28,6 +28,7 @@ import edu.ucla.sspace.vector.SparseVector;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -113,6 +114,29 @@ public class RowMaskedMatrix implements Matrix {
         for (i = 0; i < rowArr.length; ++i)
             rowToReal.put(i, rowArr[i]);
         rows = rowArr.length;
+    }
+
+    /**
+     * Creates a partial view of the provided matrix using the integers in the
+     * ordered set.  The ordering of the given set is used to determine the
+     * order of the rows in the resulting matrix.
+     *
+     * @throws IllegalArgumentException if {@code included} specifies a value
+     *         that is less than 0 or greater than the number of rows present in
+     *         {@code matrix}
+     */
+    public RowMaskedMatrix(Matrix matrix, LinkedHashSet<Integer> included) {
+        backingMatrix = matrix;
+        rowToReal = new HashMap<Integer,Integer>();
+
+        int i = 0;;
+        for (Integer j : included) {
+            if (j < 0 || j >= matrix.rows())
+                throw new IllegalArgumentException("Cannot specify a row " +
+                    "outside the original matrix dimensions:" + j);
+            rowToReal.put(i++, j);
+        }
+        rows = rowToReal.size();
     }
 
     /**

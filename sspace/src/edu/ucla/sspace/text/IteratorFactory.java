@@ -312,7 +312,7 @@ public class IteratorFactory {
     public static Iterator<String> tokenize(String str) {
         return tokenize(new BufferedReader(new StringReader(str)));
     }
-    
+
     /**
      * Tokenizes the contents of the reader according to the system
      * configuration and returns an iterator over all the tokens where any
@@ -432,5 +432,4 @@ public class IteratorFactory {
 
         return finalIterator;
     }
-
 }

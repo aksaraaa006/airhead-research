@@ -24,8 +24,9 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -192,7 +193,22 @@ public class MatrixIO {
          * href="http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf">
          * CLUTO manual</a>.
          */
-        CLUTO_SPARSE
+        CLUTO_SPARSE,
+
+        /**
+         * The sparse text format supported by <a
+         * href="http://arc2.cc.gatech.edu/cluster.html">Eigen Cluster</a>.  See
+         * more details <a href="http://arc2.cc.gatech.edu/howto.html">here</a>.
+         */
+        EIGEN_SPARSE,
+
+        /**
+         * The dense text format supported by <a
+         * href="http://arc2.cc.gatech.edu/cluster.html">Eigen Cluster</a>.  See
+         * more details <a href="http://arc2.cc.gatech.edu/howto.html">here</a>.
+         */
+        EIGEN_DENSE,
+
     }
 
     /**
@@ -1403,14 +1419,49 @@ public class MatrixIO {
                     StringBuffer sb = new StringBuffer(32);
                     // Add 1 to index values since Matlab arrays are 1-based,
                     // not 0-based
-                    sb.append(i+1).append(" ").append(j+1)
-                        .append(" ").append(matrix.get(i,j));
+                    sb.append(i+1).append(" ").append(j+1);
+                    sb.append(" ").append(matrix.get(i,j));
                     pw.println(sb.toString());
                 }
             }
             pw.close();
             break;                        
         }
+
+        case EIGEN_SPARSE: {
+            PrintWriter pw = new PrintWriter(output);
+            if (matrix instanceof SparseMatrix) {
+                SparseMatrix smat = (SparseMatrix) matrix;
+                pw.printf("%d %d\n", matrix.rows(), matrix.columns());
+                for (int r = 0; r < matrix.rows(); ++r) {
+                    SparseDoubleVector v = smat.getRowVector(r);
+                    int[] nonZeros = v.getNonZeroIndices();
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(nonZeros.length).append(" ");
+                    for (int index : nonZeros) {
+                        sb.append(index).append(" ");
+                        sb.append(v.get(index)).append(" ");
+                    }
+                    pw.println(sb.toString());
+                }
+            }
+            pw.close();
+            break;
+        }
+
+        case EIGEN_DENSE: {
+            PrintWriter pw = new PrintWriter(output);
+            pw.printf("%d %d\n", matrix.rows(), matrix.columns());
+            for (int r = 0; r < matrix.rows(); ++r) {
+                StringBuilder sb = new StringBuilder();
+                for (int c = 0; c < matrix.columns(); ++c)
+                    sb.append(matrix.get(r, c)).append(" ");
+                pw.println(sb.toString());
+            }
+            pw.close();
+            break;
+        }
+
         default:
             throw new UnsupportedOperationException(
                 "writing to " + format + " is currently unsupported");

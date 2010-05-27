@@ -149,4 +149,13 @@ class DoubleVectorView extends VectorView<Double> implements DoubleVector {
         else
             return doubleVector.toArray();
     }
+
+    /**
+     * Returns the original vector that this view is wrapping.  This is
+     * primarily so that {@code Vectors.copyOf} can create a copy of the real
+     * vector.
+     */
+    public DoubleVector getOriginalVector() {
+        return doubleVector;
+    }
 }

@@ -19,17 +19,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.index;
+package edu.ucla.sspace.util;
 
-import edu.ucla.sspace.vector.IntegerVector;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.IOError;
-import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.Collection;
@@ -40,52 +31,40 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
- * A Mapping from Strings to {@code IntegerVector}s.  If a value does not exist
- * for a given string, one will be automatically generated using a {@code
- * IntegerVectorGenerator}.
+ * A Mapping from Strings to object instances created by a {@link Generator}.
+ * If a value does not exist for a given string, one will be automatically
+ * generated using a provided {@code Generator}.
  *
  * @author Keith Stevens
  */
-public class IntegerVectorGeneratorMap<T extends IntegerVector>
-        implements Map<String, T>, Serializable {
+public class GeneratorMap<T> implements Map<String, T>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The {@code IntegerVectorGenerator} for generating new vectors.
+     * The {@code Generator} for generating new map values.
      */
-    private final IntegerVectorGenerator<T> generator;
+    private final Generator<T> generator;
 
     /**
-     * The number of dimensions created in each {@code Vector}.
+     * A mapping from terms to their instance
      */
-    private final int indexVectorLength;
+    private final Map<String, T> termToItem;
 
     /**
-     * A mapping from terms to their Index Vector, stored as a {@code
-     * Vector}.
+     * Creates a new {@link GeneratorMap} using a {@code ConcurrentHashMap}.
+     * Items will be using the provided {@link Generator}.
      */
-    private final Map<String, T> termToVector;
-
-    /**
-     * Creates a new Map using a {@code ConcurrentHashMap}.  Vectors will be
-     * generated of lenght {@code vectorLength}.
-     */
-    public IntegerVectorGeneratorMap(IntegerVectorGenerator<T> generator, 
-                                     int vectorLength) {
-        this(generator, vectorLength,
-             new ConcurrentHashMap<String, T>());
+    public GeneratorMap(Generator<T> generator) {
+        this(generator, new ConcurrentHashMap<String, T>());
     }
 
     /**
-     * Creates a new Map with the given Map.  Vectors will be generated of
-     * lenght {@code vectorLength}.
+     * Creates a new {@link GeneratorMap} using a the provided map}.  Items will
+     * be using the provided {@link Generator}.
      */
-    public IntegerVectorGeneratorMap(IntegerVectorGenerator<T> generator, 
-                                     int vectorLength,
-                                     Map<String, T> map) {
-        termToVector = map;
-        indexVectorLength = vectorLength;
+    public GeneratorMap(Generator<T> generator, Map<String, T> map) {
+        termToItem = map;
         this.generator = generator;
     }
 
@@ -93,57 +72,57 @@ public class IntegerVectorGeneratorMap<T extends IntegerVector>
      * {@inheritDoc}
      */
     public void clear() {
-        termToVector.clear();
+        termToItem.clear();
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean containsKey(Object key) {
-        return termToVector.containsKey(key);
+        return termToItem.containsKey(key);
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean containsValue(Object value) {
-        return termToVector.containsValue(value);
+        return termToItem.containsValue(value);
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<Map.Entry<String, T>> entrySet() {
-        return termToVector.entrySet();
+        return termToItem.entrySet();
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean equals(Object o) {
-        return termToVector.equals(o);
+        return termToItem.equals(o);
     }
 
     /**
-     * Returns a {@code IntegerVector} for the given term, if no mapping for
+     * Returns a {@code T} for the given term, if no mapping for
      * {@code term} then a new vaue is generated, stored, and returned.
      *
-     * @param term The term specifying the index {@code Vector} to return.
+     * @param term The term specifying the item to return.
      *
-     * @return A {@code Vector} corresponding to {@code term}.
+     * @return A generated item corresponding to {@code term}.
      */
     public T get(Object term) {
         // Check that an index vector does not already exist.
-        T v = termToVector.get(term);
+        T v = termToItem.get(term);
         if (v == null) {
             synchronized (this) {
                 // Confirm that some other thread has not created an index
                 // vector for this term.
-                v = termToVector.get(term);
+                v = termToItem.get(term);
                 if (v == null) {
                     // Generate the index vector for this term and store it.
-                    v = generator.generateRandomVector(indexVectorLength);
-                    termToVector.put((String) term, v);
+                    v = generator.generate();
+                    termToItem.put((String) term, v);
                 }
             }
         }
@@ -154,21 +133,21 @@ public class IntegerVectorGeneratorMap<T extends IntegerVector>
      * {@inheritDoc}
      */
     public int hashCode() {
-        return termToVector.hashCode();
+        return termToItem.hashCode();
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean isEmpty() {
-        return termToVector.isEmpty();
+        return termToItem.isEmpty();
     }
     
     /**
      * {@inheritDoc}
      */
     public Set<String> keySet() {
-        return termToVector.keySet();
+        return termToItem.keySet();
     }
 
     /**
@@ -176,7 +155,7 @@ public class IntegerVectorGeneratorMap<T extends IntegerVector>
      */
     public T put(String key, T vector) {
         throw new UnsupportedOperationException(
-                "Vectors may not be inserted into this VectorGeneratorMap.");
+                "Items may not be inserted into this GeneratorMap.");
     }
 
     /**
@@ -184,27 +163,27 @@ public class IntegerVectorGeneratorMap<T extends IntegerVector>
      */
     public void putAll(Map<? extends String, ? extends T> m) {
         throw new UnsupportedOperationException(
-                "Vectors may not be inserted into this VectorGeneratorMap.");
+                "Items may not be inserted into this GeneratorMap.");
     }
 
     /**
      * {@inheritDoc}
      */
     public int size() {
-        return termToVector.size();
+        return termToItem.size();
     }
 
     /**
      * {@inheritDoc}
      */
     public Collection<T> values() {
-        return termToVector.values();
+        return termToItem.values();
     }
 
     /**
      * {@inheritDoc}
      */
     public T remove(Object key) {
-        return termToVector.remove(key);
+        return termToItem.remove(key);
     }
 }

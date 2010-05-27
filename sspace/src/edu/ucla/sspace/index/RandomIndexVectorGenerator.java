@@ -118,17 +118,22 @@ public class RandomIndexVectorGenerator
      */
     private int variance;
 
+    private int indexVectorLength;
+
     /**
      * Constructs this instance using the system properties.
      */
-    public RandomIndexVectorGenerator() {
-        this(System.getProperties());
+    public RandomIndexVectorGenerator(int indexVectorLength) {
+        this(indexVectorLength, System.getProperties());
     }
 
     /**
      * Constructs this instance using the provided properties.
      */
-    public RandomIndexVectorGenerator(Properties properties) {
+    public RandomIndexVectorGenerator(int indexVectorLength,
+                                      Properties properties) {
+        this.indexVectorLength = indexVectorLength;
+
         String numVectorValuesProp = 
             properties.getProperty(VALUES_TO_SET_PROPERTY);
         numVectorValues = (numVectorValuesProp != null)
@@ -149,7 +154,7 @@ public class RandomIndexVectorGenerator
      *
      * @return an index vector
      */
-    public TernaryVector generateRandomVector(int indexVectorLength) {
+    public TernaryVector generate() {
         HashSet<Integer> pos = new HashSet<Integer>();
         HashSet<Integer> neg = new HashSet<Integer>();
         

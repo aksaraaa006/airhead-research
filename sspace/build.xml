@@ -373,7 +373,13 @@
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StatisticsTests" todir="${report.dir}"/>
-
+      <test name="edu.ucla.sspace.dependency.DependencyExtractorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.FlatPathWeightTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.LengthPathWeightTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.RelationPathWeightTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.RelationSumPathWeightTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.SubjObjPathAcceptorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.UniversalPathAcceptorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
@@ -382,12 +388,15 @@
 
       <test name="edu.ucla.sspace.index.DefaultPermutationFunctionTest" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.matrix.CorrelationTransformTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.LogEntropyTransformTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.PointWiseMutualInformationTransformTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.TfIdfTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.AtomicGrowingMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.LogEntropyTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.TfIdfTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrixTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.matrix.CorrelationTransformTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.DiagonalMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.GrowingSparseMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.MatricesTest" todir="${report.dir}"/>
@@ -400,6 +409,7 @@
 
       <test name="edu.ucla.sspace.ri.TestRandomIndexing" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.text.DependencyFileDocumentIteratorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.DocumentPreprocessorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.FilteredIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.text.IteratorFactoryTests" todir="${report.dir}"/>
@@ -422,7 +432,8 @@
 
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-      <!-- -->      
+      <!-- 
+      -->      
     </junit>
   </target>
 
