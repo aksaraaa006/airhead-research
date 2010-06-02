@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.ri.IndexVectorUtil;
 import edu.ucla.sspace.ri.RandomIndexing;
+import edu.ucla.sspace.ri.RandomIndexingByDocument;
 
 import edu.ucla.sspace.vector.TernaryVector;
 
@@ -145,7 +146,7 @@ public class RandomIndexingMain extends GenericMain {
      * The {@link RandomIndexing} instance used by this runnable.  This variable
      * is assigned after {@link #getSpace()} is called.
      */
-    private RandomIndexing ri;
+    private SemanticSpace ri;
 
     private RandomIndexingMain() {
         ri = null;
@@ -155,27 +156,51 @@ public class RandomIndexingMain extends GenericMain {
      * Adds all of the options to the {@link ArgOptions}.
      */
     protected void addExtraOptions(ArgOptions options) {
-        options.addOption('l', "vectorLength", "length of semantic vectors",
-                          true, "INT", "Algorithm Options");
+        options.addOption('l', "vectorLength", "length of semantic vectors " +
+                          "(default: 4000)", true, "INT", "Algorithm Options");
+        options.addOption('p', "usePermutations", "whether to permute " +
+                          "index vectors based on word order  (default: false)", 
+                          true, "BOOL", "Algorithm Options");
+        options.addOption('s', "windowSize", "how many words to consider " +
+                         "in each direction (default: 2)", true,
+                         "INT", "Algorithm Options");
+        options.addOption('T', "transform", "a matrix transform to perform"
+                          + " after processing  (default: none)", true,
+                          "CLASS", "Algorithm Options");
+        options.addOption('D', "byDocument", "create semantic vectors "
+                          + "by their occurrence in documents", false,
+                          null, "Algorithm Options");        
+
         options.addOption('n', "permutationFunction",
                           "permutation function to use.  This should be " +
                           "genric for TernaryVectors",
                           true, "CLASSNAME", "Advanced Algorithm Options");
-        options.addOption('p', "usePermutations", "whether to permute " +
-                        "index vectors based on word order", true,
-                        "BOOL", "Algorithm Options");
-        options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
-                          + "semantics to save memory", true,
-                         "BOOL", "Algorithm Options");
-        options.addOption('s', "windowSize", "how many words to consider " +
-                         "in each direction", true,
-                         "INT", "Algorithm Options");
         options.addOption('S', "saveVectors", "save word-to-IndexVector mapping"
                           + " after processing", true,
-                          "FILE", "Algorithm Options");
+                          "FILE", "Advanced Algorithm Options");
         options.addOption('L', "loadVectors", "load word-to-IndexVector mapping"
                           + " before processing", true,
-                          "FILE", "Algorithm Options");
+                          "FILE", "Advanced Algorithm Options");
+        options.addOption('r', "useSparseSemantics", "use a sparse encoding of "
+                          + "semantics to save memory (default: true)", true,
+                         "BOOL", "Advanced Algorithm Options");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected String getAlgorithmSpecifics() {
+        return 
+            "Normally RandomIndexing generates semantic vectors using a " +
+            "windowed approach.\n" +
+            "Howver, if the -D, --byDocument option is specified, the " +
+            "algorithm is\n" +
+            "fundamentally altered to generate vectors by their occurrence " +
+            "in the corpus's\n" +
+            "documents, similar to how the Vector Space Model works.  " +
+            "Accordingly, the\n" +
+            "options that change window-based paramters will throw " +
+            "exceptions if set.\n";
     }
 
     public static void main(String[] args) {
@@ -191,24 +216,55 @@ public class RandomIndexingMain extends GenericMain {
      * {@inheritDoc}
      */
     protected Properties setupProperties() {
+        // High-level note: because --byDocument is incompatible with the
+        // co-occurrence mode, for each co-occurrence option, we check whether
+        // the by-document option was set in order to report the error.
         props = System.getProperties();
         // Use the command line options to set the desired properites in the
         // constructor.  Use the system properties in case these properties were
         // set using -Dprop=<value>
         if (argOptions.hasOption("usePermutations")) {
+            if (argOptions.hasOption("byDocument")) {
+                throw new IllegalArgumentException(
+                    "--usePermutation is incompatible with the --byDocument " +
+                    "option");
+            }
             props.setProperty(RandomIndexing.USE_PERMUTATIONS_PROPERTY,
                               argOptions.getStringOption("usePermutations"));
         }
 
         if (argOptions.hasOption("permutationFunction")) {
+            if (argOptions.hasOption("byDocument")) {
+                throw new IllegalArgumentException(
+                    "--permutationFunction is incompatible with the " +
+                    "--byDocument option");
+            }
             props.setProperty(
                     RandomIndexing.PERMUTATION_FUNCTION_PROPERTY,
                     argOptions.getStringOption("permutationFunction"));
         }
 
+        if ((argOptions.hasOption("loadVectors")  
+             || argOptions.hasOption("saveVectors")) 
+            && argOptions.hasOption("byDocument")) {
+                throw new IllegalArgumentException(
+                    "saving and loading index vectors is incompatible with " +
+                    "the --byDocument option");
+        }
+
         if (argOptions.hasOption("windowSize")) {
+            if (argOptions.hasOption("byDocument")) {
+                throw new IllegalArgumentException(
+                    "--windowSize is incompatible with the " +
+                    "--byDocument option");
+            }
             props.setProperty(RandomIndexing.WINDOW_SIZE_PROPERTY,
                               argOptions.getStringOption("windowSize"));
+        }
+
+        if (argOptions.hasOption("transform")) {
+            props.setProperty(RandomIndexing.TRANSFORM_PROPERTY,
+                              argOptions.getStringOption("transform"));
         }
 
         if (argOptions.hasOption("vectorLength")) {
@@ -230,20 +286,25 @@ public class RandomIndexingMain extends GenericMain {
      * the word-to-{@link TernaryVector} mapping.
      */
     protected SemanticSpace getSpace() {
-        // Once all the optional properties are known and set, create the
-        // RandomIndexing algorithm using them
-        ri = new RandomIndexing(props);
-
-        // note that getSpace() is called after the arg options have been
-        // parsed, so this call is safe.
         if (argOptions.hasOption("loadVectors")) {
-            String fileName = argOptions.getStringOption("loadVectors");
-            LOGGER.info("loading index vectors from " + fileName);
-            Map<String,TernaryVector> wordToIndexVector = 
-                IndexVectorUtil.load(new File(fileName));
-            ri.setWordToIndexVector(wordToIndexVector);
+            ri = new RandomIndexingByDocument(props);
         }
+        else {
+            // Once all the optional properties are known and set, create the
+            // RandomIndexing algorithm using them
+            RandomIndexing r = new RandomIndexing(props);
 
+            // note that getSpace() is called after the arg options have been
+            // parsed, so this call is safe.
+            if (argOptions.hasOption("loadVectors")) {
+                String fileName = argOptions.getStringOption("loadVectors");
+                LOGGER.info("loading index vectors from " + fileName);
+                Map<String,TernaryVector> wordToIndexVector = 
+                    IndexVectorUtil.load(new File(fileName));
+                r.setWordToIndexVector(wordToIndexVector);
+            }
+            ri = r;
+        }
         return ri;
     }
 
@@ -263,7 +324,7 @@ public class RandomIndexingMain extends GenericMain {
         if (argOptions.hasOption("saveVectors")) {
             String fileName = argOptions.getStringOption("saveVectors");
             LOGGER.info("saving index vectors to " + fileName);
-            IndexVectorUtil.save(ri.getWordToIndexVector(), 
+            IndexVectorUtil.save(((RandomIndexing)ri).getWordToIndexVector(), 
                                  new File(fileName));
         }
     }
