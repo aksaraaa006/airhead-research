@@ -26,13 +26,13 @@ import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.dependency.DependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
-import edu.ucla.sspace.dependency.DependencyPathAcceptor;
+import edu.ucla.sspace.dependency.DependencyRelationAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyPermutationFunction;
 import edu.ucla.sspace.dependency.DependencyRelation;
 import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.FlatPathWeight;
-import edu.ucla.sspace.dependency.UniversalPathAcceptor;
+import edu.ucla.sspace.dependency.UniversalRelationAcceptor;
 
 import edu.ucla.sspace.index.PermutationFunction;
 import edu.ucla.sspace.index.RandomIndexVectorGenerator;
@@ -134,10 +134,10 @@ import java.util.logging.Logger;
  *
  * <dt> <i>Property:</i> <code><b>{@value #DEPENDENCY_ACCEPTOR_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link UniversalPathAcceptor}
+ *      <i>Default:</i> {@link UniversalRelationAcceptor}
  *
  * <dd style="padding-top: .5em">This property sets {@link
- *      DependencyPathAcceptor} to use for validating dependency paths.  If a
+ *      DependencyRelationAcceptor} to use for validating dependency paths.  If a
  *      path is rejected it will not influence either the lemma vector or the
  *      selectional preference vectors. </p>
  *
@@ -148,15 +148,6 @@ import java.util.logging.Logger;
  * <dd style="padding-top: .5em">This property sets the maximal length a
  *      dependency path can be for it to be accepted.  Paths beyond this length
  *      will not contribute towards either the lemma vectors or selectional
- *      preference vectors. </p>
- *
- * <dt> <i>Property:</i> <code><b>{@value #DEPENDENCY_WEIGHT_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@link FlatPathWeight}
- *
- * <dd style="padding-top: .5em">This property sets the {@link
- *      DependencyPathWeight} method to use for scoring a dependency path.  This
- *      score will only influence the lemma vector and not the selectional
  *      preference vectors. </p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #VECTOR_LENGTH_PROPERTY}
@@ -213,16 +204,10 @@ public class DependencyRandomIndexing implements SemanticSpace {
         PROPERTY_PREFIX + ".indexVectorLength";
 
     /**
-     * The property for setting the {@link DependencyPathAcceptor}.
+     * The property for setting the {@link DependencyRelationAcceptor}.
      */
     public static final String DEPENDENCY_ACCEPTOR_PROPERTY =
         PROPERTY_PREFIX + ".dependencyAcceptor";
-
-    /**
-     * The property for setting the {@link DependencyPathWeight}.
-     */
-    public static final String DEPENDENCY_WEIGHT_PROPERTY =
-        PROPERTY_PREFIX + ".dependencyWeight";
 
     /**
      * The property for setting the maximal length of any {@link
@@ -280,14 +265,9 @@ public class DependencyRandomIndexing implements SemanticSpace {
     private final DependencyExtractor parser;
 
     /**
-     * The {@link DependencyPathAcceptor} to use for validating paths.
+     * The {@link DependencyRelationAcceptor} to use for validating paths.
      */
-    private final DependencyPathAcceptor acceptor;
-
-    /**
-     * The {@link DependencyPathWeight} to use for scoring paths.
-     */
-    private final DependencyPathWeight weighter;
+    private final DependencyRelationAcceptor acceptor;
 
     /**
      * The maximum number of relations any path may have.
@@ -340,11 +320,8 @@ public class DependencyRandomIndexing implements SemanticSpace {
         String acceptorProp = 
             properties.getProperty(DEPENDENCY_ACCEPTOR_PROPERTY);
         acceptor = (acceptorProp != null)
-            ? (DependencyPathAcceptor) Misc.getObjectInstance(acceptorProp)
-            : new UniversalPathAcceptor();
-
-        // Load the path weight function.
-        weighter = new FlatPathWeight();
+            ? (DependencyRelationAcceptor) Misc.getObjectInstance(acceptorProp)
+            : new UniversalRelationAcceptor();
 
         // Set up the generator vector maps.
         RandomIndexVectorGenerator indexVectorGenerator = 
@@ -420,18 +397,16 @@ public class DependencyRandomIndexing implements SemanticSpace {
 
                 // Create the path iterator for all acceptable paths rooted at
                 // the focus word in the sentence.
-                Iterator<DependencyPath> pathIter = new DependencyIterator(
-                        nodes, acceptor, weighter, i, pathLength);
+                Iterator<DependencyPath> pathIter = 
+                    new DependencyIterator(nodes[i], acceptor, pathLength);
 
                 // For every path, obtain the index vector of the last word in
                 // the path and add it to the semantic vector for the focus
                 // word.  The index vector is permuted if a permutation
                 // function has been provided based on the contents of the path.
                 while (pathIter.hasNext()) {
-                    LinkedList<DependencyRelation> path = 
-                        pathIter.next().path();
-                    TernaryVector termVector = 
-                        indexMap.get(path.peekLast().token());
+                    DependencyPath path = pathIter.next();
+                    TernaryVector termVector = indexMap.get(path.last().word());
                     if (permFunc != null)
                         termVector = permFunc.permute(termVector, path);
                     add(focusMeaning, termVector);

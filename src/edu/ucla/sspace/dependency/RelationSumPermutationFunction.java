@@ -63,7 +63,7 @@ public class RelationSumPermutationFunction <T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public T permute(T vector, LinkedList<DependencyRelation> path) {
+    public T permute(T vector, DependencyPath path) {
         int bestRelationScore = 0; 
         for (DependencyRelation link : path)
             vector = permFunc.permute(

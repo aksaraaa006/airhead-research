@@ -21,24 +21,60 @@
 
 package edu.ucla.sspace.dependency;
 
-import edu.ucla.sspace.util.Pair;
-
-import java.util.LinkedList;
+import java.util.Iterator;
 
 
 /**
- * An interface for representing a dependency path.
+ * An interface for representing the nodes and their relations in a dependency
+ * path.
  */
-public interface DependencyPath {
+public interface DependencyPath extends Iterable<DependencyRelation> {
 
     /**
-     * Returns the sequence of (term, relation) pairs that comprise an
-     * undirected path in the dependency tree.
+     * Returns the first node in the path, which is closest to the root.
      */
-    LinkedList<DependencyRelation> path();
+    DependencyTreeNode first();
 
     /**
-     * Returns a score for the {@link DependencyPath}.
+     * Returns the relation that connects the first and second nodes in the
+     * path, which are closest to the root.
      */
-    double score();
+    DependencyRelation firstRelation();
+
+    /**
+     * Returns the node location at the specified position along the path.
+     */
+    DependencyTreeNode getNode(int position);
+
+    /**
+     * Returns the relation connecting the node at the specified position to the
+     * next node.  Note that for the last node in the path, no relation exists,
+     * so there are at most {@code length() - 1} relations in the path.
+     *
+     * @throws IllegalArgumentException if {@code position} is less than 0 or
+     * {@code position} is greater than {@code length() - 1}.
+     */
+    String getRelation(int position);
+
+    /**
+     * Returns an iterator over all the relations in the path in order from
+     * closest to the root to furthest.
+     */
+    Iterator<DependencyRelation> iterator();
+
+    /**
+     * Returns the last node in the path, which is furthest from the root.
+     */
+    DependencyTreeNode last();
+
+    /**
+     * Returns the relation that connects the last and second to last nodes in
+     * the path, which are furthest from the root.
+     */
+    DependencyRelation lastRelation();
+    
+    /**
+     * Returns the number of nodes in the dependency path.
+     */
+    int length();
 }

@@ -21,29 +21,34 @@
 
 package edu.ucla.sspace.dependency;
 
-import java.util.List;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 
-public class FlatPathWeightTest extends AbstractPathTest {
+public class UniversalRelationAcceptorTest {
 
-    @Test public void testSimplePath() {
-        String[][] pathString = {{"cat", "n", "Rel", "dog", "n"}};
-        DependencyPath path = makePath(pathString);
-        DependencyPathWeight weighter = new FlatPathWeight();
-        assertEquals(1, weighter.scorePath(path), .000001);
+    DependencyRelationAcceptor acceptor = new UniversalRelationAcceptor();
+
+    @Test public void testArbitraryLink() {
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "N"), "not a relation",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertTrue(acceptor.accept(r));
     }
 
-    @Test public void testLongPath() {
-        String[][] pathString = {{"cat", "n", "Rel", "dog", "n"},
-                                 {"dog", "n", "noarelation", "whale", "n"},
-                                 {"whale", "n", "noarelation", "pig", "n"}};
-        DependencyPath path = makePath(pathString);
-        DependencyPathWeight weighter = new FlatPathWeight();
-        assertEquals(1, weighter.scorePath(path), .000001);
+    @Test public void testNormalLink() {
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "N"), "SUBJ",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertTrue(acceptor.accept(r));
+    }
+
+    @Test public void testNormalLink2() {
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "NMOD"), "GEN",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertTrue(acceptor.accept(r));
     }
 }

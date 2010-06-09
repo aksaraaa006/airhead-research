@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import java.util.List;
-
 
 /**
  * A {@link DependencyPathWeight} that returns {@code 1} for every path.
@@ -34,7 +32,7 @@ public class FlatPathWeight implements DependencyPathWeight {
     /**
      * {@inheritDoc}
      */
-    public double scorePath(List<DependencyRelation> path) {
+    public double scorePath(DependencyPath path) {
         return 1;
     }
 }

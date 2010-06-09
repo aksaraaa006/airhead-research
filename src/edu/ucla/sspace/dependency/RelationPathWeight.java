@@ -21,8 +21,6 @@
 
 package edu.ucla.sspace.dependency;
 
-import java.util.List;
-
 
 /**
  * A {@link DependencyPathWeight} that scores paths based on the relations in
@@ -42,11 +40,11 @@ public class RelationPathWeight implements DependencyPathWeight {
     /**
      * {@inheritDoc}
      */
-    public double scorePath(List<DependencyRelation> path) {
+    public double scorePath(DependencyPath path) {
         double score = 1;
         for (DependencyRelation wordRelation : path) {
             if (wordRelation.relation().equals("SBJ"))
-                score = 5;
+                return 5; // short circuit on the highest score
             if (wordRelation.relation().equals("OBJ") && score < 4)
                 score = 4;
             if (wordRelation.relation().equals("OBL") && score < 3)

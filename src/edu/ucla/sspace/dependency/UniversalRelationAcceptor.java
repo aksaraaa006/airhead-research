@@ -23,17 +23,17 @@ package edu.ucla.sspace.dependency;
 
 
 /**
- * A {@link DependencyPathAcceptor} that accepts links with the {@code subj} or
- * {@code obj} relation.
+ * A {@link DependencyPathAcceptor} that accepts all links.
  *
  * @author Keith Stevens
  */
-public class SubjObjPathAcceptor implements DependencyPathAcceptor {
+public class UniversalRelationAcceptor implements DependencyRelationAcceptor {
 
     /**
      * {@inheritDoc}
      */
-    public boolean acceptLink(String pos1, String relation, String pos2) {
-        return relation.equals("SBJ") || relation.equals("OBJ");
+    public boolean accept(DependencyRelation relation) {
+        return true;
     }
 }
+

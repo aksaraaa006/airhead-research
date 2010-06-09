@@ -27,26 +27,36 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class SubjObjPathAcceptorTest {
+public class SubjObjRelationAcceptorTest {
 
-    @Test public void testArbitraryLink() {
-        DependencyPathAcceptor acceptor = new SubjObjPathAcceptor();
-        assertFalse(acceptor.acceptLink("sfsdf", "not a relation", "SDF"));
+    DependencyRelationAcceptor acceptor = new SubjObjRelationAcceptor();
+
+    @Test public void testArbitraryLink() {        
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "N"), "not a relation",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertFalse(acceptor.accept(r));
     }
 
     @Test public void testSubjLink() {
-        DependencyPathAcceptor acceptor = new SubjObjPathAcceptor();
-        assertTrue(acceptor.acceptLink("N", "SBJ", "V"));
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "N"), "SBJ",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertTrue(acceptor.accept(r));
     }
 
     @Test public void testObjLink() {
-        DependencyPathAcceptor acceptor = new SubjObjPathAcceptor();
-        assertTrue(acceptor.acceptLink("N", "OBJ", "N"));
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "N"), "OBJ",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertTrue(acceptor.accept(r));
     }
 
     @Test public void testNormalLink() {
-        DependencyPathAcceptor acceptor = new SubjObjPathAcceptor();
-        assertFalse(acceptor.acceptLink("N", "GEN", "NMOD"));
+        DependencyRelation r = new SimpleDependencyRelation(
+            new SimpleDependencyTreeNode("foo", "N"), "NMOD",
+            new SimpleDependencyTreeNode("bar", "V"));
+        assertFalse(acceptor.accept(r));
     }
 }
 
