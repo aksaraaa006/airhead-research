@@ -365,7 +365,7 @@
       <formatter type="plain"/>
 
       <!-- Comment block for excluding the testing a specific set of files.
-      -->
+        -->
       <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
@@ -373,13 +373,15 @@
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StatisticsTests" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.dependency.DependencyExtractorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.FlatPathWeightTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.LengthPathWeightTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.RelationPathWeightTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.RelationSumPathWeightTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.dependency.SubjObjPathAcceptorTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.dependency.UniversalPathAcceptorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.SubjObjRelationAcceptorTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.dependency.UniversalRelationAcceptorTest" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.evaluation.ESLSynonymEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.FinkelsteinEtAl353WordSimilarityEvaluationTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.evaluation.RubensteinGoodenoughWordSimilarityEvaluationTest" todir="${report.dir}"/>
@@ -432,8 +434,7 @@
 
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-      <!-- 
-      -->      
+      <!-- -->      
     </junit>
   </target>
 

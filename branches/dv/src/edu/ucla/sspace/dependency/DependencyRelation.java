@@ -21,35 +21,27 @@
 
 package edu.ucla.sspace.dependency;
 
+
 /**
- * An interface for representing a dependency relationship in the form of (term,
- * relation) pair that composes a sequence of relations in a {@link
- * DependencyPath}.  In addition, this node is marked as a Head node, or a
- * governing node, if the token in this relationship governs the next token in
- * the {@link DependencyPath} sequence in the original dependency parse tree.
+ * An interface for representing a dependency relationship between a head node
+ * and its dependent relation.
  */
 public interface DependencyRelation {
 
     /**
-     * Returns the token represented by this {@link DependencyRelation}.
+     * Returns the dependent node that is related to the head node.
      */
-    public String token();
+    DependencyTreeNode dependentNode();
 
     /**
-     * Returns the token's part of speech tag.
+     * Returns the head node on which the second node has dependent relation.
      */
-    public String pos();
+    DependencyTreeNode headNode();
 
     /**
      * Returns the relation the the current has with the next token in a {@link
      * DependencyPath}.
      */
-    public String relation();
-
-    /**
-     * Returns true if this token is the head word for the relationship
-     * represented by this {@link DependencyRelation}.
-     */
-    public boolean isHeadNode();
+    String relation();
 
 }

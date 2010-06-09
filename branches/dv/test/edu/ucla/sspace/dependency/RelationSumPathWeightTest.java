@@ -33,48 +33,45 @@ import static org.junit.Assert.*;
 public class RelationSumPathWeightTest extends AbstractPathTest {
 
     @Test public void testSubjPath() {
-        String[][] pathString = {{"cat", "SBJ"}, {"dog", "OBJ"},
-                                 {"meow", "nor a relation"}};
-        List<DependencyRelation> path = makePath(pathString);
+        String[][] pathString = {{"cat", "n", "SBJ", "dog", "n"},
+                                 {"dog", "n", "OBJ", "whale", "n"},
+                                 {"whale", "n", "noarelation", "pig", "n"}};
+        DependencyPath path = makePath(pathString);
         DependencyPathWeight weighter = new RelationSumPathWeight();
         assertEquals(10, weighter.scorePath(path), .000001);
     }
 
     @Test public void testObjPath() {
-        String[][] pathString = {{"cat", "GEN"}, {"dog", "OBJ"},
-                                 {"meow", "nor a relation"}};
-        List<DependencyRelation> path = makePath(pathString);
+        String[][] pathString = {{"cat", "n", "GEN", "dog", "n"},
+                                 {"dog", "n", "OBJ", "whale", "n"},
+                                 {"whale", "n", "noarelation", "pig", "n"}};
+        DependencyPath path = makePath(pathString);
         DependencyPathWeight weighter = new RelationSumPathWeight();
         assertEquals(7, weighter.scorePath(path), .000001);
     }
 
     @Test public void testOblPath() {
-        String[][] pathString = {{"cat", "gar"}, {"dog", "OBL"},
-                                 {"meow", "GEN"}};
-        List<DependencyRelation> path = makePath(pathString);
+        String[][] pathString = {{"cat", "n", "OBL", "dog", "n"},
+                                 {"dog", "n", "GEN", "whale", "n"},
+                                 {"whale", "n", "noarelation", "pig", "n"}};
+        DependencyPath path = makePath(pathString);
         DependencyPathWeight weighter = new RelationSumPathWeight();
         assertEquals(6, weighter.scorePath(path), .000001);
     }
 
     @Test public void testGenPath() {
-        String[][] pathString = {{"cat", "GEN"}, {"dog", "NMOD"},
-                                 {"meow", "nor a relation"}};
-        List<DependencyRelation> path = makePath(pathString);
+        String[][] pathString = {{"cat", "n", "GEN", "dog", "n"},
+                                 {"dog", "n", "NMOD", "whale", "n"},
+                                 {"whale", "n", "noarelation", "pig", "n"}};
+        DependencyPath path = makePath(pathString);
         DependencyPathWeight weighter = new RelationSumPathWeight();
         assertEquals(4, weighter.scorePath(path), .000001);
     }
 
     @Test public void testSimplePath() {
-        String[][] pathString = {{"cat", "Rel"}};
-        List<DependencyRelation> path = makePath(pathString);
+        String[][] pathString = {{"cat", "n", "Rel", "dog", "n"}};
+        DependencyPath path = makePath(pathString);
         DependencyPathWeight weighter = new RelationSumPathWeight();
         assertEquals(1, weighter.scorePath(path), .000001);
-    }
-
-    @Test public void testEmptyPath() {
-        String[][] pathString = {};
-        List<DependencyRelation> path = makePath(pathString);
-        DependencyPathWeight weighter = new RelationSumPathWeight();
-        assertEquals(0, weighter.scorePath(path), .000001);
     }
 }

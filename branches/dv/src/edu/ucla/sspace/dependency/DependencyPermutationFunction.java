@@ -30,5 +30,5 @@ public interface DependencyPermutationFunction <T extends Vector> {
      * @return A new permuted {@link Vector} of the same type as {@code vector}
      *         that is
      */
-    T permute(T vector, LinkedList<DependencyRelation> path);
+    T permute(T vector, DependencyPath path);
 }

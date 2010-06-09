@@ -21,9 +21,11 @@
 
 package edu.ucla.sspace.dependency;
 
+import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.text.Stemmer;
 import edu.ucla.sspace.text.TokenFilter;
 
+import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.HashMultiMap;
 
@@ -65,8 +67,6 @@ import org.w3c.dom.NodeList;
  * @author Keith Stevens
  */
 public class DependencyExtractor {
-
-    public static final String EMPTY_STRING = "";
 
     /**
      * A {@link TokenFilter} that will accept or reject tokens before they are
@@ -213,7 +213,7 @@ public class DependencyExtractor {
      * Extracts dependency relations from a document containing only the words
      * in a sentence, in the CoNLL format.  
      *
-     * The CoNNLL features that are  of interest are ID, LEMMA or FORM, POSTAG,
+     * The CoNNLL features that are of interest are ID, LEMMA or FORM, POSTAG,
      * HEAD, and DEPREL which are the id of the node, the string for the word at
      * this position, the part of speech tag, the parent of this node, and the
      * relation to the parent, respectively.  These features will be extracted
@@ -229,10 +229,16 @@ public class DependencyExtractor {
      */
     public DependencyTreeNode[] parse(BufferedReader reader) 
             throws IOException {
-        List<SimpleDependencyTreeNode> relations =
+        List<SimpleDependencyTreeNode> nodes =
             new ArrayList<SimpleDependencyTreeNode>();
-        MultiMap<Integer, DependencyLink> childrenToAdd =
-            new HashMultiMap<Integer, DependencyLink>();
+
+        // When building the tree, keep track of all the relations seen between
+        // the nodes.  The nodes need to be linked by DependencyRelations, which
+        // need DependencyTreeNode instances.  However, during parsing, we may
+        // encounter a forward reference to a Node not yet created, so the map
+        // ensures that the relation will still be added.
+        MultiMap<Integer,Duple<Integer,String>> relationsToAdd 
+            = new HashMultiMap<Integer,Duple<Integer,String>>();
 
         StringBuilder sb = new StringBuilder();
 
@@ -242,7 +248,7 @@ public class DependencyExtractor {
         for (String line = null; ((line = reader.readLine()) != null); ) {
             // If a new line is encountered and no lines have been handled yet,
             // skip all new lines.
-            if (line.length() == 0 && relations.size() == 0)
+            if (line.length() == 0 && nodes.size() == 0)
                 continue;
 
             // If a new line is encountered and lines have already been
@@ -268,42 +274,55 @@ public class DependencyExtractor {
             String rel = nodeFeatures[relationIndex];
 
             // Create the new relation.
-            SimpleDependencyTreeNode relation = 
-                new SimpleDependencyTreeNode(word, pos, parent, rel);
-            relations.add(relation);
+            SimpleDependencyTreeNode curNode = 
+                new SimpleDependencyTreeNode(word, pos);
 
             // Set the dependency link between this node and it's parent node.
             // If the parent is negative then the node itself is a root node and
             // has no parent.
-            if (parent >= 0) {
-                // If the parent has already been processed, add a child link
-                // from the parent node to this node.  Otherwise store the link
-                // in a map to be processed later.
-                if (parent < relations.size())
-                    relations.get(parent).addNeighbor(
-                            new DependencyLink(id, rel, true));
-                else
-                    childrenToAdd.put(parent, new DependencyLink(id, rel, true));
+            if (parent > 0) {
+                // If the parent has already been seen, add the relation
+                // directly.
+                if (parent < nodes.size()) {
+                    SimpleDependencyTreeNode parentNode = nodes.get(parent);
+                    DependencyRelation r = new SimpleDependencyRelation(
+                        parentNode, rel, curNode);
+                    parentNode.addNeighbor(r);
+                    curNode.addNeighbor(r);
+                }
+                // Otherwise, we'll fill in this link once the tree is has been
+                // fully seen.
+                else { 
+                    relationsToAdd.put(id,
+                        new Duple<Integer,String>(parent, rel));
+                }
             }
+            
+            // Finally, add the current node to the
+            nodes.add(curNode);
             id++;
         }
 
-        if (relations.size() == 0)
+        if (nodes.size() == 0)
             return null;
 
-        if (childrenToAdd.size() != 0) {
+        if (relationsToAdd.size() > 0) {
             // Process all the child links that were not handled during the
             // processing of the words.
-            for (Map.Entry<Integer, DependencyLink> childLink :
-                    childrenToAdd.entrySet()) {
-                int childIndex = childLink.getKey();
-                DependencyLink link = childLink.getValue();
-                relations.get(childIndex).addNeighbor(link);
+            for (Map.Entry<Integer,Duple<Integer,String>> parentAndRel :
+                     relationsToAdd.entrySet()) {
+                SimpleDependencyTreeNode dep = nodes.get(parentAndRel.getKey());
+                Duple<Integer,String> d = parentAndRel.getValue();
+                SimpleDependencyTreeNode head = nodes.get(d.x);
+                DependencyRelation r = new SimpleDependencyRelation(
+                    head, d.y, dep);
+                head.addNeighbor(r);
+                dep.addNeighbor(r);                
             }
         }
 
-        return relations.toArray(
-                new SimpleDependencyTreeNode[relations.size()]);
+        return nodes.toArray(
+                new SimpleDependencyTreeNode[nodes.size()]);
     }
 
     /**
@@ -318,71 +337,11 @@ public class DependencyExtractor {
         String word = nodeFeatures[formIndex].toLowerCase();
         // Filter if neccessary.
         if (filter != null && !filter.accept(word))
-            return EMPTY_STRING;
+            return IteratorFactory.EMPTY_TOKEN;
         // Get the lemma and check it's value.  Stem if needed.
         String lemma = nodeFeatures[lemmaIndex];
         if (lemma.equals("_"))
             return (stemmer == null) ? word : stemmer.stem(word);
         return lemma;
-    }
-
-    /**
-     * A default implementation of a {@link DependencyTreeNode}
-     */
-    public static class SimpleDependencyTreeNode implements DependencyTreeNode {
-
-        /**
-         * The node's token.
-         */
-        private String word;
-
-        /**
-         * The node's part of speech tag.
-         */
-        private String pos;
-
-        /**
-         * The list of neighbors of this node.
-         */
-        private List<DependencyLink> neighbors;
-
-        /**
-         * Creates a new {@link SimpleDependencyTreeNode} node for the provided
-         * word, with the provided parent link.  Initially the children list is
-         * empty.
-         */
-        public SimpleDependencyTreeNode(String word, String pos,
-                                        int parent, String relation) {
-            neighbors = new LinkedList<DependencyLink>();
-            if (parent >= 0)
-                neighbors.add(new DependencyLink(parent, relation, false));
-            this.word = word;
-            this.pos = pos;
-        }
-
-        public List<DependencyLink> neighbors() {
-            return neighbors;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public String word() {
-            return word;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public String pos() {
-            return pos;
-        }
-
-        /**
-         * Adds a child node id to this node.
-         */
-        public void addNeighbor(DependencyLink neighbor) {
-            neighbors.add(neighbor);
-        }
     }
 }

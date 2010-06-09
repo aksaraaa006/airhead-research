@@ -25,16 +25,16 @@ import java.util.List;
 
 
 /**
- * An interface for dependency relations.  This represents a node in a
- * dependency parsed tree structure containing the word, it's children, it's
- * parent, and the relation to the parent.
+ * The interface for a word in a dependency parse tree.
  */
 public interface DependencyTreeNode {
 
     /**
-     * Returns the list of neighbors to the current node.
+     * Returns the list of neighbors to the current node.  Note that this list
+     * include both relations where the current node is the head node and
+     * relations where the current node is the dependent.
      */
-    List<DependencyLink> neighbors();
+    List<DependencyRelation> neighbors();
 
     /**
      * Returns the word stored in this node.

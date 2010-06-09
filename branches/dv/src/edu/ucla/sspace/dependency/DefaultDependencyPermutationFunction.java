@@ -63,7 +63,7 @@ public class DefaultDependencyPermutationFunction <T extends Vector>
     /**
      * {@inheritDoc}
      */
-    public T permute(T vector, LinkedList<DependencyRelation> path) {
-        return permFunc.permute(vector, path.size());
+    public T permute(T vector, DependencyPath path) {
+        return permFunc.permute(vector, path.length());
     }
 }
