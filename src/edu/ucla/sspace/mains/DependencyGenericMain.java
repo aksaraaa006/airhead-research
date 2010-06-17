@@ -26,6 +26,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.dependency.CoNLLDependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyExtractorManager;
+import edu.ucla.sspace.dependency.WaCKyDependencyExtractor;
 
 import edu.ucla.sspace.text.DependencyFileDocumentIterator;
 import edu.ucla.sspace.text.Document;
@@ -52,13 +53,36 @@ import java.util.Iterator;
 public abstract class DependencyGenericMain extends GenericMain {
 
     /**
+     * A description of the currently supported {@link DependencyExtractor}
+     * configuration options.
+     */
+    static final String DEPENDENCY_EXTRACTOR_DESCRIPTION =        
+        "This semantic space algorithm operates only on dependency parsed " +
+        "corpora.  The\n" +
+        "corpora must be formated in way recognized by one of extractors.  " +
+        "The currently\n" +
+        "supported dependency extractors are CoNLL and WaCKy.  One of these " +
+        "may be\n" +
+        "specifed with the -D, --dependencyParseFormat option.  The CoNLL " + 
+        "extractor\n" +
+        "supports optional configuration with the -G, --configFile option to " +
+        "indicate the\n" +
+        "order of the fields.";
+
+    /**
      * {@inheritDoc}
      */
     public void addExtraOptions(ArgOptions options) {
         options.addOption('G', "configFile",
                           "XML configuration file for the format of a " +
                           "dependency parse",
-                          true, "FILE", "Process Properties");
+                          true, "FILE", 
+                          "Advanced Dependency Parsing Properties");
+        options.addOption('D', "dependencyParseFormat",
+                          "the name of the dependency parsed format for " +
+                          "the corpus (defalt: CoNLL)",
+                          true, "STR", 
+                          "Advanced Dependency Parsing Properties");
     }
 
     /**
@@ -77,15 +101,29 @@ public abstract class DependencyGenericMain extends GenericMain {
                  getObjectInstance(argOptions.getStringOption('Z'))
             : null;
 
-        // REMINDER: When we start adding more DependencyExtactor
-        // implementations, this will need to look at argOptions to decide which
-        // to create.  Some work will also need to go into deciding how to
-        // decipher the various implementation-specific options.
-        DependencyExtractor e = (argOptions.hasOption('G'))
-            ? new CoNLLDependencyExtractor(argOptions.getStringOption('G'), 
-                                           filter, stemmer)
-            : new CoNLLDependencyExtractor(filter, stemmer);
-        DependencyExtractorManager.addExtractor("Malt", e);
+        
+        String format = (argOptions.hasOption("dependencyParseFormat"))
+            ? argOptions.getStringOption("dependencyParseFormat")
+            : "CoNLL";
+            
+        if (format.equals("CoNLL")) {
+            DependencyExtractor e = (argOptions.hasOption('G'))
+                ? new CoNLLDependencyExtractor(argOptions.getStringOption('G'), 
+                                               filter, stemmer)
+                : new CoNLLDependencyExtractor(filter, stemmer);
+            DependencyExtractorManager.addExtractor("CoNLL", e);
+        }
+        else if (format.equals("WaCKy")) {
+            if (argOptions.hasOption('G'))
+                throw new IllegalArgumentException(
+                    "WaCKy does not support configuration with -G");
+            DependencyExtractor e = 
+                new WaCKyDependencyExtractor(filter, stemmer);
+            DependencyExtractorManager.addExtractor("WaCKy", e);
+        }
+        else 
+            throw new IllegalArgumentException(
+                "Unrecognized dependency parsed format: " + format);
     }
 
     /**
@@ -124,4 +162,25 @@ public abstract class DependencyGenericMain extends GenericMain {
         docIter = new CombinedIterator<Document>(docIters);
         return docIter;
     }
+
+    /**
+     * Prints out information on how to run the program to {@code stdout} using
+     * the option descriptions for compound words, tokenization, .sspace formats
+     * and help.
+     */
+    @Override protected void usage() {
+        String specifics = getAlgorithmSpecifics();
+        System.out.println(
+            "usage: java " 
+            + this.getClass().getName()
+            + " [options] <output-dir>\n"
+            + argOptions.prettyPrint() 
+            + ((specifics.length() == 0) ? "" : "\n" + specifics)
+            + "\n\n" + OptionDescriptions.TOKEN_FILTER_DESCRIPTION
+            + "\n\n" + OptionDescriptions.TOKEN_STEMMING_DESCRIPTION
+            + "\n\n" + OptionDescriptions.FILE_FORMAT_DESCRIPTION
+            + "\n\n" + DEPENDENCY_EXTRACTOR_DESCRIPTION
+            + "\n\n" + OptionDescriptions.HELP_DESCRIPTION);
+    }
+
 }
