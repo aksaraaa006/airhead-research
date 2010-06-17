@@ -22,7 +22,7 @@
 package edu.ucla.sspace.text;
 
 import edu.ucla.sspace.util.LimitedIterator;
-import edu.ucla.sspace.util.Misc;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -226,7 +226,7 @@ public class IteratorFactory {
         // to decide which stemmer to use
         String stemmerProp = props.getProperty(STEMMER_PROPERTY);
         if (stemmerProp != null)
-            stemmer = (Stemmer) Misc.getObjectInstance(stemmerProp);
+            stemmer = ReflectionUtil.<Stemmer>getObjectInstance(stemmerProp);
 
         String compoundTokensProp = 
             props.getProperty(COMPOUND_TOKENS_FILE_PROPERTY);

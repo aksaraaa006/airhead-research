@@ -24,6 +24,7 @@ package edu.ucla.sspace.dri;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyExtractorManager;
 import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyRelationAcceptor;
@@ -41,7 +42,7 @@ import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.GeneratorMap;
-import edu.ucla.sspace.util.Misc;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.vector.CompactSparseIntegerVector;
 import edu.ucla.sspace.vector.IntegerVector;
@@ -286,9 +287,8 @@ public class DependencyRandomIndexing implements SemanticSpace {
      * properties to specify other class objects.
      */
     public DependencyRandomIndexing(
-            DependencyExtractor parser,
             DependencyPermutationFunction<TernaryVector> permFunc) {
-        this(parser, permFunc, System.getProperties());
+        this(permFunc, System.getProperties());
     }
 
     /**
@@ -296,11 +296,10 @@ public class DependencyRandomIndexing implements SemanticSpace {
      * takes ownership
      */
     public DependencyRandomIndexing(
-            DependencyExtractor parser,
             DependencyPermutationFunction<TernaryVector> permFunc,
             Properties properties) {
         this.permFunc = permFunc;
-        this.parser = parser;
+        this.parser = DependencyExtractorManager.getDefaultExtractor();
 
         // Load the vector length.
         String vectorLengthProp = 
@@ -320,7 +319,8 @@ public class DependencyRandomIndexing implements SemanticSpace {
         String acceptorProp = 
             properties.getProperty(DEPENDENCY_ACCEPTOR_PROPERTY);
         acceptor = (acceptorProp != null)
-            ? (DependencyRelationAcceptor) Misc.getObjectInstance(acceptorProp)
+            ? (DependencyRelationAcceptor) 
+                ReflectionUtil.getObjectInstance(acceptorProp)
             : new UniversalRelationAcceptor();
 
         // Set up the generator vector maps.
@@ -378,7 +378,7 @@ public class DependencyRandomIndexing implements SemanticSpace {
         // Iterate over all of the parseable dependency parsed sentences in the
         // document.
         for (DependencyTreeNode[] nodes = null;
-                (nodes = parser.parse(document)) != null; ) {
+                (nodes = parser.readNextTree(document)) != null; ) {
 
             // Skip empty documents.
             if (nodes.length == 0)

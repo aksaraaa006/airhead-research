@@ -58,16 +58,16 @@ import static edu.ucla.sspace.common.Statistics.log2_1p;
  * <ul> 
  *
  * <li style="font-family:Garamond, Georgia, serif"> Landauer, T. K., Foltz,
- *      P. W., & Laham, D. (1998).  Introduction to Latent Semantic
+ *      P. W., and Laham, D. (1998).  Introduction to Latent Semantic
  *      Analysis. <i>Discourse Processes</i>, <b>25</b>, 259-284.</li>
  *
- * <li style="font-family:Garamond, Georgia, serif"> S. Dumais, “Enhancing
- *      performance in latent semantic indexing (LSI) retrieval,” Bellcore,
+ * <li style="font-family:Garamond, Georgia, serif"> S. Dumais, "Enhancing
+ *      performance in latent semantic indexing (LSI) retrieval," Bellcore,
  *      Morristown (now Telcordia Technologies), Tech. Rep. TM-ARH-017527,
  *      1990. </li>
  *
  * <li style="font-family:Garamond, Georgia, serif"> P. Nakov, A. Popova, and
- *      P. Mateev, “Weight functions impact on LSA performance,” in
+ *      P. Mateev, "Weight functions impact on LSA performance," in
  *      <i>Proceedings of the EuroConference Recent Advances in Natural Language
  *      Processing, (RANLP’01)</i>, 2001, pp. 187–193. </li>
  *

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2010 David Jurgens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,25 +19,23 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.util;
+package edu.ucla.sspace.dependency;
+
 
 /**
- * A collection of miscellaneous, but useful, functions.
+ * An interface for deciding whether a provided path is valid for further
+ * processing.
  */
-public class Misc {
+public interface DependencyPathAcceptor {
 
     /**
-     * Returns an arbitrary object instance based on a class name.
+     * Returns {@code true} if the path is valid according to this acceptor's
+     * standards
      *
-     * @param className The name of a desired class to instantiate.
+     * @param path a dependency path
+     *
+     * @return {@code true} if the path is valid
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T getObjectInstance(String className) {
-        try {
-            Class clazz = Class.forName(className);
-            return (T) clazz.newInstance();
-        } catch (Exception e) {
-            throw new Error(e);
-        }
-    }
+    boolean accepts(DependencyPath path);
+
 }

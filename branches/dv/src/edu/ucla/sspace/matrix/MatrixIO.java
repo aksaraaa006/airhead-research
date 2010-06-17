@@ -212,6 +212,11 @@ public class MatrixIO {
     }
 
     /**
+     * Uninstantiable
+     */
+    private MatrixIO() { }
+
+    /**
      * Converts the format of the input {@code matrix}, returning a temporary
      * file containing the matrix's data in the desired format.
      *
