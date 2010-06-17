@@ -23,7 +23,9 @@ package edu.ucla.sspace.mains;
 
 import edu.ucla.sspace.common.ArgOptions;
 
+import edu.ucla.sspace.dependency.CoNLLDependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyExtractorManager;
 
 import edu.ucla.sspace.text.DependencyFileDocumentIterator;
 import edu.ucla.sspace.text.Document;
@@ -31,7 +33,7 @@ import edu.ucla.sspace.text.TokenFilter;
 import edu.ucla.sspace.text.Stemmer;
 
 import edu.ucla.sspace.util.CombinedIterator;
-import edu.ucla.sspace.util.Misc;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import java.io.IOException;
 
@@ -60,22 +62,30 @@ public abstract class DependencyGenericMain extends GenericMain {
     }
 
     /**
-     * Returns a new {@link DependencyExtractor} that uses a given configuration
-     * file, if it is not null, and any {@link TokenFilter}s or {@link Stemmer}s
-     * that have been specified by the command line.
+     * Links the desired {@link DependencyExtractor} with the {@link
+     * DependencyExtractorManager}, creating the {@code DependencyExtractor}
+     * with optional configuration file, if it is not {@code null}, and any
+     * {@link TokenFilter}s or {@link Stemmer}s that have been specified by the
+     * command line.
      */
-    protected DependencyExtractor getDependencyExtractor() {
+    protected void setupDependencyExtractor() {
         TokenFilter filter = (argOptions.hasOption("tokenFilter"))
             ? TokenFilter.loadFromSpecification(argOptions.getStringOption('F'))
             : null;
         Stemmer stemmer = (argOptions.hasOption("stemmer"))
-            ? (Stemmer) Misc.getObjectInstance(argOptions.getStringOption('Z'))
+            ? ReflectionUtil.<Stemmer>
+                 getObjectInstance(argOptions.getStringOption('Z'))
             : null;
 
-        return (argOptions.hasOption('G'))
-            ? new DependencyExtractor(argOptions.getStringOption('G'), 
-                                      filter, stemmer)
-            : new DependencyExtractor(filter, stemmer);
+        // REMINDER: When we start adding more DependencyExtactor
+        // implementations, this will need to look at argOptions to decide which
+        // to create.  Some work will also need to go into deciding how to
+        // decipher the various implementation-specific options.
+        DependencyExtractor e = (argOptions.hasOption('G'))
+            ? new CoNLLDependencyExtractor(argOptions.getStringOption('G'), 
+                                           filter, stemmer)
+            : new CoNLLDependencyExtractor(filter, stemmer);
+        DependencyExtractorManager.addExtractor("Malt", e);
     }
 
     /**

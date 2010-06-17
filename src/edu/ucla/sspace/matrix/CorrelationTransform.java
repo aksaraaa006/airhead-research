@@ -100,25 +100,37 @@ public class CorrelationTransform implements Transform {
     }
 
     /**
-     * Operation not supported
-     *
-     * @throws UnsupportedOperationException if called
+     * Transform the matrix in place using row correlation.  This is done
+     * according to correlation equation provided by the cited COALS paper on
+     * page 3 in table 4.  By default, negative values are dropped after the
+     * correlation has been computed, if {@code SAVE_NEGATIVES_PROPERTY} was
+     * set, then the negative values are maintained.  If negative values are
+     * dropped then by default, after the correlation is done all values are
+     * replaced with their square root.
      */
     public File transform(File inputMatrixFile, MatrixIO.Format format) 
              throws IOException {
-        throw new UnsupportedOperationException(
-                "Transformation of files is not supported yet.");
+        // create a temp file for the output
+        File output = File.createTempFile(inputMatrixFile.getName() + 
+                                          ".correlation-transform", ".dat");
+        transform(inputMatrixFile, format, output);
+        return output;
     }
 
     /**
-     * Operation not supported
-     *
-     * @throws UnsupportedOperationException if called
+     * Transform the matrix in place using row correlation.  This is done
+     * according to correlation equation provided by the cited COALS paper on
+     * page 3 in table 4.  By default, negative values are dropped after the
+     * correlation has been computed, if {@code SAVE_NEGATIVES_PROPERTY} was
+     * set, then the negative values are maintained.  If negative values are
+     * dropped then by default, after the correlation is done all values are
+     * replaced with their square root.
      */
     public void transform(File inputMatrixFile, MatrixIO.Format format, 
                           File outputMatrixFile) throws IOException {
-        throw new UnsupportedOperationException(
-                "Transformation of files is not supported yet.");
+        Matrix m = MatrixIO.readMatrix(inputMatrixFile, format);
+        transform(m);
+        MatrixIO.writeMatrix(m, outputMatrixFile, format);
     }
 
     /**

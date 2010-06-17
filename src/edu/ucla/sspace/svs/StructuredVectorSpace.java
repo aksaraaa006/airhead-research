@@ -24,6 +24,7 @@ package edu.ucla.sspace.svs;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyExtractorManager;
 import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyRelationAcceptor;
@@ -37,8 +38,8 @@ import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.util.Misc;
 import edu.ucla.sspace.util.Pair;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -246,17 +247,16 @@ public class StructuredVectorSpace implements SemanticSpace {
      * ownership of a {@link DependencyExtractor} and uses the System provided
      * properties to specify other class objects.
      */
-    public StructuredVectorSpace(DependencyExtractor parser) {
-        this(parser, System.getProperties());
+    public StructuredVectorSpace() {
+        this(System.getProperties());
     }
 
     /**
      * Create a new instance of {@code StructuredVectorSpace} which
      * takes ownership
      */
-    public StructuredVectorSpace(DependencyExtractor parser,
-                                 Properties properties) {
-        this.parser = parser;
+    public StructuredVectorSpace(Properties properties) {
+        this.parser = DependencyExtractorManager.getDefaultExtractor();
 
         // Load the maximum dependency path length.
         String pathLengthProp =
@@ -269,14 +269,16 @@ public class StructuredVectorSpace implements SemanticSpace {
         String acceptorProp = 
             properties.getProperty(DEPENDENCY_ACCEPTOR_PROPERTY);
         acceptor = (acceptorProp != null)
-            ? (DependencyRelationAcceptor) Misc.getObjectInstance(acceptorProp)
+            ? (DependencyRelationAcceptor) 
+                ReflectionUtil.getObjectInstance(acceptorProp)
             : new UniversalRelationAcceptor();
 
         // Load the path weight function.
         String weighterProp = 
             properties.getProperty(DEPENDENCY_WEIGHT_PROPERTY);
         weighter = (weighterProp!= null)
-            ? (DependencyPathWeight) Misc.getObjectInstance(weighterProp)
+            ? (DependencyPathWeight) 
+                ReflectionUtil.getObjectInstance(weighterProp)
             : new FlatPathWeight();
 
         cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
@@ -326,7 +328,7 @@ public class StructuredVectorSpace implements SemanticSpace {
         // Iterate over all of the parseable dependency parsed sentences in the
         // document.
         for (DependencyTreeNode[] nodes = null;
-                (nodes = parser.parse(document)) != null; ) {
+                (nodes = parser.readNextTree(document)) != null; ) {
 
             // Skip empty documents.
             if (nodes.length == 0)

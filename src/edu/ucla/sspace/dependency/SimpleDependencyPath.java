@@ -39,8 +39,8 @@ public class SimpleDependencyPath implements DependencyPath {
 
     /**
      * {@code true} if the head of this path is the head node of the first
-     * relation.  Conversely, if {@code}, the path begins at the dependent node
-     * in the first relation.
+     * relation.  Conversely, if {@code false}, the path begins at the dependent
+     * node in the first relation.
      */
     private final boolean isHeadFirst;
         
@@ -120,18 +120,21 @@ public class SimpleDependencyPath implements DependencyPath {
                     || (!isHeadFirst && position == 0))
                 ? path.get(0).dependentNode() 
                 : path.get(0).headNode();
-        path.get(position);
         DependencyRelation prev = path.get(position-1);
         DependencyRelation cur = path.get(position);
         return getNextNode(prev, cur);
     }
 
     /**
-     * Given the nodes in the previous relation, determine which of the nodes in
-     * the next relation is new and return that.
+     * Given the nodes in the previous relation, determines which of the nodes
+     * in the next relation is new and return that.  This method provides a way
+     * of determine the next node in a path independent of the direction of the
+     * path's dependency edges.
      *
      * @param prev the dependency relation that was previously seen in the path
      * @param cur the current dependency relation 
+     *
+     * @return the node in {@code cur} that is not present in {@code prev}
      */
     private DependencyTreeNode getNextNode(DependencyRelation prev,
                                            DependencyRelation cur) {

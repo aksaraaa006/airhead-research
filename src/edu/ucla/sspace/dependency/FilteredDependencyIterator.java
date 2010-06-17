@@ -38,7 +38,7 @@ import java.util.Deque;
  *
  * Note that this class is <b>NOT</b> thread safe.
  */
-public class DependencyIterator extends BreadthFirstPathIterator {
+public class FilteredDependencyIterator extends BreadthFirstPathIterator {
 
     /**
      * The maximum length of the returned paths.  The length is considedered to
@@ -47,27 +47,42 @@ public class DependencyIterator extends BreadthFirstPathIterator {
     private final int maxPathLength;
 
     /**
-     * The {@link DependencyRelationAcceptor} that validates each link before it is
+     * The {@link DependencyPathAcceptor} that validates each link before it is
      * traversed and returned as part of a {@link DependencyPath}.
      */
-    private DependencyRelationAcceptor acceptor;
+    private DependencyPathAcceptor acceptor;
 
     /**
      * Creates a new {@link DependencyIterator} that will return all {@link
-     * DependencyPath}s rooted at the term with index {@code startTerm}.  Each
-     * link in the path will be valied with {@code acceptor} and weighted with
-     * {@code weighter}.  Each path will have length 1 + {@code maxPathLength}.
+     * DependencyPath} instances rooted at {@code startNode} that are validated
+     * by the provided acceptor.
      *
      * @param startNode the node that will start all the paths to be generated.
-     * @param acceptor The {@link DependencyRelationAcceptor} that will validate
+     * @param acceptor The {@link DependencyPathAcceptor} that will validate
      *        each link the a path
-     * @param maxPathLength the maximum length of any path returned
      * 
      * @throws IllegalArgumentException if {@code maxPathLength} is less than 1
      */
-    public DependencyIterator(DependencyTreeNode startNode,
-                              DependencyRelationAcceptor acceptor,
-                              int maxPathLength) {
+    public FilteredDependencyIterator(DependencyTreeNode startNode,
+                                      DependencyPathAcceptor acceptor) {
+        this(startNode, acceptor, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Creates a new {@link DependencyIterator} that will return all {@link
+     * DependencyPath} instances rooted at {@code startNode} that are validated
+     * by the provided acceptor and whose length are under the maximum length
+     *
+     * @param startNode the node that will start all the paths to be generated.
+     * @param acceptor The {@link DependencyPathAcceptor} that will validate
+     *        the paths returned by this iterator
+     * @param maxPathLength the maximum number of nodes in any path
+     * 
+     * @throws IllegalArgumentException if {@code maxPathLength} is less than 1
+     */
+    public FilteredDependencyIterator(DependencyTreeNode startNode,
+                                      DependencyPathAcceptor acceptor,
+                                      int maxPathLength) {
         super(startNode);
         if (maxPathLength < 1)
             throw new IllegalArgumentException(
@@ -80,7 +95,7 @@ public class DependencyIterator extends BreadthFirstPathIterator {
     /**
      * Extends the path in its growth direction and adds to the frontier those
      * relations that are shorter than the maximum path length and that are
-     * accepted by the {@code DependencyRelationAcceptor} used by this instance.
+     * accepted by the {@code DependencyPathAcceptor} used by this instance.
      */
     @Override void advance(DependencyPath path) {
         // Skip processing paths that would exceed the maximum length
@@ -97,13 +112,14 @@ public class DependencyIterator extends BreadthFirstPathIterator {
         for (DependencyRelation rel : last.neighbors()) {
             // Skip re-adding the current relation and those relations that do
             // not pass the filter
-            if (lastRel.equals(rel) || !acceptor.accept(rel))
+            if (lastRel.equals(rel))
                 continue;
             // Use an extension of the path, rather than having to copy all of
             // the nodes again.  This just creates a view of path with rel as
             // the last relation in path
             DependencyPath extended = new ExtendedPathView(path, rel);
-            frontier.offer(extended);
+            if (acceptor.accepts(extended))
+                frontier.offer(extended);
         }
     }
 }

@@ -74,7 +74,8 @@ public interface DependencyPath extends Iterable<DependencyRelation> {
     DependencyRelation lastRelation();
     
     /**
-     * Returns the number of nodes in the dependency path.
+     * Returns the number of nodes in the dependency path.  The number of
+     * relations in the path will be {@code length() - 1}.
      */
     int length();
 }

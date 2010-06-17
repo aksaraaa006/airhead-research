@@ -177,22 +177,27 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	}
 
 	int keyLength = key.length();
+        // Base case: the node to start the recursive search begins at the root
+        // node
 	Node<V> n = rootNode;
 
-	for (int curCharIndex = 0; curCharIndex <= keyLength; ++curCharIndex) {	    
+        // For each index in the key, see how many characters match either the
+        // preceding characters to a node, or the trailing characters.
+	for (int curKeyIndex = 0; curKeyIndex <= keyLength; ++curKeyIndex) {	    
 	    
 	    CharSequence nodePrefix = n.getPrefix();
-	    int nextCharIndex = curCharIndex + 1;
 
-	    // if the current node is an intermediate node, then we need to
-	    // match all of the prefix characters to use its children.  
+	    // Check whether the current node has a prefix (i.e. the characters
+	    // in the trie that lead to it).  If so, determine whether all of
+	    // the prefix matches the subsequence of the key starting at the
+	    // current key index.  Note that a node will only have a prefix if
+	    // it is an intermediate node in the tree.
 	    if (nodePrefix.length() > 0) {
-		int charOverlap = overlap(key, curCharIndex, nodePrefix, 0);
-		int remainingLength = keyLength - (nextCharIndex);
+		int charOverlap = countOverlap(key, curKeyIndex, nodePrefix, 0);
 		int prefixLength = nodePrefix.length();
 
 		// If this this key did not match then entire prefix, then it
-		// must not be mapped to some node.
+		// must not be mapped to any node.
 		if (charOverlap < prefixLength) {
 		    return null;
 		}
@@ -200,21 +205,21 @@ public class TrieMap<V> extends AbstractMap<String,V>
 		// Otherwise, if all of the characters overlapped, then lookup
 		// the transition to the next node based on the next character
 		// after the matching prefix
-		curCharIndex += prefixLength;
-		nextCharIndex = curCharIndex + 1;
+		curKeyIndex += prefixLength;
 	    }
 
 	    // If we have exhausted all the characters in the key, then the
 	    // current node is associated with the key.
-	    if (curCharIndex == keyLength) {
+	    if (curKeyIndex == keyLength) {
 		return n;
 	    }
 	    	    
-	    // Otherwise, more characters exist, so check to see if there is a
-	    // transition from the next sequence of the key to node.  If so, we
-	    // use this to keep searching for the key's node
+	    // Otherwise, more characters exist to be matched in the key, so
+	    // check to see if there is a transition from the next sequence of
+	    // the key to node.  If so, we use this to keep searching for the
+	    // key's node
 	    else {
-		Node<V> child = n.getChild(key.charAt(curCharIndex));
+		Node<V> child = n.getChild(key.charAt(curKeyIndex));
 
 		// if there was no other node to transition to, then the the key
 		// must not map to any node in the trie.
@@ -232,6 +237,7 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	
 	// NOTE: we should never reach this case, as the one of the conditions
 	// in the for loop will determine where the key goes.
+        assert false;
 	return null;
     }
 
@@ -253,17 +259,16 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	int keyLength = key.length();
 	Node<V> n = rootNode;
 
-	for (int curCharIndex = 0; curCharIndex <= keyLength; ++curCharIndex) {	    
+	for (int curKeyIndex = 0; curKeyIndex <= keyLength; ++curKeyIndex) {	    
 
 	    CharSequence nodePrefix = n.getPrefix();
 
-	    int nextCharIndex = curCharIndex + 1;
+	    int nextCharIndex = curKeyIndex + 1;
 
 	    // if the current node is an intermediate node, then we need to
 	    // match all of the prefix characters to use its children.  
 	    if (nodePrefix.length() > 0) {
-		int charOverlap = overlap(key, curCharIndex, nodePrefix, 0);
-		int remainingLength = keyLength - (nextCharIndex);
+		int charOverlap = countOverlap(key, curKeyIndex, nodePrefix,0);
 		int prefixLength = nodePrefix.length();
 		
 		// if 0 ore more characters overlapped, add this node to
@@ -272,7 +277,7 @@ public class TrieMap<V> extends AbstractMap<String,V>
 		    addIntermediateNode(n,
 					charOverlap,
 					key,
-					curCharIndex,
+					curKeyIndex,
 					value);
 		    size++;
 		    return null;
@@ -281,13 +286,13 @@ public class TrieMap<V> extends AbstractMap<String,V>
 		// if all of the characters overlapped, then lookup the
 		// transition to the next node based on the next character after
 		// the matching prefix
-		curCharIndex += prefixLength;
-		nextCharIndex = curCharIndex + 1;
+		curKeyIndex += prefixLength;
+		nextCharIndex = curKeyIndex + 1;
 	    }
 
 	    // If we have exhausted all the characters in the key, then the
 	    // current node should map to the value
-	    if (curCharIndex == keyLength) {
+	    if (curKeyIndex == keyLength) {
 		return replaceValue(n, value);
 	    }
 	    	    
@@ -295,14 +300,14 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	    // transition from the next sequence of the key to node.  If so, we
 	    // use this to keep searching for the key's node
 	    else {
-		Node<V> child = n.getChild(key.charAt(curCharIndex));
+		Node<V> child = n.getChild(key.charAt(curKeyIndex));
 		
 		// if there was no other node to transition to, then the
 		// remaining portion of the key is used to form a child node of
 		// the current node.  Since this is a new mapping, we can return
 		// null immediately.
 		if (child == null) {
-		    addChildNode(n, key, curCharIndex, value);
+		    addChildNode(n, key, curKeyIndex, value);
 		    return null;
 		}
 		// otherwise, update the current node to the child and repeat
@@ -332,11 +337,12 @@ public class TrieMap<V> extends AbstractMap<String,V>
      * @return the number of characters shared by both sequences when viewed at
      *         the provided starting indices.
      */
-    private int overlap(CharSequence c1, int start1, 
-			CharSequence c2, int start2) {
-	int minLength = Math.min(c1.length() - start1, c2.length() - start2);
+    private int countOverlap(CharSequence c1, int start1, 
+                             CharSequence c2, int start2) {
+        // The maxium overlap is the number of characters in the sequences
+	int maxOverlap = Math.min(c1.length() - start1, c2.length() - start2);
 	int overlap = 0;
-	for (; overlap < minLength; ++overlap) {
+	for (; overlap < maxOverlap; ++overlap) {
 	    if (c1.charAt(overlap + start1) != c2.charAt(overlap + start2)) {
 		break;
 	    }
@@ -380,14 +386,14 @@ public class TrieMap<V> extends AbstractMap<String,V>
      * @return
      */
     private V replaceValue(Node<V> node, V newValue) {
+        // Note: a node is terminal if it already has a value
 	if (node.isTerminal()) {
 	    V old = node.value;
 	    node.value = newValue;
 	    return old;
 	}
-	// the node wasn't already a terminal node (i.e. this char
-	// sequence is a substring of an existing sequence), mark
-	// this node as terminal
+	// the node wasn't already a terminal node (i.e. this char sequence is a
+	// substring of an existing sequence), assign it a value
 	else {
 	    node.value = newValue;
 	    size++;
@@ -535,11 +541,12 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	protected Map<Character,Node<V>> children;
 
 	/**
-	 * Constructs a new {@code Node}.
+	 * Constructs a new {@code Node} using only the characters in {@code
+	 * seq} that occur at or after {@code prefixStart}.
 	 * 
 	 * @param seq the {@code String} to be stored at this node in the
 	 *        trie
-	 * @param tailStart the index into {@code seq} that denotes the
+	 * @param prefixStart the index into {@code seq} that denotes the
 	 *        preceding characters of {@code seq} that are not a part of the
 	 *        path to this node
 	 * @param value the value associated with the key {@code seq}
@@ -552,6 +559,10 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	    this(toArray(seq, prefixStart), value);
 	}
 
+        /**
+	 * Constructs a new {@code Node} that is reached by the characters in
+	 * {@code prefix} and has the associated value.
+         */
 	Node(char[] prefix, V value) {
 	    this.prefix = prefix;
 	    this.value = value;
@@ -728,14 +739,18 @@ public class TrieMap<V> extends AbstractMap<String,V>
      * @see TrieMap.TrieIterator
      */
     private static class AnnotatedNode<V> {
-	
+
+        /**
+         * The full sequence of characters leading from the root of the trie to
+         * this node.
+         */
 	private final String prefix;
 	
 	private final Node<V> node;
 	
 	public AnnotatedNode(Node<V> node, String prefix) {
 	    this.prefix = prefix;
-		this.node = node;
+            this.node = node;
 	}
 
 	public String toString() {

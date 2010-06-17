@@ -68,7 +68,7 @@ import java.util.logging.Logger;
  * <ul>
  *
  *   <li style="font-family:Garamond, Georgia, serif"> Landauer, T. K., Foltz,
- *     P. W., & Laham, D. (1998).  Introduction to Latent Semantic
+ *     P. W., and Laham, D. (1998).  Introduction to Latent Semantic
  *     Analysis. <i>Discourse Processes</i>, <b>25</b>, 259-284.  Available <a
  *     href="http://lsa.colorado.edu/papers/dp1.LSAintro.pdf">here</a> </li>
  * 
