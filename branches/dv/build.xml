@@ -293,6 +293,21 @@
     </jar>
   </target>
 
+  <target name="dv-jar" depends="compile">
+    <jar destfile="${bin.dir}/dv.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Dependency Vector Space"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.DependencyVectorSpaceMain"/>
+      </manifest>
+    </jar>
+  </target>
+
   <!--
     **
     ** 

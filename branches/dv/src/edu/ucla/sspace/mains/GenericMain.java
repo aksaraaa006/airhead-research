@@ -157,8 +157,6 @@ public abstract class GenericMain {
      * Prints out information on how to run the program to {@code stdout} using
      * the option descriptions for compound words, tokenization, .sspace formats
      * and help.
-     *
-     * @param algorithmSpecifics
      */
     protected void usage() {
         String specifics = getAlgorithmSpecifics();

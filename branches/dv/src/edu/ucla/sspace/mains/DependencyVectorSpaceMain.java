@@ -71,7 +71,7 @@ public class DependencyVectorSpaceMain extends DependencyGenericMain {
         options.addOption('W', "pathWeighter",
                           "the DependencyPathWeight to weight parse tree paths",
                           true, "CLASSNAME", "Algorithm Options");
-        options.addOption('b', "pathWeighter",
+        options.addOption('b', "basisMapping",
                           "the BasisMapping to decide the dimension " +
                           "representations",
                           true, "CLASSNAME", "Algorithm Options");
