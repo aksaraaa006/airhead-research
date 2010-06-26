@@ -68,8 +68,9 @@ public class NoTransform implements Transform {
     /**
      * {@inheritDoc}
      */
-    public Matrix transform(Matrix input, boolean createNewMatrix) {
-        return Matrices.copy(input);
+    public Matrix transform(Matrix input, Matrix output) {
+        Matrices.copyTo(input, output);
+        return output;
     }
 
     /**

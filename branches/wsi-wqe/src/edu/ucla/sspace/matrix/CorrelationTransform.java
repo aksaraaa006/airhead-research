@@ -93,7 +93,6 @@ public class CorrelationTransform extends BaseTransform {
             rowSums = stats.rowSums;
             colSums = stats.columnSums;
             totalSum = stats.matrixSum;
-            System.out.println(totalSum);
         }
 
         /**

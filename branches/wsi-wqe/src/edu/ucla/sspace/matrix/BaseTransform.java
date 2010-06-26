@@ -59,24 +59,27 @@ public abstract class BaseTransform implements Transform {
     
     /**
      * {@inheritDoc}
-     *
-     * </p> Note that this transformation method modifies {@code matrix} in
-     * place.
      */
     public Matrix transform(Matrix matrix) {
-        return transform(matrix, false);
+        return transform(matrix, matrix);
     }
 
     /**
      * {@inheritDoc}
      */
-    public Matrix transform(Matrix matrix, boolean createNewMatrix) {
+    public Matrix transform(Matrix matrix, Matrix transformed) {
+        // Reject any transforms on matrices that do not have the same
+        // sizes.
+        if (matrix.rows() != transformed.rows() ||
+            matrix.columns() != transformed.columns())
+            throw new IllegalArgumentException(
+                    "Dimensions of the transformed matrix must match the " +
+                    "input matrix");
+
         GlobalTransform transform = getTransform(matrix);
-        Matrix transformed;
 
         if (matrix instanceof SparseMatrix) {
             SparseMatrix smatrix = (SparseMatrix) matrix;
-            transformed = getTransformMatrix(matrix, true, createNewMatrix);
 
             // Transform a sparse matrix by only iterating over the non zero
             // values in each row.
@@ -89,8 +92,6 @@ public abstract class BaseTransform implements Transform {
                 }
             }
         } else {
-            transformed = getTransformMatrix(matrix, true, createNewMatrix);
-
             // Transform dense matrices by inspecting each value in the matrix
             // and having it transformed.
             for (int row = 0; row < matrix.rows(); ++row) {
@@ -103,23 +104,6 @@ public abstract class BaseTransform implements Transform {
         }
 
         return transformed;
-    }
-
-    /**
-     * Returns the matrix in which transformed values should be stored.  When
-     * {@code createNew} is false, this simply returns {@code base}.  When
-     * {@code createNew} is true, a new matrix with the same dimensions as
-     * {@code base} and the requested sparsity is returned.
-     */
-    private static Matrix getTransformMatrix(Matrix base, 
-                                             boolean isSparse,
-                                             boolean createNew) {
-        if (!createNew)
-            return base;
-        Matrix.Type type = (isSparse) 
-            ? Matrix.Type.SPARSE_IN_MEMORY 
-            : Matrix.Type.DENSE_IN_MEMORY;
-        return Matrices.create(base.rows(), base.columns(), type);
     }
 
     /**
