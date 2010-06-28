@@ -13,6 +13,8 @@ Tier 1 algorithms are mature algorithms whose implementation is not likely to ch
   * [HyperspaceAnalogueToLanguage HAL]
   * [Coals]
   * [TemporalRandomIndexing Temporal Random Indexing]
+  * [PurandareAndPedersen Purandare and Pedersen]'s context-sensitive space
+
 
 = Tier 2 Algorithms =
 
@@ -21,7 +23,11 @@ Tier 2 algorithms are in the later stages of development and are suitable to run
   * [Beagle]
   * [IncrementalSemanticAnalysis Incremental Semantic Analysis] (ISA)
   * [ExplicitSemanticAnalysis Explicit Semantic Analysis] (ESA)
-  * [PurandareAndPedersen Purandare and Petersen]'s context-sensitive space
+  * [ReflectiveRandomIndexing] (RRI)
+  * [StructuredVectorSpace] as described by Erk and Padó (2008)
+  * [DependencyVectorSpace] as described by Padó and Lapata (2007)
+  * [Hermit] and [Wordsi] 
+  * [LocalityPreservingSemanticAnalysis] (LPSA) and LPP+WC 
 
 = Tier 3 Algorithms =
 
