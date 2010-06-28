@@ -23,51 +23,63 @@ package edu.ucla.sspace.dependency;
 
 
 /**
- * A simple {@link DependencyRelation} that is created from a token string,
- * a relation string, and a boolean specifiying if the token is a head node.
+ * A simple {@link DependencyRelation} implementation holds both related nodes
+ * and their relation.
  */
 public class SimpleDependencyRelation implements DependencyRelation {
 
     /**
-     * The token represented by this relation.
+     * The dependent pnode in the relation.
      */
-    private String token;
+    private final DependencyTreeNode dependent;
+
+    /**
+     * The head node in the relation.
+     */
+    private final DependencyTreeNode headNode;
 
     /**
      * The relation string.
      */
-    private String relation;
-
-    /**
-     * Specifies whether or not {@code token} is a head node in the real
-     * dependency parse tree.
-     */
-    private boolean isHeadNode;
+    private final String relation;
 
     /**
      * Creates a {@link SimpleDependencyRelation}.
      */
-    public SimpleDependencyRelation(String token,
+    public SimpleDependencyRelation(DependencyTreeNode headNode,
                                     String relation,
-                                    boolean isHeadNode) {
-        this.token = token;
+                                    DependencyTreeNode dependent) {
+        this.headNode = headNode;
         this.relation = relation;
-        this.isHeadNode = isHeadNode;
+        this.dependent = dependent;
     }
 
     /**
      * {@inheritDoc}
      */
-    public String token() {
-        return token;
+    public DependencyTreeNode dependentNode() {
+        return dependent;
     }
 
+    public boolean equals(Object o) {
+        if (o instanceof SimpleDependencyRelation) {
+            SimpleDependencyRelation r = (SimpleDependencyRelation)o;
+            return headNode.equals(r.headNode) 
+                && relation.equals(r.relation)
+                && dependent.equals(r.dependent);            
+        } 
+        return false;
+    }
+
+    public int hashCode() {
+        return relation.hashCode() ^ headNode.hashCode() ^ dependent.hashCode();
+    }
+    
     /**
      * {@inheritDoc}
      */
-    public String pos() {
-        // Current return nothing.
-        return "";
+    public DependencyTreeNode headNode() {
+        return headNode;
     }
 
     /**
@@ -77,10 +89,7 @@ public class SimpleDependencyRelation implements DependencyRelation {
         return relation;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public boolean isHeadNode() {
-        return isHeadNode;
+    public String toString() {
+        return headNode + "<-" + relation + "--" + dependent;
     }
 }

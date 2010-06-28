@@ -27,7 +27,7 @@ import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
 
-import edu.ucla.sspace.svs.StructuredVectorSpace;
+import edu.ucla.sspace.dv.DependencyVectorSpace;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -35,73 +35,13 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * An executable class for running {@link StructuredVectorSpace}
- * (StructuredVectorSpace) from the command line.  This class takes in several
- * command line arguments.
- *
- * <ul>
- *
- * <li><u>Required (at least one of)</u>:
- *   <ul>
- *
- *   <li> {@code -d}, {@code --docFile=FILE[,FILE...]} a file where each line is
- *        a document.  This is the preferred input format for large corpora
- *
- *   <li> {@code -f}, {@code --fileList=FILE[,FILE...]} a list of document files
- *        where each file is specified on its own line.
- *
- *   </ul>
- * 
- * <li><u>Algorithm Options</u>:
- *   <ul>
-        options.addOption('G', "configFile",
-                          "XML configuration file for the format of a " +
-                          "dependency parse",
- *
- *   <li> {@code -a}, {@code --pathAcceptor=CLASSNAME}
- *        Specifies the {@link edu.ucla.sspace.dependency.DependencyPathAcceptor
- *        DependencyPathAcceptor} to use while accepting or rejecting {@link
- *        DependencyPath}s.
- *
- *   <li> {@code -W}, {@code --pathWeighter=CLASSNAME} 
- *         Specifies the {@link
- *         edu.ucla.sspace.dependency.DependencyPathWeighter
- *         DependencyPathWeighter} to use while scoring {@link DependencyPath}s.
- *
- *   </ul>
- *
- * <li><u>Program Options</u>:
- *   <ul>
- *
- *   <li> {@code -G}, {@code --configFile=config.xml}
- *        Specifies a configuration file for specifying the ordering of the
- *        malth styled dependency parse trees.
- *
- *   <li> {@code -o}, {@code --outputFormat=}<tt>text|binary}</tt> Specifies the
- *        output formatting to use when generating the semantic space ({@code
- *        .sspace}) file.  See {@link edu.ucla.sspace.common.SemanticSpaceUtils
- *        SemanticSpaceUtils} for format details.
- *
- *   <li> {@code -t}, {@code --threads=INT} how many threads to use when
- *        processing the documents.  The default is one per core.
- * 
- *   <li> {@code -w}, {@code --overwrite=BOOL} specifies whether to overwrite
- *        the existing output files.  The default is {@code true}.  If set to
- *        {@code false}, a unique integer is inserted into the file name.
- *
- *   <li> {@code -v}, {@code --verbose}  specifies whether to print runtime
- *        information to standard out
- *
- *   </ul>
- *
- * </ul>
- *
- * <p>
+ * An executable class for running {@link DepenencyVectorSpace} from the command
+ * line.
  *
  * An invocation will produce one file as output {@code
  * structued-vector-space.sspace}.  If {@code overwrite} was set to {@code
  * true}, this file will be replaced for each new semantic space.  Otherwise, a
- * new output file of the format {@code structued-vector-space<number>.sspace}
+ * new output file of the format {@code dependency-vector-space<number>.sspace}
  * will be created, where {@code <number>} is a unique identifier for that
  * program's invocation.  The output file will be placed in the directory
  * specified on the command line.
@@ -111,13 +51,13 @@ import java.util.Properties;
  * This class is desgined to run multi-threaded and performs well with one
  * thread per core, which is the default setting.
  *
- * @see StructuredVectorSpace 
+ * @see DependencyVectorSpace 
  *
- * @author Keith Stevens
+ * @author David Jurgens
  */
-public class StructuredVectorSpaceMain extends DependencyGenericMain {
+public class DependencyVectorSpaceMain extends DependencyGenericMain {
 
-    private StructuredVectorSpaceMain() { }
+    private DependencyVectorSpaceMain() { }
 
     /**
      * {@inheritDoc}
@@ -126,15 +66,19 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
         super.addExtraOptions(options);
 
         options.addOption('a', "pathAcceptor",
-                          "The DependencyPathAcceptor to use",
+                          "the DependencyPathAcceptor to filter relations",
                           true, "CLASSNAME", "Algorithm Options");
         options.addOption('W', "pathWeighter",
-                          "The DependencyPathWeight to use",
+                          "the DependencyPathWeight to weight parse tree paths",
+                          true, "CLASSNAME", "Algorithm Options");
+        options.addOption('b', "basisMapping",
+                          "the BasisMapping to decide the dimension " +
+                          "representations",
                           true, "CLASSNAME", "Algorithm Options");
     }
 
     public static void main(String[] args) {
-        StructuredVectorSpaceMain svs =  new StructuredVectorSpaceMain();
+        DependencyVectorSpaceMain svs =  new DependencyVectorSpaceMain();
         try {
             svs.run(args);
         }
@@ -157,8 +101,31 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
         // Ensure that the configured DependencyExtactor is in place prior to
         // constructing the SVS
         setupDependencyExtractor();        
-        return new StructuredVectorSpace();
+        return new DependencyVectorSpace();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected String getAlgorithmSpecifics() {
+        return
+            "The --basisMapping specifies how the dependency paths that " +
+            "connect two words are\n"+
+            "mapped into dimensions.  The default behavior is to use only " +
+            "the word at the end\n" +
+            "of the path.\n\n" +
+            
+            "The --pathAcceptor specifies which paths in the corpus are " +
+            "treated as valid\n" +
+            "contexts.  The default behavior is to use the minimum set of " +
+            "paths defined in\n" +
+            "Padó and Lapata (2007) paper.\n\n" +
+
+            "The --pathWeighter specifies how to score paths that are " +
+            "accepted.  The default\n" + 
+            "behavior is not to weight the paths.\n";
+    }
+
 
     /**
      * {@inheritDoc}
@@ -170,13 +137,18 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
 
         if (argOptions.hasOption("pathAcceptor"))
             props.setProperty(
-                    StructuredVectorSpace.DEPENDENCY_ACCEPTOR_PROPERTY,
+                    DependencyVectorSpace.PATH_ACCEPTOR_PROPERTY,
                     argOptions.getStringOption("pathAcceptor"));
 
         if (argOptions.hasOption("pathWeighter"))
             props.setProperty(
-                    StructuredVectorSpace.DEPENDENCY_WEIGHT_PROPERTY,
+                    DependencyVectorSpace.PATH_WEIGHTING_PROPERTY,
                     argOptions.getStringOption("pathWeighter"));
+
+        if (argOptions.hasOption("basisMapping"))
+            props.setProperty(
+                    DependencyVectorSpace.BASIS_MAPPING_PROPERTY,
+                    argOptions.getStringOption("basisMapping"));
 
         return props;
     }

@@ -194,10 +194,11 @@ public class DependencyRandomIndexingMain extends DependencyGenericMain {
         else 
             permFunction = getPermutationFunction();
 
-        DependencyExtractor parser = getDependencyExtractor();
-
-        dri = new DependencyRandomIndexing(
-                parser, permFunction, System.getProperties());
+        // Ensure that the configured DependencyExtactor is in place prior to
+        // constructing the DRI instance
+        setupDependencyExtractor();     
+   
+        dri = new DependencyRandomIndexing(permFunction,System.getProperties());
         if (argOptions.hasOption("loadIndexes")) {
             String savedIndexName = argOptions.getStringOption("loadIndexes");
             dri.setWordToVectorMap((GeneratorMap<TernaryVector>)

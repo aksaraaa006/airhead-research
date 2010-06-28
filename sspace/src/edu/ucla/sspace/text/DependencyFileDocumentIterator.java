@@ -75,19 +75,31 @@ public class DependencyFileDocumentIterator implements Iterator<Document> {
     private String advance() throws IOException {
         StringBuilder sb = new StringBuilder();
         String line = null;
-        while ((line = documentsReader.readLine()) != null &&
-                line.length() != 0)
-            sb.append(line).append("\n");
 
-        if (sb.length() == 0)
+        // Read off any preceding blank lines
+        while ((line = documentsReader.readLine()) != null
+               && line.length() == 0)
+            ; 
+
+        // If we found a line then append it.  This is the base case
+        if (line != null)
+            sb.append(line).append("\n");
+        // Otherwise, there were no lines left, so return null
+        else
             return null;
+
+        // Keep reading until a blank line was seen or the reader has no further
+        // lines
+        while ((line = documentsReader.readLine()) != null
+               && line.length() != 0)
+            sb.append(line).append("\n");
         return sb.toString();
     }
 
     /**
      * Returns the next document from the file.
      */
-    public Document next() {
+    public synchronized Document next() {
         Document next = new StringDocument(nextLine);
         try {
             nextLine = advance();

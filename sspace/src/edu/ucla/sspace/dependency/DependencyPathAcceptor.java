@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Keith Stevens
+ * Copyright 2010 David Jurgens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -23,32 +23,19 @@ package edu.ucla.sspace.dependency;
 
 
 /**
- * An interface for providing restrictions on dependency relations.  When a
- * dependency path is being generated, a {@link DependencyPathAcceptor} will be
- * called for each link in the path.  A path will be terminated before the first
- * unacceptable link.
- *
- * </p>
- *
- * Implementations are recomended to be a thread-safe and stateless.  This
- * restricts acceptors to be limited to rejecting a link at a time, as opposed
- * to rejecting a link based on the prior link.
- *
- * @author Keith Stevens
+ * An interface for deciding whether a provided path is valid for further
+ * processing.
  */
 public interface DependencyPathAcceptor {
 
     /**
-     * Returns wether or not the given dependency link should be accepted.
-     * Links may be rejected based solely on the part of speech tags, the
-     * dependency relation, or on some combination of the three features.
+     * Returns {@code true} if the path is valid according to this acceptor's
+     * standards
      *
-     * @param pos1 The part of speech tag for the first word in the link
-     * @param relation The dependency relation between the first and second word
-     *        in the link.
-     * @param pos2 The part of speech tag for the secondword in the link
+     * @param path a dependency path
      *
-     * @return {@code true} if the link is acceptable, false otherwise
+     * @return {@code true} if the path is valid
      */
-    public boolean acceptLink(String pos1, String relation, String pos2);
+    boolean accepts(DependencyPath path);
+
 }

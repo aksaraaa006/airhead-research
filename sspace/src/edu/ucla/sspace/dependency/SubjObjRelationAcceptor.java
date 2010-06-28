@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Keith Stevens 
+ * Copyright 2010 Keith Stevens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,26 +21,20 @@
 
 package edu.ucla.sspace.dependency;
 
-import org.junit.Ignore;
-import org.junit.Test;
 
-import static org.junit.Assert.*;
+/**
+ * A {@link DependencyPathAcceptor} that accepts links with the {@code subj} or
+ * {@code obj} relation.
+ *
+ * @author Keith Stevens
+ */
+public class SubjObjRelationAcceptor implements DependencyRelationAcceptor {
 
-
-public class UniversalPathAcceptorTest {
-
-    @Test public void testArbitraryLink() {
-        DependencyPathAcceptor acceptor = new UniversalPathAcceptor();
-        assertTrue(acceptor.acceptLink("sfsdf", "not a relation", "SDF"));
-    }
-
-    @Test public void testNormalLink() {
-        DependencyPathAcceptor acceptor = new UniversalPathAcceptor();
-        assertTrue(acceptor.acceptLink("N", "SUBJ", "V"));
-    }
-
-    @Test public void testNormalLink2() {
-        DependencyPathAcceptor acceptor = new UniversalPathAcceptor();
-        assertTrue(acceptor.acceptLink("N", "GEN", "NMOD"));
+    /**
+     * {@inheritDoc}
+     */
+    public boolean accept(DependencyRelation relation) {
+        return relation.relation().equals("SBJ")
+            || relation.relation().equals("OBJ");
     }
 }
