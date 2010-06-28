@@ -115,10 +115,10 @@ public class CoalsMain extends GenericMain {
      */
     public Properties setupProperties() {
           Properties props = System.getProperties();
-          if (argOptions.hasOption("reducedDimensions"))
+          if (argOptions.hasOption("reducedDimension"))
               props.setProperty(
                       Coals.REDUCE_DIMENSION_PROPERTY,
-                      argOptions.getStringOption("reducedDimensions"));
+                      argOptions.getStringOption("reducedDimension"));
           if (argOptions.hasOption("reduce"))
               props.setProperty(Coals.REDUCE_MATRIX_PROPERTY, "true");
           if (argOptions.hasOption("dimensions"))
