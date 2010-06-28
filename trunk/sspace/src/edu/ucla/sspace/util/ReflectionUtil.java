@@ -22,9 +22,15 @@
 package edu.ucla.sspace.util;
 
 /**
- * A collection of miscellaneous, but useful, functions.
+ * A collection of miscellaneous, but useful, functions for working with
+ * reflection
  */
-public class Misc {
+public class ReflectionUtil {
+
+    /**
+     * Uninstantiable
+     */
+    private ReflectionUtil() { }
 
     /**
      * Returns an arbitrary object instance based on a class name.

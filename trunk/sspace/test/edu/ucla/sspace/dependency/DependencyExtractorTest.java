@@ -24,7 +24,10 @@ package edu.ucla.sspace.dependency;
 import edu.ucla.sspace.text.StringDocument;
 import edu.ucla.sspace.text.Document;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Ignore;
@@ -63,38 +66,51 @@ public class DependencyExtractorTest {
      * passed in string is expected to contain the relation for each node that
      * is connected to {@code relation}.
      */
-    private void evaluateRelations(DependencyTreeNode relation,
-                                   String[] expectedRelations,
-                                   int expectedNumRelations) {
-        // Check each of the links for "Review".  Add the link id to a set to
-        // check that all are accounted for and check the relation each link has
-        // with the "Review" node.
-        Set<Integer> neighbors = new HashSet<Integer>();
-        for (DependencyLink link : relation.neighbors()) {
-            assertFalse(expectedRelations[link.neighbor()].equals(""));
-            neighbors.add(link.neighbor());
-        }
+    private void evaluateRelations(DependencyTreeNode node,
+                                   List<DependencyRelation> expectedRelations) {
+        // Check that the relations have the expected number 
+        assertEquals(expectedRelations.size(), node.neighbors().size());
 
-        // Check the number of neighbors.
-        assertEquals(expectedNumRelations, neighbors.size());
+        System.out.println("Expected: " + expectedRelations);
+        // Check that all the neighbors are in the e
+        for (DependencyRelation rel : node.neighbors()) {
+            System.out.println("relation: " + rel);
+            assertTrue(expectedRelations.contains(rel));
+            // Remove the relation from the list to double check that the
+            // neighbors are a list of duplicate relations.
+            expectedRelations.remove(rel);
+        }
+        assertEquals(0, expectedRelations.size());
     }
 
     @Test public void testSingleExtraction() throws Exception {
         DependencyExtractor extractor = new DependencyExtractor();
         Document doc = new StringDocument(SINGLE_PARSE);
-        DependencyTreeNode[] relations = extractor.parse(doc.reader());
+        DependencyTreeNode[] nodes = extractor.parse(doc.reader());
 
-        assertEquals(12, relations.length);
+        assertEquals(12, nodes.length);
 
         // Check the basics of the node.
-        assertEquals("review", relations[8].word());
-        assertEquals("NNP", relations[8].pos());
+        assertEquals("review", nodes[8].word());
+        assertEquals("NNP", nodes[8].pos());
 
         // Test expected relation for each of the links for "Review".
-        String[] expectedRelations = {"", "", "", "", "",
-                                      "PMOD", "NMOD", "NMOD", "", "ADV"};
+        DependencyRelation[] expectedRelations = new DependencyRelation[] {
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("review", "NNP"),
+                                         "NMOD",
+                                         new SimpleDependencyTreeNode("the", "DT")),
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("review", "NNP"),
+                                         "NMOD",
+                                         new SimpleDependencyTreeNode("literary", "NNP")),
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("review", "NNP"),
+                                         "ADV",
+                                         new SimpleDependencyTreeNode("in", "IN")),
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("for", "IN"),
+                                         "PMOD",
+                                         new SimpleDependencyTreeNode("review", "NNP"))
+        };
 
-        evaluateRelations(relations[8], expectedRelations, 4);
+        evaluateRelations(nodes[8], new LinkedList<DependencyRelation>(Arrays.asList(expectedRelations)));
     }
 
     @Test public void testDoubleExtraction() throws Exception {
@@ -108,9 +124,17 @@ public class DependencyExtractorTest {
         assertTrue(relations != null);
         assertEquals(4, relations.length);
 
-        // Test expected relation for each of the links for "Review".
-        String[] expectedRelations = {"AT", "", "ET"};
-        evaluateRelations(relations[1], expectedRelations, 2);
+        // Test expected relation for each of the links for "beskattning".
+        DependencyRelation[] expectedRelations = new DependencyRelation[] {
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("beskattning", "N"),
+                                         "AT",
+                                         new SimpleDependencyTreeNode("individuell", "AJ")),
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("beskattning", "N"),
+                                         "ET",
+                                         new SimpleDependencyTreeNode("av", "PR"))
+        };
+        
+        evaluateRelations(relations[1], new LinkedList<DependencyRelation>(Arrays.asList(expectedRelations)));
     }
 
     @Test public void testRootNode() throws Exception {
@@ -125,8 +149,17 @@ public class DependencyExtractorTest {
         assertEquals("VBZ", relations[2].pos());
 
         // Test that the root node does not have a link to itself.
-        String[] expectedRelations = {"", "SBJ", "", "", "PRD", "", "", "",
-                                      "", "", "", "P"};
-        evaluateRelations(relations[2], expectedRelations, 3);
+        DependencyRelation[] expectedRelations = new DependencyRelation[] {
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("is", "VBZ"),
+                                         "SBJ",
+                                         new SimpleDependencyTreeNode("holt", "NNP")),
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("is", "VBZ"),
+                                         "PRD",
+                                         new SimpleDependencyTreeNode("columnist", "NN")),
+            new SimpleDependencyRelation(new SimpleDependencyTreeNode("is", "VBZ"),
+                                         "P",
+                                         new SimpleDependencyTreeNode(".", "."))
+        };
+        evaluateRelations(relations[2], new LinkedList<DependencyRelation>(Arrays.asList(expectedRelations)));
     }
 }

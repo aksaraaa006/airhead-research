@@ -21,11 +21,10 @@
 
 package edu.ucla.sspace.dependency;
 
-import java.util.List;
-
 
 /**
- * A {@link DependencyPathWeight} that scores paths based on their length.
+ * A {@link DependencyPathWeight} that scores paths inversely proportional to
+ * their length.  The scoring function is 1 / number of relations.
  *
  * @author Keith Stevens
  */
@@ -34,7 +33,8 @@ public class LengthPathWeight implements DependencyPathWeight {
     /**
      * {@inheritDoc}
      */
-    public double scorePath(List<DependencyRelation> path) {
-        return 1d / path.size();
+    public double scorePath(DependencyPath path) {
+        // Subtract 1 to get the number of relations
+        return 1d / (path.length() - 1);
     }
 }

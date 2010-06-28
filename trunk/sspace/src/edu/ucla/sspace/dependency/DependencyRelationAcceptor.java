@@ -21,41 +21,31 @@
 
 package edu.ucla.sspace.dependency;
 
+
 /**
- * A simple struct that represents a single link in a dependency parse tree.
- * This struct contains the relation that connects two nodes and the index of
- * the neighboring node.
+ * An interface for providing restrictions on dependency relations.  When a
+ * dependency path is being generated, a {@link DependencyRelationAcceptor} will
+ * be called for each link in the path.  A path will be terminated before the
+ * first unacceptable link.
+ *
+ * </p>
+ *
+ * Implementations are recomended to be a thread-safe and stateless.  This
+ * restricts acceptors to be limited to rejecting a link at a time, as opposed
+ * to rejecting a link based on the prior link.
+ *
+ * @author Keith Stevens
  */
-public class DependencyLink {
-
-    private String relation;
-    private int neighbor;
-    private boolean isHeadNode;
+public interface DependencyRelationAcceptor {
 
     /**
-     * Creates a new {@link DependencyLink}
+     * Returns wether or not the given dependency relation should be accepted.
+     * Relations may be rejected based solely on the part of speech tags, the
+     * dependency relation, or on some combination of the three features.
+     *
+     * @param relation the relation to evaluate
+     *
+     * @return {@code true} if the relation is acceptable, {@code false} otherwise
      */
-    public DependencyLink(int neighbor, String relation, boolean isHeadNode) {
-        this.relation = relation;
-        this.neighbor = neighbor;
-        this.isHeadNode = isHeadNode;
-    }
-
-    /**
-     * Returns the relation the the current node has with it's neighbor.
-     */
-    public String relation() {
-        return relation;
-    }
-
-    /**
-     * Returns the neighbor to the current node.
-     */
-    public int neighbor() {
-        return neighbor;
-    }
-
-    public boolean isHeadNode() {
-        return isHeadNode;
-    }
+    public boolean accept(DependencyRelation relation);
 }

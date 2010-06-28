@@ -24,21 +24,22 @@ package edu.ucla.sspace.svs;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyExtractorManager;
 import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
-import edu.ucla.sspace.dependency.DependencyPathAcceptor;
+import edu.ucla.sspace.dependency.DependencyRelationAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyRelation;
 import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.FlatPathWeight;
-import edu.ucla.sspace.dependency.UniversalPathAcceptor;
+import edu.ucla.sspace.dependency.UniversalRelationAcceptor;
 
 import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.util.Misc;
 import edu.ucla.sspace.util.Pair;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
@@ -92,10 +93,10 @@ import java.util.logging.Logger;
  *
  * <dt> <i>Property:</i> <code><b>{@value #DEPENDENCY_ACCEPTOR_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link UniversalPathAcceptor}
+ *      <i>Default:</i> {@link UniversalRelationAcceptor}
  *
  * <dd style="padding-top: .5em">This property sets {@link
- *      DependencyPathAcceptor} to use for validating dependency paths.  If a
+ *      DependencyRelationAcceptor} to use for validating dependency paths.  If a
  *      path is rejected it will not influence either the lemma vector or the
  *      selectional preference vectors. </p>
  *
@@ -143,7 +144,7 @@ import java.util.logging.Logger;
  *
  * @see DependencyPath
  * @see DependencyPathWeight
- * @see DependencyPathAcceptor
+ * @see DependencyRelationAcceptor
  *
  * @author Keith Stevens
  */
@@ -157,7 +158,7 @@ public class StructuredVectorSpace implements SemanticSpace {
         "edu.ucla.sspace.dri.StructuredVectorSpace";
 
     /**
-     * The property for setting the {@link DependencyPathAcceptor}.
+     * The property for setting the {@link DependencyRelationAcceptor}.
      */
     public static final String DEPENDENCY_ACCEPTOR_PROPERTY =
         PROPERTY_PREFIX + ".dependencyAcceptor";
@@ -221,9 +222,9 @@ public class StructuredVectorSpace implements SemanticSpace {
     private final DependencyExtractor parser;
 
     /**
-     * The {@link DependencyPathAcceptor} to use for validating paths.
+     * The {@link DependencyRelationAcceptor} to use for validating paths.
      */
-    private final DependencyPathAcceptor acceptor;
+    private final DependencyRelationAcceptor acceptor;
 
     /**
      * The {@link DependencyPathWeight} to use for scoring paths.
@@ -246,17 +247,16 @@ public class StructuredVectorSpace implements SemanticSpace {
      * ownership of a {@link DependencyExtractor} and uses the System provided
      * properties to specify other class objects.
      */
-    public StructuredVectorSpace(DependencyExtractor parser) {
-        this(parser, System.getProperties());
+    public StructuredVectorSpace() {
+        this(System.getProperties());
     }
 
     /**
      * Create a new instance of {@code StructuredVectorSpace} which
      * takes ownership
      */
-    public StructuredVectorSpace(DependencyExtractor parser,
-                                 Properties properties) {
-        this.parser = parser;
+    public StructuredVectorSpace(Properties properties) {
+        this.parser = DependencyExtractorManager.getDefaultExtractor();
 
         // Load the maximum dependency path length.
         String pathLengthProp =
@@ -269,14 +269,16 @@ public class StructuredVectorSpace implements SemanticSpace {
         String acceptorProp = 
             properties.getProperty(DEPENDENCY_ACCEPTOR_PROPERTY);
         acceptor = (acceptorProp != null)
-            ? (DependencyPathAcceptor) Misc.getObjectInstance(acceptorProp)
-            : new UniversalPathAcceptor();
+            ? (DependencyRelationAcceptor) 
+                ReflectionUtil.getObjectInstance(acceptorProp)
+            : new UniversalRelationAcceptor();
 
         // Load the path weight function.
         String weighterProp = 
             properties.getProperty(DEPENDENCY_WEIGHT_PROPERTY);
         weighter = (weighterProp!= null)
-            ? (DependencyPathWeight) Misc.getObjectInstance(weighterProp)
+            ? (DependencyPathWeight) 
+                ReflectionUtil.getObjectInstance(weighterProp)
             : new FlatPathWeight();
 
         cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
@@ -326,7 +328,7 @@ public class StructuredVectorSpace implements SemanticSpace {
         // Iterate over all of the parseable dependency parsed sentences in the
         // document.
         for (DependencyTreeNode[] nodes = null;
-                (nodes = parser.parse(document)) != null; ) {
+                (nodes = parser.readNextTree(document)) != null; ) {
 
             // Skip empty documents.
             if (nodes.length == 0)
@@ -348,8 +350,8 @@ public class StructuredVectorSpace implements SemanticSpace {
 
                 // Create the path iterator for all acceptable paths rooted at
                 // the focus word in the sentence.
-                Iterator<DependencyPath> pathIter = new DependencyIterator(
-                        nodes, acceptor, weighter, i, 1);
+                Iterator<DependencyPath> pathIter = 
+                    new DependencyIterator(nodes[i], acceptor, 1);
 
                 // Count each co-occurence the focus word has with words that
                 // are one relation away.  Since each focus word has several
@@ -364,8 +366,8 @@ public class StructuredVectorSpace implements SemanticSpace {
                     DependencyPath path = pathIter.next();
 
                     // Get the feature index for the co-occurring word.
-                    String otherTerm = path.path().peekLast().token();
-
+                    String otherTerm = path.last().word();
+                    
                     // Skip any filtered features.
                     if (otherTerm.equals(EMPTY_STRING))
                         continue;
@@ -375,8 +377,11 @@ public class StructuredVectorSpace implements SemanticSpace {
 
                     // Determine the expectation vector name and retrieve the
                     // row index for that vector.
-                    DependencyRelation relation = path.path().peek();
-                    String termExpectation = (relation.isHeadNode())
+                    DependencyRelation relation = path.iterator().next();
+                    // Check whether the current term is the head node in the 
+                    // relation.  If so, the relation will come after.
+                    String termExpectation = 
+                        (relation.headNode().word().equals(focusWord))
                         ? focusWord + "|" + relation.relation()
                         : relation.relation() + "|" + focusWord;
                     int rowIndex = getIndexFor(termExpectation, termToRowIndex);
@@ -384,8 +389,9 @@ public class StructuredVectorSpace implements SemanticSpace {
                     // Increment the score for this co-occurence.
                     incrementCount(matrixEntryToCount, rowIndex, 
                                    featureIndex, 1);
+                    double score = weighter.scorePath(path);
                     incrementCount(matrixEntryToCount, focusIndex, 
-                                   featureIndex, path.score());
+                                   featureIndex, score);
                 }
             }
         }

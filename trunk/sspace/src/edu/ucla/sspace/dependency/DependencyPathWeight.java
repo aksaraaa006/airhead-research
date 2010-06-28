@@ -42,5 +42,5 @@ public interface DependencyPathWeight {
      *
      * @return The score of the dependecy path
      */
-    double scorePath(List<DependencyRelation> path);
+    double scorePath(DependencyPath path);
 }
