@@ -362,7 +362,6 @@ public class Coals implements SemanticSpace {
             int wordCount = finalCorrelation.rows();
             Transform correlation = new CorrelationTransform();
             finalCorrelation = correlation.transform(finalCorrelation);
-
             COALS_LOGGER.info("Done normalizing co-occurrance matrix.");
         }
 
@@ -410,8 +409,12 @@ public class Coals implements SemanticSpace {
         // word frequencies.
         termToIndex.clear();
         int i = 0;
-        for (Map.Entry<String, AtomicInteger> entry : wordCountList)
+        for (Map.Entry<String, AtomicInteger> entry : wordCountList) {
             termToIndex.put(entry.getKey(), i++);
+            if (i >= maxWords) {
+                break;
+            }
+        }
 
         // Compute the number of dimensions to maintain. 
         int wordCount = (wordCountList.size() > maxDimensions)
@@ -424,6 +427,8 @@ public class Coals implements SemanticSpace {
         for (int row = 0; row < cooccurrenceMatrix.rows(); ++row) {
             // Get the new index for this row.
             String termForFirstIndex = indexToTerm[row];
+            if (!termToIndex.containsKey(termForFirstIndex))
+                continue;
             int newRow = termToIndex.get(termForFirstIndex).intValue();
 
             // Drop it if it's not frequent enough.
@@ -436,6 +441,8 @@ public class Coals implements SemanticSpace {
 
                 // Get the new index for this column.
                 String termForSecondIndex = indexToTerm[col];
+                if (!termToIndex.containsKey(termForSecondIndex))
+                    continue;
                 int newCol = termToIndex.get(termForSecondIndex);
 
                 // Drop it if it's not frequent enough.
