@@ -56,15 +56,18 @@ import java.util.logging.Logger;
  * linear-time subspace projection.  This implementation is based on the paper
  * by He and Niygo:
  * <ul>
-
+ *
  *   <li style="font-family:Garamond, Georgia, serif">Xiaofei He and Partha
  *     Niyogi, "Locality Preserving Projections," in <i>Proceedings of Advances
  *     in Neural Information Processing Systems 16 (NIPS 2003)</i>. Vancouver
  *     Canada. 2003.  Available <a
  *     href="http://books.nips.cc/papers/files/nips16/NIPS2003_AA20.pdf">here</a></li>
-
- * </ul>
- * This class requires the availability of Matlab or Octave.
+ *
+ * </ul> 
+ *
+ * This class requires the availability of Matlab or Octave and the appropriate
+ * code from <a href="http://www.zjucadcg.cn/dengcai/SR/index.html">Deng
+ * Cai</a>/
  *
  *
  *
@@ -160,7 +163,7 @@ public class LocalityPreservingProjection {
         "options.ReguType = 'Ridge';\n" +
         "options.ReducedDim = Dim;\n" +
         "%% Call the SR code\n" +
-        "[eigvector] = SR_caller(options, fea);\n" +
+        "[eigvector] = SR_caller(options, data);\n" +
         "[nSmp,nFea] = size(data);\n" +
         "if size(eigvector,1) == nFea + 1\n" +
         "    Projection = [data ones(nSmp,1)]*eigvector;\n" +
@@ -175,7 +178,9 @@ public class LocalityPreservingProjection {
     /**
      * The generic Matlab/Octave implementation of LPP where the files and
      * language-specific I/O calls have been left open as printf formatting
-     * arguments to be later specified.
+     * arguments to be later specified.  This version of LPP is significantly
+     * more expensive than SR-LPP and should not be used unless a specific need
+     * arises.
      */
     private static final String LPP_M =
         "%% LPP code based on the Matlab implementation by Deng Cai (dengcai2 AT\n" +
@@ -353,6 +358,8 @@ public class LocalityPreservingProjection {
      * data points become columns in the input matrix).
      *
      *
+     * @param matrixFile a file contain the matrix to be reduced by LPP
+     * @param format the format of {@code matrixFile}
      * @param dataSimilarityMetric the metric by which two data points should be
      *        compared when constructing the affinity matrix.
      * @param isDataTransposed {@code true} if the data in the original matrix
@@ -370,19 +377,19 @@ public class LocalityPreservingProjection {
      *        {@code EdgeWeight} does not take a parameter, this value is
      *        unused.
      *
-     * @return a file containing the LPP-reduced data in {@code MATLAB_SPARSE}
+     * @return a file containing the LPP-reduced data in {@code DENSE_TEXT}
      *         format.  Note that if the data was transposed on input, the data
      *         is returned non-tranposed (i.e. the data format is the same
      *         regardless of whether it was tranposed on input).
      */
     public static File project(File matrixFile, MatrixIO.Format format,
-                                boolean isDataTransposed, 
-                                int dimensions, 
-                                SimType dataSimilarityMetric,
-                                EdgeType edgeType,
-                                double edgeTypeParam,
-                                EdgeWeighting weighting,
-                                double edgeWeightParam) {
+                               boolean isDataTransposed, 
+                               int dimensions, 
+                               SimType dataSimilarityMetric,
+                               EdgeType edgeType,
+                               double edgeTypeParam,
+                               EdgeWeighting weighting,
+                               double edgeWeightParam) {
         
         // IMPLEMENTATION NOTE: since the user has requested the matrix be dealt
         // with as a file, we need to keep the matrix on disk.  However, the
@@ -489,9 +496,11 @@ public class LocalityPreservingProjection {
                                           weighting, edgeWeightParam);
                             // Print out the symmetric edges
                             affMatrixWriter.println(
-                                                    (row + 1) + " " + (other + 1) + " " + edgeWeight);
+                                (row + 1) + " " + (other + 1) 
+                                + " " + edgeWeight);
                             affMatrixWriter.println(
-                                                    (other + 1) + " " + (row + 1) + " " + edgeWeight);
+                                (other + 1) + " " + (row + 1) 
+                                + " " + edgeWeight);
                         }
                         break;
                     }
@@ -506,7 +515,8 @@ public class LocalityPreservingProjection {
                     for (Duple<Integer,Double> t : neighbors.values()) {
                         // Note that the two rows may not have a symmetric
                         // connection so only one value needs to be written
-                        affMatrixWriter.println((row + 1) + " " + (t.x + 1) + " " + t.y);
+                        affMatrixWriter.
+                            println((row + 1) + " " + (t.x + 1) + " " + t.y);
                     }
                 }
                 matrixIter.reset();
@@ -529,6 +539,31 @@ public class LocalityPreservingProjection {
         }
     }
 
+    /**
+     * Projects the rows of the matrix into a lower dimensional subspace using
+     * the Spectral Regression variant of the Locality Preserving Projection
+     * (LPP) algorithm.
+     *
+     * @param m the matrix to be projected into a smaller number of dimensions
+     * @param dataSimilarityMetric the metric by which two data points should be
+     *        compared when constructing the affinity matrix.
+     * @param isDataTransposed {@code true} if the data in the original matrix
+     *        has been transposed in the provided matrix file, i.e. the data
+     *        point as rows are now columns.
+     * @param edgeType the process to use when deciding whether two data points
+     *        are connected by an edge in the affinity matrix.
+     * @param edgeTypeParam an optional parameter to the {@link EdgeType}
+     *        selection process.  If the selected {@code EdgeType} does not take
+     *        a parameter, this value is unused.
+     * @param edgeWeight the weighting scheme to use for edges in the affinity
+     *        matrix
+     * @param edgeWeightParam an optional parameter to the {@link EdgeWeight}
+     *        when deciding on the weighting for an edge.  If the selected
+     *        {@code EdgeWeight} does not take a parameter, this value is
+     *        unused.
+     *
+     * @return a matrix containing the LPP-reduced data.
+     */
     public static Matrix project(Matrix m,
                                  int dimensions, 
                                  SimType dataSimilarityMetric,
@@ -601,7 +636,8 @@ public class LocalityPreservingProjection {
     }
 
     /**
-     *
+     * Executes LPP using the input matrix and affinity matrix files and returns
+     * the resulting projection as a {@code Matrix}.
      *
      * @param dataMatrix a matrix where each row is a data points to be
      *        projected
@@ -623,7 +659,8 @@ public class LocalityPreservingProjection {
     }
 
     /**
-     *
+     * Executes LPP using the input matrix and affinity matrix files and then
+     * writes the result to the output matrix.
      *
      * @param dataMatrixFile a file containing the original data points to be
      *        projected
@@ -657,12 +694,12 @@ public class LocalityPreservingProjection {
 	    
         // Create the Matlab-specified output code for the saving the matrix
         String outputStr =
-            "save " + outputFile.getAbsolutePath() + " projection -ASCII\n";
+            "save '" + outputFile.getAbsolutePath() + "', Projection, '-ASCII'\n";
         
         // Fill in the Matlab-specific I/O 
-        String matlabProgram = LPP_M.format(dataMatrixFile.getAbsolutePath(), 
-                                            affMatrixFile.getAbsolutePath(),
-                                            dimensions, outputStr);
+        String matlabProgram = SR_LPP_M.format(dataMatrixFile.getAbsolutePath(), 
+                                               affMatrixFile.getAbsolutePath(),
+                                               dimensions, outputStr);
 
         // Pipe the program to Matlab for execution
         PrintWriter stdin = new PrintWriter(matlab.getOutputStream());
@@ -714,13 +751,13 @@ public class LocalityPreservingProjection {
         File octaveFile = File.createTempFile("octave-LPP",".m");
         // Create the Matlab-specified output code for the saving the matrix
         String outputStr = 
-            "save(\"-ascii\", \"" + outputFile.getAbsolutePath()
-            + "\", \"projection\");\n";
+            "save('-ascii', '" + outputFile.getAbsolutePath()
+            + "', 'Projection');\n";
         
         String octaveProgram = null;
         try {
-            // Fill in the Matlab-specific I/O 
-            octaveProgram = String.format(LPP_M,
+            // Fill in the Octave-specific I/O 
+            octaveProgram = String.format(SR_LPP_M,
                                           dataMatrixFile.getAbsolutePath(), 
                                           affMatrixFile.getAbsolutePath(),
                                           dimensions, outputStr);

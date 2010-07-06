@@ -64,12 +64,12 @@ public final class LoggerUtil {
      * level.
      */
     public static void setLevel(Level outputLevel) {
-        Logger appRooLogger = Logger.getLogger("edu.ucla.sspace");
+        Logger appRootLogger = Logger.getLogger("edu.ucla.sspace");
         Handler verboseHandler = new ConsoleHandler();
         verboseHandler.setLevel(outputLevel);
-        appRooLogger.addHandler(verboseHandler);
-        appRooLogger.setLevel(outputLevel);
-        appRooLogger.setUseParentHandlers(false);
+        appRootLogger.addHandler(verboseHandler);
+        appRootLogger.setLevel(outputLevel);
+        appRootLogger.setUseParentHandlers(false);
     }
 
 }
