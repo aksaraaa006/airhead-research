@@ -1,6 +1,9 @@
 #summary A description of the Latent Semantic Analysis implementation of the S-Space package.
 #labels Featured
 
+
+<wiki:toc max_depth="2" />
+
 = Introduction =
 
 Latent Semantic Analysis (LSA) is an algorithm that uses a collection of documents to construct a a semantic space.  The algorithm constructs a word-by-document matrix where each row corresponds to a unique word in the document corpus and each row corresponds to a document.  The value at each position is how many times the row's word occurs in the column's document.  Then the [http://en.wikipedia.org/wiki/Singular_value_decomposition Singular Value Decomposition] (SVD) is calculated for the word-document matrix to produce three matrices (UΣV), U - the wordspace, Σ - the singular values, and V - the document space.  (See Wikipedia for more details on the SVD).  The columns of U are then truncated to a small number of dimensions (typically 300), which produces the final semantic vectors.
@@ -11,21 +14,25 @@ For more information on LSA, see the Wikipedia [http://en.wikipedia.org/wiki/Lat
 
   * T. K. Landauer, P. W. Foltz, and D. Laham, "Introduction to Latent Semantic Analysis," _Discourse Processes_, no. 25, pp. 259–284, 1998.  Available [http://lsa.colorado.edu/papers/dp1.LSAintro.pdf here].
 
+The regular user should download lsa.jar from the [http://code.google.com/p/airhead-research/downloads/list downloads] page.  *LSA should work right out of the box with no configuring and no external software,*  and has command line documentation on all the options.
+
 = S-Space Implementation =
 
 The current S-Space implementation of LSA is captured in two files.  {{{LatentSemanticAnalysis.java}}} contains all of the algorithmic implementation, and is suitable for use in other code as a library.  {{{LSAMain.java}}} is a command-line invokable version of LSA that uses the {{{LatentSemanticAnalysis}}} class.  This class is provided as lsa.jar on the release packages.
 
+
 == Software Requirements ==
 
-The S-Space implementation uses existing software implementations of the SVD.  At least one of the following packages should be installed:
-
+The S-Space implementation of LSA uses existing software implementations of the SVD.  We currently bundle [SVDLIBJ], an open source port of [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC] to Java by Adrian Kuhn and David Erni.  In addition, the S-Space Package also supports the following SVD libraries:
   # [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC]
   # [http://www.mathworks.com/products/matlab Matlab]
   # [http://www.gnu.org/software/octave/ GNU Octave].  Note that the required sparse svd method is in an optional package and requires that the [http://octave.sourceforge.net/arpack/index.html ARPACK bindings for Octave] are installed.
-  # [http://math.nist.gov/javanumerics/jama/ JAMA].  Note that should JAMA be used, it needs to be specified in the {{{CLASSPATH}}} variable when LSA is run.  If LSA is being invoked from a .jar (e.g. [http://airhead-research.googlecode.com/files/lsa.jar lsa.jar]) and JAMA is to be used for computing the SVD, then the path to the JAMA .jar file must be specified using the system property `jama.path`.  To set this on the command-line, use `-Djama.path=<.jar location>`.
+  # [http://math.nist.gov/javanumerics/jama/ JAMA].  
+  # [http://acs.lbl.gov/software/colt/ COLT].
+Note that should JAMA or COLT are to be used, they need to be specified in the {{{CLASSPATH}}} variable when LSA is run.  If LSA is being invoked from a .jar (e.g. [http://airhead-research.googlecode.com/files/lsa.jar lsa.jar]) you will need to specify the system property `jama.path` or `colt.path` to point to the appropriate jar.  To set this on the command-line, use `-Djama.path=<.jar location>`.
 
 
-The S-Space implementation will work with any of these implementations.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.
+The S-Space implementation will work with any of these implementations.  However, note that each has its own scalability limitations.  We recommend SVDLIBC as it is the most scalable option.  However, our performance tests have shown that SVDLIBJ performs around ~92% as fast as SVDLIBC (when compiled with icc on a core2 processor), which is fairly competitive.
 
 == Preprocessing the word-document matrix ==
 
@@ -49,26 +56,58 @@ LSA can be invoked either using {{{java edu.ucla.sspace.mains.LSAMain}}} or thro
 We provide the following options for changing the behavior of LSA and how the program is run.
 
   * Input document sources (must provide at least one)
-    * {{{-f | --fileList=FILE[,FILE...]}}} one or more files, each containing a list of file names, each of which is treated as a separate document.
-    * {{{-d | --docFile=FILE[,FILE...]}}} one or more files, in which each line is treated as a separate document. This is the preferred option for LSA operations for large numbers of documents due to reduced I/O demands. 
+    * {{{-f, --fileList=FILE[,FILE...]}}} one or more files, each containing a list of file names, each of which is treated as a separate document.
+    * {{{-d, --docFile=FILE[,FILE...]}}} one or more files, in which each line is treated as a separate document. This is the preferred option for LSA operations for large numbers of documents due to reduced I/O demands. 
 
   * LSA Options
-    * {{{-n | --dimensions <int>}}} how many dimensions to use for the LSA vectors. See LatentSemanticAnalysis for default value
-    * {{{-p | --preprocess <class name>}}} specifies an instance of [MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
-    * `-F | --tokenFilter=FILE[include|exclude][,FILE...]` specifies a list of one or more files to use for filtering the documents. An option flag may be added to each file to specify how the words in the filter filter should be used: include if only the words in the filter file should be retained in the document; exclude if only the words not in the filter file should be retained in the document.  The default value is include. An example configuration might look like:  `--tokenFilter=english-dictionary.txt=include,stop-list.txt=exclude`
+    * {{{-n, --dimensions <int>}}} how many dimensions to use for the LSA vectors. See LatentSemanticAnalysis for default value
+    * {{{-p, --preprocess <class name>}}} specifies an instance of [MatrixTransform to use in preprocessing the word-document matrix compiled by LSA prior to computing the SVD.
+
+  * Tokenizing Options  (For more information, see [Tokenizing]
+    * `-C, --compoundWords=FILE` This specifies a file where each line is a recognized compound word.  Compount tokenization is greedy and will select the longest compound token present.  For example if "bar exam" and "California bar exam" are both compound tokens, the latter will always be returned as a single token, rather than returning the two tokens "California" and "bar exam".
+    * `-F, --tokenFilter=CONFIG`  A configuration lists sets of files that contain tokens to be included or excluded.  The behavior, "include" or "exclude" is specified first, followed by one or more file names, each separated by colons.  Multiple behaviors may be specified one after the other using a ','  character to separate them.  For example, a typicaly configuration may  look like: include=top-tokens.txt:test-words.txt,exclude=stop-words.txt  Note behaviors are applied in the order they are presented on the command-line.
+    * `-z, --wordLimit=INT`  Set the maximum number of words a document can have.  (This feature is most useful in artificially truncating the corpus for testing or efficiency.)
+    * `-Z, --stemmingAlgorithm=CLASSNAME`   This option specifices the stemming algorithm to use on tokens while iterating.  The default is no stemming.  A stemmer is specified by a fully qualified class name such as `org.tartarus.snowball.englishStemmer`.
 
   * Program Options
-    * {{{-o | --outputFormat={text|binary}}}} Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details. 
-    * {{{-t | --threads <int>}}} how many threads to use when processing the documents. The default is one per core.
-    * {{{-w | --overwrite <boolean>}}} specifies whether to overwrite the existing output files. The default is `true`. If set to false, a unique integer is inserted into the file name.
-    * {{{-v | --verbose}}} specifies whether to print runtime information to standard out
+    * {{{-o, --outputFormat={text|binary|sparse_text|sparse_binary}}}} Specifies the output formatting to use when generating the semantic space (.sspace) file. See [FileFormats] for format details.  The default is `binary`.
+    * {{{-t, --threads <int>}}} how many threads to use when processing the documents. The default is one per core.
+    * {{{-w, --overwrite <boolean>}}} specifies whether to overwrite the existing output files. The default is `true`. If set to false, a unique integer is inserted into the file name.
+    * {{{-v, --verbose}}} specifies whether to print runtime information to standard out
 
+  * Advanced Options
+    * `-S, --svdAlgorithm`  The --svdAlgorithm provides a way to manually specify which algorithm should be used internally.  This option should not be used normally, as LSA will select the fastest algorithm available.  However, in the event that it is needed, valid options are: SVDLIBC, MATLAB, OCTAVE, JAMA and COLT The compound word option specifies a file whose contents are compount tokens, e.g. white house.  Each compound token should be specified on its own line.  Compount tokenization is greedy and will select the longest compound token present.  For example if "bar exam" and "California bar exam" are both compound tokens, the latter will always be returned as a single token, rather than returning the two tokens "California" and "bar exam".
 
 The program will then produce a file that contains the entire semantic space.  See [FileFormats] for exact details on the output formatting.
+
+===Important Note===
+
+The LSA program is the definitive authority on the current set of options and their configurations.  If you find an option is incorrectly specified on this page, please [mailto:s-space-research-dev@googlegroups.com let us know].  Full documentation may be found on the command line by running the `lsa.jar` program without any options.
+
+= Example Command Lines =
+
+  # Generates a simple .sspace file with the default 300 dimensions.
+    * `java -jar lsa.jar -d corpus.txt  my-lsa-output.sspace`
+  # Has the JVM use 4GB of ram when performing LSA (more ram is almost always better)
+    * `java -Xmx8g -jar lsa.jar -d corpus.txt my-lsa-output.sspace`
+  # Removes stop words from the corpus while processing.  (Note: LSA doesn't do this in the original papers)
+    * `java -Xmx8g -jar lsa.jar -d corpus.txt -F exclude=stopwords.txt my-lsa-output-no-stopwords.sspace`
+  # Generates an LSA space with 500 dimensions
+    * `java -Xmx8g -jar lsa.jar -d corpus.txt -n 500 my-lsa-output-500dim.sspace`
+  # Generates an LSA space with known compound words
+    * `java -Xmx8g -jar lsa.jar -d corpus.txt -C my-list-of-ngrams.txt my-lsa-output-with-ngrams.sspace`
+  # Runs LSA with SVDLIBJ specifically (Note: the algorithm choice shouldn't affect the final vector values - only the runtime of LSA)
+    * `java -Xmx8g -jar lsa.jar -d corpus.txt -S SVDLIBJ my-lsa-output.sspace`
+
+   
+
+
 
 = Acknowledgments =
 
   * We are grateful for the advice and assistance of Tom Landauer, Walter Kintsch and Praful Mangalath of the Latent Semantic Analysis group at the University of Colorado, Boulder.
 
   * We are grateful to Doug Rohde for making the SVDLIBC program freely available.
+
+  * We are very grateful to Adrian Kuhn and David Erni for creating SVDLIBJ by porting SVDLIBC to Java.
  
