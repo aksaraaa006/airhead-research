@@ -1417,10 +1417,22 @@ public class MatrixIO {
 
         case MATLAB_SPARSE: {
             PrintWriter pw = new PrintWriter(output);
+            // NOTE: Matlab's sparse matrix offers no way of specifying the
+            // original matrix's dimensions.  This is only problematic if the
+            // matrix contains trailing rows or columns that are all
+            // zeros. Therefore to ensure that the matrix has the correct size,
+            // we track the maximum values written and write a 0-value to extend
+            // the matrix to its correct size
+            int maxRowSeen = 0;
+            int maxColSeen = 0;
             for (int j = 0; j < matrix.columns(); ++j) {
                 for (int i = 0; i < matrix.rows(); ++i) {
                     if (matrix.get(i,j) == 0)
                         continue;
+                    if (j > maxColSeen)
+                        maxColSeen = j;
+                    if (i > maxRowSeen)
+                        maxRowSeen = i;
                     StringBuffer sb = new StringBuffer(32);
                     // Add 1 to index values since Matlab arrays are 1-based,
                     // not 0-based
@@ -1428,6 +1440,11 @@ public class MatrixIO {
                     sb.append(" ").append(matrix.get(i,j));
                     pw.println(sb.toString());
                 }
+            }
+            // Check whether we need to extend the matrix
+            if (maxRowSeen + 1 !=  matrix.rows() 
+                    || maxColSeen + 1 != matrix.columns()) {
+                pw.println(matrix.rows() + " " + matrix.columns() + " 0");
             }
             pw.close();
             break;                        

@@ -55,7 +55,7 @@ public class DenseVector implements DoubleVector, Serializable {
      */
     public DenseVector(int vectorLength) {
         vector = new double[vectorLength];
-        magnitude = -1;
+        magnitude = 0;
     }
 
     /**
@@ -67,7 +67,7 @@ public class DenseVector implements DoubleVector, Serializable {
      */
     public DenseVector(double[] vector) {
         this.vector = Arrays.copyOf(vector, vector.length);
-        magnitude = -1;
+        magnitude = 0;
     }
 	
     /**
@@ -91,7 +91,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        magnitude = -1;
+        magnitude = 0;
         vector[index] += delta;
         return vector[index];
     }
@@ -100,7 +100,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, double value) {
-        magnitude = -1;
+        magnitude = 0;
         vector[index] = value;
     }
 
@@ -108,7 +108,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
-        magnitude = -1;
+        magnitude = 0;
         set(index, value.doubleValue());
     }
 
@@ -130,7 +130,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public double magnitude() {
-        if (magnitude == -1) {
+        if (magnitude == 0) {
             for (double d : vector)
                 magnitude += d * d;
         }
