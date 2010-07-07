@@ -216,12 +216,12 @@ public class TfIdfTransform implements Transform {
         throws IOException {
          
         // for each term, in how many documents did that term appear?
-        Map<Integer,Integer> termToDocOccurrences = 
-            new HashMap<Integer,Integer>();
+        Map<Integer,Double> termToDocOccurrences = 
+            new HashMap<Integer,Double>();
  
         // for each document, how many terms appeared in it
-        Map<Integer,Integer> docToTermCount = 
-            new HashMap<Integer,Integer>();
+        Map<Integer,Double> docToTermCount = 
+            new HashMap<Integer,Double>();
  
         // how many different terms and documents were used in the matrix
         int numTerms = 0;
@@ -234,19 +234,19 @@ public class TfIdfTransform implements Transform {
      
             Integer term  = Integer.valueOf(termDocCount[0]);
             Integer doc   = Integer.valueOf(termDocCount[1]);
-            Integer count = Integer.valueOf(termDocCount[2]);
+            Double count = Double.valueOf(termDocCount[2]);
      
             // increase the count for the number of documents in which this
             // term was seen
-            Integer termCount = termToDocOccurrences.get(term);
+            Double termCount = termToDocOccurrences.get(term);
             termToDocOccurrences.put(term, (termCount == null) 
-                                     ? 1 : Integer.valueOf(termCount + 1));
+                                     ? 1 : Double.valueOf(termCount + 1d));
      
             // increase the total count of terms seen in ths document
-            Integer docTermCount = docToTermCount.get(doc);
+            Double docTermCount = docToTermCount.get(doc);
             docToTermCount.put(doc, (docTermCount == null)
                                ? count
-                               : Integer.valueOf(count + docTermCount));
+                               : Double.valueOf(count + docTermCount));
      
         }
         br.close();
@@ -263,7 +263,7 @@ public class TfIdfTransform implements Transform {
      
             Integer term  = Integer.valueOf(termDocCount[0]);
             Integer doc   = Integer.valueOf(termDocCount[1]);
-            Integer count = Integer.valueOf(termDocCount[2]);
+            Double count = Double.valueOf(termDocCount[2]);
 
             double tf = count.doubleValue() / docToTermCount.get(doc);
             double idf = 
