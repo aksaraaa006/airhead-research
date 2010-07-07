@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.DoubleEntry;
+
 import java.io.Serializable;
 
 import java.util.Arrays;
@@ -76,14 +78,21 @@ public class DenseVector implements DoubleVector, Serializable {
      *
      * @param vector The {@code Vector} to copy from.
      */
-    public DenseVector(DoubleVector vector) {
-        this.vector = new double[vector.length()];
-
-        magnitude = 0;
-        for (int i = 0; i < vector.length(); ++i) {
-            double v = vector.get(i);
-            set(i, v);
-            magnitude += Math.pow(v, 2);
+    @SuppressWarnings("unchecked")
+    public DenseVector(DoubleVector v) {
+        this.vector = new double[v.length()];
+        magnitude = v.magnitude();
+        if (v instanceof Iterable) {
+            for (DoubleEntry e : ((Iterable<DoubleEntry>)v)) 
+                vector[e.index()] = e.value();
+        }
+        else if (v instanceof SparseDoubleVector) {
+            for (int i : ((SparseDoubleVector)v).getNonZeroIndices())
+                vector[i] = v.get(i);
+        }
+        else {
+            for (int i = 0; i < v.length(); ++i)
+                vector[i] = v.get(i);
         }
     }
 
@@ -91,7 +100,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        magnitude = 0;
+        magnitude = -1;
         vector[index] += delta;
         return vector[index];
     }
@@ -100,7 +109,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, double value) {
-        magnitude = 0;
+        magnitude = -1;
         vector[index] = value;
     }
 
@@ -108,7 +117,7 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public void set(int index, Number value) {
-        magnitude = 0;
+        magnitude = -1;
         set(index, value.doubleValue());
     }
 
@@ -130,11 +139,13 @@ public class DenseVector implements DoubleVector, Serializable {
      * {@inheritDoc}
      */
     public double magnitude() {
-        if (magnitude == 0) {
+        if (magnitude < 0) {
+            double m = 0;
             for (double d : vector)
-                magnitude += d * d;
+                m += d * d;
+            magnitude = Math.sqrt(m);
         }
-        return Math.sqrt(magnitude);
+        return magnitude;
     }
 
     /**
