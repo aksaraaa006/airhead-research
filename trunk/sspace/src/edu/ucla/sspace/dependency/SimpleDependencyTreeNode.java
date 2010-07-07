@@ -28,7 +28,7 @@ import java.util.List;
  * A default implementation of a {@link DependencyTreeNode} that allows
  * mutating access to the list of neighbors.
  */
-class SimpleDependencyTreeNode implements DependencyTreeNode {
+public class SimpleDependencyTreeNode implements DependencyTreeNode {
 
     /**
      * The node's token.
@@ -62,9 +62,11 @@ class SimpleDependencyTreeNode implements DependencyTreeNode {
      *
      * @param relation a relation connecting this node to another
      */
-    void addNeighbor(DependencyRelation relation) {
+    public void addNeighbor(DependencyRelation relation) {
         // NB: this method is currently package-private to ensure that a user
         // doesn't add a relation that isn't connected to the current node
+        // NB: Changed to being public, since this is currently the only way for
+        // other libraries to build up dependency trees.
         neighbors.add(relation);
     }
 
