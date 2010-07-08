@@ -33,6 +33,7 @@ import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.LimitedIterator;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -102,6 +103,16 @@ import java.util.logging.Logger;
  * @author David Jurgens
  */
 public abstract class GenericMain {
+
+    /**
+     * The property for setting a unique corpus reader.  This corpus reader must
+     * have a no argument constructor and implement {@code Iterator<Document>}.
+     * Since this is expected to be a rare use case, this is done as a property
+     * instead of a standard command line argument to keep the argument space
+     * from being poluted.
+     */
+    public static final String CORPUS_READER_PROPERTY =
+        "edu.ucla.sspace.mains.GenericMain.corpusReader";
 
     /**
      * Extension used for all saved semantic space files.
@@ -287,6 +298,13 @@ public abstract class GenericMain {
      * @throws Error if no document source is specified
      */
     protected Iterator<Document> getDocumentIterator() throws IOException {
+        // Check to see if a corpus reader was specified as a property.  If it
+        // was, this reader overrides any command line arguments.
+        String readerProperty = 
+            System.getProperties().getProperty(CORPUS_READER_PROPERTY);
+        if (readerProperty != null)
+            return ReflectionUtil.getObjectInstance(readerProperty);
+
         Iterator<Document> docIter = null;
 
         String fileList = (argOptions.hasOption("fileList"))
