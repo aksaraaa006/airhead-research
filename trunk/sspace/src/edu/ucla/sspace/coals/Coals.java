@@ -21,10 +21,17 @@
 
 package edu.ucla.sspace.coals;
 
+import edu.ucla.sspace.common.Similarity;
+import edu.ucla.sspace.util.MultiMap;
+import edu.ucla.sspace.util.BoundedSortedMultiMap;
+import edu.ucla.sspace.vector.Vector;
+import java.util.Map;
+
 import edu.ucla.sspace.common.SemanticSpace;
 
+import edu.ucla.sspace.matrix.CellMaskedSparseMatrix;
 import edu.ucla.sspace.matrix.ArrayMatrix;
-import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
+import edu.ucla.sspace.matrix.AtomicGrowingSparseMatrix;
 import edu.ucla.sspace.matrix.CorrelationTransform;
 import edu.ucla.sspace.matrix.MatlabSparseMatrixBuilder;
 import edu.ucla.sspace.matrix.Matrix;
@@ -168,7 +175,7 @@ public class Coals implements SemanticSpace {
      * The matrix used for storing weight co-occurrence statistics of those
      * words that occur both before and after.
      */
-    private AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
+    private AtomicGrowingSparseMatrix cooccurrenceMatrix;
 
     /**
      * A mapping from word to index number.
@@ -207,7 +214,7 @@ public class Coals implements SemanticSpace {
     public Coals() {
         termToIndex = new HashMap<String, Integer>();
         totalWordFreq = new ConcurrentHashMap<String, AtomicInteger>();
-        cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
+        cooccurrenceMatrix = new AtomicGrowingSparseMatrix();
         finalCorrelation = null;
     }
 
@@ -390,12 +397,14 @@ public class Coals implements SemanticSpace {
     }
 
     private Matrix buildMatrix(int maxWords, int maxDimensions) {
+        COALS_LOGGER.info("Forming the inverse mapping from terms to indices.");
         // Calculate an inverse mapping from index to word since the binary file
         // stores things by index number.
         String[] indexToTerm = new String[termToIndex.size()];
         for (Map.Entry<String, Integer> entry : termToIndex.entrySet())
             indexToTerm[entry.getValue()] = entry.getKey();
 
+        COALS_LOGGER.info("Sorting the terms based on frequency.");
         // Calculate the new indices for each word that will be kept based on
         // the frequency count, where the most frequent word will be first.
         ArrayList<Map.Entry<String, AtomicInteger>> wordCountList =
@@ -403,65 +412,44 @@ public class Coals implements SemanticSpace {
                     totalWordFreq.entrySet());
         Collections.sort(wordCountList, new EntryComp());
 
-        MatrixBuilder builder = new MatlabSparseMatrixBuilder(true);
 
         // Calculate the new term to index mapping based on the order of the
         // word frequencies.
-        termToIndex.clear();
-        int i = 0;
-        for (Map.Entry<String, AtomicInteger> entry : wordCountList) {
-            termToIndex.put(entry.getKey(), i++);
-            if (i >= maxWords) {
-                break;
-            }
-        }
+        COALS_LOGGER.info("Generating the index masks.");
+        Map<Integer, Integer> rowMask = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> colMask = new HashMap<Integer, Integer>();
 
         // Compute the number of dimensions to maintain. 
         int wordCount = (wordCountList.size() > maxDimensions)
             ? maxDimensions 
             : wordCountList.size();
 
-        // Traverse the old matrix and drop rows if their new indices are beyond
-        // the maximum word count and drop columns if their new indices are
-        // beyond the maximum dimension size.
-        for (int row = 0; row < cooccurrenceMatrix.rows(); ++row) {
-            // Get the new index for this row.
-            String termForFirstIndex = indexToTerm[row];
-            if (!termToIndex.containsKey(termForFirstIndex))
-                continue;
-            int newRow = termToIndex.get(termForFirstIndex).intValue();
+        // For each of the terms that we have a mapping, add row and column
+        // maskings for the indices of the first maxWords terms.  For all other
+        // terms, remove the term to index mapping.
+        int termCount = 0;
+        for (Map.Entry<String, AtomicInteger> entry : wordCountList) {
+            Integer oldIndex = termToIndex.get(entry.getKey());
 
-            // Drop it if it's not frequent enough.
-            if (newRow >= maxWords)
+            // Skip any non mapped terms.
+            if (oldIndex == null)
                 continue;
 
-            SparseDoubleVector v = new SparseHashDoubleVector(wordCount);
-            // Traverse the columns.
-            for (int col = 0; col < cooccurrenceMatrix.columns(); ++col) {
-
-                // Get the new index for this column.
-                String termForSecondIndex = indexToTerm[col];
-                if (!termToIndex.containsKey(termForSecondIndex))
-                    continue;
-                int newCol = termToIndex.get(termForSecondIndex);
-
-                // Drop it if it's not frequent enough.
-                if (newCol >= wordCount)
-                    continue;
-
-                double oldValue = cooccurrenceMatrix.get(row, col);
-                v.set(newCol, oldValue);
+            // Add a row and/or column mask from the index of this word to it's
+            // index in the original matrix.
+            if (termCount < maxWords) {
+                if (termCount <  wordCount)
+                    colMask.put(termCount, oldIndex);
+                rowMask.put(termCount, oldIndex);
+                termCount++;
             }
-            builder.addColumn(v);
+            // Drop all other mappings.
+            else
+                termToIndex.remove(entry.getKey());
         }
 
-        cooccurrenceMatrix = null;
-        builder.finish();
-        try {
-            return MatrixIO.readMatrix(builder.getFile(), Format.MATLAB_SPARSE);
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
+        // Return a masked version of the original matrix.
+        return new CellMaskedSparseMatrix(cooccurrenceMatrix, rowMask, colMask);
     }
 
     private class EntryComp
