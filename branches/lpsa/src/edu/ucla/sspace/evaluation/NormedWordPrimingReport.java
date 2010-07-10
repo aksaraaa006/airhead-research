@@ -22,6 +22,11 @@
 package edu.ucla.sspace.evaluation;
 
 /**
+ * An interface for representing the result of a normed priming test.  This
+ * will record the number of cues, the number of unanswered cues, and the
+ * average correlation between answered cue-target pairs and their similarity in
+ * a word space.
+ *
  * @author Keith Stevens
  */
 public interface NormedWordPrimingReport {

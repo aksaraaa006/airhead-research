@@ -25,6 +25,8 @@ import java.util.List;
 
 
 /**
+ * A simple struct based implementation of a {@link NormedPrimingQuestion}.
+ *
  * @author Keith Stevens
  */
 public class SimpleNormedPrimingQuestion implements NormedPrimingQuestion {
