@@ -35,6 +35,10 @@ import java.util.Set;
 
 
 /**
+ * This {@link NormedWordPrimingTest} reads priming questions from a text file
+ * where each cue-target pair, and their expected strength exists on a single
+ * line.
+ *
  * @author Keith Stevens
  */
 public class OneNormedQuestionPerLineTest 

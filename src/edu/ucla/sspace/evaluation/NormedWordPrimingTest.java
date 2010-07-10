@@ -25,9 +25,15 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 
 /**
+ * An interface for testing a collection of {link NormedPrimingQuestion}s.
+ *
  * @author Keith Stevens
  */
 public interface NormedWordPrimingTest {
 
+    /**
+     * Returns a {@link NormedWordPrimingReport} that details how similar word
+     * space similarity is to a set of expected priming strengths.
+     */
     public NormedWordPrimingReport evaluate(SemanticSpace sspace);
 }

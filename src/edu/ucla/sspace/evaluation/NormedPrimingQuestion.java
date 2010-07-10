@@ -25,6 +25,10 @@ import java.util.List;
 
 
 /**
+ * An interface for representing a semantic priming question.  Each question is
+ * represented as a cue term and a target term, along with a score representing
+ * a priming strength.
+ *
  * @author Keith Stevens
  */
 public interface NormedPrimingQuestion {
