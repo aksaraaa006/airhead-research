@@ -144,16 +144,23 @@ Having too large of a corpus is also an important issue. LSA is much more sensit
 
 = Other Questions =
 
+== I want to use your code in a research paper.  Do I need to do anything? ==
+
+Please cite our ACL Systems paper:
+  Jurgens and Stevens, (2010). The S-Space Package: An Open Source Package for Word Space Models. In System Papers of the Association of Computational Linguistics. 
+
+Also, we'd love to hear from you as well.  Please send us email and let us know if you have any feedback on the package (e.g. features you would have liked, problems with documentation, or any other suggestions).
+
 == Who do I contact with questions about the project? ==
 
 If it is a general question, contact [mailto:s-space-research-dev@googlegroups.com s-space-research-dev@googlegroups.com].  If you need a private question answered, please email David Jurgens or Keith Stevens.
 
-== Why does the project activity tend to drop off in the summer ==
+== Why does the project activity tend to drop off in the summer? ==
 
 Two possible reasons.  One, we often work on much larger scale projects during the summer.  We intend to port these to S-Space package once they are finished, but we don't want to leave intermediate files in the repository until they're verified as working.
 
 Second during the summer, many of the graduate students and undergraduates working on the project leave on vacation or for work.  This puts a time constraint on how much work can be done.  However, work is still being done, even if it isn't committed.
 
-== Why _Airhead_ Research ==
+== Why the name _Airhead_ Research? ==
 
 Airhead Research sands for AI-Head Research.  This is a throw-back from an older name for the lab, which we have taken as our own.  We're still working on a nice-sounding acronym for "head" to fill out the title.
