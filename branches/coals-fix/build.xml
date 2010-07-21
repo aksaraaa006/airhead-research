@@ -381,14 +381,13 @@
 
       <!-- Comment block for excluding the testing a specific set of files.
         -->
-      <test name="edu.ucla.sspace.coals.CoalsTest" todir="${report.dir}"/>
-
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StatisticsTests" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.dependency.CoNLLDependencyExtractorTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.FlatPathWeightTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.LengthPathWeightTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.dependency.RelationPathWeightTest" todir="${report.dir}"/>
