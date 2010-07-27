@@ -42,26 +42,24 @@ public class CellMaskedMatrixTest {
         { 3, 4, 5, 6, 7, 8, 9},
         { 9, 8, 7, 6, 5, 4, 3}};
 
-    private static Map<Integer, Integer> rowMap =
-        new HashMap<Integer, Integer>();
-    private static Map<Integer, Integer> colMap =
-        new HashMap<Integer, Integer>();
+    private static int[] rowMap = new int[3];
+    private static int[] colMap = new int[4];
 
     static {
-        rowMap.put(0, 0);
-        rowMap.put(1, 3);
-        rowMap.put(2, 2);
+        rowMap[0] = 0;
+        rowMap[1] = 3;
+        rowMap[2] = 2;
 
-        colMap.put(0, 6);
-        colMap.put(1, 0);
-        colMap.put(2, 4);
-        colMap.put(3, 5);
+        colMap[0] = 6;
+        colMap[1] = 0;
+        colMap[2] = 4;
+        colMap[3] = 5;
     }
 
     public CellMaskedMatrixTest() { }
 
     private double getBaseValue(Matrix baseMatrix, int row, int col) {
-        return baseMatrix.get(rowMap.get(row), colMap.get(col));
+        return baseMatrix.get(rowMap[row], colMap[col]);
     }
 
     @Test

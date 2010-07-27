@@ -416,13 +416,14 @@ public class Coals implements SemanticSpace {
         // Calculate the new term to index mapping based on the order of the
         // word frequencies.
         COALS_LOGGER.info("Generating the index masks.");
-        Map<Integer, Integer> rowMask = new HashMap<Integer, Integer>();
-        Map<Integer, Integer> colMask = new HashMap<Integer, Integer>();
 
         // Compute the number of dimensions to maintain. 
         int wordCount = (wordCountList.size() > maxDimensions)
             ? maxDimensions 
             : wordCountList.size();
+
+        int[] rowMask = new int[maxWords];
+        int[] colMask = new int[wordCount];
 
         // For each of the terms that we have a mapping, add row and column
         // maskings for the indices of the first maxWords terms.  For all other
@@ -439,8 +440,8 @@ public class Coals implements SemanticSpace {
             // index in the original matrix.
             if (termCount < maxWords) {
                 if (termCount <  wordCount)
-                    colMask.put(termCount, oldIndex);
-                rowMask.put(termCount, oldIndex);
+                    colMask[termCount] = oldIndex;
+                rowMask[termCount] = oldIndex;
                 termToIndex.put(entry.getKey(), termCount);
                 termCount++;
             }
@@ -460,24 +461,5 @@ public class Coals implements SemanticSpace {
             int diff = o2.getValue().get() - o1.getValue().get();
             return (diff != 0) ? diff : o2.getKey().compareTo(o1.getKey());
         }
-    }
-
-    public Matrix compareToMatrix(Matrix testMatrix) {
-        if (testMatrix.rows() != finalCorrelation.rows() ||
-            testMatrix.columns() != finalCorrelation.columns()) {
-            throw new IllegalArgumentException(
-                    "The given test matrix size does not match");
-        }
-
-        Matrix result = new ArrayMatrix(testMatrix.rows(),
-                                        testMatrix.columns());
-
-        for (int row = 0; row < testMatrix.rows(); ++row) {
-            for (int col = 0; col < testMatrix.columns(); ++col) {
-                result.set(row, col, finalCorrelation.get(row, col) -
-                                     testMatrix.get(row, col));
-            }
-        }
-        return result;
     }
 }

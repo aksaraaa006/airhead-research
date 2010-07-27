@@ -44,14 +44,18 @@ public class MaskedSparseDoubleVectorViewTest {
             if (values[i] != 0)
                 v.set(i, values[i]);
 
-        Map<Integer, Integer> mask = new HashMap<Integer, Integer>();
-        mask.put(0, 5);
-        mask.put(1, 9);
-        mask.put(2, 1);
+        int[] mask = new int[3];
+        mask[0] = 5;
+        mask[1] = 9;
+        mask[2] = 1;
+        Map<Integer, Integer> reverseMask = new HashMap<Integer, Integer>();
+        reverseMask.put(5, 0);
+        reverseMask.put(0, 1);
+        reverseMask.put(1, 2);
         SparseDoubleVector masked = new MaskedSparseDoubleVectorView(
-                v, new HashBiMap<Integer, Integer>(mask));
+                v, mask, reverseMask);
 
-        assertEquals(mask.size(), masked.length());
+        assertEquals(mask.length, masked.length());
         assertEquals(values[5], masked.get(0), .00001);
         assertEquals(values[9], masked.get(1), .00001);
         assertEquals(values[1], masked.get(2), .00001);

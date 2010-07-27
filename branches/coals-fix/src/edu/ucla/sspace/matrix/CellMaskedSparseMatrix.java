@@ -24,9 +24,7 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.MaskedSparseDoubleVectorView;
 
-import edu.ucla.sspace.util.BiMap;
-import edu.ucla.sspace.util.HashBiMap;
-
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -47,15 +45,13 @@ public class CellMaskedSparseMatrix extends CellMaskedMatrix
      */
     private final SparseMatrix matrix;
 
-    /**
-     * The mapping for rows from new indices to old indices.
-     */
-    private BiMap<Integer, Integer> rowMaskMap;
+    private final int[] rowMaskMap;
 
-    /**
-     * The mapping for columns from new indices to old indices.
-     */
-    private BiMap<Integer, Integer> colMaskMap;
+    private final Map<Integer, Integer> reverseRowMaskMap;
+
+    private final int[] colMaskMap;
+
+    private final Map<Integer, Integer> reverseColMaskMap;
 
     /**
      * Creates a new {@link CellMaskedSparseMatrix} from a given {@link
@@ -69,12 +65,18 @@ public class CellMaskedSparseMatrix extends CellMaskedMatrix
      *        original map for columns.
      */
     public CellMaskedSparseMatrix(SparseMatrix matrix,
-                                  Map<Integer, Integer> rowMaskMap,
-                                  Map<Integer, Integer> colMaskMap) {
+                                  int[] rowMaskMap,
+                                  int[] colMaskMap) {
         super(matrix, rowMaskMap, colMaskMap);
         this.matrix = matrix;
-        this.rowMaskMap = new HashBiMap<Integer, Integer>(rowMaskMap);
-        this.colMaskMap = new HashBiMap<Integer, Integer>(colMaskMap);
+        this.rowMaskMap = rowMaskMap;
+        this.colMaskMap = colMaskMap;
+        reverseRowMaskMap = new HashMap<Integer, Integer>();
+        for (int i = 0; i < rowMaskMap.length; ++i)
+            reverseRowMaskMap.put(rowMaskMap[i], i);
+        reverseColMaskMap = new HashMap<Integer, Integer>();
+        for (int i = 0; i < colMaskMap.length; ++i)
+            reverseColMaskMap.put(colMaskMap[i], i);
     }
 
     /**
@@ -83,7 +85,7 @@ public class CellMaskedSparseMatrix extends CellMaskedMatrix
     public SparseDoubleVector getRowVector(int row) {
         row = getIndexFromMap(rowMaskMap, row);
         return new MaskedSparseDoubleVectorView(
-                matrix.getRowVector(row), colMaskMap);
+                matrix.getRowVector(row), colMaskMap, reverseColMaskMap);
     }
 
     /**
@@ -92,6 +94,6 @@ public class CellMaskedSparseMatrix extends CellMaskedMatrix
     public SparseDoubleVector getColumnVector(int col) {
         col = getIndexFromMap(colMaskMap, col);
         return new MaskedSparseDoubleVectorView(
-                matrix.getColumnVector(col), rowMaskMap);
+                matrix.getColumnVector(col), rowMaskMap, reverseRowMaskMap);
     }
 }

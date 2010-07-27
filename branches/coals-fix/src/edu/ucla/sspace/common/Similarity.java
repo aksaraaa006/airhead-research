@@ -927,7 +927,7 @@ public class Similarity {
             curRank++;
         }
 
-        return 1 - ((6 * diff) / (a.length * (Math.pow(a.length, 2) - 1)));
+        return 1 - ((6 * diff) / (a.length * ((a.length * a.length) - 1)));
     }
 
     /**
@@ -982,7 +982,7 @@ public class Similarity {
             curRank++;
         }
 
-        return 1 - ((6d * diff) / (a.length * (Math.pow(a.length, 2) - 1d)));
+        return 1 - ((6d * diff) / (a.length * ((a.length * a.length) - 1)));
     }
 
     /**
@@ -1042,7 +1042,7 @@ public class Similarity {
             curRank++;
         }
 
-        return 1 - ((6 * diff) / (a.length() * (Math.pow(a.length(), 2) - 1)));
+        return 1 - ((6 * diff) / (a.length() * ((a.length() * a.length()) - 1)));
     }
 
     /**
@@ -1099,7 +1099,7 @@ public class Similarity {
             curRank++;
         }
 
-        return 1 - ((6 * diff) / (a.length() * (Math.pow(a.length(), 2) - 1)));
+        return 1 - ((6 * diff) / (a.length() * ((a.length() * a.length()) - 1)));
     }
 
     /**

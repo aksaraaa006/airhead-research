@@ -38,13 +38,13 @@ public class MaskedDoubleVectorViewTest {
     @Test public void testScaledCreate() {
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         DoubleVector v = new DenseVector(values);
-        Map<Integer, Integer> mask = new HashMap<Integer, Integer>();
-        mask.put(0, 5);
-        mask.put(1, 9);
-        mask.put(2, 1);
+        int[] mask = new int[3];
+        mask[0] = 5;
+        mask[1] = 0;
+        mask[2] = 1;
         DoubleVector masked = new MaskedDoubleVectorView(v, mask);
 
-        assertEquals(mask.size(), masked.length());
+        assertEquals(mask.length, masked.length());
         assertEquals(values[5], masked.get(0), .00001);
         assertEquals(values[9], masked.get(1), .00001);
         assertEquals(values[1], masked.get(2), .00001);
