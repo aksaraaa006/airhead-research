@@ -40,13 +40,13 @@ public class MaskedDoubleVectorViewTest {
         DoubleVector v = new DenseVector(values);
         int[] mask = new int[3];
         mask[0] = 5;
-        mask[1] = 0;
+        mask[1] = 9;
         mask[2] = 1;
         DoubleVector masked = new MaskedDoubleVectorView(v, mask);
 
         assertEquals(mask.length, masked.length());
-        assertEquals(values[5], masked.get(0), .00001);
-        assertEquals(values[9], masked.get(1), .00001);
-        assertEquals(values[1], masked.get(2), .00001);
+        assertEquals(values[mask[0]], masked.get(0), .00001);
+        assertEquals(values[mask[1]], masked.get(1), .00001);
+        assertEquals(values[mask[2]], masked.get(2), .00001);
     }
 }

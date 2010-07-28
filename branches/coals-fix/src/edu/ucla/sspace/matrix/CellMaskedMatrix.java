@@ -24,9 +24,8 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.MaskedDoubleVectorView;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -70,6 +69,21 @@ public class CellMaskedMatrix implements Matrix {
         this.matrix = matrix;
         this.rowMaskMap = rowMaskMap;
         this.colMaskMap = colMaskMap;
+        assert arrayToSet(rowMaskMap).size() == rowMaskMap.length
+            : "input mapping contains duplicates mappings to the same row";
+        assert arrayToSet(colMaskMap).size() == colMaskMap.length
+            : "input mapping contains duplicates mappings to the same column";
+    }
+
+    /**
+     * Returns an integer {@link Set} containing all of the values in {@code
+     * arr}.
+     */
+    private Set<Integer> arrayToSet(int[] arr) {
+        Set<Integer> s = new HashSet<Integer>();
+        for (int value : arr)
+            s.add(value);
+        return s;
     }
 
     /**
