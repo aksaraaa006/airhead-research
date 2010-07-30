@@ -36,7 +36,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class DependencyExtractorTest {
+public class CoNLLDependencyExtractorTest {
 
     public static final String SINGLE_PARSE = 
         "1   Mr. _   NNP NNP _   2   NMOD    _   _\n" +
@@ -84,9 +84,9 @@ public class DependencyExtractorTest {
     }
 
     @Test public void testSingleExtraction() throws Exception {
-        DependencyExtractor extractor = new DependencyExtractor();
+        DependencyExtractor extractor = new CoNLLDependencyExtractor();
         Document doc = new StringDocument(SINGLE_PARSE);
-        DependencyTreeNode[] nodes = extractor.parse(doc.reader());
+        DependencyTreeNode[] nodes = extractor.readNextTree(doc.reader());
 
         assertEquals(12, nodes.length);
 
@@ -114,13 +114,13 @@ public class DependencyExtractorTest {
     }
 
     @Test public void testDoubleExtraction() throws Exception {
-        DependencyExtractor extractor = new DependencyExtractor();
+        DependencyExtractor extractor = new CoNLLDependencyExtractor();
         Document doc = new StringDocument(DOUBLE_PARSE);
-        DependencyTreeNode[] relations = extractor.parse(doc.reader());
+        DependencyTreeNode[] relations = extractor.readNextTree(doc.reader());
         assertTrue(relations != null);
         assertEquals(12, relations.length);
 
-        relations = extractor.parse(doc.reader());
+        relations = extractor.readNextTree(doc.reader());
         assertTrue(relations != null);
         assertEquals(4, relations.length);
 
@@ -138,9 +138,9 @@ public class DependencyExtractorTest {
     }
 
     @Test public void testRootNode() throws Exception {
-        DependencyExtractor extractor = new DependencyExtractor();
+        DependencyExtractor extractor = new CoNLLDependencyExtractor();
         Document doc = new StringDocument(SINGLE_PARSE);
-        DependencyTreeNode[] relations = extractor.parse(doc.reader());
+        DependencyTreeNode[] relations = extractor.readNextTree(doc.reader());
 
         assertEquals(12, relations.length);
 

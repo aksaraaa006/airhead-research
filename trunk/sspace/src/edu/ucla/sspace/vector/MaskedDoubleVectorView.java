@@ -46,7 +46,7 @@ public class MaskedDoubleVectorView extends VectorView<Double>
     /**
      * The mapping from new indices to old indices.
      */
-    private final Map<Integer, Integer> columnMask;
+    private final int[] columnMask;
 
     /**
      * Creates a new {@link DoubleVector} view of the data in the provided
@@ -56,8 +56,8 @@ public class MaskedDoubleVectorView extends VectorView<Double>
      * @param columnMask A mapping from new indices to old indices.
      */
     public MaskedDoubleVectorView(DoubleVector v,
-                                  Map<Integer, Integer> columnMask) {
-        super(v, 0, columnMask.size(), false);
+                                  int[] columnMask) {
+        super(v, 0, columnMask.length, false);
         this.doubleVector = v;
         this.columnMask = columnMask;
     }
@@ -67,8 +67,10 @@ public class MaskedDoubleVectorView extends VectorView<Double>
      * mapped.
      */
     protected int getIndex(int index) {
-        Integer newIndex = columnMask.get(index);
-        return (newIndex != null) ? newIndex : -1;
+        if (index < 0 || index > columnMask.length)
+            throw new IllegalArgumentException("The given index is not " +
+                    "within the bounds of the masked vector");
+        return columnMask[index];
     }
 
     /**
@@ -118,7 +120,7 @@ public class MaskedDoubleVectorView extends VectorView<Double>
      * {@inheritDoc}
      */
     public int length() {
-        return columnMask.size();
+        return columnMask.length;
     }
 
     /**
