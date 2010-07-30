@@ -336,7 +336,7 @@ public class EvaluatorMain {
      */
     private void evaluateSemanticSpace(SemanticSpace sspace,
                                        SimType similarity) {
-        double[] results = new double[wordChoiceTests.size() +
+        String[] results = new String[wordChoiceTests.size() +
                                       wordSimilarityTests.size() +
                                       wordPrimingTests.size() +
                                       normedPrimingTests.size()];
@@ -347,7 +347,7 @@ public class EvaluatorMain {
             WordChoiceReport report = WordChoiceEvaluationRunner.evaluate(
                         sspace, wordChoice, similarity);
             verbose("Results for %s:%n%s%n", wordChoice, report);
-            results[resultIndex++] = report.score();
+            results[resultIndex++] = String.format("%4.3f", report.score());
         }
 
         // Run the word similarity tests.
@@ -357,21 +357,26 @@ public class EvaluatorMain {
                 WordSimilarityEvaluationRunner.evaluate(
                         sspace, wordSimilarity, similarity);
             verbose("Results for %s:%n%s%n", wordSimilarity, report);
-            results[resultIndex++] = report.correlation();
+            results[resultIndex++] = String.format(
+                    "%4.3f", report.correlation());
         }
 
         // Run the word priming tests.
         for (WordPrimingTest wordPrimingTest : wordPrimingTests) {
             WordPrimingReport report = wordPrimingTest.evaluate(sspace);
             verbose("Results for %s:%n%s%n", wordPrimingTest , report);
-            results[resultIndex++] = report.effect();
+            results[resultIndex++] = String.format("%4.3f & %4.3f & %4.3f", 
+                                                   report.relatedPriming(),
+                                                   report.unrelatedPriming(),
+                                                   report.effect());
         }
 
         // Run the word priming tests.
         for (NormedWordPrimingTest normedPrimingTest : normedPrimingTests) {
             NormedWordPrimingReport report = normedPrimingTest.evaluate(sspace);
             verbose("Results for %s:%n%s%n", normedPrimingTest, report);
-            results[resultIndex++] = report.averageCorrelation();
+            results[resultIndex++] = String.format(
+                    "%4.3f", report.averageCorrelation());
         }
 
         reporter.addResults(sspace.getSpaceName(),
@@ -504,7 +509,7 @@ public class EvaluatorMain {
         /**
          * Adds a set of results for a particular semantic space.
          */
-        void addResults(String sspaceName, String simType, double[] results);
+        void addResults(String sspaceName, String simType, String[] results);
 
         /**
          * Prints the set of results.
@@ -523,26 +528,26 @@ public class EvaluatorMain {
          */
         public void addResults(String sspaceName,
                                String simType,
-                               double[] results) {
+                               String[] results) {
             int index = 0;
             for (WordChoiceEvaluation choice : wordChoiceTests)
                 resultWriter.printf(
-                        "Result for sspace %s-%s on synonymy test %s: %f\n",
+                        "Result for sspace %s-%s on synonymy test %s: %s\n",
                         sspaceName, simType, choice, results[index++]);
 
             for (WordSimilarityEvaluation similarity : wordSimilarityTests)
                 resultWriter.printf(
-                        "Result for sspace %s-%s on similarity test %s: %f\n",
+                        "Result for sspace %s-%s on similarity test %s: %s\n",
                         sspaceName, simType, similarity, results[index++]);
 
             for (WordPrimingTest priming : wordPrimingTests)
                 resultWriter.printf(
-                        "Result for sspace %s-%s on priming test %s: %f\n",
+                        "Result for sspace %s-%s on priming test %s: %s\n",
                         sspaceName, simType, priming , results[index++]);
 
             for (NormedWordPrimingTest priming : normedPrimingTests)
                 resultWriter.printf(
-                        "Result for sspace %s-%s on priming test %s: %f\n",
+                        "Result for sspace %s-%s on priming test %s: %s\n",
                         sspaceName, simType, priming , results[index++]);
         }
 
@@ -567,14 +572,14 @@ public class EvaluatorMain {
         /**
          * The list of results as they are reported.
          */
-        private List<double[]> resultList;
+        private List<String[]> resultList;
 
         /**
          * Creates a new {@link LatexReporter}.
          */
         public LatexReporter() {
             titleList = new ArrayList<String>();
-            resultList = new ArrayList<double[]>();
+            resultList = new ArrayList<String[]>();
         }
 
         /**
@@ -582,7 +587,7 @@ public class EvaluatorMain {
          */
         public void addResults(String sspaceName, 
                                String simType,
-                               double[] results) {
+                               String[] results) {
             titleList.add(sspaceName + "-" + simType);
             resultList.add(results);
         }
@@ -608,9 +613,9 @@ public class EvaluatorMain {
             // Print out the results for each semantic space algorithm tested.
             for (int i = 0; i < titleList.size(); ++i) {
                 resultWriter.printf("%s ", titleList.get(i));
-                double[] results = resultList.get(i);
-                for (double result : results)
-                    resultWriter.printf("  &  %4.3f", result);
+                String[] results = resultList.get(i);
+                for (String result : results)
+                    resultWriter.printf("  &  %s", result);
                 resultWriter.printf("  \\\\\n");
             }
             resultWriter.close();

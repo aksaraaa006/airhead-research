@@ -26,6 +26,7 @@ import edu.ucla.sspace.util.BiMap;
 import java.io.Serializable;
 
 import java.util.Arrays;
+import java.util.Map;
 
 
 /**
@@ -49,7 +50,7 @@ public class MaskedSparseDoubleVectorView extends MaskedDoubleVectorView
     /**
      * The mapping from new indices to old indices.
      */
-    private final BiMap<Integer, Integer> columnMask;
+    private final Map<Integer, Integer> reverseColumnMask;
 
     /**
      * Creates a new {@link SparseDoubleVector} view of the data in the provided
@@ -59,22 +60,23 @@ public class MaskedSparseDoubleVectorView extends MaskedDoubleVectorView
      * @param columnMask A mapping from new indices to old indices.
      */
     public <T extends DoubleVector & SparseVector<Double>> 
-            MaskedSparseDoubleVectorView(T v, BiMap<Integer, Integer> map) {
-        super(v, map);
+            MaskedSparseDoubleVectorView(T v, 
+                                         int[] columnMask,
+                                         Map<Integer, Integer> reverseMask) {
+        super(v, columnMask);
         sparseVector = v;
-        columnMask = map;
+        this.reverseColumnMask = reverseMask; 
     }
 
     /**
      * {@inheritDoc}
      */
     public int[] getNonZeroIndices() {
-        BiMap<Integer, Integer> reverseIndexMap = columnMask.inverse();
         int[] indices = sparseVector.getNonZeroIndices();
         int[] newIndices = new int[indices.length];
         int i = 0;
         for (int index = 0; index < indices.length; ++index) {
-            Integer newIndex = reverseIndexMap.get(indices[index]);
+            Integer newIndex = reverseColumnMask.get(indices[index]);
             if (newIndex == null)
                 continue;
             System.out.printf("%d %d %d\n", index, indices[index], newIndex);

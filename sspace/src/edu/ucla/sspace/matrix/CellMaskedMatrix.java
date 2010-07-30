@@ -24,7 +24,8 @@ package edu.ucla.sspace.matrix;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.MaskedDoubleVectorView;
 
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -41,12 +42,12 @@ public class CellMaskedMatrix implements Matrix {
     /**
      * The mapping for rows from new indices to old indices.
      */
-    private final Map<Integer, Integer> rowMaskMap;
+    private final int[] rowMaskMap;
 
     /**
      * The mapping for columns from new indices to old indices.
      */
-    private final Map<Integer, Integer> colMaskMap;
+    private final int[] colMaskMap;
 
     /**
      * The original underlying matrix.
@@ -64,21 +65,42 @@ public class CellMaskedMatrix implements Matrix {
      * @param colMaskMap A mapping from new indices to old indices in the
      *        original map for columns.
      */
-    public CellMaskedMatrix(Matrix matrix,
-                            Map<Integer, Integer> rowMaskMap,
-                            Map<Integer, Integer> colMaskMap) {
+    public CellMaskedMatrix(Matrix matrix, int[] rowMaskMap, int[] colMaskMap) {
         this.matrix = matrix;
         this.rowMaskMap = rowMaskMap;
         this.colMaskMap = colMaskMap;
+        assert arrayToSet(rowMaskMap).size() == rowMaskMap.length
+            : "input mapping contains duplicates mappings to the same row";
+        assert arrayToSet(colMaskMap).size() == colMaskMap.length
+            : "input mapping contains duplicates mappings to the same column";
+    }
+
+    /**
+     * Returns an integer {@link Set} containing all of the values in {@code
+     * arr}.
+     */
+    private Set<Integer> arrayToSet(int[] arr) {
+        Set<Integer> s = new HashSet<Integer>();
+        for (int value : arr)
+            s.add(value);
+        return s;
     }
 
     /**
      * Returns the new index value for a given index from a given mapping.
      * Returns -1 if no mapping is found for the requested row.
      */
-    private int getIndexFromMap(Map<Integer, Integer> indexMap, int row) {
-        Integer newRow = indexMap.get(row);
-        return (newRow == null) ? -1 : newRow.intValue();
+    protected int getIndexFromMap(int[] maskMap, int index) {
+        if (index < 0 || index >= maskMap.length)
+            throw new IndexOutOfBoundsException(
+                    "The given index is beyond the bounds of the matrix");
+        int newIndex = maskMap[index];
+        if (newIndex < 0 ||
+            maskMap == rowMaskMap && newIndex >= matrix.rows() ||
+            maskMap == colMaskMap && newIndex >= matrix.columns())
+            throw new IndexOutOfBoundsException(
+                    "The mapped index is beyond the bounds of the base matrix");
+        return newIndex;
     }
 
     /**
@@ -128,7 +150,7 @@ public class CellMaskedMatrix implements Matrix {
      * {@inheritDoc}
      */
     public int columns() {
-        return colMaskMap.size();
+        return colMaskMap.length;
     }
     
     /**
@@ -142,7 +164,7 @@ public class CellMaskedMatrix implements Matrix {
      * {@inheritDoc}
      */
     public int rows() {
-        return rowMaskMap.size();
+        return rowMaskMap.length;
     }
 
     /**
