@@ -83,6 +83,7 @@ public class CellMaskedSparseMatrix extends CellMaskedMatrix
      * {@inheritDoc}
      */
     public SparseDoubleVector getRowVector(int row) {
+        row = getIndexFromMap(rowMaskMap, row);
         return new MaskedSparseDoubleVectorView(
                 matrix.getRowVector(row), colMaskMap, reverseColMaskMap);
     }
@@ -91,6 +92,7 @@ public class CellMaskedSparseMatrix extends CellMaskedMatrix
      * {@inheritDoc}
      */
     public SparseDoubleVector getColumnVector(int col) {
+        col = getIndexFromMap(colMaskMap, col);
         return new MaskedSparseDoubleVectorView(
                 matrix.getColumnVector(col), rowMaskMap, reverseRowMaskMap);
     }
