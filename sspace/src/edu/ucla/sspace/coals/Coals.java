@@ -360,7 +360,7 @@ public class Coals implements SemanticSpace {
         COALS_LOGGER.info("Droppring dimensions from co-occurrance matrix.");
         // Read in the matrix from a file with dimensions dropped.
         finalCorrelation = buildMatrix(maxWords, maxDimensions);
-        COALS_LOGGER.info("Done droppring dimensions.");
+        COALS_LOGGER.info("Done dropping dimensions.");
 
         if (normalize) {
             COALS_LOGGER.info("Normalizing co-occurrance matrix.");
@@ -442,6 +442,7 @@ public class Coals implements SemanticSpace {
                 if (termCount <  wordCount)
                     colMask[termCount] = oldIndex;
                 rowMask[termCount] = oldIndex;
+                termToIndex.put(entry.getKey(), termCount);
                 termCount++;
             }
             // Drop all other mappings.

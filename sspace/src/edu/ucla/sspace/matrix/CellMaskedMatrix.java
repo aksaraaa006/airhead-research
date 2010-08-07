@@ -110,38 +110,46 @@ public class CellMaskedMatrix implements Matrix {
         row = getIndexFromMap(rowMaskMap, row);
         col = getIndexFromMap(colMaskMap, col);
 
-        if (row == -1 || col == -1)
-            return 0;
         return matrix.get(row, col);
     }
 
     /**
-     * Unsupported.
+     * {@inheritDoc}
      */
     public double[] getColumn(int column) {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        column = getIndexFromMap(colMaskMap, column);
+        double[] values = new double[rows()];
+        for (int r = 0; r < rows(); ++r)
+            values[r] = matrix.get(getIndexFromMap(rowMaskMap, r), column);
+        return values;
     }
 
     /**
      * {@inheritDoc}
      */
     public DoubleVector getColumnVector(int column) {
+        column = getIndexFromMap(colMaskMap, column);
         DoubleVector v = matrix.getColumnVector(column);
         return new MaskedDoubleVectorView(v, rowMaskMap);
     }
 
 
     /**
-     * Unsupported.
+     * {@inheritDoc}
      */
     public double[] getRow(int row) {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        row = getIndexFromMap(rowMaskMap, row);
+        double[] values = new double[columns()];
+        for (int c = 0; c < columns(); ++c)
+            values[c] = matrix.get(row, getIndexFromMap(colMaskMap, c));
+        return values;
     }
 
     /**
      * {@inheritDoc}
      */
     public DoubleVector getRowVector(int row) {
+        row = getIndexFromMap(rowMaskMap, row);
         DoubleVector v = matrix.getRowVector(row);
         return new MaskedDoubleVectorView(v, colMaskMap);
     }
@@ -154,10 +162,14 @@ public class CellMaskedMatrix implements Matrix {
     }
     
     /**
-     * Unsupported.
+     * {@inheritDoc}
      */
     public double[][] toDenseArray() {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        double[][] values = new double[rows()][columns()];
+        for (int r = 0; r < rows(); ++r)
+            for (int c = 0; c < columns(); ++c)
+                values[r][c] = get(r, c);
+        return values;
     }
 
     /**
@@ -174,36 +186,42 @@ public class CellMaskedMatrix implements Matrix {
         row = getIndexFromMap(rowMaskMap, row);
         col = getIndexFromMap(colMaskMap, col);
 
-        if (row == -1 || col == -1)
-            return;
         matrix.set(row, col, val);
     }
 
     /**
-     * Unsupported.
+     * {@inheritDoc}
      */
     public void setColumn(int column, double[] values) {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        column = getIndexFromMap(colMaskMap, column);
+        for (int r = 0; r < rows(); ++r)
+            matrix.set(getIndexFromMap(rowMaskMap, r), column, values[r]);
     }
 
     /**
-     * Unsupported.
+     * {@inheritDoc}
      */
     public void setColumn(int column, DoubleVector values) {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        column = getIndexFromMap(colMaskMap, column);
+        for (int r = 0; r < rows(); ++r)
+            matrix.set(getIndexFromMap(rowMaskMap, r), column, values.get(r));
     }
 
     /**
-     * Unsupported.
+     * {@inheritDoc}
      */
     public void setRow(int row, double[] columns) {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        row = getIndexFromMap(rowMaskMap, row);
+        for (int c = 0; c < columns(); ++c)
+            matrix.set(row, getIndexFromMap(colMaskMap, c), columns[c]);
     }
 
     /**
      * {@inheritDoc}
      */
     public void setRow(int row, DoubleVector values) {
-        throw new UnsupportedOperationException("Cannot retrieve the column;");
+        row = getIndexFromMap(rowMaskMap, row);
+        for (int c = 0; c < columns(); ++c)
+            matrix.set(row, getIndexFromMap(colMaskMap, c), values.get(c));
     }
 }
