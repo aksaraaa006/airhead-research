@@ -367,17 +367,10 @@ public class SVD {
                 double[][] m = MatrixIO.readMatrixArray(matrix, format);
 		return coltSVD(m, Matrices.isDense(format), dimensions);
             }
-	    case ANY:
-
-		// Keep copies of these around in case they are MATLAB and we
-		// end up convert for SVDLIBC which ends up failing.  This
-		// ensures that we don't do an unnecessary matrix conversion
-		Format originalFormat = format;
-		File originalMatrix = matrix;
-                
-		// Try to peform the SVD with any installed algorithm.  Go in
-		// order of speed.  If any algorithm causes an error, go on to
-		// the next until all are exhausted.
+	    case ANY:               
+                // NOTE: Since the addition of SVDLIBJ, all algorithms except
+                // SVDLIBC have been rendered obsolete.  Therefore, we see if
+                // SVDLIBC is available and then default to SVDLIBJ.
 		if (isSVDLIBCavailable()) {
 		    try {
 			// check whether the input matrix is in an
@@ -400,51 +393,12 @@ public class SVD {
 			}
 			return svdlibc(converted, dimensions, format);		
 		    } catch (UnsupportedOperationException uoe) { }
-
-		    // If SVDLIBC didn't work reset the matrix and format back
-		    // to what it orignally was
-		    format = originalFormat;
-		    matrix = originalMatrix;
 		}
-
-
-		if (isMatlabAvailable()) {
-		    try {
-			converted = MatrixIO.convertFormat(
-			    matrix, format, Format.MATLAB_SPARSE);
-		    
-			return matlabSVDS(converted, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
-
-		if (isOctaveAvailable()) {
-		    try {
-			converted = MatrixIO.convertFormat(
-			    matrix, format, Format.MATLAB_SPARSE);
-			return octaveSVDS(converted, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
-
-		if (isColtAvailable()) {
-		    try {
-                        double[][] m = MatrixIO.readMatrixArray(matrix, format);
-			return coltSVD(m, Matrices.isDense(format), dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
-		
-		if (isJAMAavailable()) {
-		    try {
-                        double[][] inputMatrix = 
-                            MatrixIO.readMatrixArray(matrix, format);
-			return jamaSVD(inputMatrix, dimensions);
-		    } catch (UnsupportedOperationException uoe) { }
-		}
-
-		// if none of the algoritms were available throw an exception to
-		// let the user know that the SVD cannot be done under any
-		// circumstances
-		throw new UnsupportedOperationException(
-		    "No SVD algorithms are available");
+                else {
+                    // Default to SVDLIBJ as all remaining algorithms will be
+                    // slower
+                    return SvdlibjDriver.svd(matrix, format, dimensions);
+                }
 	    }
 	}
 	catch (IOException ioe) {

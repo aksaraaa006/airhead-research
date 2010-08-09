@@ -379,8 +379,9 @@
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
 
-      <!-- Comment block for excluding the testing a specific set of files.
-        -->
+
+      <!-- Comment block for excluding the testing a specific set of files. -->
+
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
@@ -419,6 +420,7 @@
       <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>      
       <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SvdlibcSparseBinaryFileIteratorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.matrix.SvdTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
 
