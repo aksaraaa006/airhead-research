@@ -1,6 +1,16 @@
 % This is an implementation of the first version of the EigenCluster algorithm.
 
 function assignment = spectral_eigencluster(data, k)
+  % First normalize the data set so the dot product equals the cosine
+  % similarity.
+  row_magnitudes = sumsq(data, 2).^.5;
+  for r = 1:size(data)(1);
+    data(r,:) = data(r,:)./row_magnitudes(r);
+  endfor
+  assignment = internal_cluster(data, k);
+endfunction
+
+function assignment = internal_cluster(data, k)
   % Stop partitioning the matrix if we have reached the maximal depth.
   if k == 0;
     assignment = {data};

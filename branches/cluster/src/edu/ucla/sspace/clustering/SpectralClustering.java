@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.Statistics;
 import edu.ucla.sspace.index.DoubleVectorGenerator;
 import edu.ucla.sspace.index.RandomOrthogonalVectorGenerator;
 
+import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO;
@@ -39,6 +40,8 @@ import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.ScaledDoubleVector;
+import edu.ucla.sspace.vector.ScaledSparseDoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
@@ -52,6 +55,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -107,6 +111,29 @@ public class SpectralClustering implements Clustering {
     public Assignment[] cluster(Matrix matrix,
                                 int maxClusters,
                                 Properties props) {
+        // Scale every data point such that it has a dot product of 1 with
+        // itself.  This will make further calculations easier since the dot
+        // product distrubutes when the cosine similarity does not.
+        if (matrix instanceof SparseMatrix) {
+            List<SparseDoubleVector> scaledVectors =
+                new ArrayList<SparseDoubleVector>(matrix.rows());
+            SparseMatrix sm = (SparseMatrix) matrix;
+            for (int r = 0; r < matrix.rows(); ++r) {
+                SparseDoubleVector v = sm.getRowVector(r);
+                scaledVectors.add(new ScaledSparseDoubleVector(
+                            v, 1/v.magnitude()));
+            }
+            matrix = Matrices.asSparseMatrix(scaledVectors);
+        } else {
+            List<DoubleVector> scaledVectors = 
+                new ArrayList<DoubleVector>(matrix.rows());
+            for (int r = 0; r < matrix.rows(); ++r) {
+                DoubleVector v = matrix.getRowVector(r);
+                scaledVectors.add(new ScaledDoubleVector(v, v.magnitude()));
+            }
+            matrix = Matrices.asMatrix(scaledVectors);
+        }
+
         String alphaProp = props.getProperty(ALPHA_PROPERTY);
         double alpha = (alphaProp == null)
             ? DEFAULT_ALPHA
@@ -137,19 +164,15 @@ public class SpectralClustering implements Clustering {
         if (matrix.rows() == 1 || depth == maxClusters)
             return new ClusterResult(new int[matrix.rows()], 1);
 
+        // Compute the centroid of the entire data set.
         int vectorLength = matrix.rows();
         DoubleVector matrixRowSums = computeMatrixRowSum(matrix);
-        double magnitude = 0;
-        for (int i = 0; i < matrixRowSums.length(); ++i)
-            magnitude += Math.pow(matrixRowSums.get(i), 2);
-        magnitude = Math.sqrt(magnitude);
 
         // Compute p.
         DoubleVector p = new DenseVector(vectorLength);
         double pSum = 0;
         for (int r = 0; r < matrix.rows(); ++r) {
-            double dot = cosineSimilarity(
-                    matrixRowSums, magnitude, matrix.getRowVector(r));
+            double dot = dotProduct(matrixRowSums, matrix.getRowVector(r));
             pSum += dot;
             p.set(r, dot);
         }
@@ -169,13 +192,29 @@ public class SpectralClustering implements Clustering {
 
         DoubleVector v = computeSecondEigenVector(matrix, piDInverse, D, p);
 
+        System.out.println("eigen2: " + VectorIO.toString(v));
+
         // Sort the rows of the original matrix based on their v values.
         Index[] elementIndices = new Index[v.length()];
         for (int i = 0; i < v.length(); ++i)
             elementIndices[i] = new Index(v.get(i), i);
         Arrays.sort(elementIndices);
 
-        int cutIndex = computeCut(matrix, p, elementIndices);
+        LinkedHashSet<Integer> reordering = new LinkedHashSet<Integer>();
+        DoubleVector sortedRho = new DenseVector(matrix.rows());
+        for (int i = 0; i < v.length(); ++i) {
+            reordering.add(elementIndices[i].index);
+            sortedRho.set(i, elementIndices[i].weight);
+        }
+
+        Matrix sortedMatrix;
+        if (matrix instanceof SparseMatrix)
+            sortedMatrix = new SparseRowMaskedMatrix(
+                    (SparseMatrix) matrix, reordering);
+        else
+            sortedMatrix = new RowMaskedMatrix(matrix, reordering);
+
+        int cutIndex = computeCut(sortedMatrix, sortedRho);
 
         // Compute the split masked sub matrices from the original.
         LinkedHashSet<Integer> leftMatrixRows = new LinkedHashSet<Integer>();
@@ -213,16 +252,17 @@ public class SpectralClustering implements Clustering {
 
         verbose("Merging at depth " + depth);
 
+        int numRows = matrix.rows();
+
         // Compute the objective when we keep the two branches split.
         double intraClusterScore = 
             computeIntraClusterScore(leftResult, leftMatrix) +
             computeIntraClusterScore(rightResult, rightMatrix);
 
-        double interClusterScore = (pSum / 2) - intraClusterScore;
+        double interClusterScore = (pSum - numRows) / 2 - intraClusterScore;
         double splitObjective = alpha * intraClusterScore + interClusterScore;
 
         // Compute the objective when we merge the two branches together.
-        int numRows = matrix.rows();
         double mergedObjective = alpha *
             ((numRows * (numRows + 1) / 2) - pSum/2);
 
@@ -253,6 +293,14 @@ public class SpectralClustering implements Clustering {
 
     }
 
+    private DoubleVector orthonormalize(DoubleVector v, DoubleVector other) {
+        double dot = dotProduct(v, other);
+        dot -= v.get(0) * other.get(0);
+        dot /= other.get(0);
+        v.add(0, -dot);
+        return new ScaledDoubleVector(v, 1/dotProduct(v, v));
+    }
+
     private DoubleVector computeSecondEigenVector(Matrix matrix,
                                                   DoubleVector piDInverse,
                                                   DoubleVector D,
@@ -260,15 +308,16 @@ public class SpectralClustering implements Clustering {
         int vectorLength = piDInverse.length();
         // Step 1, generate a random vector, v,  that is orthogonal to
         // pi*D-Inverse.
-        DoubleVectorGenerator<DoubleVector> generator =
-            new RandomOrthogonalVectorGenerator(vectorLength, piDInverse);
-        DoubleVector v = generator.generate();
+        DoubleVector v = new DenseVector(vectorLength);
+        for (int i = 0; i < v.length(); ++i)
+            v.set(i, Math.random());
 
         int log = (int) Statistics.log2(vectorLength);
         for (int k = 0; k < log; ++k) {
+            v = orthonormalize(v, piDInverse);
+
             // Step 2, repeated, (a) normalize v (b) set v = Q*v, where Q = D *
             // R-Inverse * matrix * matrix-Transpose * D-Inverse.
-            normalize(v);
 
             // v = Q*v is broken into 4 sub steps that allow for sparse
             // multiplications. 
@@ -292,15 +341,13 @@ public class SpectralClustering implements Clustering {
             }
         }
 
-        for (int i = 0; i < vectorLength; ++i)
-            v.set(i, v.get(i) / D.get(i));
-
+        System.out.println("v: " + VectorIO.toString(v));
+        System.out.println(dotProduct(v,v));
+        //return new ScaledDoubleVector(v, 1/dotProduct(v, v));
         return v;
     }
 
-    private int computeCut(Matrix matrix,
-                           DoubleVector p,
-                           Index[] elementIndices) {
+    private int computeCut(Matrix matrix, DoubleVector p) {
         // Compute the conductance of the newly sorted matrix.
         DoubleVector x = new DenseVector(matrix.columns());
         DoubleVector y = new DenseVector(matrix.columns());
@@ -309,33 +356,32 @@ public class SpectralClustering implements Clustering {
         // matrix, starting with x being the first row and y being the summation
         // of all other rows.  While doing this, also compute different
         // summations of values in the p vector using the same cut.
-        VectorMath.add(x, matrix.getRowVector(elementIndices[0].index));
-        double lLeft = p.get(elementIndices[0].index);
+        VectorMath.add(x, matrix.getRowVector(0));
+        double lLeft = p.get(0);
         double lRight = 0;
-        for (int i = 1; i < elementIndices.length; ++i) {
-            VectorMath.add(y, matrix.getRowVector(elementIndices[i].index));
-            lRight += p.get(elementIndices[i].index);
+        for (int i = 1; i < p.length(); ++i) {
+            VectorMath.add(y, matrix.getRowVector(i));
+            lRight += p.get(i);
         }
 
-        double u = Similarity.cosineSimilarity(x, y); 
+        double u = dotProduct(x, y); 
 
         // Find the minimum conductance.
         double minConductance = u / Math.min(lLeft, lRight);
         int cutIndex = 0;
-        for (int i = 1; i < elementIndices.length - 1; ++i) {
+        for (int i = 1; i < p.length() - 1; ++i) {
             // Compute the new value of u, the denominator for computing the
             // conductance.
-            DoubleVector vector = matrix.getRowVector(elementIndices[i].index);
-            u = u - Similarity.cosineSimilarity(x, vector) +
-                    Similarity.cosineSimilarity(y, vector) + 1;
+            DoubleVector vector = matrix.getRowVector(i);
+            u = u - dotProduct(x, vector) + dotProduct(y, vector) + 1;
 
             // Shift over vectors from y to x.
             VectorMath.add(x, vector);
             VectorMath.subtract(y, vector);
 
             // Shift over values from the p vector.
-            lLeft += p.get(elementIndices[i].index);
-            lRight -= p.get(elementIndices[i].index);
+            lLeft += p.get(i);
+            lRight -= p.get(i);
 
             // Recompute the new conductance and check if it's the smallest.
             double conductance = u / Math.min(lLeft, lRight);
@@ -351,29 +397,23 @@ public class SpectralClustering implements Clustering {
      * Computes the dot product when the second vector may be sparse and the
      * first vector has a known magnitude.
      */
-    private double cosineSimilarity(DoubleVector v1,
-                                    double v1Magnitude,
-                                    DoubleVector v2) {
+    private double dotProduct(DoubleVector v1, DoubleVector v2) {
         double dot = 0;
-        double v2Magnitude = 0;
         if (v2 instanceof SparseDoubleVector) {
             SparseDoubleVector sv2 = (SparseDoubleVector) v2;
             int[] nonZeros = sv2.getNonZeroIndices();
             for (int index : nonZeros) {
                 double v2Value = v2.get(index);
-                v2Magnitude += Math.pow(v2Value, 2);
                 dot += v2Value * v1.get(index);
             }
         } else {
             for (int i = 0; i < v2.length(); ++i) {
                 double v2Value = v2.get(i);
-                v2Magnitude += Math.pow(v2Value, 2);
                 dot += v2Value * v1.get(i);
             }
         }
-        v2Magnitude = Math.sqrt(v2Magnitude);
 
-        return dot / (v1Magnitude * v2Magnitude);
+        return dot;
     }
 
     /**
@@ -442,6 +482,7 @@ public class SpectralClustering implements Clustering {
     private double computeIntraClusterScore(ClusterResult result,
                                             Matrix m) {
         DoubleVector[] centroids = new DoubleVector[result.numClusters];
+        int[] centroidSizes = new int[result.numClusters];
         double intraClusterScore = 0;
         for (int i = 0; i < result.assignments.length; ++i) {
             int assignment = result.assignments[i];
@@ -450,9 +491,11 @@ public class SpectralClustering implements Clustering {
                 centroids[assignment] = Vectors.copyOf(v);
             else {
                 DoubleVector centroid = centroids[assignment];
-                intraClusterScore += Similarity.cosineSimilarity(centroid, v);
+                intraClusterScore += (centroidSizes[assignment] -
+                                      dotProduct(v, centroid));
                 VectorMath.add(centroid, v);
             }
+            centroidSizes[assignment]++;
         }
         return intraClusterScore;
     }

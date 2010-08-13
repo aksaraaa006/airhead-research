@@ -35,29 +35,41 @@ function assignment = internal_cluster(data, k)
   printf("eigenclustering %d data points\n", rows);
 
   [rho, pi, R, D] = compute_affinity_sums(data);
+
   eigen2 = compute_second_eigenvector(data, rho, pi, R, D);
+
+  eigen2
+
+  %Q = D * R^-1 * data * data' * D^-1;
+  %[v, e] = eigs(Q);
+  %eigen2
+  %v(:,2) - eigen2
 
   printf("Sorting the eigen vector and reordering the data matrix\n");
   [sorted_eigen2, reordering] = sort(eigen2);
-  re_ordered_data = spalloc(rows, cols, 0);
+  reordered_data = spalloc(rows, cols, 0);
+  reordered_rho = zeros(rows, 1);
   for i = 1:rows;
     reordered_data(i,:) = data(reordering(i),:);
+    reordered_rho(i) = rho(reordering(i));
   endfor
 
   printf("Splitting the data matrix\n");
-  cut_index = compute_spectral_cut(data, rho);
+  cut_index = compute_spectral_cut(reordered_data, reordered_rho);%data, rho);
 
   % Short circuit at any cuts that would not partition the matrix.
+  printf("Splitting at %d\n", cut_index);
   if cut_index == rows;
     assignment = { data };
     return;
   endif
 
-  printf("Splitting at %d\n", cut_index);
+  leftSize = k / 2;
+  rightSize = k - leftSize;
   data_split_1 = reordered_data(1:cut_index,:);
   data_split_2 = reordered_data(cut_index+1:rows,:);
-  assignment = { spectral_eigencluster(data_split_1, k-1)
-                 spectral_eigencluster(data_split_2, k-1) };
+  assignment = { spectral_eigencluster(data_split_1, leftSize)
+                 spectral_eigencluster(data_split_2, rightSize) };
 endfunction
 
 % Computes the index at which the matrix should be split.  The matrix should be
@@ -105,6 +117,7 @@ function cut_index = compute_spectral_cut(data, rho)
       min_index = row;
     endif
   endfor
+  printf("min_index %d\n", min_index);
   cut_index = min_index;
 endfunction
 
@@ -112,6 +125,7 @@ endfunction
 function [rho, pi, R, D] = compute_affinity_sums(data)
   printf("Computing the row sums\n");
   centroid = sum(data, 1);
+
   rows = size(data)(1);
   rho = zeros(rows, 1);
   for row = 1:rows;
@@ -128,7 +142,7 @@ function orthogonal = make_orthogonal(vector, other)
   similarity -= other(1) * vector(1);
   similarity /= other(1);
   vector(1) = -similarity;
-  magnitude = dot(vector, vector);
+  magnitude = dot(vector, vector)
   orthogonal = vector./magnitude;
 endfunction
   
@@ -143,6 +157,8 @@ function second_eigenvector = compute_second_eigenvector(data, rho, pi, R, D)
   % Precompute a matrix and vector that will be re-used several times.
   D_R_inv = D*R^-1;
   base_vector = pi' * D^-1;
+
+  base_vector
 
   % Initialize the eigen vector to be a random vector.
   vector = rand(size(data)(1), 1);

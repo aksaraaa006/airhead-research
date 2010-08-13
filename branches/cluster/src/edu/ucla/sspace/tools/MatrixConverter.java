@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -55,6 +56,9 @@ public class MatrixConverter {
         options.addOption('o', "ouputFormat",
                           "the matrix format of the output matrix",
                           true, "STRING", "Required");
+        options.addOption('r', "randomize",
+                          "If true, the partitioned matrix will be randomized",
+                          false, null, "Optional");
         options.parseOptions(args);
 
         if (options.numPositionalArgs() != 2 ||
@@ -78,6 +82,10 @@ public class MatrixConverter {
                 v.add((SparseDoubleVector) matrix.getRowVector(i));
             for (int i = matrix.rows()-100; i < matrix.rows(); ++i)
                 v.add((SparseDoubleVector) matrix.getRowVector(i));
+
+            if (options.hasOption('r'))
+                Collections.shuffle(v);
+
             matrix = Matrices.asSparseMatrix(v);
         } else {
             List<DoubleVector> v = new ArrayList<DoubleVector>();
@@ -85,6 +93,10 @@ public class MatrixConverter {
                 v.add(matrix.getRowVector(i));
             for (int i = matrix.rows()-100; i < matrix.rows(); ++i)
                 v.add(matrix.getRowVector(i));
+
+            if (options.hasOption('r'))
+                Collections.shuffle(v);
+
             matrix = Matrices.asMatrix(v);
         }
         MatrixIO.writeMatrix(matrix, outMatFile, outMatFormat);
