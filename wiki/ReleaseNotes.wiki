@@ -5,6 +5,17 @@
 
 = Algorithm Release Notes =
 
+== Latent Semantic Analysis ==
+
+=== Version 1.2 ===
+
+Updated to fix a bug where SVDLIBJ wasn't included as an SVD algorithm, which resulting in systems not finding any SVD when one was present.
+
+== COALS ==
+
+=== Version 1.2 ===
+
+Fixed several bugs in COALS where word-to-index mappings were off after the SVD was performed.  This release also includes the SVD bug that affected LSA v. 1.1.
 
 = S-Space Package Release Notes =
 
