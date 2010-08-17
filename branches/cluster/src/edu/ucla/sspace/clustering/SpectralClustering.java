@@ -168,21 +168,23 @@ public class SpectralClustering implements Clustering {
         int vectorLength = matrix.rows();
         DoubleVector matrixRowSums = computeMatrixRowSum(matrix);
 
-        // Compute p.
-        DoubleVector p = new DenseVector(vectorLength);
+        // Compute rho, where rho[i] = dataPoint_i DOT matrixRowSums.
+        DoubleVector rho = new DenseVector(vectorLength);
         double pSum = 0;
         for (int r = 0; r < matrix.rows(); ++r) {
             double dot = dotProduct(matrixRowSums, matrix.getRowVector(r));
             pSum += dot;
-            p.set(r, dot);
+            rho.set(r, dot);
         }
 
-        // Compute pi, and D.
+        // Compute pi, and D.  Pi is the normalized form of rho.  D a diagonal
+        // matrix with sqrt(pi) as the values along the diagonal.  Also compute
+        // pi * D^-1.
         DoubleVector pi = new DenseVector(vectorLength);
         DoubleVector D = new DenseVector(vectorLength);
         DoubleVector piDInverse = new DenseVector(vectorLength);
         for (int i = 0; i < vectorLength; ++i) {
-            double piValue = p.get(i)/pSum;
+            double piValue = rho.get(i)/pSum;
             pi.set(i, piValue);
             if (piValue > 0d) {
                 D.set(i, Math.sqrt(piValue));
@@ -190,23 +192,30 @@ public class SpectralClustering implements Clustering {
             }
         }
 
-        DoubleVector v = computeSecondEigenVector(matrix, piDInverse, D, p);
+        // Compute the second largest eigenvector of the normalized affinity
+        // matrix with respect to pi*D^-1, which is similar to it's first eigen
+        // vector.
+        DoubleVector v = computeSecondEigenVector(matrix, piDInverse, D, rho);
 
-        System.out.println("eigen2: " + VectorIO.toString(v));
-
-        // Sort the rows of the original matrix based on their v values.
+        // Sort the rows of the original matrix based on the values of the eigen
+        // vector.
         Index[] elementIndices = new Index[v.length()];
         for (int i = 0; i < v.length(); ++i)
             elementIndices[i] = new Index(v.get(i), i);
         Arrays.sort(elementIndices);
 
+        // Create a reordering mapping for the indices in the original data
+        // matrix and of rho.  The ith data point and rho value will be ordered
+        // based on the position of the ith value in the second eigen vector
+        // after it has been sorted.
         LinkedHashSet<Integer> reordering = new LinkedHashSet<Integer>();
         DoubleVector sortedRho = new DenseVector(matrix.rows());
         for (int i = 0; i < v.length(); ++i) {
             reordering.add(elementIndices[i].index);
-            sortedRho.set(i, elementIndices[i].weight);
+            sortedRho.set(i, rho.get(elementIndices[i].index));
         }
 
+        // Create the sorted matrix based on the reordering.
         Matrix sortedMatrix;
         if (matrix instanceof SparseMatrix)
             sortedMatrix = new SparseRowMaskedMatrix(
@@ -214,6 +223,8 @@ public class SpectralClustering implements Clustering {
         else
             sortedMatrix = new RowMaskedMatrix(matrix, reordering);
 
+        // Compute the index at which the best cut can be made based on the
+        // reordered data matrix and rho values.
         int cutIndex = computeCut(sortedMatrix, sortedRho);
 
         // Compute the split masked sub matrices from the original.
@@ -293,6 +304,12 @@ public class SpectralClustering implements Clustering {
 
     }
 
+    /**
+     * Returns a {@link DoubleVector} that is the orthonormalized version of
+     * {@code v} with respect to {@code other}.  This orthonormalization is done
+     * by simply modifying the value of v[0] such that it balances out the
+     * similarity between {@code v} and {@code other} in all other dimensions.
+     */
     private DoubleVector orthonormalize(DoubleVector v, DoubleVector other) {
         double dot = dotProduct(v, other);
         dot -= v.get(0) * other.get(0);
@@ -301,10 +318,19 @@ public class SpectralClustering implements Clustering {
         return new ScaledDoubleVector(v, 1/dotProduct(v, v));
     }
 
+    /**
+     * Returns the second largest eigenvector of the a scaled form of the row
+     * normalized affinity matrix.  The computation is using the power method
+     * and such that the affinity matrix is never explicitly computed.  {@code
+     * piDInverse} serves as a vector which is similar to the first eigen
+     * vector.  The second eigen vector is assumed to be orthogonal to {@code
+     * piDInverse}.  This algorithm makes O(log({@code matrix.rows()})) passes
+     * through the data matrix.
+     */
     private DoubleVector computeSecondEigenVector(Matrix matrix,
                                                   DoubleVector piDInverse,
                                                   DoubleVector D,
-                                                  DoubleVector p) {
+                                                  DoubleVector rho) {
         int vectorLength = piDInverse.length();
         // Step 1, generate a random vector, v,  that is orthogonal to
         // pi*D-Inverse.
@@ -312,8 +338,10 @@ public class SpectralClustering implements Clustering {
         for (int i = 0; i < v.length(); ++i)
             v.set(i, Math.random());
 
+        // Make log(matrix.rows()) passes.
         int log = (int) Statistics.log2(vectorLength);
         for (int k = 0; k < log; ++k) {
+            // start the orthonormalizing the eigen vector.
             v = orthonormalize(v, piDInverse);
 
             // Step 2, repeated, (a) normalize v (b) set v = Q*v, where Q = D *
@@ -333,21 +361,25 @@ public class SpectralClustering implements Clustering {
             computeMatrixDotV(matrix, newV, v);
 
             // Step 2b-4) v = D*R-Inverse * v. Note that R is a diagonal matrix
-            // with p as the values along the diagonal.
+            // with rho as the values along the diagonal.
             for (int i = 0; i < vectorLength; ++i) {
                 double oldValue = v.get(i);
-                double newValue = oldValue * D.get(i) / p.get(i);
+                double newValue = oldValue * D.get(i) / rho.get(i);
                 v.set(i, newValue);
             }
         }
 
-        System.out.println("v: " + VectorIO.toString(v));
-        System.out.println(dotProduct(v,v));
-        //return new ScaledDoubleVector(v, 1/dotProduct(v, v));
         return v;
     }
 
-    private int computeCut(Matrix matrix, DoubleVector p) {
+    /**
+     * Returns the index at which {@code matrix} should be cut such that the
+     * conductance between the two partitions is minimized.  This is done such
+     * that the sparsity of the data matrix is maintained and all the entire
+     * operation is linear with respect to the number of non zeros in the
+     * matrix.
+     */
+    private int computeCut(Matrix matrix, DoubleVector rho) {
         // Compute the conductance of the newly sorted matrix.
         DoubleVector x = new DenseVector(matrix.columns());
         DoubleVector y = new DenseVector(matrix.columns());
@@ -355,21 +387,27 @@ public class SpectralClustering implements Clustering {
         // First compute x and y, which are summations of different cuts of the
         // matrix, starting with x being the first row and y being the summation
         // of all other rows.  While doing this, also compute different
-        // summations of values in the p vector using the same cut.
+        // summations of values in the rho vector using the same cut.
         VectorMath.add(x, matrix.getRowVector(0));
-        double lLeft = p.get(0);
-        double lRight = 0;
-        for (int i = 1; i < p.length(); ++i) {
+        double rhoX = rho.get(0);
+        double rhoY = 0;
+        for (int i = 1; i < rho.length(); ++i) {
             VectorMath.add(y, matrix.getRowVector(i));
-            lRight += p.get(i);
+            rhoY += rho.get(i);
         }
 
+        // Compute the dot product between the first possible cut.
         double u = dotProduct(x, y); 
 
-        // Find the minimum conductance.
-        double minConductance = u / Math.min(lLeft, lRight);
+        // Find the current conductance for the cut, assume that this is the
+        // best so far.
+        double minConductance = u / Math.min(rhoX, rhoY);
         int cutIndex = 0;
-        for (int i = 1; i < p.length() - 1; ++i) {
+
+        // Compute the other possible cuts, ignoring the last cut, which would
+        // leave no data points in a partition.  The cut with the smallest
+        // conductance is maintained.
+        for (int i = 1; i < rho.length() - 1; ++i) {
             // Compute the new value of u, the denominator for computing the
             // conductance.
             DoubleVector vector = matrix.getRowVector(i);
@@ -379,12 +417,12 @@ public class SpectralClustering implements Clustering {
             VectorMath.add(x, vector);
             VectorMath.subtract(y, vector);
 
-            // Shift over values from the p vector.
-            lLeft += p.get(i);
-            lRight -= p.get(i);
+            // Shift over values from the rho vector.
+            rhoX += rho.get(i);
+            rhoY -= rho.get(i);
 
             // Recompute the new conductance and check if it's the smallest.
-            double conductance = u / Math.min(lLeft, lRight);
+            double conductance = u / Math.min(rhoX, rhoY);
             if (conductance < minConductance) {
                 minConductance = conductance;
                 cutIndex = i;
@@ -394,8 +432,7 @@ public class SpectralClustering implements Clustering {
     }
 
     /**
-     * Computes the dot product when the second vector may be sparse and the
-     * first vector has a known magnitude.
+     * Computes the dot product when the second vector may be sparse.
      */
     private double dotProduct(DoubleVector v1, DoubleVector v2) {
         double dot = 0;

@@ -38,8 +38,6 @@ function assignment = internal_cluster(data, k)
 
   eigen2 = compute_second_eigenvector(data, rho, pi, R, D);
 
-  eigen2
-
   %Q = D * R^-1 * data * data' * D^-1;
   %[v, e] = eigs(Q);
   %eigen2
@@ -53,6 +51,8 @@ function assignment = internal_cluster(data, k)
     reordered_data(i,:) = data(reordering(i),:);
     reordered_rho(i) = rho(reordering(i));
   endfor
+
+  reordered_rho
 
   printf("Splitting the data matrix\n");
   cut_index = compute_spectral_cut(reordered_data, reordered_rho);%data, rho);
@@ -103,8 +103,8 @@ function cut_index = compute_spectral_cut(data, rho)
     rho_x += rho(row);
     rho_y -= rho(row);
 
-    mu = mu - dot(X, data(row,:)) + (dot(Y, data(row,:)) +
-                                     dot(data(row,:), data(row,:)));
+    mu = mu - dot(X, data(row,:)) + (dot(Y, data(row,:)) + 1);
+                                     %dot(data(row,:), data(row,:)));
 
     X += data(row,:);
     Y -= data(row,:);
@@ -142,7 +142,7 @@ function orthogonal = make_orthogonal(vector, other)
   similarity -= other(1) * vector(1);
   similarity /= other(1);
   vector(1) = -similarity;
-  magnitude = dot(vector, vector)
+  magnitude = dot(vector, vector);
   orthogonal = vector./magnitude;
 endfunction
   
@@ -157,8 +157,6 @@ function second_eigenvector = compute_second_eigenvector(data, rho, pi, R, D)
   % Precompute a matrix and vector that will be re-used several times.
   D_R_inv = D*R^-1;
   base_vector = pi' * D^-1;
-
-  base_vector
 
   % Initialize the eigen vector to be a random vector.
   vector = rand(size(data)(1), 1);
