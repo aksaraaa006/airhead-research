@@ -200,7 +200,7 @@ public class HALMain extends GenericMain {
 
          if (argOptions.hasOption("weighting")) {
              props.setProperty(
-                     HyperspaceAnalogueToLanguage.WINDOW_SIZE_PROPERTY,
+                     HyperspaceAnalogueToLanguage.WEIGHTING_FUNCTION_PROPERTY,
                      argOptions.getStringOption("weighting"));
          }        
 
