@@ -80,6 +80,19 @@ public class SparseRowMaskedMatrix extends RowMaskedMatrix
     }
 
     /**
+     * Creates a partial view of the provided sparse matrix using the the
+     * integer mapping to specify which rows should be included in the matrix.  
+     *
+     * @throws IllegalArgumentException if {@code included} specifies a value
+     *         that is less than 0 or greater than the number of rows present in
+     *         {@code matrix}
+     */
+    public SparseRowMaskedMatrix(Matrix matrix, int[] reordering) {
+        super(matrix, reordering);
+    }
+
+
+    /**
      * {@inheritDoc}
      */
     public SparseDoubleVector getColumnVector(int column) {
