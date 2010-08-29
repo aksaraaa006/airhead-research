@@ -123,24 +123,26 @@ public abstract class BaseSpectralCut implements EigenCut {
         // Compute the objective when we keep the two branches split.
         double intraClusterScore = 0;
 
-        int[] leftCentroidSizes = new int[leftNumClusters];
+        int[] leftClusterCounts = new int[leftNumClusters];
         intraClusterScore += computeIntraClusterScore(
-                leftAssignments, leftSplit, leftCentroidSizes);
+                leftAssignments, leftSplit, leftClusterCounts);
 
-        int[] rightCentroidSizes = new int[rightNumClusters];
+        int[] rightClusterCounts = new int[rightNumClusters];
         intraClusterScore += computeIntraClusterScore(
-                rightAssignments, rightSplit, rightCentroidSizes);
+                rightAssignments, rightSplit, rightClusterCounts);
 
-        double interClusterScore = (pSum - numRows) / 2 - intraClusterScore;
+        double interClusterScore = (pSum - numRows) / 2.0 - intraClusterScore;
 
-        int pairCount = comparisonCount(leftCentroidSizes) +
-                        comparisonCount(rightCentroidSizes);
+        int pairCount = comparisonCount(leftClusterCounts) +
+                        comparisonCount(rightClusterCounts);
         intraClusterScore = pairCount - intraClusterScore;
         return alpha * intraClusterScore + beta * interClusterScore;
     }
 
     public double getMergedObjective(double alpha, double beta) {
-        return alpha * ((numRows * (numRows + 1) / 2) - pSum/2.0);
+        double intraScore = pSum - numRows / 2.0;
+        double pairCount = (numRows * (numRows -1)) / 2.0;
+        return alpha * (pairCount - intraScore);
     }
 
     /**
@@ -151,8 +153,9 @@ public abstract class BaseSpectralCut implements EigenCut {
      */
     private static double computeIntraClusterScore(int[] assignments,
                                                    Matrix m,
-                                                   int[] centroidSizes) {
-        DoubleVector[] centroids = new DoubleVector[centroidSizes.length];
+                                                   int[] numComparisons) {
+        DoubleVector[] centroids = new DoubleVector[numComparisons.length];
+        int[] centroidSizes = new int[numComparisons.length];
         double intraClusterScore = 0;
         for (int i = 0; i < assignments.length; ++i) {
             int assignment = assignments[i];
@@ -164,6 +167,7 @@ public abstract class BaseSpectralCut implements EigenCut {
                 intraClusterScore += (centroidSizes[assignment] -
                                       dotProduct(v, centroid));
                 VectorMath.add(centroid, v);
+                numComparisons[assignment] += centroidSizes[assignment];
             }
             centroidSizes[assignment]++;
         }
@@ -172,8 +176,8 @@ public abstract class BaseSpectralCut implements EigenCut {
 
     protected static int comparisonCount(int[] clusterSizes) {
         int total = 0;
-        for (int size : clusterSizes)
-            total += (size * (size+1)) / 2.0;
+        for (int count : clusterSizes)
+            total += count;
         return total;
     }
 
@@ -243,7 +247,7 @@ public abstract class BaseSpectralCut implements EigenCut {
 
             // Recompute the new conductance and check if it's the smallest.
             double conductance = u / Math.min(rhoX, rhoY);
-            if (conductance < minConductance) {
+            if (conductance <= minConductance) {
                 minConductance = conductance;
                 cutIndex = i;
             }

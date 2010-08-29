@@ -26,6 +26,8 @@ import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
+import edu.ucla.sspace.util.Generator;
+
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledDoubleVector;
 import edu.ucla.sspace.vector.ScaledSparseDoubleVector;
@@ -63,19 +65,7 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class SpectralClustering implements Clustering {
-
-    public static final String PROPERTY_PREFIX = 
-        "edu.ucla.sspace.clustering.SpectralClustering";
-
-    public static final String ALPHA_PROPERTY =
-        PROPERTY_PREFIX + ".alpha";
-
-    public enum ObjectiveFunction {
-        RELAEXED_CORRELATION,
-        MIN_DIAMETER,
-        MIN_SUM,
-    }
+public class SpectralClustering {
 
     /**
      * The logger used to record all output.
@@ -83,18 +73,25 @@ public class SpectralClustering implements Clustering {
     private static final Logger LOGGER =
         Logger.getLogger(SpectralClustering.class.getName());
 
-    /**
-     * The default intra cluster similarity weight.
-     */
-    private static final Double DEFAULT_ALPHA = .4;
+    private final double alpha;
 
-    public Assignment[] cluster(Matrix matrix, Properties props) {
-        return cluster(matrix, Integer.MAX_VALUE, props);
+    private final double beta;
+
+    private final Generator<EigenCut> cutterGenerator;
+
+    public SpectralClustering(double alpha,
+                              Generator<EigenCut> cutterGenerator) {
+        this.alpha = alpha;
+        this.beta = 1 - alpha;
+        this.cutterGenerator = cutterGenerator;
+    }
+
+    public Assignment[] cluster(Matrix matrix) {
+        return cluster(matrix, Integer.MAX_VALUE);
     }
 
     public Assignment[] cluster(Matrix matrix,
-                                int maxClusters,
-                                Properties props) {
+                                int maxClusters) {
         // Scale every data point such that it has a dot product of 1 with
         // itself.  This will make further calculations easier since the dot
         // product distrubutes when the cosine similarity does not.
@@ -118,15 +115,8 @@ public class SpectralClustering implements Clustering {
             matrix = Matrices.asMatrix(scaledVectors);
         }
 
-        String alphaProp = props.getProperty(ALPHA_PROPERTY);
-        double alpha = (alphaProp == null)
-            ? DEFAULT_ALPHA
-            : Double.parseDouble(alphaProp);
-
-        double beta = 1 - alpha;
-
         // Cluster the matrix recursively.
-        ClusterResult r = realCluster(matrix, alpha, beta, maxClusters, 0);
+        ClusterResult r = realCluster(matrix, maxClusters, 0);
         verbose("Created " + r.numClusters + " clusters");
         Assignment[] assignments = new HardAssignment[r.assignments.length];
         for (int i = 0; i < r.assignments.length; ++i)
@@ -136,8 +126,6 @@ public class SpectralClustering implements Clustering {
     }
 
     private ClusterResult realCluster(Matrix matrix,
-                                      double alpha,
-                                      double beta,
                                       int maxClusters,
                                       int depth) {
         verbose("Clustering at depth " + depth);
@@ -145,24 +133,29 @@ public class SpectralClustering implements Clustering {
         // If the matrix has only one element or the depth is equal to the
         // maximum number of desired clusters then all items are in a single
         // cluster.
-        if (matrix.rows() == 1 || depth == maxClusters)
+        if (matrix.rows() <= 1 || depth == maxClusters)
             return new ClusterResult(new int[matrix.rows()], 1);
 
-        EigenCut eigenCutter = new SuperSpectralCut();
+        EigenCut eigenCutter = cutterGenerator.generate();
         eigenCutter.computeCut(matrix);
 
         Matrix leftMatrix = eigenCutter.getLeftCut();
         Matrix rightMatrix = eigenCutter.getRightCut();
 
+        // If the compute decided that the matrix should not be split, short
+        // circuit any attempts to further cut the matrix.
+        if (leftMatrix.rows() == matrix.rows() ||
+            rightMatrix.rows() == matrix.rows())
+            return new ClusterResult(new int[matrix.rows()], 1);
+
         verbose(String.format("Splitting into two matricies %d-%d",
                               leftMatrix.rows(), rightMatrix.rows()));
 
-
         // Do clustering on the left and right branches.
         ClusterResult leftResult =
-            realCluster(leftMatrix, alpha, beta, maxClusters, depth+1);
+            realCluster(leftMatrix, maxClusters, depth+1);
         ClusterResult rightResult =
-            realCluster(rightMatrix, alpha, beta, maxClusters, depth+1);
+            realCluster(rightMatrix, maxClusters, depth+1);
 
         verbose("Merging at depth " + depth);
 

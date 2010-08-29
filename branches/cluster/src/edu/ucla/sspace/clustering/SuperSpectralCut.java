@@ -4,6 +4,8 @@ import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.util.Generator;
+
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 
@@ -76,5 +78,12 @@ public class SuperSpectralCut extends BaseSpectralCut {
         }
 
         return v;
+    }
+
+    public static class SuperSpectralGenerator implements Generator<EigenCut> {
+
+        public EigenCut generate() {
+            return new SuperSpectralCut();
+        }
     }
 }

@@ -147,7 +147,7 @@ public class KMeansClustering implements Clustering {
     /**
      * A small number used to determine when the centroids have converged.
      */
-    private static final double EPSILON = 1e-4;
+    private static final double EPSILON = 1e-6;
 
     private static final Random random = new Random();
 
@@ -217,10 +217,10 @@ public class KMeansClustering implements Clustering {
 
                 // Find the nearest centroid.
                 int nearestCentroid = 0;
-                double minDistance = Double.MAX_VALUE;
+                double minDistance = -1; //Double.MAX_VALUE;
                 for (int c = 0; c < numClusters; ++c) {
-                    double distance = distance(centroids[c], dataPoint);
-                    if (distance < minDistance) {
+                    double distance = Similarity.cosineSimilarity(centroids[c], dataPoint);//distance(centroids[c], dataPoint);
+                    if (distance > minDistance) {
                         minDistance = distance;
                         nearestCentroid = c;
                     }
@@ -246,9 +246,12 @@ public class KMeansClustering implements Clustering {
                             newCentroids[c], 1/numAssignments[c]);
 
                 // Compute the difference.
-                centroidDifference += Math.pow(
-                        distance(centroids[c], newCentroids[c]), 2);
+                //centroidDifference += Math.pow(
+                //        distance(centroids[c], newCentroids[c]), 2);
+                centroidDifference += 1-Similarity.cosineSimilarity
+                    (centroids[c], newCentroids[c]);
             }
+            System.err.println(centroidDifference);
             converged = centroidDifference < EPSILON;
             centroids = newCentroids;
         }
@@ -271,6 +274,7 @@ public class KMeansClustering implements Clustering {
         // euclidean distance.
         if (!(v2 instanceof SparseVector))
             return Similarity.euclideanDistance(v1, v2);
+
         // If v2 is sparse, use a special case where we use the cached magnitude
         // of v1 and the sparsity of v2 to avoid most of the computations.
         SparseVector sv2 = (SparseVector)v2;

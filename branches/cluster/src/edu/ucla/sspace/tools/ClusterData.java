@@ -22,7 +22,7 @@ public class ClusterData {
         ArgOptions options = new ArgOptions();
         options.addOption('m', "matrix",
                           "Cluster the data points in the given matrix",
-                          true, "FILE", "Required (At least one of)");
+                          true, "FILE", "Required");
         options.addOption('f', "matrixFormat",
                           "Specifies the matrix file format",
                           true, "String", "Optional");
@@ -36,6 +36,11 @@ public class ClusterData {
                           "The desired number of clusters",
                           true, "INT", "Optional");
         options.parseOptions(args);
+
+        if (!options.hasOption('c') || !options.hasOption('m')) {
+            System.out.println("usage: java ClusterData [options]");
+            System.exit(1);
+        }
 
         Clustering clustering = (Clustering) ReflectionUtil.getObjectInstance(
                 options.getStringOption('c'));
@@ -56,5 +61,7 @@ public class ClusterData {
         else
             assignments = clustering.cluster(
                     data, System.getProperties());
+        for (Assignment assignment : assignments)
+            System.out.println(assignment.assignments()[0]);
     }
 }
