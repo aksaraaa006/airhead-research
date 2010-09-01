@@ -8,6 +8,8 @@ import edu.ucla.sspace.matrix.Matrix;
  */
 public interface EigenCut {
 
+    void computeRhoSum(Matrix matrix);
+
     void computeCut(Matrix matrix);
 
     int[] getLeftReordering();

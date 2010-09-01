@@ -26,6 +26,8 @@ import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.VectorIO;
+
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledDoubleVector;
@@ -217,10 +219,10 @@ public class KMeansClustering implements Clustering {
 
                 // Find the nearest centroid.
                 int nearestCentroid = 0;
-                double minDistance = -1; //Double.MAX_VALUE;
+                double minDistance = Double.MAX_VALUE;
                 for (int c = 0; c < numClusters; ++c) {
-                    double distance = Similarity.cosineSimilarity(centroids[c], dataPoint);//distance(centroids[c], dataPoint);
-                    if (distance > minDistance) {
+                    double distance = distance(centroids[c], dataPoint);
+                    if (distance < minDistance) {
                         minDistance = distance;
                         nearestCentroid = c;
                     }
@@ -246,12 +248,9 @@ public class KMeansClustering implements Clustering {
                             newCentroids[c], 1/numAssignments[c]);
 
                 // Compute the difference.
-                //centroidDifference += Math.pow(
-                //        distance(centroids[c], newCentroids[c]), 2);
-                centroidDifference += 1-Similarity.cosineSimilarity
-                    (centroids[c], newCentroids[c]);
+                centroidDifference += Math.pow(
+                        distance(centroids[c], newCentroids[c]), 2);
             }
-            System.err.println(centroidDifference);
             converged = centroidDifference < EPSILON;
             centroids = newCentroids;
         }
@@ -301,7 +300,7 @@ public class KMeansClustering implements Clustering {
         // magnitude that was computed.
         sum += v1Magnitude;
 
-        return sum;
+        return Math.sqrt(sum);
     }
 
     /**
@@ -348,12 +347,12 @@ public class KMeansClustering implements Clustering {
                                              Matrix dataPoints) {
         int[] centroids = new int[numCentroids];
         // Select the first centroid randomly.
-        centroids[0] = random.nextInt(numCentroids);
+        DoubleVector[] centers = new DoubleVector[numCentroids];
+        centers[0] = dataPoints.getRowVector(random.nextInt(dataPoints.rows()));
 
         // Compute the distance each data point has with the first centroid.
         double[] distances = new double[dataPoints.rows()];
-        computeDistances(distances, false, dataPoints,
-                         dataPoints.getRowVector(centroids[0]));
+        computeDistances(distances, false, dataPoints, centers[0]);
 
         // For each of the remaining centroids, select one of the data points,
         // p, with probability
@@ -363,15 +362,11 @@ public class KMeansClustering implements Clustering {
         for (int i = 1; i < numCentroids; ++i) {
             double sum = distanceSum(distances);
             double probability = random.nextDouble();
-            centroids[i] = chooseWithProbability(distances, sum, probability);
-            computeDistances(distances, true, dataPoints,
-                             dataPoints.getRowVector(centroids[i]));
+            centers[i] = dataPoints.getRowVector(
+                    chooseWithProbability(distances, sum, probability));
+            computeDistances(distances, true, dataPoints, centers[i]);
         }
 
-        // Convert the indices into an array of vectors.
-        DoubleVector[] centers = new DoubleVector[numCentroids];
-        for (int c = 0; c < numCentroids; ++c)
-            centers[c] = dataPoints.getRowVector(centroids[c]);
         return centers;
     }
 

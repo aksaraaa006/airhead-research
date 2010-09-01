@@ -87,11 +87,33 @@ public class SpectralClustering {
     }
 
     public Assignment[] cluster(Matrix matrix) {
-        return cluster(matrix, Integer.MAX_VALUE);
+        ClusterResult r = fullCluster(scaleMatrix(matrix), 0);
+        verbose("Created " + r.numClusters + " clusters");
+
+        Assignment[] assignments = new HardAssignment[r.assignments.length];
+        for (int i = 0; i < r.assignments.length; ++i)
+            assignments[i] = new HardAssignment(r.assignments[i]);
+
+        return assignments;
     }
 
     public Assignment[] cluster(Matrix matrix,
                                 int maxClusters) {
+        // Cluster the matrix recursively.
+        LimitedResult[] results = limitedCluster(
+                scaleMatrix(matrix), maxClusters);
+        LimitedResult r = results[maxClusters-1];
+
+        verbose("Created " + r.numClusters + " clusters");
+
+        Assignment[] assignments = new HardAssignment[r.assignments.length];
+        for (int i = 0; i < r.assignments.length; ++i)
+            assignments[i] = new HardAssignment(r.assignments[i]);
+
+        return assignments;
+    }
+
+    private Matrix scaleMatrix(Matrix matrix) {
         // Scale every data point such that it has a dot product of 1 with
         // itself.  This will make further calculations easier since the dot
         // product distrubutes when the cosine similarity does not.
@@ -104,7 +126,7 @@ public class SpectralClustering {
                 scaledVectors.add(new ScaledSparseDoubleVector(
                             v, 1/v.magnitude()));
             }
-            matrix = Matrices.asSparseMatrix(scaledVectors);
+            return Matrices.asSparseMatrix(scaledVectors);
         } else {
             List<DoubleVector> scaledVectors = 
                 new ArrayList<DoubleVector>(matrix.rows());
@@ -112,28 +134,18 @@ public class SpectralClustering {
                 DoubleVector v = matrix.getRowVector(r);
                 scaledVectors.add(new ScaledDoubleVector(v, v.magnitude()));
             }
-            matrix = Matrices.asMatrix(scaledVectors);
+            return Matrices.asMatrix(scaledVectors);
         }
-
-        // Cluster the matrix recursively.
-        ClusterResult r = realCluster(matrix, maxClusters, 0);
-        verbose("Created " + r.numClusters + " clusters");
-        Assignment[] assignments = new HardAssignment[r.assignments.length];
-        for (int i = 0; i < r.assignments.length; ++i)
-            assignments[i] = new HardAssignment(r.assignments[i]);
-
-        return assignments;
     }
 
-    private ClusterResult realCluster(Matrix matrix,
-                                      int maxClusters,
+    private ClusterResult fullCluster(Matrix matrix,
                                       int depth) {
         verbose("Clustering at depth " + depth);
 
         // If the matrix has only one element or the depth is equal to the
         // maximum number of desired clusters then all items are in a single
         // cluster.
-        if (matrix.rows() <= 1 || depth == maxClusters)
+        if (matrix.rows() <= 1) 
             return new ClusterResult(new int[matrix.rows()], 1);
 
         EigenCut eigenCutter = cutterGenerator.generate();
@@ -153,9 +165,9 @@ public class SpectralClustering {
 
         // Do clustering on the left and right branches.
         ClusterResult leftResult =
-            realCluster(leftMatrix, maxClusters, depth+1);
+            fullCluster(leftMatrix, depth+1);
         ClusterResult rightResult =
-            realCluster(rightMatrix, maxClusters, depth+1);
+            fullCluster(rightMatrix, depth+1);
 
         verbose("Merging at depth " + depth);
 
@@ -195,8 +207,109 @@ public class SpectralClustering {
         return new ClusterResult(assignments, numClusters);
     }
 
+    private LimitedResult[] limitedCluster(Matrix matrix,
+                                           int maxClusters) {
+        verbose("Clustering for " + maxClusters + " clusters.");
+
+        EigenCut eigenCutter = cutterGenerator.generate();
+
+        // If the matrix has only one element or the depth is equal to the
+        // maximum number of desired clusters then all items are in a single
+        // cluster.
+        if (matrix.rows() <= 1 || 0 == maxClusters) {
+            eigenCutter.computeRhoSum(matrix);
+            double score = eigenCutter.getMergedObjective(alpha, beta);
+            LimitedResult result = new LimitedResult(
+                    new int[matrix.rows()], 1, score);
+            return new LimitedResult[] {result};
+        }
+
+        eigenCutter.computeCut(matrix);
+
+        Matrix leftMatrix = eigenCutter.getLeftCut();
+        Matrix rightMatrix = eigenCutter.getRightCut();
+
+        // If the compute decided that the matrix should not be split, short
+        // circuit any attempts to further cut the matrix.
+        if (leftMatrix.rows() == matrix.rows() ||
+            rightMatrix.rows() == matrix.rows()) {
+            eigenCutter.computeRhoSum(matrix);
+            double score = eigenCutter.getMergedObjective(alpha, beta);
+            LimitedResult result = new LimitedResult(
+                    new int[matrix.rows()], 1, score);
+            return new LimitedResult[] {result};
+        }
+
+        verbose(String.format("Splitting into two matricies %d-%d",
+                              leftMatrix.rows(), rightMatrix.rows()));
+
+        // Do clustering on the left and right branches.
+        LimitedResult[] leftResults =
+            limitedCluster(leftMatrix, maxClusters-1);
+        LimitedResult[] rightResults =
+            limitedCluster(rightMatrix, maxClusters-1);
+
+        verbose("Merging at for: " + maxClusters + " clusters");
+
+        int[] leftReordering = eigenCutter.getLeftReordering();
+        int[] rightReordering = eigenCutter.getRightReordering();
+
+        LimitedResult[] results = new LimitedResult[maxClusters];
+        double mergedScore = eigenCutter.getMergedObjective(alpha, beta);
+        results[0] =  new LimitedResult(new int[matrix.rows()], 1, mergedScore);
+        for (int i = 0; i < leftResults.length; ++i) {
+            LimitedResult leftResult = leftResults[i];
+            if (leftResult == null)
+                continue;
+
+            for (int j = 0; j < rightResults.length; ++j) {
+                LimitedResult rightResult = rightResults[j];
+                if (rightResult == null)
+                    continue;
+
+                double splitObjective = eigenCutter.getSplitObjective(
+                        alpha, beta,
+                        leftResult.numClusters, leftResult.assignments,
+                        rightResult.numClusters, rightResult.assignments);
+                int numClusters =
+                    leftResult.numClusters + rightResult.numClusters - 1;
+
+                if (results[numClusters] == null ||
+                    results[numClusters].score < splitObjective) {
+                    int[] assignments = new int[matrix.rows()];
+
+                    for (int k = 0; k < leftReordering.length; ++k)
+                        assignments[leftReordering[k]] = 
+                            leftResult.assignments[k];
+                    for (int k = 0; k < rightReordering.length; ++k)
+                        assignments[rightReordering[k]] =
+                            rightResult.assignments[k] + leftResult.numClusters;
+
+                    results[numClusters] = new LimitedResult(
+                            assignments, numClusters+1, splitObjective);
+                }
+            }
+        }
+
+        return results;
+    }
+
+
+
     private void verbose(String out) {
         LOGGER.info(out);
+    }
+
+    private class LimitedResult {
+        public int[] assignments;
+        public int numClusters;
+        public double score;
+
+        public LimitedResult(int[] assignments, int numClusters, double score) {
+            this.assignments = assignments;
+            this.numClusters = numClusters;
+            this.score = score;
+        }
     }
 
     /**

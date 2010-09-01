@@ -29,10 +29,7 @@ public abstract class BaseSpectralCut implements EigenCut {
     protected Matrix leftSplit;
     protected Matrix rightSplit;
 
-    public void computeCut(Matrix matrix) {
-        dataMatrix = matrix;
-        int numRows = matrix.rows();
-
+    public void computeRhoSum(Matrix matrix) {
         // Compute the centroid of the entire data set.
         int vectorLength = matrix.rows();
         DoubleVector matrixRowSums = computeMatrixRowSum(matrix);
@@ -45,6 +42,15 @@ public abstract class BaseSpectralCut implements EigenCut {
             pSum += dot;
             rho.set(r, dot);
         }
+    }
+
+    public void computeCut(Matrix matrix) {
+        dataMatrix = matrix;
+        int numRows = matrix.rows();
+
+        // Compute the centroid of the entire data set.
+        int vectorLength = matrix.rows();
+        computeRhoSum(matrix);
  
         // Compute the second largest eigenvector of the normalized affinity
         // matrix with respect to pi*D^-1, which is similar to it's first eigen
