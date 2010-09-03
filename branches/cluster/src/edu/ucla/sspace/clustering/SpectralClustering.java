@@ -216,7 +216,7 @@ public class SpectralClustering {
         // If the matrix has only one element or the depth is equal to the
         // maximum number of desired clusters then all items are in a single
         // cluster.
-        if (matrix.rows() <= 1 || 0 == maxClusters) {
+        if (matrix.rows() <= 1 || maxClusters <= 1) {
             eigenCutter.computeRhoSum(matrix);
             double score = eigenCutter.getMergedObjective(alpha, beta);
             LimitedResult result = new LimitedResult(
@@ -267,12 +267,15 @@ public class SpectralClustering {
                 if (rightResult == null)
                     continue;
 
+                int numClusters =
+                    leftResult.numClusters + rightResult.numClusters - 1;
+                if (numClusters >= results.length)
+                    continue;
+
                 double splitObjective = eigenCutter.getSplitObjective(
                         alpha, beta,
                         leftResult.numClusters, leftResult.assignments,
                         rightResult.numClusters, rightResult.assignments);
-                int numClusters =
-                    leftResult.numClusters + rightResult.numClusters - 1;
 
                 if (results[numClusters] == null ||
                     results[numClusters].score < splitObjective) {

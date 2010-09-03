@@ -22,7 +22,7 @@ public class ClusterData {
         ArgOptions options = new ArgOptions();
         options.addOption('m', "matrix",
                           "Cluster the data points in the given matrix",
-                          true, "FILE", "Required");
+                          true, "FILE", "Required (At least one of)");
         options.addOption('f', "matrixFormat",
                           "Specifies the matrix file format",
                           true, "String", "Optional");
@@ -38,7 +38,8 @@ public class ClusterData {
         options.parseOptions(args);
 
         if (!options.hasOption('c') || !options.hasOption('m')) {
-            System.out.println("usage: java ClusterData [options]");
+            System.out.println("usage: java ClusterData [options]\n" +
+                               options.prettyPrint());
             System.exit(1);
         }
 
