@@ -237,11 +237,13 @@ public abstract class BaseSpectralCut implements EigenCut {
         // Compute the other possible cuts, ignoring the last cut, which would
         // leave no data points in a partition.  The cut with the smallest
         // conductance is maintained.
-        for (int i = 1; i < rho.length() - 1; ++i) {
+        for (int i = 1; i < rho.length() - 2; ++i) {
             // Compute the new value of u, the denominator for computing the
             // conductance.
             DoubleVector vector = matrix.getRowVector(i);
-            u = u - dotProduct(x, vector) + dotProduct(y, vector) + 1;
+            double xv = dotProduct(x, vector);
+            double yv = dotProduct(y, vector);
+            u = u - xv + yv + 1;
 
             // Shift over vectors from y to x.
             VectorMath.add(x, vector);
@@ -253,12 +255,15 @@ public abstract class BaseSpectralCut implements EigenCut {
 
             // Recompute the new conductance and check if it's the smallest.
             double conductance = u / Math.min(rhoX, rhoY);
+            System.out.printf("xv: %f yv: %f\n", xv, yv);
+            System.out.printf("rhoX: %f rhoY: %f\n", rhoX, rhoY);
+            System.out.printf("%f %f\n", conductance, minConductance);
             if (conductance <= minConductance) {
                 minConductance = conductance;
                 cutIndex = i;
             }
         }
-        return cutIndex;
+        return cutIndex+1;
     }
 
     /**
