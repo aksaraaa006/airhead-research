@@ -209,6 +209,12 @@ public class SpectralClustering {
 
     private LimitedResult[] limitedCluster(Matrix matrix,
                                            int maxClusters) {
+        return limitedCluster(matrix, maxClusters, false);
+    }
+
+    private LimitedResult[] limitedCluster(Matrix matrix,
+                                           int maxClusters,
+                                           boolean useKMeans) {
         verbose("Clustering for " + maxClusters + " clusters.");
 
         EigenCut eigenCutter = cutterGenerator.generate();
@@ -218,7 +224,9 @@ public class SpectralClustering {
         // cluster.
         if (matrix.rows() <= 1 || maxClusters <= 1) {
             eigenCutter.computeRhoSum(matrix);
-            double score = eigenCutter.getMergedObjective(alpha, beta);
+            double score = (useKMeans)
+                ? eigenCutter.getKMeansObjective()
+                : eigenCutter.getMergedObjective(alpha, beta);
             LimitedResult result = new LimitedResult(
                     new int[matrix.rows()], 1, score);
             return new LimitedResult[] {result};
@@ -234,7 +242,9 @@ public class SpectralClustering {
         if (leftMatrix.rows() == matrix.rows() ||
             rightMatrix.rows() == matrix.rows()) {
             eigenCutter.computeRhoSum(matrix);
-            double score = eigenCutter.getMergedObjective(alpha, beta);
+            double score = (useKMeans)
+                ? eigenCutter.getKMeansObjective()
+                : eigenCutter.getMergedObjective(alpha, beta);
             LimitedResult result = new LimitedResult(
                     new int[matrix.rows()], 1, score);
             return new LimitedResult[] {result};
@@ -245,9 +255,9 @@ public class SpectralClustering {
 
         // Do clustering on the left and right branches.
         LimitedResult[] leftResults =
-            limitedCluster(leftMatrix, maxClusters-1);
+            limitedCluster(leftMatrix, maxClusters-1, useKMeans);
         LimitedResult[] rightResults =
-            limitedCluster(rightMatrix, maxClusters-1);
+            limitedCluster(rightMatrix, maxClusters-1, useKMeans);
 
         verbose("Merging at for: " + maxClusters + " clusters");
 
@@ -272,10 +282,18 @@ public class SpectralClustering {
                 if (numClusters >= results.length)
                     continue;
 
-                double splitObjective = eigenCutter.getSplitObjective(
+                double splitObjective;
+                if (useKMeans) {
+                    splitObjective = eigenCutter.getKMeansObjective(
                         alpha, beta,
                         leftResult.numClusters, leftResult.assignments,
                         rightResult.numClusters, rightResult.assignments);
+                } else {
+                    splitObjective = eigenCutter.getSplitObjective(
+                        alpha, beta,
+                        leftResult.numClusters, leftResult.assignments,
+                        rightResult.numClusters, rightResult.assignments);
+                }
 
                 if (results[numClusters] == null ||
                     results[numClusters].score < splitObjective) {

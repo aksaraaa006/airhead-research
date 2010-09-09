@@ -23,6 +23,7 @@ public abstract class BaseSpectralCut implements EigenCut {
     protected Matrix dataMatrix;
     protected int numRows;
     protected DoubleVector rho;
+    protected DoubleVector matrixRowSums;
     protected double pSum;
     protected int[] leftReordering;
     protected int[] rightReordering;
@@ -32,7 +33,7 @@ public abstract class BaseSpectralCut implements EigenCut {
     public void computeRhoSum(Matrix matrix) {
         // Compute the centroid of the entire data set.
         int vectorLength = matrix.rows();
-        DoubleVector matrixRowSums = computeMatrixRowSum(matrix);
+        matrixRowSums = computeMatrixRowSum(matrix);
 
         // Compute rho, where rho[i] = dataPoint_i DOT matrixRowSums.
         rho = new DenseVector(vectorLength);
@@ -120,6 +121,49 @@ public abstract class BaseSpectralCut implements EigenCut {
 
     public int[] getRightReordering() {
         return rightReordering;
+    }
+
+    public double getKMeansObjective() {
+        DoubleVector centroid = new ScaledDoubleVector(
+                matrixRowSums, 1/((double) dataMatrix.rows()));
+        double score = 0;
+        for (int r = 0; r < dataMatrix.rows(); ++r)
+            score += dotProduct(centroid, dataMatrix.getRowVector(r));
+        return score;
+    }
+
+    public double getKMeansObjective(
+            double alpha, double beta,
+            int leftNumClusters, int[] leftAssignments,
+            int rightNumClusters, int[] rightAssignments) {
+        double score = 0;
+        score += kMeansObjective(leftNumClusters, leftAssignments, leftSplit);
+        score += kMeansObjective(
+                rightNumClusters, rightAssignments, rightSplit);
+        return score;
+    }
+
+    public static double kMeansObjective(int numClusters,
+                                         int[] assignments,
+                                         Matrix data) {
+        double score = 0;
+        DoubleVector[] centroids = new DoubleVector[numClusters];
+        double[] sizes = new double[numClusters];
+        for (int i = 0; i < centroids.length; ++i)
+            centroids[i] = new DenseVector(data.columns());
+
+        for (int i = 0; i < assignments.length; ++i) {
+            VectorMath.add(centroids[assignments[i]], data.getRowVector(i));
+            sizes[assignments[i]]++;
+        }
+
+        for (int i = 0; i < centroids.length; ++i)
+            centroids[i] = new ScaledDoubleVector(centroids[i], 1/sizes[i]);
+
+        for (int i = 0; i < assignments.length; ++i)
+            score += dotProduct(
+                    centroids[assignments[i]], data.getRowVector(i));
+        return score;
     }
 
     public double getSplitObjective(

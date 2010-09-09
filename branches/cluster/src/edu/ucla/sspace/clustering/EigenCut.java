@@ -20,6 +20,12 @@ public interface EigenCut {
 
     int[] getRightReordering();
 
+    double getKMeansObjective();
+
+    double getKMeansObjective(double alpha, double beta,
+                              int leftNumClusters, int[] leftAssignments,
+                              int rightNumClusters, int[] rightAssignments);
+
     double getSplitObjective(double alpha, double beta,
                              int leftNumClusters, int[] leftAssignments,
                              int rightNumClusters, int[] rightAssignments);
