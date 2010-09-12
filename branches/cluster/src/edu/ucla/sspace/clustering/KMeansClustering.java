@@ -203,7 +203,6 @@ public class KMeansClustering implements Clustering {
         // re-computed centroids do not differ by some margin of error.
         boolean converged = false;
         while (!converged) {
-            System.err.println("Running one iteration of the K-Means loop");
             // Setup the new set of centroids to be emtpy vectors..
             DoubleVector[] newCentroids = new DoubleVector[numClusters];
             for (int c = 0; c < numClusters; ++c)
@@ -348,7 +347,8 @@ public class KMeansClustering implements Clustering {
         int[] centroids = new int[numCentroids];
         // Select the first centroid randomly.
         DoubleVector[] centers = new DoubleVector[numCentroids];
-        centers[0] = dataPoints.getRowVector(random.nextInt(dataPoints.rows()));
+        int centroidIndex = random.nextInt(dataPoints.rows());
+        centers[0] = dataPoints.getRowVector(centroidIndex);
 
         // Compute the distance each data point has with the first centroid.
         double[] distances = new double[dataPoints.rows()];
@@ -414,8 +414,9 @@ public class KMeansClustering implements Clustering {
         for (int j = 0; j < distances.length; ++j) {
             double probOfDistance = Math.pow(distances[j], 2) / sum;
             probability -= probOfDistance;
-            if (probability <= EPSILON)
+            if (probability <= EPSILON) {
                 return j;
+            }
         }
         return distances.length-1;
     }
@@ -598,8 +599,9 @@ public class KMeansClustering implements Clustering {
 
         // Convert the selection indices into vectors.
         for (int c = 0, i = selectedCentroids.nextSetBit(0); i >= 0;
-                c++, i = selectedCentroids.nextSetBit(i+1))
+                c++, i = selectedCentroids.nextSetBit(i+1)) {
             centers[c] = dataPoints.getRowVector(i);
+        }
         return centers;
     }
 }

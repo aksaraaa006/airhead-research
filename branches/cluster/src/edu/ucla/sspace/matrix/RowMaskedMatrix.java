@@ -163,7 +163,7 @@ public class RowMaskedMatrix implements Matrix {
      * Returns the row in the backing matrix that the {@code virtualRow} value
      * is mapped to in the row-masked matrix.
      */
-    private int getRealRow(int virtualRow) {
+    protected int getRealRow(int virtualRow) {
         if (virtualRow < 0 || virtualRow >= rows)
             throw new IndexOutOfBoundsException(
                 "row out of bounds: " + virtualRow);
