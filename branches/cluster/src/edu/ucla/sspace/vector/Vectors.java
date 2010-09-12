@@ -353,11 +353,7 @@ public class Vectors {
             return null;
         DoubleVector result = null;
 
-        if (source instanceof DenseVector) {
-            result = new DenseVector(source.length());
-            for (int i = 0; i < source.length(); ++i)
-                result.set(i, source.get(i));
-        } else if (source instanceof CompactSparseVector) {
+        if (source instanceof CompactSparseVector) {
             result = new CompactSparseVector(source.length());
             copyFromSparseVector(result, source);
         } else if (source instanceof AmortizedSparseVector) {
@@ -368,6 +364,11 @@ public class Vectors {
             return copyOf(view.getOriginalVector());
         } else if (source instanceof ScaledSparseDoubleVector) {
             return new CompactSparseVector((SparseDoubleVector) source);
+        } else if (source instanceof DenseVector ||
+            source instanceof ScaledDoubleVector) {
+            result = new DenseVector(source.length());
+            for (int i = 0; i < source.length(); ++i)
+                result.set(i, source.get(i));
         } else {
             // Create a copy of the given class using reflection.  This code
             // assumes that the given implemenation of Vector has a constructor
