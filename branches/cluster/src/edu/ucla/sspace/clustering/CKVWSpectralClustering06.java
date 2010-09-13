@@ -17,6 +17,12 @@ import java.util.Properties;
  */
 public class CKVWSpectralClustering06 implements Clustering {
 
+    public static final String PROPERTY_PREFIX =
+        "edu.ucla.sspace.clustering.CKVWSpectralClustering06";
+
+    public static final String USE_KMEANS =
+        PROPERTY_PREFIX + ".useKMeans";
+
     public Assignment[] cluster(Matrix matrix, Properties props) {
         SpectralClustering cluster = new SpectralClustering(
                 .2, new SuperSpectralGenerator());
@@ -28,7 +34,8 @@ public class CKVWSpectralClustering06 implements Clustering {
                                 Properties props) {
         SpectralClustering cluster = new SpectralClustering(
                 .2, new SuperSpectralGenerator());
-        return cluster.cluster(matrix, numClusters);
+        return cluster.cluster(
+                matrix, numClusters, props.getProperty(USE_KMEANS) != null);
     }
 
     public class SuperSpectralCut extends BaseSpectralCut {

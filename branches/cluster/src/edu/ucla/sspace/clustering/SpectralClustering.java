@@ -98,10 +98,11 @@ public class SpectralClustering {
     }
 
     public Assignment[] cluster(Matrix matrix,
-                                int maxClusters) {
+                                int maxClusters,
+                                boolean useKMeans) {
         // Cluster the matrix recursively.
         LimitedResult[] results = limitedCluster(
-                scaleMatrix(matrix), maxClusters);
+                scaleMatrix(matrix), maxClusters, useKMeans);
         LimitedResult r = results[maxClusters-1];
 
         verbose("Created " + r.numClusters + " clusters");
