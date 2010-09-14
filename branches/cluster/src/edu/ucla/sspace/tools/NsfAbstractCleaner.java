@@ -74,6 +74,10 @@ public class NsfAbstractCleaner {
 
                 // Iterate over each award.
                 for (File awardFile : abstractPartDir.listFiles()) {
+                    // Skip the html link files.
+                    if  (awardFile.getName().endsWith("html"))
+                        continue;
+
                     BufferedReader br = 
                         new BufferedReader(new FileReader(awardFile));
                     StringBuilder sb = new StringBuilder();
