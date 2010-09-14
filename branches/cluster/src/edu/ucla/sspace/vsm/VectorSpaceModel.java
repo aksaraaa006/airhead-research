@@ -25,6 +25,7 @@ import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.Transform;
@@ -35,6 +36,7 @@ import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
 
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.BufferedReader;
@@ -403,9 +405,21 @@ public class VectorSpaceModel implements SemanticSpace {
             else {
                 vectorSpace = MatrixIO.readMatrix(termDocumentMatrix, format);
             }            
+
+            PrintWriter writer = new PrintWriter("vsm-docspace-matlab.mat");
+            if (vectorSpace instanceof SparseMatrix) {
+                SparseMatrix sm = (SparseMatrix) vectorSpace;
+                for (int row = 0; row < sm.rows(); ++row) {
+                    SparseDoubleVector sdv = sm.getRowVector(row);
+                    for (int col : sdv.getNonZeroIndices())
+                        writer.printf("%d %d %f\n", col+1, row+1, sm.get(row, col));
+                }
+            }
+            writer.close();
         } catch (IOException ioe) {
             //rethrow as Error
             throw new IOError(ioe);
         }
+
     }
 }

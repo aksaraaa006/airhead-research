@@ -10,15 +10,24 @@ import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledDoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorIO;
 import edu.ucla.sspace.vector.VectorMath;
 
 import java.util.Arrays;
+
+import java.util.logging.Logger;
 
 
 /**
  * @author Keith Stevens
  */
 public abstract class BaseSpectralCut implements EigenCut {
+
+    /**
+     * The logger used to record all output.
+     */
+    private static final Logger LOGGER =
+        Logger.getLogger(BaseSpectralCut.class.getName());
 
     protected Matrix dataMatrix;
     protected int numRows;
@@ -30,7 +39,8 @@ public abstract class BaseSpectralCut implements EigenCut {
     protected Matrix leftSplit;
     protected Matrix rightSplit;
 
-    public void computeRhoSum(Matrix matrix) {
+    public DoubleVector computeRhoSum(Matrix matrix) {
+        LOGGER.info("Computing rho and rhoSum");
         // Compute the centroid of the entire data set.
         int vectorLength = matrix.rows();
         matrixRowSums = computeMatrixRowSum(matrix);
@@ -43,6 +53,7 @@ public abstract class BaseSpectralCut implements EigenCut {
             pSum += dot;
             rho.set(r, dot);
         }
+        return matrixRowSums;
     }
 
     public void computeCut(Matrix matrix) {
@@ -51,8 +62,9 @@ public abstract class BaseSpectralCut implements EigenCut {
 
         // Compute the centroid of the entire data set.
         int vectorLength = matrix.rows();
-        computeRhoSum(matrix);
+        DoubleVector matrixRowSums = computeRhoSum(matrix);
  
+        LOGGER.info("Computing the second eigen vector");
         // Compute the second largest eigenvector of the normalized affinity
         // matrix with respect to pi*D^-1, which is similar to it's first eigen
         // vector.
@@ -84,9 +96,11 @@ public abstract class BaseSpectralCut implements EigenCut {
         else
             sortedMatrix = new RowMaskedMatrix(matrix, reordering);
 
+        LOGGER.info("Computing the spectral cut");
         // Compute the index at which the best cut can be made based on the
         // reordered data matrix and rho values.
-        int cutIndex = computeCut(sortedMatrix, sortedRho);
+        int cutIndex = computeCut(
+                sortedMatrix, sortedRho, pSum, matrixRowSums);
 
         leftReordering = Arrays.copyOfRange(reordering, 0, cutIndex);
         rightReordering = Arrays.copyOfRange(
@@ -253,10 +267,14 @@ public abstract class BaseSpectralCut implements EigenCut {
      * operation is linear with respect to the number of non zeros in the
      * matrix.
      */
-    protected static int computeCut(Matrix matrix, DoubleVector rho) {
+    protected static int computeCut(Matrix matrix, 
+                                    DoubleVector rho, 
+                                    double rhoSum,
+                                    DoubleVector matrixRowSums) {
         // Compute the conductance of the newly sorted matrix.
         DoubleVector x = new DenseVector(matrix.columns());
-        DoubleVector y = new DenseVector(matrix.columns());
+        DoubleVector y = matrixRowSums;
+        VectorMath.subtract(y, x);
 
         // First compute x and y, which are summations of different cuts of the
         // matrix, starting with x being the first row and y being the summation
@@ -264,11 +282,7 @@ public abstract class BaseSpectralCut implements EigenCut {
         // summations of values in the rho vector using the same cut.
         VectorMath.add(x, matrix.getRowVector(0));
         double rhoX = rho.get(0);
-        double rhoY = 0;
-        for (int i = 1; i < rho.length(); ++i) {
-            VectorMath.add(y, matrix.getRowVector(i));
-            rhoY += rho.get(i);
-        }
+        double rhoY = rhoSum - rho.get(0);
 
         // Compute the dot product between the first possible cut.
         double u = dotProduct(x, y); 
@@ -342,6 +356,7 @@ public abstract class BaseSpectralCut implements EigenCut {
                                                           DoubleVector v) {
         DoubleVector newV = new DenseVector(matrix.columns());
         if (matrix instanceof SparseMatrix) {
+            System.out.println("sparse transopose");
             SparseMatrix smatrix = (SparseMatrix) matrix;
             for (int r = 0; r < smatrix.rows(); ++r) {
                 SparseDoubleVector row = smatrix.getRowVector(r);
@@ -350,6 +365,7 @@ public abstract class BaseSpectralCut implements EigenCut {
                     newV.add(c, row.get(c) * v.get(r));
             }
         } else {
+            System.out.println("dense transopose");
             for (int r = 0; r < matrix.rows(); ++r)
                 for (int c = 0; c < matrix.columns(); ++c)
                     newV.add(c, matrix.get(r, c) * v.get(r));
@@ -369,6 +385,7 @@ public abstract class BaseSpectralCut implements EigenCut {
                                             DoubleVector v) {
         // Special case for sparse matrices.
         if (matrix instanceof SparseMatrix) {
+            System.out.println("sparse dot v");
             SparseMatrix smatrix = (SparseMatrix) matrix;
             for (int r = 0; r < smatrix.rows(); ++r) {
                 double vValue = 0;
@@ -379,6 +396,7 @@ public abstract class BaseSpectralCut implements EigenCut {
                 v.set(r, vValue);
             }
         } else {
+            System.out.println("dense dot v");
             // Handle dense matrices.
             for (int r = 0; r < matrix.rows(); ++r) {
                 double vValue = 0;

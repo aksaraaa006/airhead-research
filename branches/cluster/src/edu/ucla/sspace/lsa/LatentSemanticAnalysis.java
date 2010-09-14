@@ -502,6 +502,14 @@ public class LatentSemanticAnalysis implements SemanticSpace {
             // columns.  NOTE: if the Matrix interface ever adds a getColumn()
             // method, it might be better to use that instead.
             documentSpace = Matrices.transpose(usv[2]);
+
+            PrintWriter writer = new PrintWriter("lsa-docspace-matlab.mat");
+            for (int row = 0; row < documentSpace.rows(); ++row) {
+                for (int col = 0; col < documentSpace.columns(); ++col)
+                    writer.printf("%f ", documentSpace.get(row, col)+1);
+                writer.println();
+            }
+            writer.close();
         } catch (IOException ioe) {
             //rethrow as Error
             throw new IOError(ioe);

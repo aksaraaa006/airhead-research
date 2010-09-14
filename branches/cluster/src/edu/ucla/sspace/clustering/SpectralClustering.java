@@ -155,14 +155,14 @@ public class SpectralClustering {
         Matrix leftMatrix = eigenCutter.getLeftCut();
         Matrix rightMatrix = eigenCutter.getRightCut();
 
+        verbose(String.format("Splitting into two matricies %d-%d",
+                              leftMatrix.rows(), rightMatrix.rows()));
+
         // If the compute decided that the matrix should not be split, short
         // circuit any attempts to further cut the matrix.
         if (leftMatrix.rows() == matrix.rows() ||
             rightMatrix.rows() == matrix.rows())
             return new ClusterResult(new int[matrix.rows()], 1);
-
-        verbose(String.format("Splitting into two matricies %d-%d",
-                              leftMatrix.rows(), rightMatrix.rows()));
 
         // Do clustering on the left and right branches.
         ClusterResult leftResult =

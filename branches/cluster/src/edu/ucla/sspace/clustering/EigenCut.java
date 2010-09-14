@@ -2,13 +2,15 @@ package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.DoubleVector;
+
 
 /**
  * @author Keith Stevens
  */
 public interface EigenCut {
 
-    void computeRhoSum(Matrix matrix);
+    DoubleVector computeRhoSum(Matrix matrix);
 
     void computeCut(Matrix matrix);
 
