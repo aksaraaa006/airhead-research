@@ -72,6 +72,7 @@ public class ClusterData {
 
         Assignment[] bestAssignments = null;
         double bestScore = Double.MAX_VALUE;
+        int bestNumClusters = 0;
 
         int runTime = 0;
 
@@ -105,11 +106,13 @@ public class ClusterData {
             if (score <= bestScore) {
                 bestScore = score;
                 bestAssignments = assignments;
+                bestNumClusters = numClusters;
             }
         }
 
         System.out.println(bestScore);
         System.out.println(runTime);
+        System.out.println(numClusters);
         for (Assignment assignment : bestAssignments)
             System.out.println(assignment.assignments()[0]);
     }
