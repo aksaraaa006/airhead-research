@@ -313,9 +313,6 @@ public abstract class BaseSpectralCut implements EigenCut {
 
             // Recompute the new conductance and check if it's the smallest.
             double conductance = u / Math.min(rhoX, rhoY);
-            System.out.printf("xv: %f yv: %f\n", xv, yv);
-            System.out.printf("rhoX: %f rhoY: %f\n", rhoX, rhoY);
-            System.out.printf("%f %f\n", conductance, minConductance);
             if (conductance <= minConductance) {
                 minConductance = conductance;
                 cutIndex = i;
@@ -356,7 +353,6 @@ public abstract class BaseSpectralCut implements EigenCut {
                                                           DoubleVector v) {
         DoubleVector newV = new DenseVector(matrix.columns());
         if (matrix instanceof SparseMatrix) {
-            System.out.println("sparse transopose");
             SparseMatrix smatrix = (SparseMatrix) matrix;
             for (int r = 0; r < smatrix.rows(); ++r) {
                 SparseDoubleVector row = smatrix.getRowVector(r);
@@ -365,7 +361,6 @@ public abstract class BaseSpectralCut implements EigenCut {
                     newV.add(c, row.get(c) * v.get(r));
             }
         } else {
-            System.out.println("dense transopose");
             for (int r = 0; r < matrix.rows(); ++r)
                 for (int c = 0; c < matrix.columns(); ++c)
                     newV.add(c, matrix.get(r, c) * v.get(r));
@@ -385,7 +380,6 @@ public abstract class BaseSpectralCut implements EigenCut {
                                             DoubleVector v) {
         // Special case for sparse matrices.
         if (matrix instanceof SparseMatrix) {
-            System.out.println("sparse dot v");
             SparseMatrix smatrix = (SparseMatrix) matrix;
             for (int r = 0; r < smatrix.rows(); ++r) {
                 double vValue = 0;
@@ -396,7 +390,6 @@ public abstract class BaseSpectralCut implements EigenCut {
                 v.set(r, vValue);
             }
         } else {
-            System.out.println("dense dot v");
             // Handle dense matrices.
             for (int r = 0; r < matrix.rows(); ++r) {
                 double vValue = 0;

@@ -26,8 +26,6 @@ import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.Matrix;
 
-import edu.ucla.sspace.vector.VectorIO;
-
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledDoubleVector;
@@ -300,43 +298,6 @@ public class KMeansClustering implements Clustering {
         sum += v1Magnitude;
 
         return Math.sqrt(sum);
-    }
-
-    /**
-     * Returns the centroids of a {@link Matrix} based on the assignments for
-     * each data point.  This is only a helper function for users of {@link
-     * KMeansClustering} so that they can reconstruct the centroids.
-     */
-    public static DoubleVector[] computeCentroids(Matrix dataPoints,
-                                                  Assignment[] assignments,
-                                                  int numCentroids) {
-        DoubleVector[] centroids = new DoubleVector[numCentroids];
-        double[] numAssignments = new double[numCentroids];
-        for (int i = 0; i < dataPoints.rows(); ++i) {
-            int assignment = assignments[i].assignments()[0];
-            VectorMath.add(centroids[i], dataPoints.getRowVector(i));
-            numAssignments[i]++;
-        }
-        for (int c = 0; c < numCentroids; ++c)
-            if (numAssignments[c] > 0)
-                centroids[c] = new ScaledDoubleVector(
-                        centroids[c], 1/numAssignments[c]);
-        return centroids;
-    }
-
-    /**
-     * Returns the K-Means objective score of a given solution.
-     */
-    public static double computeObjective(Matrix dataPoints,
-                                          DoubleVector[] centroids,
-                                          Assignment[] assignments) {
-        double objective = 0;
-        for (int i = 0; i < dataPoints.rows(); ++i) {
-            int assignment = assignments[i].assignments()[0];
-            objective += distance(centroids[assignment],
-                                       dataPoints.getRowVector(i));
-        }
-        return objective;
     }
 
     /**
