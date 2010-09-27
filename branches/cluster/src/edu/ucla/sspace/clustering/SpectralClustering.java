@@ -335,7 +335,7 @@ public class SpectralClustering {
         int[] combineAssignments(LimitedResult res1, LimitedResult res2,
                                  int[] ordering1, int[] ordering2) {
             int[] newAssignments = new int[
-                res1.assignments.length + res1.assignments.length];
+                res1.assignments.length + res2.assignments.length];
 
             for (int k = 0; k < ordering1.length; ++k)
                 newAssignments[ordering1[k]] = res1.assignments[k];
