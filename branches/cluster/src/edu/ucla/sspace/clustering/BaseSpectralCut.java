@@ -48,6 +48,7 @@ public abstract class BaseSpectralCut implements EigenCut {
         // Compute the centroid of the entire data set.
         int vectorLength = matrix.rows();
         matrixRowSums = computeMatrixRowSum(matrix);
+        dataMatrix = matrix;
 
         // Compute rho, where rho[i] = dataPoint_i DOT matrixRowSums.
         rho = new DenseVector(vectorLength);
