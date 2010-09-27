@@ -112,7 +112,7 @@ public class ClusterData {
 
         System.out.println(bestScore);
         System.out.println(runTime);
-        System.out.println(numClusters);
+        System.out.println(bestNumClusters);
         for (Assignment assignment : bestAssignments)
             System.out.println(assignment.assignments()[0]);
     }

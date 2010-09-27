@@ -10,6 +10,8 @@ import edu.ucla.sspace.vector.DoubleVector;
  */
 public interface EigenCut {
 
+    double rhoSum();
+
     DoubleVector computeRhoSum(Matrix matrix);
 
     void computeCut(Matrix matrix);

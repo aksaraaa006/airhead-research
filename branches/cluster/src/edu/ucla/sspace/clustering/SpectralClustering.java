@@ -225,11 +225,15 @@ public class SpectralClustering {
         // cluster.
         if (matrix.rows() <= 1 || maxClusters <= 1) {
             eigenCutter.computeRhoSum(matrix);
-            double score = (useKMeans)
-                ? eigenCutter.getKMeansObjective()
-                : eigenCutter.getMergedObjective(alpha, beta);
-            LimitedResult result = new LimitedResult(
-                    new int[matrix.rows()], 1, score);
+            LimitedResult result;
+            if (useKMeans)
+                result = new KMeansLimitedResult(new int[matrix.rows()], 1,
+                        eigenCutter.getKMeansObjective());
+            else
+                result = new SpectralLimitedResult(new int[matrix.rows()], 1, 
+                        eigenCutter.getMergedObjective(alpha, beta),
+                        eigenCutter.rhoSum() - matrix.rows() / 2.0,
+                        (matrix.rows() * (matrix.rows()-1)) / 2);
             return new LimitedResult[] {result};
         }
 
@@ -243,11 +247,15 @@ public class SpectralClustering {
         if (leftMatrix.rows() == matrix.rows() ||
             rightMatrix.rows() == matrix.rows()) {
             eigenCutter.computeRhoSum(matrix);
-            double score = (useKMeans)
-                ? eigenCutter.getKMeansObjective()
-                : eigenCutter.getMergedObjective(alpha, beta);
-            LimitedResult result = new LimitedResult(
-                    new int[matrix.rows()], 1, score);
+            LimitedResult result;
+            if (useKMeans)
+                result = new KMeansLimitedResult(new int[matrix.rows()], 1,
+                        eigenCutter.getKMeansObjective());
+            else
+                result = new SpectralLimitedResult(new int[matrix.rows()], 1, 
+                        eigenCutter.getMergedObjective(alpha, beta),
+                        eigenCutter.rhoSum() - matrix.rows() / 2.0,
+                        (matrix.rows() * (matrix.rows()-1)) / 2);
             return new LimitedResult[] {result};
         }
 
@@ -266,8 +274,15 @@ public class SpectralClustering {
         int[] rightReordering = eigenCutter.getRightReordering();
 
         LimitedResult[] results = new LimitedResult[maxClusters];
-        double mergedScore = eigenCutter.getMergedObjective(alpha, beta);
-        results[0] =  new LimitedResult(new int[matrix.rows()], 1, mergedScore);
+        if (useKMeans)
+            results[0] = new KMeansLimitedResult(new int[matrix.rows()], 1,
+                    eigenCutter.getKMeansObjective());
+        else
+            results[0] = new SpectralLimitedResult(new int[matrix.rows()], 1, 
+                    eigenCutter.getMergedObjective(alpha, beta),
+                    eigenCutter.rhoSum() - matrix.rows() / 2.0,
+                    (matrix.rows() * (matrix.rows()-1)) / 2);
+
         for (int i = 0; i < leftResults.length; ++i) {
             LimitedResult leftResult = leftResults[i];
             if (leftResult == null)
@@ -283,33 +298,19 @@ public class SpectralClustering {
                 if (numClusters >= results.length)
                     continue;
 
-                double splitObjective;
-                if (useKMeans) {
-                    splitObjective = eigenCutter.getKMeansObjective(
-                        alpha, beta,
-                        leftResult.numClusters, leftResult.assignments,
-                        rightResult.numClusters, rightResult.assignments);
-                } else {
-                    splitObjective = eigenCutter.getSplitObjective(
-                        alpha, beta,
-                        leftResult.numClusters, leftResult.assignments,
-                        rightResult.numClusters, rightResult.assignments);
-                }
+                LimitedResult newResult;
+                if (useKMeans)
+                    newResult = leftResult.combine(leftResult, rightResult,
+                            leftReordering, rightReordering, 0);
+                else
+                    newResult = leftResult.combine(
+                            leftResult, rightResult,
+                            leftReordering, rightReordering,
+                            eigenCutter.rhoSum());
 
                 if (results[numClusters] == null ||
-                    results[numClusters].score < splitObjective) {
-                    int[] assignments = new int[matrix.rows()];
-
-                    for (int k = 0; k < leftReordering.length; ++k)
-                        assignments[leftReordering[k]] = 
-                            leftResult.assignments[k];
-                    for (int k = 0; k < rightReordering.length; ++k)
-                        assignments[rightReordering[k]] =
-                            rightResult.assignments[k] + leftResult.numClusters;
-
-                    results[numClusters] = new LimitedResult(
-                            assignments, numClusters+1, splitObjective);
-                }
+                    results[numClusters].score() < newResult.score())
+                    results[numClusters] = newResult;
             }
         }
 
@@ -322,15 +323,104 @@ public class SpectralClustering {
         LOGGER.info(out);
     }
 
-    private class LimitedResult {
+    private abstract class LimitedResult {
         public int[] assignments;
         public int numClusters;
-        public double score;
 
-        public LimitedResult(int[] assignments, int numClusters, double score) {
+        public LimitedResult(int[] assignments, int numClusters) {
             this.assignments = assignments;
             this.numClusters = numClusters;
+        }
+
+        int[] combineAssignments(LimitedResult res1, LimitedResult res2,
+                                 int[] ordering1, int[] ordering2) {
+            int[] newAssignments = new int[
+                res1.assignments.length + res1.assignments.length];
+
+            for (int k = 0; k < ordering1.length; ++k)
+                newAssignments[ordering1[k]] = res1.assignments[k];
+            for (int k = 0; k < ordering2.length; ++k)
+                newAssignments[ordering2[k]] =
+                    res2.assignments[k] + res1.numClusters;
+            return newAssignments;
+        }
+
+        abstract double score();
+        abstract LimitedResult combine(LimitedResult res1, LimitedResult res2,
+                                       int[] ordering1, int[] ordering2,
+                                       double extra);
+    }
+
+    private class KMeansLimitedResult extends LimitedResult {
+        
+        public double score;
+
+        public KMeansLimitedResult(int[] assignments,
+                                  int numClusters,
+                                  double score) {
+            super(assignments, numClusters);
             this.score = score;
+        }
+
+        LimitedResult combine(LimitedResult res1, LimitedResult res2,
+                              int[] ordering1, int[] ordering2,
+                              double extra) {
+            KMeansLimitedResult kres1 = (KMeansLimitedResult) res1;
+            KMeansLimitedResult kres2 = (KMeansLimitedResult) res2;
+
+            int[] newAssignments = combineAssignments(
+                    res1, res2, ordering1, ordering2);
+            int newNumClusters = res1.numClusters + res2.numClusters;
+            double newScore = kres1.score + kres2.score;
+            return new KMeansLimitedResult(
+                    newAssignments, newNumClusters, newScore);
+        }
+
+        public double score() {
+            return score;
+        }
+    }
+
+    private class SpectralLimitedResult extends LimitedResult {
+
+        public double totalScore;
+        public double rawIntraScore;
+        public int intraCount;
+
+        public SpectralLimitedResult(int[] assignments, int numClusters,
+                                     double totalScore, double rawIntraScore,
+                                     int intraCount) {
+            super(assignments, numClusters);
+
+            this.totalScore = totalScore;
+            this.rawIntraScore = rawIntraScore;
+            this.intraCount = intraCount;
+        }
+
+        public double score() {
+            return totalScore;
+        }
+
+        LimitedResult combine(LimitedResult res1, LimitedResult res2,
+                              int[] ordering1, int[] ordering2,
+                              double rhoSum) {
+            SpectralLimitedResult sres1 = (SpectralLimitedResult) res1;
+            SpectralLimitedResult sres2 = (SpectralLimitedResult) res2;
+
+            int[] newAssignments = combineAssignments(
+                    res1, res2, ordering1, ordering2);
+            int newNumClusters = res1.numClusters + res2.numClusters;
+
+            double newIntraScore = sres1.rawIntraScore + sres2.rawIntraScore;
+            int newCount = sres1.intraCount + sres2.intraCount;
+
+            double interClusterScore =
+                (rhoSum-newAssignments.length) / 2.0 - newIntraScore;
+            newIntraScore = newCount - newIntraScore;
+            double newScore = alpha * newIntraScore + beta * interClusterScore;
+
+            return new SpectralLimitedResult(newAssignments, newNumClusters,
+                                            newScore, newIntraScore, newCount);
         }
     }
 

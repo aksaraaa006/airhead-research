@@ -39,6 +39,10 @@ public abstract class BaseSpectralCut implements EigenCut {
     protected Matrix leftSplit;
     protected Matrix rightSplit;
 
+    public double rhoSum() {
+        return pSum;
+    }
+
     public DoubleVector computeRhoSum(Matrix matrix) {
         LOGGER.info("Computing rho and rhoSum");
         // Compute the centroid of the entire data set.
