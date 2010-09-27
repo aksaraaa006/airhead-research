@@ -370,7 +370,7 @@ public class SpectralClustering {
 
             int[] newAssignments = combineAssignments(
                     res1, res2, ordering1, ordering2);
-            int newNumClusters = res1.numClusters + res2.numClusters;
+            int newNumClusters = res1.numClusters + res2.numClusters - 1;
             double newScore = kres1.score + kres2.score;
             return new KMeansLimitedResult(
                     newAssignments, newNumClusters, newScore);
@@ -409,7 +409,7 @@ public class SpectralClustering {
 
             int[] newAssignments = combineAssignments(
                     res1, res2, ordering1, ordering2);
-            int newNumClusters = res1.numClusters + res2.numClusters;
+            int newNumClusters = res1.numClusters + res2.numClusters - 1;
 
             double newIntraScore = sres1.rawIntraScore + sres2.rawIntraScore;
             int newCount = sres1.intraCount + sres2.intraCount;
