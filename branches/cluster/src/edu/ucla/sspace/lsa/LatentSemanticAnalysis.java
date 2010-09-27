@@ -315,8 +315,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
         // documentIndex.  This could possibly save some dimensions in the final
         // array for documents that were essentially blank.  If we didn't see
         // any terms, just perform no updates. 
-        if (termCounts.isEmpty())
-            return;
+        //if (termCounts.isEmpty())
+        //    return;
 
         // Get the total number of terms encountered so far, including any new
         // unique terms found in the most recent document
