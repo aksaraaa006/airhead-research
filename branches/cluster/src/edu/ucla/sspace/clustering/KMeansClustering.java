@@ -38,7 +38,9 @@ import java.io.BufferedReader;
 import java.io.IOError;
 import java.io.IOException;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Properties;
 
@@ -392,31 +394,36 @@ public class KMeansClustering implements Clustering {
             throw new IllegalArgumentException(
                     "An assignment file must be provided");
 
-        DoubleVector[] centroids = new DoubleVector[numCentroids];
+        List<DoubleVector> centroids = new ArrayList<DoubleVector>();
+        List<Integer> numAssignments = new ArrayList<Integer>();
+        DoubleVector[] centroidsArr;
         try {
             BufferedReader br = new BufferedReader(new FileReader(
                         assignmentProp));
-            int numAssignments[] = new int[numCentroids];
             int i = 0;
             for (String line = null; (line = br.readLine()) != null; ) {
-                int assignment = Integer.parseInt(line.split("\\s")[1]);
-                if (centroids[assignment] == null)
-                    centroids[assignment] = new DenseVector(
-                            dataPoints.columns());
-                VectorMath.add(centroids[assignment], 
+                int assignment = Integer.parseInt(line.split("\\s")[1])-1;
+                while (assignment >= centroids.size()) {
+                    centroids.add(new DenseVector(dataPoints.columns()));
+                    numAssignments.add(0);
+                }
+
+                VectorMath.add(centroids.get(assignment), 
                                dataPoints.getRowVector(i));
-                numAssignments[assignment]++;
+                numAssignments.set(
+                        assignment, numAssignments.get(assignment)+1);
                 i++;
             }
 
+            numCentroids = centroids.size();
+            centroidsArr = new DoubleVector[numCentroids];
             for (int c = 0; c < numCentroids; ++c)
-                centroids[c] = new ScaledDoubleVector(
-                        centroids[c], 1/((double)numAssignments[c]));
-
+                centroidsArr[c] = new ScaledDoubleVector(
+                        centroids.get(c), 1/((double)numAssignments.get(c)));
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
-        return centroids;
+        return centroidsArr;
     }
 
     /**
