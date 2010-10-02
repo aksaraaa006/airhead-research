@@ -146,10 +146,11 @@ public class KMeansClustering implements Clustering {
         PROPERTY_PREFIX + ".kMeansOptimalAssignment";
 
     private static final String DEFAULT_SEED = "KMEANS_PLUS_PLUS";
+
     /**
      * A small number used to determine when the centroids have converged.
      */
-    private static final double EPSILON = 1e-6;
+    private static final double EPSILON = 1e-3;
 
     private static final Random random = new Random();
 
@@ -252,6 +253,7 @@ public class KMeansClustering implements Clustering {
             }
             converged = centroidDifference < EPSILON;
             centroids = newCentroids;
+            LOGGER.info(String.format("difference %f\n", centroidDifference));
         }
 
         // Return the last set of assignments made.
