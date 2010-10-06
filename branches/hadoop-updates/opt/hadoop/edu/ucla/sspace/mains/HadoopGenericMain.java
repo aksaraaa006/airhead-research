@@ -29,7 +29,7 @@ import edu.ucla.sspace.common.SemanticSpaceWriter;
 
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.FileListDocumentIterator;
-import edu.ucla.sspace.text.HadoopIteratorFactory;
+import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
@@ -115,7 +115,7 @@ public abstract class HadoopGenericMain {
         System.out.println(
             "usage: java " 
             + this.getClass().getName()
-            + " [options] <input-dir> <output-sspace>\n"
+            + " [options] input-dir [input-dir2 ...] output-sspace\n"
             + argOptions.prettyPrint() 
             + ((specifics.length() == 0) ? "" : "\n" + specifics)
             + "\n" + OptionDescriptions.COMPOUND_WORDS_DESCRIPTION
@@ -230,7 +230,8 @@ public abstract class HadoopGenericMain {
         }
         argOptions.parseOptions(args);
         
-        if (argOptions.numPositionalArgs() != 2) {
+        int numArgs = argOptions.numPositionalArgs();
+        if (numArgs < 2) {
             throw new IllegalArgumentException("must specify output path");
         }
 
@@ -254,29 +255,29 @@ public abstract class HadoopGenericMain {
         // Initialize the IteratorFactory to tokenize the documents according to
         // the specified configuration (e.g. filtering, compound words)
         if (argOptions.hasOption("tokenFilter")) {
-            props.setProperty(HadoopIteratorFactory.TOKEN_FILTER_PROPERTY,
+            props.setProperty(IteratorFactory.TOKEN_FILTER_PROPERTY,
                               argOptions.getStringOption("tokenFilter"));            
         }
 
         // Set any tokenizing options.
         if (argOptions.hasOption("stemmingAlgorithm"))
-            props.setProperty(HadoopIteratorFactory.STEMMER_PROPERTY,
+            props.setProperty(IteratorFactory.STEMMER_PROPERTY,
                               argOptions.getStringOption("stemmingAlgorithm"));
 
         if (argOptions.hasOption("compoundWords")) {
             props.setProperty(
-                HadoopIteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
+                IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY,
                               argOptions.getStringOption("compoundWords"));
         }
         if (argOptions.hasOption("wordLimit"))
-            props.setProperty(HadoopIteratorFactory.TOKEN_COUNT_LIMIT_PROPERTY,
+            props.setProperty(IteratorFactory.TOKEN_COUNT_LIMIT_PROPERTY,
                               argOptions.getStringOption("wordLimit"));
 
         
         // use the System properties in case the user specified them as
         // -Dprop=<val> to the JVM directly.
 
-        File outputPath = new File(argOptions.getPositionalArg(1));
+        File outputPath = new File(argOptions.getPositionalArg(numArgs - 1));
         File outputFile = null;
         // If the path is a directory, generate the .sspace file name based on
         // the space's name, taking into account any duplicates
@@ -324,8 +325,12 @@ public abstract class HadoopGenericMain {
         SemanticSpaceWriter writer = 
             new SemanticSpaceWriter(outputFile, format);
 
+        Collection<String> inputFiles = new LinkedList<String>();
+        for (int arg = 0; arg < numArgs - 1; ++arg)
+            inputFiles.add(argOptions.getPositionalArg(arg));
+
         long startTime = System.currentTimeMillis();
-        execute(argOptions.getPositionalArg(0), writer);            
+        execute(inputFiles, writer);            
         long endTime = System.currentTimeMillis();
 
         verbose("Computed space in %.3f seconds",
@@ -337,14 +342,16 @@ public abstract class HadoopGenericMain {
     /**
      *
      *
-     * @param inputDir
+     * @param inputDirs one or more directories on the Hadoop file system which
+     *        contain files to be processed
+     * @param writer the writer to which the resulting {@link SemanticSpace}
+     *        should be written
      *
-     * @return 
-     *
-     * @throws Exception if
+     * @throws Exception if any error occurs either in Hadoop or the I/O during
+     *         the execution of this algorithm
      */
-    protected abstract void execute(
-            String inputDir, SemanticSpaceWriter writer) throws Exception;
+    protected abstract void execute(Collection<String> inputDirs,
+                                   SemanticSpaceWriter writer) throws Exception;
 
     /**
      * Returns a set of terms based on the contents of the provided file.  Each

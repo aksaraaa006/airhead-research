@@ -25,7 +25,8 @@ import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceWriter;
 
-import edu.ucla.sspace.hadoop.WordCoOccurrence;
+import edu.ucla.sspace.hadoop.CooccurrenceMapper;
+import edu.ucla.sspace.hadoop.WordCooccurrence;
 import edu.ucla.sspace.hadoop.WordCooccurrenceCountingJob;
 
 import edu.ucla.sspace.index.IntegerVectorGenerator;
@@ -54,6 +55,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -317,26 +319,33 @@ public class HadoopRandomIndexing {
      * Computes the co-occurrences present in the documents in the input
      * directory and writes the {@link SemanticSpace} to the provided writer.
      *
-     * @param inputDir a directory in the hadoop file system containing all the
-     *        documents to process
+     * @param inputDirs one or more a directories in the Hadoop file system that
+     *        contain all the documents to process
      * @param writer a writer to which the output {@link SemanticSpace} will be
      *        written upon completion of the map-reduce analysis.
      *
      * @throws Exception if any exception occurs during the Hadoop processing or
      *         when writing the {@link SemanticSpace}
      */
-    public void execute(String inputDir, SemanticSpaceWriter writer) 
-            throws Exception {
-        WordCooccurrenceCountingJob job = new WordCooccurrenceCountingJob();
-        Iterator<WordCoOccurrence> occurrences = 
-            job.execute(inputDir, windowSize);
-
+    public void execute(Collection<String> inputDirs, 
+                        SemanticSpaceWriter writer) throws Exception {
+        // Set the window size property used the the Cooccurrence Mapper
+        Properties props = System.getProperties();
+        props.setProperty(CooccurrenceMapper.WINDOW_SIZE_PROPERTY, 
+                          String.valueOf(windowSize));
+        LOGGER.info("Beginning Hadoop corpus processing");
+        // Construct the counting job that will use Hadoop to count the
+        // co-occurrences
+        WordCooccurrenceCountingJob job = 
+            new WordCooccurrenceCountingJob(props);
+        Iterator<WordCooccurrence> occurrences = job.execute(inputDirs);
+        LOGGER.info("Finished Hadoop corpus processing; calculating sspace");
         int wordCount =  0;
         // Local state variables for updating the current word's vector.
         String curWord = null;
         IntegerVector semantics = null;
         while (occurrences.hasNext()) {
-            WordCoOccurrence occ = occurrences.next();
+            WordCooccurrence occ = occurrences.next();
             String word = occ.focusWord();
             // Base case for the first word seen
             if (curWord == null) {
@@ -354,7 +363,9 @@ public class HadoopRandomIndexing {
                 semantics = createSemanticVector();
             }
 
-            TernaryVector indexVector =
+            // NOTE: because we are using a GeneratorMap, this call will create
+            // a new index vector for the word if it didn't exist prior.
+            TernaryVector indexVector = 
                 wordToIndexVector.get(occ.relativeWord());
 
             if (usePermutations) {

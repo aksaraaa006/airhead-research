@@ -26,11 +26,11 @@ package edu.ucla.sspace.hadoop;
  * An abstraction of a word co-occurrence as extracted by the Hadoop processing
  * classes.  This class reflects the aggregate result where multiple
  * co-occurrence of two words with the same distance are reprsented by a single
- * {@code WordCoOccurrence}
+ * {@code WordCooccurrence}
  *
  * @see WordCooccurrenceCountingJob
  */
-public interface WordCoOccurrence {
+public interface WordCooccurrence {
     
     /**
      * Returns the word at the center of the co-occurrence window.  All other
