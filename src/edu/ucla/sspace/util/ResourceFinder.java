@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2010 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,39 +21,27 @@
 
 package edu.ucla.sspace.util;
 
-import java.io.Serializable;
+import java.io.BufferedReader;
+import java.io.IOException;
 
 
 /**
- * A wrapper for containing two objects of different types.
+ * An interface for reader file-based resources regardless of the environment in
+ * which the system is operating, e.g. a Hadoop environment.
  */
-public class Duple<T, U> implements Serializable {
+public interface ResourceFinder {
 
-    private static final long serialVersionUID = 1L;
-
-    public final T x;
+    /**
+     * Finds the file with the specified name and returns a reader for that
+     * files contents.
+     *
+     * @param fileName the name of a file
+     *
+     * @return a {@code BufferedReader} to the contents of the specified file
+     *
+     * @throws IOException if the resource cannot be found or if an error occurs
+     *         while opening the resource
+     */
+    BufferedReader open(String fileName) throws IOException;
     
-    public final U y;
-
-    public Duple(T x, U y) {
-	this.x = x;
-	this.y = y;
-    }
-
-    public boolean equals(Object o) {
-	if (o == null || !(o instanceof Duple))
-	    return false;
-	Duple d = (Duple)o;
-	return (x == d.x || (x != null && x.equals(d.x))) &&
-	    (y == d.y || (y != null && y.equals(d.y)));
-    }
-    
-    public int hashCode() {
-	return ((x == null) ? 0 : x.hashCode()) ^
-	    ((y == null) ? 0 : y.hashCode());
-    }
-
-    public String toString() {
-	return "{" + x + ", " + y + "}";
-    }
 }

@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.IOError;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 
@@ -95,9 +96,17 @@ public class HadoopRandomIndexingMain extends HadoopGenericMain {
         }
     }
 
-    protected void execute(String inputDir, SemanticSpaceWriter writer) 
-            throws Exception {
+    /**
+     * Executes the {@link HadoopRandomIndexing} algorithm, processing all of
+     * the provided input directories and writing the resulting {@link
+     * SemanticSpace} to the writer.
+     */
+    protected void execute(Collection<String> inputDirs, 
+                           SemanticSpaceWriter writer) throws Exception {
+
         HadoopRandomIndexing hri = new HadoopRandomIndexing();
+
+        // Load the index vectors if the user has specified any
         if (argOptions.hasOption("loadVectors")) {
             String fileName = argOptions.getStringOption("loadVectors");
             LOGGER.info("loading index vectors from " + fileName);
@@ -105,8 +114,8 @@ public class HadoopRandomIndexingMain extends HadoopGenericMain {
                 IndexVectorUtil.load(new File(fileName));
             hri.setWordToIndexVector(wordToIndexVector);
         }
-        hri.execute(inputDir, writer);
-        
+
+        hri.execute(inputDirs, writer);        
     }
 
     /**
