@@ -146,6 +146,15 @@ import java.util.logging.Logger;
  *       matrix.  In general, users should not need to set this property, as the
  *       default behavior will choose the fastest available on the system.<p>
  *
+ * <dt> <i>Property:</i> <code><b>{@value RETAIN_DOCUMENT_SPACE_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code false}
+ *
+ * <dd style="padding-top: .5em">This property indicate whether the document
+ *       space should be retained after {@code processSpace}.  Setting this
+ *       property to {@code true} will enable the {@link #getDocumentVector(int)
+ *       getDocumentVector} method. <p>
+ *
  * </dl> <p>
  *
  * <p>
@@ -195,6 +204,15 @@ public class LatentSemanticAnalysis implements SemanticSpace {
         PROPERTY_PREFIX + ".svd.algorithm";
 
     /**
+     * The property whose boolean value indicate whether the document space
+     * should be retained after {@code processSpace}.  Setting this property to
+     * {@code true} will enable the {@link #getDocumentVector(int)
+     * getDocumentVector} method.
+     */
+    public static final String RETAIN_DOCUMENT_SPACE_PROPERTY =
+        PROPERTY_PREFIX + ".dimensions";
+
+    /**
      * The name prefix used with {@link #getName()}
      */
     private static final String LSA_SSPACE_NAME =
@@ -234,11 +252,18 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     /**
      * The document space of the LSA model, which is the right factor matrix of
      * the SVD of the word-document matrix.  This matrix is only available after
-     * the {@link #processSpace(Properties) processSpace} method has been
-     * called.
+     * the {@link #processSpace(Properties) processSpace} method has been called
+     * if the {@value #RETAIN_DOCUMENT_SPACE_PROPERTY} has been set to {@code
+     * true}.
      */
     private Matrix documentSpace;
     
+    /**
+     * A flag to indicate whether the document space should be fully processed
+     * and retained in memory when {@code processSpace} has been called.
+     */
+    private boolean retainDocumentSpace;
+
     /**
      * Constructs the {@code LatentSemanticAnalysis} using the system properties
      * for configuration.
@@ -265,6 +290,15 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
         wordSpace = null;
         documentSpace = null;
+        retainDocumentSpace = false;
+
+        // Check whether the user has indicated that the document space should
+        // be retained.
+        String retDocSpaceProp = 
+            properties.getProperty(RETAIN_DOCUMENT_SPACE_PROPERTY);
+        if (retDocSpaceProp != null) {
+            retainDocumentSpace = Boolean.parseBoolean(retDocSpaceProp);
+        }
     }   
 
     /**
@@ -382,8 +416,11 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * completely unrelated.  However, document vectors may be compared to find
      * those document with similar content.<p>
      *
-     * Similar to {@code getVector}, this method is only to be used after
-     * {@code processSpace} has been called.<p>
+     * Similar to {@code getVector}, this method is only to be used after {@code
+     * processSpace} has been called.  By default, the document space is not
+     * retained; however, the {@value #RETAIN_DOCUMENT_SPACE_PROPERTY} property
+     * may be set to {@code true} to specify that it should be fully
+     * processed.<p>
      *
      * Implementation note: If a specific document ordering is needed, caution
      * should be used when using this class in a multi-threaded environment.
@@ -395,7 +432,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * @param documentNumber the number of the document according to when it was
      *        processed
      *
-     * @return the semantics of the document in the document space
+     * @return the semantics of the document in the document space, or {@code
+     *         null} if the document space was not retained in memory.
      */
     public DoubleVector getDocumentVector(int documentNumber) {
         if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
@@ -497,11 +535,29 @@ public class LatentSemanticAnalysis implements SemanticSpace {
             
             // Load the left factor matrix, which is the word semantic space
             wordSpace = usv[0];
+            // Weight the values in the word space by the singular values.
+            Matrix singularValues = usv[1];
+            for (int r = 0; r < wordSpace.rows(); ++r) {
+                for (int c = 0; c < wordSpace.columns(); ++c) {
+                    wordSpace.set(r, c, wordSpace.get(r, c) 
+                                  * singularValues.get(c, c));
+                }
+            }
+
             // We transpose the document space to provide easier access to the
             // document vectors, which in the un-transposed version are the
-            // columns.  NOTE: if the Matrix interface ever adds a getColumn()
-            // method, it might be better to use that instead.
-            documentSpace = Matrices.transpose(usv[2]);
+            // columns.
+            if (retainDocumentSpace) {
+                documentSpace = Matrices.transpose(usv[2]);
+                // Weight the values in the document space by the singular
+                // values.
+                for (int r = 0; r < documentSpace.rows(); ++r) {
+                    for (int c = 0; c < documentSpace.columns(); ++c) {
+                        documentSpace.set(r, c, documentSpace.get(r, c) 
+                                          * singularValues.get(c, c));
+                    }
+                }                
+            }
         } catch (IOException ioe) {
             //rethrow as Error
             throw new IOError(ioe);
