@@ -83,7 +83,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format to be stored in a
+     * MatrixIO.Format#MATLAB_SPARSE MATLAB_SPARSE} format to be stored in a
      * temporary file.
      */
     public MatlabSparseMatrixBuilder() {
@@ -92,7 +92,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format to be stored in a
+     * MatrixIO.Format#MATLAB_SPARSE MATLAB_SPARSE} format to be stored in a
      * temporary file.
      *
      * @param transposeData {@code true} if the input matrix columns should be
@@ -104,7 +104,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format, which will be stored
+     * MatrixIO.Format#MATLAB_SPARSE MATLAB_SPARSE} format, which will be stored
      * in the specified file.
      *
      * @param backingFile the file to which the matrix should be written
@@ -115,7 +115,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE} format, which will be stored
+     * MatrixIO.Format#MATLAB_SPARSE MATLAB_SPARSE} format, which will be stored
      * in the specified file.
      *
      * @param backingFile the file to which the matrix should be written
@@ -253,7 +253,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     }
 
     /**
-     * Returns {@link MatrixIO.Format.MATLAB_SPARSE MATLAB_SPARSE}.
+     * Returns {@link MatrixIO.Format#MATLAB_SPARSE MATLAB_SPARSE}.
      */
     public Format getMatrixFormat() {
         return MatrixIO.Format.MATLAB_SPARSE;

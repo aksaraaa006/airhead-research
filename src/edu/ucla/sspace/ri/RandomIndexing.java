@@ -502,7 +502,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                     // ensure that the token stream maintains its existing
                     // ordering, which is necessary when permutations are taken
                     // into account.
-                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    if (word.equals(IteratorFactory.EMPTY_TOKEN)) {
                         ++permutations;
                         continue;
                     }
@@ -524,7 +524,7 @@ public class RandomIndexing implements SemanticSpace, Filterable {
                     // ensure that the token stream maintains its existing
                     // ordering, which is necessary when permutations are taken
                     // into account.
-                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    if (word.equals(IteratorFactory.EMPTY_TOKEN)) {
                         ++permutations;
                         continue;
                     }

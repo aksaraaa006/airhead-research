@@ -65,13 +65,14 @@ import java.util.Set;
  * <dd style="padding-top: .5em">This property sets a configuration of a {@link
  *      TokenFilter} that should be applied to all token streams.<p>
  *
- * <dt> <i>Property:</i> <code><b>{@value #USE_STEMMING_PROPERTY}
+ * <dt> <i>Property:</i> <code><b>{@value #STEMMER_PROPERTY}
  *      </b></code> <br>
  *      <i>Default:</i> <i>unset</i>
  *
  * <dd style="padding-top: .5em">This property sets enables the use of the
- *      {@link PorterStemmer} on all the tokens returned by iterators of this
- *      class.<p>
+ *      {@link Stemmer} on all the tokens returned by iterators of this class.
+ *      The property value should be the fully qualified class name of a {@code
+ *      Stemmer} class implementation.<p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #TOKEN_COUNT_LIMIT_PROPERTY}
  *      </b></code> <br>
@@ -310,7 +311,7 @@ public class IteratorFactory {
     /**
      * Sets the {@link ResourceFinder} used by the iterator factory to locate
      * its file-based resources when configuring the tokenization.  This method
-     * should be set prior to calling {@link setProperties(Properties)
+     * should be set prior to calling {@link #setProperties(Properties)
      * setProperties} to ensure that the resources are accessed correctly.  Most
      * applications will never need to call this method.
      *
@@ -388,9 +389,9 @@ public class IteratorFactory {
     }
 
     /**
-     * Wraps an iterator returned by {@link tokenizeOrdered} to also include
-     * term replacement of tokens.  Terms will be replaced based on a mapping
-     * provided through the system configuration.
+     * Wraps an iterator returned by {@link #tokenizeOrdered(String)
+     * tokenizeOrdered} to also include term replacement of tokens.  Terms will
+     * be replaced based on a mapping provided through the system configuration.
      *
      * @param reader A reader whose contents are to be tokenized.
      *

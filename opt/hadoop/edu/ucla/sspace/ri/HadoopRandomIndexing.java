@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceWriter;
 
-import edu.ucla.sspace.hadoop.CooccurrenceMapper;
+import edu.ucla.sspace.hadoop.CooccurrenceExtractor;
 import edu.ucla.sspace.hadoop.WordCooccurrence;
 import edu.ucla.sspace.hadoop.WordCooccurrenceCountingJob;
 
@@ -331,7 +331,7 @@ public class HadoopRandomIndexing {
                         SemanticSpaceWriter writer) throws Exception {
         // Set the window size property used the the Cooccurrence Mapper
         Properties props = System.getProperties();
-        props.setProperty(CooccurrenceMapper.WINDOW_SIZE_PROPERTY, 
+        props.setProperty(CooccurrenceExtractor.WINDOW_SIZE_PROPERTY, 
                           String.valueOf(windowSize));
         LOGGER.info("Beginning Hadoop corpus processing");
         // Construct the counting job that will use Hadoop to count the

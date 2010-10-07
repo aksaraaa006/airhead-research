@@ -38,7 +38,6 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 
-import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
@@ -46,16 +45,13 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.util.*;
 
-import static edu.ucla.sspace.text.IteratorFactory.ITERATOR_FACTORY_PROPERTIES;
-
 
 /**
- * A {@link Mapper} implementation that maps a the text values of a document to
- * the word co-occurrences.  The input key values are not interpreted by this
- * mapper, only the text values.
+ * An common implementation that provides functionality for processing a {@link
+ * Text} document and recording word co-occurrences to a {@link Mapper.Context}.
  *
  * <p>This class defines the following configurable properties that may be set
- * using {@link Properties} constructor to {@link HadoopJobRunner}.  Note that
+ * using {@link Properties} constructor to {@link HadoopJob}.  Note that
  * setting these properties with the {@link System} properties will have no
  * effect on this class.
  *
@@ -72,11 +68,8 @@ import static edu.ucla.sspace.text.IteratorFactory.ITERATOR_FACTORY_PROPERTIES;
  *      symmetric window. <p>
  *
  * </dl>
- *
- * @see HadoopJobRunner#HadoopJobRunner(Class,Class,Properties)
  */
-public class CooccurrenceMapper 
-    extends Mapper<LongWritable,Text,Text,TextIntWritable> {
+public class CooccurrenceExtractor {
 
     /**
      * The property used to configure the {@code Mapper} instances' window size,
@@ -84,7 +77,7 @@ public class CooccurrenceMapper
      * focus.
      */
     public static final String WINDOW_SIZE_PROPERTY =
-        "edu.ucla.sspace.hadoop.CooccurrenceMapp.windowSize";
+        "edu.ucla.sspace.hadoop.CooccurrenceExtractor.windowSize";
 
     /**
      * The default window size if none is specified.  Note that this value is
@@ -97,7 +90,7 @@ public class CooccurrenceMapper
      * The default number of words to view before and after each word in focus,
      * which will be counted as co-occurring.
      */
-    private int windowSize = 2;
+    private final int windowSize;
 
     /**
      * The set of terms that should have the co-occurences counted for them.
@@ -105,60 +98,29 @@ public class CooccurrenceMapper
      * output if not present in the set.  If the set is empty, all terms are
      * accepted as valid.
      */
-    private Set<String> semanticFilter;        
-        
+    private final Set<String> semanticFilter;        
+               
     /**
      * Creates an unconfigured {@code CooccurrenceMapper}.
      */
-    public CooccurrenceMapper() {
+    public CooccurrenceExtractor(Configuration conf) {
         semanticFilter = new HashSet<String>();
-    }
-
-    /**
-     * Initializes all the properties for this particular mapper.  This process
-     * includes setting up the window size and configuring how the input
-     * documents will be tokenized.
-     */
-    protected void setup(Mapper.Context context) {
-        Configuration conf = context.getConfiguration();
         windowSize = conf.getInt(WINDOW_SIZE_PROPERTY,
                                  DEFAULT_WINDOW_SIZE);
-
-        // Set up the IteratorFactory properties           
-        Properties props = new Properties();
-        for (String property : ITERATOR_FACTORY_PROPERTIES) {
-            String propVal = conf.get(property);
-            if (propVal != null)
-                props.setProperty(property, propVal);
-        }
-        
-        // Create the ResourceFinder that the IteratorFactory will use to find
-        // the various files on HDFS
-        ResourceFinder hadoopRf = null;
-        try {
-            hadoopRf = new HadoopResourceFinder(conf);
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-
-        // Set the IteratorFactory to locate the resources and then have it
-        // reconfigure itself based on the user specified properties
-        IteratorFactory.setResourceFinder(hadoopRf);        
-        IteratorFactory.setProperties(props);
     }
-
+ 
     /**
-     * Takes the {@code document} and produces a set of tuples mapping a word to
+     * Takes the {@code document} and writes a set of tuples mapping a word to
      * the other words it co-occurs with and the relative position of those
      * co-occurrences.
      *
-     * @param key the byte offset of the document in the input corpus
      * @param document the document that will be segmented into tokens and
      *        mapped to cooccurrences
      * @param context the context in which this mapper is executing
      */
-    public void map(LongWritable key, Text document, Context context)
-        throws IOException, InterruptedException {
+    public void processDocument(Text document, 
+            Mapper<?,?,Text,TextIntWritable>.Context context) 
+            throws IOException, InterruptedException {
  	
         Queue<String> prevWords = new ArrayDeque<String>(windowSize);
         Queue<String> nextWords = new ArrayDeque<String>(windowSize);
@@ -199,12 +161,15 @@ public class CooccurrenceMapper
                 int pos = -prevWords.size();
                 for (String word : prevWords) {
 
-                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        ++pos;
-                        continue;
+                    // Skip the addition of any words that are excluded from the
+                    // filter set.  Note that by doing the exclusion here, we
+                    // ensure that the token stream maintains its existing
+                    // ordering, which is necessary when permutations are taken
+                    // into account.
+                    if (!word.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        context.write(focusWordWritable,
+                                      new TextIntWritable(word, pos));
                     }
-                    context.write(focusWordWritable,
-                                  new TextIntWritable(word, pos));
                     ++pos;
                 }
                     
@@ -216,12 +181,10 @@ public class CooccurrenceMapper
                     // ensure that the token stream maintains its existing
                     // ordering, which is necessary when permutations are taken
                     // into account.
-                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        ++pos;
-                        continue;
+                    if (!word.equals(IteratorFactory.EMPTY_TOKEN)) {
+                        context.write(focusWordWritable,
+                                      new TextIntWritable(word, pos));
                     }
-                    context.write(focusWordWritable,
-                                  new TextIntWritable(word, pos));
                     ++pos;
                 }
             }

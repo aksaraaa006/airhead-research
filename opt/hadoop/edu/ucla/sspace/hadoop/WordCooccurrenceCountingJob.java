@@ -103,7 +103,7 @@ public class WordCooccurrenceCountingJob {
      */
     public WordCooccurrenceCountingJob(Properties props) {
         job = new HadoopJob(
-            CooccurrenceMapper.class, 
+            RawTextCooccurrenceMapper.class, 
             Text.class,                     // mapper output key class
             TextIntWritable.class,          // mapper output value class
             CooccurrenceReducer.class, 
@@ -137,21 +137,6 @@ public class WordCooccurrenceCountingJob {
             results.getFileSystem(), results.getResults().iterator());
     }
 
-    /**
-     * A private {@link PathFilter} implementation designed to only accept
-     * output files from the reducer.
-     */
-    private static class OutputFilePathFilter implements PathFilter {
-        
-        /**
-         * Returns {@code true} if the path begins the prefix for output files
-         * from the reducer.
-         */
-        public boolean accept(Path p) {
-            return p.getName().startsWith("part-r-");
-        }
-    }
-        
     /**
      * An iterator over the output files from the {@link CooccurrenceReducer}
      * that returns the set of {@link WordCooccurrence} instances extracted from

@@ -169,9 +169,8 @@ public class HadoopJob {
      * input directory using the current Hadoop instance, returning an iterator
      * over all the occurrences frequences found in the corpus.
      *
-     * @param inputDir a directory on the Hadoop distributed file system
+     * @param inputPaths the directories on the Hadoop distributed file system
      *        containing all the corpus files that will be processed
-     * @param windowSize the size of the co-occurrence window
      *
      * @return an iterator over the unique {@link WordCooccurrence} counts found
      *         in the corpus.  Note that if two words co-occur the same distance

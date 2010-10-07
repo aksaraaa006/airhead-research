@@ -116,7 +116,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format to be
+     * MatrixIO.Format#SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format to be
      * stored in a temporary file.
      */
     public SvdlibcSparseBinaryMatrixBuilder() {
@@ -125,7 +125,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format to be
+     * MatrixIO.Format#SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format to be
      * stored in a temporary file.
      *
      * @param transposeData {@code true} if the input matrix columns should be
@@ -137,7 +137,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format,
+     * MatrixIO.Format#SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format,
      * which will be stored in the specified file.
      *
      * @param backingFile the file to which the matrix should be written
@@ -148,7 +148,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
 
     /**
      * Creates a builder for a matrix in the {@link
-     * MatrixIO.Format.SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format,
+     * MatrixIO.Format#SVDLIBC_SPARSE_BINARY SVDLIBC_SPARSE_BINARY} format,
      * which will be stored in the specified file.
      *
      * @param backingFile the file to which the matrix should be written
@@ -441,7 +441,7 @@ public class SvdlibcSparseBinaryMatrixBuilder implements MatrixBuilder {
     }
 
     /**
-     * Returns {@link MatrixIO.Format.SVDLIBC_SPARSE_BINARY
+     * Returns {@link MatrixIO.Format#SVDLIBC_SPARSE_BINARY
      * SVDLIBC_SPARSE_BINARY}.
      */
     public Format getMatrixFormat() {
