@@ -27,9 +27,9 @@ import java.io.IOException;
 
 
 /**
- * A {@link ResourceFinder} implementation that maps file name to {@link File}
- * instances.  This class is the default implementation for all systems
- * operating with a standard JVM environment.
+ * A {@link ResourceFinder} implementation that maps file name to {@link
+ * java.io.File} instances.  This class is the default implementation for all
+ * systems operating with a standard JVM environment.
  */
 public class FileResourceFinder implements ResourceFinder {
 

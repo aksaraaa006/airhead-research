@@ -26,6 +26,7 @@
   <property name="build.dir" value="classes"/>
   <property name="report.dir" value="reports"/>
   <property name="src.dir" value="src"/>
+  <property name="hadoop.dir" value="opt/hadoop"/>
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
   <property name="tools.dir" value="tools"/>
@@ -412,7 +413,7 @@
       <formatter type="plain"/>
 
       <test name="edu.ucla.sspace.common.SemanticSpaceWriterTests" todir="${report.dir}"/>
-      <!-- Comment block for excluding the testing a specific set of files.
+      <!-- Comment block for excluding the testing a specific set of files.-->
         
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
@@ -482,14 +483,19 @@
       <test name="edu.ucla.sspace.vector.MaskedSparseDoubleVectorViewTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-       -->      
+      <!-- -->
     </junit>
   </target>
 
-  <target name="javadoc" description="Create Javadocs" depends="compile">
+  <target name="javadoc" description="Create Javadocs" depends="compile,hadoop">
     <javadoc destdir="javadoc/" classpathref="classpath" access="public">
       <link href="http://java.sun.com/javase/6/docs/api/"/>
-      <fileset dir="${src.dir}/" includes="**/*.java"/>
+      <link href="http://hadoop.apache.org/common/docs/current/api/"/>
+      <link href="http://hadoop.apache.org/mapreduce/docs/r0.21.0/api/"/>
+      <fileset dir="${src.dir}/" includes="**/*.java"/>      
+      <fileset dir="${hadoop.dir}/" includes="**/*.java"/>
+
+
       <bottom><![CDATA[
    <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
    <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  
