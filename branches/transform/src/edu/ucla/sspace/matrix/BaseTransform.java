@@ -21,10 +21,15 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.matrix.TransformStatistics.StatisticType;
+
 import edu.ucla.sspace.vector.SparseDoubleVector;
 
 import java.io.File;
 import java.io.IOException;
+
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -104,6 +109,14 @@ public abstract class BaseTransform implements Transform {
         }
 
         return transformed;
+    }
+
+    protected static Set<StatisticType> sumStatistics() {
+        Set<StatisticType> types = new HashSet<StatisticType>();
+        types.add(StatisticType.ROW_SUMS);
+        types.add(StatisticType.COLUMN_SUMS);
+        types.add(StatisticType.MATRIX_SUM);
+        return types;
     }
 
     /**

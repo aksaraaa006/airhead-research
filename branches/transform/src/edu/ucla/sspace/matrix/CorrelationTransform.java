@@ -88,8 +88,8 @@ public class CorrelationTransform extends BaseTransform {
          * Matrix}.
          */
         public CorrelationGlobalTransform(Matrix matrix) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(matrix);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                  matrix, sumStatistics());
             rowSums = stats.rowSums;
             colSums = stats.columnSums;
             totalSum = stats.matrixSum;
@@ -101,8 +101,8 @@ public class CorrelationTransform extends BaseTransform {
          */
         public CorrelationGlobalTransform(File inputMatrixFile,
                                           Format format) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(inputMatrixFile, format);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                  inputMatrixFile, format, sumStatistics());
             rowSums = stats.rowSums;
             colSums = stats.columnSums;
             totalSum = stats.matrixSum;

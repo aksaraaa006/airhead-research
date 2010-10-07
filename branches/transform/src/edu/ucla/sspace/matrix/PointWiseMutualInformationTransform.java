@@ -78,8 +78,8 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
          * from a given {@link Matrix}.
          */
         public PointWiseMutualInformationGlobalTransform(Matrix matrix) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(matrix);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                  matrix, sumStatistics());
             rowCounts = stats.rowSums;
             colCounts = stats.columnSums;
             matrixSum = stats.matrixSum;
@@ -92,8 +92,8 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
         public PointWiseMutualInformationGlobalTransform(
                 File inputMatrixFile,
                 MatrixIO.Format format) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(inputMatrixFile, format);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                  inputMatrixFile, format, sumStatistics());
             rowCounts = stats.rowSums;
             colCounts = stats.columnSums;
             matrixSum = stats.matrixSum;

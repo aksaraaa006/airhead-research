@@ -90,8 +90,8 @@ public class LogLikelihoodTransform extends BaseTransform {
          * {@link Matrix}.
          */
         public LogLikelihoodGlobalTransform(Matrix matrix) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(matrix);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                  matrix, sumStatistics());
             rowCounts = stats.rowSums;
             colCounts = stats.columnSums;
             matrixSum = stats.matrixSum;
@@ -104,8 +104,8 @@ public class LogLikelihoodTransform extends BaseTransform {
         public LogLikelihoodGlobalTransform(
                 File inputMatrixFile,
                 MatrixIO.Format format) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(inputMatrixFile, format);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                  inputMatrixFile, format, sumStatistics());
             rowCounts = stats.rowSums;
             colCounts = stats.columnSums;
             matrixSum = stats.matrixSum;

@@ -31,8 +31,10 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.File;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -48,15 +50,13 @@ import java.util.Map;
  */
 public class TransformStatistics {
 
-    /**
-     * Extracts the full row, column, and matrix summations based on entries in
-     * the given {@link Matrix}.
-     *
-     * @param matrix a {@link Matrix to sum over}
-     * @return a {@link MatrixStatistics} instance containing the summations
-     */
-    public static MatrixStatistics extractStatistics(Matrix matrix) {
-        return extractStatistics(matrix, false, false);
+    enum StatisticType {
+        ROW_OCCURRANCE,
+        COLUMN_OCCURRANCE,
+        ROW_SUMS,
+        COLUMN_SUMS,
+        MATRIX_SUM,
+        MATRIX_COUNTS,
     }
 
     /**
@@ -75,12 +75,10 @@ public class TransformStatistics {
      */
     public static MatrixStatistics extractStatistics(
             Matrix matrix,
-            boolean countRowOccurrances,
-            boolean countColumnOccurrances) {
+            Set<StatisticType> statType) {
         // Initialize the statistics.
-        double[] rowSums = new double[matrix.rows()];
-        double[] columnSums = new double[matrix.columns()];
-        double matrixSum = 0;
+        MatrixStatistics stats = createStatistics(
+                matrix.rows(),matrix.columns(),statType);
 
         if (matrix instanceof SparseMatrix) {
             // Special case for sparse matrices so that only non zero values
@@ -91,11 +89,9 @@ public class TransformStatistics {
             for (int row = 0; row < matrix.rows(); ++row) {
                 SparseDoubleVector rowVec = smatrix.getRowVector(row);
                 int[] nonZeros = rowVec.getNonZeroIndices();
-                for (int index : nonZeros) {
-                    double value = rowVec.get(index);
-                    rowSums[row] += (countRowOccurrances) ? 1 : value;
-                    columnSums[index] += (countColumnOccurrances) ? 1 : value;
-                    matrixSum += value;
+                for (int col : nonZeros) {
+                    double value = rowVec.get(col);
+                    handleValue(row, col, value, statType, stats);
                 }
             }
         } else {
@@ -104,26 +100,61 @@ public class TransformStatistics {
             for (int row = 0; row < matrix.rows(); ++row) {
                 for (int col = 0; col < matrix.columns(); ++col) {
                     double value = matrix.get(row, col);
-                    rowSums[row] += (countRowOccurrances) ? 1 : value;
-                    columnSums[col] += (countColumnOccurrances) ? 1 : value;
-                    matrixSum += value;
+                    handleValue(row, col, value, statType, stats);
                 }
             }
         }
-        return new MatrixStatistics(rowSums, columnSums, matrixSum);
+        return stats;
     }
 
-    /**
-     * Extracts the full row, column, and matrix summations based on entries in
-     * the given {@link Matrix} file.
-     *
-     * @param inputMatrixFfile a {@link Matrix} file  to sum over
-     * @param format the matrix {@link Format} of {@code inputMatrixFile}
-     * @return a {@link MatrixStatistics} instance containing the summations
-     */
-    public static MatrixStatistics extractStatistics(
-            File inputMatrixFile, Format format) {
-        return extractStatistics(inputMatrixFile, format, false, false);
+    private static MatrixStatistics createStatistics(int rows, int columns,
+                                                     Set<StatisticType> types) {
+        double[] rowSums = null;
+        double[] columnSums = null;
+        int[] rowCounts = null;
+        int[] columnCounts = null;
+        double matrixSum = 0;
+        int matrixCounts = 0;
+
+        for (StatisticType type : types) {
+            switch (type) {
+                case ROW_OCCURRANCE:
+                    rowCounts = new int[rows];
+                    break;
+                case COLUMN_OCCURRANCE:
+                    columnCounts = new int[columns];
+                    break;
+                case ROW_SUMS:
+                    rowSums = new double[rows];
+                    break;
+                 case COLUMN_SUMS:
+                    columnSums = new double[columns];
+                    break;
+            }
+        }
+        return new MatrixStatistics(rowSums, columnSums,
+                                    rowCounts, columnCounts,
+                                    matrixSum, matrixCounts);
+    }
+
+    private static void handleValue(int row, int col, 
+                                    double value, Set<StatisticType> types,
+                                    MatrixStatistics stats) {
+        if (value == 0d)
+            return;
+
+        if (types.contains(StatisticType.ROW_OCCURRANCE))
+            stats.rowCounts[row]++;
+        if (types.contains(StatisticType.ROW_SUMS))
+            stats.rowSums[row] += value;
+        if (types.contains(StatisticType.COLUMN_OCCURRANCE))
+            stats.columnCounts[col]++;
+        if (types.contains(StatisticType.COLUMN_SUMS))
+            stats.columnSums[col] += value;
+        if (types.contains(StatisticType.MATRIX_COUNTS))
+            stats.matrixCounts++;
+        if (types.contains(StatisticType.MATRIX_SUM))
+            stats.matrixSum += value;
     }
 
     /**
@@ -144,14 +175,16 @@ public class TransformStatistics {
     public static MatrixStatistics extractStatistics(
             File inputMatrixFile,
             Format format,
-            boolean countRowOccurrances,
-            boolean countColumnOccurrances) {
+            Set<StatisticType> types) {
         // Initialize the statistics.
         int numColumns = 0;
         int numRows = 0;
         double matrixSum = 0;
-        Map<Integer, Double> rowCountMap = new IntegerMap<Double>();
-        Map<Integer, Double> colCountMap = new IntegerMap<Double>();
+        int matrixCount = 0;
+        Map<Integer, Double> rowSumMap = new IntegerMap<Double>();
+        Map<Integer, Double> columnSumMap = new IntegerMap<Double>();
+        Map<Integer, Integer> rowCountMap = new IntegerMap<Integer>();
+        Map<Integer, Integer> columnCountMap = new IntegerMap<Integer>();
 
         // Get an iterator for the matrix file.
         Iterator<MatrixEntry> iter;
@@ -174,27 +207,44 @@ public class TransformStatistics {
             if (entry.value() == 0d)
                 continue;
 
-            // Gather the row sums.
-            Double occurance = rowCountMap.get(entry.row());
-            double rowDelta = (countRowOccurrances) ? 1 : entry.value();
-            rowCountMap.put(entry.row(), (occurance == null)
-                    ? rowDelta
-                    : occurance + rowDelta);
-
-            // Gather the column sums.
-            occurance = colCountMap.get(entry.column());
-            double columnDelta = (countColumnOccurrances) ? 1 : entry.value();
-            colCountMap.put(entry.column(), (occurance == null)
-                    ? columnDelta
-                    : occurance + columnDelta);
-
-            matrixSum += entry.value();
+            if (types.contains(StatisticType.ROW_OCCURRANCE)) {
+                Integer occurance = rowCountMap.get(entry.row());
+                rowCountMap.put(entry.row(), (occurance == null)
+                        ? 1 
+                        : 1 + occurance);
+            }
+            if (types.contains(StatisticType.COLUMN_OCCURRANCE)) {
+                Integer occurance = columnCountMap.get(entry.column());
+                rowCountMap.put(entry.column(), (occurance == null)
+                        ? 1
+                        : 1 + occurance);
+            }
+            if (types.contains(StatisticType.COLUMN_SUMS)) {
+                Double occurance = columnSumMap.get(entry.column());
+                columnSumMap.put(entry.column(), (occurance == null)
+                        ? entry.value()
+                        : entry.value() + occurance);
+            }
+            if (types.contains(StatisticType.ROW_SUMS)) {
+                Double occurance = rowSumMap.get(entry.row());
+                rowSumMap.put(entry.row(), (occurance == null)
+                        ? entry.value()
+                        : entry.value() + occurance);
+            }
+            if (types.contains(StatisticType.MATRIX_COUNTS))
+                matrixCount++;
+            if (types.contains(StatisticType.MATRIX_SUM))
+                matrixSum += entry.value();
         }
 
         // Convert the maps to arrays.
-        double[] rowSums = extractValues(rowCountMap, numRows);
-        double[] columnSums = extractValues(colCountMap, numColumns);
-        return new MatrixStatistics(rowSums, columnSums, matrixSum);
+        double[] rowSums = extractValues(rowSumMap, numRows);
+        double[] columnSums = extractValues(columnSumMap, numColumns);
+        int[] rowCounts = extractValues(rowCountMap, numRows);
+        int[] columnCounts = extractValues(columnCountMap, numColumns);
+        return new MatrixStatistics(rowSums, columnSums,
+                                    rowCounts, columnCounts,
+                                    matrixSum, matrixCount);
     }
 
     /**
@@ -204,26 +254,49 @@ public class TransformStatistics {
      * Each key in the map corresponds to an index in the array being
      * created and the value is the value in stored at the specified index.
      */
-    private static <T extends Number> double[] extractValues(
-            Map<Integer, T> map, int size)  {
+    private static double[] extractValues(
+            Map<Integer, Double> map, int size)  {
         double[] values = new double[size];
-        for (Map.Entry<Integer, T> entry : map.entrySet()) {
+        for (Map.Entry<Integer, Double> entry : map.entrySet()) {
             if (entry.getKey() > values.length)
                 throw new IllegalArgumentException(
                         "Array size is too small for values in the " +
                         "given map");
-            values[entry.getKey()] = (double) entry.getKey();
+            values[entry.getKey()] = entry.getValue();
         }
         return values;
     }
-    
+ 
+    /**
+     * Extracts the values from the given map into an array form.  This is
+     * neccesary since {@code toArray} on a {@link IntegerMap} does not work
+     * with primitives and {@code Map} does not provide this functionality.
+     * Each key in the map corresponds to an index in the array being
+     * created and the value is the value in stored at the specified index.
+     */
+    private static int[] extractValues(
+            Map<Integer, Integer> map, int size)  {
+        int[] values = new int[size];
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            if (entry.getKey() > values.length)
+                throw new IllegalArgumentException(
+                        "Array size is too small for values in the " +
+                        "given map");
+            values[entry.getKey()] = entry.getValue();
+        }
+        return values;
+    }
+
     /**
      * A struct recording the row, column, and matrix summations as doubles.
      */
     public static class MatrixStatistics {
         public double[] rowSums;
         public double[] columnSums;
+        public int[] rowCounts;
+        public int[] columnCounts;
         public double matrixSum;
+        public int matrixCounts;
 
         /**
          * Creates a new {@link MatrixStatistics} instance using the given
@@ -231,10 +304,16 @@ public class TransformStatistics {
          */
         public MatrixStatistics(double[] rowSums,
                                 double[] columnSums,
-                                double matrixSum) {
+                                int[] rowCounts,
+                                int[] columnCounts,
+                                double matrixSum, 
+                                int matrixCounts) {
             this.rowSums = rowSums;
             this.columnSums = columnSums;
+            this.rowCounts = rowCounts;
+            this.columnCounts = columnCounts;
             this.matrixSum = matrixSum;
+            this.matrixCounts = matrixCounts;
         }
     }
 }

@@ -23,8 +23,12 @@ package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.TransformStatistics.MatrixStatistics;
+import edu.ucla.sspace.matrix.TransformStatistics.StatisticType;
 
 import java.io.File;
+
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -68,6 +72,14 @@ public class TfIdfTransform extends BaseTransform {
         return "TF-IDF";
     }
 
+    private static Set<StatisticType> stats() {
+        Set<StatisticType> types = new HashSet<StatisticType>();
+        types.add(StatisticType.ROW_OCCURRANCE);
+        types.add(StatisticType.COLUMN_SUMS);
+        types.add(StatisticType.MATRIX_SUM);
+        return types;
+    }
+
     public class TfIdfGlobalTransform implements GlobalTransform {
 
         /**
@@ -78,7 +90,7 @@ public class TfIdfTransform extends BaseTransform {
         /**
          * The total number of documents (columns) that each term occurs in.
          */
-        private double[] termDocCount;
+        private int[] termDocCount;
 
         /**
          * The total number of documents (columns) present in the matrix.
@@ -90,10 +102,10 @@ public class TfIdfTransform extends BaseTransform {
          * Matrix}.
          */
         public TfIdfGlobalTransform(Matrix matrix) {
-            MatrixStatistics stats =
-                TransformStatistics.extractStatistics(matrix, true, false);
+            MatrixStatistics stats = TransformStatistics.extractStatistics(
+                    matrix, stats());
             docTermCount = stats.columnSums;
-            termDocCount = stats.rowSums;
+            termDocCount = stats.rowCounts;
             totalDocCount = docTermCount.length;
         }
         
@@ -103,9 +115,9 @@ public class TfIdfTransform extends BaseTransform {
          */
         public TfIdfGlobalTransform(File inputMatrixFile, Format format) {
             MatrixStatistics stats = TransformStatistics.extractStatistics(
-                    inputMatrixFile, format, true, false);
+                    inputMatrixFile, format, stats());
             docTermCount = stats.columnSums;
-            termDocCount = stats.rowSums;
+            termDocCount = stats.rowCounts;
             totalDocCount = docTermCount.length;
         }
 
@@ -123,7 +135,7 @@ public class TfIdfTransform extends BaseTransform {
         public double transform(int row, int column, double value) {
             double tf = value / docTermCount[column];
             double idf =
-                Math.log(totalDocCount / (termDocCount[row] + 1));
+                Math.log(totalDocCount / (termDocCount[row] + 1.0));
             return tf * idf;
         }
     }
