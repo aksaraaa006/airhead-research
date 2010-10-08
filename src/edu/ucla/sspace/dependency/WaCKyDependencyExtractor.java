@@ -169,6 +169,7 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
      */
     public DependencyTreeNode[] readNextTree(BufferedReader reader) 
             throws IOException {
+
         List<SimpleDependencyTreeNode> nodes =
             new ArrayList<SimpleDependencyTreeNode>();
 
@@ -207,16 +208,16 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
             word = pos = rel = null;
 
             try {
-            // Get the node id and the parent node id.
-             parent = Integer.parseInt(nodeFeatures[parentIndex]) - 1;
-
-             word = getWord(nodeFeatures);
-
-            // Get the part of speech of the node.
-             pos = nodeFeatures[posIndex];
-
-            // Get the relation between this node and it's head node.
-             rel = nodeFeatures[relationIndex].toLowerCase();
+                // Get the node id and the parent node id.
+                parent = Integer.parseInt(nodeFeatures[parentIndex]) - 1;
+                
+                word = getWord(nodeFeatures);
+                
+                // Get the part of speech of the node.
+                pos = nodeFeatures[posIndex];
+                
+                // Get the relation between this node and it's head node.
+                rel = nodeFeatures[relationIndex].toLowerCase();
             } catch (Exception e) {
                 System.out.println("offending line: " + line);
                 e.printStackTrace();
@@ -254,6 +255,64 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
 
         if (nodes.size() == 0)
             return null;
+    
+        // Merge all of the noun phrase nodes into a single node.  This
+        // effectively creates a single node with "United States of America" as
+        // the text, rather than four nodes.
+        for (int i = 0; i < nodes.size(); ++i) {
+            SimpleDependencyTreeNode n = nodes.get(i);
+            // See if there are more nodes that are either noun phrase nodes, or
+            // are nodes with parts of speech that could fall between a noun
+            // phranse, e.g. "of", " 's"
+            int nounPhraseNodes = 0;
+            for (int j = i+1; j < nodes.size(); ++j) {
+                String pos = nodes.get(j).pos();
+                if (pos.equals("NP") || pos.equals("NPS"))
+                    nounPhraseNodes = j - i;
+                // Words such as "of" or "to" might be a part of the noun
+                // phrase, but don't include them in the total length of a noun
+                // phrase, i.e. only a noun phrase POS can end the phrase.
+                else if (pos.equals("IN") || pos.equals("TO"))
+                    continue;
+                // If the word wasn't a noun phrase or a connection, just stop
+                // the processing.
+                else
+                    break;
+                
+            }
+            // If we found more nodes to group into a single noun phrase, then
+            // rewrite all the links to them to the current node
+            if (nounPhraseNodes > 0) {
+                for (Map.Entry<Integer,Duple<Integer,String>> parentAndRel :
+                         relationsToAdd.entrySet()) {
+                    int parent = parentAndRel.getKey();
+                    Duple<Integer,String> d = parentAndRel.getValue();
+                    // If the relation pointed to any of the nodes in the noun
+                    // phrase, replace it with the node indicator with the
+                    // current node
+                    if (parent < i && parent > i + nounPhraseNodes + 1
+                            && d.x > i && d.x < i + nounPhraseNodes + 1) {
+                        parentAndRel.setValue(new Duple<Integer,String>(i,d.y));
+                    }
+                }
+
+                // Add all the text from the other noun phrase nodes into the
+                // current node's text
+                StringBuilder nounPhrase = 
+                    new StringBuilder((nounPhraseNodes + 1) * 8);
+                for (int k = i; k < i + nounPhraseNodes; ++k) {
+                    nounPhrase.append(nodes.get(k).word());
+                    if (k + 1 < i + nounPhraseNodes)
+                        nounPhrase.append(' ');
+                }
+                n.setWord(nounPhrase.toString());
+
+                // Update i, so we skip past the rest of the nodes in the phrase
+                // and avoid making them their own noun phrase
+                i += nounPhraseNodes;
+            }
+        }
+        
 
         if (relationsToAdd.size() > 0) {
             // Process all the child links that were not handled during the

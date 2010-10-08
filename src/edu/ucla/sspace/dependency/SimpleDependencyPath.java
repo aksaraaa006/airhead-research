@@ -188,5 +188,20 @@ public class SimpleDependencyPath implements DependencyPath {
         // +1 because path.size() == number of relations.  There is one more
         // node than there are relations.
         return path.size() + 1;
-    }    
+    }
+
+    /**
+     * Returns the path in order with words and relations space delimited.
+     */
+    public String toString() {
+        int size = path.size();
+        StringBuilder sb = new StringBuilder(8 * size);
+        sb.append('[');
+        for (int i = 0; i < size; ++i) {
+            sb.append(getNode(i).word());
+            if (i + i < size)
+                sb.append(' ').append(getRelation(i)).append(' ');
+        }
+        return sb.append(']').toString();
+    }
 }
