@@ -35,9 +35,12 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -231,21 +234,10 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
             // If the parent is negative then the node itself is a root node and
             // has no parent.
             if (parent > 0) {
-                // If the parent has already been seen, add the relation
-                // directly.
-                if (parent < nodes.size()) {
-                    SimpleDependencyTreeNode parentNode = nodes.get(parent);
-                    DependencyRelation r = new SimpleDependencyRelation(
-                        parentNode, rel, curNode);
-                    parentNode.addNeighbor(r);
-                    curNode.addNeighbor(r);
-                }
-                // Otherwise, we'll fill in this link once the tree is has been
-                // fully seen.
-                else { 
-                    relationsToAdd.put(id,
+                // Add to the list so we'll fill in this link once the tree is
+                // has been fully seen and any noun phrase nodes merged
+                relationsToAdd.put(id,
                         new Duple<Integer,String>(parent, rel));
-                }
             }
             
             // Finally, add the current node to the
@@ -255,20 +247,31 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
 
         if (nodes.size() == 0)
             return null;
+
+        // Keep track of any nodes that might need to be removed due to being
+        // merged into a single noun phrase nodes.
+        NavigableMap<Integer,Integer> remappedNodes = 
+            new TreeMap<Integer,Integer>();
+        
     
         // Merge all of the noun phrase nodes into a single node.  This
         // effectively creates a single node with "United States of America" as
         // the text, rather than four nodes.
         for (int i = 0; i < nodes.size(); ++i) {
             SimpleDependencyTreeNode n = nodes.get(i);
+            String pos = n.pos();
+            if (!(pos.equals("NP") || pos.equals("NPS")))
+                continue;
+
             // See if there are more nodes that are either noun phrase nodes, or
             // are nodes with parts of speech that could fall between a noun
             // phranse, e.g. "of", " 's"
             int nounPhraseNodes = 0;
             for (int j = i+1; j < nodes.size(); ++j) {
-                String pos = nodes.get(j).pos();
-                if (pos.equals("NP") || pos.equals("NPS"))
+                pos = nodes.get(j).pos();
+                if (pos.equals("NP") || pos.equals("NPS")) {
                     nounPhraseNodes = j - i;
+                }
                 // Words such as "of" or "to" might be a part of the noun
                 // phrase, but don't include them in the total length of a noun
                 // phrase, i.e. only a noun phrase POS can end the phrase.
@@ -283,32 +286,23 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
             // If we found more nodes to group into a single noun phrase, then
             // rewrite all the links to them to the current node
             if (nounPhraseNodes > 0) {
-                for (Map.Entry<Integer,Duple<Integer,String>> parentAndRel :
-                         relationsToAdd.entrySet()) {
-                    int parent = parentAndRel.getKey();
-                    Duple<Integer,String> d = parentAndRel.getValue();
-                    // If the relation pointed to any of the nodes in the noun
-                    // phrase, replace it with the node indicator with the
-                    // current node
-                    if (parent < i && parent > i + nounPhraseNodes + 1
-                            && d.x > i && d.x < i + nounPhraseNodes + 1) {
-                        parentAndRel.setValue(new Duple<Integer,String>(i,d.y));
-                    }
-                }
+
+                for (int k = i + 1; k <= i + nounPhraseNodes; ++k)
+                    remappedNodes.put(k, i);
 
                 // Add all the text from the other noun phrase nodes into the
                 // current node's text
                 StringBuilder nounPhrase = 
                     new StringBuilder((nounPhraseNodes + 1) * 8);
-                for (int k = i; k < i + nounPhraseNodes; ++k) {
+                for (int k = i; k < i + nounPhraseNodes + 1; ++k) {
                     nounPhrase.append(nodes.get(k).word());
-                    if (k + 1 < i + nounPhraseNodes)
+                    if (k < i + nounPhraseNodes)
                         nounPhrase.append(' ');
                 }
                 n.setWord(nounPhrase.toString());
-
-                // Update i, so we skip past the rest of the nodes in the phrase
-                // and avoid making them their own noun phrase
+                
+                // Update the i index to skip over the nodes that were merged.
+                // This avoids creating subsets of the noun phrase.
                 i += nounPhraseNodes;
             }
         }
@@ -319,15 +313,41 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
             // processing of the words.
             for (Map.Entry<Integer,Duple<Integer,String>> parentAndRel :
                      relationsToAdd.entrySet()) {
-                SimpleDependencyTreeNode dep = nodes.get(parentAndRel.getKey());
+
+                //  Each of the nodes may have been remapped during the noun
+                //  phrase chunking, so check whether the index has been
+                //  updated.
+                Integer parent = parentAndRel.getKey();
                 Duple<Integer,String> d = parentAndRel.getValue();
-                SimpleDependencyTreeNode head = nodes.get(d.x);
+                Integer i = remappedNodes.get(parent);
+                if (i != null)
+                    parent = i;
+
+                Integer headIndex = d.x;
+                i = remappedNodes.get(headIndex);
+                if (i != null)
+                    headIndex = i;
+
+                // In addition, ensure that after the remapping, the node isn't
+                // linking to itself
+                if (parent.equals(headIndex))
+                    continue;
+
+                SimpleDependencyTreeNode dep = nodes.get(parent);
+                SimpleDependencyTreeNode head = nodes.get(headIndex);
                 DependencyRelation r = new SimpleDependencyRelation(
                     head, d.y, dep);
                 head.addNeighbor(r);
                 dep.addNeighbor(r);                
             }
         }
+
+        // Once all the relations have been added remove any of the dangling
+        // nodes that were merged into a single noun phrase node.  Remove in
+        // reverse order to ensure that removing by index doesn't affect the
+        // subsequent indices.
+        for (Integer i : remappedNodes.descendingKeySet())
+            nodes.remove(i);
 
         return nodes.toArray(
                 new SimpleDependencyTreeNode[nodes.size()]);
