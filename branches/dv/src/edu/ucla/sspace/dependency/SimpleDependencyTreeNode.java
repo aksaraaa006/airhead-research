@@ -106,4 +106,11 @@ class SimpleDependencyTreeNode implements DependencyTreeNode {
     public String word() {
         return word;
     }
+
+    /**
+     * Changes the word in this node to the provided word.
+     */
+    void setWord(String word) {
+        this.word = word;
+    }
 }
