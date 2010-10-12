@@ -44,6 +44,11 @@ class ExtendedPathView implements DependencyPath {
      * The relation that is now the last relation in the path
      */
     private final DependencyRelation extension;
+
+    /**
+     * The length of this path.
+     */
+    private final int length;
     
     /**
      * Creates a new {@code DependencyPath} based on the nodes in an existing
@@ -53,6 +58,11 @@ class ExtendedPathView implements DependencyPath {
                             DependencyRelation extension) {
         this.original = original;
         this.extension = extension;
+        // Due to the recursive nature of this class (i.e. multiple extensions
+        // nested on top of each other).  The length is computed once during
+        // construction and cached to avoid a possible linear overhead per
+        // length() call.
+        length = original.length() + 1;
     }
 
     /**
@@ -88,10 +98,10 @@ class ExtendedPathView implements DependencyPath {
      * {@inheritDoc}
      */
     public DependencyTreeNode getNode(int position) {
-        if (position < original.length())
+        if (position < length - 1)
             return original.getNode(position);
         // Check that the request isn't for an invalid index
-        else if (position > original.length() + 1)
+        else if (position > length)
             throw new IllegalArgumentException("invalid node: " + position);
         else
             return last();
@@ -101,10 +111,10 @@ class ExtendedPathView implements DependencyPath {
      * {@inheritDoc}
      */
     public String getRelation(int position) {
-        if (position < original.length() - 1)
+        if (position < length - 2)
             return original.getRelation(position);
         // Check that the request isn't for an invalid index
-        else if (position > original.length())
+        else if (position > length - 1)
             throw new IllegalArgumentException("invalid relation: " + position);
         else 
             return extension.relation();
@@ -145,6 +155,20 @@ class ExtendedPathView implements DependencyPath {
      * {@inheritDoc}
      */
     public int length() {
-        return original.length() + 1;
+        return length;
     }    
+
+    /**
+     * Returns the path in order with words and relations space delimited.
+     */
+    public String toString() {
+        StringBuilder sb = new StringBuilder(8 * length);
+        sb.append('[');
+        for (int i = 0; i < length; ++i) {
+            sb.append(getNode(i).word());
+            if (i < length - 1)
+                sb.append(' ').append(getRelation(i)).append(' ');
+        }
+        return sb.append(']').toString();        
+    }
 }

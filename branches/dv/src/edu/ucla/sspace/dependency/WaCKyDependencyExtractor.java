@@ -283,10 +283,10 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
                     break;
                 
             }
+            
             // If we found more nodes to group into a single noun phrase, then
             // rewrite all the links to them to the current node
             if (nounPhraseNodes > 0) {
-
                 for (int k = i + 1; k <= i + nounPhraseNodes; ++k)
                     remappedNodes.put(k, i);
 
@@ -300,14 +300,12 @@ public class WaCKyDependencyExtractor implements DependencyExtractor {
                         nounPhrase.append(' ');
                 }
                 n.setWord(nounPhrase.toString());
-                
                 // Update the i index to skip over the nodes that were merged.
                 // This avoids creating subsets of the noun phrase.
                 i += nounPhraseNodes;
             }
         }
         
-
         if (relationsToAdd.size() > 0) {
             // Process all the child links that were not handled during the
             // processing of the words.

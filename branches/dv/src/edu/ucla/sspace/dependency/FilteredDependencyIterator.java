@@ -24,6 +24,7 @@ package edu.ucla.sspace.dependency;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Deque;
 
@@ -38,7 +39,7 @@ import java.util.Deque;
  *
  * Note that this class is <b>NOT</b> thread safe.
  */
-public class FilteredDependencyIterator extends BreadthFirstPathIterator {
+public class FilteredDependencyIterator implements Iterator<DependencyPath> {
 
     /**
      * The maximum length of the returned paths.  The length is considedered to
@@ -50,7 +51,19 @@ public class FilteredDependencyIterator extends BreadthFirstPathIterator {
      * The {@link DependencyPathAcceptor} that validates each link before it is
      * traversed and returned as part of a {@link DependencyPath}.
      */
-    private DependencyPathAcceptor acceptor;
+    private final DependencyPathAcceptor acceptor;
+    
+    /**
+     * The underlying iterator that performs the path expansion in a
+     * breadth-first order.
+     */
+    private final BreadthFirstPathIterator iterator;
+
+    /**
+     * The next path to return or {@code null} if there are no further paths to
+     * return.
+     */
+    private DependencyPath next;
 
     /**
      * Creates a new {@link DependencyIterator} that will return all {@link
@@ -83,43 +96,62 @@ public class FilteredDependencyIterator extends BreadthFirstPathIterator {
     public FilteredDependencyIterator(DependencyTreeNode startNode,
                                       DependencyPathAcceptor acceptor,
                                       int maxPathLength) {
-        super(startNode);
         if (maxPathLength < 1)
             throw new IllegalArgumentException(
                 "Must specify a path length greater than 1");
-
+        this.iterator = new BreadthFirstPathIterator(startNode);
         this.acceptor = acceptor;
         this.maxPathLength = maxPathLength;
+        advance();
     }
 
     /**
-     * Extends the path in its growth direction and adds to the frontier those
-     * relations that are shorter than the maximum path length and that are
-     * accepted by the {@code DependencyPathAcceptor} used by this instance.
+     * Advances the {@link #next} reference to the next path to return or sets
+     * the value to {@code null} if no further paths exist.
      */
-    @Override void advance(DependencyPath path) {
-        // Skip processing paths that would exceed the maximum length
-        if (path.length() == maxPathLength)
-            return;
+    private void advance() {
+        DependencyPath p = null;
 
-        // Get the last node and last relation to decide how to expand.
-        DependencyTreeNode last = path.last();
-        DependencyRelation lastRel = path.lastRelation();
-        
-        // Expand all of the possible relations from the last node, creating a
-        // new path for each, except if the relation is the one that generated
-        // this path.
-        for (DependencyRelation rel : last.neighbors()) {
-            // Skip re-adding the current relation and those relations that do
-            // not pass the filter
-            if (lastRel.equals(rel))
-                continue;
-            // Use an extension of the path, rather than having to copy all of
-            // the nodes again.  This just creates a view of path with rel as
-            // the last relation in path
-            DependencyPath extended = new ExtendedPathView(path, rel);
-            if (acceptor.accepts(extended))
-                frontier.offer(extended);
-        }
+        // While the underlying iterator has paths, check whether any are
+        // accepted by the filter.  If a path is over the maximum path length,
+        // break, since no further returned paths will be smaller.
+        while (iterator.hasNext()) {
+            p = iterator.next();
+            if (acceptor.accepts(p))
+                break;
+            else if (p.length() >= maxPathLength) {
+                p = null;
+                break;
+            }
+        }        
+        next = p;
+    }
+
+    /**
+     * Returns {@code true} if there are more paths to return that meet the
+     * acceptor and path length requirements.
+     */
+    public boolean hasNext() {
+        return next != null;
+    }
+
+    /**
+     * Returns the next path that meets the requirements.  
+     *
+     * @throws NoSuchElementException if called when no further paths exist
+     */
+    public DependencyPath next() {
+        if (next == null)
+            throw new NoSuchElementException("No further paths to return");
+        DependencyPath p = next;
+        advance();
+        return p;
+    }
+    
+    /**
+     * Throws {@code UnsupportedOperationException} if called.
+     */
+    public void remove() {
+        throw new UnsupportedOperationException("Removal is not supported");
     }
 }
