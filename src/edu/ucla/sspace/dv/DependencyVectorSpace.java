@@ -261,7 +261,7 @@ public class DependencyVectorSpace implements SemanticSpace {
         String acceptorProp = 
             properties.getProperty(PATH_ACCEPTOR_PROPERTY);
         acceptor = (acceptorProp == null)
-            ? new MinimumTemplateAcceptor()
+            ? new MinimumPennTemplateAcceptor()
             : ReflectionUtil.<DependencyPathAcceptor>
                 getObjectInstance(acceptorProp);
 
@@ -356,7 +356,8 @@ public class DependencyVectorSpace implements SemanticSpace {
                 // acceptor will filter out any paths that don't contain the
                 // semantic connections we're looking for.
                 Iterator<DependencyPath> paths = 
-                    new FilteredDependencyIterator(nodes[wordIndex], acceptor);
+                    new FilteredDependencyIterator(nodes[wordIndex], acceptor,
+                                                   acceptor.maxPathLength());
                 
                 // For each of the paths rooted at the focus word, update the
                 // co-occurrences of the focus word in the dimension that the

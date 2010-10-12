@@ -32,67 +32,55 @@ import java.util.Set;
 
 
 /**      
- * A {@code DependencyPathAcceptor} that accepts the maximum set of path
- * templates specified by <a
- * href="http://www.nlpado.de/~sebastian/pub/papers/cl07_pado.pdf">Padó and
- * Lapata (2007)</a>.
+ * A {@code DependencyPathAcceptor} that accepts the minimum set of path
+ * templates specified by Padó and Lapata (2007).
  *
- * @see MediumTemplateAcceptor
- * @see MinimumTemplateAcceptor
+ * @see MinimumMiniparTemplateAcceptor
+ * @see MaximumMiniparTemplateAcceptor
  */
-public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
+public class MediumMiniparTemplateAcceptor implements DependencyPathAcceptor {
 
-    static final Set<String> MAXIMUM_TEMPLATES = new HashSet<String>();
+    static final Set<String> MEDIUM_TEMPLATES = new HashSet<String>();
 
-    static {     
-        MAXIMUM_TEMPLATES.add("A:mod:A,A:mod:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("A:mod:A,A:mod:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("A:mod:Prep,Prep:pcomp-n:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("N:mod:Prep,Prep:pcomp-n:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("N:mod:Prep,Prep:pcomp-n:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:mod:A,A:mod:A");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:mod:Prep,Prep:pcomp-n:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:mod:Prep,Prep:pcomp-n:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:obj:V,V:subj:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:obj:V,V:subj:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:pcomp-n:Prep");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:pcomp-n:Prep,Prep:mod:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:pcomp-n:Prep,Prep:mod:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:subj:V,V:obj:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,N:subj:V,V:obj:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:nn:N,V:s:C,C:fc:V");
-        MAXIMUM_TEMPLATES.add("N:obj:V,V:subj:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("N:obj:V,V:subj:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:pcomp-n:Prep,Prep:mod:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("N:pcomp-n:Prep,Prep:mod:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("N:subj:V,V:obj:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("N:subj:V,V:obj:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:mod:A,A:mod:A");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:mod:Prep,Prep:pcomp-n:N");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:mod:Prep,Prep:pcomp-n:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:obj:V,V:subj:N");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:obj:V,V:subj:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:pcomp-n:Pred,Prep:mod:A");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:pcomp-n:Prep");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:pcomp-n:Prep,Prep:mod:N");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:pcomp-n:Prep,Prep:mod:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:pcomp-n:Prep,Prep:mod:V");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:rel:C,C:i:V");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:subj:V,V:obj:N");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,N:subj:V,V:obj:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("(null):lex-mod:N,V:s:C,C:fc:V");
-        MAXIMUM_TEMPLATES.add("Prep:pcomp-n:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("Prep:pcomp-n:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("V:fc:C,C:s:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("V:fc:C,C:s:N,N:nn:N");
-        MAXIMUM_TEMPLATES.add("V:i:C,C:rel:N,N:lex-mod:(null)");
-        MAXIMUM_TEMPLATES.add("V:mod:Prep,Prep:pcomp-n:N,N:lex-mod:(null)");
+    static {
+        MEDIUM_TEMPLATES.add("A:mod:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("A:mod:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("A:subj:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("A:subj:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("N:conj:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("N:conj:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("N:gen:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("N:gen:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:conj:N");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:conj:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:gen:N");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:gen:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:mod:A");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:mod:Pred");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:obj:V");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:subj:A");
+        MEDIUM_TEMPLATES.add("N:nn:N,N:subj:V");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:conj:N");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:conj:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:gen:N");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:gen:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:mod:A");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:mod:Pred");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:obj:V");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:subj:A");
+        MEDIUM_TEMPLATES.add("(null):lex-mod:N,N:subj:V");
+        MEDIUM_TEMPLATES.add("Prep:mod:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("Prep:mod:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("V:obj:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("V:obj:N,N:nn:N");
+        MEDIUM_TEMPLATES.add("V:subj:N,N:lex-mod:(null)");
+        MEDIUM_TEMPLATES.add("V:subj:N,N:nn:N");
     }
     
     /**
      * Creates the acceptor with its standard templates
      */
-    public MaximumTemplateAcceptor() { }
+    public MediumMiniparTemplateAcceptor() { }
    
     /**
      * Returns {@code true} if the path matches one of the predefined templates
@@ -117,11 +105,11 @@ public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
     static boolean acceptsInternal(DependencyPath path) {
         // First check whether the minimum template acceptor would allow this
         // path
-        if (MediumTemplateAcceptor.acceptsInternal(path))
+        if (MinimumMiniparTemplateAcceptor.acceptsInternal(path))
             return true;
 
         // Filter out paths that can't match the template due to length
-        if (path.length() > 4)
+        if (path.length() > 3)
             return false;
 
         int pathLength = path.length();
@@ -174,8 +162,15 @@ public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
         if (first.word().equals(IteratorFactory.EMPTY_TOKEN))
             return false;
 
-        return MAXIMUM_TEMPLATES.contains(noNulls.toString())
-            || MAXIMUM_TEMPLATES.contains(nullStart.toString())
-            || MAXIMUM_TEMPLATES.contains(nullEnd.toString());
+        return MEDIUM_TEMPLATES.contains(noNulls.toString())
+            || MEDIUM_TEMPLATES.contains(nullStart.toString())
+            || MEDIUM_TEMPLATES.contains(nullEnd.toString());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 4;
     }
 }
