@@ -171,7 +171,7 @@ public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
     static boolean acceptsInternal(DependencyPath path) {
         // First check whether the minimum template acceptor would allow this
         // path
-        if (MinimumTemplateAcceptor.acceptsInternal(path))
+        if (MinimumPennTemplateAcceptor.acceptsInternal(path))
             return true;
 
         // Filter out paths that can't match the template due to length
@@ -256,5 +256,12 @@ public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
             || MEDIUM_TEMPLATES.contains(nullEnd.toString());
         
         return match;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 4;
     }
 }

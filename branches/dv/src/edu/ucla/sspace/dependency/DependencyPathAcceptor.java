@@ -38,4 +38,11 @@ public interface DependencyPathAcceptor {
      */
     boolean accepts(DependencyPath path);
 
+    /**
+     * Returns the maximum path length allowed by this acceptor.
+     *
+     * @return the length above which no path will be accepted
+     */
+    int maxPathLength();
+
 }

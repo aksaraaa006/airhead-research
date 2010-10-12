@@ -192,6 +192,13 @@ public class MinimumPennTemplateAcceptor implements DependencyPathAcceptor {
     }
     
     /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 2;
+    }
+    
+    /**
      * Returns the pattern string for the provided parts of speech and relation.
      */
     static String toPattern(String pos1, String rel, String pos2) {
