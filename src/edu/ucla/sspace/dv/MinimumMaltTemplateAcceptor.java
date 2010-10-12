@@ -163,6 +163,13 @@ public class MinimumMaltTemplateAcceptor implements DependencyPathAcceptor {
 
         return MINIMUM_TEMPLATES.contains(toPattern(pos1, rel, pos2));
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 2;
+    }
     
     /**
      * Returns the pattern string for the provided parts of speech and relation.
