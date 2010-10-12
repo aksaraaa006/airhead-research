@@ -85,62 +85,62 @@ public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
     // in order to handle the combinatorial explosion of patterns that would
     // need to be expressed when moving from the Minipar to Penn tag sets.
     static {
-        MEDIUM_TEMPLATES.add("J:NMOD:N,N:AMOD:(null)");
-        MEDIUM_TEMPLATES.add("J:NMOD:N,N:VMOD:(null)");
-        MEDIUM_TEMPLATES.add("J:NMOD:N,N:NMOD:(null)");
-        MEDIUM_TEMPLATES.add("J:NMOD:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("J:SBJ:N,N:AMOD:(null)");
-        MEDIUM_TEMPLATES.add("J:SBJ:N,N:NMOD:(null)");
-        MEDIUM_TEMPLATES.add("J:SBJ:N,N:VMOD:(null)");
-        MEDIUM_TEMPLATES.add("J:SBJ:N,N:NMOD:N");
+        MEDIUM_TEMPLATES.add("J:nmod:N,N:amod:(null)");
+        MEDIUM_TEMPLATES.add("J:nmod:N,N:vmod:(null)");
+        MEDIUM_TEMPLATES.add("J:nmod:N,N:nmod:(null)");
+        MEDIUM_TEMPLATES.add("J:nmod:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("J:sbj:N,N:amod:(null)");
+        MEDIUM_TEMPLATES.add("J:sbj:N,N:nmod:(null)");
+        MEDIUM_TEMPLATES.add("J:sbj:N,N:vmod:(null)");
+        MEDIUM_TEMPLATES.add("J:sbj:N,N:nmod:N");
 
-        MEDIUM_TEMPLATES.add("R:NMOD:N,N:AMOD:(null)");
-        MEDIUM_TEMPLATES.add("R:NMOD:N,N:VMOD:(null)");
-        MEDIUM_TEMPLATES.add("R:NMOD:N,N:NMOD:(null)");
-        MEDIUM_TEMPLATES.add("R:NMOD:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("R:SBJ:N,N:AMOD:(null)");
-        MEDIUM_TEMPLATES.add("R:SBJ:N,N:VMOD:(null)");
-        MEDIUM_TEMPLATES.add("R:SBJ:N,N:NMOD:(null)");
-        MEDIUM_TEMPLATES.add("R:SBJ:N,N:NMOD:N");
+        MEDIUM_TEMPLATES.add("R:nmod:N,N:amod:(null)");
+        MEDIUM_TEMPLATES.add("R:nmod:N,N:vmod:(null)");
+        MEDIUM_TEMPLATES.add("R:nmod:N,N:nmod:(null)");
+        MEDIUM_TEMPLATES.add("R:nmod:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("R:sbj:N,N:amod:(null)");
+        MEDIUM_TEMPLATES.add("R:sbj:N,N:vmod:(null)");
+        MEDIUM_TEMPLATES.add("R:sbj:N,N:nmod:(null)");
+        MEDIUM_TEMPLATES.add("R:sbj:N,N:nmod:N");
 
 
-        MEDIUM_TEMPLATES.add("N:COORD:N,N:mod:(null)");
-        MEDIUM_TEMPLATES.add("N:COORD:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("N:gen:N,N:NMOD:(null)");
-        MEDIUM_TEMPLATES.add("N:gen:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:COORD:N");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:COORD:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:gen:N");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:gen:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:mod:A");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:mod:TO");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:OBJ:V");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:PROD:V");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:SBJ:A");
-        MEDIUM_TEMPLATES.add("N:NMOD:N,N:SBJ:V");
+        MEDIUM_TEMPLATES.add("N:coord:N,N:mod:(null)");
+        MEDIUM_TEMPLATES.add("N:coord:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("N:gen:N,N:nmod:(null)");
+        MEDIUM_TEMPLATES.add("N:gen:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:coord:N");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:coord:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:gen:N");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:gen:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:mod:A");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:mod:TO");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:obj:V");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:prd:V");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:sbj:A");
+        MEDIUM_TEMPLATES.add("N:nmod:N,N:sbj:V");
 
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:COORD:N");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:COORD:N,N:mod:(null)");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:coord:N");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:coord:N,N:mod:(null)");
         MEDIUM_TEMPLATES.add("(null):mod:N,N:gen:N");
         MEDIUM_TEMPLATES.add("(null):mod:N,N:gen:N,N:mod:(null)");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:AMOD:J");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:ADV:R");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:PMOD:TO");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:OBJ:V");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:PROD:V");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:SBJ:J");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:SBJ:R");
-        MEDIUM_TEMPLATES.add("(null):mod:N,N:SBJ:V");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:amod:J");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:adv:R");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:pmod:TO");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:obj:V");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:prd:V");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:sbj:J");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:sbj:R");
+        MEDIUM_TEMPLATES.add("(null):mod:N,N:sbj:V");
 
         MEDIUM_TEMPLATES.add("TO:mod:N,N:mod:(null)");
-        MEDIUM_TEMPLATES.add("TO:mod:N,N:NMOD:N");
+        MEDIUM_TEMPLATES.add("TO:mod:N,N:nmod:N");
 
-        MEDIUM_TEMPLATES.add("V:OBJ:N,N:mod:(null)");
-        MEDIUM_TEMPLATES.add("V:OBJ:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("V:SBJ:N,N:mod:(null)");
-        MEDIUM_TEMPLATES.add("V:SBJ:N,N:NMOD:N");
-        MEDIUM_TEMPLATES.add("V:PROD:N,N:mod:(null)");
-        MEDIUM_TEMPLATES.add("V:PROD:N,N:NMOD:N");
+        MEDIUM_TEMPLATES.add("V:obj:N,N:mod:(null)");
+        MEDIUM_TEMPLATES.add("V:obj:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("V:sbj:N,N:mod:(null)");
+        MEDIUM_TEMPLATES.add("V:sbj:N,N:nmod:N");
+        MEDIUM_TEMPLATES.add("V:prd:N,N:mod:(null)");
+        MEDIUM_TEMPLATES.add("V:prd:N,N:nmod:N");
     }
     
     /**
@@ -212,7 +212,7 @@ public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
             // were designed by Padó and Lapata.
             String class1 = POS_TAG_TO_CLASS.get(firstPos);
             String class2 = POS_TAG_TO_CLASS.get(secPos);
-
+            
             if (class1 != null)
                 firstPos = class1;
             if (class2 != null)
@@ -227,7 +227,7 @@ public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
             
             // Create the three relation patterns by checking the current index
             // compared to the path length.
-            nullStart.append((i == 0) ? "(null)" : firstPos);
+            nullStart.append((i == 1) ? "(null)" : firstPos);
             nullStart.append(":").append(rel).append(":").append(secPos);
 
             nullEnd.append(firstPos).append(":").append(rel).append(":");
@@ -246,13 +246,15 @@ public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
             // Last, shift over the node
             first = second;
         }
-        
+
         // Extra case for the last token in the path
         if (first.word().equals(IteratorFactory.EMPTY_TOKEN))
             return false;
 
-        return MEDIUM_TEMPLATES.contains(noNulls.toString())
+        boolean match = MEDIUM_TEMPLATES.contains(noNulls.toString())
             || MEDIUM_TEMPLATES.contains(nullStart.toString())
             || MEDIUM_TEMPLATES.contains(nullEnd.toString());
+        
+        return match;
     }
 }
