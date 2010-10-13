@@ -116,7 +116,9 @@ import java.util.logging.Logger;
  * <p>
  *
  * This class offers configurable preprocessing and dimensionality reduction.
- * through three parameters.
+ * through three parameters.  These properties should be specified in the {@code
+ * Properties} object passed to the {@link #processSpace(Properties)
+ * processSpace} method.
  *
  * <dl style="margin-left: 1em">
  *
@@ -259,12 +261,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
     private Matrix documentSpace;
     
     /**
-     * A flag to indicate whether the document space should be fully processed
-     * and retained in memory when {@code processSpace} has been called.
-     */
-    private boolean retainDocumentSpace;
-
-    /**
      * Constructs the {@code LatentSemanticAnalysis} using the system properties
      * for configuration.
      *
@@ -290,15 +286,6 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
         wordSpace = null;
         documentSpace = null;
-        retainDocumentSpace = false;
-
-        // Check whether the user has indicated that the document space should
-        // be retained.
-        String retDocSpaceProp = 
-            properties.getProperty(RETAIN_DOCUMENT_SPACE_PROPERTY);
-        if (retDocSpaceProp != null) {
-            retainDocumentSpace = Boolean.parseBoolean(retDocSpaceProp);
-        }
     }   
 
     /**
@@ -489,7 +476,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
             LSA_LOGGER.info("performing " + transform + " transform");
                 
-                // Get the finished matrix file from the builder
+            // Get the finished matrix file from the builder
             File termDocumentMatrix = termDocumentMatrixBuilder.getFile();
             if (LSA_LOGGER.isLoggable(Level.FINE)) {
                 LSA_LOGGER.fine("stored term-document matrix in format " + 
@@ -508,7 +495,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
             
             int dimensions = 300; // default
             String userSpecfiedDims = 
-            properties.getProperty(LSA_DIMENSIONS_PROPERTY);
+                properties.getProperty(LSA_DIMENSIONS_PROPERTY);
             if (userSpecfiedDims != null) {
                 try {
                     dimensions = Integer.parseInt(userSpecfiedDims);
@@ -517,6 +504,15 @@ public class LatentSemanticAnalysis implements SemanticSpace {
                             LSA_DIMENSIONS_PROPERTY + " is not an integer: " +
                             userSpecfiedDims);
                 }
+            }
+
+            // Check whether the user has indicated that the document space
+            // should be retained.
+            boolean retainDocumentSpace = false;
+            String retDocSpaceProp = 
+                properties.getProperty(RETAIN_DOCUMENT_SPACE_PROPERTY);
+            if (retDocSpaceProp != null) {
+                retainDocumentSpace = Boolean.parseBoolean(retDocSpaceProp);
             }
 
             LSA_LOGGER.info("reducing to " + dimensions + " dimensions");
@@ -544,13 +540,19 @@ public class LatentSemanticAnalysis implements SemanticSpace {
                 }
             }
 
-            // We transpose the document space to provide easier access to the
-            // document vectors, which in the un-transposed version are the
-            // columns.
+            // Check whether the user asked to process the document space.  If
+            // not, then the Matrix is discarded.
             if (retainDocumentSpace) {
+                LSA_LOGGER.fine("loading in document space");
+                // We transpose the document space to provide easier access to
+                // the document vectors, which in the un-transposed version are
+                // the columns.
                 documentSpace = Matrices.transpose(usv[2]);
                 // Weight the values in the document space by the singular
                 // values.
+                //
+                // REMINDER: when the RowScaledMatrix class is merged in with
+                // the trunk, this code should be replaced.
                 for (int r = 0; r < documentSpace.rows(); ++r) {
                     for (int c = 0; c < documentSpace.columns(); ++c) {
                         documentSpace.set(r, c, documentSpace.get(r, c) 
