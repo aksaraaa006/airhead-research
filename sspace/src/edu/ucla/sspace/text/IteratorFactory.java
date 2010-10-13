@@ -21,17 +21,18 @@
 
 package edu.ucla.sspace.text;
 
+import edu.ucla.sspace.util.FileResourceFinder;
 import edu.ucla.sspace.util.LimitedIterator;
 import edu.ucla.sspace.util.ReflectionUtil;
+import edu.ucla.sspace.util.ResourceFinder;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.StringReader;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -64,13 +65,14 @@ import java.util.Set;
  * <dd style="padding-top: .5em">This property sets a configuration of a {@link
  *      TokenFilter} that should be applied to all token streams.<p>
  *
- * <dt> <i>Property:</i> <code><b>{@value #USE_STEMMING_PROPERTY}
+ * <dt> <i>Property:</i> <code><b>{@value #STEMMER_PROPERTY}
  *      </b></code> <br>
  *      <i>Default:</i> <i>unset</i>
  *
  * <dd style="padding-top: .5em">This property sets enables the use of the
- *      {@link PorterStemmer} on all the tokens returned by iterators of this
- *      class.<p>
+ *      {@link Stemmer} on all the tokens returned by iterators of this class.
+ *      The property value should be the fully qualified class name of a {@code
+ *      Stemmer} class implementation.<p>
  *
  * <dt> <i>Property:</i> <code><b>{@value #TOKEN_COUNT_LIMIT_PROPERTY}
  *      </b></code> <br>
@@ -85,7 +87,7 @@ import java.util.Set;
  *      <i>Default:</i> <i>unset</i>
  *
  * <dd style="padding-top: .5em">This property sets the name of a file that
- *      contains all of the recognized compound words (or multi-token tokens)
+ *      Contains all of the recognized compound words (or multi-token tokens)
  *      recognized by any iterators returned by this class.<p>
  *
  * </dl> <p>
@@ -166,10 +168,39 @@ public class IteratorFactory {
     public static final String TOKEN_COUNT_LIMIT_PROPERTY =
         PROPERTY_PREFIX + ".tokenCountLimit";
 
+
+    /**
+     * A list of all the factory properties supported for configuration by the
+     * {@link IteratorFactory}.
+     */
+    public static final Set<String> ITERATOR_FACTORY_PROPERTIES =
+        new HashSet<String>();
+    
+    // Static block for setting the properties
+    static {
+        ITERATOR_FACTORY_PROPERTIES.add(
+                IteratorFactory.TOKEN_FILTER_PROPERTY);
+        ITERATOR_FACTORY_PROPERTIES.add(
+                IteratorFactory.STEMMER_PROPERTY);
+        ITERATOR_FACTORY_PROPERTIES.add(
+                IteratorFactory.COMPOUND_TOKENS_FILE_PROPERTY);
+        ITERATOR_FACTORY_PROPERTIES.add(
+                IteratorFactory.TOKEN_REPLACEMENT_FILE_PROPERTY);
+        ITERATOR_FACTORY_PROPERTIES.add(
+                IteratorFactory.TOKEN_COUNT_LIMIT_PROPERTY);
+    }
+
     /**
      * An optional {@code TokenFilter} to use to remove tokens from document
      */
     private static TokenFilter filter;
+
+    /**
+     * The {@link ResourceFinder} used to locate the file-based resources used
+     * by the iterator factory.  The default value for this is to read things
+     * directly from {@code File} instances.
+     */
+    private static ResourceFinder resourceFinder = new FileResourceFinder();
     
     /**
      * True if stemming should be done in a word iterator.
@@ -219,7 +250,7 @@ public class IteratorFactory {
         String filterProp = 
             props.getProperty(TOKEN_FILTER_PROPERTY);
         filter = (filterProp != null)
-            ? TokenFilter.loadFromSpecification(filterProp)
+            ? TokenFilter.loadFromSpecification(filterProp, resourceFinder)
             : null;
         
         // NOTE: future implementations may interpret the value of this property
@@ -231,17 +262,10 @@ public class IteratorFactory {
         String compoundTokensProp = 
             props.getProperty(COMPOUND_TOKENS_FILE_PROPERTY);
         if (compoundTokensProp != null) {
-            File compoundTokensFile = new File(compoundTokensProp);
-            if (!compoundTokensFile.exists()) {
-                throw new IllegalArgumentException(COMPOUND_TOKENS_FILE_PROPERTY
-                    + " is set to a non-existant file: " + compoundTokensProp);
-            }
-            
             // Load the tokens from file
             compoundTokens = new LinkedHashSet<String>();
             try {
-                BufferedReader br = 
-                    new BufferedReader(new FileReader(compoundTokensFile));
+                BufferedReader br = resourceFinder.open(compoundTokensProp);
                 for (String line = null; (line = br.readLine()) != null; ) {
                     compoundTokens.add(line);
                 }
@@ -270,8 +294,7 @@ public class IteratorFactory {
             props.getProperty(TOKEN_REPLACEMENT_FILE_PROPERTY);
         if (replacementProp != null) {
             try {
-                BufferedReader br =
-                    new BufferedReader(new FileReader(replacementProp));
+                BufferedReader br = resourceFinder.open(replacementProp);
                 replacementMap = new HashMap<String, String>();
                 String line = null;
                 while ((line = br.readLine()) != null) {
@@ -283,6 +306,20 @@ public class IteratorFactory {
             }
         } else
             replacementMap = null;
+    }
+
+    /**
+     * Sets the {@link ResourceFinder} used by the iterator factory to locate
+     * its file-based resources when configuring the tokenization.  This method
+     * should be set prior to calling {@link #setProperties(Properties)
+     * setProperties} to ensure that the resources are accessed correctly.  Most
+     * applications will never need to call this method.
+     *
+     * @param finder the resource finder used to find and open file-based
+     *        resources
+     */
+    public static void setResourceFinder(ResourceFinder finder) {
+        resourceFinder = finder;
     }
 
     /**
@@ -352,9 +389,9 @@ public class IteratorFactory {
     }
 
     /**
-     * Wraps an iterator returned by {@link tokenizeOrdered} to also include
-     * term replacement of tokens.  Terms will be replaced based on a mapping
-     * provided through the system configuration.
+     * Wraps an iterator returned by {@link #tokenizeOrdered(String)
+     * tokenizeOrdered} to also include term replacement of tokens.  Terms will
+     * be replaced based on a mapping provided through the system configuration.
      *
      * @param reader A reader whose contents are to be tokenized.
      *

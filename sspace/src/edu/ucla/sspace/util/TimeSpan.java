@@ -228,7 +228,7 @@ public class TimeSpan {
      * days were specified in addition to the other time components to comprise
      * the total duration.
      *
-     * @returns the day component of this time span
+     * @return the day component of this time span
      */
     public int getDays() {
         return days;
@@ -240,7 +240,7 @@ public class TimeSpan {
      * how many hours were specified in addition to the other time components to
      * comprise the total duration.
      *
-     * @returns the hour component of this time span
+     * @return the hour component of this time span
      */
     public int getHours() {
         return hours;
@@ -252,7 +252,7 @@ public class TimeSpan {
      * rather how many months were specified in addition to the other time
      * components to comprise the total duration.
      *
-     * @returns the month component of this time span
+     * @return the month component of this time span
      */
     public int getMonths() {
         return months;
@@ -264,7 +264,7 @@ public class TimeSpan {
      * how many weeks were specified in addition to the other time components to
      * comprise the total duration.
      *
-     * @returns the week component of this time span
+     * @return the week component of this time span
      */
     public int getWeeks() {
         return weeks;
@@ -276,7 +276,7 @@ public class TimeSpan {
      * how many years were specified in addition to the other time components to
      * comprise the total duration.
      *
-     * @returns the year component of this time span
+     * @return the year component of this time span
      */
     public int getYears() {
         return years;

@@ -347,7 +347,7 @@ public class SemanticSpaceIO {
      * @throws IOException if any I/O exception occurs when reading the semantic
      *         space data from the file
      */
-    private static void writeHeader(OutputStream os, SSpaceFormat format) 
+    static void writeHeader(OutputStream os, SSpaceFormat format) 
             throws IOException {
         DataOutputStream dos = new DataOutputStream(os);
         dos.writeChar('s');

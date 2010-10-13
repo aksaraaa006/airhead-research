@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.text;
 
+import edu.ucla.sspace.util.FileResourceFinder;
+import edu.ucla.sspace.util.ResourceFinder;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOError;
@@ -30,6 +33,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
 
 /**
  * A utility for asserting what tokens are valid and invalid within a stream of
@@ -151,7 +155,8 @@ public class TokenFilter {
     
     /**
      * Loads a series of chained {@code TokenFilter} instances from the
-     * specified configuration string.<p>
+     * specified configuration string.  This method will assume that all
+     * specified resources exist on the local file system.<p>
      * 
      * A configuration lists sets of files that contain tokens to be included or
      * excluded.  The behavior, {@code include} or {@code exclude} is specified
@@ -170,6 +175,35 @@ public class TokenFilter {
      * @throws IOError if any error occurs when reading the word list files
      */
     public static TokenFilter loadFromSpecification(String configuration) {
+        return loadFromSpecification(configuration, new FileResourceFinder());
+    }
+
+    /**
+     * Loads a series of chained {@code TokenFilter} instances from the
+     * specified configuration string using the provided {@link ResourceFinder}
+     * to locate the resources.  This method is provided for applications that
+     * need to load resources from a custom environment or file system.<p>
+     * 
+     * A configuration lists sets of files that contain tokens to be included or
+     * excluded.  The behavior, {@code include} or {@code exclude} is specified
+     * first, followed by one or more file names, each separated by colons.
+     * Multiple behaviors may be specified one after the other using a {@code ,}
+     * character to separate them.  For example, a typicaly configuration may
+     * look like: "include=top-tokens.txt,test-words.txt:exclude=stop-words.txt"
+     * <b>Note</b> behaviors are applied in the order they are presented on the
+     * command-line.
+     *
+     * @param configuration a token filter configuration
+     * @param finder the {@code ResourceFinder} used to locate the file
+     *        resources specified in the configuration string.
+     *
+     * @return the chained TokenFilter instance made of all the specification,
+     *         or {@code null} if the configuration did not specify any filters
+     *
+     * @throws IOError if any error occurs when reading the word list files
+     */    
+    public static TokenFilter loadFromSpecification(String configuration,
+                                                    ResourceFinder finder) {
 
 	TokenFilter toReturn = null;
 
@@ -195,7 +229,7 @@ public class TokenFilter {
 	    Set<String> words = new HashSet<String>();
 	    try {
                 for (String f : files) {
-                    BufferedReader br = new BufferedReader(new FileReader(f));
+                    BufferedReader br = finder.open(f);
                     for (String line = null; (line = br.readLine()) != null; ) 
                         words.add(line);
                     br.close();
