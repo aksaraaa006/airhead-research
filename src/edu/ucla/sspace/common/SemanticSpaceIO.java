@@ -37,6 +37,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.IOError;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
@@ -78,9 +80,12 @@ public class SemanticSpaceIO {
 
     /**
      * The type of formatting to use when writing a semantic space to a file.
-     * See <a href="SemantSpaceIO.html#format">here</a> for file format specifications.
+     * See <a
+     * href="http://code.google.com/p/airhead-research/wiki/FileFormats">here</a>
+     * for file format specifications.
      */
-    public enum SSpaceFormat { TEXT, BINARY, SPARSE_TEXT, SPARSE_BINARY }
+    public enum SSpaceFormat 
+        { TEXT, BINARY, SPARSE_TEXT, SPARSE_BINARY, SERIALIZE }
 
     /**
      * Uninstantiable
@@ -113,7 +118,7 @@ public class SemanticSpaceIO {
         int formatCode = encodedFormatCode - '0';
         dis.close();
         return (formatCode < 0 || formatCode > SSpaceFormat.values().length)
-            ? null
+            ? SSpaceFormat.SERIALIZE
             : SSpaceFormat.values()[formatCode];                
     }
 
@@ -143,6 +148,7 @@ public class SemanticSpaceIO {
         // is roughly equivalent to their size in memory.            
         case BINARY: // fallthrough
         case SPARSE_BINARY:
+        case SERIALIZE:
             inMemory = sspaceFileSize < available;
             break;
         case TEXT:
@@ -256,27 +262,47 @@ public class SemanticSpaceIO {
                                               SSpaceFormat format,
                                               boolean manuallySpecifiedFormat) 
             throws IOException {
-        if (fitsInMemory(sspaceFile.length(), format)) {
-            LOGGER.fine(format + "-formatted .sspace file will fit into memory"
-                        + "; creating StaticSemanticSpace");
-            if (manuallySpecifiedFormat) {
-                @SuppressWarnings("deprecation")
-                SemanticSpace s = new StaticSemanticSpace(sspaceFile, format);
-                return s;
+
+        if (format.equals(SemanticSpaceIO.SSpaceFormat.SERIALIZE)) {
+            LOGGER.fine("Loading serialized SemanticSpace from " + sspaceFile);
+            ObjectInputStream ois = 
+                new ObjectInputStream(new FileInputStream(sspaceFile));           
+            SemanticSpace sspace = null;
+            try {
+                sspace = (SemanticSpace)(ois.readObject());
+            } catch (ClassNotFoundException cnfe) {
+                throw new IOException(cnfe);
             }
-            else
-                return new StaticSemanticSpace(sspaceFile);
+            return sspace;
         }
+        // For SemanticSpace instances that have not been serialized, decide
+        // whether they fit into memory before determing how to represent their
+        // data
         else {
-            LOGGER.fine(format + "-formatted .sspace file will not fit into"
-                        + "memory; creating OnDiskSemanticSpace");
-            if (manuallySpecifiedFormat) {
-                @SuppressWarnings("deprecation")
-                SemanticSpace s = new OnDiskSemanticSpace(sspaceFile, format);
-                return s;
+            if (fitsInMemory(sspaceFile.length(), format)) {
+                LOGGER.fine(format + "-formatted .sspace file will fit into "
+                            + "memory; creating StaticSemanticSpace");
+                if (manuallySpecifiedFormat) {
+                    @SuppressWarnings("deprecation")
+                        SemanticSpace s = 
+                        new StaticSemanticSpace(sspaceFile, format);
+                    return s;
+                }
+                else
+                    return new StaticSemanticSpace(sspaceFile);
             }
-            else 
-                return new OnDiskSemanticSpace(sspaceFile);
+            else {
+                LOGGER.fine(format + "-formatted .sspace file will not fit into"
+                            + "memory; creating OnDiskSemanticSpace");
+                if (manuallySpecifiedFormat) {
+                    @SuppressWarnings("deprecation")
+                        SemanticSpace s = 
+                        new OnDiskSemanticSpace(sspaceFile, format);
+                    return s;
+                }
+                else 
+                    return new OnDiskSemanticSpace(sspaceFile);
+            }
         }
     }
 
@@ -328,6 +354,13 @@ public class SemanticSpaceIO {
             break;
         case SPARSE_BINARY:
             writeSparseBinary(sspace, output);
+            break;
+        case SERIALIZE: 
+            LOGGER.fine("Saving " + sspace + " to disk as serialized object");
+            ObjectOutputStream oos = 
+                new ObjectOutputStream(new FileOutputStream(output));
+            oos.writeObject(sspace);
+            oos.close();
             break;
         default:
             assert false : format;
