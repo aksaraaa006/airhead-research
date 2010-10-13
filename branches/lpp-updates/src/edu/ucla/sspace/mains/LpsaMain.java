@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
-import edu.ucla.sspace.lpsa.LocalityPreservingSemanticAnalysis;
+import edu.ucla.sspace.nonlinear.LocalityPreservingSemanticAnalysis;
 
 import java.io.IOError;
 import java.io.IOException;
