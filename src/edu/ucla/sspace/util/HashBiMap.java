@@ -47,6 +47,13 @@ public class HashBiMap<K, V> implements BiMap<K, V> {
     private BiMap<V, K> reverseMap;
 
     /**
+     * Creates an empty {@code HashBiMap}
+     */
+    public HashBiMap() {
+        this(new HashMap<K,V>());
+    }
+
+    /**
      * Creates a new {@link HashBiMap} from an existing {@link Map}
      */
     public HashBiMap(Map<K, V> map) {
@@ -88,7 +95,7 @@ public class HashBiMap<K, V> implements BiMap<K, V> {
      * {@inheritDoc}
      */
     public boolean containsValue(Object key) {
-        return originalMap.containsValue(key);
+        return reverseMap.containsKey(key);
     }
 
     /**

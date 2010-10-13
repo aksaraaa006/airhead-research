@@ -83,8 +83,6 @@ import java.util.logging.Logger;
  */
 public class LocalityPreservingProjection {
 
-
-
     private static final Logger LOGGER = 
 	Logger.getLogger(LocalityPreservingProjection.class.getName());
 
@@ -94,9 +92,9 @@ public class LocalityPreservingProjection {
      * arguments to be later specified.
      */
     private static final String SR_LPP_M =
-        "%% This code requires the SR-LPP implementation by Deng Cai (dengcai2 AT\n" +
-        "%% cs.uiuc.edu) available at\n" +
-        "%% http://www.cs.uiuc.edu/homes/dengcai2/SR/index.html\n" +
+        "%% This code requires the SR-LPP implementation by Deng Cai (dengcai AT\n" +
+        "%% gmail.com) available at\n" +
+        "%% http://www.zjucadcg.cn/dengcai/SR/index.html\n" +
         "\n" +
         "%% Load the data matrix from file\n" +
         "Tmp = load('%s','-ascii');\n" +
@@ -119,7 +117,7 @@ public class LocalityPreservingProjection {
         "options.ReguType = 'Ridge';\n" +
         "options.ReducedDim = Dim;\n" +
         "%% Call the SR code\n" +
-        "[eigvector] = SR_caller(options, fea);\n" +
+        "[eigvector] = SR_caller(options, data);\n" +
         "[nSmp,nFea] = size(data);\n" +
         "if size(eigvector,1) == nFea + 1\n" +
         "    Projection = [data ones(nSmp,1)]*eigvector;\n" +
@@ -320,7 +318,7 @@ public class LocalityPreservingProjection {
                                   int dims) throws IOException {
         // Write the input matrix to a file for Matlab/Octave to use
         File mInput = File.createTempFile("lpp-input-data-matrix",".dat");
-        mInput.deleteOnExit();
+        //mInput.deleteOnExit();
         MatrixIO.writeMatrix(dataMatrix, mInput, MatrixIO.Format.MATLAB_SPARSE);        
 
         // Create an output matrix to hold the results of the computation from
@@ -380,9 +378,10 @@ public class LocalityPreservingProjection {
             "save " + outputFile.getAbsolutePath() + " projection -ASCII\n";
         
         // Fill in the Matlab-specific I/O 
-        String matlabProgram = LPP_M.format(dataMatrixFile.getAbsolutePath(), 
-                                            affMatrixFile.getAbsolutePath(),
-                                            dimensions, outputStr);
+        String matlabProgram = String.format(SR_LPP_M, 
+					     dataMatrixFile.getAbsolutePath(), 
+					     affMatrixFile.getAbsolutePath(),
+					     dimensions, outputStr);
 
         // Pipe the program to Matlab for execution
         PrintWriter stdin = new PrintWriter(matlab.getOutputStream());
@@ -443,7 +442,7 @@ public class LocalityPreservingProjection {
         String octaveProgram = null;
         try {
             // Fill in the Matlab-specific I/O 
-            octaveProgram = String.format(LPP_M,
+            octaveProgram = String.format(SR_LPP_M,
                                           dataMatrixFile.getAbsolutePath(), 
                                           affMatrixFile.getAbsolutePath(),
                                           dimensions, outputStr);
