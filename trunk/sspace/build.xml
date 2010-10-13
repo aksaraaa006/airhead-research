@@ -26,6 +26,7 @@
   <property name="build.dir" value="classes"/>
   <property name="report.dir" value="reports"/>
   <property name="src.dir" value="src"/>
+  <property name="hadoop.dir" value="opt/hadoop"/>
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
   <property name="tools.dir" value="tools"/>
@@ -73,7 +74,25 @@
        <compilerarg value="-g"/>
        <include name="src/**"/>
        <include name="lib/**"/>
+       <exclude name="opt/"/>
     </javac>  
+  </target>
+
+  <!-- An internal target designed to check that the hadoop library exists -->
+  <target name="-hadoop-check">
+    <available file="${lib.dir}/hadoop-0.20.2-core.jar" 
+               property="hadoop.present"/>
+  </target>
+
+  <target name="hadoop" depends="compile,-hadoop-check" if="hadoop.present">
+    <echo>Compiling Hadoop classes</echo>  
+    <javac srcdir="opt/hadoop/" destdir="classes"
+           classpathref="classpath" 
+	   debug="true" debuglevel="lines,source">
+       <compilerarg value="-Xlint"/>
+       <compilerarg value="-g"/>
+       <include name="**"/>
+    </javac>
   </target>
 
   <!-- Removes all class files and built jar executables -->
@@ -155,6 +174,20 @@
     **
     **-->
 
+  <target name="hadoop-ri-jar" depends="hadoop">
+    <jar destfile="${bin.dir}/hadoop-ri.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Hadoop Random Indexing"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.HadoopRandomIndexingMain"/>
+      </manifest>
+    </jar>
+  </target>
 
   <target name="lsa-jar" depends="compile">
     <jar destfile="${bin.dir}/lsa.jar" basedir="classes">
@@ -379,9 +412,9 @@
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>
 
-
-      <!-- Comment block for excluding the testing a specific set of files. -->
-
+      <test name="edu.ucla.sspace.common.SemanticSpaceWriterTests" todir="${report.dir}"/>
+      <!-- Comment block for excluding the testing a specific set of files.-->
+        
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
@@ -420,7 +453,6 @@
       <test name="edu.ucla.sspace.matrix.MatrixIOtests" todir="${report.dir}"/>      
       <test name="edu.ucla.sspace.matrix.OnDiskMatrixTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SvdlibcSparseBinaryFileIteratorTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.matrix.SvdTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.StatisticsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.matrix.SparseMatrixTest" todir="${report.dir}"/>
 
@@ -451,14 +483,19 @@
       <test name="edu.ucla.sspace.vector.MaskedSparseDoubleVectorViewTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-      <!-- -->      
+      <!-- -->
     </junit>
   </target>
 
-  <target name="javadoc" description="Create Javadocs" depends="compile">
+  <target name="javadoc" description="Create Javadocs" depends="compile,hadoop">
     <javadoc destdir="javadoc/" classpathref="classpath" access="public">
       <link href="http://java.sun.com/javase/6/docs/api/"/>
-      <fileset dir="${src.dir}/" includes="**/*.java"/>
+      <link href="http://hadoop.apache.org/common/docs/current/api/"/>
+      <link href="http://hadoop.apache.org/mapreduce/docs/r0.21.0/api/"/>
+      <fileset dir="${src.dir}/" includes="**/*.java"/>      
+      <fileset dir="${hadoop.dir}/" includes="**/*.java"/>
+
+
       <bottom><![CDATA[
    <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
    <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  

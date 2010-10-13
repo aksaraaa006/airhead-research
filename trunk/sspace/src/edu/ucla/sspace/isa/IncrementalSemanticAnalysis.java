@@ -532,7 +532,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
                     // ensure that the token stream maintains its existing
                     // ordering, which is necessary when permutations are taken
                     // into account.
-                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    if (word.equals(IteratorFactory.EMPTY_TOKEN)) {
                         ++permutations;
                         continue;
                     }
@@ -554,7 +554,7 @@ public class IncrementalSemanticAnalysis implements SemanticSpace {
                     // ensure that the token stream maintains its existing
                     // ordering, which is necessary when permutations are taken
                     // into account.
-                    if (focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    if (word.equals(IteratorFactory.EMPTY_TOKEN)) {
                         ++permutations;
                         continue;
                     }
