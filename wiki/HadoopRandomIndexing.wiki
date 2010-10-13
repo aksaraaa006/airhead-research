@@ -1,0 +1,26 @@
+#summary A description of the Hadoop MapReduce based implementation of Random Indexing
+
+= Introduction =
+
+Currently, the command-line [RandomIndexing Random Indexing] implementation is able to take full advantage of a multi-core environment.  However, the command-line algorithm is unable to execute in a cluster environment, which makes processing terabytes of text increasingly infeasible due to the computational demands on a _single_ machine.  Therefore, we have developed a [http://hadoop.apache.org/mapreduce/ Hadoop MapReduce] based implementation that performs the Random Indexing algorithm on data stored on a Hadoop cluster and generate a `.sspace` on a local file system.
+
+
+= Requirements =
+
+Using this implementation of Random Indexing requires that the user have an existing Hadoop cluster set up.  In addition, the entire corpora and any tokenizing resources (e.g. stop word lists, compound token lists) be stored on the Hadoop Distributed File System (HDFS).
+
+= Running the Algorithm =
+
+The algorithm can be run by providing the `hadoop-ri.jar` to the Hadoop jar-running architecture:
+{{{
+$ hadoop jar hadoop-ri.jar corpus-dir1 corpus-dir2 /home/hadoop/output.sspace
+}}}
+In this instance, we have executed the Random Indexing algorithm on all the corpus files stored in `corpus-dir1` and `corpus-dir2`.  The resulting .sspace is written to the local file system at `/home/hadoop/output.sspace`.  Note that the input directories are specified with their location *on the HDFS*.  
+
+The Hadoop MapReduce implementation supports the same set of features that the command-line version does.  For example, we can filter out tokens with
+{{{
+$ hadoop jar hadoop-ri.jar --tokenFilter exclude=/user/hadoop/wordlists/english-stop-words-large.txt input-dir /home/hadoop/output-no-stopwords.sspace
+}}}
+This will generate a new `.sspace` where all the tokens in the file `/user/hadoop/wordlists/english-stop-words-large.txt` have been removed.  Note that the files used to specify token filtering *must be on HDFS*.  Specifying these files with locations on the local file system will not work.
+
+A complete list of options may be found by calling `java -jar hadoop-ri.jar` from the command line (not using hadoop).
