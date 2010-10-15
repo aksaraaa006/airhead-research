@@ -39,7 +39,10 @@ import java.util.Set;
  * @see MediumMiniparTemplateAcceptor
  * @see MaximumMiniparTemplateAcceptor
  */
-public class MinimumMiniparTemplateAcceptor implements DependencyPathAcceptor {
+public class MinimumMiniparTemplateAcceptor
+        implements DependencyPathAcceptor, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     static final Set<String> MINIMUM_TEMPLATES = new HashSet<String>();
 
