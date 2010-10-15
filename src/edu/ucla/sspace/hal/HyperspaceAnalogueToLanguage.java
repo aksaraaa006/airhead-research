@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.hal;
 
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.DimensionallyInterpretableSemanticSpace;
 import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
@@ -151,7 +151,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see SemanticSpace 
  * @see WeightingFunction
  */
-public class HyperspaceAnalogueToLanguage implements SemanticSpace {
+public class HyperspaceAnalogueToLanguage 
+        implements DimensionallyInterpretableSemanticSpace<String> {
 
     /**
      * The prefix for naming public properties.
@@ -267,6 +268,18 @@ public class HyperspaceAnalogueToLanguage implements SemanticSpace {
             ? DEFAULT_WEIGHTING
             : loadWeightingFunction(weightFuncProp);
     }
+
+    /**
+     * Returns a description of the word mapped to the specified dimension and
+     * its relative position 
+     *
+     * @param dimension {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    public String getDimensionDescription(int dimension) {
+        return null; // FIXME
+    }
+
 
     /**
      * Creates an instance of {@link WeightingFunction} based on the provide

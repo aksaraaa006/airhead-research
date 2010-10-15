@@ -22,6 +22,7 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.DimensionallyInterpretableSemanticSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
@@ -76,7 +77,8 @@ public class SemanticSpaceExplorer {
         GET_CURRENT_SSPACE,
         PRINT_VECTOR,
         ALIAS,
-        GET_WORDS    
+        GET_WORDS,
+        DESCRIBE_DIMENSION
     }
 
     /**
@@ -576,6 +578,39 @@ public class SemanticSpaceExplorer {
                     out.println(word);
                 else if (word.startsWith(prefix))
                     out.println(word);
+            }
+            break;
+        }
+
+        // Returns the description for the dimension if the sspace implements
+        // DimensionallyInterpretableSemanticSpace
+        case DESCRIBE_DIMENSION: {
+            if (current == null) {
+                out.println("no current semantic space");
+                return false;
+            }
+
+            if (!commandTokens.hasNext()) {
+                out.println("must specify dimension number");
+                return false;
+            }
+            String dimStr = commandTokens.next();
+            int dimension = -1;
+            try {
+                dimension = Integer.parseInt(dimStr);
+            } catch (NumberFormatException nfe) {
+                out.println("Invalid number: " + dimStr);
+                break;
+            }
+
+            if (current instanceof DimensionallyInterpretableSemanticSpace) {
+                DimensionallyInterpretableSemanticSpace diss =
+                    (DimensionallyInterpretableSemanticSpace)current;
+                out.println(diss.getDimensionDescription(dimension));
+            }
+            else {
+                out.println("Dimensions in the current space have no " +
+                            "description");
             }
             break;
         }
