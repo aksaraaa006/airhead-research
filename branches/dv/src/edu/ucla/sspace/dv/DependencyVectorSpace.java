@@ -162,7 +162,10 @@ import java.util.logging.Logger;
  * @author David Jurgens
  */
 public class DependencyVectorSpace 
-        implements DimensionallyInterpretableSemanticSpace<String> {
+        implements DimensionallyInterpretableSemanticSpace<String>,
+        java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * The base prefix for all {@code DependencyVectorSpace} properties.
@@ -204,7 +207,7 @@ public class DependencyVectorSpace
      * The {@link DependencyExtractor} used to extract parse trees from the
      * already parsed documents
      */
-    private final DependencyExtractor extractor;
+    private final transient DependencyExtractor extractor;
 
     /**
      * A basis mapping from dependency paths to the the dimensions that

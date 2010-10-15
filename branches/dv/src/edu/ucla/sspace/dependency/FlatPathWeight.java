@@ -27,7 +27,10 @@ package edu.ucla.sspace.dependency;
  *
  * @author Keith Stevens
  */
-public class FlatPathWeight implements DependencyPathWeight {
+public class FlatPathWeight 
+        implements DependencyPathWeight, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * {@inheritDoc}

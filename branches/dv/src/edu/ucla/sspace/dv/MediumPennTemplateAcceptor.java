@@ -40,7 +40,10 @@ import java.util.Set;
  * @see MinimumTemplateAcceptor
  * @see MaximumTemplateAcceptor
  */
-public class MediumPennTemplateAcceptor implements DependencyPathAcceptor {
+public class MediumPennTemplateAcceptor 
+        implements DependencyPathAcceptor, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     static final Set<String> MEDIUM_TEMPLATES = new HashSet<String>();
 

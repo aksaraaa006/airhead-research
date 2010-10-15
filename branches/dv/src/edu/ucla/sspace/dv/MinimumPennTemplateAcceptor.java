@@ -41,7 +41,10 @@ import java.util.Set;
  * @see MediumPennTemplateAcceptor
  * @see MaximumPennTemplateAcceptor
  */
-public class MinimumPennTemplateAcceptor implements DependencyPathAcceptor {
+public class MinimumPennTemplateAcceptor 
+        implements DependencyPathAcceptor, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     static final Set<String> MINIMUM_TEMPLATES = new HashSet<String>();
     

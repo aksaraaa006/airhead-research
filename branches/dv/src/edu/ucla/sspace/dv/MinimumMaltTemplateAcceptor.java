@@ -39,7 +39,10 @@ import java.util.Set;
  * @see MediumMaltTemplateAcceptor
  * @see MaximumMaltTemplateAcceptor
  */
-public class MinimumMaltTemplateAcceptor implements DependencyPathAcceptor {
+public class MinimumMaltTemplateAcceptor 
+        implements DependencyPathAcceptor, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     static final Set<String> MINIMUM_TEMPLATES = new HashSet<String>();
 

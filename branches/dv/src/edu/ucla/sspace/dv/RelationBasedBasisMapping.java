@@ -36,7 +36,10 @@ import java.util.Map;
  *
  * @author David Jurgens
  */
-public class RelationBasedBasisMapping implements DependencyPathBasisMapping {
+public class RelationBasedBasisMapping
+        implements DependencyPathBasisMapping, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * A map that represents the word space by mapping terms and their relations

@@ -36,7 +36,10 @@ import java.util.Map;
  *
  * @author David Jurgens
  */
-public class WordBasedBasisMapping implements DependencyPathBasisMapping {
+public class WordBasedBasisMapping 
+        implements DependencyPathBasisMapping, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * A map that represents the word space by mapping raw strings to which
