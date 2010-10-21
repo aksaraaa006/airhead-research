@@ -158,6 +158,15 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     /**
      * {@inheritDoc}
      */
+    public void putAll(MultiMap<? extends K,? extends V> m) {
+        for (Map.Entry<? extends K,? extends V> e : m.entrySet()) {
+            put(e.getKey(), e.getValue());
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public boolean putMulti(K key, Collection<V> values) {
         Set<V> vals = map.get(key);
         if (vals == null) {

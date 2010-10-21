@@ -19,18 +19,20 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.lpsa;
+package edu.ucla.sspace.nonlinear;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
+import edu.ucla.sspace.matrix.AffinityMatrixCreator;
+import edu.ucla.sspace.matrix.AffinityMatrixCreator.EdgeType;
+import edu.ucla.sspace.matrix.AffinityMatrixCreator.EdgeWeighting;
 import edu.ucla.sspace.matrix.LocalityPreservingProjection;
-import edu.ucla.sspace.matrix.LocalityPreservingProjection.EdgeType;
-import edu.ucla.sspace.matrix.LocalityPreservingProjection.EdgeWeighting;
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
@@ -503,17 +505,22 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
                 pw.println(e.getKey() + "\t" + e.getValue());
             pw.close();
             LOGGER.info("wrote term-index map to " + tiMap);
+           
 
-            
             Matrix termDocMatrix = MatrixIO.readMatrix(
                 transformedMatrix, 
                 termDocumentMatrixBuilder.getMatrixFormat(), 
                 Matrix.Type.SPARSE_IN_MEMORY, true);
+
+            // Calculate the affinity matrix for the term-doc matrix
+            MatrixFile affinityMatrix = AffinityMatrixCreator.calculate(
+                termDocMatrix, Similarity.SimType.COSINE, 
+                edgeType, edgeTypeParam, weighting, edgeWeightParam);
+
+            // Using the affinity matrix as a guide to locality, project the
+            // co-occurrence matrix into the lower dimensional subspace
             wordSpace = LocalityPreservingProjection.project(
-                 termDocMatrix,
-                 dimensions,
-                 Similarity.SimType.COSINE, 
-                 edgeType, edgeTypeParam, weighting, edgeWeightParam);
+                termDocMatrix, affinityMatrix, dimensions);
             
             /*
             File projectedFile = LocalityPreservingProjection.project(

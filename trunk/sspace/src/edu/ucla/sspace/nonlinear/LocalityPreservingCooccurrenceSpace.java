@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.lpsa;
+package edu.ucla.sspace.nonlinear;
 
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
@@ -28,13 +28,15 @@ import edu.ucla.sspace.common.Statistics;
 import edu.ucla.sspace.hal.EvenWeighting;
 import edu.ucla.sspace.hal.WeightingFunction;
 
+import edu.ucla.sspace.matrix.AffinityMatrixCreator;
+import edu.ucla.sspace.matrix.AffinityMatrixCreator.EdgeType;
+import edu.ucla.sspace.matrix.AffinityMatrixCreator.EdgeWeighting;
 import edu.ucla.sspace.matrix.AtomicMatrix;
 import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.LocalityPreservingProjection;
-import edu.ucla.sspace.matrix.LocalityPreservingProjection.EdgeType;
-import edu.ucla.sspace.matrix.LocalityPreservingProjection.EdgeWeighting;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
@@ -76,7 +78,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @see SemanticSpace 
  * @see LocalityPreservingSemanticAnalysis
- * @see WeightingFunction
+ * @see AffinityMatrixCreator
+ * @see LocalityPreservingProjection
  */
 public class LocalityPreservingCooccurrenceSpace implements SemanticSpace {
 
@@ -172,6 +175,10 @@ public class LocalityPreservingCooccurrenceSpace implements SemanticSpace {
      */
     private SparseMatrix cooccurrenceMatrix;
 
+    /**
+     * An atomic wrapper around the {@link #cooccurrenceMatrix} instance to
+     * provide atomic updates during document processing.
+     */
     private AtomicMatrix atomicMatrix;    
 
     /**
@@ -448,12 +455,16 @@ public class LocalityPreservingCooccurrenceSpace implements SemanticSpace {
         } catch (Throwable t) {
             t.printStackTrace();
         }
-        
-        reduced = LocalityPreservingProjection.project(
-            cooccurrenceMatrix,
-            dimensions,
-            Similarity.SimType.COSINE, 
+
+        // Calculate the affinity matrix for the cooccurrence matrix
+        MatrixFile affinityMatrix = AffinityMatrixCreator.calculate(
+            cooccurrenceMatrix, Similarity.SimType.COSINE, 
             edgeType, edgeTypeParam, weighting, edgeWeightParam);
+        
+        // Using the affinity matrix as a guide to locality, project the
+        // co-occurrence matrix into the lower dimensional subspace
+        reduced = LocalityPreservingProjection.project(
+            cooccurrenceMatrix, affinityMatrix, dimensions);
     }
         
     /**
