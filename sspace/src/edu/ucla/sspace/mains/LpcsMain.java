@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
-import edu.ucla.sspace.lpsa.LocalityPreservingCooccurrenceSpace;
+import edu.ucla.sspace.nonlinear.LocalityPreservingCooccurrenceSpace;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * An executable class for running {@link LocalityPreservingCooccurrenceSpace} (LPWS) from the
- * command line.
+ * An executable class for running {@link LocalityPreservingCooccurrenceSpace}
+ * (LPWS) from the command line.
  *
  * <p>
  *
