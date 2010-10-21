@@ -302,6 +302,39 @@ public class LocalityPreservingProjection {
     }
 
     /**
+     * Projects the rows of the input matrix into a lower dimensional subspace
+     * using the Locality Preserving Projection (LPP) algorithm and the affinity
+     * matrix as a guide to locality.
+     *
+     * @param m a matrix whose rows will be projected
+     * @param affinityMatrix a square matrix whose entries denote locality
+     *        between the rows of the inputMatrix.  Note that this matrix's
+     *        dimensions must be equal to the number of rows in the input
+     *        matrix.
+     * @param dimensions the number of dimensions into which the inputMatrix
+     *        should be projected
+     *
+     * @return a {@code Matrix} that contains the rows of {@code m} projected
+     *         into the specified number of dimensions
+     *
+     * @throws IOError if any exception occurrs during processing
+     */
+    public static Matrix project(Matrix m, Matrix affinityMatrix,
+                                 int dimensions) {        
+        try {
+            File affMatrixFile = 
+                File.createTempFile("affinity-matrix", ".dat");
+            MatrixIO.writeMatrix(affinityMatrix, affMatrixFile, 
+                                 MatrixIO.Format.MATLAB_SPARSE);
+            return execute(m, new MatrixFile(affMatrixFile, 
+                                             MatrixIO.Format.MATLAB_SPARSE), 
+                           dimensions);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }        
+    }
+
+    /**
      * Executes the LPP script, thereby computing the locality preserving
      * projection of the data matrix to the specified number of dimension, using
      * the affinity matrix to determine locality, and returning the result as a
@@ -318,7 +351,7 @@ public class LocalityPreservingProjection {
                                   int dims) throws IOException {
         // Write the input matrix to a file for Matlab/Octave to use
         File mInput = File.createTempFile("lpp-input-data-matrix",".dat");
-        //mInput.deleteOnExit();
+        mInput.deleteOnExit();
         MatrixIO.writeMatrix(dataMatrix, mInput, MatrixIO.Format.MATLAB_SPARSE);        
 
         // Create an output matrix to hold the results of the computation from

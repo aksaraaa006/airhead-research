@@ -70,6 +70,8 @@ import java.util.logging.Logger;
  * the returned matrix will also be on disk.
  *
  * <p> This class is thread safe.
+ *
+ * @see LocalityPreservingProjection
  */
 public class AffinityMatrixCreator {
 
@@ -133,6 +135,12 @@ public class AffinityMatrixCreator {
     private AffinityMatrixCreator() {}
 
     /**
+     * Computes the affinity matrix for the input matrix according to the
+     * specified similarity metrics, returning the result as a file on disk.
+     * Because the input matrix is provided already in memory, all similarity
+     * comparisons are performed in memory, which offers a significant speed-up
+     * compared to the off-core overloads of this method that operate on a
+     * {@link MatrixFile} as input.
      *
      * @param dataSimilarityMetric the metric by which two data points should be
      *        compared when constructing the affinity matrix.
@@ -147,6 +155,9 @@ public class AffinityMatrixCreator {
      *        when deciding on the weighting for an edge.  If the selected
      *        {@code EdgeWeight} does not take a parameter, this value is
      *        unused.
+     *
+     * @return the affinity matrix as a file on disk.  The result may be read
+     *         back into memory with {@code MatrixFile.read()}.
      */
     public static MatrixFile calculate(Matrix input,
                                        SimType dataSimilarityMetric,
@@ -220,9 +231,12 @@ public class AffinityMatrixCreator {
         }
     }
 
-
     /**
-     *
+     * Computes the affinity matrix for the input matrix according to the
+     * specified similarity metrics, returning the result as a file on disk.
+     * The similarity comparisons are all performed off-core, which ensures that
+     * the input matrix does not need to be loaded in memory in its entirety in
+     * order to compute the affinity matrix.
      *
      * @param dataSimilarityMetric the metric by which two data points should be
      *        compared when constructing the affinity matrix.
@@ -237,6 +251,9 @@ public class AffinityMatrixCreator {
      *        when deciding on the weighting for an edge.  If the selected
      *        {@code EdgeWeight} does not take a parameter, this value is
      *        unused.
+     *
+     * @return the affinity matrix as a file on disk.  The result may be read
+     *         back into memory with {@code MatrixFile.read()}.
      */
     public static MatrixFile calculate(MatrixFile input, 
                                        SimType dataSimilarityMetric,
@@ -249,6 +266,16 @@ public class AffinityMatrixCreator {
     }
 
     /**
+     * Computes the affinity matrix for the input matrix according to the
+     * specified similarity metrics, optionally treating the columns as data
+     * points, and returning the result as a file on disk.  The similarity
+     * comparisons are all performed off-core, which ensures that the input
+     * matrix does not need to be loaded in memory in its entirety in order to
+     * compute the affinity matrix.
+     *
+     * <p>This method is primiarily intended to support computing the affinity
+     * matrix for the {@code SVDLIBC_SPARSE_BINARY} format which is stored in
+     * column-major order.
      *
      * @param dataSimilarityMetric the metric by which two data points should be
      *        compared when constructing the affinity matrix.
@@ -266,6 +293,9 @@ public class AffinityMatrixCreator {
      * @param useColumns {@code true} if the affinity matrix should be
      *        calculated for the <i>columns</i> of the input matrix, not the
      *        rows.
+     *
+     * @return the affinity matrix as a file on disk.  The result may be read
+     *         back into memory with {@code MatrixFile.read()}.
      */
     public static MatrixFile calculate(MatrixFile input, 
                                        SimType dataSimilarityMetric,
