@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.dv;
 
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.DimensionallyInterpretableSemanticSpace;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyExtractorManager;
@@ -161,7 +161,8 @@ import java.util.logging.Logger;
  * 
  * @author David Jurgens
  */
-public class DependencyVectorSpace implements SemanticSpace {
+public class DependencyVectorSpace 
+        implements DimensionallyInterpretableSemanticSpace<String> {
 
     /**
      * The base prefix for all {@code DependencyVectorSpace} properties.
@@ -261,11 +262,25 @@ public class DependencyVectorSpace implements SemanticSpace {
         String acceptorProp = 
             properties.getProperty(PATH_ACCEPTOR_PROPERTY);
         acceptor = (acceptorProp == null)
-            ? new MinimumTemplateAcceptor()
+            ? new MinimumPennTemplateAcceptor()
             : ReflectionUtil.<DependencyPathAcceptor>
                 getObjectInstance(acceptorProp);
 
         extractor = DependencyExtractorManager.getDefaultExtractor();
+    }
+
+    /**
+     * Returns a description of the dependency path feature to which the
+     * provided dimension is mapped.
+     *
+     * @param dimension {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    public String getDimensionDescription(int dimension) {
+        if (dimension < 0 || dimension >= basisMapping.numDimensions())
+            throw new IllegalArgumentException(
+                "Invalid dimension: " + dimension);
+        return basisMapping.getDimensionDescription(dimension);
     }
 
     /**
@@ -356,7 +371,8 @@ public class DependencyVectorSpace implements SemanticSpace {
                 // acceptor will filter out any paths that don't contain the
                 // semantic connections we're looking for.
                 Iterator<DependencyPath> paths = 
-                    new FilteredDependencyIterator(nodes[wordIndex], acceptor);
+                    new FilteredDependencyIterator(nodes[wordIndex], acceptor,
+                                                   acceptor.maxPathLength());
                 
                 // For each of the paths rooted at the focus word, update the
                 // co-occurrences of the focus word in the dimension that the

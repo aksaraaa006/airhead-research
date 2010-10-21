@@ -22,6 +22,7 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.DimensionallyInterpretableSemanticSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
@@ -76,7 +77,9 @@ public class SemanticSpaceExplorer {
         GET_CURRENT_SSPACE,
         PRINT_VECTOR,
         ALIAS,
-        GET_WORDS    
+        GET_WORDS,
+        DESCRIBE_DIMENSION,
+        GET_VECTOR_MAGNITUDE
     }
 
     /**
@@ -580,6 +583,64 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Returns the description for the dimension if the sspace implements
+        // DimensionallyInterpretableSemanticSpace
+        case DESCRIBE_DIMENSION: {
+            if (current == null) {
+                out.println("no current semantic space");
+                return false;
+            }
+
+            if (!commandTokens.hasNext()) {
+                out.println("must specify dimension number");
+                return false;
+            }
+            String dimStr = commandTokens.next();
+            int dimension = -1;
+            try {
+                dimension = Integer.parseInt(dimStr);
+            } catch (NumberFormatException nfe) {
+                out.println("Invalid number: " + dimStr);
+                break;
+            }
+
+            if (current instanceof DimensionallyInterpretableSemanticSpace) {
+                DimensionallyInterpretableSemanticSpace diss =
+                    (DimensionallyInterpretableSemanticSpace)current;
+                out.println(diss.getDimensionDescription(dimension));
+            }
+            else {
+                out.println("Dimensions in the current space have no " +
+                            "description");
+            }
+            break;
+        }
+
+        // Print the vector for a word
+        case GET_VECTOR_MAGNITUDE: {
+            if (current == null) {
+                out.println("no current semantic space");
+                return false;
+            }
+
+            if (!commandTokens.hasNext()) {
+                out.println("missing word argument");
+                return false;
+            }
+            String word = commandTokens.next();
+
+            Vector vec = current.getVector(word);
+            if (vec == null) {
+                out.println(word + " is not in semantic space " +
+                            getCurrentSSpaceFileName());
+                break;
+            }
+            
+            out.println(vec.magnitude());
+            break;
+        }
+
+
         default: // should never get executed
             assert false : command;
         }
@@ -608,7 +669,9 @@ public class SemanticSpaceExplorer {
             "  alias filename.sspace name\n" + 
             "  write-command-results output-file command...\n" +
             "  print-vector word\n" +
-            "  get-words [string-prefix]\n";
+            "  get-words [string-prefix]\n" +
+            "  describe-dimension number\n" +
+            "  get-vector-magnitude word\n";
     }
 
     /**
@@ -619,7 +682,9 @@ public class SemanticSpaceExplorer {
     private static void usage(ArgOptions options) {
         System.out.println("usage: java SemanticSpaceExplorer [options]\n\n" +
                            "Command line options:\n" + options.prettyPrint() +
-                           "\n\nExplorer commands:\n" + getCommands());
+                           "\n\nExplorer commands:\n" + getCommands() +
+                           "(commands may be abbreviated using the first " +
+                           "letters of each of its words)\n");
     }
 
     public static void main(String[] args) {
