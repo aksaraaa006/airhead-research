@@ -86,7 +86,7 @@ public class SemanticSpaceMatrix extends AbstractMatrix {
      * Returns the row to which the provided term is mapped or {@link null} if
      * the term is not mapped to any row.
      */
-    public Integer getRow(String term) {
+    public Integer getRowIndex(String term) {
         return rowToWord.inverse().get(term);
     }
 

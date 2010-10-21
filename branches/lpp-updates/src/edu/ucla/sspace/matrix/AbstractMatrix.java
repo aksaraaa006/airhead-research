@@ -31,7 +31,15 @@ import edu.ucla.sspace.vector.Vectors;
  * An abstract {@link Matrix} class that provides common implementations for
  * generic matrix operations.  This class assumes that all subclasses are
  * row-based and will therefore call {@link #getRowVector(int) getRowVector} for
- * all operations.
+ * all operations.  At a minimum subclasses must define the following four
+ * operations:
+ *
+ * <ul>
+ *  <li> {@link #getRowVector(int) getRowVector}
+ *  <li> {@link #set(int, int, double) set}
+ *  <li> {@link #rows()}
+ *  <li> {@link #columns()}
+ * </ul>
  */
 public abstract class AbstractMatrix implements Matrix {
 
@@ -116,18 +124,33 @@ public abstract class AbstractMatrix implements Matrix {
 
     /**
      * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException if the length of {@code values} is not
+     *         equal to the number of rows
      */
     public void setColumn(int column, double[] values) {
         setColumn(column, Vectors.asVector(values));
     }
-
+                
     /**
      * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException if the length of {@code values} is not
+     *         equal to the number of rows
      */
-    public abstract void setColumn(int column, DoubleVector values);
+    public void setColumn(int column, DoubleVector values) {
+        if (values.length() != rows())
+            throw new IllegalArgumentException(
+                "Number of values is not equal the number of rows");
+        for  (int r = 0; r < values.length(); ++r)
+            set(r, column, values.get(r));
+    }
 
     /**
      * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException if the length of {@code columns} is not
+     *         equal to the number of columns
      */
     public void setRow(int row, double[] columns) {
         setRow(row, Vectors.asVector(columns));
@@ -135,8 +158,17 @@ public abstract class AbstractMatrix implements Matrix {
 
     /**
      * {@inheritDoc}
+     *
+     * @throws IllegalArgumentException if the length of {@code columns} is not
+     *         equal to the number of columns
      */
-    public abstract void setRow(int row, DoubleVector values);
+    public void setRow(int row, DoubleVector values) {
+        if (values.length() != columns())
+            throw new IllegalArgumentException(
+                "Number of values is not equal the number of rows");
+        for  (int c = 0; c < values.length(); ++c)
+            set(row, c, values.get(c));
+    }
 
     /**
      * {@inheritDoc}

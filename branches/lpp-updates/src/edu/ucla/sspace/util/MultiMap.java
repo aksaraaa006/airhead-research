@@ -90,6 +90,11 @@ public interface MultiMap<K,V> {
     public void putAll(Map<? extends K,? extends V> m);
 
     /**
+     * Copies all of the mappings from the specified mulit-map to this mutli-map
+     */
+    public void putAll(MultiMap<? extends K,? extends V> m);
+
+    /**
      * Adds all of the specified values to the set of values associated with the
      * specified key in this map.
      *
