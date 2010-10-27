@@ -212,7 +212,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      * getDocumentVector} method.
      */
     public static final String RETAIN_DOCUMENT_SPACE_PROPERTY =
-        PROPERTY_PREFIX + ".dimensions";
+        PROPERTY_PREFIX + ".retainDocSpace";
 
     /**
      * The name prefix used with {@link #getName()}
