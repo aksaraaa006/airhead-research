@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.vsm;
 
+import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.Matrices;
@@ -115,7 +116,7 @@ import java.util.logging.Logger;
  * 
  * @author David Jurgens
  */
-public class VectorSpaceModel implements SemanticSpace {
+public class VectorSpaceModel implements SemanticSpace, Filterable {
 
     /** 
      * The prefix for naming publically accessible properties
@@ -166,6 +167,8 @@ public class VectorSpaceModel implements SemanticSpace {
      */
     private Matrix vectorSpace;
     
+    private Set<String> acceptedWords;
+
     /**
      * Constructs the {@code VectorSpaceModel} using the system properties
      * for configuration.
@@ -189,6 +192,7 @@ public class VectorSpaceModel implements SemanticSpace {
         termIndexCounter = new AtomicInteger(0);
         termDocumentMatrixBuilder = Matrices.getMatrixBuilderForSVD();
         vectorSpace = null;
+        acceptedWords = null;
     }   
 
     /**
@@ -219,7 +223,7 @@ public class VectorSpaceModel implements SemanticSpace {
             String word = documentTokens.next();
             
             // Skip added empty tokens for words that have been filtered out
-            if (word.equals(IteratorFactory.EMPTY_TOKEN))
+            if (!acceptWord(word))
                 continue;
             
             // Add the term to the total list of terms to ensure it has a proper
@@ -257,6 +261,15 @@ public class VectorSpaceModel implements SemanticSpace {
         termDocumentMatrixBuilder.addColumn(documentColumn);
     }
     
+    public void setSemanticFilter(Set<String> words) {
+        acceptedWords = words;
+    }
+
+    private boolean acceptWord(String word) {
+        return !word.equals(IteratorFactory.EMPTY_TOKEN) && 
+               (acceptedWords == null || acceptedWords.contains(word));
+    }
+
     /**
      * Adds the term to the list of terms and gives it an index, or if the term
      * has already been added, does nothing.

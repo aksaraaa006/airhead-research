@@ -57,6 +57,8 @@ public class VsmMain extends GenericMain {
         options.addOption('T', "transform", "a MatrixTransform class to "
                           + "use for preprocessing", true, "CLASSNAME",
                           "Algorithm Options");
+        options.addOption('A', "acceptedWordList", "A list of accepted words.",
+                          true, "FILE", "Optional");
     }
 
     public static void main(String[] args) {
@@ -74,7 +76,11 @@ public class VsmMain extends GenericMain {
      */
     protected SemanticSpace getSpace() {
         try {
-            return new VectorSpaceModel();
+            VectorSpaceModel vsm = new VectorSpaceModel();
+            if (argOptions.hasOption('A'))
+                vsm.setSemanticFilter(loadValidTermSet(
+                            argOptions.getStringOption('A')));
+            return vsm;
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

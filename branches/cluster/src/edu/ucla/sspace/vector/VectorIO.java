@@ -94,9 +94,16 @@ public class VectorIO {
     public static String toString(Vector vector) {
         StringBuilder sb = new StringBuilder(vector.length() * 5);
         
-        for (int i = 0; i < vector.length() - 1; ++i)
-            sb.append(vector.getValue(i).doubleValue()).append(" ");
-        sb.append(vector.getValue(vector.length() - 1).doubleValue());
+        if (vector instanceof SparseVector) {
+            SparseVector sv = (SparseVector) vector;
+            for (int index : sv.getNonZeroIndices()) {
+                sb.append(index).append(":").append(sv.getValue(index).doubleValue()).append(" ");
+            }
+        } else {
+            for (int i = 0; i < vector.length() - 1; ++i)
+                sb.append(vector.getValue(i).doubleValue()).append(" ");
+            sb.append(vector.getValue(vector.length() - 1).doubleValue());
+        }
         
         return sb.toString();
     }

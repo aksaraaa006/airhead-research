@@ -139,6 +139,8 @@ public class LSAMain extends GenericMain {
         options.addOption('S', "svdAlgorithm", "a specific SVD algorithm to use"
                           , true, "SVD.Algorithm", 
                           "Advanced Algorithm Options");
+        options.addOption('A', "acceptedWordList", "A list of accepted words.",
+                          true, "FILE", "Optional");
     }
 
     public static void main(String[] args) {
@@ -153,7 +155,11 @@ public class LSAMain extends GenericMain {
     
     protected SemanticSpace getSpace() {
         try {
-            return new LatentSemanticAnalysis();
+            LatentSemanticAnalysis lsa = new LatentSemanticAnalysis();
+            if (argOptions.hasOption('A'))
+                lsa.setSemanticFilter(loadValidTermSet(
+                            argOptions.getStringOption('A')));
+            return lsa;
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

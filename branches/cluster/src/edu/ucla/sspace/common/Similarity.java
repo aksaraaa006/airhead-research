@@ -664,7 +664,7 @@ public class Similarity {
             for (int nonZero : bNonZero)
                 if (!sparseIndicesA.contains(nonZero))
                     sum += Math.pow(b.get(nonZero), 2);
-            return sum;
+            return Math.sqrt(sum);
         }
 
         double sum = 0;

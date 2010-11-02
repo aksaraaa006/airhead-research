@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.lsa;
 
+import edu.ucla.sspace.common.Filterable;
 import edu.ucla.sspace.common.SemanticSpace;
 
 import edu.ucla.sspace.matrix.LogEntropyTransform;
@@ -162,7 +163,7 @@ import java.util.logging.Logger;
  * 
  * @author David Jurgens
  */
-public class LatentSemanticAnalysis implements SemanticSpace {
+public class LatentSemanticAnalysis implements SemanticSpace, Filterable {
 
     /** 
      * The prefix for naming publically accessible properties
@@ -239,6 +240,8 @@ public class LatentSemanticAnalysis implements SemanticSpace {
      */
     private Matrix documentSpace;
     
+    private Set<String> acceptedWords;
+
     /**
      * Constructs the {@code LatentSemanticAnalysis} using the system properties
      * for configuration.
@@ -265,6 +268,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
 
         wordSpace = null;
         documentSpace = null;
+        acceptedWords = null;
     }   
 
     /**
@@ -295,7 +299,7 @@ public class LatentSemanticAnalysis implements SemanticSpace {
             String word = documentTokens.next();
             
             // Skip added empty tokens for words that have been filtered out
-            if (word.equals(IteratorFactory.EMPTY_TOKEN))
+            if (!acceptWord(word))
                 continue;
             
             // Add the term to the total list of terms to ensure it has a proper
@@ -333,6 +337,16 @@ public class LatentSemanticAnalysis implements SemanticSpace {
         termDocumentMatrixBuilder.addColumn(documentColumn);
     }
     
+    public void setSemanticFilter(Set<String> words) {
+        acceptedWords = words;
+    }
+
+    private boolean acceptWord(String word) {
+        return !word.equals(IteratorFactory.EMPTY_TOKEN) && 
+               (acceptedWords == null || acceptedWords.contains(word));
+    }
+
+    /**
     /**
      * Adds the term to the list of terms and gives it an index, or if the term
      * has already been added, does nothing.

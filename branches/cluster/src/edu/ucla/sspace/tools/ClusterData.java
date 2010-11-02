@@ -103,7 +103,7 @@ public class ClusterData {
                     data, assignments, numClusters);
             double score = ClusterUtil.computeObjective(
                     data, centroids, assignments);
-            if (score <= bestScore || numReptitions == 1) {
+            if (score <= bestScore) {
                 bestScore = score;
                 bestAssignments = assignments;
                 bestNumClusters = numClusters;
