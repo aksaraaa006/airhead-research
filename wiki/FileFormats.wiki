@@ -94,6 +94,6 @@ This format is convenient if the documents are already represented by files, and
 = Matrix File Formats =
 
 The S-Space package supports reading and writing several matrix file formats.  Among those supported are
-  * [http://tedlab.mit.edu/~dr/svdlibc/ SVDLIBC] text, sparse text, binary and sparse binary 
+  * [http://tedlab.mit.edu/~dr/SVDLIBC/ SVDLIBC] text, sparse text, binary and sparse binary 
   * Matlab and Octave [http://www.mathworks.com/help/techdoc/ref/dlmwrite.html dense text] and [http://bebop.cs.berkeley.edu/smc/formats/matlab.html sparse text] formats
   * CLUTO [http://glaros.dtc.umn.edu/gkhome/fetch/sw/cluto/manual.pdf sparse text]
