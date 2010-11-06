@@ -5,9 +5,10 @@
 The Document interface, and it's iterators and implemented classes provides a uniform method of interacting with corpora so that methods calling `reader` have a uniform means of iterating through many document files.  The provided Document related classes are:
    * `FileDocument`, for single file with a single document
    * `StringDocument`, for documents represented as a single string
-   * `FileListDocumentIterator`, for single file which is a list of other files, each containing documents
-   * `OneLinePerDocumentIterator`, for a single file which one document contained on a single line
-In addition to these, a `WordIterator` is provided, such that it will automagically tokenize a `BufferedReader` and provided an iterator for each word read.
+   * `FileListDocumentIterator`, for single file which is a list of other files.  Each listed file corresponds to an entire document of text
+   * `OneLinePerDocumentIterator`, for a single file in which each document is contained on a single line.  These files may have many lines, and thus many documents
+
+In all cases, these iterators expect unstructured documents, meaning that there should only be the document text, and nothing else.  CSV files are not currently supported.  In addition to these, a `WordIterator` is provided, such that it will automagically tokenize a `BufferedReader` and provided an iterator for each word read.
 
 Each document is treated as a sequence of tokens.  Algorithms in the S-Space package are designed to tokenize _all_ documents according to the [Tokenizing tokenizing] rules specified by the user.  This means that regardless of how the document is loaded, a document will tokenized in the same manner.  No attempt is made to treat any of the tokens in the document with special meaning, e.g. no document labels, numbers or directives.  
 
