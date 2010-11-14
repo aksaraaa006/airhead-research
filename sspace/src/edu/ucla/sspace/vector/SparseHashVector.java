@@ -61,7 +61,7 @@ public class SparseHashVector<T extends Number>
      */
     public SparseHashVector(int length) {
         vector = new SparseHashArray<Number>(length);
-        magnitude = 0;
+        magnitude = -1;
     }
 
     /**
