@@ -413,7 +413,7 @@
       <formatter type="plain"/>
 
       <test name="edu.ucla.sspace.common.SemanticSpaceWriterTests" todir="${report.dir}"/>
-      <!-- Comment block for excluding the testing a specific set of files.-->
+      <!-- Comment block for excluding the testing a specific set of files.
         
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
@@ -480,7 +480,10 @@
       <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.vector.MaskedDoubleVectorViewTest" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.vector.MaskedSparseDoubleVectorViewTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.MaskedSparseDoubleVectorViewTest" todir="${report.dir}"/> -->
+      <test name="edu.ucla.sspace.vector.SparseHashVectorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.SparseHashIntegerVectorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.SparseHashDoubleVectorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
       <!-- -->
