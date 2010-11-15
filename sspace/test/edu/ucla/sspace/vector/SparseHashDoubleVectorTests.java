@@ -45,5 +45,8 @@ public class SparseHashDoubleVectorTests {
         v.set(1, 3);
         v.set(2, 4);
         assertEquals(5, v.magnitude(), .0001);
+
+        SparseHashDoubleVector v2 = new SparseHashDoubleVector(v);
+        assertEquals(5, v2.magnitude(), .0001);
     }
 }
