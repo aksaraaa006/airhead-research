@@ -10,7 +10,7 @@ This class exposes several properties that affect how documents are tokenized.  
 
 = Compound Tokens =
 
-A compound token exists when multiple tokens are joined as a single unit.  Examples of common compound tokens are [http://en.wikipedia.org/wiki/Collocation collocations], [http://en.wikipedia.org/wiki/Clich%C3%A9 clichés], or [http://en.wikipedia.org/wiki/Compound_noun,_adjective_and_verb compound nouns].  In the normal processing of a document, the tokens are broken up by white space.  However, users may specify that certain token sequences, e.g. "white house", should be grouped a single token.  This functionality is provided by setting the `edu.ucla.sspace.text.TokenizerFactory.compoundTokens` property to point a file of compound tokens, one on each line.
+A compound token exists when multiple tokens are joined as a single unit.  Examples of common compound tokens are [http://en.wikipedia.org/wiki/Collocation collocations], [http://en.wikipedia.org/wiki/Clich%C3%A9 clichés], or [http://en.wikipedia.org/wiki/Compound_noun,_adjective_and_verb compound nouns].  In the normal processing of a document, the tokens are broken up by white space.  However, users may specify that certain token sequences, e.g. "white house", should be grouped a single token.  This functionality is provided by setting the `edu.ucla.sspace.text.IteratorFactory.compoundTokens` property to point a file of compound tokens, one on each line.
 
 = Filtering =
 
@@ -18,14 +18,14 @@ Often when processing documents, certain tokens may need to be excluded.  For ex
 
 Token filter configurations are specified as a comma-separated list of file names, where each file name has an optional string with values:inclusive or exclusive, which species whether the token are to be used for an exclusive filter. The default value is include. An example configuration might look like:  `--tokenFilter=include=english-dictionary.txt,exclude=stop-list.txt`
 
-When running an algorithm, this filter may be set using the `edu.ucla.sspace.text.TokenizerFactory.tokenFilter` property.  
+When running an algorithm, this filter may be set using the `edu.ucla.sspace.text.IteratorFactory.tokenFilter` property.  
 
 = Stemming =
 
 Tokens may also be [http://en.wikipedia.org/wiki/Stemming stemmed].  This process attempts to remove morphological changes to a word to reduce it to a base form.  For example "fishing," "fishes," "fished" might be reduced to the base form of "fish."  This behavior is often used to simplify the term co-occurrences and has other applications in information retrieval.  However, not all algorithms perform better when stemming is enabled, since it conflates multiple word meanings into a single token (i.e. increases [http://en.wikipedia.org/wiki/Polysemy polysemy]).  The S-Space package provides wrappers for the [http://snowball.tartarus.org/ Snoball stemmers].
 
-Users may enable stemming by setting the `edu.ucla.sspace.text.TokenizerFactory.stem` property to a non-null value.  The value passed via this property is expected to correspond to a full class descriptor, such as `edu.ucla.sspace.text.EnglihStemmer`, which will be dynamically loaded.
+Users may enable stemming by setting the `edu.ucla.sspace.text.IteratorFactory.stem` property to a non-null value.  The value passed via this property is expected to correspond to a full class descriptor, such as `edu.ucla.sspace.text.EnglihStemmer`, which will be dynamically loaded.
 
 = Document Token Limiting =
 
-Often document contain hundreds or thousands of tokens.  For some applications it is not practical to process an entire document.  A user may therefore artificially limit the number of tokens processed in a corpus by setting the `edu.ucla.sspace.text.TokenizerFactory.tokenCountLimit` value to the desired maximum number of tokens per document.
+Often document contain hundreds or thousands of tokens.  For some applications it is not practical to process an entire document.  A user may therefore artificially limit the number of tokens processed in a corpus by setting the `edu.ucla.sspace.text.IteratorFactory.tokenCountLimit` value to the desired maximum number of tokens per document.
