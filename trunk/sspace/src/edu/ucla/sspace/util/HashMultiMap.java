@@ -168,9 +168,13 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
      * {@inheritDoc}
      */
     public boolean putMulti(K key, Collection<V> values) {
+        // Short circuit when adding empty values to avoid adding a key with an
+        // empty mapping
+        if (values.isEmpty())
+            return false;
         Set<V> vals = map.get(key);
         if (vals == null) {
-            vals = new HashSet<V>();
+            vals = new HashSet<V>(values.size());
             map.put(key, vals);
         }
         int oldSize = vals.size();
@@ -391,6 +395,7 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
                 curValues = e.getValue().iterator();
                 // Assume that the map correct manages the keys and values such
                 // that no key is ever mapped to an empty set
+                assert curValues.hasNext() : "key is mapped to no values";
                 next = new MultiMapEntry(curKey, curValues.next());
                 //System.out.println("next = " + next);
             } else {

@@ -272,6 +272,10 @@ public class TreeMultiMap<K,V>
      * {@inheritDoc}
      */
     public boolean putMulti(K key, Collection<V> values) {
+        // Short circuit when adding empty values to avoid adding a key with an
+        // empty mapping
+        if (values.isEmpty())
+            return false;
 	Set<V> vals = map.get(key);
 	if (vals == null) {
 	    vals = new HashSet<V>();
