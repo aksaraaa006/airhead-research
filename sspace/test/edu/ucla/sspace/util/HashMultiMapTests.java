@@ -1,4 +1,4 @@
-1/*
+/*
  * Copyright 2009 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
