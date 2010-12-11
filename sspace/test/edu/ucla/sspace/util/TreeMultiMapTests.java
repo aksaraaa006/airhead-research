@@ -87,6 +87,24 @@ public class TreeMultiMapTests {
 	assertTrue(s.contains("1"));
     }
 
+    @Test public void testPutMulti() {
+        HashMultiMap<String,String> m = new HashMultiMap<String,String>();
+        Set<String> vals = new HashSet<String>();
+        vals.add("1");
+        vals.add("2");
+        m.put("a", vals);
+        Set<String> s = m.get("a");
+        assertTrue(s.contains("1"));
+        assertTrue(s.contains("2"));
+        assertEquals(2, s.size());
+        assertEquals(2, m.range());
+        assertEquals(1, m.size());
+
+        // empty values
+        m.put("b", new HashSet<String>());
+        assertFalse(m.containsKey("b"));
+    }
+
     @Test public void testPutEmptyString() {
 	TreeMultiMap<String,String> m = new TreeMultiMap<String,String>();
 	m.put("", "empty");
