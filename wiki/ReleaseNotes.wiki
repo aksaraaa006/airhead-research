@@ -42,6 +42,10 @@ Fixed several bugs in COALS where word-to-index mappings were off after the SVD 
 
 = S-Space Package Release Notes =
 
+== Release 1.5 Snapshot ==
+
+Due to the ever-increasing staleness of the 1.0 source release, we've taken a current snapshot of the SVN repository and arbitrarily labeled it 1.5.  This version contains many performance enhancements and bug fixes from 1.0, along with a number of feature extensions, such as support for dependency parsed input and Hadoop jobs.  However, we'll be releasing even more features in an official fashion soon, so this release may soon be superseded.
+
 == Release 1.0 ==
 
 This release indicates several months of testing and debugging.  All [ImplementedAlgorithms Tier 1] algorithms are now fully vetted and have been highly optimized.  All supported algorithms have now been versioned at 1.0, reflecting this release.
