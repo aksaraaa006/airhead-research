@@ -69,7 +69,7 @@ public class DenseVector implements DoubleVector, Serializable {
      */
     public DenseVector(double[] vector) {
         this.vector = Arrays.copyOf(vector, vector.length);
-        magnitude = 0;
+        magnitude = -1;
     }
 	
     /**
