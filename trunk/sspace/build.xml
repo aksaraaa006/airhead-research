@@ -479,6 +479,7 @@
       <test name="edu.ucla.sspace.util.TrieSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
 
+      <test name="edu.ucla.sspace.vector.DenseVectorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.MaskedDoubleVectorViewTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.MaskedSparseDoubleVectorViewTest" todir="${report.dir}"/> 
       <test name="edu.ucla.sspace.vector.SparseHashVectorTests" todir="${report.dir}"/>
