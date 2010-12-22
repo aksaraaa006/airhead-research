@@ -35,12 +35,14 @@ import java.util.Set;
  * A {@code DependencyPathAcceptor} that accepts the maximum set of path
  * templates specified by <a
  * href="http://www.nlpado.de/~sebastian/pub/papers/cl07_pado.pdf">Padó and
- * Lapata (2007)</a>.
+ * Lapata (2007)</a>.  This acceptor is designed to be used with the <a
+ * link="http://webdocs.cs.ualberta.ca/~lindek/minipar.htm">Minipar</a> parser
+ * and its associated part of speech tag set.
  *
- * @see MediumTemplateAcceptor
- * @see MinimumTemplateAcceptor
+ * @see MediumMiniparTemplateAcceptor
+ * @see MinimumMiniparTemplateAcceptor
  */
-public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
+public class MaximumMiniparTemplateAcceptor implements DependencyPathAcceptor {
 
     static final Set<String> MAXIMUM_TEMPLATES = new HashSet<String>();
 
@@ -92,7 +94,7 @@ public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
     /**
      * Creates the acceptor with its standard templates
      */
-    public MaximumTemplateAcceptor() { }
+    public MaximumMiniparTemplateAcceptor() { }
    
     /**
      * Returns {@code true} if the path matches one of the predefined templates
@@ -117,7 +119,7 @@ public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
     static boolean acceptsInternal(DependencyPath path) {
         // First check whether the minimum template acceptor would allow this
         // path
-        if (MediumTemplateAcceptor.acceptsInternal(path))
+        if (MediumMiniparTemplateAcceptor.acceptsInternal(path))
             return true;
 
         // Filter out paths that can't match the template due to length
@@ -177,5 +179,12 @@ public class MaximumTemplateAcceptor implements DependencyPathAcceptor {
         return MAXIMUM_TEMPLATES.contains(noNulls.toString())
             || MAXIMUM_TEMPLATES.contains(nullStart.toString())
             || MAXIMUM_TEMPLATES.contains(nullEnd.toString());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 5;
     }
 }
