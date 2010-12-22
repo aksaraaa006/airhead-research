@@ -34,7 +34,9 @@ import java.util.Set;
  * A {@code DependencyPathAcceptor} that accepts the minimum set of path
  * templates specified by <a
  * href="http://www.nlpado.de/~sebastian/pub/papers/cl07_pado.pdf">Padó and
- * Lapata (2007)</a>.
+ * Lapata (2007)</a>.  This acceptor is designed to be used with the <a
+ * link="http://webdocs.cs.ualberta.ca/~lindek/minipar.htm">Minipar</a> parser
+ * and its associated part of speech tag set
  *
  * @see MediumMiniparTemplateAcceptor
  * @see MaximumMiniparTemplateAcceptor
