@@ -35,7 +35,15 @@ import java.util.Set;
 
 /**      
  * A {@code DependencyPathAcceptor} that accepts the minimum set of path
- * templates specified by Padó and Lapata (2007).
+ * templates specified by <a
+ * href="http://www.nlpado.de/~sebastian/pub/papers/cl07_pado.pdf">Padó and
+ * Lapata (2007)</a>.  This acceptor is designed to be used with the Penn
+ * Treebank part of speech <a
+ * href="http://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html">tag
+ * set</a> and dependency relations from the pre-1.4 Malt parser (not the
+ * Stanford typed dependencies).  Note that this template's patters is an
+ * <i>adaptation</i> of the the original patterns, which were specified using
+ * the Minipar relations and part of speech tags.
  *
  * @see MinimumTemplateAcceptor
  * @see MaximumTemplateAcceptor
