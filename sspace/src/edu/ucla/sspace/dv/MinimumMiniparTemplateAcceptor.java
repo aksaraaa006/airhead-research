@@ -34,12 +34,14 @@ import java.util.Set;
  * A {@code DependencyPathAcceptor} that accepts the minimum set of path
  * templates specified by <a
  * href="http://www.nlpado.de/~sebastian/pub/papers/cl07_pado.pdf">Padó and
- * Lapata (2007)</a>.
+ * Lapata (2007)</a>.  This acceptor is designed to be used with the <a
+ * link="http://webdocs.cs.ualberta.ca/~lindek/minipar.htm">Minipar</a> parser
+ * and its associated part of speech tag set
  *
- * @see MediumTemplateAcceptor
- * @see MaximumTemplateAcceptor
+ * @see MediumMiniparTemplateAcceptor
+ * @see MaximumMiniparTemplateAcceptor
  */
-public class MinimumTemplateAcceptor implements DependencyPathAcceptor {
+public class MinimumMiniparTemplateAcceptor implements DependencyPathAcceptor {
 
     static final Set<String> MINIMUM_TEMPLATES = new HashSet<String>();
 
@@ -77,7 +79,7 @@ public class MinimumTemplateAcceptor implements DependencyPathAcceptor {
     /**
      * Creates the acceptor with its standard templates
      */
-    public MinimumTemplateAcceptor() { }
+    public MinimumMiniparTemplateAcceptor() { }
    
     /**
      * Returns {@code true} if the path matches one of the predefined templates
@@ -116,6 +118,13 @@ public class MinimumTemplateAcceptor implements DependencyPathAcceptor {
         String pos2 = path.getNode(1).pos();
 
         return MINIMUM_TEMPLATES.contains(toPattern(pos1, rel, pos2));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 2;
     }
     
     /**

@@ -33,12 +33,17 @@ import java.util.Set;
 
 /**      
  * A {@code DependencyPathAcceptor} that accepts the minimum set of path
- * templates specified by Padó and Lapata (2007).
+ * templates specified by <a
+ * href="http://www.nlpado.de/~sebastian/pub/papers/cl07_pado.pdf">Padó and
+ * Lapata (2007)</a>. This acceptor is designed to
+ * be used with the <a
+ * link="http://webdocs.cs.ualberta.ca/~lindek/minipar.htm">Minipar</a> parser
+ * and its associated part of speech tag set.
  *
- * @see MinimumTemplateAcceptor
- * @see MaximumTemplateAcceptor
+ * @see MinimumMiniparTemplateAcceptor
+ * @see MaximumMiniparTemplateAcceptor
  */
-public class MediumTemplateAcceptor implements DependencyPathAcceptor {
+public class MediumMiniparTemplateAcceptor implements DependencyPathAcceptor {
 
     static final Set<String> MEDIUM_TEMPLATES = new HashSet<String>();
 
@@ -80,7 +85,7 @@ public class MediumTemplateAcceptor implements DependencyPathAcceptor {
     /**
      * Creates the acceptor with its standard templates
      */
-    public MediumTemplateAcceptor() { }
+    public MediumMiniparTemplateAcceptor() { }
    
     /**
      * Returns {@code true} if the path matches one of the predefined templates
@@ -105,7 +110,7 @@ public class MediumTemplateAcceptor implements DependencyPathAcceptor {
     static boolean acceptsInternal(DependencyPath path) {
         // First check whether the minimum template acceptor would allow this
         // path
-        if (MinimumTemplateAcceptor.acceptsInternal(path))
+        if (MinimumMiniparTemplateAcceptor.acceptsInternal(path))
             return true;
 
         // Filter out paths that can't match the template due to length
@@ -165,5 +170,12 @@ public class MediumTemplateAcceptor implements DependencyPathAcceptor {
         return MEDIUM_TEMPLATES.contains(noNulls.toString())
             || MEDIUM_TEMPLATES.contains(nullStart.toString())
             || MEDIUM_TEMPLATES.contains(nullEnd.toString());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int maxPathLength() {
+        return 4;
     }
 }

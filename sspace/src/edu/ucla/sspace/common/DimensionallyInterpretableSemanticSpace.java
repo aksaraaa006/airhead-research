@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 David Jurgens 
+ * Copyright 2010 David Jurgens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,30 +19,26 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.dependency;
+package edu.ucla.sspace.common;
 
 
 /**
- * An interface for deciding whether a provided path is valid for further
- * processing.
+ * An interface for {@link SemanticSpace} instances that are meaningfully
+ * interpretable.  In most cases, the dimensions will be understandable by human
+ * viewers, but this interface provides support for mapping a dimension to a
+ * generic {@code Object} for using the description in some programatic manner.
  */
-public interface DependencyPathAcceptor {
+public interface DimensionallyInterpretableSemanticSpace<T>
+    extends SemanticSpace {
 
     /**
-     * Returns {@code true} if the path is valid according to this acceptor's
-     * standards
+     * Returns a description of what features with which the specified dimension
+     * corresponds.
      *
-     * @param path a dependency path
+     * @param dimension a dimension number
      *
-     * @return {@code true} if the path is valid
+     * @return a description of the features for the dimension
      */
-    boolean accepts(DependencyPath path);
-
-    /**
-     * Returns the maximum path length allowed by this acceptor.
-     *
-     * @return the length above which no path will be accepted
-     */
-    int maxPathLength();
+    T getDimensionDescription(int dimension);
 
 }
