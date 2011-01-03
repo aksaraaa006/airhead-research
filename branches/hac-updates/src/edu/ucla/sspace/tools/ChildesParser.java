@@ -270,7 +270,7 @@ public class ChildesParser {
     /**
      * Finalizes the writing of documents.
      */
-    public void finalize() {
+    public void finish() {
         for (Map.Entry<String, String> entry : posTags.entrySet()) {
             posWriter.println(entry.getKey() + " " + entry.getValue());
         }
@@ -365,7 +365,7 @@ public class ChildesParser {
             findXmlFiles(parser, utterancePerDoc, baseDir);
         }
 
-        parser.finalize();
+        parser.finish();
     }
 
     /**

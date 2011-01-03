@@ -46,8 +46,9 @@ import java.util.TreeMap;
 
 
 /**
- * A collection of static methods for computing the similarity between different
- * vectors.  {@link SemanticSpace} implementations should use this class.
+ * A collection of static methods for computing the similarity and distances
+ * between vectors and arrays.  {@link SemanticSpace} implementations should use
+ * this class.
  *
  * @author Keith Stevens
  * @author David Jurgens
@@ -458,11 +459,9 @@ public class Similarity {
      */
     public static double cosineSimilarity(Vector a, Vector b) {
         return 
-//             (a instanceof IntegerVector 
-//              && b instanceof IntegerVector)
-//             ? cosineSimilarity((IntegerVector)a, (IntegerVector)b)
-//             :
-            cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
+            (a instanceof IntegerVector && b instanceof IntegerVector)
+            ? cosineSimilarity((IntegerVector)a, (IntegerVector)b)
+            : cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
     }
 
     /**
@@ -749,15 +748,11 @@ public class Similarity {
     }
 
     /**
-     * Computes the Jaccard index comparing the similarity both arrays when
-     * viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
+     * Computes the <a href="http://en.wikipedia.org/wiki/Jaccard_index">Jaccard
+     * index</a> comparing the similarity both arrays when viewed as sets of
+     * samples.
      */
-    public static double jaccardIndex(double[] a, double[] b) {
-        check(a, b);
-        
+    public static double jaccardIndex(double[] a, double[] b) {        
         Set<Double> intersection = new HashSet<Double>();
         Set<Double> union = new HashSet<Double>();
         for (double d : a) {
@@ -775,15 +770,11 @@ public class Similarity {
     }
 
     /**
-     * Computes the Jaccard index comparing the similarity both arrays when
-     * viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
+     * Computes the <a href="http://en.wikipedia.org/wiki/Jaccard_index">Jaccard
+     * index</a> comparing the similarity both arrays when viewed as sets of
+     * samples.
      */
     public static double jaccardIndex(int[] a, int[] b) {
-        check(a, b);
-
         // The BitSets should be faster than a HashMap since it's back by an
         // array and operations are just logical bit operations and require no
         // auto-boxing.  However, if a or b contains large values, then the cost
@@ -808,15 +799,11 @@ public class Similarity {
     }
 
     /**
-     * Computes the Jaccard index comparing the similarity both {@code
-     * DoubleVector}s when viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
+     * Computes the <a href="http://en.wikipedia.org/wiki/Jaccard_index">Jaccard
+     * index</a> comparing the similarity both {@code DoubleVector}s when viewed
+     * as sets of samples.
      */
     public static double jaccardIndex(DoubleVector a, DoubleVector b) {
-        check(a, b);
-        
         Set<Double> intersection = new HashSet<Double>();
         Set<Double> union = new HashSet<Double>();
         for (int i = 0; i < a.length(); ++i) {
@@ -836,15 +823,11 @@ public class Similarity {
     }
 
     /**
-     * Computes the Jaccard index comparing the similarity both {@code
-     * DoubleVector}s when viewed as sets of samples.
-     *
-     * @throws IllegalArgumentException when the length of the two vectors are
-     *                                  not the same.
+     * Computes the <a href="http://en.wikipedia.org/wiki/Jaccard_index">Jaccard
+     * index</a> comparing the similarity both {@code DoubleVector}s when viewed
+     * as sets of samples.
      */
     public static double jaccardIndex(IntegerVector a, IntegerVector b) {
-        check(a, b);
-        
         Set<Integer> intersection = new HashSet<Integer>();
         Set<Integer> union = new HashSet<Integer>();
         for (int i = 0; i < a.length(); ++i) {
@@ -864,11 +847,9 @@ public class Similarity {
     }
 
     /**
-     * Computes the Jaccard index comparing the similarity both {@code
-     * Vector}s when viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
+     * Computes the <a href="http://en.wikipedia.org/wiki/Jaccard_index">Jaccard
+     * index</a> comparing the similarity both {@code Vector}s when viewed as
+     * sets of samples.
      */
     public static double jaccardIndex(Vector a, Vector b) {
         return jaccardIndex(Vectors.asDouble(a), Vectors.asDouble(b));
@@ -1808,7 +1789,7 @@ public class Similarity {
             // Ignore values from b that are zero, since they would cause a
             // divide by zero error.
             if (a[i] != 0d && b[i] != 0d)
-                divergence += a[i] * Math.log(a[i]/ b[i]);
+                divergence += a[i] * Math.log(a[i]/ (double)(b[i]));
         }
 
         return divergence;

@@ -97,7 +97,10 @@ public class BoundedSortedMap<K,V> extends TreeMap<K,V> {
      * A comparator that results in the opposite ordering of the natural
      * ordering from {@link Comparator#compareTo(Object,Object) compareTo}.
      */
-    static final class ReverseComparator<K> implements Comparator<K> {
+    static final class ReverseComparator<K> 
+            implements Comparator<K>, java.io.Serializable {
+
+        private static final long serialVersionUID = 1;
 	
 	// Assume that if the comparator is being used that the objects are
 	// instances of Comparable

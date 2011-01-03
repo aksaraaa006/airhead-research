@@ -28,9 +28,9 @@ import java.util.Properties;
 
 /**
  * An interface for any Ofline clustering implementation.  This interface
- * supports hard and soft clustering by returning a {@link
- * ClusteringAssignment}.  A {@link Matrix} is passed in where each row is to be
- * considered the set of data points to cluster.
+ * supports hard and soft clustering by returning a {@link Assignment}.  A
+ * {@link Matrix} is passed in where each row is to be considered the set of
+ * data points to cluster.
  *
  * </p>
  *
@@ -55,12 +55,13 @@ public interface Clustering {
      * number of clusters (optional operation).  The set of cluster assignments
      * are returned for each row in the matrix.
      *
-     * @param matrix the {@link Matrix} containing data points to cluster
+     * @param matrix the {@link Matrix} whose row data points are to be
+     *        clustered
      * @param props the properties to use for any parameters each clustering
      *        algorithm may need 
      *
-     * @return an array of {@link ClusterAssignment}s that may contain only one
-     *         assignment or multiple
+     * @return an array of {@link Assignment} instances that indicate zero or
+     *         more clusters to which each row belongs.
      */
     Assignment[] cluster(Matrix matrix, Properties props);
 
@@ -69,13 +70,14 @@ public interface Clustering {
      * number of clusters.  The set of cluster assignments are returned for each
      * row in the matrix.
      *
-     * @param matrix the {@link Matrix} containing data points to cluster
+     * @param matrix the {@link Matrix} whose row data points are to be
+     *        clustered 
      * @param numClusters the number of clusters to generate
      * @param props the properties to use for any parameters each clustering
      *        algorithm may need 
      *
-     * @return an array of {@link ClusterAssignment}s that may contain only one
-     *         assignment or multiple
+     * @return an array of {@link Assignment} instances that indicate zero or
+     *         more clusters to which each row belongs.
      */
     Assignment[] cluster(Matrix matrix, int numClusters, Properties props);
 }

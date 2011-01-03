@@ -62,7 +62,8 @@ import java.util.Set;
  * 
  * @author David Jurgens
  */
-public class CharMap<V> extends AbstractMap<Character,V> {
+public class CharMap<V> extends AbstractMap<Character,V> 
+        implements java.io.Serializable {
     
     private static final long serialVersionUID = 1L;
 

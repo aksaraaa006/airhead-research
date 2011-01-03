@@ -672,9 +672,14 @@ public class TrieMap<V> extends AbstractMap<String,V>
     }
 
     /**
-     * An immutable {@code String} implementation backed by an array.
+     * An immutable {@link CharSequence} implementation backed by an array.
+     * This class is used internally instead of {@link String} to save space,
+     * is equivalent in the character sequence representation.
      */
-    private static class ArraySequence implements CharSequence {
+    private static class ArraySequence 
+            implements CharSequence, Serializable {
+
+        private static final long serialVersionUID = 1;
 
 	private final char[] sequence;
 
@@ -687,6 +692,13 @@ public class TrieMap<V> extends AbstractMap<String,V>
 	}
 
 	public boolean equals(Object o) {
+            // NOTE: this class intentionally bends the rules for Java's
+            // equals() contract; an ArraySequence is equal to a String
+            // instance, but the reverse is not true, thereby breaking the
+            // associativity.  However, ArraySequence is always internal to a
+            // TrieMap (they are converted to Strings when exposed in the API),
+            // which means that a String will never be compared to an instance
+            // of this class.
 	    if (o instanceof String) {
 		String cs = (String)o;
 		if (cs.length() != sequence.length) {
