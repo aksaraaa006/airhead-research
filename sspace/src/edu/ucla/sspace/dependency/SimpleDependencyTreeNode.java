@@ -52,6 +52,8 @@ public class SimpleDependencyTreeNode implements DependencyTreeNode {
      */
     public SimpleDependencyTreeNode(String word, String pos) {
         neighbors = new LinkedList<DependencyRelation>();
+        if (word == null || pos == null)
+            throw new NullPointerException("Arguments must be non-null");
         this.word = word;
         this.pos = pos;
     }
@@ -96,6 +98,14 @@ public class SimpleDependencyTreeNode implements DependencyTreeNode {
      */
     public String pos() {
         return pos;
+    }
+
+    /**
+     * Sets the word contained by this node.  This method is provided for
+     * updating the parse tree's node contents after construction.
+     */ 
+    void setWord(String word) {
+        this.word = word;
     }
 
     public String toString() {
