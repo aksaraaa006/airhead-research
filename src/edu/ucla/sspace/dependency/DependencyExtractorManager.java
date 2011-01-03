@@ -95,8 +95,7 @@ public class DependencyExtractorManager {
         if (extractor == null)
             throw new NullPointerException("Extractor cannot be null" + name);
         if (name == null)
-            throw new NullPointerException(
-                "Extractor cannot have null name" + name);
+            throw new NullPointerException("Extractor cannot have null name");
         nameToExtractor.put(name, extractor);
         if (isDefault)
             defaultExtractor = extractor;

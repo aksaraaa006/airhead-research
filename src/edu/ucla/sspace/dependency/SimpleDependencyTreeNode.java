@@ -98,6 +98,10 @@ public class SimpleDependencyTreeNode implements DependencyTreeNode {
         return pos;
     }
 
+    void setWord(String word) {
+        this.word = word;
+    }
+    
     public String toString() {
         return word + ":" + pos;
     }

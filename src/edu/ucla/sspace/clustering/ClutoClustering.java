@@ -50,21 +50,21 @@ public class ClutoClustering implements Clustering {
     /**
      * A property prefix for specifiying options when using Cluto.
      */
-    public static String PROPERTY_PREFIX = 
+    public static final String PROPERTY_PREFIX = 
         "edu.ucla.sspace.clustering.ClutoClustering";
 
     /**
-     * The property to set the name of a {@link #Method} that Cluto should use
-     * in clustering the data.
+     * The property to set the name of a {@link ClutoClustering.Method} that
+     * Cluto should use in clustering the data.
      */
-    public static String CLUSTER_METHOD = 
+    public static final String CLUSTER_METHOD = 
         PROPERTY_PREFIX + ".clusterSimilarity";
 
     /**
-     * The property to set the name of a {@link #Criterion} that Cluto should
-     * use in clustering the data.
+     * The property to set the name of a {@link ClutoClustering.Criterion} that
+     * Cluto should use in clustering the data.
      */
-    public static String CLUSTER_CRITERION = 
+    public static final String CLUSTER_CRITERION = 
         PROPERTY_PREFIX + ".clusterCriterion";
 
     /**
@@ -151,20 +151,20 @@ public class ClutoClustering implements Clustering {
     public ClutoClustering() { }
 
     /**
-     * {@inheritDoc}
-     *
-     * @param props the properties to use for clustering with CLUTO.  See {@link
-     *        ClutoClustering} for the list of supported properties.
+     * Throws an {@link UnsupportedOperationException} if called, as CLUTO
+     * requires the number of clusters to be specified.
      */
     public Assignment[] cluster(Matrix matrix, Properties properties) {
-        return cluster(matrix, System.getProperties());
+        throw new UnsupportedOperationException(
+            "CLUTO requires the number of clusters to be specified and " +
+            "therefore cannot be invoked using this method.");
     }
 
     /**
      * {@inheritDoc}
      *
-     * @param props the properties to use for clustering with CLUTO.  See {@link
-     *        ClutoClustering} for the list of supported properties.
+     * @param properties the properties to use for clustering with CLUTO.  See
+     *        {@link ClutoClustering} for the list of supported properties.
      */
     public Assignment[] cluster(Matrix matrix, int numClusters, 
                                 Properties properties) {
@@ -187,8 +187,8 @@ public class ClutoClustering implements Clustering {
      * @param numClusters the number of clusters to generate
      * @param clusterMethod the method by which cluto should cluster the rows
      *
-     * @return an array of {@link ClusterAssignment}s that may contain only one
-     *         assignment or multiple
+     * @return an array of {@link Assignment} instances that indicate zero or
+     *         more clusters to which each row belongs.
      */
     public Assignment[] cluster(Matrix matrix, int numClusters, 
                                 Method clusterMethod,
