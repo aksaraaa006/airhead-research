@@ -362,8 +362,10 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
     /**
      * An iterator of all the key-value mappings in the multi-map.
      */
-    class EntryIterator implements Iterator<Map.Entry<K,V>> {
+    class EntryIterator implements Iterator<Map.Entry<K,V>>, Serializable {
         
+        private static final long serialVersionUID = 1;
+
         K curKey;
         Iterator<V> curValues;
         Iterator<Map.Entry<K,Set<V>>> multiMapIterator;

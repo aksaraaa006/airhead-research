@@ -235,7 +235,11 @@ public class AmortizedSparseVector implements SparseDoubleVector,
      * Comparator class for IndexValues.  A IndexValue is ordered based on it's
      * index value.
      */
-    private static class CellComparator implements Comparator<IndexValue> {
+    private static class CellComparator implements Comparator<IndexValue>,
+                                                   Serializable {
+
+        private static final long serialVersionUID = 1;
+
         public int compare(IndexValue item1, IndexValue item2) {
             return item1.index - item2.index;
         }
