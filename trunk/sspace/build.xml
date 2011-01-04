@@ -26,6 +26,7 @@
   <property name="build.dir" value="classes"/>
   <property name="report.dir" value="reports"/>
   <property name="src.dir" value="src"/>
+  <property name="dist.dir" value="dist"/>
   <property name="hadoop.dir" value="opt/hadoop"/>
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
@@ -135,7 +136,7 @@
 
   
   <target name="sspace-jar" depends="compile">
-    <jar destfile="${lib.dir}/sspace-lib.jar" basedir="classes">
+    <jar destfile="${dist.dir}/sspace-lib.jar" basedir="classes">
       <include name="**/*.class"/>
       <exclude name="jnt/*"/>
       <manifest>
@@ -151,7 +152,7 @@
   </target>
 
   <target name="sspace-src-jar" depends="compile">
-    <jar destfile="${lib.dir}/sspace-src.jar" basedir="src">
+    <jar destfile="${dist.dir}/sspace-src.jar" basedir="src">
       <include name="**/*.java"/>
       <exclude name="jnt/*"/>
       <manifest>
@@ -410,13 +411,13 @@
       <jvmarg value="-Xmx1g"/>
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
-      <formatter type="plain"/>
-
-      <test name="edu.ucla.sspace.common.SemanticSpaceWriterTests" todir="${report.dir}"/>
+      <formatter type="plain"/>    
       <!-- Comment block for excluding the testing a specific set of files. -->
-        
+      <test name="edu.ucla.sspace.clustering.HierarchicalAgglomerativeClusteringTests" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.common.SemanticSpaceWriterTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StaticSemanticSpaceTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.StatisticsTests" todir="${report.dir}"/>

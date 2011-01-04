@@ -124,7 +124,6 @@ class ClutoWrapper {
         LOGGER.log(Level.FINE, "clustering {0} data points with {1} features",
                    new Object[] { matrix.rows(), matrix.columns() });
         File matrixFile = File.createTempFile("cluto-input",".matrix");
-        matrixFile.deleteOnExit();        
         // NOTE: Cluto seems to have allocation problems on sparse matrices that
         // are dense.  Therefore, try to estimate whether to use a dense matrix
         // format based on the matrix type
@@ -132,8 +131,13 @@ class ClutoWrapper {
                              ((matrix instanceof SparseMatrix) 
                               ? MatrixIO.Format.CLUTO_SPARSE
                               : MatrixIO.Format.CLUTO_DENSE));
-        return cluster(clusterAssignment, matrix, clmethod, crtFun,
-                       numClusters, outputFile);
+        String output = cluster(clusterAssignment, matrixFile, clmethod, crtFun,
+                                outputFile, numClusters);
+        // Clean up the temporary file now, and if for some reason that failed,
+        // mark the file to be deleted on exit.
+        if (!matrixFile.delete())
+            matrixFile.deleteOnExit();
+        return output;
     }
 
 
