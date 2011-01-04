@@ -14,3 +14,7 @@ S-Space files are copyrighted the original author of the file.  Full copyright i
 = Restrictions =
 
 We ask that if you use the S-Space package as a part of an academic paper, you please cite the following:
+
+David Jurgens and Keith Stevens, (2010). The S-Space Package: An Open Source Package for Word Space Models.  In _System Papers of the Association of Computational Linguistics_.  
+
+An online version of the paper is available [http://cs.ucla.edu/~jurgens/papers/jurgens_and_stevens_2010_S-Space_Package.pdf here]
