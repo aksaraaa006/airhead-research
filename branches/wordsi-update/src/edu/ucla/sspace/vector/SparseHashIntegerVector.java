@@ -104,7 +104,14 @@ public class SparseHashIntegerVector extends SparseHashVector<Integer>
      * {@inheritDoc}
      */
     public void set(int index, int value) {
-        set(index, Integer.valueOf(value));
+        vector.set(index, value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        vector.set(index, value);
     }
 
     /**

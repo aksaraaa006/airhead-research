@@ -93,10 +93,17 @@ public class VectorIO {
      */
     public static String toString(Vector vector) {
         StringBuilder sb = new StringBuilder(vector.length() * 5);
-        
-        for (int i = 0; i < vector.length() - 1; ++i)
-            sb.append(vector.getValue(i).doubleValue()).append(" ");
-        sb.append(vector.getValue(vector.length() - 1).doubleValue());
+        if (vector instanceof SparseDoubleVector) {
+            SparseDoubleVector sdv = (SparseDoubleVector) vector;
+            int[] nz = sdv.getNonZeroIndices();
+            sb.append(nz[0]).append(",").append(sdv.get(nz[0]));
+            for (int i = 1; i < nz.length; ++i)
+              sb.append(";").append(nz[i]).append(",").append(sdv.get(nz[i]));
+        } else {
+            for (int i = 0; i < vector.length() - 1; ++i)
+                sb.append(vector.getValue(i).doubleValue()).append(" ");
+            sb.append(vector.getValue(vector.length() - 1).doubleValue());
+        }
         
         return sb.toString();
     }

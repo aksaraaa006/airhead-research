@@ -486,7 +486,8 @@ public class SemanticSpaceIO {
 
         for (String word : words) {
             pw.print(word + "|");
-            // for each vector, write all the non-zero elements and their indices
+            // for each vector, write all the non-zero elements and their
+            // indices
             Vector vector = sspace.getVector(word);
             StringBuilder sb = null;
             if (vector instanceof SparseVector) {
@@ -495,7 +496,7 @@ public class SemanticSpaceIO {
                     int[] nz = sdv.getNonZeroIndices();
                     sb = new StringBuilder(nz.length * 4);
                     // special case the first
-                    sb.append(0).append(",").append(sdv.get(0));
+                    sb.append(nz[0]).append(",").append(sdv.get(nz[0]));
                     for (int i = 1; i < nz.length; ++i)
                         sb.append(",").append(i).append(",").append(sdv.get(i));
                 }

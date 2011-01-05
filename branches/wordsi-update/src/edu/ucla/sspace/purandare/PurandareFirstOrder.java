@@ -34,6 +34,7 @@ import edu.ucla.sspace.matrix.GrowingSparseMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SparseRowMaskedMatrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 import edu.ucla.sspace.matrix.SparseOnDiskMatrix;
@@ -533,7 +534,7 @@ public class PurandareFirstOrder implements SemanticSpace {
         int documents = documentCounter.get();
         // Use the number of times the term occurred in the corpus to determine
         // how many rows (contexts) in the matrix.
-        Matrix contextsForCurTerm = new YaleSparseMatrix(
+        SparseMatrix contextsForCurTerm = new YaleSparseMatrix(
             termCounts.get(termIndex).get(), termToIndex.size());
         int contextsSeen = 0;
         for (int d = 0; d < documents; ++d) {
