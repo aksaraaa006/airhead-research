@@ -259,6 +259,8 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
         // word in the sentence.
         int id = 0;
         for (String line = null; ((line = reader.readLine()) != null); ) {
+            line = line.trim();
+
             // If a new line is encountered and no lines have been handled yet,
             // skip all new lines.
             if (line.length() == 0 && nodes.size() == 0)
@@ -280,6 +282,8 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
 
             String word = getWord(nodeFeatures);
 
+            String lemma = getLemma(nodeFeatures, word);
+
             // Get the part of speech of the node.
             String pos = nodeFeatures[posIndex];
 
@@ -288,7 +292,7 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
 
             // Create the new relation.
             SimpleDependencyTreeNode curNode = 
-                new SimpleDependencyTreeNode(word, pos);
+                new SimpleDependencyTreeNode(word, pos, lemma);
 
             // Set the dependency link between this node and it's parent node.
             // If the parent is negative then the node itself is a root node and
@@ -351,6 +355,10 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
         // Filter if neccessary.
         if (filter != null && !filter.accept(word))
             return IteratorFactory.EMPTY_TOKEN;
+        return word;
+    }
+
+    private String getLemma(String[] nodeFeatures, String word) {
         // Get the lemma and check it's value.  Stem if needed.
         String lemma = nodeFeatures[lemmaIndex];
         if (lemma.equals("_"))

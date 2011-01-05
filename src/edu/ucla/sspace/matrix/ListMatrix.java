@@ -70,6 +70,15 @@ class ListMatrix<T extends DoubleVector> implements Matrix {
         }        
     }
 
+    public ListMatrix(List<T> vectors, int columns) {
+        if (vectors.size() == 0)
+            throw new IllegalArgumentException(
+                "Must provide at least one vector");
+        // Copy the contents to an ArrayList to guarantee O(1) row access
+        this.vectors = new ArrayList<T>(vectors);
+        this.columns = columns;
+    }
+
     /**
      * {@inheritDoc}
      */

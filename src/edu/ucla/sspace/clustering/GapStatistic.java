@@ -73,6 +73,9 @@ public class GapStatistic implements Clustering {
     public static final String NUM_REFERENCE_DATA_SETS = 
         PROPERTY_PREFIX + ".numReferenceDataSets";
 
+    public static final String METHOD_PROPERTY = 
+        PROPERTY_PREFIX + ".method";
+
     /**
      * The default number of clusters at which to start clustering.
      */
@@ -88,15 +91,12 @@ public class GapStatistic implements Clustering {
      */
     private static final String DEFAULT_NUM_REFERENCE_DATA_SETS = "5";
 
+    private static final String DEFAULT_METHOD = "KMEANS";
+
     /**
      * A random number generator for creating reference data sets.
      */
     private static final Random random = new Random();
-
-    /**
-     * The cluto clustering method name for k-means clustering.
-     */
-    private static final Method METHOD = Method.KMEANS;
 
     private static final Criterion CRITERION = Criterion.H2;
 
@@ -123,6 +123,8 @@ public class GapStatistic implements Clustering {
         int numGaps = Integer.parseInt(props.getProperty(
                 NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
         int numIterations = maxClusters - startSize;
+        Method method = Method.valueOf(props.getProperty(
+                METHOD_PROPERTY, DEFAULT_METHOD));
 
         verbose("Generating the reference data set");
         // Generate the reference data sets.
@@ -162,7 +164,7 @@ public class GapStatistic implements Clustering {
                     try {
                     result = ClutoWrapper.cluster(null,
                                                   gapFiles[j],
-                                                  METHOD.getClutoName(),
+                                                  method.getClutoName(),
                                                   CRITERION.getClutoName(),
                                                   outputFile,
                                                   k);
@@ -199,7 +201,7 @@ public class GapStatistic implements Clustering {
                 try {
                 result = ClutoWrapper.cluster(null,
                                               matrixFile,
-                                              METHOD.getClutoName(),
+                                              method.getClutoName(),
                                               CRITERION.getClutoName(),
                                               outFile,
                                               i + startSize);

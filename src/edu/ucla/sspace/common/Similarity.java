@@ -279,14 +279,9 @@ public class Similarity {
 
     /**
      * Returns the cosine similarity of the two {@code DoubleVector}.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
      */
     @SuppressWarnings("unchecked")
     public static double cosineSimilarity(DoubleVector a, DoubleVector b) {
-        check(a,b);
-
         double dotProduct = 0.0;
         double aMagnitude = a.magnitude();
         double bMagnitude = b.magnitude();
@@ -299,30 +294,27 @@ public class Similarity {
             // are in each vector.  This value is used to select the iteration
             // order, which affects the number of get(value) calls.
             boolean useA =
-                (a instanceof SparseVector && b instanceof SparseVector)
-                && ((SparseVector)a).getNonZeroIndices().length <
-                   ((SparseVector)b).getNonZeroIndices().length;
-            
+                (a.length() < b.length() ||
+                 (a instanceof SparseVector && b instanceof SparseVector) &&
+                 ((SparseVector)a).getNonZeroIndices().length <
+                 ((SparseVector)b).getNonZeroIndices().length);
+
             // Choose the smaller of the two to use in computing the dot
             // product.  Because it would be more expensive to compute the
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (useA) {
-                for (DoubleEntry e : ((Iterable<DoubleEntry>)a)) {
-                    int index = e.index();                    
-                    double aValue = e.value();
-                    double bValue = b.get(index);
-                    dotProduct += aValue * bValue;
-                }
+                DoubleVector t = a;
+                a = b;
+                b = t;
             }
-            else {
-                for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
-                    int index = e.index();                    
-                    double aValue = a.get(index);
-                    double bValue = e.value();
-                    dotProduct += aValue * bValue;
-                }
-            }            
+
+            for (DoubleEntry e : ((Iterable<DoubleEntry>)b)) {
+                int index = e.index();                    
+                double aValue = a.get(index);
+                double bValue = e.value();
+                dotProduct += aValue * bValue;
+            }
         }
 
         // Check whether both vectors are sparse.  If so, use only the non-zero
@@ -332,28 +324,36 @@ public class Similarity {
             SparseVector svB = (SparseVector)b;
             int[] nzA = svA.getNonZeroIndices();
             int[] nzB = svB.getNonZeroIndices();
+
             // Choose the smaller of the two to use in computing the dot
             // product.  Because it would be more expensive to compute the
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
-            if (nzA.length < nzB.length) {
-                for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    double bValue = b.get(nz);
-                    dotProduct += aValue * bValue;
-                }
+            if (nzA[nzA.length-1] < nzB[nzB.length-1] ||
+                nzA.length < nzB.length) {
+                DoubleVector t = a;
+                a = b;
+                b = t;
             }
-            else {
-                for (int nz : nzB) {
-                    double aValue = a.get(nz);
-                    double bValue = b.get(nz);
-                    dotProduct += aValue * bValue;
-                }
+
+            for (int nz : nzB) {
+                double aValue = a.get(nz);
+                double bValue = b.get(nz);
+                dotProduct += aValue * bValue;
             }
         }
-
         // Otherwise, just assume both are dense and compute the full amount
         else {
+            // Swap the vectors such that the b is the shorter vector and a is
+            // the longer vector, or of equal length.   In the case that the two
+            // vectors of unequal length, this will prevent any calls to out of
+            // bounds values in the smaller vector.
+            if (a.length() < b.length()) {
+                DoubleVector t = a;
+                a = b;
+                b = t;
+            }
+
             for (int i = 0; i < b.length(); i++) {
                 double aValue = a.get(i);
                 double bValue = b.get(i);
@@ -366,14 +366,9 @@ public class Similarity {
 
     /**
      * Returns the cosine similarity of the two {@code DoubleVector}.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
      */
     @SuppressWarnings("unchecked")
     public static double cosineSimilarity(IntegerVector a, IntegerVector b) {
-        check(a,b);
-
         double dotProduct = 0.0;
         double aMagnitude = a.magnitude();
         double bMagnitude = b.magnitude();
@@ -389,25 +384,22 @@ public class Similarity {
                 (a instanceof SparseVector && b instanceof SparseVector)
                 && ((SparseVector)a).getNonZeroIndices().length <
                    ((SparseVector)b).getNonZeroIndices().length;
+
             // Choose the smaller of the two to use in computing the dot
             // product.  Because it would be more expensive to compute the
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (useA) {
-                for (IntegerEntry e : ((Iterable<IntegerEntry>)a)) {
-                    int index = e.index();                    
-                    int aValue = e.value();
-                    int bValue = b.get(index);
-                    dotProduct += aValue * bValue;
-                }
+                IntegerVector t = a;
+                a = b;
+                b = t;
             }
-            else {
-                for (IntegerEntry e : ((Iterable<IntegerEntry>)b)) {
-                    int index = e.index();                    
-                    int aValue = a.get(index);
-                    int bValue = e.value();
-                    dotProduct += aValue * bValue;
-                }
+
+            for (IntegerEntry e : ((Iterable<IntegerEntry>)b)) {
+                int index = e.index();                    
+                int aValue = a.get(index);
+                int bValue = e.value();
+                dotProduct += aValue * bValue;
             }            
         }
 
@@ -418,28 +410,37 @@ public class Similarity {
             SparseVector svB = (SparseVector)b;
             int[] nzA = svA.getNonZeroIndices();
             int[] nzB = svB.getNonZeroIndices();
+
             // Choose the smaller of the two to use in computing the dot
             // product.  Because it would be more expensive to compute the
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
             if (nzA.length < nzB.length) {
-                for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    double bValue = b.get(nz);
-                    dotProduct += aValue * bValue;
-                }
+                IntegerVector t = a;
+                a = b;
+                b = t;
             }
-            else {
-                for (int nz : nzB) {
-                    double aValue = a.get(nz);
-                    double bValue = b.get(nz);
-                    dotProduct += aValue * bValue;
-                }
+
+            for (int nz : nzB) {
+                double aValue = a.get(nz);
+                double bValue = b.get(nz);
+                dotProduct += aValue * bValue;
             }
         }
 
         // Otherwise, just assume both are dense and compute the full amount
         else {
+
+            // Swap the vectors such that the b is the shorter vector and a is
+            // the longer vector, or of equal length.   In the case that the two
+            // vectors of unequal length, this will prevent any calls to out of
+            // bounds values in the smaller vector.
+            if (a.length() < b.length()) {
+                IntegerVector t = a;
+                a = b;
+                b = t;
+            }
+
             for (int i = 0; i < b.length(); i++) {
                 double aValue = a.get(i);
                 double bValue = b.get(i);
@@ -458,10 +459,6 @@ public class Similarity {
      */
     public static double cosineSimilarity(Vector a, Vector b) {
         return 
-//             (a instanceof IntegerVector 
-//              && b instanceof IntegerVector)
-//             ? cosineSimilarity((IntegerVector)a, (IntegerVector)b)
-//             :
             cosineSimilarity(Vectors.asDouble(a), Vectors.asDouble(b));
     }
 
@@ -751,13 +748,8 @@ public class Similarity {
     /**
      * Computes the Jaccard index comparing the similarity both arrays when
      * viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
      */
     public static double jaccardIndex(double[] a, double[] b) {
-        check(a, b);
-        
         Set<Double> intersection = new HashSet<Double>();
         Set<Double> union = new HashSet<Double>();
         for (double d : a) {
@@ -777,13 +769,8 @@ public class Similarity {
     /**
      * Computes the Jaccard index comparing the similarity both arrays when
      * viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
      */
     public static double jaccardIndex(int[] a, int[] b) {
-        check(a, b);
-
         // The BitSets should be faster than a HashMap since it's back by an
         // array and operations are just logical bit operations and require no
         // auto-boxing.  However, if a or b contains large values, then the cost
@@ -810,13 +797,8 @@ public class Similarity {
     /**
      * Computes the Jaccard index comparing the similarity both {@code
      * DoubleVector}s when viewed as sets of samples.
-     *
-     * @throws IllegaleArgumentException when the length of the two vectors are
-     *                                   not the same.
      */
     public static double jaccardIndex(DoubleVector a, DoubleVector b) {
-        check(a, b);
-        
         Set<Double> intersection = new HashSet<Double>();
         Set<Double> union = new HashSet<Double>();
         for (int i = 0; i < a.length(); ++i) {
@@ -838,13 +820,8 @@ public class Similarity {
     /**
      * Computes the Jaccard index comparing the similarity both {@code
      * DoubleVector}s when viewed as sets of samples.
-     *
-     * @throws IllegalArgumentException when the length of the two vectors are
-     *                                  not the same.
      */
     public static double jaccardIndex(IntegerVector a, IntegerVector b) {
-        check(a, b);
-        
         Set<Integer> intersection = new HashSet<Integer>();
         Set<Integer> union = new HashSet<Integer>();
         for (int i = 0; i < a.length(); ++i) {
@@ -982,7 +959,7 @@ public class Similarity {
             curRank++;
         }
 
-        return 1 - ((6d * diff) / (a.length * ((a.length * a.length) - 1)));
+        return 1 - ((6d * diff) / (a.length * ((a.length * a.length) - 1d)));
     }
 
     /**

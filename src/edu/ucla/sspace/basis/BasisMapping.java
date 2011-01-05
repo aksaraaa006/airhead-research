@@ -19,7 +19,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.dv;
+package edu.ucla.sspace.basis;
+
+import java.util.Set;
 
 
 /**
@@ -63,8 +65,25 @@ public interface BasisMapping<T,E> {
     E getDimensionDescription(int dimension);
 
     /**
+     * Returns the set of keys known by this {@link BasisMapping}
+     */
+    Set<E> keySet();
+
+    /**
      * Returns the number of dimensions currently represented in this basis
      * mapping.
      */
     int numDimensions();    
+
+    /**
+     * Sets the basis mapping into a read only state.  This is intended for when
+     * the basis mapping is needed to map to a known set of values, and any
+     * unknown values are left unmapped.
+     */
+    void setReadOnly();
+
+    /**
+     * Unsets the read only state.
+     */
+    void unsetReadOnly();
 }
