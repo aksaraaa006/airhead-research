@@ -184,7 +184,7 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
     /**
      * {@inheritDoc}
      */
-    public Assignment[] cluster(Matrix matrix, Properties props) {
+    public Assignments cluster(Matrix matrix, Properties props) {
         if (props.getProperty(CLUSTER_SIMILARITY_PROPERTY) == null)
             throw new IllegalArgumentException("The number of clusters or a " +
                     "threshold must be specified.");
@@ -195,7 +195,7 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
     /**
      * {@inheritDoc}
      */
-    public Assignment[] cluster(Matrix m,
+    public Assignments cluster(Matrix m,
                                 int numClusters,
                                 Properties props) {
         double clusterSimilarityThreshold =
@@ -213,10 +213,14 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
         int[] rawAssignments = cluster(m, clusterSimilarityThreshold, linkage,
                                        similarityFunction, numClusters);
 
+        if (numClusters == -1) 
+            for (int assignment : rawAssignments)
+                numClusters = Math.max(numClusters, assignment+1);
+
         Assignment[] assignments = new Assignment[rawAssignments.length];
         for (int i = 0; i < rawAssignments.length; ++i)
             assignments[i] = new HardAssignment(rawAssignments[i]);
-        return assignments;
+        return new Assignments(numClusters, assignments);
     }
 
     /**

@@ -1,5 +1,7 @@
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.DoubleVector;
+
 
 /**
  * This interface is for any algorithm that ranks a set of nodes in a graph

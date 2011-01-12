@@ -159,7 +159,7 @@ public class AutomaticStopClustering implements Clustering {
      * using a specified method for determineing when to automaticaly stop
      * clustering.
      */
-    public Assignment[] cluster(Matrix matrix, Properties props) {
+    public Assignments cluster(Matrix matrix, Properties props) {
         int endSize = Integer.parseInt(props.getProperty(
                 NUM_CLUSTERS_END, DEFAULT_NUM_CLUSTERS_END));
         return cluster(matrix, endSize, props);
@@ -174,9 +174,9 @@ public class AutomaticStopClustering implements Clustering {
      * using a specified method for determineing when to automaticaly stop
      * clustering.
      */
-    public Assignment[] cluster(Matrix m,
-                                int numClusters,
-                                Properties props) {
+    public Assignments cluster(Matrix m,
+                               int numClusters,
+                               Properties props) {
         int startSize = Integer.parseInt(props.getProperty(
                 NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
 
@@ -249,7 +249,7 @@ public class AutomaticStopClustering implements Clustering {
         for (File outFile : outFiles)
             outFile.delete();
 
-        return assignments;
+        return new Assignments(bestK, assignments);
     }
 
     /**

@@ -103,7 +103,7 @@ public class GapStatistic implements Clustering {
     /**
      * {@inheritDoc}
      */
-    public Assignment[] cluster(Matrix matrix, Properties props) {
+    public Assignments cluster(Matrix matrix, Properties props) {
         return cluster(matrix, Integer.MAX_VALUE, props);
     }
 
@@ -115,7 +115,7 @@ public class GapStatistic implements Clustering {
      * Iteratively computes the k-means clustering of the dataset {@code m}
      * using the the Gap Statistic .
      */
-    public Assignment[] cluster(Matrix m,
+    public Assignments cluster(Matrix m,
                                 int maxClusters,
                                 Properties props) {
         int startSize = Integer.parseInt(props.getProperty(
@@ -149,7 +149,8 @@ public class GapStatistic implements Clustering {
 
         // Compute the gap statistic for each iteration.
         String result = null;
-        for (int i = 0; i < numIterations; ++i) {
+        int i;
+        for (i = 0; i < numIterations; ++i) {
             int k = i + startSize;
             try {
                 verbose("Clustering reference data for %d clusters\n", k);
@@ -254,7 +255,7 @@ public class GapStatistic implements Clustering {
         for (File gapFile : gapFiles)
             gapFile.delete();
 
-        return assignments;
+        return new Assignments(i+startSize, assignments);
     }
 
     /**

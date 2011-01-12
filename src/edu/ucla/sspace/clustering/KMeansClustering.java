@@ -165,7 +165,7 @@ public class KMeansClustering implements Clustering {
     /**
      * Not implemented.
      */
-    public Assignment[] cluster(Matrix dataPoints, Properties props) {
+    public Assignments cluster(Matrix dataPoints, Properties props) {
         throw new UnsupportedOperationException(
                 "KMeansClustering requires that the " +
                 "number of clusters be specified");
@@ -174,9 +174,9 @@ public class KMeansClustering implements Clustering {
     /**
      * {@inheritDoc}
      */
-    public Assignment[] cluster(Matrix dataPoints, 
-                                int numClusters,
-                                Properties props) {
+    public Assignments cluster(Matrix dataPoints, 
+                               int numClusters,
+                               Properties props) {
         // Get an instance of the seed generator.
         String seedProp = props.getProperty(KMEANS_SEED_PROPERTY, DEFAULT_SEED);
         SeedAlgorithm seedType = SeedAlgorithm.valueOf(seedProp);
@@ -270,7 +270,7 @@ public class KMeansClustering implements Clustering {
         }
 
         // Return the last set of assignments made.
-        return assignments;
+        return new Assignments(numClusters, assignments);
     }
 
     /**
