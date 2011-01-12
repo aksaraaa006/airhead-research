@@ -22,6 +22,7 @@
 package edu.ucla.sspace.wordsi;
 
 import edu.ucla.sspace.clustering.Assignment;
+import edu.ucla.sspace.clustering.Assignments;
 import edu.ucla.sspace.clustering.Clustering;
 import edu.ucla.sspace.clustering.ClusterUtil;
 
@@ -254,26 +255,12 @@ public class WaitingWordsi extends BaseWordsi {
 
     // Cluster the context set.
     LOG.info("Clustering term: " + senseName);
-    Assignment[] assignments = (numClusters > 0) 
+    Assignments assignments = (numClusters > 0) 
       ? clustering.cluster(contexts, numClusters, props)
       : clustering.cluster(contexts, props);
     LOG.info("Finished clustering term: " + senseName);
 
-    int numCentroids = 0;
-    for (Assignment assignment : assignments)
-        if (assignment.assignments().length > 0 &&
-            assignment.assignments()[0] > numCentroids)
-            numCentroids = assignment.assignments()[0];
-    numCentroids++;
-
-    SparseDoubleVector[] centroids = new SparseDoubleVector[numCentroids];
-    for (int c = 0; c < numCentroids; ++c)
-        centroids[c] = new CompactSparseVector(contexts.columns());
-
-    // Create the centroids based on the assignments made.
-    LOG.info("Creating centroids for term: " + senseName);
-    ClusterUtil.computeCentroids(
-            contexts, assignments, centroids);
+    SparseDoubleVector[] centroids = assignments.getCentroids(contexts);
 
     // Add the centroids to the splitSenses map.
     for (int index = 0; index < centroids.length; ++index) {
@@ -298,10 +285,10 @@ public class WaitingWordsi extends BaseWordsi {
     // Report the assignments for each clustered data point.  Note that some
     // data points might not have been clustered (Cluto based clustering does
     // this on occasion) so we must check for the number of assignments first.
-    for (int i = 0; i < assignments.length; ++i)
-      if (assignments[i].assignments().length > 0)
+    for (int i = 0; i < assignments.length(); ++i)
+      if (assignments.get(i).assignments().length > 0)
           reporter.updateAssignment(
-              senseName, contextLabels[i], assignments[i].assignments()[0]);
+              senseName, contextLabels[i], assignments.get(i).assignments()[0]);
     LOG.info("Finished making assignment report: " + senseName);
   }
 }

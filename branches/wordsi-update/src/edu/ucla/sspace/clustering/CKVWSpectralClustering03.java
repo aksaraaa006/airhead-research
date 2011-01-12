@@ -26,13 +26,13 @@ public class CKVWSpectralClustering03 implements Clustering {
     public static final String USE_KMEANS =
         PROPERTY_PREFIX + ".useKMeans";
 
-    public Assignment[] cluster(Matrix matrix, Properties props) {
+    public Assignments cluster(Matrix matrix, Properties props) {
         SpectralClustering cluster = new SpectralClustering(
                 .2, new SpectralCutGenerator());
         return cluster.cluster(matrix);
     }
 
-    public Assignment[] cluster(Matrix matrix,
+    public Assignments cluster(Matrix matrix,
                                 int numClusters,
                                 Properties props) {
         SpectralClustering cluster = new SpectralClustering(

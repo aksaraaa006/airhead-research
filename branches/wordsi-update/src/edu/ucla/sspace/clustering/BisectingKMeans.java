@@ -59,7 +59,7 @@ public class BisectingKMeans implements Clustering {
     /**
      * Not implemented.
      */
-    public Assignment[] cluster(Matrix dataPoints, Properties props) {
+    public Assignments cluster(Matrix dataPoints, Properties props) {
         throw new UnsupportedOperationException(
                 "KMeansClustering requires that the " +
                 "number of clusters be specified");
@@ -68,15 +68,15 @@ public class BisectingKMeans implements Clustering {
     /**
      * {@inheritDoc}
      */
-    public Assignment[] cluster(Matrix dataPoints,
-                                int numClusters,
-                                Properties props) {
+    public Assignments cluster(Matrix dataPoints,
+                               int numClusters,
+                               Properties props) {
         // Handle a simple base case.
         if (numClusters <= 1) {
             Assignment[] assignments = new Assignment[dataPoints.rows()];
             for (int i = 0; i < assignments.length; ++i)
                 assignments[i] = new HardAssignment(0);
-            return assignments;
+            return new Assignments(numClusters, assignments);
         }
 
         // Instantiate a KMeansClustering instance which will be used to bisect
@@ -94,7 +94,8 @@ public class BisectingKMeans implements Clustering {
             clusters.set(0, new ArrayList<DoubleVector>());
 
         // Make the first bisection.
-        Assignment[] assignments = kmeans.cluster(dataPoints, 2, props);
+        Assignment[] assignments =
+            kmeans.cluster(dataPoints, 2, props).assignments();
 
         // Count the number of assignments made to each cluster and move the
         // vectors in to the corresponding list.
@@ -128,7 +129,7 @@ public class BisectingKMeans implements Clustering {
             // Split the largest cluster.
             Matrix clusterToSplit = Matrices.asMatrix(originalCluster);
             Assignment[] newAssignments = 
-                kmeans.cluster(clusterToSplit, 2, props);
+                kmeans.cluster(clusterToSplit, 2, props).assignments();
 
             // Clear the lists for cluster being split and the new cluster.
             // Also clear the number of assignments.
@@ -160,6 +161,6 @@ public class BisectingKMeans implements Clustering {
                 }
             }
         }
-        return assignments;
+        return new Assignments(numClusters, assignments);
     }
 }

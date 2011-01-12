@@ -86,7 +86,7 @@ public class SpectralClustering {
         this.cutterGenerator = cutterGenerator;
     }
 
-    public Assignment[] cluster(Matrix matrix) {
+    public Assignments cluster(Matrix matrix) {
         ClusterResult r = fullCluster(scaleMatrix(matrix), 0);
         verbose("Created " + r.numClusters + " clusters");
 
@@ -94,10 +94,10 @@ public class SpectralClustering {
         for (int i = 0; i < r.assignments.length; ++i)
             assignments[i] = new HardAssignment(r.assignments[i]);
 
-        return assignments;
+        return new Assignments(r.numClusters, assignments);
     }
 
-    public Assignment[] cluster(Matrix matrix,
+    public Assignments cluster(Matrix matrix,
                                 int maxClusters,
                                 boolean useKMeans) {
         // Cluster the matrix recursively.
@@ -111,7 +111,7 @@ public class SpectralClustering {
         for (int i = 0; i < r.assignments.length; ++i)
             assignments[i] = new HardAssignment(r.assignments[i]);
 
-        return assignments;
+        return new Assignments(r.numClusters, assignments);
     }
 
     private Matrix scaleMatrix(Matrix matrix) {

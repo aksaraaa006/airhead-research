@@ -156,7 +156,7 @@ public class ClutoClustering implements Clustering {
      * @param props the properties to use for clustering with CLUTO.  See {@link
      *        ClutoClustering} for the list of supported properties.
      */
-    public Assignment[] cluster(Matrix matrix, Properties properties) {
+    public Assignments cluster(Matrix matrix, Properties properties) {
         return cluster(matrix, System.getProperties());
     }
 
@@ -166,7 +166,7 @@ public class ClutoClustering implements Clustering {
      * @param props the properties to use for clustering with CLUTO.  See {@link
      *        ClutoClustering} for the list of supported properties.
      */
-    public Assignment[] cluster(Matrix matrix, int numClusters, 
+    public Assignments cluster(Matrix matrix, int numClusters, 
                                 Properties properties) {
         Method clmethod = DEFAULT_CLUSTER_METHOD;
         String methodProp = properties.getProperty(CLUSTER_METHOD);
@@ -190,7 +190,7 @@ public class ClutoClustering implements Clustering {
      * @return an array of {@link ClusterAssignment}s that may contain only one
      *         assignment or multiple
      */
-    public Assignment[] cluster(Matrix matrix, int numClusters, 
+    public Assignments cluster(Matrix matrix, int numClusters, 
                                 Method clusterMethod,
                                 Criterion criterionMethod) {
         try {

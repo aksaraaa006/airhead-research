@@ -229,7 +229,7 @@ public class ClusteringByCommittee implements Clustering {
      * @throws IllegalArgumentException if {@code m} is not an instance of
      *         {@link SparseMatrix}.
      */
-    public Assignment[] cluster(Matrix m, int numClusters, Properties props) {
+    public Assignments cluster(Matrix m, int numClusters, Properties props) {
         LOGGER.warning("CBC does not take in a specified number of clusters.  "
                     + "Ignoring specification and clustering anyway.");
         return cluster(m, props);
@@ -242,7 +242,7 @@ public class ClusteringByCommittee implements Clustering {
      * @throws IllegalArgumentException if {@code m} is not an instance of
      *         {@link SparseMatrix}.
      */
-    public Assignment[] cluster(Matrix m, Properties props) {
+    public Assignments cluster(Matrix m, Properties props) {
         // Set up the parameters for clustering
         double avgLinkMergeThresh = Double.parseDouble(props.getProperty(
             AVERGAGE_LINK_MERGE_THRESHOLD_PROPERTY,
@@ -292,7 +292,7 @@ public class ClusteringByCommittee implements Clustering {
             }
             result[r] = new SoftAssignment(assignments);
         }
-        return result;
+        return new Assignments(committees.size(), result);
     }
 
     /**

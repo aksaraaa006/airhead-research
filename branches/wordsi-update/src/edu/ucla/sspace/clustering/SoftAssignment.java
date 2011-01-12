@@ -54,6 +54,13 @@ public class SoftAssignment implements Assignment {
         return assignments;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public int length() {
+        return assignments.length;
+    }
+
     public String toString() {
         return "SoftAssignment" + Arrays.toString(assignments);
     }
