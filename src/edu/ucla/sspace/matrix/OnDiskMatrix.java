@@ -297,5 +297,4 @@ public class OnDiskMatrix implements Matrix {
     public int rows() {
         return rows;
     }
-
 }
