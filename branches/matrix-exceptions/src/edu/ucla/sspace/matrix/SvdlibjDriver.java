@@ -34,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -127,7 +128,7 @@ public class SvdlibjDriver {
 
         rows = result.Vt.rows;
         cols = result.Vt.cols;
-        Matrix Vt = new OnDiskMatrix(result.Vt.rows, result.Vt.cols);
+        Matrix Vt = new ArrayMatrix(result.Vt.rows, result.Vt.cols);
         for (int row = 0; row < rows; ++row) {
             for (int col = 0; col < cols; ++col) {
                 Vt.set(row, col, result.Vt.value[row][col]);
@@ -250,26 +251,32 @@ public class SvdlibjDriver {
      * @throws IOError if any {@link IOException} is thrown as a part of reading
      */
     static SMat readToSMat(File f) throws IOException {
-        DataInputStream dis = new DataInputStream(
-            new BufferedInputStream(new FileInputStream(f)));
-        int rows = dis.readInt();
-        int cols = dis.readInt();
-        int vals = dis.readInt();
-        SMat m = new SMat(rows, cols, vals);
-        
-        int n = 0; // total non-zero values seen
-        for (int col = 0; col < cols; ++col) {
-            m.pointr[col] = n;
-            int nz = dis.readInt(); // discard
-            for (int i = 0; i < nz; i++) {
-                int row = dis.readInt();
-                float val = dis.readFloat();
-                m.rowind[n] = row;
-                m.value[n] = val;
-                n++;
+        try {
+            DataInputStream dis = new DataInputStream(
+                new BufferedInputStream(new FileInputStream(f)));
+            int rows = dis.readInt();
+            int cols = dis.readInt();
+            int vals = dis.readInt();
+            SMat m = new SMat(rows, cols, vals);
+            
+            int n = 0; // total non-zero values seen
+            for (int col = 0; col < cols; ++col) {
+                m.pointr[col] = n;
+                int nz = dis.readInt(); // discard
+                for (int i = 0; i < nz; i++) {
+                    int row = dis.readInt();
+                    float val = dis.readFloat();
+                    m.rowind[n] = row;
+                    m.value[n] = val;
+                    n++;
+                }
             }
+            m.pointr[cols] = vals;
+            return m;
+        } 
+        catch (EOFException eofe) {
+            // Wrap to indicate what happened at a more conceptual level
+            throw new MatrixIOException("Truncated matrix data file: " + f);
         }
-        m.pointr[cols] = vals;
-        return m;
     }
 }

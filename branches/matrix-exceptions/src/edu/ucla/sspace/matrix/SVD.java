@@ -343,6 +343,7 @@ public class SVD {
                 return SvdlibjDriver.svd(matrix, format, dimensions);
             }
 	    case JAMA: {
+                @SuppressWarnings("deprecation")
                 double[][] inputMatrix = 
                     MatrixIO.readMatrixArray(matrix, format);
 		return jamaSVD(inputMatrix, dimensions);
@@ -364,6 +365,7 @@ public class SVD {
                 }
 		return octaveSVDS(matrix, dimensions);
 	    case COLT: {
+                @SuppressWarnings("deprecation")
                 double[][] m = MatrixIO.readMatrixArray(matrix, format);
 		return coltSVD(m, Matrices.isDense(format), dimensions);
             }

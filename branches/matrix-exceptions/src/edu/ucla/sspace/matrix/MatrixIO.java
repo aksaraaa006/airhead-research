@@ -33,6 +33,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -651,152 +652,26 @@ public class MatrixIO {
         dis.close();
         pw.close();
     }
-
+    
     /**
+     * Reads in the content of the file as a two dimensional Java array matrix.
+     * This method has been deprecated in favor of using purely {@link Matrix}
+     * objects for all operations.  If a Java array is needed, the {@link
+     * Matrix#toArray()} method may be used to generate one.
      *
      * @return a two-dimensional array of the matrix contained in provided file
      */
-    public static double[][] readMatrixArray(File input, Format format) 
-        throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(input));
-    
-        switch(format) {
-            case DENSE_TEXT: {
-                // read in the all the lines
-                List<double[]> matrix = new LinkedList<double[]>();
-                int cols = -1;
-                for (String line = null; (line = br.readLine()) != null; ) {
-                    String[] values = line.split("\\s+");
-                    int length = values.length;
-                    if (length == 0)
-                        throw new IOException("bad matrix line: " + line);
-
-                    double[] d = new double[length];
-                    for (int i = 0; i < length; ++i)
-                        d[i] = Double.parseDouble(values[i]);
-                    if (cols == -1)
-                        cols = length;
-                    else if (cols != length)
-                        // check that all the vectors have the same  length;
-                        throw new IOException(
-                                "Inconsistent number of columns: line");
-                    matrix.add(d);
-                }
-
-                if (matrix.isEmpty())
-                    throw new IOException("Empty matrix file");
-
-                double[][] array = new double[matrix.size()][0];
-                Iterator<double[]> it = matrix.iterator();
-                for (int i = 0; i < matrix.size(); ++i)
-                    array[i] = it.next();
-                
-                MATRIX_IO_LOGGER.fine("loaded a " + array.length + " x " + 
-                        array[0].length + " dense text matrix from " +
-                        input);
-
-                br.close();
-                return array;
-            }
-                
-            case MATLAB_SPARSE: {
-                Matrix matrix = new GrowingSparseMatrix();
-                String line = null;
-                while ((line = br.readLine()) != null) {
-                    String[] rowColVal = line.split("\\s");
-                    int row = Integer.parseInt(rowColVal[0]) - 1;
-                    int col = Integer.parseInt(rowColVal[1]) - 1;
-                    double value = Double.parseDouble(rowColVal[2]);
-                    matrix.set(row, col, value);
-                }
-
-                double[][] array = new double[matrix.rows()][0];
-                for (int i = 0; i < matrix.rows(); ++i)
-                    array[i] = matrix.getRow(i);
-                br.close();
-                return array;
-            }
-
-            case CLUTO_SPARSE:
-                break;
-
-            case SVDLIBC_SPARSE_TEXT: {
-                String line = br.readLine();
-                if (line == null)
-                    throw new IOException("Empty input Matrix");
-
-                String[] numRowsColsNonZeros = line.split("\\s");
-                int numRows = Integer.parseInt(numRowsColsNonZeros[0]);
-                int numCols = Integer.parseInt(numRowsColsNonZeros[1]);
-
-                double[][] array = new double[numRows][numCols];
-                for (int j = 0; j < numCols && (line = br.readLine()) != null;
-                     ++j) {
-                    int numNonZeros = Integer.parseInt(line);
-                    for (int i = 0; i < numNonZeros &&
-                            (line = br.readLine()) != null; ++i) {
-                        String[] rowValue = line.split("\\s");
-                        int row = Integer.parseInt(rowValue[0]);
-                        double value = Double.parseDouble(rowValue[1]);
-                        array[row][j] = value;
-                    }
-                }
-                br.close();
-                return array;
-            }
-
-
-            case SVDLIBC_DENSE_BINARY: {
-                DataInputStream in = new DataInputStream(
-                    new BufferedInputStream(new FileInputStream(input)));
-                int numRows = in.readInt();
-                int numCols = in.readInt();
-                double[][] array = new double[numRows][numCols];
-
-                for (int row = 0; row < numRows; ++row) {
-                    for (int col = 0; col < numCols; ++col) {
-                        array[row][col] = in.readFloat();
-                    }
-                }                 
-                br.close();                
-                return array;
-            }
-
-            // These two formats are equivalent
-            case CLUTO_DENSE:
-            case SVDLIBC_DENSE_TEXT:
-                // TODO IMPLEMENT ME.
-                break;
-
-            case SVDLIBC_SPARSE_BINARY: {
-                DataInputStream in = new DataInputStream(
-                    new BufferedInputStream(new FileInputStream(input)));
-                int numRows = in.readInt();
-                int numCols = in.readInt();
-                int allNonZeros = in.readInt();
-
-                double[][] array = new double[numRows][numCols];
-                for (int j = 0; j < numCols; ++j) {
-                    int numNonZeros = in.readInt();
-                    for (int i = 0; i < numNonZeros; ++i) {
-                        int row = in.readInt(); 
-                        double value = in.readFloat();
-                        array[row][j] = value;
-                    }
-                }
-                br.close();
-                return array;
-            }
-        }
-
-        br.close();
-        throw new Error("Convert matrix files of " + format + " format " +
-                        "to an array is not currently supported. Email " + 
-                        "s-space-research-dev@googlegroups.com to request its" +
-                        "inclusion and it will be quickly added");
+    @Deprecated public static double[][] readMatrixArray(File input, 
+                                                         Format format) 
+            throws IOException {
+        // Use the same code path for reading the Matrix object and then dump to
+        // an array.  This comes at a potential 2X space usage, but greatly
+        // reduces the possibilities for bugs.
+        return readMatrix(input, format).toDenseArray();
     }
-     /**
-      * Converts the contents of a matrix file as a {@link Matrix} object, using
+    
+    /**
+     * Converts the contents of a matrix file as a {@link Matrix} object, using
       * the provided format as a hint for what kind to create.  The
       * type of {@code Matrix} object created will assuming that the entire
       * matrix can fit in memory based on the format of the file speicfied
@@ -887,31 +762,37 @@ public class MatrixIO {
                                     Type matrixType, boolean transposeOnRead) 
             throws IOException {
 
-        switch(format) {
-        case DENSE_TEXT: 
-            return readDenseTextMatrix(matrix, matrixType, transposeOnRead);
-            
-        case MATLAB_SPARSE:
-            return readMatlabSparse(matrix, matrixType, transposeOnRead);
-
-        case CLUTO_SPARSE:
-            break;
-
-        case SVDLIBC_SPARSE_TEXT:
-            return readSparseSVDLIBCtext(matrix, matrixType, transposeOnRead);
-
-        // These two formats are equivalent
-        case CLUTO_DENSE:
-        case SVDLIBC_DENSE_TEXT: 
-            return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
-           
-        case SVDLIBC_SPARSE_BINARY:
-            return readSparseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
-
-        case SVDLIBC_DENSE_BINARY:
-            return readDenseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
-        }
-        
+        try {
+            switch(format) {
+            case DENSE_TEXT: 
+                return readDenseTextMatrix(matrix, matrixType, transposeOnRead);
+                
+            case MATLAB_SPARSE:
+                return readMatlabSparse(matrix, matrixType, transposeOnRead);
+                
+            case CLUTO_SPARSE:
+                break;
+                
+            case SVDLIBC_SPARSE_TEXT:
+                return readSparseSVDLIBCtext(matrix, matrixType, transposeOnRead);
+                
+                // These two formats are equivalent
+            case CLUTO_DENSE:
+            case SVDLIBC_DENSE_TEXT: 
+                return readDenseSVDLIBCtext(matrix, matrixType, transposeOnRead);
+                
+            case SVDLIBC_SPARSE_BINARY:
+                return readSparseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
+                
+            case SVDLIBC_DENSE_BINARY:
+                return readDenseSVDLIBCbinary(matrix, matrixType, transposeOnRead);
+            }
+        } catch (EOFException eofe) {
+            // Rethrow with more specific type information
+            throw new MatrixIOException("Matrix file " + matrix + " appeared "
+                + "truncated, or was missing expected values at the end of its "
+                + "contents.");
+        }        
         throw new Error("Reading matrices of " + format + " format is not "+
                         "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its "+
@@ -927,9 +808,9 @@ public class MatrixIO {
      *
      * @return as
      */
-    private static  Matrix readDenseTextMatrix(File matrix, Type matrixType,
-                                               boolean transposeOnRead) 
-        throws IOException {
+    private static Matrix readDenseTextMatrix(File matrix, Type matrixType,
+                                              boolean transposeOnRead) 
+            throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(matrix));
 
         // unknown number of rows, so do a quick scan to determine it
@@ -951,8 +832,8 @@ public class MatrixIO {
             // matches the number of values seen in the first
             else {
                 if (cols != vals) {
-                    throw new Error("line " + (rows + 1) + " contains an " + 
-                                    "inconsistent number of columns");
+                    throw new MatrixIOException("line " + (rows + 1) + 
+                        " contains an inconsistent number of columns");
                 }
             }
         }
