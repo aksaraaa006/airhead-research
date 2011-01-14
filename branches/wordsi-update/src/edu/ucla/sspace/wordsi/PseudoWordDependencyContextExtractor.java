@@ -26,14 +26,14 @@ import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.SimpleDependencyTreeNode;
 
+import edu.ucla.sspace.vector.SparseDoubleVector;
+
 import java.io.BufferedReader;
+import java.io.IOError;
 import java.io.IOException;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A pseudo word based {@link DependencyContextExtractor}.  Given a mapping from
@@ -47,16 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PseudoWordDependencyContextExtractor 
     extends DependencyContextExtractor  {
 
-  /** 
-   * The set of pseudo words.
-   */
-  private Set<String> pseudoWords;
-
-  /**
-   * A mapping from {@link DependencyTreeNode}s to the original token for that
-   * node.
-   */
-  private Map<DependencyTreeNode, String> replacementMap;
+  private Map<String, String> pseudoWordMap;
 
   /**
    * Creates a new {@link PseudoWordDependencyContextExtractor}.
@@ -73,18 +64,49 @@ public class PseudoWordDependencyContextExtractor
       DependencyExtractor extractor,
       DependencyContextGenerator generator,
       Map<String, String> pseudoWordMap) {
-    super(new PseudoWordDependencyExtractor(extractor, pseudoWordMap),
-          generator, true);
+    super(extractor, generator, true);
+    this.pseudoWordMap = pseudoWordMap;
+  }
 
-    // Convert the dependency tree extractor to the known pseudo word extractor
-    // and get a pointer to the replacement map.
-    PseudoWordDependencyExtractor pwExtractor =
-      (PseudoWordDependencyExtractor) this.extractor;
-    this.replacementMap = pwExtractor.replacementMap;
+  /**
+   * {@inheritDoc}
+   */
+  public void processDocument(BufferedReader document, Wordsi wordsi) {
+      try {
+          // Handle the context header, if one exists.  Context headers are assumed
+          // to be the first line in a document and to contain an integer specifying
+          // which line the focus word is on..
+          String contextHeader = handleContextHeader(document);
+          int focusIndex = Integer.parseInt(contextHeader.split("\\s+")[2]);
 
-    // Create the set of pseudo words.
-    pseudoWords = new HashSet<String>();
-    pseudoWords.addAll(pseudoWordMap.values());
+          // Extract the dependency trees and skip any that are empty.
+          DependencyTreeNode[] nodes = extractor.readNextTree(document);
+          if (nodes.length == 0)
+              return;
+          DependencyTreeNode focusNode = nodes[focusIndex];
+
+          // Get the focus word, i.e., the primary key, and the secondary key.
+          String focusWord = getPrimaryKey(focusNode);
+          String secondarykey = pseudoWordMap.get(focusWord);
+
+          // Ignore any focus words that have no mapping.
+          if (secondarykey == null)
+              return;
+
+          // Ignore any focus words that are unaccepted by Wordsi.
+          if (!acceptWord(focusNode, contextHeader, wordsi))
+              return;
+
+          // Create a new context vector and send it to the Wordsi model.
+          SparseDoubleVector focusMeaning = generator.generateContext(
+                  nodes, focusIndex);
+          wordsi.handleContextVector(focusWord, secondarykey, focusMeaning);
+
+          // Close up the document.
+          document.close();
+      } catch (IOException ioe) {
+          throw new IOError(ioe);
+      }
   }
 
   /**
@@ -93,80 +115,6 @@ public class PseudoWordDependencyContextExtractor
   protected boolean acceptWord(DependencyTreeNode focusNode,
                                String contextHeader,
                                Wordsi wordsi) {
-    return pseudoWords.contains(focusNode.word());
-  }
-
-  /**
-   * Returns the pseudo word replacement for the word for {@code focusNode} if
-   * there is a mapping, or {@code null}.
-   */
-  protected String getSecondaryKey(DependencyTreeNode focusNode,
-                                   String contextHeader) {
-    String replacement = replacementMap.get(focusNode);
-    if (replacement == null)
-      return focusNode.word();
-
-    replacementMap.remove(focusNode);
-    return replacement;
-  }
-
-  /**
-   * A private pseudo word based {@lin DependencyExtractor}.  This class
-   * automatically changes out the text for dependency nodes if they have a
-   * valid pseudo word mapping.  The reverse mapping is automatically
-   * maintained.
-   */
-  private static class PseudoWordDependencyExtractor 
-      implements DependencyExtractor {
-
-    /**
-     * The raw {@link DependencyExtractor}.
-     */
-    final DependencyExtractor extractor;
-
-    /**
-     * The mapping from raw tokens to their pseudo words.
-     */
-    final Map<String, String> pseudoWordMap;
-
-    /**
-     * A mapping from dependency tree nodes to the original text for that node.
-     */
-    final Map<DependencyTreeNode, String> replacementMap;
-
-    /**
-     * Creates a new {@link PseudoWordDependencyExtractor}.
-     */
-    public PseudoWordDependencyExtractor(DependencyExtractor extractor,
-                                         Map<String, String> pseudoWordMap) {
-      this.extractor = extractor;
-      this.pseudoWordMap = pseudoWordMap;
-      this.replacementMap = new ConcurrentHashMap<DependencyTreeNode, String>();
-    }
-
-    /**
-     * Returns a new tree of {@link DependencyTreeNode}s.  If any node is for a
-     * word that has a pseudo word mapping, that node's text is replaced with
-     * the pseudo word.  A mapping is then created for the node to the pseudo
-     * word.
-     */
-    public DependencyTreeNode[] readNextTree(BufferedReader reader)
-        throws IOException { 
-      reader.readLine();
-      DependencyTreeNode[] tree = extractor.readNextTree(reader);
-      for (int i = 0; i < tree.length; ++i) {
-        // Get the mapping for the node's text.  If there is a mapping, replace
-        // the node with a pseudo word version and make a mapping from the node
-        // to the original term.
-        String realToken = tree[i].word();
-        String replacement = pseudoWordMap.get(realToken);
-        if (replacement != null) {
-          tree[i] = new SimpleDependencyTreeNode(
-              replacement, tree[i].pos(), tree[i].neighbors());
-          replacementMap.put(tree[i], realToken);
-        }
-      }
-      return tree;
-    }
+    return pseudoWordMap.containsKey(focusNode.word());
   }
 }
