@@ -7,30 +7,29 @@
 bdir=$1
 mkdir -p $bdir/res
 
-CORP_PATH=/fomor/corpora/SemEval2010
+CORP_PATH=/argos/corpora/WaCkypedia/word-contexts
 CLUST=edu.ucla.sspace.clustering
 MAIN=edu.ucla.sspace.mains
 
-LIMIT=5
-keyWords=(cheats)
+LIMIT=4
 
 j="java -Xmx8g -server "
 
 run() {
   corp=""
   # Tac on the extra corpora segments, if specified.
-  for i in $(seq 1 $LIMIT)
+  for i in $(seq 0 $LIMIT)
   do
     [ $i -eq $1 ] && continue
-    corp=$corp,$CORP_PATH/$keyWord-segment-$i.txt,
-    corp=$corp,$CORP_PATH/$confounder-segment-$i.txt
+    corp=$CORP_PATH/$keyWord.$pos.$i,$CORP_PATH/$confounder.$pos.$i,$corp
   done
 
   clustAlg=$2
   clustName=$3
   extraArgs=$4
 
-  outputName=semeval-2010-$algName-$clustName-$keyWord-$confounder-$1
+  outputName=semeval-2010-$algName-$clustName-$keyWord-$confounder-$pos-$1
+  echo $bdir/$outputName-train.log
   echo "Running $algName-$clustName-$1"
   $j $extArgs $MAIN.$alg -d $corp -P $keyMap -W $window -c $numClust -v \
      $clustAlg -S $bdir/$outputName.basis $extraArgs \
@@ -38,7 +37,7 @@ run() {
      2> $bdir/$outputName-train.log \
      > $bdir/res/$outputName-train.counts
 
-  corp=$CORP_PATH/$keyWord-segment-$testSeg.txt,$CORP_PATH/$confounder-segment-$testSeg.txt
+  corp=$CORP_PATH/$keyWord.noun.$testSeg,$CORP_PATH/$confounder.noun.$testSeg
   $j $extArgs $MAIN.$alg -d $corp -P $keyMap -W $window -c $numClust -v \
      -L $bdir/$outputName.basis $extraArgs -e $bdir/$outputName-train.sspace \
      $bdir/$outputName-test.sspace \
@@ -68,15 +67,18 @@ run_all() {
   run $3 "$CTYPE $CLUST.$1" $2 "-B edu.ucla.sspace.dv.RelationBasedBasisMapping"
 }
 
+pos=noun
 keyMap=pseudoword-test-key-map.txt
-for keyWord in ${keyWords[@]}
-do
-  for confounder in `cat $keyWord-confounders.txt`
-  do
+#for keyWord in ${keyWords[@]}
+#do
+#  for confounder in `cat $keyWord-confounders.txt`
+#  do
+    keyWord=factory
+    confounder=house
     echo "$keyWord $keyWord$confounder" > $keyMap
     echo "$confounder $keyWord$confounder" >> $keyMap
 
-    for testSeg in $(seq 1 $LIMIT)
+    for testSeg in $(seq 0 $LIMIT)
     do
       CTYPE=-s
       run_all StreamingKMeans stkm $testSeg
@@ -85,5 +87,5 @@ do
       run_all CKVWSpectralClustering06 sc06 $testSeg
       run_all GapStatistic gs-kmeans $testSeg
     done
-  done
-done
+#  done
+#done
