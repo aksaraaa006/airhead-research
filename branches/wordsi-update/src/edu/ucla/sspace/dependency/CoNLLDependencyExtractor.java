@@ -282,7 +282,7 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
             // order for the later parse trees to be linked correctly, we need
             // to create an offset for the parent ids.
             int realId = Integer.parseInt(nodeFeatures[idIndex]) ;
-            if (realId == 1)
+            if (realId == 1 && nodes.size() != 1)
                 offset = nodes.size();
 
             // Get the node id and the parent node id.

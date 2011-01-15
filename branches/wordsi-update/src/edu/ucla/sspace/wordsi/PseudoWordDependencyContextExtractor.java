@@ -77,7 +77,7 @@ public class PseudoWordDependencyContextExtractor
           // to be the first line in a document and to contain an integer specifying
           // which line the focus word is on..
           String contextHeader = handleContextHeader(document);
-          int focusIndex = Integer.parseInt(contextHeader.split("\\s+")[2]);
+          int focusIndex = Integer.parseInt(contextHeader.split("\\s+")[3]);
 
           // Extract the dependency trees and skip any that are empty.
           DependencyTreeNode[] nodes = extractor.readNextTree(document);
