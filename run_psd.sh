@@ -67,25 +67,29 @@ run_all() {
   run $3 "$CTYPE $CLUST.$1" $2 "-B edu.ucla.sspace.dv.RelationBasedBasisMapping"
 }
 
-pos=noun
+processWordList() {
+pos=$2
 keyMap=pseudoword-test-key-map.txt
-#for keyWord in ${keyWords[@]}
-#do
-#  for confounder in `cat $keyWord-confounders.txt`
-#  do
-    keyWord=factory
-    confounder=house
-    echo "$keyWord $keyWord$confounder" > $keyMap
-    echo "$confounder $keyWord$confounder" >> $keyMap
+for confounderPair in `cat $1`
+do
+  keyWord=`echo $confounderPair | cut -d "-" -f 1`
+  confounder=`echo $confounderPair | cut -d "-" -f 2`
 
-    for testSeg in $(seq 0 $LIMIT)
-    do
-      CTYPE=-s
-      run_all StreamingKMeans stkm $testSeg
-      CTYPE=-b
-      run_all ClusteringByCommittee cbc $testSeg
-      run_all CKVWSpectralClustering06 sc06 $testSeg
-      run_all GapStatistic gs-kmeans $testSeg
-    done
-#  done
-#done
+  echo "$keyWord $confounder"
+  echo "$keyWord $keyWord$confounder" > $keyMap
+  echo "$confounder $keyWord$confounder" >> $keyMap
+
+  for testSeg in $(seq 0 $LIMIT)
+  do
+    CTYPE=-s
+    run_all StreamingKMeans stkm $testSeg
+    CTYPE=-b
+    run_all ClusteringByCommittee cbc $testSeg
+    run_all CKVWSpectralClustering06 sc06 $testSeg
+    #run_all GapStatistic gs-kmeans $testSeg
+  done
+done
+}
+
+processWordList psd-noun-word-list.txt noun
+processWordList psd-verb-word-list.txt verb

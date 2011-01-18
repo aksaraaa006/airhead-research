@@ -47,12 +47,12 @@ public class Assignments implements Iterable<Assignment> {
     private int numClusters;
 
     public Assignments(int numClusters, int numAssignments) {
-        numClusters = numClusters;
+        this.numClusters = numClusters;
         assignments = new Assignment[numAssignments];
     }
 
     public Assignments(int numClusters, Assignment[] initialAssignments) {
-        numClusters = numClusters;
+        this.numClusters = numClusters;
         assignments = initialAssignments;
     }
 
@@ -120,8 +120,9 @@ public class Assignments implements Iterable<Assignment> {
         }
 
         for (int c = 0; c < numClusters; ++c)
-            centroids[c] = new SparseScaledDoubleVector(
-                    centroids[c], 1/counts[c]);
+            if (counts[c] > 0)
+                centroids[c] = new SparseScaledDoubleVector(
+                        centroids[c], 1d/counts[c]);
 
         return centroids;
     }
