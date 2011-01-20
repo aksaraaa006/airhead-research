@@ -45,8 +45,8 @@ class DoubleVectorView extends VectorView<Double> implements DoubleVector {
     /**
      * A {@link DoubleVector} reference to the backing vector
      */
-    private final DoubleVector doubleVector;
-
+    protected final DoubleVector doubleVector;
+    
     /**
      * Creates a new {@link DoubleVector} view of the data in the provided
      * {@link DoubleVector}.
@@ -134,6 +134,22 @@ class DoubleVectorView extends VectorView<Double> implements DoubleVector {
      */
     public Double getValue(int index) {
         return doubleVector.get(getIndex(index));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            double m = 0;
+            for (int i = vectorOffset; i < vectorOffset + vectorLength; ++i) {
+                double d = doubleVector.get(i);
+                m += d * d;
+            }
+            magnitude = Math.sqrt(m);
+        }
+        return magnitude;
     }
 
     /**

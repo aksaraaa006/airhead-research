@@ -21,9 +21,12 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.DoubleEntry;
+
 import java.io.Serializable;
 
 import java.util.Arrays;
+
 
 /**
  * A view of a sparse {@link DoubleVector} that that allows the backing data to
@@ -130,5 +133,35 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
             System.arraycopy(full, startIndex, range, 0, range.length);
             return range;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings("unchecked") @Override 
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            double m = 0;
+            // Special case if we can iterate in time linear to the number of
+            // non-zero values
+            if (sparseVector instanceof Iterable) {
+                for (DoubleEntry e : (Iterable<DoubleEntry>)sparseVector) {
+                    double d = e.value();
+                    m += d * d;
+                }
+            }
+            else {
+                for (int nz : sparseVector.getNonZeroIndices()) {
+                    if (nz >= vectorOffset 
+                            && nz < vectorOffset + vectorLength) {
+                        double d = doubleVector.get(nz);
+                        m += d * d;
+                    }
+                }
+            }
+            magnitude = Math.sqrt(m);
+        }
+        return magnitude;
     }
 }
