@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.dv;
 
+import edu.ucla.sspace.basis.BasisMapping;
+
 import edu.ucla.sspace.dependency.DependencyPath;
 
 

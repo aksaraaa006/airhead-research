@@ -321,6 +321,28 @@ public class Vectors {
     }
 
     /**
+     * Returns a subview for the given {@code IntegerVector} with a specified
+     * offset and length.
+     *
+     * @param vector the {@code Vector} whose values will be shown in the view
+     * @param offset the index of {@code v} at which the first index of this
+     *               view starts
+     * @param length the length of this view.
+     *
+     * @throws IllegalArgumentException if <ul><li>{@code offset} is
+     *         negative<li>{@code length} is less than zero<li>the sum of {@code
+     *         offset} plus {@code length} is greater than the length of {@code
+     *         vector}</ul>
+     */
+    public static SparseIntegerVector subview(SparseIntegerVector vector, 
+                                              int offset, int length) {
+        if (vector == null)
+            throw new NullPointerException("Cannot create view of a " +
+                                           "null vector");
+        return new SparseIntegerVectorView(vector, offset, length);
+    }
+
+    /**
      * Copies all of the values from one {@code Vector} into another.  After the
      * operation, all of the values in {@code dest} will be the same as that of
      * {@code source}.  The legnth of {@code dest} must be as long as the length
