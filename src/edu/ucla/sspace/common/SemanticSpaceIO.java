@@ -112,7 +112,7 @@ public class SemanticSpaceIO {
         char header = dis.readChar();
         if (header != 's') {
             dis.close();
-            return null;
+            return SSpaceFormat.SERIALIZE;
         }
         char encodedFormatCode = dis.readChar();
         int formatCode = encodedFormatCode - '0';
