@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.vector;
 
+import edu.ucla.sspace.util.IntegerEntry;
+
 import java.io.Serializable;
 
 import java.util.Arrays;
@@ -130,5 +132,35 @@ class SparseIntegerVectorView extends IntegerVectorView
             System.arraycopy(full, startIndex, range, 0, range.length);
             return range;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings("unchecked") @Override 
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            double m = 0;
+            // Special case if we can iterate in time linear to the number of
+            // non-zero values
+            if (sparseVector instanceof Iterable) {
+                for (IntegerEntry e : (Iterable<IntegerEntry>)sparseVector) {
+                    int i = e.value();
+                    m += i * i;
+                }
+            }
+            else {
+                for (int nz : sparseVector.getNonZeroIndices()) {
+                    if (nz >= vectorOffset 
+                            && nz < vectorOffset + vectorLength) {
+                        int j = intVector.get(nz);
+                        m += j * j;
+                    }
+                }
+            }
+            magnitude = Math.sqrt(m);
+        }
+        return magnitude;
     }
 }
