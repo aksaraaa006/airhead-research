@@ -28,7 +28,7 @@ import edu.ucla.sspace.dependency.DependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyExtractorManager;
 import edu.ucla.sspace.dependency.WaCKyDependencyExtractor;
 
-import edu.ucla.sspace.text.DependencyFileDocumentIterator;
+import edu.ucla.sspace.text.UkWacDependencyFileIterator;
 import edu.ucla.sspace.text.Document;
 import edu.ucla.sspace.text.TokenFilter;
 import edu.ucla.sspace.text.Stemmer;
@@ -141,7 +141,7 @@ public abstract class DependencyGenericMain extends GenericMain {
                                    String[] fileNames) throws IOException {
         for (String s : fileNames)
           docIters.add(
-              new DependencyFileDocumentIterator(s, argOptions.hasOption('H')));
+              new UkWacDependencyFileIterator(s));
     }
 
     /**

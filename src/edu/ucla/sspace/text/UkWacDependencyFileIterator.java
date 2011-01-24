@@ -83,7 +83,7 @@ public class UkWacDependencyFileIterator implements Iterator<Document> {
             return null;
 
         while ((line = documentsReader.readLine()) != null
-               && line.equals("</text>")) {
+               && !line.equals("</text>")) {
             // Skip sentence delimitors.
             if (line.startsWith("<s>") || line.startsWith("</s>"))
                 continue;
