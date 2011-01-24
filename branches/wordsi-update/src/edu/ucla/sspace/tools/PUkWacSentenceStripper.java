@@ -11,6 +11,7 @@ import edu.ucla.sspace.text.UkWacDependencyFileIterator;
 
 import java.util.Iterator;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -27,10 +28,12 @@ public class PUkWacSentenceStripper {
         StringBuilder builder = new StringBuilder();
         DependencyExtractor extractor = new CoNLLDependencyExtractor();
         while (ukWacIter.hasNext()) {
-            DependencyTreeNode[] tree = extractor.readNextTree(
-                    ukWacIter.next().reader());
-            for (DependencyTreeNode node : tree)
-                builder.append(node.word()).append(" ");
+            BufferedReader doc = ukWacIter.next().reader();
+            for (DependencyTreeNode[] tree = null;
+                 (tree = extractor.readNextTree(doc)) != null; ) {
+                for (DependencyTreeNode node : tree)
+                    builder.append(node.word()).append(" ");
+            }
             writer.println(builder.toString());
             builder = new StringBuilder();
         }
