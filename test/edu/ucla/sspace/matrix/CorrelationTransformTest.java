@@ -59,7 +59,6 @@ public class CorrelationTransformTest {
                                    {-.055,-.037, .088, .069,-.018,-.037,-.034, .111,-.017,-.037,-.037,-.018,-.026},
                                    {-.079, .133, .031, .023,-.026,-.053, .072, .100,-.051,-.053,-.053,-.026,-.037}};
 
-        System.setProperty(CorrelationTransform.SAVE_NEGATIVES_PROPERTY, "");
         Transform correlation = new CorrelationTransform();
         testIn = correlation.transform(testIn);
         for (int i = 0; i < 13; ++i) {
