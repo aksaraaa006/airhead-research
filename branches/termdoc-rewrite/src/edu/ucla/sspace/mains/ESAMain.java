@@ -82,7 +82,11 @@ public class ESAMain extends GenericMain {
      * {@inheritDoc} 
      */
     public SemanticSpace getSpace() {
-        return new ExplicitSemanticAnalysis();
+        try {
+            return new ExplicitSemanticAnalysis();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**
