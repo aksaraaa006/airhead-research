@@ -412,8 +412,10 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>    
+
       <!-- Comment block for excluding the testing a specific set of files. -->
       <test name="edu.ucla.sspace.clustering.HierarchicalAgglomerativeClusteringTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.clustering.LinkClusteringTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.common.ArgOptionsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.common.OnDiskSemanticSpaceTests" todir="${report.dir}"/>
@@ -479,6 +481,7 @@
       <test name="edu.ucla.sspace.util.TrieMapTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TrieSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.TimeSpanTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.WorkQueueTests" todir="${report.dir}"/>
 
       <test name="edu.ucla.sspace.vector.DenseVectorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.MaskedDoubleVectorViewTest" todir="${report.dir}"/>
@@ -488,7 +491,7 @@
       <test name="edu.ucla.sspace.vector.SparseHashDoubleVectorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
-      <!-- -->
+       -->
     </junit>
   </target>
 
