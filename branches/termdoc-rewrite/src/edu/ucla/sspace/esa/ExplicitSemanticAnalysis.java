@@ -24,8 +24,14 @@ package edu.ucla.sspace.esa;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.TfIdfTransform;
 
+import edu.ucla.sspace.util.Duple;
+
+import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 
 import java.util.Properties;
@@ -65,7 +71,14 @@ public class ExplicitSemanticAnalysis extends GenericTermDocumentVectorSpace {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-        processSpace(new TfIdfTransform(), null, 0, false);
+        try {
+            Duple<File, Format> processedSpace = processSpace(
+                    new TfIdfTransform());
+            setWordSpace(MatrixIO.readMatrix(
+                        processedSpace.x, processedSpace.y));
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
     /**

@@ -21,47 +21,27 @@
 
 package edu.ucla.sspace.lsa;
 
-import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
 
-import edu.ucla.sspace.text.IteratorFactory;
-
+import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.ReflectionUtil;
-import edu.ucla.sspace.util.SparseArray;
-import edu.ucla.sspace.util.SparseIntHashArray;
 
 import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.Vector;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-import java.io.PrintWriter;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -222,8 +202,19 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
     private static final String LSA_SSPACE_NAME =
         "lsa-semantic-space";
 
+    /**
+     * The document space of the term document based word space If the word
+     * space is reduced.  After reduction it is the right factor matrix of the
+     * SVD of the word-document matrix.  This matrix is only available after the
+     * {@link #processSpace(Transform, SVD.Algorithm, int, boolean)
+     * processSpace} method has been called.
+     */
+    private Matrix documentSpace;
+    
     public LatentSemanticAnalysis() throws IOException {
         super();
+
+        documentSpace = null;
     }
 
     /**
@@ -231,6 +222,48 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
      */
     public String getSpaceName() {
         return LSA_SSPACE_NAME;
+    }
+
+    /**
+     * Returns the semantics of the document as represented by a numeric vector.
+     * Note that document semantics may be represented in an entirely different
+     * space, so the corresponding semantic dimensions in the word space will be
+     * completely unrelated.  However, document vectors may be compared to find
+     * those document with similar content.
+     *
+     * </p>
+     *
+     * Similar to {@code getVector}, this method is only to be used after {@code
+     * processSpace} has been called.  By default, the document space is not
+     * retained unless {@code retainDocumentSpace} is set to true.
+     *
+     * </p>
+     *
+     * Implementation note: If a specific document ordering is needed, caution
+     * should be used when using this class in a multi-threaded environment.
+     * Beacuse the document number is based on what order it was
+     * <i>processed</i>, no guarantee is made that this will correspond with the
+     * original document ordering as it exists in the corpus files.  However, in
+     * a single-threaded environment, the ordering will be preserved.
+     *
+     * @param documentNumber the number of the document according to when it was
+     *        processed
+     *
+     * @return the semantics of the document in the document space.
+     * @throws IllegalArgumentException If the document space was not retained
+     *         or the document number is out of range.
+     */
+    public DoubleVector getDocumentVector(int documentNumber) {
+        if (documentSpace == null)
+            throw new IllegalArgumentException(
+                    "The document space has not been retained or generated.");
+
+        if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
+            throw new IllegalArgumentException(
+                    "Document number is not within the bounds of the number of "
+                    + "documents: " + documentNumber);
+        }
+        return documentSpace.getRowVector(documentNumber);
     }
 
     /**
@@ -276,6 +309,56 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
             ? SVD.Algorithm.ANY
             : SVD.Algorithm.valueOf(svdProp);
 
-        processSpace(transform, alg, dimensions, retainDocumentSpace);
+
+        try {
+            Duple<File, Format> processedSpace = processSpace(transform);
+
+            Matrix wordSpace = null;
+
+            info("reducing to %d dimensions", dimensions);
+
+            // Compute SVD on the pre-processed matrix.
+            Matrix[] usv = SVD.svd(
+                    processedSpace.x, alg,
+                    processedSpace.y, dimensions);
+            
+            // Load the left factor matrix, which is the word semantic space
+            wordSpace = usv[0];
+
+            // Weight the values in the word space by the singular values.
+            Matrix singularValues = usv[1];
+            for (int r = 0; r < wordSpace.rows(); ++r) {
+                for (int c = 0; c < wordSpace.columns(); ++c) {
+                    wordSpace.set(r, c, wordSpace.get(r, c) * 
+                                        singularValues.get(c, c));
+                }
+            }
+
+            // Save the reduced document space if requested.
+            if (retainDocumentSpace) {
+                verbose("loading in document space");
+                // We transpose the document space to provide easier access to
+                // the document vectors, which in the un-transposed version are
+                // the columns.
+                //
+                documentSpace = Matrices.transpose(usv[2]);
+                // Weight the values in the document space by the singular
+                // values.
+                //
+                // REMINDER: when the RowScaledMatrix class is merged in with
+                // the trunk, this code should be replaced.
+                for (int r = 0; r < documentSpace.rows(); ++r) {
+                    for (int c = 0; c < documentSpace.columns(); ++c) {
+                        documentSpace.set(r, c, documentSpace.get(r, c) * 
+                                                singularValues.get(c, c));
+                    }
+                }
+
+                setWordSpace(wordSpace);
+            }
+        } catch (IOException ioe) {
+            //rethrow as Error
+            throw new IOError(ioe);
+        }
     }
 }

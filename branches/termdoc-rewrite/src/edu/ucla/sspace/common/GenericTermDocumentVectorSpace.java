@@ -25,11 +25,13 @@ import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
 
@@ -55,33 +57,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * LSA first processes documents into a word-document matrix where each unique
- * word is a assigned a row in the matrix, and each column represents a
- * document.  The values of ths matrix correspond to the number of times the
- * row's word occurs in the column's document.  After the matrix has been built,
- * the <a
- * href="http://en.wikipedia.org/wiki/Singular_value_decomposition">Singular
- * Value Decomposition</a> (SVD) may be used to reduce the dimensionality of the
- * original word-document matrix, denoted as <span style="font-family:Garamond,
- * Georgia, serif">A</span>. The SVD is a way of factoring any matrix A into
- * three matrices <span style="font-family:Garamond, Georgia, serif">U &Sigma;
- * V<sup>T</sup></span> such that <span style="font-family:Garamond, Georgia,
- * serif"> &Sigma; </span> is a diagonal matrix containing the singular values
- * of <span style="font-family:Garamond, Georgia, serif">A</span>. The singular
- * values of <span style="font-family:Garamond, Georgia, serif"> &Sigma; </span>
- * are ordered according to which causes the most variance in the values of
- * <span style="font-family:Garamond, Georgia, serif">A</span>. The original
- * matrix may be approximated by recomputing the matrix with only <span
- * style="font-family:Garamond, Georgia, serif">k</span> of these singular
- * values and setting the rest to 0. The approximated matrix <span
- * style="font-family:Garamond, Georgia, serif"> &Acirc; = U<sub>k</sub>
- * &Sigma;<sub>k</sub> V<sub>k</sub><sup>T</sup></span> is the least squares
- * best-ﬁt rank-<span style="font-family:Garamond, Georgia, serif">k</span>
- * approximation of <span style="font-family:Garamond, Georgia, serif">A</span>.
- * LSA reduces the dimensions by keeping only the ﬁrst <span
- * style="font-family:Garamond, Georgia, serif">k</span> dimensions from the row
- * vectors of <span style="font-family:Garamond, Georgia, serif">U</span>.
- * These vectors form the <i>semantic space</i> of the words.
+ * This base class centralizes much of the common text processing needed for
+ * term-document based {@link SemanticSpace}s.  It processes a document by
+ * tokenizing all of the provided text and counting the term occurrences within
+ * the document.  Each column in these spaces represent a document, and the
+ * column values initially represent the number of occurrences for each word.
+ * After all documents are processed, the word space can be modified with one of
+ * the many {@link Matrix} {@link Transform} classes.  A single transform, if
+ * provided will be used to reweight each term document occurrence count.  This
+ * reweighting is typically done to increase the score for important and
+ * distinguishing terms while less salient terms, such as stop words, are given
+ * a lower score.
  *
  * <p>
  *
@@ -134,20 +120,11 @@ public abstract class GenericTermDocumentVectorSpace
      * The word space of the term document based word space model.  If the word
      * space is reduced, it is the left factor matrix of the SVD of the
      * word-document matrix.  This matrix is only available after the {@link
-     * #processSpace(Transform, SVD.Algorithm, int, boolean) processSpace}
+     * #processSpace(Transform) processSpace}
      * method has been called.
      */
     private Matrix wordSpace;
 
-    /**
-     * The document space of the term document based word space If the word
-     * space is reduced.  After reduction it is the right factor matrix of the
-     * SVD of the word-document matrix.  This matrix is only available after the
-     * {@link #processSpace(Transform, SVD.Algorithm, int, boolean)
-     * processSpace} method has been called.
-     */
-    private Matrix documentSpace;
-    
     /**
      * Constructs the {@code GenericTermDocumentVectorSpace}.
      *
@@ -176,7 +153,6 @@ public abstract class GenericTermDocumentVectorSpace
         termDocumentMatrixBuilder = Matrices.getMatrixBuilderForSVD();
 
         wordSpace = null;
-        documentSpace = null;
     }   
 
     /**
@@ -300,46 +276,8 @@ public abstract class GenericTermDocumentVectorSpace
             : wordSpace.getRowVector(index.intValue());
     }
 
-    /**
-     * Returns the semantics of the document as represented by a numeric vector.
-     * Note that document semantics may be represented in an entirely different
-     * space, so the corresponding semantic dimensions in the word space will be
-     * completely unrelated.  However, document vectors may be compared to find
-     * those document with similar content.
-     *
-     * </p>
-     *
-     * Similar to {@code getVector}, this method is only to be used after {@code
-     * processSpace} has been called.  By default, the document space is not
-     * retained unless {@code retainDocumentSpace} is set to true.
-     *
-     * </p>
-     *
-     * Implementation note: If a specific document ordering is needed, caution
-     * should be used when using this class in a multi-threaded environment.
-     * Beacuse the document number is based on what order it was
-     * <i>processed</i>, no guarantee is made that this will correspond with the
-     * original document ordering as it exists in the corpus files.  However, in
-     * a single-threaded environment, the ordering will be preserved.
-     *
-     * @param documentNumber the number of the document according to when it was
-     *        processed
-     *
-     * @return the semantics of the document in the document space.
-     * @throws IllegalArgumentException If the document space was not retained
-     *         or the document number is out of range.
-     */
-    public DoubleVector getDocumentVector(int documentNumber) {
-        if (documentSpace == null)
-            throw new IllegalArgumentException(
-                    "The document space has not been retained or generated.");
-
-        if (documentNumber < 0 || documentNumber >= documentSpace.rows()) {
-            throw new IllegalArgumentException(
-                    "Document number is not within the bounds of the number of "
-                    + "documents: " + documentNumber);
-        }
-        return documentSpace.getRowVector(documentNumber);
+    protected void setWordSpace(Matrix wordSpace) {
+        this.wordSpace = wordSpace;
     }
 
     /**
@@ -363,85 +301,33 @@ public abstract class GenericTermDocumentVectorSpace
      *        Vectors in this space can later be accessible by {@link
      *        #getDocumentVector}.
      */
-    protected void processSpace(Transform transform,
-                                SVD.Algorithm alg,
-                                int dimensions,
-                                boolean retainDocumentSpace) {
-        try {
-            // first ensure that we are no longer writing to the matrix
-            termDocumentMatrixBuilder.finish();
+    protected Duple<File, Format> processSpace(Transform transform)
+            throws IOException {
+        // first ensure that we are no longer writing to the matrix
+        termDocumentMatrixBuilder.finish();
 
-            // Get the finished matrix file from the builder
-            File termDocumentMatrix = termDocumentMatrixBuilder.getFile();
+        // Get the finished matrix file from the builder
+        File termDocumentMatrix = termDocumentMatrixBuilder.getFile();
 
-            // If a transform was specified, perform the matrix transform.
-            if (transform != null) {
-                info("performing %s transform", transform);
+        // If a transform was specified, perform the matrix transform.
+        if (transform != null) {
+            info("performing %s transform", transform);
 
-                verbose("stored term-document matrix in format %s at %s",
-                        termDocumentMatrixBuilder.getMatrixFormat(),
-                        termDocumentMatrix.getAbsolutePath());
-
-                // Convert the raw term counts using the specified transform
-                termDocumentMatrix = transform.transform(
-                        termDocumentMatrix, 
-                        termDocumentMatrixBuilder.getMatrixFormat());
-
-                verbose("transformed matrix to %s",
-                        termDocumentMatrix.getAbsolutePath());
-            }
-            
-            // If no SVD Algorithm was selected, transform the term document
-            // matrix file to a matrix.
-            if (alg == null || dimensions == 0) {
-                wordSpace = MatrixIO.readMatrix(
-                        termDocumentMatrix, 
-                        termDocumentMatrixBuilder.getMatrixFormat());
-                return;
-            }
-
-            info("reducing to %d dimensions", dimensions);
-
-            // Compute SVD on the pre-processed matrix.
-            Matrix[] usv = SVD.svd(
-                    termDocumentMatrix, alg,
+            verbose("stored term-document matrix in format %s at %s",
                     termDocumentMatrixBuilder.getMatrixFormat(),
-                    dimensions);
-            
-            // Load the left factor matrix, which is the word semantic space
-            wordSpace = usv[0];
-            // Weight the values in the word space by the singular values.
-            Matrix singularValues = usv[1];
-            for (int r = 0; r < wordSpace.rows(); ++r) {
-                for (int c = 0; c < wordSpace.columns(); ++c) {
-                    wordSpace.set(r, c, wordSpace.get(r, c) * 
-                                        singularValues.get(c, c));
-                }
-            }
+                    termDocumentMatrix.getAbsolutePath());
 
-            // Save the reduced document space if requested.
-            if (retainDocumentSpace) {
-                verbose("loading in document space");
-                // We transpose the document space to provide easier access to
-                // the document vectors, which in the un-transposed version are
-                // the columns.
-                //
-                documentSpace = Matrices.transpose(usv[2]);
-                // Weight the values in the document space by the singular
-                // values.
-                //
-                // REMINDER: when the RowScaledMatrix class is merged in with
-                // the trunk, this code should be replaced.
-                for (int r = 0; r < documentSpace.rows(); ++r) {
-                    for (int c = 0; c < documentSpace.columns(); ++c) {
-                        documentSpace.set(r, c, documentSpace.get(r, c) * 
-                                                singularValues.get(c, c));
-                    }
-                }
-            }
-        } catch (IOException ioe) {
-            //rethrow as Error
-            throw new IOError(ioe);
+            // Convert the raw term counts using the specified transform
+            termDocumentMatrix = transform.transform(
+                    termDocumentMatrix, 
+                    termDocumentMatrixBuilder.getMatrixFormat());
+
+            verbose("transformed matrix to %s",
+                    termDocumentMatrix.getAbsolutePath());
         }
+
+        return new Duple<File, Format>(
+                termDocumentMatrix, 
+                termDocumentMatrixBuilder.getMatrixFormat());
     }
 }

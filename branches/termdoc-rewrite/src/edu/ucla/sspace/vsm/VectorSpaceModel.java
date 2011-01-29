@@ -24,10 +24,15 @@ package edu.ucla.sspace.vsm;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Transform;
 
+import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.ReflectionUtil;
 
+import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 
 import java.util.Properties;
@@ -131,14 +136,19 @@ public class VectorSpaceModel extends GenericTermDocumentVectorSpace {
      *        javadoc} for the full list of supported properties.
      */
     public void processSpace(Properties properties) {
-        Transform transform = null;
+        try {
+            Transform transform = null;
 
-        // Load any optionally specifie transform class
-        String transformClass = 
-            properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
-        if (transformClass != null)
-            transform = ReflectionUtil.getObjectInstance(
-                    transformClass);
-        processSpace(transform, null, 0, false);
+            // Load any optionally specifie transform class
+            String transformClass = 
+                properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
+            if (transformClass != null)
+                transform = ReflectionUtil.getObjectInstance(
+                        transformClass);
+            Duple<File, Format> processedSpace = processSpace(transform);
+            setWordSpace(MatrixIO.readMatrix(processedSpace.x, processedSpace.y));
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 }
