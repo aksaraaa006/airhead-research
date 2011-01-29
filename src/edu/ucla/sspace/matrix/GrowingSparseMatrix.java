@@ -163,7 +163,7 @@ public class GrowingSparseMatrix implements SparseMatrix {
     /**
      * {@inheritDoc}
      *
-     * The size of the matrix will be expanded if either row or col is larger
+     * <p>The size of the matrix will be expanded if either row or col is larger
      * than the largest previously seen row or column value.    When the matrix
      * is expanded by either dimension, the values for the new row/column will
      * all be assumed to be zero.
