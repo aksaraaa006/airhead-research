@@ -26,13 +26,13 @@ import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
 
-import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.vector.DoubleVector;
@@ -311,7 +311,7 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
 
 
         try {
-            Duple<File, Format> processedSpace = processSpace(transform);
+            MatrixFile processedSpace = processSpace(transform);
 
             Matrix wordSpace = null;
 
@@ -319,8 +319,8 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
 
             // Compute SVD on the pre-processed matrix.
             Matrix[] usv = SVD.svd(
-                    processedSpace.x, alg,
-                    processedSpace.y, dimensions);
+                    processedSpace.getFile(), alg,
+                    processedSpace.getFormat(), dimensions);
             
             // Load the left factor matrix, which is the word semantic space
             wordSpace = usv[0];

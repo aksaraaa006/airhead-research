@@ -23,6 +23,7 @@ package edu.ucla.sspace.common;
 
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
@@ -31,7 +32,6 @@ import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
-import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
 
@@ -301,7 +301,7 @@ public abstract class GenericTermDocumentVectorSpace
      *        Vectors in this space can later be accessible by {@link
      *        #getDocumentVector}.
      */
-    protected Duple<File, Format> processSpace(Transform transform)
+    protected MatrixFile processSpace(Transform transform)
             throws IOException {
         // first ensure that we are no longer writing to the matrix
         termDocumentMatrixBuilder.finish();
@@ -326,7 +326,7 @@ public abstract class GenericTermDocumentVectorSpace
                     termDocumentMatrix.getAbsolutePath());
         }
 
-        return new Duple<File, Format>(
+        return new MatrixFile(
                 termDocumentMatrix, 
                 termDocumentMatrixBuilder.getMatrixFormat());
     }

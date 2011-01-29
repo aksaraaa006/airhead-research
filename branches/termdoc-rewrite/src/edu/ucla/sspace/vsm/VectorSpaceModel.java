@@ -24,11 +24,11 @@ package edu.ucla.sspace.vsm;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 
+import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Transform;
 
-import edu.ucla.sspace.util.Duple;
 import edu.ucla.sspace.util.ReflectionUtil;
 
 import java.io.File;
@@ -145,8 +145,9 @@ public class VectorSpaceModel extends GenericTermDocumentVectorSpace {
             if (transformClass != null)
                 transform = ReflectionUtil.getObjectInstance(
                         transformClass);
-            Duple<File, Format> processedSpace = processSpace(transform);
-            setWordSpace(MatrixIO.readMatrix(processedSpace.x, processedSpace.y));
+            MatrixFile processedSpace = processSpace(transform);
+            setWordSpace(MatrixIO.readMatrix(processedSpace.getFile(),
+                                             processedSpace.getFormat()));
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }
