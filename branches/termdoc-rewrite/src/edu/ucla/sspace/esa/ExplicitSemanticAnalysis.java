@@ -27,6 +27,7 @@ import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
 import edu.ucla.sspace.matrix.TfIdfTransform;
 
 import java.io.File;
@@ -63,7 +64,8 @@ public class ExplicitSemanticAnalysis extends GenericTermDocumentVectorSpace {
      * Constructs a new {@link ExplicitSemanticAnalysis} instance.
      */
     public ExplicitSemanticAnalysis() throws IOException {
-        super(true, new ConcurrentHashMap<String, Integer>());
+        super(true, new ConcurrentHashMap<String, Integer>(),
+              new SvdlibcSparseBinaryMatrixBuilder());
     }
 
     /**

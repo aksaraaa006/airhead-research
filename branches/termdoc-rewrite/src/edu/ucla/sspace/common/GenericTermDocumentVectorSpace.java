@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2010 Keith Stevens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -63,21 +63,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the document.  Each column in these spaces represent a document, and the
  * column values initially represent the number of occurrences for each word.
  * After all documents are processed, the word space can be modified with one of
- * the many {@link Matrix} {@link Transform} classes.  A single transform, if
- * provided will be used to reweight each term document occurrence count.  This
- * reweighting is typically done to increase the score for important and
- * distinguishing terms while less salient terms, such as stop words, are given
- * a lower score.
+ * the many {@link Matrix} {@link Transform} classes.  The transform, if
+ * provided, will be used to rescore each term document occurrence count.
+ * Typically, this reweighting is typically done to increase the score for
+ * important and distinguishing terms while less salient terms, such as stop
+ * words, are given a lower score.  After calling {@link
+ * #processSpace(Transform) processSpace}, sub classes should call {@link
+ * #setWordSpace(Matrix) setWordSpace} after any remaining sspace processing is
+ * done, the passed in matrix will be usedas the final word space.
  *
  * <p>
  *
  * This class is thread-safe for concurrent calls of {@link
  * #processDocument(BufferedReader) processDocument}.  Once {@link
- * #processSpace(Transform, SVD.Algorithm, int, boolean) processSpace} has been
- * called, no further calls to {@code processDocument} should be made.  This
- * implementation does not support access to the semantic vectors until after
- * {@code processSpace} has been
- * called.
+ * #processSpace(Transform) processSpace} has been
+ * called, no further calls to {@link #processDocument(BufferedReader)
+ * processDocument} should be made.  This implementation does not support access
+ * to the semantic vectors until after {@link #processSpace(Properties)
+ * processSpace} has been called.
  *
  * @see Transform
  * @see SVD
@@ -90,6 +93,7 @@ public abstract class GenericTermDocumentVectorSpace
     /**
      * A mapping from a word to the row index in the that word-document matrix
      * that contains occurrence counts for that word.
+     * TODO: Replace this with a basis mapping.
      */
     private final ConcurrentMap<String,Integer> termToIndex;
 
@@ -132,7 +136,8 @@ public abstract class GenericTermDocumentVectorSpace
      *         the backing array files required for processing
      */
     public GenericTermDocumentVectorSpace() throws IOException {
-        this(false, new ConcurrentHashMap<String, Integer>());
+        this(false, new ConcurrentHashMap<String, Integer>(),
+             Matrices.getMatrixBuilderForSVD());
     }
 
     /**
@@ -144,13 +149,14 @@ public abstract class GenericTermDocumentVectorSpace
      */
     public GenericTermDocumentVectorSpace(
             boolean readHeaderToken,
-            ConcurrentMap<String, Integer> termToIndex) throws IOException {
+            ConcurrentMap<String, Integer> termToIndex,
+            MatrixBuilder termDocumentMatrixBuilder) throws IOException {
         this.readHeaderToken = readHeaderToken;
         this.termToIndex = termToIndex;
         termIndexCounter = new AtomicInteger(0);
         documentCounter = new AtomicInteger(0);
 
-        termDocumentMatrixBuilder = Matrices.getMatrixBuilderForSVD();
+        this.termDocumentMatrixBuilder = termDocumentMatrixBuilder;
 
         wordSpace = null;
     }   
@@ -276,6 +282,12 @@ public abstract class GenericTermDocumentVectorSpace
             : wordSpace.getRowVector(index.intValue());
     }
 
+    /**
+     * Saves the given {@link Matrix} and uses it as the word space.  Rows
+     * should be in the same order as the matrix returned by {@link
+     * #processSpace(Transform) processSpace}, but columns can be collaped or
+     * rearranged in any order.
+     */
     protected void setWordSpace(Matrix wordSpace) {
         this.wordSpace = wordSpace;
     }
@@ -289,17 +301,13 @@ public abstract class GenericTermDocumentVectorSpace
 
     /**
      * Processes the {@link GenericTermDocumentVectorSpace} with the provided
-     * {@link SemanticSpace} modifying objects.
+     * {@link Transform} if it is not {@code null} as a {@link MatrixFile}.
+     * Otherwise, the raw term document counts are returned.  Sub classes must
+     * call this in order to access the term document counts before doing any
+     * other processing.
      *
      * @param transform A matrix transform used to rescale the original raw
      *        document counts.  If {@code null} no transform is done.
-     * @param alg The {@link SVD#Algorithm} for reducing the scaled term
-     *        document space.  If {@code null} no reduction is done.
-     * @param dimensions The reduced number of dimensions requsted. {@code 0},
-     *        no reduction is done. 
-     * @param retainDocumentSpace If true, the reduced document space is saved.
-     *        Vectors in this space can later be accessible by {@link
-     *        #getDocumentVector}.
      */
     protected MatrixFile processSpace(Transform transform)
             throws IOException {
