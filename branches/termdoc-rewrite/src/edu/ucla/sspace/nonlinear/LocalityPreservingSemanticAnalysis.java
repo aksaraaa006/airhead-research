@@ -36,6 +36,7 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
 import edu.ucla.sspace.matrix.Transform;
 
+import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.ReflectionUtil;
 
 import java.io.File;
@@ -278,7 +279,7 @@ public class LocalityPreservingSemanticAnalysis
                 }
             }
 
-            verbose("reducing to %d dimensions");
+            LoggerUtil.verbose(LOG, "reducing to %d dimensions", dimensions);
 
             Matrix termDocMatrix = MatrixIO.readMatrix(
                 transformedMatrix.getFile(), 

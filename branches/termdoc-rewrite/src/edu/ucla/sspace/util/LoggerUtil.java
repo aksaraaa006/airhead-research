@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.mains;
+package edu.ucla.sspace.util;
 
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -72,4 +72,35 @@ public final class LoggerUtil {
         appRooLogger.setUseParentHandlers(false);
     }
 
+    /**
+     * Prints {@link Level#FINE} messages to the provided {@link Logger}.
+     */
+    public static void verbose(Logger log, String format, Object... args) {
+        if (log.isLoggable(Level.FINE))
+            log.fine(String.format(format, args));
+    }
+
+    /**
+     * Prints {@link Level#INFO} messages to the provided {@link Logger}.
+     */
+    public static void info(Logger log, String format, Object... args) {
+        if (log.isLoggable(Level.INFO))
+            log.info(String.format(format, args));
+    }
+
+    /** 
+     * Prints {@link Level#WARNING} messages to the provided {@link Logger}.
+     */
+    public static void warning(Logger log, String format, Object... args) {
+        if (log.isLoggable(Level.WARNING))
+            log.warning(String.format(format, args));
+    }
+
+    /** 
+     * Prints {@link Level#SEVERE} messages to the provided {@link Logger}.
+     */
+    public static void severe(Logger log, String format, Object... args) {
+        if (log.isLoggable(Level.SEVERE))
+            log.severe(String.format(format, args));
+    }
 }

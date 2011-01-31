@@ -33,6 +33,7 @@ import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
 
+import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.vector.DoubleVector;
@@ -315,7 +316,7 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
 
             Matrix wordSpace = null;
 
-            info("reducing to %d dimensions", dimensions);
+            LoggerUtil.info(LOG, "reducing to %d dimensions", dimensions);
 
             // Compute SVD on the pre-processed matrix.
             Matrix[] usv = SVD.svd(
@@ -334,9 +335,11 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
                 }
             }
 
+            setWordSpace(wordSpace);
+
             // Save the reduced document space if requested.
             if (retainDocumentSpace) {
-                verbose("loading in document space");
+                LoggerUtil.verbose(LOG, "loading in document space");
                 // We transpose the document space to provide easier access to
                 // the document vectors, which in the un-transposed version are
                 // the columns.
@@ -353,8 +356,6 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
                                                 singularValues.get(c, c));
                     }
                 }
-
-                setWordSpace(wordSpace);
             }
         } catch (IOException ioe) {
             //rethrow as Error

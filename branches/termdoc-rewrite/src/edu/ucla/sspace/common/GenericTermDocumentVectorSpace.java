@@ -32,6 +32,7 @@ import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.SparseArray;
 import edu.ucla.sspace.util.SparseIntHashArray;
 
@@ -55,6 +56,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import java.util.logging.Logger;
+
 
 /**
  * This base class centralizes much of the common text processing needed for
@@ -75,20 +78,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  *
  * This class is thread-safe for concurrent calls of {@link
- * #processDocument(BufferedReader) processDocument}.  Once {@link
- * #processSpace(Transform) processSpace} has been
- * called, no further calls to {@link #processDocument(BufferedReader)
- * processDocument} should be made.  This implementation does not support access
- * to the semantic vectors until after {@link #processSpace(Properties)
- * processSpace} has been called.
+ * #processDocument(BufferedReader) processDocument}, if either the default
+ * constructor is used or a {@link ConcurrentMap} is passed to {@link
+ * #GenericTermDocumentVectorSpace(Boolean, Map<String, Integer>, MatrixBuilder)
+ * GenericTermDocumentVectorSpace}.  Once {@link #processSpace(Transform)
+ * processSpace} has been called, no further calls to {@link
+ * #processDocument(BufferedReader) processDocument} should be made.  This
+ * implementation does not support access to the semantic vectors until after
+ * {@link #processSpace(Properties) processSpace} has been called.
  *
  * @see Transform
  * @see SVD
  * 
- * @author David Jurgens
+ * @author Keith Stevens
  */
-public abstract class GenericTermDocumentVectorSpace 
-        extends LoggedSemanticSpace implements SemanticSpace {
+public abstract class GenericTermDocumentVectorSpace implements SemanticSpace {
+
+    protected static final Logger LOG = 
+        Logger.getLogger(GenericTermDocumentVectorSpace.class.getName());
 
     /**
      * A mapping from a word to the row index in the that word-document matrix
@@ -186,16 +193,15 @@ public abstract class GenericTermDocumentVectorSpace
         Iterator<String> documentTokens = IteratorFactory.tokenize(document);
 
         // Increaes the count of documents observed so far.
-        documentCounter.addAndGet(1);
+        int docCount = documentCounter.getAndAdd(1);
+
+        // If the first token is to be interpreted as a document header read it.
+        if (readHeaderToken)
+            handleDocumentHeader(docCount, documentTokens.next());
 
         // If the document is empty, skip it
         if (!documentTokens.hasNext())
             return;
-
-        // If the first token is to be interpreted as the title read it.
-        // TODO: Use this document header as a descriptor for each dimension.
-        if (readHeaderToken)
-            documentTokens.next();
 
         // For each word in the text document, keep a count of how many times it
         // has occurred
@@ -321,9 +327,10 @@ public abstract class GenericTermDocumentVectorSpace
 
         // If a transform was specified, perform the matrix transform.
         if (transform != null) {
-            info("performing %s transform", transform);
+            LoggerUtil.info(LOG, "performing %s transform", transform);
 
-            verbose("stored term-document matrix in format %s at %s",
+            LoggerUtil.verbose(
+                    LOG,"stored term-document matrix in format %s at %s",
                     termDocumentMatrixBuilder.getMatrixFormat(),
                     termDocumentMatrix.getAbsolutePath());
 
@@ -332,12 +339,24 @@ public abstract class GenericTermDocumentVectorSpace
                     termDocumentMatrix, 
                     termDocumentMatrixBuilder.getMatrixFormat());
 
-            verbose("transformed matrix to %s",
+            LoggerUtil.verbose(
+                    LOG, "transformed matrix to %s",
                     termDocumentMatrix.getAbsolutePath());
         }
 
         return new MatrixFile(
                 termDocumentMatrix, 
                 termDocumentMatrixBuilder.getMatrixFormat());
+    }
+
+    /**
+     * Subclasses should override this method if they need to utilize a header
+     * token for each document.  Implementations of this method <b>must</b> be
+     * thread safe.  The default action is a no-op.
+     *
+     * @param docIndex The document id assigned to the current document
+     * @param documentName The name of the current document.
+     */
+    protected void handleDocumentHeader(int docIndex, String header) {
     }
 }

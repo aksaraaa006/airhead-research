@@ -23,13 +23,13 @@ package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
 
-import edu.ucla.sspace.mains.LoggerUtil;
 import edu.ucla.sspace.mains.OptionDescriptions;
 
 import edu.ucla.sspace.text.DocumentPreprocessor;
 import edu.ucla.sspace.text.IteratorFactory;
 import edu.ucla.sspace.text.StringUtils;
 
+import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.TrieMap;
 
 import java.io.BufferedReader;

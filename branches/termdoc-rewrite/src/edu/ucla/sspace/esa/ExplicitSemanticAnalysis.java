@@ -30,13 +30,23 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
 import edu.ucla.sspace.matrix.TfIdfTransform;
 
+import edu.ucla.sspace.util.GrowableArrayList;
+import edu.ucla.sspace.util.SparseArray;
+import edu.ucla.sspace.util.SparseHashArray;
+
+import edu.ucla.sspace.vector.SparseVector;
+import edu.ucla.sspace.vector.Vector;
+
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -61,11 +71,64 @@ public class ExplicitSemanticAnalysis extends GenericTermDocumentVectorSpace {
         "esa-semantic-space";
 
     /**
+     * A mapping from document indices to document labels.  This {@link List}
+     * must both be thread safe and able to dynamically grow it's current length
+     * since multiple calls to {@link List#set} can be made in parallel, and the
+     * final number of documents is unknown.
+     */
+    private final List<String> documentLabels;
+
+    /**
      * Constructs a new {@link ExplicitSemanticAnalysis} instance.
      */
     public ExplicitSemanticAnalysis() throws IOException {
         super(true, new ConcurrentHashMap<String, Integer>(),
               new SvdlibcSparseBinaryMatrixBuilder());
+
+        // We use a synchronized and growable array list in order to save space.
+        // Since the GrowableArrayList does the growing whenever set is called,
+        // the number of synchronization calls are minimized.
+        documentLabels = Collections.synchronizedList(
+                new GrowableArrayList<String>());
+    }
+
+    /**
+     * Stores {@link header} at index {@link docIndex}.
+     */
+    protected void handleDocumentHeader(int docIndex, String header) {
+        documentLabels.set(docIndex, header);
+    }
+
+    /**
+     * Returns a {@link SparseArray} containing document labels for any non zero
+     * value in the given {@link Vector}.  The given {@link Vector}s are
+     * expected to have the same dimensionality as this {@link
+     * ExplicitSemanticAnalysis} word space.  Under ESA, these returned document
+     * labels can be considered the wikipedia articles that best describe the
+     * vector created by combining each of the term vectors in a fragment of
+     * text.
+     */
+    public SparseArray<String> getDocumentDescriptors(Vector documentVector) {
+        if (documentVector.length() != getVectorLength())
+            throw new IllegalArgumentException(
+                    "An documentVector with an invalid length cannot be " +
+                    "interpreted by ESA.");
+
+        SparseArray<String> docLabels = new SparseHashArray<String>();
+
+        // Extract the indices which are non zero and add the corresponding
+        // document label to docLabels.
+        if (documentVector instanceof SparseVector) {
+            int[] nonZeros = ((SparseVector) documentVector).getNonZeroIndices();
+            for (int index : nonZeros)
+                docLabels.set(index, documentLabels.get(index));
+        } else {
+            for (int index = 0; index < documentVector.length(); index++)
+                if (documentVector.getValue(index).doubleValue() != 0d)
+                    docLabels.set(index, documentLabels.get(index));
+        }
+
+        return docLabels;
     }
 
     /**
