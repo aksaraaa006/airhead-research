@@ -99,14 +99,15 @@ public abstract class GenericTermDocumentVectorSpace
 
     /**
      * The counter for recording the current, largest word index in the
-     * word-document matrix.
+     * word-document matrix.  Subclasses can use this for any reporting.
      */
-    private final AtomicInteger termIndexCounter;
+    protected final AtomicInteger termIndexCounter;
     
     /**
      * The counter for recording the current number of documents observed.
+     * Subclasses can use this for any reporting.
      */
-    private final AtomicInteger documentCounter;
+    protected final AtomicInteger documentCounter;
 
     /**
      * The builder used to construct the term-document matrix as new documents
@@ -162,7 +163,8 @@ public abstract class GenericTermDocumentVectorSpace
     }   
 
     /**
-     * Parses the document.
+     * Tokenizes the document using the {@link IteratorFactory} and updates the
+     * term-document frequency counts.
      *
      * <p>
      *
