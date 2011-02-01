@@ -36,7 +36,7 @@ public class StringBasisMapping extends AbstractBasisMapping<String, String> {
      * {@inheritDoc}
      */
     public int getDimension(String key) {
-      return getDimensionInternal(key);
+        return getDimensionInternal(key);
     }
 }
 

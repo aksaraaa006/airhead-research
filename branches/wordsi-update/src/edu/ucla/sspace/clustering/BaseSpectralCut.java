@@ -19,6 +19,24 @@ import java.util.logging.Logger;
 
 
 /**
+ * An abstract class for computing a spectral cut over a data {@link Matrix}
+ * that represents a set of data points.  The spectral cut attempts to find the
+ * a separation that minimizes the conductance between the two resulting
+ * regions.  Often, this requires computing a complete affinity matrix from the
+ * data points, which requires O(n^2) time and space complexity.  {@link
+ * SparseMatrix}s are a special case, Instead of computing the full affinity
+ * matrix, a centroid for the complete data set, and possible divided regions
+ * can be computed and used to evaluate the conductance (based on the
+ * transitivity of the dot product).
+ *
+ * </p>
+ *
+ * There are several various on computing the conductance of a matrix.  This
+ * base class does most of the heavy lifting, such as computing the centorids.
+ * This class also re-orders the data points such that each region is composd of
+ * the most similar vectors.  The resulting cut will be non continuous in the
+ * original data set, but will be continious in the re-ordered version.
+ * 
  * @author Keith Stevens
  */
 public abstract class BaseSpectralCut implements EigenCut {
@@ -29,20 +47,64 @@ public abstract class BaseSpectralCut implements EigenCut {
     private static final Logger LOGGER =
         Logger.getLogger(BaseSpectralCut.class.getName());
 
+    /**
+     * The {@link Matrix} containing the data points.
+     */
     protected Matrix dataMatrix;
+
+    /**
+     * The number of rows in the data matrix.  Used as a short hand in
+     * computations.
+     */
     protected int numRows;
+
+    /**
+     * The sum similarity values from each data point to all other data points,
+     * which is equivalent to the simiarltiy between each data point and the
+     * centroid of the entire data set.
+     */
     protected DoubleVector rho;
+
+    /**
+     * The centroid of the entire data set.
+     */
     protected DoubleVector matrixRowSums;
+
+    /**
+     * The summation of the {@code rho} values.
+     */
     protected double pSum;
+
+    /**
+     * The final ordering of data points in the first created region.
+     */
     protected int[] leftReordering;
+
+    /**
+     * The final ordering of data points in the first created region.
+     */
     protected int[] rightReordering;
+
+    /**
+     * The data points in the left region.
+     */
     protected Matrix leftSplit;
+
+    /**
+     * The data points in the right region.
+     */
     protected Matrix rightSplit;
 
+    /**
+     * {@inheritDoc}
+     */
     public double rhoSum() {
         return pSum;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public DoubleVector computeRhoSum(Matrix matrix) {
         LOGGER.info("Computing rho and rhoSum");
         // Compute the centroid of the entire data set.
@@ -61,6 +123,9 @@ public abstract class BaseSpectralCut implements EigenCut {
         return matrixRowSums;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void computeCut(Matrix matrix) {
         dataMatrix = matrix;
         int numRows = matrix.rows();
@@ -123,25 +188,44 @@ public abstract class BaseSpectralCut implements EigenCut {
         }
     }
 
+    /**
+     * Returns a {@link DoubleVector} representing the secord largest eigen
+     * vector for the data set.
+     */
     protected abstract DoubleVector computeSecondEigenVector(Matrix matrix, 
                                                              int vectorLength);
 
+    /**
+     * {@inheritDoc}
+     */
     public Matrix getLeftCut() {
         return leftSplit;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Matrix getRightCut() {
         return rightSplit;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int[] getLeftReordering() {
         return leftReordering;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int[] getRightReordering() {
         return rightReordering;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double getKMeansObjective() {
         DoubleVector centroid = new ScaledDoubleVector(
                 matrixRowSums, 1/((double) dataMatrix.rows()));
@@ -151,6 +235,9 @@ public abstract class BaseSpectralCut implements EigenCut {
         return score;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double getKMeansObjective(
             double alpha, double beta,
             int leftNumClusters, int[] leftAssignments,
@@ -162,29 +249,41 @@ public abstract class BaseSpectralCut implements EigenCut {
         return score;
     }
 
+    /**
+     * Returns the K-Means objective over an arbitrary clustering assignment for
+     * the data set.
+     */
     public static double kMeansObjective(int numClusters,
                                          int[] assignments,
                                          Matrix data) {
+        // Initialize the clusters.
         double score = 0;
         DoubleVector[] centroids = new DoubleVector[numClusters];
         double[] sizes = new double[numClusters];
         for (int i = 0; i < centroids.length; ++i)
             centroids[i] = new DenseVector(data.columns());
 
+        // Add vectors to each cluster.
         for (int i = 0; i < assignments.length; ++i) {
             VectorMath.add(centroids[assignments[i]], data.getRowVector(i));
             sizes[assignments[i]]++;
         }
 
+        // Scale non empty centroids.
         for (int i = 0; i < centroids.length; ++i)
-            centroids[i] = new ScaledDoubleVector(centroids[i], 1/sizes[i]);
+            if (sizes[i] != 0)
+                centroids[i] = new ScaledDoubleVector(centroids[i],1d/sizes[i]);
 
+        // Compute the total distance of each asisgned point to it's centroid.
         for (int i = 0; i < assignments.length; ++i)
             score += dotProduct(
                     centroids[assignments[i]], data.getRowVector(i));
         return score;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double getSplitObjective(
             double alpha, double beta,
             int leftNumClusters, int[] leftAssignments,
@@ -192,22 +291,34 @@ public abstract class BaseSpectralCut implements EigenCut {
         // Compute the objective when we keep the two branches split.
         double intraClusterScore = 0;
 
+        // Compute the intra cluster score for the left region.
         int[] leftClusterCounts = new int[leftNumClusters];
         intraClusterScore += computeIntraClusterScore(
                 leftAssignments, leftSplit, leftClusterCounts);
 
+        // Compute the intra cluster score for the right region.
         int[] rightClusterCounts = new int[rightNumClusters];
         intraClusterScore += computeIntraClusterScore(
                 rightAssignments, rightSplit, rightClusterCounts);
 
+        // Compute the inter cluster score. Since the sum of the rho vector is
+        // equivalent to the total summation of the affinity matrix, the inter
+        // cluster score is the sum of similarity scores not covered by the
+        // intra cluster score, without any duplicate similarity scores.
         double interClusterScore = (pSum - numRows) / 2.0 - intraClusterScore;
 
+        // Compute the number of comparisons made for each region.
         int pairCount = comparisonCount(leftClusterCounts) +
                         comparisonCount(rightClusterCounts);
+        // Reset the intraClusterScore such that a low intra cluster similarity
+        // leads to a higher score.
         intraClusterScore = pairCount - intraClusterScore;
         return alpha * intraClusterScore + beta * interClusterScore;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public double getMergedObjective(double alpha, double beta) {
         double intraScore = pSum - numRows / 2.0;
         double pairCount = (numRows * (numRows -1)) / 2.0;
@@ -243,6 +354,9 @@ public abstract class BaseSpectralCut implements EigenCut {
         return intraClusterScore;
     }
 
+    /**
+     * Returns the number of comparisons made for a cluster.
+     */
     protected static int comparisonCount(int[] clusterSizes) {
         int total = 0;
         for (int count : clusterSizes)

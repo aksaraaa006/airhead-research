@@ -40,6 +40,16 @@ import java.util.List;
 
 import java.util.logging.Logger;
 
+
+/**
+ * This class parses the xml content for SenseEval and SemEval corpora.  The
+ * output is either formatted as one context per line or as a set of Dependency
+ * Parse Trees concatonated together per context.  When generating one context
+ * per line, an optional separator may be added before the focus word, i.e. the
+ * semEval word of interest.  
+ *
+ * @author Keith Stevens
+ */
 public class SemEvalCleaner {
 
     /**
@@ -48,6 +58,10 @@ public class SemEvalCleaner {
     private static final Logger LOG = 
         Logger.getLogger(SemEvalCleaner.class.getName());
 
+    /**
+     * The three types of SemEval corpora.  When new formats are added, this
+     * should be expanded.
+     */
     public enum CorpusType {
       SEMEVAL_2010_TRAIN,
       SEMEVAL_2010_TEST,
@@ -100,6 +114,7 @@ public class SemEvalCleaner {
         CorpusType type = CorpusType.valueOf(
             options.getStringOption('t').toUpperCase());
 
+        // Create the document iterator based on the corpus format.
         final Iterator<String> contextIter;
         switch (type) {
           case SEMEVAL_2010_TRAIN:
@@ -126,35 +141,42 @@ public class SemEvalCleaner {
           ? options.getIntOption('T')
           : 1;
 
+        // Extract, and optionally parse, each document in the corpora.
         for (int i = 0; i < numThreads; ++i) {
-          threads.add(new Thread() {
-            public void run() {
-              Parser parser = null;
-              if (parserType.equals("stanford"))
-                parser = new StanfordParser();
-              else if (parserType.equals("malt"))
-                parser = new MaltParser();
+            threads.add(new Thread() {
+                public void run() {
+                    // If a parser was specified, create the parser for this
+                    // thread.  Be very cautious when using the Malt parser with
+                    // liblinear, it consumes great amounts of ram.
+                    Parser parser = null;
+                    if (parserType.equals("stanford"))
+                        parser = new StanfordParser();
+                    else if (parserType.equals("malt"))
+                        parser = new MaltParser();
 
-              while (contextIter.hasNext()) {
-                String[] lines = contextIter.next().split("\n");
-                String header = lines[0];
-                LOG.info("Handling: " + header);
-                for (int i = 1; i < lines.length; ++i) {
-                  String text;
-                  if (parser != null) {
-                      text = parser.parseText(header, lines[i]).replace(
-                          "\t"+header+"\t_\t",
-                          "\t"+header.split("\\.")[0]+"\t"+header+"\t");
-                  } else {
-                      text = String.format("%s %s", header, lines[i]);
-                  }
-                  synchronized (writer) {
-                    writer.println(text);
-                  }
+                    // Parse each file and save it.
+                    while (contextIter.hasNext()) {
+                        String[] lines = contextIter.next().split("\n");
+                        String header = lines[0];
+                        LOG.info("Handling: " + header);
+                        for (int i = 1; i < lines.length; ++i) {
+                            String text;
+                            if (parser != null) {
+                                text = parser.parseText(
+                                    header, lines[i]).replace(
+                                        "\t"+header+"\t_\t",
+                                        "\t"+header.split("\\.")[0]+
+                                        "\t"+header+"\t");
+                            } else {
+                                text = String.format("%s %s", header, lines[i]);
+                            }
+                            synchronized (writer) {
+                                writer.println(text);
+                            }
+                        }
+                    }
                 }
-              }
-            }
-          });
+            });
         }
 
         // start all the threads processing
@@ -167,4 +189,3 @@ public class SemEvalCleaner {
         writer.close();
     }
 }
-

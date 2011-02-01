@@ -436,44 +436,46 @@ public class SyntacticallyEnrichedVectorModel
     }
 
     public SparseDoubleVector contextualize(Iterator<DependencyPath> paths) {
-      SparseDoubleVector contextVector = new CompactSparseVector(numFeatures);
-      while (paths.hasNext()) {
-        DependencyPath path = paths.next();
+        SparseDoubleVector contextVector = new CompactSparseVector(numFeatures);
+        while (paths.hasNext()) {
+            DependencyPath path = paths.next();
 
-        // Skip any paths longer than 1 relation.
-        if (path.length() > 1)
-          continue;
+            // Skip any paths longer than 1 relation.
+            if (path.length() > 1)
+                continue;
 
-        DependencyRelation relation = path.lastRelation();
-        String occurringTerm = path.last().word();
-        String focusTerm = path.first().word();
+            DependencyRelation relation = path.lastRelation();
+            String occurringTerm = path.last().word();
+            String focusTerm = path.first().word();
 
-        String orderedRelation = (relation.headNode().equals(path.first()))
-          ? relation.relation() + "-"
-          : "-" + relation.relation(); 
+            String orderedRelation = (relation.headNode().equals(path.first()))
+              ? relation.relation() + "-"
+              : "-" + relation.relation(); 
 
-        // Get the index corresponding to the current relation.
-        int relation1Index = relationBasis.getDimension(orderedRelation);
+            // Get the index corresponding to the current relation.
+            int relation1Index = relationBasis.getDimension(orderedRelation);
 
-        Map<String, SparseDoubleVector> prefs = selPrefMap.get(occurringTerm);
-        if (prefs == null)
-          continue;
+            Map<String, SparseDoubleVector> prefs = selPrefMap.get(occurringTerm);
+            if (prefs == null)
+                continue;
 
-        SparseDoubleVector focusVector = getVector(focusTerm);
-        for (Map.Entry<String, SparseDoubleVector> entry : prefs.entrySet()) {
-            int relation2Index = relationBasis.getDimension(entry.getKey());
-            SparseDoubleVector secondCounts = entry.getValue();
-            for (int secondIndex : secondCounts.getNonZeroIndices()) {
-                double weight2 = secondCounts.get(secondIndex);
-                int featureIndex = secondIndex * numRows * numRelations +
-                                   relation2Index * numRelations +
-                                   relation1Index;
-                contextVector.add(
-                    featureIndex, weight2*focusVector.get(featureIndex));
+            SparseDoubleVector focusVector = getVector(focusTerm);
+            for (Map.Entry<String, SparseDoubleVector> entry :
+                    prefs.entrySet()) {
+                int relation2Index =
+                    relationBasis.getDimension(entry.getKey());
+                SparseDoubleVector secondCounts = entry.getValue();
+                for (int secondIndex : secondCounts.getNonZeroIndices()) {
+                    double weight2 = secondCounts.get(secondIndex);
+                    int featureIndex = secondIndex * numRows * numRelations +
+                                       relation2Index * numRelations +
+                                       relation1Index;
+                    contextVector.add(
+                        featureIndex, weight2*focusVector.get(featureIndex));
+                }
             }
         }
-      }
-      return contextVector;
+        return contextVector;
     }
 
     /**
@@ -486,8 +488,8 @@ public class SyntacticallyEnrichedVectorModel
      *        computed.
      */
     public void setSemanticFilter(Set<String> semanticsToRetain) {
-      for (String term : semanticsToRetain)
-        focusBasis.getDimension(term);
-      focusBasis.setReadOnly();
+        for (String term : semanticsToRetain)
+            focusBasis.getDimension(term);
+        focusBasis.setReadOnly();
     }
 }

@@ -46,75 +46,89 @@ import org.xml.sax.SAXException;
 
 
 /**
+ * An {@link Iterator} for the SemEval 2010 test data set.
+ *
  * @author Keith Stevens
  */
 public class SemEval2010TestIterator extends SemEvalIterator {
 
-  private final Stemmer stemmer;
+    /**
+     * The {@link Stemmer} used to determine the focus word in each context.
+     */
+    private final Stemmer stemmer;
 
-  public SemEval2010TestIterator(InputStream fileStream,
-                                 boolean prepareForParse,
-                                 String separator,
-                                 Stemmer stemmer) {
-    super(fileStream, prepareForParse, separator);
-    this.stemmer = stemmer;
-    advance();
-  }
-
-  public SemEval2010TestIterator(List<String> fileNames,
-                                 boolean prepareForParse,
-                                 String separator,
-                                 Stemmer stemmer) {
-    super(fileNames, prepareForParse, separator);
-    this.stemmer = stemmer;
-    advance();
-  }
-
-  protected NodeList getInstances(Document doc) {
-    NodeList root = doc.getChildNodes();
-    return root.item(0).getChildNodes();
-  }
-
-  /**
-   * Writes out a single context for the instance node.  For the test files,
-   * each target sentence is embedded withing xml tags with the name
-   * "TargetSentence".  This will consider all text before and after this
-   * embedded node to be context and only search for the instance term within
-   * the "TargetSentence".  The instance term is found by stemming each term
-   * in the "TargetSentence" and comparing this to the stem of the known test
-   * word, when a match is found, a separator and the stem is printed.  All
-   * proceeding text is printed after the instance term.
-   */
-  protected String handleElement(Element instanceNode) {
-    String instanceId = instanceNode.getNodeName();
-    String[] wordPosNum = instanceId.split("\\.");
-    String word = stemmer.stem(wordPosNum[0].toLowerCase());
-
-    NodeList context = instanceNode.getChildNodes();
-    StringBuilder sb = new StringBuilder();
-
-    sb.append(instanceId).append("\n");
-    for (int i = 0; i < context.getLength(); ++i) {
-      // If we are handling the target sentence, tokenize it based on white
-      // space and find the term that has the same stem as the word of
-      // interest.  Otherwise just print the entire text of the line.
-      if (context.item(i).getNodeName().equals("TargetSentence")) {
-        Element target = (Element) context.item(i);
-        String text = target.getTextContent();
-        for (String token : text.split("\\s+")) {
-          String stem = stemmer.stem(token.toLowerCase());
-          if (stem.equals(word))
-            if (prepareForParse)
-              sb.append(instanceId).append(" ");
-            else
-              sb.append(separator).append(" ").append(stem).append(" ");
-          else
-            sb.append(token).append(" ");
-        }
-      } else {
-        sb.append(context.item(i).getTextContent()).append(" ");
-      }
+    /**
+     * Creates a new {@link SemEval2010TestIterator}.
+     */
+    public SemEval2010TestIterator(InputStream fileStream,
+                                   boolean prepareForParse,
+                                   String separator,
+                                   Stemmer stemmer) {
+        super(fileStream, prepareForParse, separator);
+        this.stemmer = stemmer;
+        advance();
     }
-    return sb.toString();
-  }
+
+    /**
+     * Creates a new {@link SemEval2010TestIterator}.
+     */
+    public SemEval2010TestIterator(List<String> fileNames,
+                                   boolean prepareForParse,
+                                   String separator,
+                                   Stemmer stemmer) {
+        super(fileNames, prepareForParse, separator);
+        this.stemmer = stemmer;
+        advance();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected NodeList getInstances(Document doc) {
+        NodeList root = doc.getChildNodes();
+        return root.item(0).getChildNodes();
+    }
+
+    /**
+     * Writes out a single context for the instance node.  For the test files,
+     * each target sentence is embedded withing xml tags with the name
+     * "TargetSentence".  This will consider all text before and after this
+     * embedded node to be context and only search for the instance term within
+     * the "TargetSentence".  The instance term is found by stemming each term
+     * in the "TargetSentence" and comparing this to the stem of the known test
+     * word, when a match is found, a separator and the stem is printed.  All
+     * proceeding text is printed after the instance term.
+     */
+    protected String handleElement(Element instanceNode) {
+        String instanceId = instanceNode.getNodeName();
+        String[] wordPosNum = instanceId.split("\\.");
+        String word = stemmer.stem(wordPosNum[0].toLowerCase());
+
+        NodeList context = instanceNode.getChildNodes();
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(instanceId).append("\n");
+        for (int i = 0; i < context.getLength(); ++i) {
+            // If we are handling the target sentence, tokenize it based on
+            // white space and find the term that has the same stem as the word
+            // of interest.  Otherwise just print the entire text of the line.
+            if (context.item(i).getNodeName().equals("TargetSentence")) {
+                Element target = (Element) context.item(i);
+                String text = target.getTextContent();
+                for (String token : text.split("\\s+")) {
+                    String stem = stemmer.stem(token.toLowerCase());
+                    if (stem.equals(word))
+                        if (prepareForParse)
+                            sb.append(instanceId).append(" ");
+                        else
+                            sb.append(separator).append(" ").append(stem).append(" ");
+                    else
+                        sb.append(token).append(" ");
+                }
+            } else {
+                sb.append(context.item(i).getTextContent()).append(" ");
+            }
+        }
+        return sb.toString();
+    }
 }

@@ -65,208 +65,251 @@ import java.util.Set;
 
 
 /**
- * GENERALIZE THIS TO HANDLE DEPENDENCY VECTOR SPACES.
+ * This main creates a {@link BasisMapping} based on the unique terms found in a
+ * document set and serializes it to disk.
+ *
  * @author Keith Stevens
  */
 public class BasisMaker extends GenericMain {
 
-  protected void addExtraOptions(ArgOptions options) { 
-    options.addOption('T', "matrixTransform",
-                      "Specifies the matrix transform that should be applied " +
-                      "to co-occurrence counts after they have been generated",
-                      true, "CLASSNAME", "Optional");
-    options.addOption('b', "basisSize",
-                      "Specifies the total desired size of the basis " +
-                      "(Default: 10000)",
-                      true, "INT", "Optional");
-    options.addOption('w', "windowSize",
-                      "Specifies the sliding window size (Default: 5)",
-                      true, "INT", "Optional");
-    options.addOption('p', "printWeights",
-                      "If true, each saved word and it's associated weight " +
-                      "will be printed to standard out",
-                      false, null, "Optional");
-  }
-
-  protected SemanticSpace getSpace() {
-    Transform transform = null;
-    if (argOptions.hasOption('T'))
-      transform = ReflectionUtil.getObjectInstance(argOptions.getStringOption('T'));
-    else
-      transform = new NoTransform();
-    int bound = argOptions.getIntOption('b', 10000);
-    int windowSize = argOptions.getIntOption('w', 5);
-    return new OccurrenceCounter(transform, bound, windowSize);
-  }
-
-  protected void saveSSpace(SemanticSpace sspace, File outputFile)
-      throws IOException{
-    BasisMapping<String, String> savedTerms = new StringBasisMapping();
-    for (String term : sspace.getWords())
-      savedTerms.getDimension(term);
-
-    ObjectOutputStream ouStream = new ObjectOutputStream(new FileOutputStream(
-          outputFile));
-    ouStream.writeObject(savedTerms);
-    ouStream.close();
-  }
-
-  public class OccurrenceCounter implements SemanticSpace {
-
     /**
-     * The matrix used for storing weight co-occurrence statistics of those
-     * words that occur both before and after.
+     * {@inheritDoc}
      */
-    private final AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
-
-    /**
-     * The type of weight to apply to a the co-occurrence word based on its
-     * relative location
-     */
-    private final WeightingFunction weighting;
-
-    private final BasisMapping<String, String> basis;
-
-    private final Map<String, Double> wordScores;
-
-    private final Transform transform;
-
-    private final int windowSize;
-
-    public OccurrenceCounter(Transform transform, int bound, int windowSize) {
-      cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
-      basis = new StringBasisMapping();
-      wordScores = new BoundedSortedMap<String, Double>(bound);
-      weighting = new LinearWeighting();
-
-      this.transform = transform;
-      this.windowSize = windowSize;
+    protected void addExtraOptions(ArgOptions options) { 
+        options.addOption('T', "matrixTransform",
+                          "Specifies the matrix transform that should be applied " +
+                          "to co-occurrence counts after they have been generated",
+                          true, "CLASSNAME", "Optional");
+        options.addOption('b', "basisSize",
+                          "Specifies the total desired size of the basis " +
+                          "(Default: 10000)",
+                          true, "INT", "Optional");
+        options.addOption('w', "windowSize",
+                          "Specifies the sliding window size (Default: 5)",
+                          true, "INT", "Optional");
+        options.addOption('p', "printWeights",
+                          "If true, each saved word and it's associated weight " +
+                          "will be printed to standard out",
+                          false, null, "Optional");
     }
 
     /**
      * {@inheritDoc}
      */
-    public void  processDocument(BufferedReader document) throws IOException {
-        Queue<String> nextWords = new ArrayDeque<String>();
-        Queue<String> prevWords = new ArrayDeque<String>();
-            
-        Iterator<String> documentTokens = 
-            IteratorFactory.tokenizeOrdered(document);
-            
-        String focus = null;
+    protected SemanticSpace getSpace() {
+        Transform transform = null;
+        if (argOptions.hasOption('T'))
+            transform = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption('T'));
+        else
+            transform = new NoTransform();
+        int bound = argOptions.getIntOption('b', 10000);
+        int windowSize = argOptions.getIntOption('w', 5);
+        return new OccurrenceCounter(transform, bound, windowSize);
+    }
 
-        // Rather than updating the matrix every time an occurrence is seen,
-        // keep a thread-local count of what needs to be modified in the matrix
-        // and update after the document has been processed.  This saves
-        // potential contention from concurrent writes.
-        Map<Pair<Integer>,Double> matrixEntryToCount = 
-            new HashMap<Pair<Integer>,Double>();
-            
-        //Load the first windowSize words into the Queue        
-        for(int i = 0;  i < windowSize && documentTokens.hasNext(); i++)
-            nextWords.offer(documentTokens.next());
-            
-        while(!nextWords.isEmpty()) {
-            
-            // Load the top of the nextWords Queue into the focus word
-            focus = nextWords.remove();
+    /**
+     * Saves the {@link BasisMapping} created from the {@link
+     * OccurrenceCounter}.
+     */
+    protected void saveSSpace(SemanticSpace sspace, File outputFile)
+            throws IOException{
+        BasisMapping<String, String> savedTerms = new StringBasisMapping();
+        for (String term : sspace.getWords())
+            savedTerms.getDimension(term);
 
-            // Add the next word to nextWords queue (if possible)
-            if (documentTokens.hasNext())
-                nextWords.offer(documentTokens.next());
+        ObjectOutputStream ouStream = new ObjectOutputStream(
+                new FileOutputStream(outputFile));
+        ouStream.writeObject(savedTerms);
+        ouStream.close();
+    }
 
-            // If the filter does not accept this word, skip the semantic
-            // processing, continue with the next word
-            if (focus.equals(IteratorFactory.EMPTY_TOKEN)) {
-              int focusIndex = basis.getDimension(focus);
-              
-              countOccurrences(nextWords, focusIndex, 1, matrixEntryToCount);
-              countOccurrences(
-                prevWords, focusIndex, -prevWords.size(), matrixEntryToCount);
-            }
+    /**
+     * A simple term {@link SemanticSpace} implementation that counts word
+     * co-occurrences, performs a transform, and then scores each recorded basis
+     * dimension based on the row summed scores for each word.
+     */
+    public class OccurrenceCounter implements SemanticSpace {
 
-            // last, put this focus word in the prev words and shift off the
-            // front if it is larger than the window
-            prevWords.offer(focus);
-            if (prevWords.size() > windowSize)
-                prevWords.remove();
+        /**
+         * The matrix used for storing weight co-occurrence statistics of those
+         * words that occur both before and after.
+         */
+        private final AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
+
+        /**
+         * The type of weight to apply to a the co-occurrence word based on its
+         * relative location
+         */
+        private final WeightingFunction weighting;
+
+        /**
+         * The {@link BasisMapping} used to record dimensions.
+         */
+        private final BasisMapping<String, String> basis;
+
+        /**
+         * The final scores for each word in the {@code basis}.
+         */
+        private final Map<String, Double> wordScores;
+
+        /**
+         * The {@link Transform} class used to rescore each word.
+         */
+        private final Transform transform;
+
+        /**
+         * The sliding window size used when traversing documents.
+         */
+        private final int windowSize;
+
+        /**
+         * Creates a new {@link OccurrenceCounter}.
+         */
+        public OccurrenceCounter(Transform transform,
+                                 int bound,
+                                 int windowSize) {
+            cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
+            basis = new StringBasisMapping();
+            wordScores = new BoundedSortedMap<String, Double>(bound);
+            weighting = new LinearWeighting();
+
+            this.transform = transform;
+            this.windowSize = windowSize;
         }
 
-        // Once the document has been processed, update the co-occurrence matrix
-        // accordingly.
-        for (Map.Entry<Pair<Integer>,Double> e : matrixEntryToCount.entrySet()){
-            Pair<Integer> p = e.getKey();
-            cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
-        }                    
+        /**
+         * {@inheritDoc}
+         */
+        public void processDocument(BufferedReader document)
+               throws IOException {
+            Queue<String> nextWords = new ArrayDeque<String>();
+            Queue<String> prevWords = new ArrayDeque<String>();
+                    
+            Iterator<String> documentTokens = 
+                IteratorFactory.tokenizeOrdered(document);
+                    
+            String focus = null;
+
+            // Rather than updating the matrix every time an occurrence is seen,
+            // keep a thread-local count of what needs to be modified in the
+            // matrix and update after the document has been processed.    This
+            // saves potential contention from concurrent writes.
+            Map<Pair<Integer>,Double> matrixEntryToCount = 
+                    new HashMap<Pair<Integer>,Double>();
+                    
+            //Load the first windowSize words into the Queue                
+            for(int i = 0;    i < windowSize && documentTokens.hasNext(); i++)
+                nextWords.offer(documentTokens.next());
+                    
+            while(!nextWords.isEmpty()) {
+                // Load the top of the nextWords Queue into the focus word
+                focus = nextWords.remove();
+
+                // Add the next word to nextWords queue (if possible)
+                if (documentTokens.hasNext())
+                    nextWords.offer(documentTokens.next());
+
+                // If the filter does not accept this word, skip the semantic
+                // processing, continue with the next word
+                if (focus.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    int focusIndex = basis.getDimension(focus);
+                    
+                    countOccurrences(nextWords, focusIndex,
+                                     1, matrixEntryToCount);
+                    countOccurrences(prevWords, focusIndex,
+                                     -prevWords.size(), matrixEntryToCount);
+                }
+
+                // last, put this focus word in the prev words and shift off the
+                // front if it is larger than the window
+                prevWords.offer(focus);
+                if (prevWords.size() > windowSize)
+                    prevWords.remove();
+            }
+
+            // Once the document has been processed, update the co-occurrence
+            // matrix accordingly.
+            for (Map.Entry<Pair<Integer>,Double> e : matrixEntryToCount.entrySet()){
+                Pair<Integer> p = e.getKey();
+                cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
+            }                                        
+        }
+
+        /**
+         * Adds a occurnce count for each term in {@code words} according to
+         * it's distance from the focus word.
+         */
+        private void countOccurrences(Queue<String> words,
+                                      int focusIndex,
+                                      int wordDistance,
+                                      Map<Pair<Integer>, Double> entryCounts) {
+            // Iterate through the words occurring after and add values
+            for (String term : words) {
+                // skip adding co-occurence values for words that are not
+                // accepted by the filter
+                if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                    int index = basis.getDimension(term);
+                    
+                    // Get the current number of times that the focus word has
+                    // co-occurred with this word appearing after it.    Weight
+                    // the word appropriately based on distance
+                    Pair<Integer> p = new Pair<Integer>(focusIndex, index);
+                    double value = weighting.weight(wordDistance, windowSize);
+                    Double curCount = entryCounts.get(p);
+                    entryCounts.put(p, (curCount == null) ? value : value + curCount);
+                }
+                wordDistance++;
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<String> getWords() {
+            return Collections.unmodifiableSet(wordScores.keySet());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public DoubleVector getVector(String word) {
+            Double score = wordScores.get(word);
+            return (score == null)
+                ? new DenseVector(new double[] {0})
+                : new DenseVector(new double[] {score});
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int getVectorLength() {
+            return 1;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void processSpace(Properties properties) {
+            SparseMatrix cleanedMatrix = (SparseMatrix) transform.transform(
+                    cooccurrenceMatrix);
+            for (String term : basis.keySet()) {
+                int index = basis.getDimension(term);
+                SparseDoubleVector sdv = cleanedMatrix.getRowVector(index);
+
+                double score = 0;
+                for (int i : sdv.getNonZeroIndices())
+                    score += sdv.get(i);
+
+                wordScores.put(term, score);
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String getSpaceName() {
+            return "BasisMaker";
+        }
     }
-
-    private void countOccurrences(Queue<String> words,
-                                  int focusIndex,
-                                  int wordDistance,
-                                  Map<Pair<Integer>, Double> entryCounts) {
-      // Iterate through the words occurring after and add values
-      for (String term : words) {
-          // skip adding co-occurence values for words that are not
-          // accepted by the filter
-          if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-              int index = basis.getDimension(term);
-              
-              // Get the current number of times that the focus word has
-              // co-occurred with this word appearing after it.  Weight
-              // the word appropriately based on distance
-              Pair<Integer> p = new Pair<Integer>(focusIndex, index);
-              double value = weighting.weight(wordDistance, windowSize);
-              Double curCount = entryCounts.get(p);
-              entryCounts.put(p, (curCount == null) ? value : value + curCount);
-          }
-          wordDistance++;
-      }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Set<String> getWords() {
-      return Collections.unmodifiableSet(wordScores.keySet());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public DoubleVector getVector(String word) {
-      Double score = wordScores.get(word);
-      return (score == null)
-        ? new DenseVector(new double[] {0})
-        : new DenseVector(new double[] {score});
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int getVectorLength() {
-      return 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void processSpace(Properties properties) {
-      SparseMatrix cleanedMatrix = (SparseMatrix) transform.transform(
-          cooccurrenceMatrix);
-      for (String term : basis.keySet()) {
-        int index = basis.getDimension(term);
-        SparseDoubleVector sdv = cleanedMatrix.getRowVector(index);
-
-        double score = 0;
-        for (int i : sdv.getNonZeroIndices())
-          score += sdv.get(i);
-
-        wordScores.put(term, score);
-      }
-    }
-
-    public String getSpaceName() {
-      return "BasisMaker";
-    }
-  }
 }

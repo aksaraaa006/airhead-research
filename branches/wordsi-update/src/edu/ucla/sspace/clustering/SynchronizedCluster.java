@@ -34,64 +34,64 @@ import java.util.List;
  */
 public class SynchronizedCluster<T extends DoubleVector> implements Cluster<T> {
 
-  /**
-   * The base {@link Cluster} that is being synchronized.
-   */
-  private Cluster<T> cluster;
+    /**
+     * The base {@link Cluster} that is being synchronized.
+     */
+    private Cluster<T> cluster;
 
-  /**
-   * Creates a synchronized accessor to {@code cluster}.
-   */
-  public SynchronizedCluster(Cluster<T> cluster) {
-    this.cluster = cluster;
-  }
+    /**
+     * Creates a synchronized accessor to {@code cluster}.
+     */
+    public SynchronizedCluster(Cluster<T> cluster) {
+        this.cluster = cluster;
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized void addVector(T vector, int id) {
-    cluster.addVector(vector, id);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void addVector(T vector, int id) {
+        cluster.addVector(vector, id);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized double compareWithVector(T vector) {
-    return cluster.compareWithVector(vector);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized double compareWithVector(T vector) {
+        return cluster.compareWithVector(vector);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized T centroid() {
-    return cluster.centroid();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized T centroid() {
+        return cluster.centroid();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized List<T> dataPointValues() {
-    return cluster.dataPointValues();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized List<T> dataPointValues() {
+        return cluster.dataPointValues();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized BitSet dataPointIds() {
-    return cluster.dataPointIds();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized BitSet dataPointIds() {
+        return cluster.dataPointIds();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized void merge(Cluster<T> other) {
-    cluster.merge(other);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized void merge(Cluster<T> other) {
+        cluster.merge(other);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized int size() {
-    return cluster.size();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized int size() {
+        return cluster.size();
+    }
 }

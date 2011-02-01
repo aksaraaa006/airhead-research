@@ -41,41 +41,41 @@ import java.util.List;
  */
 public interface Cluster<T extends DoubleVector> {
 
-  /**
-   * Adds {@code vector} with {@code id} to this {@link Cluster}.
-   */
-  void addVector(T vector, int id);
+    /**
+     * Adds {@code vector} with {@code id} to this {@link Cluster}.
+     */
+    void addVector(T vector, int id);
 
-  /**
-   * Returns the similarity between this {@link Cluster} and {@code vector}.
-   */
-  double compareWithVector(T vector);
+    /**
+     * Returns the similarity between this {@link Cluster} and {@code vector}.
+     */
+    double compareWithVector(T vector);
 
-  /**
-   * Returns the centroid of this cluster.
-   */
-  T centroid();
+    /**
+     * Returns the centroid of this cluster.
+     */
+    T centroid();
 
-  /**
-   * Returns the set of stored data points, if any, for this cluster.
-   */
-  List<T> dataPointValues();
+    /**
+     * Returns the set of stored data points, if any, for this cluster.
+     */
+    List<T> dataPointValues();
 
-  /**
-   * Returns the set of identifiers for all data points assigned to this
-   * cluster.
-   */
-  BitSet dataPointIds();
+    /**
+     * Returns the set of identifiers for all data points assigned to this
+     * cluster.
+     */
+    BitSet dataPointIds();
 
-  /**
-   * Merges the {@code other} {@link Cluster} with this {@link Cluster}.  This
-   * {@link Cluster} will absorb all data points from {@code other} and update
-   * the centroid and data point assignments as needed.
-   */
-  void merge(Cluster<T> other);
+    /**
+     * Merges the {@code other} {@link Cluster} with this {@link Cluster}.
+     * This {@link Cluster} will absorb all data points from {@code other} and
+     * update the centroid and data point assignments as needed.
+     */
+    void merge(Cluster<T> other);
 
-  /**
-   * Returns the total number of points assigned to this {@link Cluster}.
-   */
-  int size();
+    /**
+     * Returns the total number of points assigned to this {@link Cluster}.
+     */
+    int size();
 }

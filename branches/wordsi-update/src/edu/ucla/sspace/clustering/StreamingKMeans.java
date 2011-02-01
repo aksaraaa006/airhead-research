@@ -321,109 +321,31 @@ public class StreamingKMeans<T extends DoubleVector>
          * {@inheritDoc}
          */
         public synchronized int addVector(T value) {
+            // Get the id of the new data point.
+            int id = idCounter.getAndAdd(1);
 
-            /*
-          // If the first K data points have not been handled, begin storing the
-          // data values in a list and then process the list once it has reached
-          // the required size.  If K data points have already been observed,
-          // this will initialize all of the clustering values, cluster the
-          // first K points, and then finally cluster the most recent value.
-          if (firstKPoints != null) {
-            // Simply store the value until the size limit is reached.
-            if (firstKPoints.size() < numClusters) {
-              firstKPoints.add(value);
-              return firstKPoints.size();
+            // Try to assign the data point to a cluster.  If assigning the data
+            // point causes either the cost threshold or number of clusters
+            // threshold to be surpassed, try reclustering the centroids and
+            // sampled data points, then cluster the data point again.  This may
+            // take several iterations since the creation of new clusters is
+            // done at random.
+            if (addDataPoint(value, id) < 0) {
+                // Reassign the centroid of each cluster.
+                List<Cluster<T>> clusters = facilities;
+                facilities = new ArrayList<Cluster<T>>();
+                LCost *= beta;
+                facilityCost = LCost/(numClusters*(1 + logNumPoints));
+
+                // When reassigning each centroid, copy over the id of assigned
+                // data points to the new cluster.
+                for (Cluster<T> cluster : clusters) {
+                    int assignment = addDataPoint(cluster.centroid(), 0);
+                Cluster<T> newCluster = facilities.get(assignment);
+                newCluster.dataPointIds().or(cluster.dataPointIds());
+                }
             }
-
-            // Among the first K data points, compute all of the pairwise
-            // similarities and find the pairing with the smallest distance.
-            List<T> dataPoints = firstKPoints;
-            firstKPoints = null;
-
-            // Find the shortest distance between the first K data points.
-            double bestDistance = 0;
-            for (int i = 0; i < dataPoints.size(); ++i) {
-              for (int j = i+1; j < dataPoints.size(); ++j) {
-                double sim = Similarity.cosineSimilarity(
-                    dataPoints.get(i), dataPoints.get(j));
-                bestDistance = Math.max(bestDistance, sim);
-              }
-            }
-
-            // Use the shortest distance to initialize the scaled cost and the
-            // facility cost.
-            LCost = bestDistance / beta;
-
-            // Cluster each of the data points.
-            for (T dataPoint : dataPoints)
-              addVector(dataPoint);
-          }
-          */
-
-          // Get the id of the new data point.
-          int id = idCounter.getAndAdd(1);
-
-          // Try to assign the data point to a cluster.  If assigning the data
-          // point causes either the cost threshold or number of clusters
-          // threshold to be surpassed, try reclustering the centroids and
-          // sampled data points, then cluster the data point again.  This may
-          // take several iterations since the creation of new clusters is
-          // done at random.
-          if (addDataPoint(value, id) < 0) {
-
-              /*
-            // Create a matrix storing the stored centroids.  If the vectors are
-            // sparse, create a sparse matrix so that the offline KMeans
-            // implementation can take advantage of the sparsity, otherwise
-            // create a normal matrix.
-            Matrix storedDataPoints;
-            if (value instanceof SparseDoubleVector) {
-              List<SparseDoubleVector> vectors = 
-                new ArrayList<SparseDoubleVector>();
-              for (Cluster<T> cluster : facilities)
-                for (T vector : cluster.dataPointValues())
-                  vectors.add((SparseDoubleVector) vector);
-              storedDataPoints = Matrices.asSparseMatrix(vectors);
-            } else {
-              List<DoubleVector> vectors = new ArrayList<DoubleVector>();
-              for (Cluster<T> cluster : facilities)
-                vectors.addAll(cluster.dataPointValues());
-              storedDataPoints = Matrices.asMatrix(vectors);
-            }
-
-            // Perform the offline kmeans approximation over the stored data
-            // points and compute the cost, or objective value, of the
-            // clustering assignment.
-            Assignment[] assignments = approxCluster.cluster(
-                storedDataPoints, numClusters, System.getProperties());
-            DoubleVector[] centroids = KMeansClustering.computeCentroids(
-                storedDataPoints, assignments, numClusters);
-            double approximateCost = KMeansClustering.computeObjective(
-                storedDataPoints, centroids, assignments);
-
-            // Update the scaled clustering cost and the facility cost.
-            double newLCost = approximateCost/
-              (4*approxCluster.approximationFactor()*(1+gamma));
-            LCost = Math.max(beta * LCost, newLCost);
-            facilityCost = LCost/(numClusters*(1 + logNumPoints));
-            */
-
-            // Reassign the centroid of each cluster.
-            List<Cluster<T>> clusters = facilities;
-            facilities = new ArrayList<Cluster<T>>();
-            LCost *= beta;
-            facilityCost = LCost/(numClusters*(1 + logNumPoints));
-
-            // When reassigning each centroid, copy over the id of assigned data
-            // points to the new cluster.
-            for (Cluster<T> cluster : clusters) {
-              int assignment = addDataPoint(cluster.centroid(), 0);
-              Cluster<T> newCluster = facilities.get(assignment);
-              newCluster.dataPointIds().or(cluster.dataPointIds());
-            }
-          }
-
-          return id;
+            return id;
         }
 
         /**
@@ -436,77 +358,52 @@ public class StreamingKMeans<T extends DoubleVector>
          * @param id The unique identifier for {@code id}
          */
         private int addDataPoint(T value, int id) {
-          // Find the cluster that is closest to value.
-          double bestCost = Double.MAX_VALUE;
-          int bestClusterId = 0;
-          Cluster<T> bestCluster = null;
-          int i = 0;
-          for (Cluster<T> cluster : facilities) {
-            double cost = cluster.compareWithVector(value);
-            // Reverse the scale so that a high similarity corresponds to a low
-            // cost and a low similarity corresponds to a high cost, but is
-            // still from a 0 to 1 range.
-            cost = -1*cost + 1;
-            if (cost < bestCost) {
-              bestCost = cost;
-              bestCluster = cluster;
-              bestClusterId = i;
+            // Find the cluster that is closest to value.
+            double bestCost = Double.MAX_VALUE;
+            int bestClusterId = 0;
+            Cluster<T> bestCluster = null;
+            int i = 0;
+            for (Cluster<T> cluster : facilities) {
+                double cost = cluster.compareWithVector(value);
+                // Reverse the scale so that a high similarity corresponds to a
+                // low cost and a low similarity corresponds to a high cost, but
+                // is still from a 0 to 1 range.
+                cost = -1*cost + 1;
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestCluster = cluster;
+                    bestClusterId = i;
+                }
+                ++i;
             }
-            ++i;
-          }
 
-          // Determine whether or not a new facility, or cluster, should be
-          // generated for this data point.  This based on the total cost of
-          // serving this data point and the cost of creating a new facility.
-          double makeFacilityProb = Math.min(bestCost / facilityCost, 1);
-          boolean makeFacility = facilities.size() == 0 || 
-                                 Math.random() < makeFacilityProb;
-          
-          if (makeFacility) {
-            Cluster<T> newCluster = new CentroidCluster<T>(
-                Vectors.instanceOf(value));
-            newCluster.addVector(value, (id > 0) ? id : -1);
-            facilities.add(newCluster);
-            bestClusterId = facilities.size() - 1;
-          } else {
-            bestCluster.addVector(value, (id > 0) ? id : -1);
-            totalCost += bestCost;
-          }
+            // Determine whether or not a new facility, or cluster, should be
+            // generated for this data point.  This based on the total cost of
+            // serving this data point and the cost of creating a new
+            // facility.
+            double makeFacilityProb = Math.min(bestCost / facilityCost, 1);
+            boolean makeFacility = facilities.size() == 0 || 
+                                   Math.random() < makeFacilityProb;
+              
+            if (makeFacility) {
+                Cluster<T> newCluster = new CentroidCluster<T>(
+                  Vectors.instanceOf(value));
+                newCluster.addVector(value, (id > 0) ? id : -1);
+                facilities.add(newCluster);
+                bestClusterId = facilities.size() - 1;
+            } else {
+                bestCluster.addVector(value, (id > 0) ? id : -1);
+                totalCost += bestCost;
+            }
 
-          if (id != 0) {
-              if (totalCost > gamma * LCost)
-                  return -1;
-              if (facilities.size() >= facilityThreshold)
-                  return -2;
-          }
+            if (id != 0) {
+                if (totalCost > gamma * LCost)
+                    return -1;
+                if (facilities.size() >= facilityThreshold)
+                    return -2;
+            }
 
-          return bestClusterId;
-          /*
-          // If a new facility should be created, determine whether or not the
-          // creation of this facility would violate the facility threshold.  If
-          // it does not, add it to the list of facilities and assign the data
-          // point to it.
-          if (makeFacility && facilities.size() + 1 <= facilityThreshold) {
-            Cluster<T> newCluster = new CentroidCluster<T>(
-                Vectors.instanceOf(value));
-            newCluster.addVector(value, id);
-            facilities.add(newCluster);
-            return facilities.size() - 1;
-          } 
-          // If a new facility should not be created, then it must be assigned
-          // to the nearest existing facility.  If making this assignment does
-          // not violate the cost threshold, make the assignment and update the
-          // total cost.
-          else if (!makeFacility && totalCost + bestCost <= costThreshold) {
-            bestCluster.addVector(value, id);
-            totalCost += bestCost;
-            return facilities.size() - 1;
-          }
-
-          // One of the thresholds was violated, return -1 signifying that the
-          // data point cannot be assigned as is.
-          return -1;
-          */
+            return bestClusterId;
         }
 
         /**
@@ -514,7 +411,7 @@ public class StreamingKMeans<T extends DoubleVector>
          */
         public Cluster<T> getCluster(int clusterIndex) {
             if (facilities.size() <= clusterIndex || clusterIndex < 0)
-              throw new ArrayIndexOutOfBoundsException();
+                throw new ArrayIndexOutOfBoundsException();
             return facilities.get(clusterIndex);
         }
 
@@ -540,4 +437,3 @@ public class StreamingKMeans<T extends DoubleVector>
         }
     }
 }
-

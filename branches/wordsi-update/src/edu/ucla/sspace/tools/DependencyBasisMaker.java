@@ -71,192 +71,244 @@ import java.util.Set;
 
 
 /**
- * GENERALIZE THIS TO HANDLE DEPENDENCY VECTOR SPACES.
+ * This main creates a {@link BasisMapping} based on the unique terms found in a
+ * document set and serializes it to disk.
+ *
  * @author Keith Stevens
  */
 public class DependencyBasisMaker extends DependencyGenericMain {
 
-  public void addExtraOptions(ArgOptions options) { 
-    options.addOption('b', "basisSize",
-                      "Specifies the total desired size of the basis " +
-                      "(Default: 10000)",
-                      true, "INT", "Optional");
-    options.addOption('a', "pathAcceptor",
-                      "Specifies the dependency path acceptor to use. " +
-                      "(Default:  UnivseralPathAcceptor)",
-                      true, "CLASSNAME", "Optional");
-    options.addOption('w', "pathWeighter",
-                      "Specifies the dependency path weighter to use. " +
-                      "(Default:  FlatPathWeight)",
-                      true, "CLASSNAME", "Optional");
-    options.addOption('l', "pathLength",
-                      "Specifies the maximum dependency path length. " +
-                      "(Default:  5)",
-                      true, "INT", "Optional");
-  }
-
-  protected SemanticSpace getSpace() {
-    setupDependencyExtractor();
-
-    int bound = argOptions.getIntOption('b', 10000);
-    Transform transform = argOptions.getObjectOption('T', new NoTransform());
-    DependencyPathAcceptor acceptor = argOptions.getObjectOption(
-        'a', new UniversalPathAcceptor());
-    DependencyPathWeight weighter = argOptions.getObjectOption(
-        'w', new FlatPathWeight());
-    int pathLength = argOptions.getIntOption('l', 5);
-    return new OccurrenceCounter(
-        transform, bound, acceptor, weighter, pathLength);
-  }
-
-  protected void saveSSpace(SemanticSpace sspace, File outputFile)
-      throws IOException{
-    BasisMapping<String, String> savedTerms = new StringBasisMapping();
-    for (String term : sspace.getWords())
-      savedTerms.getDimension(term);
-
-    ObjectOutputStream ouStream = new ObjectOutputStream(new FileOutputStream(
-          outputFile));
-    ouStream.writeObject(savedTerms);
-    ouStream.close();
-  }
-
-  public class OccurrenceCounter implements SemanticSpace {
-
     /**
-     * The matrix used for storing weight co-occurrence statistics of those
-     * words that occur both before and after.
+     * {@inheritDoc}
      */
-    private final AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
-
-    private final BasisMapping<String, String> basis;
-
-    private final Map<String, Double> wordScores;
-
-    private final Transform transform;
-
-    private final DependencyPathAcceptor acceptor;
-
-    private final DependencyPathWeight weighter;
-
-    private final int pathLength;
-
-    private final DependencyExtractor extractor;
-    public OccurrenceCounter(Transform transform,
-                             int bound, 
-                             DependencyPathAcceptor acceptor,
-                             DependencyPathWeight weighter,
-                             int pathLength) {
-      cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
-      basis = new StringBasisMapping();
-      wordScores = new BoundedSortedMap<String, Double>(bound);
-      extractor = DependencyExtractorManager.getDefaultExtractor();
-
-      this.transform = transform;
-      this.acceptor = acceptor;
-      this.weighter = weighter;
-      this.pathLength = pathLength;
+    public void addExtraOptions(ArgOptions options) { 
+        options.addOption('b', "basisSize",
+                          "Specifies the total desired size of the basis " +
+                          "(Default: 10000)",
+                          true, "INT", "Optional");
+        options.addOption('a', "pathAcceptor",
+                          "Specifies the dependency path acceptor to use. " +
+                          "(Default:    UnivseralPathAcceptor)",
+                          true, "CLASSNAME", "Optional");
+        options.addOption('w', "pathWeighter",
+                          "Specifies the dependency path weighter to use. " +
+                          "(Default:    FlatPathWeight)",
+                          true, "CLASSNAME", "Optional");
+        options.addOption('l', "pathLength",
+                          "Specifies the maximum dependency path length. " +
+                          "(Default:    5)",
+                          true, "INT", "Optional");
     }
 
     /**
      * {@inheritDoc}
      */
-    public void  processDocument(BufferedReader document) throws IOException {
-        // Rather than updating the matrix every time an occurrence is seen,
-        // keep a thread-local count of what needs to be modified in the matrix
-        // and update after the document has been processed.  This saves
-        // potential contention from concurrent writes.
-        Map<Pair<Integer>,Double> matrixEntryToCount = 
-            new HashMap<Pair<Integer>,Double>();
+    protected SemanticSpace getSpace() {
+        setupDependencyExtractor();
 
-        // Iterate over all of the parseable dependency parsed sentences in the
-        // document.
-        for (DependencyTreeNode[] nodes = null; 
-             (nodes = extractor.readNextTree(document)) != null; ) {
+        int bound = argOptions.getIntOption('b', 10000);
+        Transform transform = argOptions.getObjectOption(
+                'T', new NoTransform());
+        DependencyPathAcceptor acceptor = argOptions.getObjectOption(
+                'a', new UniversalPathAcceptor());
+        DependencyPathWeight weighter = argOptions.getObjectOption(
+                'w', new FlatPathWeight());
+        int pathLength = argOptions.getIntOption('l', 5);
+        return new OccurrenceCounter(
+                transform, bound, acceptor, weighter, pathLength);
+    }
 
-          // Skip empty documents.
-          if (nodes.length == 0)
-            continue;            
+    /**
+     * Saves the {@link BasisMapping} created from the {@link
+     * OccurrenceCounter}.
+     */
+    protected void saveSSpace(SemanticSpace sspace, File outputFile)
+            throws IOException{
+        BasisMapping<String, String> savedTerms = new StringBasisMapping();
+        for (String term : sspace.getWords())
+            savedTerms.getDimension(term);
 
-          // Examine the paths for each word in the sentence.
-          for (int wordIndex = 0; wordIndex < nodes.length; ++wordIndex) {
-            String focusWord = nodes[wordIndex].word();              
-            int focusIndex = basis.getDimension(focusWord);
+        ObjectOutputStream ouStream = new ObjectOutputStream(
+                new FileOutputStream(outputFile));
+        ouStream.writeObject(savedTerms);
+        ouStream.close();
+    }
 
-            // Get all the valid paths starting from this word.  The
-            // acceptor will filter out any paths that don't contain the
-            // semantic connections we're looking for.
-            Iterator<DependencyPath> paths = new FilteredDependencyIterator(
-                nodes[wordIndex], acceptor, pathLength);
-                
-            // For each of the paths rooted at the focus word, update the
-            // co-occurrences of the focus word in the dimension that the
-            // BasisFunction states.
-            while (paths.hasNext()) {
-              DependencyPath path = paths.next();
+    /**
+     * A simple term {@link SemanticSpace} implementation that counts word
+     * co-occurrences, performs a transform, and then scores each recorded basis
+     * dimension based on the row summed scores for each word.
+     */
+    public class OccurrenceCounter implements SemanticSpace {
 
-              String occurrence = path.last().word();
-              int featureIndex = basis.getDimension(occurrence);
+        /**
+         * The matrix used for storing weight co-occurrence statistics of those
+         * words that occur both before and after.
+         */
+        private final AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
 
-              double score = weighter.scorePath(path);
-              matrixEntryToCount.put(
-                  new Pair<Integer>(focusIndex, featureIndex), score);
-            }
-          }
+        /**
+         * The {@link BasisMapping} used to record dimensions.
+         */
+        private final BasisMapping<String, String> basis;
+
+        /**
+         * The final scores for each word in the {@code basis}.
+         */
+        private final Map<String, Double> wordScores;
+
+        /**
+         * The {@link Transform} class used to rescore each word.
+         */
+        private final Transform transform;
+
+        /**
+         * The {@link DependencyPathAcceptor} used to accept or reject
+         * dependency paths.
+         */
+        private final DependencyPathAcceptor acceptor;
+
+        /**
+         * The {@link DependencyPathWeight} used to score dependency paths.
+         */
+        private final DependencyPathWeight weighter;
+
+        /**
+         * The maximum path length that is acceptable.
+         */
+        private final int pathLength;
+
+        /**
+         * The {@link DependencyExtractor} used to extract parse trees from each
+         * document.
+         */
+        private final DependencyExtractor extractor;
+
+        /**
+         * Creates a new {@link OccurrenceCounter}.
+         */
+        public OccurrenceCounter(Transform transform,
+                                 int bound, 
+                                 DependencyPathAcceptor acceptor,
+                                 DependencyPathWeight weighter,
+                                 int pathLength) {
+            cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
+            basis = new StringBasisMapping();
+            wordScores = new BoundedSortedMap<String, Double>(bound);
+            extractor = DependencyExtractorManager.getDefaultExtractor();
+
+            this.transform = transform;
+            this.acceptor = acceptor;
+            this.weighter = weighter;
+            this.pathLength = pathLength;
         }
 
-        // Once the document has been processed, update the co-occurrence matrix
-        // accordingly.
-        for (Map.Entry<Pair<Integer>,Double> e : matrixEntryToCount.entrySet()){
-            Pair<Integer> p = e.getKey();
-            cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
-        }                    
+        /**
+         * {@inheritDoc}
+         */
+        public void processDocument(BufferedReader document)
+                throws IOException {
+            // Rather than updating the matrix every time an occurrence is
+            // seen, keep a thread-local count of what needs to be modified
+            // in the matrix and update after the document has been
+            // processed.  This saves potential contention from concurrent
+            // writes.
+            Map<Pair<Integer>,Double> matrixEntryToCount = 
+                    new HashMap<Pair<Integer>,Double>();
+
+            // Iterate over all of the parseable dependency parsed sentences in
+            // the document.
+            for (DependencyTreeNode[] nodes = null; 
+                    (nodes = extractor.readNextTree(document)) != null; ) {
+
+                // Skip empty documents.
+                if (nodes.length == 0)
+                    continue;                        
+
+                // Examine the paths for each word in the sentence.
+                for (int wordIndex = 0; wordIndex < nodes.length; ++wordIndex) {
+                    String focusWord = nodes[wordIndex].word();                            
+                    int focusIndex = basis.getDimension(focusWord);
+
+                    // Get all the valid paths starting from this word.    The
+                    // acceptor will filter out any paths that don't contain the
+                    // semantic connections we're looking for.
+                    Iterator<DependencyPath> paths =
+                        new FilteredDependencyIterator(
+                                nodes[wordIndex], acceptor, pathLength);
+                            
+                    // For each of the paths rooted at the focus word, update
+                    // the co-occurrences of the focus word in the dimension
+                    // that the BasisFunction states.
+                    while (paths.hasNext()) {
+                        DependencyPath path = paths.next();
+
+                        String occurrence = path.last().word();
+                        int featureIndex = basis.getDimension(occurrence);
+
+                        double score = weighter.scorePath(path);
+                        matrixEntryToCount.put(new Pair<Integer>(
+                                    focusIndex, featureIndex), score);
+                    }
+                }
+            }
+
+            // Once the document has been processed, update the co-occurrence
+            // matrix accordingly.
+            for (Map.Entry<Pair<Integer>,Double> e :
+                    matrixEntryToCount.entrySet()){
+                    Pair<Integer> p = e.getKey();
+                    cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<String> getWords() {
+            return Collections.unmodifiableSet(wordScores.keySet());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public DoubleVector getVector(String word) {
+            Double score = wordScores.get(word);
+            return (score == null)
+                ? new DenseVector(new double[] {0})
+                : new DenseVector(new double[] {score});
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int getVectorLength() {
+            return 1;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void processSpace(Properties properties) {
+            SparseMatrix cleanedMatrix = (SparseMatrix) transform.transform(
+                    cooccurrenceMatrix);
+            for (String term : basis.keySet()) {
+                int index = basis.getDimension(term);
+                SparseDoubleVector sdv = cleanedMatrix.getRowVector(index);
+
+                double score = 0;
+                for (int i : sdv.getNonZeroIndices())
+                    score += sdv.get(i);
+
+                wordScores.put(term, score);
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public String getSpaceName() {
+            return "BasisMaker";
+        }
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Set<String> getWords() {
-      return Collections.unmodifiableSet(wordScores.keySet());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public DoubleVector getVector(String word) {
-      Double score = wordScores.get(word);
-      return (score == null)
-        ? new DenseVector(new double[] {0})
-        : new DenseVector(new double[] {score});
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int getVectorLength() {
-      return 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void processSpace(Properties properties) {
-      SparseMatrix cleanedMatrix = (SparseMatrix) transform.transform(
-          cooccurrenceMatrix);
-      for (String term : basis.keySet()) {
-        int index = basis.getDimension(term);
-        SparseDoubleVector sdv = cleanedMatrix.getRowVector(index);
-
-        double score = 0;
-        for (int i : sdv.getNonZeroIndices())
-          score += sdv.get(i);
-
-        wordScores.put(term, score);
-      }
-    }
-
-    public String getSpaceName() {
-      return "BasisMaker";
-    }
-  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Keith Stevens 
+ * Copyright 2011 Keith Stevens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,27 +19,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.parser;
+package edu.ucla.sspace.dependency;
 
 
 /**
- * An interface for building dependency parse trees from raw text.
+ * An interface for transforming a dependency tree represented by a series of
+ * {@link DependencyTreeNode}s.
  *
  * @author Keith Stevens
  */
-public interface Parser {
+public interface DependencyTreeTransform {
 
     /**
-     * Returns a dependency parse tree formatted in the default CoNLL format.
-     * The returned string may represent multiple parse tress, espeically if the
-     * given document contains multiple sentences.  Each parse tree will be
-     * padded with new lines.  If {@code header} is not {@code null}, then it
-     * will be first line of each parse tree, otherwise only padded parse trees
-     * will be returned.
-     *
-     * @param header The header text that should label each parsed tree
-     * @param document The raw text to be parsed
+     * Transforms the {@link DependencyRelation} links within a series of {@link
+     * DependencyTreeNode}s.  Relations may be added or removed, and entire
+     * nodes may even be removed as long as the tree remaains connected.
      */
-    String parseText(String header, String document);
+    DependencyTreeNode[] transform(DependencyTreeNode[] tree);
 }
-
