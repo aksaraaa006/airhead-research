@@ -38,83 +38,84 @@ import java.util.List;
  */
 public class CentroidCluster<T extends DoubleVector> implements Cluster<T> {
 
-  /**
-   * The centroid of this {@link Cluster}.  This is the only data representation
-   * stored for the {@link Cluster}.
-   */
-  private T centroid;
+    /**
+     * The centroid of this {@link Cluster}.  This is the only data
+     * representation stored for the {@link Cluster}.
+     */
+    private T centroid;
 
-  /**
-   * The set of data point id's that assigned to this {@link Cluster}.
-   */
-  private BitSet assignments;
+    /**
+     * The set of data point id's that assigned to this {@link Cluster}.
+     */
+    private BitSet assignments;
 
-  /**
-   * Creates a new {@link CentroidCluster} that takes ownership of {@code
-   * emptyVector} as the centroid for this {@link Cluster}.  {@code emptyVector}
-   * should have length equal to the length of vectors that will be assigned to
-   * this {@link  Cluster} and should be dense if a large number of vectors, or
-   * any dense vectors, are expected to be assigned to this {@link Cluster}.
-   */
-  public CentroidCluster(T emptyVector) {
-    centroid = emptyVector;
-    assignments = new BitSet();
-  }
+    /**
+     * Creates a new {@link CentroidCluster} that takes ownership of {@code
+     * emptyVector} as the centroid for this {@link Cluster}. {@code
+     * emptyVector} should have length equal to the length of vectors that will
+     * be assigned to this {@link Cluster} and should be dense if a large number
+     * of vectors, or any dense vectors, are expected to be assigned to this
+     * {@link Cluster}.
+     */
+    public CentroidCluster(T emptyVector) {
+        centroid = emptyVector;
+        assignments = new BitSet();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public void addVector(T vector, int id) {
-    VectorMath.add(centroid, vector);
-    if (id >= 0)
-        assignments.set(id);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public void addVector(T vector, int id) {
+        VectorMath.add(centroid, vector);
+        if (id >= 0)
+                assignments.set(id);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public double compareWithVector(T vector) {
-    return Similarity.cosineSimilarity(centroid, vector);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public double compareWithVector(T vector) {
+        return Similarity.cosineSimilarity(centroid, vector);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public T centroid() {
-    return centroid;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public T centroid() {
+        return centroid;
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public List<T> dataPointValues() {
-    return new ArrayList<T>();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public List<T> dataPointValues() {
+        return new ArrayList<T>();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public BitSet dataPointIds() {
-    return assignments;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public BitSet dataPointIds() {
+        return assignments;
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public void merge(Cluster<T> other) {
-    VectorMath.add(centroid, other.centroid());
-    for (T otherDataPoint : other.dataPointValues())
-      VectorMath.add(centroid, otherDataPoint);
+    /**
+     * {@inheritDoc}
+     */
+    public void merge(Cluster<T> other) {
+        VectorMath.add(centroid, other.centroid());
+        for (T otherDataPoint : other.dataPointValues())
+            VectorMath.add(centroid, otherDataPoint);
 
-    for (int i = other.dataPointIds().nextSetBit(0); i >= 0;
-         i = other.dataPointIds().nextSetBit(i+1))
-      assignments.set(i);
-  }
+        for (int i = other.dataPointIds().nextSetBit(0); i >= 0;
+                 i = other.dataPointIds().nextSetBit(i+1))
+            assignments.set(i);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  public int size() {
-    return assignments.size();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public int size() {
+        return assignments.size();
+    }
 }

@@ -37,43 +37,45 @@ import java.util.List;
  * href="http://nlp.cs.swarthmore.edu/semeval/tasks/task02/summary.shtml">
  * SenseEval07 Task 2</a>.  By default this iterator simply extracts the text
  * from the senseEval xml data file, but it can optionaly add a separator token
- * before the instance word.  
+ * before the instance word.    
  *
  * @author Keith Stevens
  */
 public class SenseEval2007Iterator extends SemEvalIterator {
 
-  public SenseEval2007Iterator(InputStream fileStream, 
-                               boolean prepareForParse,
-                               String separator) {
-    super(fileStream, prepareForParse, separator);
-    advance();
-  }
+    public SenseEval2007Iterator(InputStream fileStream, 
+                                 boolean prepareForParse,
+                                 String separator) {
+        super(fileStream, prepareForParse, separator);
+        advance();
+    }
 
-  public SenseEval2007Iterator(List<String> fileNames, 
-                               boolean prepareForParse,
-                               String separator) {
-    super(fileNames, prepareForParse, separator);
-    advance();
-  }
+    public SenseEval2007Iterator(List<String> fileNames, 
+                                 boolean prepareForParse,
+                                 String separator) {
+        super(fileNames, prepareForParse, separator);
+        advance();
+    }
 
-  protected NodeList getInstances(Document doc) {
-    return doc.getElementsByTagName("instance");
-  }
+    protected NodeList getInstances(Document doc) {
+        return doc.getElementsByTagName("instance");
+    }
 
-  protected String handleElement(Element instanceNode) {
-    // Extract the instance id, and stemmed word.
-    String instanceId = instanceNode.getAttribute("id").trim();
-    String[] wordPosNum = instanceId.split("\\.");
+    protected String handleElement(Element instanceNode) {
+        // Extract the instance id, and stemmed word.
+        String instanceId = instanceNode.getAttribute("id").trim();
+        String[] wordPosNum = instanceId.split("\\.");
 
-    String prevContext = instanceNode.getFirstChild().getNodeValue();
-    prevContext = prevContext.substring(1);
-    String nextContext = instanceNode.getLastChild().getNodeValue();
+        String prevContext = instanceNode.getFirstChild().getNodeValue();
+        prevContext = prevContext.substring(1);
+        String nextContext = instanceNode.getLastChild().getNodeValue();
 
-    if (prepareForParse)
-      return String.format(
-          "%s\n%s %s %s", instanceId, prevContext, instanceId, nextContext);
-    return String.format("%s\n%s %s %s %s", instanceId, prevContext, 
-                         separator, wordPosNum[0], nextContext);
-  }
+        if (prepareForParse)
+            return String.format("%s\n%s %s %s", 
+                                 instanceId, prevContext,
+                                 instanceId, nextContext);
+        return String.format("%s\n%s %s %s %s",
+                             instanceId, prevContext, 
+                             separator, wordPosNum[0], nextContext);
+    }
 }

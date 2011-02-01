@@ -50,143 +50,121 @@ import java.util.List;
  */
 public class MaltParser implements Parser {
 
-  /**
-   * The default location of the stanford part of speech tager model .
-   */
-  private static final String TAGGER_MODEL = 
-    "data/left3words-wsj-0-18.tagger";
-  
-  /**
-   * The default location of the malt parser model.
-   */
-  private static final String PARSER_MODEL = "engmalt.linear";
+    /**
+     * The default location of the stanford part of speech tager model .
+     */
+    private static final String TAGGER_MODEL = 
+        "data/left3words-wsj-0-18.tagger";
+    
+    /**
+     * The default location of the malt parser model.
+     */
+    private static final String PARSER_MODEL = "engmalt.linear";
 
-  /**
-   * The {@link MaxentTagger} used to part of speech tag each sentence.
-   */
-  private final MaxentTagger tagger;
+    /**
+     * The {@link MaxentTagger} used to part of speech tag each sentence.
+     */
+    private final MaxentTagger tagger;
 
-  /**
-   * The {@link MaltParserService} used to parse sentences.
-   */
-  private final MaltParserService parser;
+    /**
+     * The {@link MaltParserService} used to parse sentences.
+     */
+    private final MaltParserService parser;
 
-  /**
-   * Creates a new {@link MaltParser} using the default model paths.
-   */
-  public MaltParser() {
-    this(TAGGER_MODEL, PARSER_MODEL);
-  }
-
-  /**
-   * Creates a new {@link MaltParser} using the provided model paths.  Note that
-   * this {@link Parser} cannot be readily used within a map reduce job.
-   *
-   */
-  public MaltParser(String posTaggerPath, String maltParserModelPath) {
-    try {
-      tagger = new MaxentTagger(posTaggerPath);
-      parser = new MaltParserService();
-      parser.initializeParserModel("-c " + maltParserModelPath + " -m parse");
-    } catch (MaltChainedException ioe) {
-      throw new RuntimeException(ioe);
-    } catch (ClassNotFoundException cnfe) {
-      throw new RuntimeException(cnfe);
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public String parseText(String header, String document) {
-    StringBuilder builder = new StringBuilder();
-
-    List<ArrayList<HasWord>> sentences =
-        new ArrayList<ArrayList<HasWord>>();
-
-    DocumentPreprocessor processor = new DocumentPreprocessor(
-                new StringReader(document));
-    int totalWords = 0;
-    for (List<HasWord> sentence : processor) {
-      if (sentence.size() == 0 || sentence.size() > 100)
-          continue;
-      totalWords += sentence.size();
-      ArrayList<HasWord> sent = new ArrayList<HasWord>();
-      for (HasWord word : sentence)
-          sent.add(word);
-      sentences.add(sent);
+    /**
+     * Creates a new {@link MaltParser} using the default model paths.
+     */
+    public MaltParser() {
+        this(TAGGER_MODEL, PARSER_MODEL);
     }
 
-    if (totalWords == 0)
-        return "";
-
-    List<ArrayList<TaggedWord>> taggedSentence = tagger.process(sentences);
-
-    String[] tokens = new String[totalWords];
-    int i = 0;
-    for (List<TaggedWord> sentence : taggedSentence) {
-        for (TaggedWord word : sentence)
-          tokens[i] = String.format("%d\t%s\t_\t%s\t%s\t_\t_\t_",
-              i++, word.word(), word.tag(), word.tag());
-    }
-
-    /*
-    // Tokenize and tag each sentence in the document.
-    ArrayList<TaggedWord> sentence = new ArrayList<TaggedWord>();
-    for (String token : document.split("\\s+"))
-      sentence.add(new TaggedWord(token));
-    List<TaggedWord> tSentence = tagger.tagSentence(sentence);
-
-    // Create the token format expected by Malt.
-    String[] tokens = new String[tSentence.size()];
-    for (int i = 0; i < tSentence.size(); ++i) {
-      TaggedWord word = tSentence.get(i);
-      tokens[i] = String.format("%d\t%s\t_\t%s\t%s\t_\t_\t_",
-          i+1, word.word(), word.tag(), word.tag());
-    }
-    */
-
-    // Parse the sentence and write the graph to the string builder.
-    try {
-      DependencyStructure graph = parser.parse(tokens);
-
-      if (header != null && !header.equals(""))
-        builder.append(header).append("\n");
-
-      for (i = 1; i <= graph.getHighestDependencyNodeIndex(); i++) {
-        DependencyNode node = graph.getDependencyNode(i);
-        if (node != null) {
-          for (SymbolTable table : node.getLabelTypes())
-            builder.append(node.getLabelSymbol(table)).append("\t");
-
-          if (node.hasHead()) {
-            Edge  e = node.getHeadEdge();
-            builder.append(e.getSource().getIndex()).append("\t");
-            if (e.isLabeled()) {
-              for (SymbolTable table : e.getLabelTypes())
-                builder.append(e.getLabelSymbol(table)).append("\t");
-            } else {
-              for (SymbolTable table : graph.getDefaultRootEdgeLabels().keySet()) 
-                builder.append(graph.getDefaultRootEdgeLabelSymbol(table)).append("\t");
-            }
-          }
-          builder.append('\n');
+    /**
+     * Creates a new {@link MaltParser} using the provided model paths.    Note
+     * that this {@link Parser} cannot be readily used within a map reduce job.
+     */
+    public MaltParser(String posTaggerPath, String maltParserModelPath) {
+        try {
+            tagger = new MaxentTagger(posTaggerPath);
+            parser = new MaltParserService();
+            parser.initializeParserModel
+                ("-c " + maltParserModelPath + " -m parse");
+        } catch (MaltChainedException ioe) {
+            throw new RuntimeException(ioe);
+        } catch (ClassNotFoundException cnfe) {
+            throw new RuntimeException(cnfe);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
         }
-      }
-    } catch (MaltChainedException ioe) {
-      throw new RuntimeException(ioe);
-    } catch (NullPointerException npe) {
-      return "";
     }
 
-    return builder.toString();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public String parseText(String header, String document) {
+        StringBuilder builder = new StringBuilder();
 
-  public static void main(String[] args) {
-    Parser parser = new MaltParser();
-    System.out.println(parser.parseText("",  "For ActionAid the debate is not whether life begins at conception or at birth but the fact that this clause may be used to deny women the right to freely seek , access and utilise reproductive health services including contraceptives. Says Ruth Masha , National Coordinator , HIV and Aids and Right to Health "));
+        List<ArrayList<HasWord>> sentences =
+                new ArrayList<ArrayList<HasWord>>();
 
-  }
+        DocumentPreprocessor processor = new DocumentPreprocessor(
+                                new StringReader(document));
+        int totalWords = 0;
+        for (List<HasWord> sentence : processor) {
+            if (sentence.size() == 0 || sentence.size() > 100)
+                    continue;
+            totalWords += sentence.size();
+            ArrayList<HasWord> sent = new ArrayList<HasWord>();
+            for (HasWord word : sentence)
+                    sent.add(word);
+            sentences.add(sent);
+        }
+
+        if (totalWords == 0)
+                return "";
+
+        List<ArrayList<TaggedWord>> taggedSentence = tagger.process(sentences);
+
+        String[] tokens = new String[totalWords];
+        int i = 0;
+        for (List<TaggedWord> sentence : taggedSentence) {
+                for (TaggedWord word : sentence)
+                    tokens[i] = String.format("%d\t%s\t_\t%s\t%s\t_\t_\t_",
+                            i++, word.word(), word.tag(), word.tag());
+        }
+
+        // Parse the sentence and write the graph to the string builder.
+        try {
+            DependencyStructure graph = parser.parse(tokens);
+
+            if (header != null && !header.equals(""))
+                builder.append(header).append("\n");
+
+            for (i = 1; i <= graph.getHighestDependencyNodeIndex(); i++) {
+                DependencyNode node = graph.getDependencyNode(i);
+                if (node != null) {
+                    for (SymbolTable table : node.getLabelTypes())
+                        builder.append(node.getLabelSymbol(table)).append("\t");
+
+                    if (node.hasHead()) {
+                        Edge    e = node.getHeadEdge();
+                        builder.append(e.getSource().getIndex()).append("\t");
+                        if (e.isLabeled()) {
+                            for (SymbolTable table : e.getLabelTypes())
+                                builder.append(e.getLabelSymbol(table)).append("\t");
+                        } else {
+                            for (SymbolTable table : graph.getDefaultRootEdgeLabels().keySet()) 
+                                builder.append(graph.getDefaultRootEdgeLabelSymbol(table)).append("\t");
+                        }
+                    }
+                    builder.append('\n');
+                }
+            }
+        } catch (MaltChainedException ioe) {
+            throw new RuntimeException(ioe);
+        } catch (NullPointerException npe) {
+            return "";
+        }
+
+        return builder.toString();
+    }
 }

@@ -150,7 +150,6 @@ public class KMeansClustering implements Clustering {
         PROPERTY_PREFIX + ".kMeansOptimalAssignment";
 
     private static final String DEFAULT_SEED = "KMEANS_PLUS_PLUS";
-    //private static final String DEFAULT_SEED = "OPTIMAL";
 
     /**
      * A small number used to determine when the centroids have converged.
@@ -200,11 +199,6 @@ public class KMeansClustering implements Clustering {
                 break;
         }
 
-        //for (DoubleVector centroid : centroids) {
-        //    SparseVector sv = (SparseVector) centroid;
-        //    System.out.printf("num non zeros: %d\n", sv.getNonZeroIndices().length);
-        //}
-
         // Initialize the assignments.
         Assignment[] assignments = new Assignment[dataPoints.rows()];
 
@@ -232,8 +226,6 @@ public class KMeansClustering implements Clustering {
                 double minDistance = Double.MAX_VALUE;
                 for (int c = 0; c < numClusters; ++c) {
                     double distance = distance(centroids[c], dataPoint);
-                    LOGGER.info(String.format("distance to %d: %f\n", c, distance));
-                    LOGGER.info(String.format("similarity to %d: %f\n", c, Similarity.cosineSimilarity(centroids[c], dataPoint)));
                     if (distance < minDistance) {
                         minDistance = distance;
                         nearestCentroid = c;
@@ -258,7 +250,6 @@ public class KMeansClustering implements Clustering {
                 if (numAssignments[c] > 0)
                     newCentroids[c] = new ScaledDoubleVector(
                             newCentroids[c], 1/numAssignments[c]);
-                LOGGER.info(String.format("%d num assignments: %f\n", c, numAssignments[c]));
 
                 // Compute the difference.
                 centroidDifference += Math.pow(
@@ -266,7 +257,6 @@ public class KMeansClustering implements Clustering {
             }
             converged = centroidDifference < EPSILON;
             centroids = newCentroids;
-            LOGGER.info(String.format("difference %f\n", centroidDifference));
         }
 
         // Return the last set of assignments made.
@@ -328,8 +318,6 @@ public class KMeansClustering implements Clustering {
         int centroidIndex = random.nextInt(dataPoints.rows());
         centers[0] = dataPoints.getRowVector(centroidIndex);
 
-        System.err.printf("selecting point %d\n", centroidIndex);
-
         // Compute the distance each data point has with the first centroid.
         double[] distances = new double[dataPoints.rows()];
         computeDistances(distances, false, dataPoints, centers[0]);
@@ -343,7 +331,6 @@ public class KMeansClustering implements Clustering {
             double sum = distanceSum(distances);
             double probability = random.nextDouble();
             centroidIndex = chooseWithProbability(distances, sum, probability);
-            System.err.printf("selecting point %d\n", centroidIndex);
             centers[i] = dataPoints.getRowVector(centroidIndex);
             computeDistances(distances, true, dataPoints, centers[i]);
         }
@@ -590,11 +577,5 @@ public class KMeansClustering implements Clustering {
             centers[c] = dataPoints.getRowVector(i);
         }
         return centers;
-    }
-
-    public static void main(String[] args) throws Exception {
-        Matrix m = MatrixIO.readMatrix(new File(args[0]), Format.MATLAB_SPARSE);
-        System.out.println(Similarity.euclideanDistance(m.getRowVector(0), m.getRowVector(1)));
-        System.out.println(distance(m.getRowVector(0), m.getRowVector(1)));
     }
 }

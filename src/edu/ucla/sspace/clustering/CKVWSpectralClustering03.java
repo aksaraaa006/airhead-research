@@ -16,22 +16,44 @@ import java.util.Properties;
 
 
 /**
+ * A spectral clustering implementation based on the following paper:
+ *
+ * <p style="font-family:Garamond, Georgia, serif"> David Cheng ,  Ravi Kannan ,
+ * Santosh Vempala ,  Grant Wang (2003) On a Recursive Spectral Algorithm for
+ * Clustering from Pairwise Similaritie. Available
+ * <a href="http://research.microsoft.com/en-us/um/people/kannan/Papers/experimentclustering.pdf">here</a>
+ *
+ * </p>  This implementation implements a subclass of the {@link
+ * BaseSpectralCut} and simply computes the second eigen vector for a data set.
+ *
  * @author Keith Stevens
  */
 public class CKVWSpectralClustering03 implements Clustering {
 
+    /**
+     * The proper prefix.
+     */
     public static final String PROPERTY_PREFIX =
         "edu.ucla.sspace.clustering.CKVWSpectralClustering03";
 
+    /**
+     * The property used to use K-Means as the objective function.
+     */
     public static final String USE_KMEANS =
         PROPERTY_PREFIX + ".useKMeans";
 
+    /**
+     * {@inheritDoc}
+     */
     public Assignments cluster(Matrix matrix, Properties props) {
         SpectralClustering cluster = new SpectralClustering(
                 .2, new SpectralCutGenerator());
         return cluster.cluster(matrix);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Assignments cluster(Matrix matrix,
                                 int numClusters,
                                 Properties props) {
@@ -41,7 +63,15 @@ public class CKVWSpectralClustering03 implements Clustering {
                 matrix, numClusters, props.getProperty(USE_KMEANS) != null);
     }
 
+    /**
+     * An internal spectral cut implementation that is based on the referred to
+     * paper.  See paper for details.
+     */
     public class SpectralCut extends BaseSpectralCut {
+
+        /**
+         * {@inheritDoc}
+         */
         protected DoubleVector computeSecondEigenVector(Matrix matrix,
                                                         int vectorLength) {
             DoubleVector Rinv = new DenseVector(vectorLength);
@@ -74,8 +104,15 @@ public class CKVWSpectralClustering03 implements Clustering {
         }
     }
 
+    /**
+     * A simple generator for creating instances of the {@link SpectralCut}
+     * class.
+     */
     public class SpectralCutGenerator implements Generator<EigenCut> {
 
+        /**
+         * {@inheritDoc}
+         */
         public EigenCut generate() {
             return new SpectralCut();
         }

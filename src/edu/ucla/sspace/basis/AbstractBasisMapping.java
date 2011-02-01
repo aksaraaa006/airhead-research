@@ -69,9 +69,9 @@ public abstract class AbstractBasisMapping<T, K> implements BasisMapping<T, K>,
      * Creates a new {@link AbstractBasisMapping}.
      */
     public AbstractBasisMapping() {
-      mapping = new HashMap<K, Integer>();
-      readonly = false;
-      indexToKeyCache = new ArrayList<K>();
+        mapping = new HashMap<K, Integer>();
+        readonly = false;
+        indexToKeyCache = new ArrayList<K>();
     }
 
     /**
@@ -100,7 +100,7 @@ public abstract class AbstractBasisMapping<T, K> implements BasisMapping<T, K>,
      * {@inheritDoc}
      */
     public Set<K> keySet() {
-      return mapping.keySet();
+        return mapping.keySet();
     }
 
     /**
@@ -109,53 +109,52 @@ public abstract class AbstractBasisMapping<T, K> implements BasisMapping<T, K>,
      *  new dimension.
      */
     protected int getDimensionInternal(K key) {
-      Integer index = mapping.get(key);
-      if (readonly)
-        return (index == null) ? -1: index;
+        Integer index = mapping.get(key);
+        if (readonly)
+            return (index == null) ? -1: index;
 
-      if (index == null) {     
-        synchronized(this) {
-          // Recheck to see if the key was added while blocking.
-          index = mapping.get(key);
+        if (index == null) {     
+            synchronized(this) {
+                // Recheck to see if the key was added while blocking.
+                index = mapping.get(key);
 
-          // If another thread has not already added this key while the
-          // current thread was blocking waiting on the lock, then add it.
-          if (index == null) {
-            int i = mapping.size();
-            mapping.put(key, i);
-            return i; // avoid the auto-boxing to assign i to index
-          }
+                // If another thread has not already added this key while the
+                // current thread was blocking waiting on the lock, then add it.
+                if (index == null) {
+                    int i = mapping.size();
+                    mapping.put(key, i);
+                    return i; // avoid the auto-boxing to assign i to index
+                }
+            }
         }
-      }
-      return index;
+        return index;
     }
 
     /**
      * Returns the internal mapping from keys to indices.
      */
     protected Map<K, Integer> getMapping() {
-      return mapping;
+        return mapping;
     }
 
     /**
      * {@inheritDoc}
      */
     public int numDimensions() {
-      return mapping.size();
+        return mapping.size();
     }
 
     /**
      * {@inheritDoc}
      */
     public void setReadOnly() {
-      readonly = true;
+        readonly = true;
     }
 
     /**
      * {@inheritDoc}
      */
     public void unsetReadOnly() {
-      readonly = false;
+        readonly = false;
     }
 }
-

@@ -88,8 +88,15 @@ public class DepTokenCounter {
      */
     private final boolean doLowerCasing;
 
+    /**
+     * If true, part of speech tags will be added to each term before being used
+     * as a dimension.
+     */
     private final boolean doPos;
 
+    /**
+     * The {@link DependencyExtractor} used to extract parse trees.
+     */
     private final DependencyExtractor extractor;
 
     /**
@@ -143,6 +150,7 @@ public class DepTokenCounter {
     }
 
     public static void main(String[] args) throws Exception {
+        // Setup the argument options.
         ArgOptions options = new ArgOptions();
         options.addOption('Z', "stemmingAlgorithm",
                           "specifices the stemming algorithm to use on " +
@@ -169,6 +177,8 @@ public class DepTokenCounter {
                           "the corpus (defalt: CoNLL)",
                           true, "STR", 
                           "Advanced Dependency Parsing");
+
+        // Parse and validate the options.
         options.parseOptions(args);
         if (options.numPositionalArgs() < 2) {
             System.out.println(
@@ -179,9 +189,11 @@ public class DepTokenCounter {
             return;
         }
 
+        // Setup logging.
         if (options.hasOption("verbose")) 
             LoggerUtil.setLevel(Level.FINE);
 
+        // Extract key arguments.
         boolean doLowerCasing = options.hasOption("lowerCase");
         boolean doPos = options.hasOption("partOfSpeech");
         boolean discardHeader = options.hasOption('H');
@@ -194,6 +206,8 @@ public class DepTokenCounter {
 
         String format = options.getStringOption(
                 "dependencyParseFormat", "CoNLL");
+
+        // setup the dependency extractor.
         DependencyExtractor e = null;
         if (format.equals("CoNLL"))
             e = new CoNLLDependencyExtractor(filter, stemmer);

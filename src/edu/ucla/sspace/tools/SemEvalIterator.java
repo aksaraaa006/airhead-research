@@ -42,120 +42,167 @@ import org.xml.sax.SAXException;
 
 
 /**
+ * An abstract {@link Iterator} for documents in the SemEval 1 and 2 formats.
+ * This {@link Iterator} abstracts most of the work needed in extracting word
+ * sense induction contexsts from a corpus.
+ *
+ * @see SemEval2010TestIterator
+ * @see SemEval2010TrainIterator
+ * @see SenseEval2007Iterator
+ *
  * @author Keith Stevens
  */
 public abstract class SemEvalIterator implements Iterator<String> {
 
-  private final Queue<InputStream> xmlFiles;
+    /**
+     * A queue of the the XML files that need to be processed.
+     */
+    private final Queue<InputStream> xmlFiles;
 
-  private final DocumentBuilder db;
+    /**
+     * A {@link DocumentBuilder} used to create the xml tree for a document.
+     */
+    private final DocumentBuilder db;
 
-  private NodeList instances;
+    /**
+     * The list of instance nodes in the xml tree.
+     */
+    private NodeList instances;
 
-  private int currentNode;
+    /**
+     * The current index of the document node that needs to be processed.
+     */
+    private int currentNode;
 
-  private String next;
+    /**
+     * The next document to be returned.
+     */
+    private String next;
 
-  protected final String separator;
+    /**
+     * The separator to be inserted into the output text before the focus
+     * word, if provided.
+     */
+    protected final String separator;
 
-  protected final boolean prepareForParse;
+    /**
+     * If true, the output will be formatted such that it can be passed to the
+     * parsers with little modification.
+     */
+    protected final boolean prepareForParse;
 
-  public SemEvalIterator(InputStream fileStream,
-                         boolean prepareForParse,
-                         String separator) {
-    this.prepareForParse = prepareForParse;
-    this.separator = separator;
+    /**
+     * Creates a new {@link SemEvalIterator} with {@link fileStream} as the
+     * document to be processed.
+     */
+    public SemEvalIterator(InputStream fileStream,
+                           boolean prepareForParse,
+                           String separator) {
+        this.prepareForParse = prepareForParse;
+        this.separator = separator;
 
-    try {
-      xmlFiles = new ArrayDeque<InputStream>();
-      xmlFiles.add(fileStream);
-      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      db = dbf.newDocumentBuilder();
-    } catch (ParserConfigurationException pce) {
-      throw new RuntimeException(pce);
-    }
-  }
-
-  public SemEvalIterator(List<String> fileNames,
-                         boolean prepareForParse,
-                         String separator) {
-    this.prepareForParse = prepareForParse;
-    this.separator = separator;
-
-    try {
-      xmlFiles = new ArrayDeque<InputStream>();
-      for (String filename : fileNames)
-        xmlFiles.add(new FileInputStream(filename));
-
-      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      db = dbf.newDocumentBuilder();
-    } catch (ParserConfigurationException pce) {
-      throw new RuntimeException(pce);
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized boolean hasNext() {
-    return next != null;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public synchronized String next() {
-    String current = next;
-    advance();
-    return current;
-  }
-
-  /**
-   * A  no-op.
-   */
-  public synchronized void remove() {
-  }
-
-  /**
-   * Creates a set of cleaned context lines for each instance node in the
-   * {@code trainingFile}.  The text for an entire context is written on a
-   * single line.  The focus word for each context is preceeded by {@code
-   * separator} and the first token in each context is the instance id of the
-   * context.  NOTE: for training SemEval2010 files, multiple context can be
-   * generated for the same instance id.  This is due to the lack of tags
-   * marking where the key word is in the context, so we are conservative and
-   * assume that all are possibly the key word.
-   */
-  protected void advance() {
-    if (xmlFiles.size() == 0 && instances == null) {
-        next = null;
-        return;
+        try {
+            xmlFiles = new ArrayDeque<InputStream>();
+            xmlFiles.add(fileStream);
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            db = dbf.newDocumentBuilder();
+        } catch (ParserConfigurationException pce) {
+            throw new RuntimeException(pce);
+        }
     }
 
-    if (instances == null) {
-      try {
-        Document doc = db.parse(xmlFiles.remove());
-        instances = getInstances(doc);
-        currentNode = 0;
-      } catch (SAXException saxe) {
-        throw new RuntimeException(saxe);
-      } catch (IOException ioe) {
-        throw new IOError(ioe);
-      }
+    /**
+     * Creates a {@link SemEvalIterator} with {@code fileNames} as the set of
+     * xml files that need to be processed.
+     */
+    public SemEvalIterator(List<String> fileNames,
+                           boolean prepareForParse,
+                           String separator) {
+        this.prepareForParse = prepareForParse;
+        this.separator = separator;
+
+        try {
+            xmlFiles = new ArrayDeque<InputStream>();
+            for (String filename : fileNames)
+                xmlFiles.add(new FileInputStream(filename));
+
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            db = dbf.newDocumentBuilder();
+        } catch (ParserConfigurationException pce) {
+            throw new RuntimeException(pce);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
 
-    if (currentNode >= instances.getLength()) {
-      instances = null;
-      advance();
-      return;
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized boolean hasNext() {
+        return next != null;
     }
 
-    next = handleElement((Element) instances.item(currentNode++));
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public synchronized String next() {
+        String current = next;
+        advance();
+        return current;
+    }
 
-  protected abstract NodeList getInstances(Document doc);
+    /**
+     * A no-op.
+     */
+    public synchronized void remove() {
+    }
 
-  protected abstract String handleElement(Element instanceNode);
+    /**
+     * Creates a set of cleaned context lines for each instance node in the
+     * {@code trainingFile}.    The text for an entire context is written on a
+     * single line.    The focus word for each context is preceeded by {@code
+     * separator} and the first token in each context is the instance id of the
+     * context.    NOTE: for training SemEval2010 files, multiple context can be
+     * generated for the same instance id.    This is due to the lack of tags
+     * marking where the key word is in the context, so we are conservative and
+     * assume that all are possibly the key word.
+     */
+    protected void advance() {
+        if (xmlFiles.size() == 0 && instances == null) {
+                next = null;
+                return;
+        }
+
+        if (instances == null) {
+            try {
+                Document doc = db.parse(xmlFiles.remove());
+                instances = getInstances(doc);
+                currentNode = 0;
+            } catch (SAXException saxe) {
+                throw new RuntimeException(saxe);
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
+            }
+        }
+
+        if (currentNode >= instances.getLength()) {
+            instances = null;
+            advance();
+            return;
+        }
+
+        next = handleElement((Element) instances.item(currentNode++));
+    }
+
+    /**
+     * Returns a {@link NodeList} from the current document that needs to be
+     * processed.
+     */
+    protected abstract NodeList getInstances(Document doc);
+
+    /**
+     * Extracts the document text from the given {@link Element} node in the xml
+     * tree.
+     */
+    protected abstract String handleElement(Element instanceNode);
 }
