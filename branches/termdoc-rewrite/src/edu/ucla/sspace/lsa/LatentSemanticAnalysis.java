@@ -314,8 +314,6 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
         try {
             MatrixFile processedSpace = processSpace(transform);
 
-            Matrix wordSpace = null;
-
             LoggerUtil.info(LOG, "reducing to %d dimensions", dimensions);
 
             // Compute SVD on the pre-processed matrix.
@@ -334,8 +332,6 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
                                         singularValues.get(c, c));
                 }
             }
-
-            setWordSpace(wordSpace);
 
             // Save the reduced document space if requested.
             if (retainDocumentSpace) {

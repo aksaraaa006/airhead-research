@@ -146,8 +146,8 @@ public class VectorSpaceModel extends GenericTermDocumentVectorSpace {
                 transform = ReflectionUtil.getObjectInstance(
                         transformClass);
             MatrixFile processedSpace = processSpace(transform);
-            setWordSpace(MatrixIO.readMatrix(processedSpace.getFile(),
-                                             processedSpace.getFormat()));
+            wordSpace = MatrixIO.readMatrix(processedSpace.getFile(),
+                                            processedSpace.getFormat());
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

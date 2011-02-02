@@ -71,9 +71,10 @@ import java.util.logging.Logger;
  * Typically, this reweighting is typically done to increase the score for
  * important and distinguishing terms while less salient terms, such as stop
  * words, are given a lower score.  After calling {@link
- * #processSpace(Transform) processSpace}, sub classes should call {@link
- * #setWordSpace(Matrix) setWordSpace} after any remaining sspace processing is
- * done, the passed in matrix will be usedas the final word space.
+ * #processSpace(Transform) processSpace}, sub classes should call assign thei
+ * final data matrix to {@code wordSpace}.  This final matrix should maintain
+ * the same row ordering, but the column ordering and dimensionality can be
+ * modified in any way.
  *
  * <p>
  *
@@ -135,7 +136,7 @@ public abstract class GenericTermDocumentVectorSpace implements SemanticSpace {
      * #processSpace(Transform) processSpace}
      * method has been called.
      */
-    private Matrix wordSpace;
+    protected Matrix wordSpace;
 
     /**
      * Constructs the {@code GenericTermDocumentVectorSpace}.
@@ -288,16 +289,6 @@ public abstract class GenericTermDocumentVectorSpace implements SemanticSpace {
         return (index == null)
             ? null
             : wordSpace.getRowVector(index.intValue());
-    }
-
-    /**
-     * Saves the given {@link Matrix} and uses it as the word space.  Rows
-     * should be in the same order as the matrix returned by {@link
-     * #processSpace(Transform) processSpace}, but columns can be collaped or
-     * rearranged in any order.
-     */
-    protected void setWordSpace(Matrix wordSpace) {
-        this.wordSpace = wordSpace;
     }
 
     /**

@@ -138,8 +138,8 @@ public class ExplicitSemanticAnalysis extends GenericTermDocumentVectorSpace {
         try {
             MatrixFile processedSpace = processSpace(
                     new TfIdfTransform());
-            setWordSpace(MatrixIO.readMatrix(
-                        processedSpace.getFile(), processedSpace.getFormat()));
+            wordSpace = MatrixIO.readMatrix(
+                    processedSpace.getFile(), processedSpace.getFormat());
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

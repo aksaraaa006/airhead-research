@@ -293,9 +293,8 @@ public class LocalityPreservingSemanticAnalysis
 
             // Using the affinity matrix as a guide to locality, project the
             // co-occurrence matrix into the lower dimensional subspace
-            Matrix wordSpace = LocalityPreservingProjection.project(
-                termDocMatrix, affinityMatrix, dimensions);
-            setWordSpace(wordSpace);
+            wordSpace = LocalityPreservingProjection.project(
+                    termDocMatrix, affinityMatrix, dimensions);
         } catch (IOException ioe) {
             //rethrow as Error
             throw new IOError(ioe);
