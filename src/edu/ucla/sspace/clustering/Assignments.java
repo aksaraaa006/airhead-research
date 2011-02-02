@@ -92,7 +92,7 @@ public class Assignments implements Iterable<Assignment> {
      * Returns an iterator over the {@link Assignment} objects stored.
      */
     public Iterator<Assignment> iterator() {
-        return new ArrayIterator(assignments);
+        return new ArrayIterator();
     }
 
     /**
