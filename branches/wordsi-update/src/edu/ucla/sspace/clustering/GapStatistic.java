@@ -184,6 +184,8 @@ public class GapStatistic implements Clustering {
         int bestK = 0;
         for (int i = 0; i < numIterations; ++i) {
             if (bestGap >= (gapResults[i] - gapStds[i])) {
+                verbose("bestGap: %f, newGap: %f", bestGap, 
+            gapResults[i] - gapStds[i]);
                 verbose("Found best clustering with %d clusters\n",
                         (i + startSize - 1));
                 break;
@@ -193,6 +195,7 @@ public class GapStatistic implements Clustering {
             bestGap = gapResults[i];
             bestAssignments = gapAssignments[i];
             bestK = i + startSize;
+            verbose("current: gap: %f, k: %d", bestGap, bestK);
         }
 
         // Extract the cluster assignments based on the best found value of k.
@@ -211,6 +214,7 @@ public class GapStatistic implements Clustering {
         for (File assignmentFile : gapAssignments)
             assignmentFile.delete();
 
+        verbose("final bestK: %d", bestK);
         return new Assignments(bestK, assignments);
     }
 
@@ -299,11 +303,14 @@ public class GapStatistic implements Clustering {
                     // current score is less than the previous score, then the
                     // previous assignment is considered best.
                     double gap = Math.log(extractScore(result));
+                    verbose("gap-1: %f, referenceScore: %f", gap, referenceScore);
                     gap = referenceScore - gap;
 
                     gapResults[i] = gap;
                     gapStds[i] = referenceStdev;
                     gapAssignments[i] = outFile;
+
+                    verbose("completed iteration %d\n", i);
                 } catch (IOException ioe) {
                     throw new IOError(ioe);
                 } finally {
@@ -323,7 +330,7 @@ public class GapStatistic implements Clustering {
             new BufferedReader(new StringReader(clutoOutput));
         String line = null;
         while ((line = reader.readLine()) != null) {
-            if (line.contains("[I2=")) {
+            if (line.contains("[I2=") || line.contains("[H2=")) {
                 String[] split = line.split("=");
                 int endOfIndex = split[1].indexOf("]");
                 return Double.parseDouble(split[1].substring(0, endOfIndex));

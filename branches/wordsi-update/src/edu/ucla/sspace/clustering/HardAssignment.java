@@ -61,6 +61,6 @@ public class HardAssignment implements Assignment {
      * {@inheritDoc}
      */
     public int length() {
-        return 1;
+        return assignments.length;
     }
 }
