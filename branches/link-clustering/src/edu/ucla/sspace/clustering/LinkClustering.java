@@ -26,7 +26,9 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.SparseHashMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.SparseSymmetricMatrix;
 import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.util.HashMultiMap;
@@ -96,7 +98,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      * The work used by all {@code LinkClustering} instances to perform
      * multi-threaded operations.
      */
-    private static final WorkQueue WORK_QUEUE = new WorkQueue(1);
+    private static final WorkQueue WORK_QUEUE = new WorkQueue();
 
     /**
      * Instantiates a new {@code LinkClustering} instance.
@@ -164,7 +166,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         final int numEdges = edgeList.size();
         LOGGER.fine("Number of edges to cluster: " + numEdges);
         
-        SparseMatrix edgeSimMatrix = calculateEdgeSimMatrix(edgeList, sm);
+        Matrix edgeSimMatrix = calculateEdgeSimMatrix(edgeList, sm);
         
         LOGGER.fine("Computing single linkage link clustering");
 
@@ -300,16 +302,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         return nodeAssignments;
     }
 
-    /**
-     * Calculates the similarity matrix for the edges.  The similarity matrix is
-     * symmetric.
-     *
-     * @param edgeList the list of all edges known to the system
-     * @param sm a square matrix whose values denote edges between the rows.
-     *
-     * @return the similarity matrix
-     */
-    private SparseMatrix calculateEdgeSimMatrix(
+    protected SparseMatrix calculateEdgeSimMatrix(
             List<Edge> edgeList,  SparseMatrix sm) {
 
         int numEdges = edgeList.size();
@@ -330,6 +323,57 @@ public class LinkClustering implements Clustering, java.io.Serializable {
                 }
             }
         }
+        return edgeSimMatrix;
+    }
+
+
+    /**
+     * Calculates the similarity matrix for the edges.  The similarity matrix is
+     * symmetric.
+     *
+     * @param edgeList the list of all edges known to the system
+     * @param sm a square matrix whose values denote edges between the rows.
+     *
+     * @return the similarity matrix
+     */
+    private Matrix calculateEdgeSimMatrix2(
+            final List<Edge> edgeList,  final SparseMatrix sm) {
+
+        int numEdges = edgeList.size();
+        // NOTE: this matrix is sparse because we expect that the majority of
+        // edges will have no similarity with each other. and therefore will
+        // have 0 values in the matrix.
+        final Matrix edgeSimMatrix = 
+            new SparseSymmetricMatrix(new SparseHashMatrix(numEdges, numEdges));
+
+        Object taskKey = WORK_QUEUE.registerTaskGroup(numEdges);
+        
+        for (int i = 0; i < numEdges; ++i) {
+            final int row = i;
+            final Edge e1 = edgeList.get(i);
+            WORK_QUEUE.add(taskKey, new Runnable() { 
+                    public void run() {
+                        System.out.println("Calculating edge similarities for row " + row);
+                        for (int j = 0; j < row; ++j) {
+                            Edge e2 = edgeList.get(j);                
+                            double sim = getEdgeSimilarity(sm, e1, e2);
+                
+                            if (sim > 0) {
+                                // Put in the symmetric similarities
+                                edgeSimMatrix.set(row, j, sim);
+
+                                // NOTE: we don't need to write the symmetric
+                                // values since the sym-matrix wrapper class
+                                // takes care of this, which elimates the need
+                                // for concurrent writes. to the same row.
+                                //// edgeSimMatrix.set(j, i, sim);
+                            }
+                        }
+                    }
+                });
+        }
+        WORK_QUEUE.await(taskKey);
+
         return edgeSimMatrix;
     }
 
@@ -421,6 +465,18 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         public Edge(int from, int to) {
             this.from = from;
             this.to = to;
+        }
+
+        public boolean equals(Object o) {
+            if (o instanceof Edge) {
+                Edge e = (Edge)o;
+                return e.from == from && e.to == to;
+            }
+            return false;
+        }
+
+        public int hashCode() {
+            return from ^ to;
         }
 
         public String toString() {
