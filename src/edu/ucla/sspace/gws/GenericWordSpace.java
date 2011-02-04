@@ -111,13 +111,13 @@ import java.util.Set;
  *
  * This class is thread-safe for concurrent calls of {@link
  * #processDocument(BufferedReader) processDocument}.  At any given point in
-  * processing, the {@link #getVectorFor(String) getVector} method may be used
+  * processing, the {@link #getVector(String) getVector} method may be used
  * to access the current semantics of a word.  This allows callers to track
  * incremental changes to the semantics as the corpus is processed.  <p>
  *
  * The {@link #processSpace(Properties) processSpace} method does nothing for
  * this class and calls to it will not affect the results of {@code
- * getVectorFor}.
+ * getVector}.
  *
  * @author David Jurgens
  */
@@ -166,12 +166,6 @@ public class GenericWordSpace
     private final int windowSize;
 
     /**
-     * Whether the index vectors for co-occurrent words should be permuted based
-     * on their relative position.
-     */
-    private final boolean useWordOrder;
-
-    /**
      * An optional set of words that restricts the set of semantic vectors that
      * this instance will retain.
      */
@@ -205,18 +199,51 @@ public class GenericWordSpace
 
         String useWordOrderProp = 
             properties.getProperty(USE_WORD_ORDER_PROPERTY);
-        useWordOrder = (useWordOrderProp != null)
+        boolean useWordOrder = (useWordOrderProp != null)
             ? Boolean.parseBoolean(useWordOrderProp)
             : false;
 
         basisMapping = (useWordOrder)
             ? new WordOrderBasisMapping()
-            : new WordBasisMapping();
-        
+            : new WordBasisMapping();        
 
         wordToSemantics = new HashMap<String,SparseIntegerVector>(1024, 4f);
         semanticFilter = new HashSet<String>();
     }
+
+    /**
+     * Creates a new {@code GenericWordSpace} with the provided window size that
+     * ignores word order.
+     */
+   public GenericWordSpace(int windowSize) {
+       this(windowSize, new WordBasisMapping());
+    }
+
+    /**
+     * Creates a new {@code GenericWordSpace} with the provided window size that
+     * optionally includes word order.
+     */
+   public GenericWordSpace(int windowSize, boolean useWordOrder) {
+       this(windowSize, (useWordOrder)
+            ? new WordOrderBasisMapping()
+            : new WordBasisMapping());
+   }
+
+    /**
+     * Creates a new {@code GenericWordSpace} with the provided window size that
+     * uses the specified basis mapping to map each co-occurrence at a specified
+     * position to a dimension.
+     *
+     * @param basis a basis mapping from a duple that represents a word and its
+     *        relative position to a dimension.
+     */
+   public GenericWordSpace(int windowSize, 
+                           BasisMapping<Duple<String,Integer>,String> basis) {
+       this.windowSize = windowSize;
+       this.basisMapping = basis;
+       wordToSemantics = new HashMap<String,SparseIntegerVector>(1024, 4f);
+       semanticFilter = new HashSet<String>();
+   }
 
     /**
      * Removes all associations between word and semantics while still retaining
@@ -285,8 +312,7 @@ public class GenericWordSpace
      */ 
     public String getSpaceName() {
         return GWS_SSPACE_NAME + "-w-" + windowSize
-            + ((useWordOrder) ? "+wo" : "");
-
+            + "-" + basisMapping;
     }
 
     /**
@@ -344,7 +370,7 @@ public class GenericWordSpace
 
                 // Keep track of the relative position of the focus word in case
                 // word ordering is being used.
-                int position = -1;
+                int position = -prevWords.size(); // first word is furthest
                 for (String word : prevWords) {
                     // Skip the addition of any words that are excluded from the
                     // filter set.  Note that by doing the exclusion here, we
@@ -352,7 +378,7 @@ public class GenericWordSpace
                     // ordering, which is necessary when word order is taken
                     // into account.
                     if (word.equals(IteratorFactory.EMPTY_TOKEN)) {
-                        position--;
+                        position++;
                         continue;
                     }
                     
@@ -361,7 +387,7 @@ public class GenericWordSpace
                     synchronized(focusSemantics) {
                         focusSemantics.add(dimension, 1);
                     }
-                    position--;
+                    position++;
                 }
             
                 // Repeat for the words in the forward window.
