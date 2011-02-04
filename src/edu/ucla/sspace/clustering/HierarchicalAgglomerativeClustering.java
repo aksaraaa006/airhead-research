@@ -613,7 +613,8 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
 
         // Perform rows-1 merges to merge all elements
         for (int mergeIter = 0; mergeIter < rows - 1; ++mergeIter) {
-            LOGGER.finer("Computing dendogram merge " + mergeIter);
+            LOGGER.finer("Computing dendogram merge" 
+                         + mergeIter + "/" + (rows-1));
 
             // Find the two clusters that have the highest similarity
             int cluster1index = 0;
@@ -763,7 +764,9 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
         // Perform rows-1 merges to merge all elements
         for (int mergeIter = 0; mergeIter < rows - 1; ++mergeIter) {
             LOGGER.finer("Computing dendogram merge " + mergeIter);
-            System.out.println("Computing dendogram merge " + mergeIter);
+            System.out.println("Computing dendogram merge " 
+                               + mergeIter + "/" + (rows-1));
+
 
             // Find the two clusters that have the highest similarity
             int cluster1index = 0;

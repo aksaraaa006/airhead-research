@@ -186,6 +186,21 @@ public class WorkQueue {
     }
 
     /**
+     * Registers a new task group with the specified number of tasks to execute and 
+     * returns a task group identifier to use when registering its tasks.
+     *
+     * @param numTasks the number of tasks that will be eventually run as a part
+     *        of this group.
+     *
+     * @returns an identifier associated with a group of tasks
+     */
+    public Object registerTaskGroup(int numTasks) {
+        Object key = new Object();
+        taskKeyToLatch.putIfAbsent(key, new CountDownLatch(numTasks));
+        return key;
+    }
+
+    /**
      * Registers a new task group with the specified number of tasks to execute,
      * or returns {@code false} if a task group with the same identifier has
      * already been registered.  This identifier will remain valid in the queue
