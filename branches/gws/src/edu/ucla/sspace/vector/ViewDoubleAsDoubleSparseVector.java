@@ -110,28 +110,24 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      * {@inheritDoc}
      */
     public int[] getNonZeroIndices() {
-        if (vectorOffset == 0)
+        if (vectorOffset == 0 && vectorLength == sparseVector.length())
             return sparseVector.getNonZeroIndices();
         // If the sparse vector is a sub-view, calculate which indices are
         // reflected in this view
         else {
-            int[] full = sparseVector.getNonZeroIndices();
-            Arrays.sort(full);
-            int startIndex = 0;
-            int endIndex = full.length;
-            for (int i = 0; i < full.length; ++i) {
-                if (full[i] < vectorOffset)
-                    startIndex++;
-                else if (full[i] > vectorOffset + vectorLength) {
-                    endIndex = i - 1;
-                    break;
-                }
+            int inRange = 0;
+            int[] indices = sparseVector.getNonZeroIndices();
+            for (int nz : indices) {
+                if (nz >= vectorOffset && nz < vectorOffset + vectorLength)
+                    inRange++;
             }
-            if (startIndex == endIndex)
-                return new int[0];
-            int[] range = new int[endIndex - startIndex];
-            System.arraycopy(full, startIndex, range, 0, range.length);
-            return range;
+            int[] arr = new int[inRange];
+            int idx = 0;
+            for (int nz : indices) {
+                if (nz >= vectorOffset && nz < vectorOffset + vectorLength)
+                    arr[idx++] = nz;
+            }
+            return arr; 
         }
     }
 
@@ -147,8 +143,12 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
             // non-zero values
             if (sparseVector instanceof Iterable) {
                 for (DoubleEntry e : (Iterable<DoubleEntry>)sparseVector) {
-                    double d = e.value();
-                    m += d * d;
+                    int idx = e.index();
+                    if (idx >= vectorOffset 
+                            && idx < vectorOffset + vectorLength) {
+                        double d = e.value();
+                        m += d * d;
+                    }
                 }
             }
             else {

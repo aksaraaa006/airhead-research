@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.gws;
 
-import edu.ucla.sspace.basis.BasisMapping;
+import edu.ucla.sspace.basis.GenericBasisMapping;
 
 import edu.ucla.sspace.util.Duple;
 
@@ -36,84 +36,20 @@ import java.util.Map;
  *
  * @author David Jurgens
  */
-class WordBasisMapping 
-        implements BasisMapping<Duple<String,Integer>,String>, 
-                   java.io.Serializable {
+class WordBasisMapping extends GenericBasisMapping<Duple<String,Integer>> {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * A map that represents the word space by mapping raw strings to which
-     * dimension they are represented by.
-     */
-    private final Map<String,Integer> termToIndex;
-    
-    /**
-     * A cache of the reverse {@code termToIndex} mapping.  This field is only
-     * updated on calls to {@link #getDimensionDescription(int)} when the
-     * mapping has chanaged since the previous call.
-     */
-    private String[] indexToTermCache;
-
-    /**
      * Creates an empty {@code WordBasisMapping}.
      */
-    public WordBasisMapping() {
-        termToIndex = new HashMap<String,Integer>();
-        indexToTermCache = new String[0];
-    }
-
-    /**
-     * Returns the dimension number corresponding to the word regardless of its
-     * position.
-     *
-     * @param wordAndPosition a word and its relative position from the focus
-     *        word
-     *
-     * @return the dimension for the word, ignoring its positoion,
-     */
-    public int getDimension(Duple<String,Integer> wordAndPosition) {       
-        String token = wordAndPosition.x;
-        Integer index = termToIndex.get(token);
-        if (index == null) {     
-            synchronized(this) {
-                // recheck to see if the term was added while blocking
-                index = termToIndex.get(token);
-                // if another thread has not already added this word while the
-                // current thread was blocking waiting on the lock, then add it.
-                if (index == null) {
-                    int i = termToIndex.size();
-                    termToIndex.put(token, i);
-                    return i; // avoid the auto-boxing to assign i to index
-                }
-            }
-        }
-        return index;
-    }
+    public WordBasisMapping() { }
 
     /**
      * Returns the word mapped to each dimension.
      */
-    public String getDimensionDescription(int dimension) {
-        if (dimension < 0 || dimension > termToIndex.size())
-            throw new IllegalArgumentException(
-                "invalid dimension: " + dimension);
-        // If the cache is out of date, rebuild the reverse mapping.
-        if (termToIndex.size() > indexToTermCache.length) {
-            // Lock to ensure safe iteration
-            synchronized(this) {
-                indexToTermCache = new String[termToIndex.size()];
-                for (Map.Entry<String,Integer> e : termToIndex.entrySet())
-                    indexToTermCache[e.getValue()] = e.getKey();
-            }
-        }
-        return indexToTermCache[dimension];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int numDimensions() { 
-        return termToIndex.size();
+    @Override protected String describeDimension(int dimension, 
+                                                 Duple<String,Integer> d) {
+        return d.x;
     }
 }
