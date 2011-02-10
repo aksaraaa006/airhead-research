@@ -180,14 +180,14 @@ public class GapStatistic implements Clustering {
         // Setup files to store  store what the previous gap statistic was and
         // the previous clustering assignment. 
         File bestAssignments = null;
-        double bestGap = Double.MIN_VALUE;
+        double bestGap = Double.NEGATIVE_INFINITY;
         int bestK = 0;
         for (int i = 0; i < numIterations; ++i) {
             if (bestGap >= (gapResults[i] - gapStds[i])) {
                 verbose("bestGap: %f, newGap: %f", bestGap, 
             gapResults[i] - gapStds[i]);
                 verbose("Found best clustering with %d clusters\n",
-                        (i + startSize - 1));
+                        (i + startSize));
                 break;
             }
 
