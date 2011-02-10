@@ -381,9 +381,6 @@ public abstract class GenericMain {
         if (verbose) 
             LoggerUtil.setLevel(Level.FINE);
 
-        // all the documents are listed in one file, with one document per line
-        Iterator<Document> docIter = getDocumentIterator();
-        
         // Check whether this class supports mutlithreading when deciding how
         // many threads to use by default
         int numThreads = (isMultiThreaded)
@@ -428,6 +425,9 @@ public abstract class GenericMain {
         // -Dprop=<val> to the JVM directly.
 
         SemanticSpace space = getSpace(); 
+        
+        // all the documents are listed in one file, with one document per line
+        Iterator<Document> docIter = getDocumentIterator();
         
         processDocumentsAndSpace(space, docIter, numThreads, props);
 

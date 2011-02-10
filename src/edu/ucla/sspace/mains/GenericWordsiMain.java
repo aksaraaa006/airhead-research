@@ -7,6 +7,8 @@ import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.clustering.Clustering;
 import edu.ucla.sspace.clustering.OnlineClustering;
 
+import edu.ucla.sspace.text.Document;
+
 import edu.ucla.sspace.util.Generator;
 import edu.ucla.sspace.util.ReflectionUtil;
 
@@ -33,6 +35,10 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -147,271 +153,290 @@ public abstract class GenericWordsiMain extends GenericMain {
 
     private ObjectInputStream loadStream = null;
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void addExtraOptions(ArgOptions options) {
-    // Set the three runtime mode arguments.
-    options.addOption('s', "streamingClustering", 
-                      "Specifies the streaming clustering algorithm to " +
-                      "use for forming word senses",
-                      true, "CLASSNAME", "Required (one of)");
-    options.addOption('b', "batchClustering", 
-                      "Specifies the batch clustering algorithm to " +
-                      "use for forming word senses",
-                      true, "CLASSNAME", "Required (one of)");
-    options.addOption('e', "evaluationClustering", 
-                      "Specifies a trained Wordsi semantic space to be used " +
-                      "for evaluation.  When set, one of the Evaluation Type " +
-                      "arguments must be set",
-                      true, "<sspace>", "Required (one of)");
+    /**
+    * {@inheritDoc}
+    */
+    protected void addExtraOptions(ArgOptions options) {
+        // Set the three runtime mode arguments.
+        options.addOption('s', "streamingClustering", 
+                          "Specifies the streaming clustering algorithm to " +
+                          "use for forming word senses",
+                          true, "CLASSNAME", "Required (one of)");
+        options.addOption('b', "batchClustering", 
+                          "Specifies the batch clustering algorithm to " +
+                          "use for forming word senses",
+                          true, "CLASSNAME", "Required (one of)");
+        options.addOption('e', "evaluationClustering", 
+                          "Specifies a trained Wordsi semantic space to be " +
+                          "used for evaluation.  When set, one of the " +
+                          "Evaluation Type arguments must be set",
+                          true, "<sspace>", "Required (one of)");
 
-    // Set the evaluation type arguments.
-    options.addOption('P', "pseudoWordEvaluation",
-                      "Specifies a mapping from raw tokens to their pseudo " +
-                      "word token.  Only the raw tokens in this mapping will " +
-                      "be represented in the Wordsi space.  A " +
-                      "PseudoWordReport will be generated for these pseudo " +
-                      "words.  This overrides the -a option",
-                      true, "FILENAME", "Evaluation Type");
-    options.addOption('E', "semEvalEvaluation",
-                      "Signifies that the data files are in the SemEval " +
-                      "format and that only test instance words should be " +
-                      "represented in the Wordsi space.  Each line must " +
-                      "correspond to an instance context and the focus word " +
-                      "must be precceded by the token given as the argument " +
-                      "to this option.",
-                      true, "STRING", "Evaluation Type");
+        // Set the evaluation type arguments.
+        options.addOption('P', "pseudoWordEvaluation",
+                          "Specifies a mapping from raw tokens to their " +
+                          "pseudo word token.  Only the raw tokens in this " +
+                          "mapping will be represented in the Wordsi space.  " +
+                          "A PseudoWordReport will be generated for these " +
+                          "pseudo words.  This overrides the -a option",
+                          true, "FILENAME", "Evaluation Type");
+        options.addOption('E', "semEvalEvaluation",
+                          "Signifies that the data files are in the SemEval " +
+                          "format and that only test instance words should " +
+                          "be represented in the Wordsi space.  Each line " +
+                          "must correspond to an instance context and the " +
+                          "focus word must be precceded by the token given " +
+                          "as the argument to this option.",
+                          true, "STRING", "Evaluation Type");
 
-    // Set the optional arguments.
-    options.addOption('a', "acceptedWords",
-                      "Specifies the set of words which should be " +
-                      "represented by Wordsi. (Default: all words)",
-                      true, "FILENAME", "Optional");
-    options.addOption('c', "clusters",
-                      "Specifies the desired number of clusters, or " +
-                      "word senses.  (Default: 0)",
-                      true, "INT", "Optional");
-    options.addOption('W', "windowSize",
-                      "Specifies the number of words, in one direction, " +
-                      "that form a valid context.  For example, a window " +
-                      "size of 5 means that up to 5 words before and after " +
-                      "a focus word are used to form the context. (Default: 5)",
-                      true, "INT", "Optional");
+        // Set the optional arguments.
+        options.addOption('a', "acceptedWords",
+                          "Specifies the set of words which should be " +
+                          "represented by Wordsi. (Default: all words)",
+                          true, "FILENAME", "Optional");
+        options.addOption('c', "clusters",
+                          "Specifies the desired number of clusters, or " +
+                          "word senses.  (Default: 0)",
+                          true, "INT", "Optional");
+        options.addOption('W', "windowSize",
+                          "Specifies the number of words, in one direction, " +
+                          "that form a valid context.  For example, a window " +
+                          "size of 5 means that up to 5 words before and " +
+                          "after a focus word are used to form the context. " +
+                          "(Default: 5)",
+                          true, "INT", "Optional");
 
-    // Set the serialization arguments.
-    options.addOption('S', "save",
-                      "Specfies a file to which all files needed to " +
-                      "generate context vectors will be serialized",
-                      true, "FILENAME", "Serialization");
-    options.addOption('L', "load",
-                      "Specfies a file from which all files needed to " +
-                      "generate context vectors will be deserialized",
-                      true, "FILENAME", "Serialization");
-  }
-
-
-  /**
-   * Returns a {@link ContextExtractor}, which will be responsible for creating
-   * context vectors for documents.
-   */
-  abstract protected ContextExtractor getExtractor();
-
-  /**
-   * Returns a set of strings that the {@link Wordsi} implementations should
-   * represent, or {@code null}, which signifies that all words should be
-   * represented.
-   */
-  protected Set<String> getAcceptedWords() {
-    if (!argOptions.hasOption('a'))
-      return null;
-
-    try {
-      Set<String> acceptedWords = new HashSet<String>();
-      BufferedReader br = new BufferedReader(new FileReader(
-            argOptions.getStringOption('a')));
-      for (String line = null; (line = br.readLine()) != null; )
-        acceptedWords.add(line.trim());
-      return acceptedWords;
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    }
-  }
-
-  /**
-   * Returns a mapping from real tokens to their pseudo word tokens, or {@code
-   * null} if the {@code -P} option is not specified.
-   */
-  protected Map<String, String> getPseudoWordMap() {
-    if (!argOptions.hasOption('P'))
-      return null;
-
-    try {
-      Map<String, String> pseudoWordMap = new HashMap<String, String>();
-      BufferedReader br = new BufferedReader(new FileReader(
-            argOptions.getStringOption('P')));
-      for (String line = null; (line = br.readLine()) != null; ) {
-        String[] tokens = line.split("\\s+");
-        pseudoWordMap.put(tokens[0].trim(), tokens[1].trim());
-      }
-      return pseudoWordMap;
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    }
-  }
-
-  protected ContextExtractor contextExtractorFromGenerator(
-      ContextGenerator generator) {
-    // If experimentation mode is set, mark the generator as read only.
-    if (argOptions.hasOption('e'))
-      generator.setReadOnly();
-
-    // If the evaluation type is for semEval, use a SenseEvalContextExtractor.
-    if (argOptions.hasOption('E'))
-      return new SenseEvalContextExtractor(
-          generator, windowSize(), argOptions.getStringOption('E'));
-
-    // If the evaluation type is for pseudoWord, use a
-    // PseudoWordContextExtractor.
-    if (argOptions.hasOption('P'))
-      return new PseudoWordContextExtractor(
-          generator, windowSize(), getPseudoWordMap());
-
-    // Return a standard context extractor
-    return new GeneralContextExtractor(generator, windowSize());
-  }
-
-  /**
-   * Returns the window size used in a sliding context window.
-   */
-  protected int windowSize() {
-    return argOptions.getIntOption('W', 5);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  protected SemanticSpace getSpace() {
-    ArgOptions options = argOptions;
-
-    // Setup the assignment reporter.  When training, the assignment report will
-    // only be used If the evaluation mode will be for
-    // pseudoWord.
-    boolean trackSecondaryKeys = false;
-    AssignmentReporter reporter = null;
-    if (options.hasOption('P')) {
-      trackSecondaryKeys = true;
-      reporter = new PseudoWordReporter(System.out);
+        // Set the serialization arguments.
+        options.addOption('S', "save",
+                          "Specfies a file to which all files needed to " +
+                          "generate context vectors will be serialized",
+                          true, "FILENAME", "Serialization");
+        options.addOption('L', "load",
+                          "Specfies a file from which all files needed to " +
+                          "generate context vectors will be deserialized",
+                          true, "FILENAME", "Serialization");
     }
 
-    // If Wordsi is being used in an evaluation mode, set up word space
-    // accordingly.
-    if (options.hasOption('e')) {
-      // If the evaluation type is not set, report an error and exit.
-      if (!options.hasOption('E') && !options.hasOption('P')) {
-        usage();
-        System.out.println(
-            "An Evaluation Type must be set when evaluating Wordsi");
-        System.exit(1);
-      }
 
-      // Load the semantic space that has the predefined word senses from disk
-      // and return an EvaluationWordsi instance.
-      try {
-        SemanticSpace sspace = SemanticSpaceIO.load(
-            options.getStringOption('e'));
-        if (options.hasOption('E'))
-          reporter = new SenseEvalReporter(System.out);
+    /**
+     * Returns a {@link ContextExtractor}, which will be responsible for
+     * creating context vectors for documents.
+     */
+    abstract protected ContextExtractor getExtractor();
 
-        return new EvaluationWordsi(
-            getAcceptedWords(), getExtractor(), sspace, reporter);
-      } catch (IOException ioe) {
-        throw new IOError(ioe);
-      }
-    } else if (options.hasOption('s')) {
-      // Create a StreamingWordsi instance that uses the specified online 
-      // cluster generator.
-      if (options.hasOption('c'))
-        System.getProperties().setProperty(
-            OnlineClustering.NUM_CLUSTERS_PROPERTY,
-            options.getStringOption('c'));
+    /**
+     * Returns a set of strings that the {@link Wordsi} implementations should
+     * represent, or {@code null}, which signifies that all words should be
+     * represented.
+     */
+    protected Set<String> getAcceptedWords() {
+        if (!argOptions.hasOption('a'))
+            return null;
 
-      Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator =
-        ReflectionUtil.getObjectInstance(options.getStringOption('s'));
-      return new StreamingWordsi(
-          getAcceptedWords(), getExtractor(), clusterGenerator, reporter);
-    } else if (options.hasOption('b')) {
-      // Create a WaitingWordsi instance that uses the specified batch
-      // clustering implementation.
-      Clustering clustering = 
-        ReflectionUtil.getObjectInstance(options.getStringOption('b'));
-      int numClusters = options.getIntOption('c', 0);
-      return new WaitingWordsi(getAcceptedWords(), getExtractor(), 
-                               clustering, reporter, numClusters);
-    } else {
-      // None of the required options was provided, report an error and exit.
-      usage();
-      System.out.println("No clustering method was specified.");
-      System.exit(1);
-      return null;
+        try {
+            Set<String> acceptedWords = new HashSet<String>();
+            BufferedReader br = new BufferedReader(new FileReader(
+                        argOptions.getStringOption('a')));
+            for (String line = null; (line = br.readLine()) != null; )
+                acceptedWords.add(line.trim());
+            return acceptedWords;
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
-  }
 
-  /**
-   * Returns an {@link ObjectOutputStream} for the file referred to by the
-   * {@code --Save} option or {@link null} if the option was not used.
-   */
-  protected ObjectOutputStream openSaveFile() {
-    try {
-      if (saveStream == null && argOptions.hasOption('S'))
-        saveStream = new ObjectOutputStream(new FileOutputStream(
-              argOptions.getStringOption('S')));
-      return saveStream;
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    }
-  }
+    /**
+     * Returns a mapping from real tokens to their pseudo word tokens, or {@code
+     * null} if the {@code -P} option is not specified.
+     */
+    protected Map<String, String> getPseudoWordMap() {
+        if (!argOptions.hasOption('P'))
+            return null;
 
-  /**
-   * Returns an {@link ObjectInputStream} for the file referred to by the {@code
-   * --Load} option or {@link null} if the option was not used.
-   */
-  protected ObjectInputStream openLoadFile() {
-    try {
-      if (loadStream == null && argOptions.hasOption('L'))
-        loadStream = new ObjectInputStream(new FileInputStream(
-              argOptions.getStringOption('L')));
-      return loadStream;
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
+        try {
+            Map<String, String> pseudoWordMap = new HashMap<String, String>();
+            BufferedReader br = new BufferedReader(new FileReader(
+                        argOptions.getStringOption('P')));
+            for (String line = null; (line = br.readLine()) != null; ) {
+                String[] tokens = line.split("\\s+");
+                pseudoWordMap.put(tokens[0].trim(), tokens[1].trim());
+            }
+            return pseudoWordMap;
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
     }
-  }
 
-  /**
-   * Writes the {@code obj} to the given {@link ObjectOutputStream}.
-   */
-  protected void saveObject(ObjectOutputStream outStream, Object obj) {
-    try {
-      outStream.writeObject(obj);
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    }
-  }
+    protected ContextExtractor contextExtractorFromGenerator(
+            ContextGenerator generator) {
+        // If experimentation mode is set, mark the generator as read only.
+        if (argOptions.hasOption('e'))
+            generator.setReadOnly();
 
-  /**
-   * Returns an object of type {@code T} from the provided {@link
-   * ObjectInputStream}.  This method does the casting, so assignments should be
-   * done directly to a pointer and not through a ternary operator, otherwise
-   * the cast will need to be done a second time.
-   */
-  @SuppressWarnings("unchecked")
-  protected <T> T loadObject(ObjectInputStream inStream) {
-    try {
-      return (T) inStream.readObject();
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
-    } catch (ClassNotFoundException cnfe) {
-      throw new IOError(cnfe);
+        // If the evaluation type is for semEval, use a
+        // SenseEvalContextExtractor.
+        if (argOptions.hasOption('E'))
+            return new SenseEvalContextExtractor(
+                    generator, windowSize(), argOptions.getStringOption('E'));
+
+        // If the evaluation type is for pseudoWord, use a
+        // PseudoWordContextExtractor.
+        if (argOptions.hasOption('P'))
+            return new PseudoWordContextExtractor(
+                    generator, windowSize(), getPseudoWordMap());
+
+        // Return a standard context extractor
+        return new GeneralContextExtractor(generator, windowSize());
     }
-  }
+
+    /**
+     * Returns the window size used in a sliding context window.
+     */
+    protected int windowSize() {
+        return argOptions.getIntOption('W', 5);
+    }
+
+    protected Iterator<Document> getDocumentIterator() throws IOException {
+        Iterator<Document> docIter = super.getDocumentIterator();
+
+        // If we are not in streaming mode, just return the iterator as normal.
+        if (!argOptions.hasOption('s'))
+            return docIter;
+
+        // Otherwise, read in all of the documents into a list, shuffle it, and
+        // return an iterator over that list.  This is needed to ensure that the
+        // ordering does not bias the clustering algorithm.
+        List<Document> docList = new LinkedList<Document>();
+        while (docIter.hasNext())
+            docList.add(docIter.next());
+        Collections.shuffle(docList);
+        return docList.iterator();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected SemanticSpace getSpace() {
+        ArgOptions options = argOptions;
+
+        // Setup the assignment reporter.  When training, the assignment report
+        // will only be used If the evaluation mode will be for pseudoWord.
+        boolean trackSecondaryKeys = false;
+        AssignmentReporter reporter = null;
+        if (options.hasOption('P')) {
+            trackSecondaryKeys = true;
+            reporter = new PseudoWordReporter(System.out);
+        }
+
+        // If Wordsi is being used in an evaluation mode, set up word space
+        // accordingly.
+        if (options.hasOption('e')) {
+            // If the evaluation type is not set, report an error and exit.
+            if (!options.hasOption('E') && !options.hasOption('P')) {
+                usage();
+                System.out.println("An Evaluation Type must be set when " +
+                                   "evaluating Wordsi");
+                System.exit(1);
+            }
+
+            // Load the semantic space that has the predefined word senses from
+            // disk and return an EvaluationWordsi instance.
+            try {
+                SemanticSpace sspace = SemanticSpaceIO.load(
+                        options.getStringOption('e'));
+                if (options.hasOption('E'))
+                    reporter = new SenseEvalReporter(System.out);
+
+                return new EvaluationWordsi(
+                        getAcceptedWords(), getExtractor(), sspace, reporter);
+            } catch (IOException ioe) {
+                throw new IOError(ioe);
+            }
+        } else if (options.hasOption('s')) {
+            // Create a StreamingWordsi instance that uses the specified online 
+            // cluster generator.
+            if (options.hasOption('c'))
+                System.getProperties().setProperty(
+                        OnlineClustering.NUM_CLUSTERS_PROPERTY,
+                        options.getStringOption('c'));
+
+            Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator =
+                ReflectionUtil.getObjectInstance(options.getStringOption('s'));
+            return new StreamingWordsi(getAcceptedWords(), getExtractor(), 
+                                       clusterGenerator, reporter);
+        } else if (options.hasOption('b')) {
+            // Create a WaitingWordsi instance that uses the specified batch
+            // clustering implementation.
+            Clustering clustering = 
+                ReflectionUtil.getObjectInstance(options.getStringOption('b'));
+            int numClusters = options.getIntOption('c', 0);
+            return new WaitingWordsi(getAcceptedWords(), getExtractor(), 
+                                     clustering, reporter, numClusters);
+        } else {
+            // None of the required options was provided, report an error and
+            // exit.
+            usage();
+            System.out.println("No clustering method was specified.");
+            System.exit(1);
+            return null;
+        }
+    }
+
+    /**
+     * Returns an {@link ObjectOutputStream} for the file referred to by the
+     * {@code --Save} option or {@link null} if the option was not used.
+     */
+    protected ObjectOutputStream openSaveFile() {
+        try {
+            if (saveStream == null && argOptions.hasOption('S'))
+                saveStream = new ObjectOutputStream(new FileOutputStream(
+                            argOptions.getStringOption('S')));
+            return saveStream;
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
+
+    /**
+     * Returns an {@link ObjectInputStream} for the file referred to by the {@code
+     * --Load} option or {@link null} if the option was not used.
+     */
+    protected ObjectInputStream openLoadFile() {
+        try {
+            if (loadStream == null && argOptions.hasOption('L'))
+                loadStream = new ObjectInputStream(new FileInputStream(
+                            argOptions.getStringOption('L')));
+            return loadStream;
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
+
+    /**
+     * Writes the {@code obj} to the given {@link ObjectOutputStream}.
+     */
+    protected void saveObject(ObjectOutputStream outStream, Object obj) {
+        try {
+            outStream.writeObject(obj);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
+
+    /**
+     * Returns an object of type {@code T} from the provided {@link
+     * ObjectInputStream}.  This method does the casting, so assignments should
+     * be done directly to a pointer and not through a ternary operator,
+     * otherwise the cast will need to be done a second time.
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> T loadObject(ObjectInputStream inStream) {
+        try {
+            return (T) inStream.readObject();
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        } catch (ClassNotFoundException cnfe) {
+            throw new IOError(cnfe);
+        }
+    }
 }
