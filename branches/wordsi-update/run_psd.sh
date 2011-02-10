@@ -7,7 +7,7 @@
 bdir=$1
 mkdir -p $bdir/res
 
-CORP_PATH=/argos/corpora/WaCkypedia/word-contexts
+CORP_PATH=/fomor/corpora/new-contexts/contexts
 CLUST=edu.ucla.sspace.clustering
 MAIN=edu.ucla.sspace.mains
 
@@ -21,7 +21,7 @@ run() {
   for i in $(seq 0 $LIMIT)
   do
     [ $i -eq $1 ] && continue
-    corp=$CORP_PATH/$keyWord.$pos.$i,$CORP_PATH/$confounder.$pos.$i,$corp
+    corp=$CORP_PATH/$keyWord.$pos.contexts.$i,$CORP_PATH/$confounder.$pos.contexts.$i,$corp
   done
 
   clustAlg=$2
@@ -37,7 +37,7 @@ run() {
      2> $bdir/$outputName-train.log \
      > $bdir/res/$outputName-train.counts
 
-  corp=$CORP_PATH/$keyWord.noun.$testSeg,$CORP_PATH/$confounder.noun.$testSeg
+  corp=$CORP_PATH/$keyWord.$pos.contexts.$testSeg,$CORP_PATH/$confounder.$pos.contexts.$testSeg
   $j $extArgs $MAIN.$alg -d $corp -P $keyMap -W $window -c $numClust -v \
      -L $bdir/$outputName.basis $extraArgs -e $bdir/$outputName-train.sspace \
      $bdir/$outputName-test.sspace \
@@ -54,9 +54,9 @@ run_all() {
   algName="dv-wc-wordsi"
   run $3 "$CTYPE $CLUST.$1" $2 ""
   algName="dv-wc-wordsi-order"
-  run $3 "$CTYPE $CLUST.$1" $2 "-G edu.ucla.sspace.hal.GeometricWeighting"
+  #run $3 "$CTYPE $CLUST.$1" $2 "-G edu.ucla.sspace.hal.GeometricWeighting"
   algName="dv-wc-wordsi-pos"
-  run $3 "$CTYPE $CLUST.$1" $2 "-O"
+  #run $3 "$CTYPE $CLUST.$1" $2 "-O"
 
   alg=DVWordsiMain
   algOpts=""
@@ -64,7 +64,7 @@ run_all() {
   numClust=15
 
   algName="dv-wordsi-rel"
-  run $3 "$CTYPE $CLUST.$1" $2 "-B edu.ucla.sspace.dv.RelationBasedBasisMapping"
+  #run $3 "$CTYPE $CLUST.$1" $2 "-B edu.ucla.sspace.dv.RelationBasedBasisMapping"
 }
 
 processWordList() {
@@ -84,12 +84,11 @@ do
     CTYPE=-s
     run_all StreamingKMeans stkm $testSeg
     CTYPE=-b
-    run_all ClusteringByCommittee cbc $testSeg
-    run_all CKVWSpectralClustering06 sc06 $testSeg
+    #run_all ClusteringByCommittee cbc $testSeg
+    #run_all CKVWSpectralClustering06 sc06 $testSeg
     #run_all GapStatistic gs-kmeans $testSeg
   done
 done
 }
 
-processWordList psd-noun-word-list.txt noun
-processWordList psd-verb-word-list.txt verb
+processWordList psd-noun-confounders.txt NOUN
