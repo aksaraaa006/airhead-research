@@ -25,13 +25,14 @@ Coals can be invoked either using {{{java edu.ucla.sspace.mains.CoalsMain}}} or 
 We provide the following options for changing the behavior of Coals and how the program is run.
 
   * Input document sources (must provide at least one)
-    * {{{-l | --fileList <filename>}}} a file containing a list of file names, each of which is treated as a separate document.
+    * {{{-f | --fileList <filename>}}} a file containing a list of file names, each of which is treated as a separate document.
     * {{{-d | --docFile <filename>}}} a file where each line is treated as a separate document. This is the preferred option for Coals operations for large numbers of documents due to reduced I/O demands. 
 
   * Coals Options
-    * {{{-s | --svddimension <int>}}} how many dimensions to use for the SVD vectors. See Coals for default value
-    * {{{-s | --dimensions <int>}}} the number of most frequent words to retain for the word-word matrix. See Coals for default value.
-    * {{{-r | --reduce}}} If passed, the word-word matrix will be reduced using SVD, otherwise no reduction will be done.
+    * {{{-s | --reducedDimension <int>}}} Set the number of dimension to reduce to using the Singular Value Decompositon.  This is used if --reduce is set.
+    * {{{-n | --dimensions <int>}}} Set the number of columns to keep in the raw co-occurance matrix
+    * {{{-m | --maxWords <int>}}} Set the maximum number of words to keep in the space, ordered by frequency.
+    * {{{-r | --reduce}}} Set to true if the co-occurrance matrix should be reduced using the Singluar Value Decomposition.
     
   * Program Options
     * {{{-t | --threads <int>}}} how many threads to use when processing the documents. The default is one per core.
