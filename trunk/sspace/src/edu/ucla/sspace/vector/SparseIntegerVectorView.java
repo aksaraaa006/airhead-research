@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Keith Stevens 
+ * Copyright 2011 David Jurgens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.vector;
 
-import edu.ucla.sspace.util.DoubleEntry;
+import edu.ucla.sspace.util.IntegerEntry;
 
 import java.io.Serializable;
 
@@ -29,52 +29,51 @@ import java.util.Arrays;
 
 
 /**
- * A view of a sparse {@link DoubleVector} that that allows the backing data to
+ * A view of a sparse {@link IntegerVector} that that allows the backing data to
  * be resized and also viewed from an offset.  Furthermore, this class allows
  * the viewed data to be immutable, where all mutating operations throw {@link
  * UnsupportedOperationException}.
  * 
- * @author Keith Stevens
  * @authod David Jurgens
  */
-class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
-        implements SparseDoubleVector {
+class SparseIntegerVectorView extends IntegerVectorView
+        implements SparseIntegerVector {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * A {@link SparseVector} reference to the {@link DoubleVector} data backing
+     * A {@link SparseVector} reference to the {@link IntegerVector} data backing
      * this view.
      */
     private final SparseVector sparseVector;
 
     /**
-     * Creates a new {@link DoubleVector} view of the data in the provided
-     * {@link DoubleVector}.
+     * Creates a new {@link IntegerVector} view of the data in the provided
+     * {@link IntegerVector}.
      *
-     * @param v the {@code DoubleVector} to view as containing double data.
+     * @param v the {@code IntegerVector} to view as containing double data.
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v) {
+    public <T extends IntegerVector & SparseVector<Integer>> 
+            SparseIntegerVectorView(T v) {
         this(v, 0, v.length(), false);
     }
 
     /**
-     * Creates a new, optionally immutable {@link DoubleVector} view of the data
-     * in the provided {@link DoubleVector}.
+     * Creates a new, optionally immutable {@link IntegerVector} view of the data
+     * in the provided {@link IntegerVector}.
      *
-     * @param v the {@code DoubleVector} to view as containing double data.
+     * @param v the {@code IntegerVector} to view as containing double data.
      * @param isImmutable {@code true} if this view should not allow mutating
      *        operations to change the state of the backing vector
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v, boolean isImmutable) {
+    public <T extends IntegerVector & SparseVector<Integer>> 
+            SparseIntegerVectorView(T v, boolean isImmutable) {
         this(v, 0, v.length(), isImmutable);
     }
 
     /**
-     * Creates a new {@link DoubleVector} sub-view of the data in the provided
-     * {@link DoubleVector} using the offset and length to specify a viewing
+     * Creates a new {@link IntegerVector} sub-view of the data in the provided
+     * {@link IntegerVector} using the offset and length to specify a viewing
      * region.
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -82,14 +81,14 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      *               view starts
      * @param length the length of this view.
      */
-    public <T extends DoubleVector & SparseVector<Double>> 
-            ViewDoubleAsDoubleSparseVector(T v, int offset, int length) {
+    public <T extends IntegerVector & SparseVector<Integer>> 
+            SparseIntegerVectorView(T v, int offset, int length) {
         this(v, offset, length, false);
     }
 
     /**
-     * Creates a new, optionally immutable {@link DoubleVector} sub-view of the
-     * data in the provided {@link DoubleVector} using the offset and length to
+     * Creates a new, optionally immutable {@link IntegerVector} sub-view of the
+     * data in the provided {@link IntegerVector} using the offset and length to
      * specify a viewing region.
      *
      * @param v the {@code Vector} whose data is reflected in this view.
@@ -99,9 +98,9 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
      * @param isImmutable {@code true} if this view should not allow mutating
      *        operations to change the state of the backing vector.
      */
-    public <T extends DoubleVector & SparseVector<Double>>
-           ViewDoubleAsDoubleSparseVector(T v, int offset, int length, 
-                                          boolean isImmutable) {
+    public <T extends IntegerVector & SparseVector<Integer>>
+           SparseIntegerVectorView(T v, int offset, int length, 
+                                   boolean isImmutable) {
         super(v, offset, length, isImmutable);
         sparseVector = v;
     }
@@ -127,7 +126,7 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
                 if (nz >= vectorOffset && nz < vectorOffset + vectorLength)
                     arr[idx++] = nz;
             }
-            return arr; 
+            return arr;
         }
     }
 
@@ -142,12 +141,12 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
             // Special case if we can iterate in time linear to the number of
             // non-zero values
             if (sparseVector instanceof Iterable) {
-                for (DoubleEntry e : (Iterable<DoubleEntry>)sparseVector) {
+                for (IntegerEntry e : (Iterable<IntegerEntry>)sparseVector) {
                     int idx = e.index();
                     if (idx >= vectorOffset 
                             && idx < vectorOffset + vectorLength) {
-                        double d = e.value();
-                        m += d * d;
+                        int i = e.value();
+                        m += i * i;
                     }
                 }
             }
@@ -155,8 +154,8 @@ class ViewDoubleAsDoubleSparseVector extends DoubleVectorView
                 for (int nz : sparseVector.getNonZeroIndices()) {
                     if (nz >= vectorOffset 
                             && nz < vectorOffset + vectorLength) {
-                        double d = doubleVector.get(nz);
-                        m += d * d;
+                        int j = intVector.get(nz);
+                        m += j * j;
                     }
                 }
             }

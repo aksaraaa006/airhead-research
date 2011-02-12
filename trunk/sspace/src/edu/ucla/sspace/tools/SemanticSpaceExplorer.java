@@ -22,6 +22,7 @@
 package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
+import edu.ucla.sspace.common.DimensionallyInterpretableSemanticSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO;
 import edu.ucla.sspace.common.Similarity;
@@ -29,6 +30,7 @@ import edu.ucla.sspace.common.WordComparator;
 
 import edu.ucla.sspace.text.WordIterator;
 
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.VectorIO;
 
@@ -76,7 +78,9 @@ public class SemanticSpaceExplorer {
         GET_CURRENT_SSPACE,
         PRINT_VECTOR,
         ALIAS,
-        GET_WORDS    
+        GET_WORDS,
+        DESCRIBE_DIMENSION,
+        DESCRIBE_SEMANTIC_SPACE
     }
 
     /**
@@ -580,6 +584,57 @@ public class SemanticSpaceExplorer {
             break;
         }
 
+        // Describes the dimension, if the current sspace has annotations
+        case DESCRIBE_DIMENSION: {
+            if (current instanceof DimensionallyInterpretableSemanticSpace) {
+                if (!commandTokens.hasNext()) {
+                    out.println("Must supply a dimension number");
+                    break;
+                }
+                int dim = -1;
+                String next = commandTokens.next();
+                try {
+                    dim = Integer.parseInt(next);                    
+                } catch (NumberFormatException nfe) {
+                    out.println("Invalid dimension: " + next);
+                    break;
+                }
+                DimensionallyInterpretableSemanticSpace<?> diss = 
+                    (DimensionallyInterpretableSemanticSpace)current;
+                try {
+                    out.println(diss.getDimensionDescription(dim).toString());
+                } catch (Exception e) {
+                    out.println(e.getMessage());
+                }
+            }
+            else
+                out.println("Current space has no dimension descriptions");
+            break;
+        }
+
+        // Prints out statistics on the current sspaces
+        case DESCRIBE_SEMANTIC_SPACE: {
+            if (current == null) {
+                out.println("no .sspace loaded");
+                break;
+            }
+            String name = current.getSpaceName();
+            boolean hasDimDescriptions = 
+                current instanceof DimensionallyInterpretableSemanticSpace;
+            int dims = current.getVectorLength();
+            int words = current.getWords().size();
+            boolean isSparse = (current.getWords().isEmpty()) ||
+                current.getVector(current.getWords().iterator().next())
+                    instanceof SparseVector;
+            out.println(name + ": " + words + " words, " 
+                        + dims + " dimensions" 
+                        + ((hasDimDescriptions) 
+                           ? " with descriptions" : "")
+                        + ((isSparse) ? ", sparse vectors"
+                           : ", dense vectors"));
+            break;
+        }
+
         default: // should never get executed
             assert false : command;
         }
@@ -608,7 +663,9 @@ public class SemanticSpaceExplorer {
             "  alias filename.sspace name\n" + 
             "  write-command-results output-file command...\n" +
             "  print-vector word\n" +
-            "  get-words [string-prefix]\n";
+            "  get-words [string-prefix]\n" +
+            "  describe-dimension number\n" +
+            "  describe-semantic-space\n";
     }
 
     /**

@@ -31,7 +31,7 @@
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
   <property name="tools.dir" value="tools"/>
-  <property name="version" value="1.1"/>
+  <property name="version" value="1.6"/>
   
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -267,6 +267,21 @@
     </jar>
   </target>
 
+  <target name="gws-jar" depends="compile">
+    <jar destfile="${bin.dir}/gws.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Generic Word Space"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.GwsMain"/>
+      </manifest>
+    </jar>
+  </target>
+
   <target name="fdtri-jar" depends="compile">
     <jar destfile="${bin.dir}/fd-tri.jar" basedir="classes">
       <include name="**/*.class"/>
@@ -412,6 +427,7 @@
       <jvmarg value="-debug"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>    
+
       <!-- Comment block for excluding the testing a specific set of files. -->
       <test name="edu.ucla.sspace.clustering.HierarchicalAgglomerativeClusteringTests" todir="${report.dir}"/>
 
@@ -486,8 +502,11 @@
       <test name="edu.ucla.sspace.vector.SparseHashVectorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.SparseHashIntegerVectorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.SparseHashDoubleVectorTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.SparseIntegerVectorViewTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorsTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.vector.VectorMathTest" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.vector.ViewDoubleAsDoubleSparseVectorTests" todir="${report.dir}"/>
+
       <!-- -->
     </junit>
   </target>

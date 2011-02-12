@@ -183,12 +183,12 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
     public double magnitude() {
         // Check whether the current magnitude is valid and if not, recompute it
         if (magnitude < 0) {
-            magnitude = 0;
+            double m = 0;
             for (int i = vectorOffset; i < vectorOffset + vectorLength; ++i) {
                 Number j = vector.getValue(i);
-                magnitude += j.doubleValue() * j.doubleValue();
+                m += j.doubleValue() * j.doubleValue();
             }
-            magnitude = Math.sqrt(magnitude);
+            magnitude = Math.sqrt(m);
         }
         return magnitude;
     }

@@ -375,7 +375,7 @@ public class Similarity {
     public static double cosineSimilarity(IntegerVector a, IntegerVector b) {
         check(a,b);
 
-        double dotProduct = 0.0;
+        int dotProduct = 0;
         double aMagnitude = a.magnitude();
         double bMagnitude = b.magnitude();
 
@@ -425,15 +425,15 @@ public class Similarity {
             // misses would be less of a performance hit.
             if (nzA.length < nzB.length) {
                 for (int nz : nzA) {
-                    double aValue = a.get(nz);
-                    double bValue = b.get(nz);
+                    int aValue = a.get(nz);
+                    int bValue = b.get(nz);
                     dotProduct += aValue * bValue;
                 }
             }
             else {
                 for (int nz : nzB) {
-                    double aValue = a.get(nz);
-                    double bValue = b.get(nz);
+                    int aValue = a.get(nz);
+                    int bValue = b.get(nz);
                     dotProduct += aValue * bValue;
                 }
             }
@@ -442,8 +442,8 @@ public class Similarity {
         // Otherwise, just assume both are dense and compute the full amount
         else {
             for (int i = 0; i < b.length(); i++) {
-                double aValue = a.get(i);
-                double bValue = b.get(i);
+                int aValue = a.get(i);
+                int bValue = b.get(i);
                 dotProduct += aValue * bValue;
             }
         }
