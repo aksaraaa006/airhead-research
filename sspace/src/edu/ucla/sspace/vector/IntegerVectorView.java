@@ -45,7 +45,7 @@ class IntegerVectorView extends VectorView<Integer> implements IntegerVector {
     /**
      * A {@link IntegerVector} reference to the backing vector
      */
-    private final IntegerVector intVector;
+    protected final IntegerVector intVector;
 
     /**
      * Creates a new {@link IntegerVector} view of the data in the provided
@@ -134,6 +134,22 @@ class IntegerVectorView extends VectorView<Integer> implements IntegerVector {
      */
     public Integer getValue(int index) {
         return intVector.get(getIndex(index));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            double m = 0;
+            for (int i = vectorOffset; i < vectorOffset + vectorLength; ++i) {
+                int j = intVector.get(i);
+                m += j * j;
+            }
+            magnitude = Math.sqrt(m);
+        }
+        return magnitude;
     }
 
     /**
