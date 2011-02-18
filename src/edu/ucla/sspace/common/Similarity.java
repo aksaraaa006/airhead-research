@@ -329,8 +329,7 @@ public class Similarity {
             // product.  Because it would be more expensive to compute the
             // intersection of the two sets, we assume that any potential
             // misses would be less of a performance hit.
-            if (nzA[nzA.length-1] < nzB[nzB.length-1] ||
-                nzA.length < nzB.length) {
+            if (nzA.length < nzB.length) {
                 DoubleVector t = a;
                 a = b;
                 b = t;
