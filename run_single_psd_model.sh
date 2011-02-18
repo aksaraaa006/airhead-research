@@ -97,8 +97,10 @@ do
   keyWord=`echo $line | cut -d " " -f 1`
   confounder=`echo $line | cut -d " " -f 2`
 
-  echo "$keyWord $confounder" > psd-key-map.txt
-  keyMap=psd-key-map.txt
+  keyMap=psd-key-$keyWord-$confounder-map.txt
+  echo $keyMap
+  echo "$keyWord $keyWord$confounder" > $keyMap
+  echo "$confounder $keyWord$confounder" >> $keyMap
 
   for testSeg in $(seq 0 $LIMIT)
   do
@@ -122,4 +124,5 @@ do
 
     run_all $NAME $model $testSeg
   done
+  rm $keyMap
 done
