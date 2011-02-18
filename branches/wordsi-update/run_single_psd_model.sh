@@ -6,7 +6,6 @@
 # POS can be: NOUN VERB ADV ADJ
 # clustModel can be: cbc stkm sc06 gs-kmeans
 # sspaceModel can be: wordsi order pos rel
-keyMap=$2
 pos=$3
 model=$4
 sspace=$5
@@ -93,25 +92,34 @@ run_all() {
   fi
 }
 
-for testSeg in $(seq 0 $LIMIT)
+cat $2 | while read line
 do
-  if [ "$model" == "stkm" ]
-  then
-    CTYPE=-s
-    NAME="StreamingKMeans"
-  elif [ "$model" == "cbc" ]
-  then
-    CTYPE=-b
-    NAME=ClusteringByCommittee
-  elif [ "$model" == "sc06" ]
-    CTYPE=-b
-    NAME=CKVWSpectralClustering06
-  then
-  elif [ "$model" == "gs-kmeans" ]
-  then
-    CTYPE=-b
-    NAME=GapStatistic
-  fi
+  keyWord=`echo $line | cut -d " " -f 1`
+  confounder=`echo $line | cut -d " " -f 2`
 
-  run_all GapStatistic gs-kmeans $testSeg
+  echo "$keyWord $confounder" > psd-key-map.txt
+  keyMap=psd-key-map.txt
+
+  for testSeg in $(seq 0 $LIMIT)
+  do
+    if [ "$model" == "stkm" ]
+    then
+      CTYPE=-s
+      NAME="StreamingKMeans"
+    elif [ "$model" == "cbc" ]
+    then
+      CTYPE=-b
+      NAME=ClusteringByCommittee
+    elif [ "$model" == "sc06" ]
+    then
+      CTYPE=-b
+      NAME=CKVWSpectralClustering06
+    elif [ "$model" == "gs-kmeans" ]
+    then
+      CTYPE=-b
+      NAME=GapStatistic
+    fi
+
+    run_all $NAME $model $testSeg
+  done
 done
