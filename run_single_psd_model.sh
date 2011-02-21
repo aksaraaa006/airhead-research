@@ -106,7 +106,7 @@ do
   keyWord=`echo $line | cut -d " " -f 1`
   confounder=`echo $line | cut -d " " -f 2`
 
-  keyMap=psd-key-$keyWord-$confounder-map.txt
+  keyMap=psd-key-$keyWord-$confounder-$model-$sspace-map.txt
   echo $keyMap
   echo "$keyWord $keyWord$confounder" > $keyMap
   echo "$confounder $keyWord$confounder" >> $keyMap
