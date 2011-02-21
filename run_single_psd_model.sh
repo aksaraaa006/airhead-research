@@ -5,7 +5,7 @@
 #  ./run_single_psd_model.sh /path/to/SemEvalResults/psd_results confoudners.txt POS clustModel sspaceModel
 # POS can be: NOUN VERB ADV ADJ
 # clustModel can be: cbc stkm sc06 gs-kmeans
-# sspaceModel can be: wordsi order pos rel
+# sspaceModel can be: wordsi order pos rel wordsi25
 pos=$3
 model=$4
 sspace=$5
@@ -61,6 +61,15 @@ run_all() {
     numClust=15
 
     algName="dv-wc-wordsi"
+    run $3 "$CTYPE $CLUST.$1" $2 ""
+  elif [ "$sspace" == "wordsi25" ]
+  then
+    alg=DVWCWordsiMain
+    algOpts=""
+    window=25
+    numClust=15
+
+    algName="dv-wc-wordsi-25"
     run $3 "$CTYPE $CLUST.$1" $2 ""
   elif [ "$sspace" == "order" ]
   then
