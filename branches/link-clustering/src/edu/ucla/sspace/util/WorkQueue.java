@@ -106,7 +106,7 @@ public class WorkQueue {
         threads = new ArrayList<Thread>();
         taskKeyToLatch = new ConcurrentHashMap<Object,CountDownLatch>();
         for (int i = 0; i < numThreads; ++i) {
-            Thread t = new WorkerThread(workQueue, 10);
+            Thread t = new WorkerThread(workQueue);
             threads.add(t);
             t.start();            
         }
@@ -292,6 +292,5 @@ public class WorkQueue {
                 latch.countDown();
             }
         }
-
     }
 }

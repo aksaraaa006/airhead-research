@@ -25,16 +25,18 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 
+import edu.ucla.sspace.matrix.AbstractMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseHashMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SparseSymmetricMatrix;
-import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.WorkQueue;
 
+import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 
 import java.util.ArrayList;
@@ -76,6 +78,31 @@ import java.util.logging.Logger;
  * elements will still cluster the rows, but will ignore the requester number of
  * clusters.
  *
+ * <p> Note that this class is <i>not</i> thread-safe.  Each call to clustering
+ * will cache local information about the clustering result to facilitate the
+ * {@link #getSolution(int)} and {@link #getDensity(int)} functions.
+ *
+ * This class provides one configurable property:
+ *
+ * <dl style="margin-left: 1em">
+ * <dt> <i>Property:</i> <code><b>{@value #KEEP_SIMILARITY_MATRIX_IN_MEMORY_PROPERTY}
+ *      </b></code> <br>
+ *      <i>Default:</i> {@code true}
+ *
+ * <dd style="padding-top: .5em"> If {@code true}, this property specifies the
+ *      edge similarity matrix used by {@link
+ *      HierarchicalAgglomerativeClustering} should be computed once and then
+ *      kept in memory, which is the default behavior.  If {@code false}, this
+ *      causes the similarity of two edges to be recomputed on-the-fly whenever
+ *      it is requester.  By computing these values on-the-fly, the performance
+ *      will be slowed down, depending on the complexity of the edge similarity
+ *      function.  However, this on-the-fly setting allows for clustering large
+ *      graphs whose edge similarity matrix would not regularly fit into memory.
+ *      It is advised that users not tune this parameter unless it is known that
+ *      the similarity matrix will not fit in memory. </p>
+ *
+ * </dl>
+ *
  * @author David Jurgens 
  */
 public class LinkClustering implements Clustering, java.io.Serializable {
@@ -87,6 +114,13 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      */
     public static final String PROPERTY_PREFIX =
         "edu.ucla.sspace.clustering.LinkClustering";
+
+    /**
+     * The property to specify if the edge similarity matrix should be kept in
+     * memory during clustering, or if its values should be computed on the fly.
+     */
+    public static final String KEEP_SIMILARITY_MATRIX_IN_MEMORY_PROPERTY =
+        PROPERTY_PREFIX + ".keepSimilarityMatrixInMemory";
     
     /**
      * The logger to which clustering status updates will be written.
@@ -99,14 +133,37 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      * multi-threaded operations.
      */
     private static final WorkQueue WORK_QUEUE = new WorkQueue();
+    
+    /**
+     * The merges for the prior run of this clustering algorithm
+     */
+    private List<Merge> mergeOrder;
+
+    /**
+     * The list of edges that were last merged.  This list is maintained in the
+     * same order as the initial cluster ordering.
+     */
+    private List<Edge> edgeList;
+
+    /**
+     * The number of rows in the input matrix that was last clustered.
+     */
+    private int numRows;
 
     /**
      * Instantiates a new {@code LinkClustering} instance.
      */
-    public LinkClustering() { }
+    public LinkClustering() { 
+        mergeOrder = null;
+        edgeList = null;
+        numRows = 0;
+    }
 
     /**
-     * {@inheritDoc}
+     * <i>Ignores the specified number of clusters</i> and returns the
+     * clustering solution according to the partition density.
+     *
+     * @param numClusters this parameter is ignored.
      *
      * @throws IllegalArgumentException if {@code matrix} is not square, or is
      *         not an instance of {@link SparseMatrix}
@@ -134,6 +191,11 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         }
         SparseMatrix sm = (SparseMatrix)matrix;
 
+        String inMemProp =
+            props.getProperty(KEEP_SIMILARITY_MATRIX_IN_MEMORY_PROPERTY);
+        boolean keepSimMatrixInMem = props.contains(inMemProp)
+            ? Boolean.parseBoolean(inMemProp) : true;
+
         // IMPLEMENTATION NOTE: Ahn et al. used single-linkage HAC, which can be
         // efficiently implemented in O(n^2) time as a special case of HAC.
         // However, we currently don't optimize for this special case and
@@ -142,12 +204,15 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         // it in, rather than passing in the edge matrix directly.
 
         final int rows = sm.rows();
+        numRows = rows;
         LOGGER.fine("Generating link similarity matrix for " + rows + " nodes");
 
         //  Rather than create an O(row^3) matrix for representing the edges,
         // compress the edge matrix by getting a mapping for each edge to a row
         // in the new matrix.
         final List<Edge> edgeList = new ArrayList<Edge>();
+        this.edgeList = edgeList;
+
         for (int r = 0; r < rows; ++r) {
             SparseDoubleVector row = sm.getRowVector(r);
             int[] edges = row.getNonZeroIndices();
@@ -166,102 +231,81 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         final int numEdges = edgeList.size();
         LOGGER.fine("Number of edges to cluster: " + numEdges);
         
-        Matrix edgeSimMatrix = calculateEdgeSimMatrix(edgeList, sm);
+        Matrix edgeSimMatrix = 
+            getEdgeSimMatrix(edgeList, sm, keepSimMatrixInMem);
         
         LOGGER.fine("Computing single linkage link clustering");
 
         final List<Merge> mergeOrder = 
             new HierarchicalAgglomerativeClustering().
                 buildDendrogram(edgeSimMatrix, ClusterLinkage.SINGLE_LINKAGE);
+        this.mergeOrder = mergeOrder;
 
         LOGGER.fine("Calculating partition densitities");
-
-        /*
-         * Split up the partitions among multiple threads to get the partition
-         * densities computed in parallel.
-         */
-        Collection<Runnable> partitionTasks = new ArrayList<Runnable>();
-        
-        // Determine how many partions each thread will evaluate
-        int numThreads = WORK_QUEUE.numThreads();
-        int partitionsPerThread = mergeOrder.size() / numThreads;
 
         // Set up a concurrent map that each thread will update once it has
         // calculated the densitites of each of its partitions.  This map is
         // only written to once per thread.
         final ConcurrentNavigableMap<Double,Integer> partitionDensities 
             = new ConcurrentSkipListMap<Double,Integer>();
-
-        for (int th = 0; th < numThreads; ++th) {
-            final int start = th * partitionsPerThread;
-            final int end = Math.min((th + 1) * partitionsPerThread,
-                                     mergeOrder.size());
-
-            partitionTasks.add(new Runnable() {
+        
+        // Register a task group for calculating all of the partition
+        // densitities
+        Object key = WORK_QUEUE.registerTaskGroup(mergeOrder.size());
+        for (int p = 0; p < mergeOrder.size(); ++p) {
+            final int part = p;
+            WORK_QUEUE.add(key, new Runnable() {
                     public void run() {
-                        double maxDensity = 0d;
-                        int partitionWithMaxDensity = -1;
-
-                        for (int part = start; part < end; ++part) {
-
-                            // Get the merges for this particular partitioning
-                            // of the links
-                            List<Merge> mergeSteps = 
-                                mergeOrder.subList(0, part);
-
-                            // Convert the merges to a specific cluster labeling
-                            MultiMap<Integer,Integer> clusterToElements = 
-                               convertMergesToAssignments(mergeSteps, numEdges);
-
-                            // Based on the link partitioning, calculate the
-                            // node partition density
-                            double partitionDensitySum = 0d;
-                            for (Integer cluster : clusterToElements.keySet()) {
-                                Set<Integer> linkPartition = 
-                                    clusterToElements.get(cluster);
-                                int numLinks = linkPartition.size();
-                                BitSet nodesInPartition = new BitSet(rows);
-                                for (Integer linkIndex : linkPartition) {
-                                    Edge link = edgeList.get(linkIndex);
-                                    nodesInPartition.set(link.from);
-                                    nodesInPartition.set(link.to);
-                                }
-                                int numNodes = nodesInPartition.cardinality();
-                                // This reflects the density of this particular
-                                // partition
-                                double partitionDensity =
-                                    (numLinks - (numNodes - 1d))
-                                    / (((numNodes * (numNodes - 1d)) / 2d)
-                                       - (numLinks - 1));                
-                                partitionDensitySum += partitionDensity;
-                            }
-                            // Compute the density for the total partitioning
-                            // solution
-                            double partitionDensity = 
-                                (2d / numEdges) * partitionDensitySum;
-                            LOGGER.log(Level.FINE, "Partition solution {0} had "
-                                       + "density {1}",
-                                       new Object[] { part, partitionDensity });
-                            
-                            if (partitionDensity > maxDensity) {
-                                maxDensity = partitionDensity;
-                                partitionWithMaxDensity = part;
-                            }
-                        }
+                        // Get the merges for this particular partitioning of
+                        // the links
+                        List<Merge> mergeSteps = mergeOrder.subList(0, part);
                         
-                        System.out.println(partitionWithMaxDensity + " -> " + maxDensity);
+                        // Convert the merges to a specific cluster labeling
+                        MultiMap<Integer,Integer> clusterToElements = 
+                            convertMergesToAssignments(mergeSteps, numEdges);
 
-                        // Once all the partitions have been seen, update the
-                        // thread-shared map with the result
-                        partitionDensities.put(maxDensity, 
-                                               partitionWithMaxDensity);
+                        // Based on the link partitioning, calculate the
+                        // partition density for each cluster
+                        double partitionDensitySum = 0d;
+                        for (Integer cluster : clusterToElements.keySet()) {
+                            Set<Integer> linkPartition = 
+                                clusterToElements.get(cluster);
+                            int numLinks = linkPartition.size();
+                            BitSet nodesInPartition = new BitSet(rows);
+                            for (Integer linkIndex : linkPartition) {
+                                Edge link = edgeList.get(linkIndex);
+                                nodesInPartition.set(link.from);
+                                nodesInPartition.set(link.to);
+                            }
+                            int numNodes = nodesInPartition.cardinality();
+                            // This reflects the density of this particular
+                            // cluster
+                            double partitionDensity =
+                                (numLinks - (numNodes - 1d))
+                                / (((numNodes * (numNodes - 1d)) / 2d)
+                                   - (numLinks - 1));                
+                            partitionDensitySum += partitionDensity;
+                        }
+                        // Compute the density for the total partitioning
+                        // solution
+                        double partitionDensity = 
+                            (2d / numEdges) * partitionDensitySum;
+                        LOGGER.log(Level.FINER, "Partition solution {0} had "
+                                   + "density {1}",
+                                   new Object[] { part, partitionDensity });
+                        
+                        // Update the thread-shared partition density map with
+                        // this task's calculation
+                        partitionDensities.put(partitionDensity, part);
+                        
                     }
                 });
         }
 
-        // Run all of the partition evaluations
-        WORK_QUEUE.run(partitionTasks);
-        System.out.println(partitionDensities);
+        // Wait for all the partition densities to be calculated
+        WORK_QUEUE.await(key);
+
+
         Map.Entry<Double,Integer> densest = partitionDensities.lastEntry();
         LOGGER.fine("Partition " + densest.getValue() + 
                     " had the highest density: " + densest.getKey());
@@ -302,30 +346,16 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         return nodeAssignments;
     }
 
-    protected SparseMatrix calculateEdgeSimMatrix(
-            List<Edge> edgeList,  SparseMatrix sm) {
-
-        int numEdges = edgeList.size();
-        final SparseMatrix edgeSimMatrix = 
-            new YaleSparseMatrix(numEdges, numEdges);
-
-        for (int i = 0; i < numEdges; ++i) {
-            for (int j = 0; j < i; ++j) {
-                Edge e1 = edgeList.get(i);
-                Edge e2 = edgeList.get(j);
-                
-                double sim = getEdgeSimilarity(sm, e1, e2);
-                
-                if (sim > 0) {
-                    // Put in the symmetric similarities
-                    edgeSimMatrix.set(i, j, sim);
-                    edgeSimMatrix.set(j, i, sim);
-                }
-            }
-        }
-        return edgeSimMatrix;
+    /**
+     * Returns the edge similarity matrix for the edges in the provided sparse
+     * matrix.
+     */
+    private Matrix getEdgeSimMatrix(List<Edge> edgeList, SparseMatrix sm,
+                                    boolean keepSimilarityMatrixInMemory) {
+        return (keepSimilarityMatrixInMemory) 
+            ? calculateEdgeSimMatrix(edgeList, sm)
+            : new LazySimilarityMatrix(edgeList, sm);            
     }
-
 
     /**
      * Calculates the similarity matrix for the edges.  The similarity matrix is
@@ -336,47 +366,48 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      *
      * @return the similarity matrix
      */
-    private Matrix calculateEdgeSimMatrix2(
-            final List<Edge> edgeList,  final SparseMatrix sm) {
+    private Matrix calculateEdgeSimMatrix(
+            final List<Edge> edgeList, final SparseMatrix sm) {
 
         int numEdges = edgeList.size();
-        // NOTE: this matrix is sparse because we expect that the majority of
-        // edges will have no similarity with each other. and therefore will
-        // have 0 values in the matrix.
         final Matrix edgeSimMatrix = 
-            new SparseSymmetricMatrix(new SparseHashMatrix(numEdges, numEdges));
+            new SparseSymmetricMatrix(
+                new SparseHashMatrix(numEdges, numEdges));
 
-        Object taskKey = WORK_QUEUE.registerTaskGroup(numEdges);
-        
+        Object key = WORK_QUEUE.registerTaskGroup(numEdges);
         for (int i = 0; i < numEdges; ++i) {
             final int row = i;
-            final Edge e1 = edgeList.get(i);
-            WORK_QUEUE.add(taskKey, new Runnable() { 
+            WORK_QUEUE.add(key, new Runnable() {
                     public void run() {
-                        System.out.println("Calculating edge similarities for row " + row);
                         for (int j = 0; j < row; ++j) {
-                            Edge e2 = edgeList.get(j);                
+                            Edge e1 = edgeList.get(row);
+                            Edge e2 = edgeList.get(j);
+                            
                             double sim = getEdgeSimilarity(sm, e1, e2);
                 
                             if (sim > 0) {
-                                // Put in the symmetric similarities
+                                // The symmetric matrix handles the (j,i) case
                                 edgeSimMatrix.set(row, j, sim);
-
-                                // NOTE: we don't need to write the symmetric
-                                // values since the sym-matrix wrapper class
-                                // takes care of this, which elimates the need
-                                // for concurrent writes. to the same row.
-                                //// edgeSimMatrix.set(j, i, sim);
                             }
                         }
                     }
-                });
+                });            
         }
-        WORK_QUEUE.await(taskKey);
-
+        WORK_QUEUE.await(key);
         return edgeSimMatrix;
     }
 
+    /**
+     * Converts a series of merges to cluster assignments.  Cluster assignments
+     * are assumed to start at 0.
+     *
+     * @param merges the merge steps, in order
+     * @param numOriginalClusters how many clusters are present prior to
+     *        merging.  This is typically the number of rows in the matrix being
+     *        clustered
+     *
+     * @returns a mapping from a cluster to all the elements contained within it.
+     */
     private static MultiMap<Integer,Integer> convertMergesToAssignments(
             List<Merge> merges, int numOriginalClusters) {
 
@@ -399,9 +430,17 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      * edges do not have in common.  Subclasses may override this method to
      * define a new method for computing edge similarity.
      *
+     * <p><i>Implementation Note</i>: Subclasses that wish to override this
+     * behavior should be aware that this method is likely to be called by
+     * multiple threads and therefor should make provisions to be thread safe.
+     * In addition, this method may be called more than once per edge pair if
+     * the similarity matrix is being computed on-the-fly.
+     *
      * @param sm a matrix containing the connections between edges.  A non-zero
      *        value in location (i,j) indicates a node <i>i</i> is connected to
      *        node <i>j</i> by an edge.
+     * @param e1 an edge to be compared with {@code e2}
+     * @param e2 an edge to be compared with {@code e1}
      *
      * @return the similarity of the edges.a
      */
@@ -451,6 +490,121 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         neighbors[neighbors.length - 1] = rowIndex;
         return neighbors;
     }
+
+    /**
+     * Returns the partition density of the clustering solution.
+     */
+    public double getSolutionDensity(int solutionNum) {
+        if (solutionNum < 0 || solutionNum >= mergeOrder.size()) {
+            throw new IllegalArgumentException(
+                "not a valid solution: " + solutionNum);
+        }      
+        if (mergeOrder == null || edgeList == null) {
+            throw new IllegalStateException(
+                "initial clustering solution is not valid yet");
+        }
+        
+        int numEdges = edgeList.size();
+
+        // Get the merges for this particular partitioning of the links
+        List<Merge> mergeSteps = 
+            mergeOrder.subList(0, solutionNum);
+        
+        // Convert the merges to a specific cluster labeling
+        MultiMap<Integer,Integer> clusterToElements = 
+            convertMergesToAssignments(mergeSteps, numEdges);
+        
+        // Based on the link partitioning, calculate the node partition density
+        double partitionDensitySum = 0d;
+        for (Integer cluster : clusterToElements.keySet()) {
+            Set<Integer> linkPartition = clusterToElements.get(cluster);
+            int numLinks = linkPartition.size();
+            BitSet nodesInPartition = new BitSet(numRows);
+            for (Integer linkIndex : linkPartition) {
+                Edge link = edgeList.get(linkIndex);
+                nodesInPartition.set(link.from);
+                nodesInPartition.set(link.to);
+            }
+            int numNodes = nodesInPartition.cardinality();
+            // This reflects the density of this particular cluster within the
+            // total partitioning
+            double partitionDensity = (numLinks - (numNodes - 1d))
+                / (((numNodes * (numNodes - 1d)) / 2d) - (numLinks - 1));                
+            partitionDensitySum += partitionDensity;
+        }
+        // Compute the density for the total partitioning solution
+        double partitionDensity =  (2d / numEdges) * partitionDensitySum;
+        return partitionDensity;
+    }
+
+    /**
+     * Returns the clustering solution after the specified number of merge
+     * steps.
+     *
+     * @param solutionNum the number of merge steps to take prior to returning
+     *        the clustering solution.
+     *
+     * @throws IllegalArgumentException if {@code solutionNum} is less than 0 or
+     *         is greater than or equal to {@link #numberOfSolutions()}.
+     * @throws IllegalStateException if this instance has not yet finished a
+     *         clustering solution.
+     */
+    public Assignment[] getSolution(int solutionNum) {
+        if (solutionNum < 0 || solutionNum >= mergeOrder.size()) {
+            throw new IllegalArgumentException(
+                "not a valid solution: " + solutionNum);
+        }      
+        if (mergeOrder == null || edgeList == null) {
+            throw new IllegalStateException(
+                "initial clustering solution is not valid yet");
+        }
+
+        int numEdges = edgeList.size();
+
+        // Select the solution and all merges necessary to solve it
+        MultiMap<Integer,Integer> bestEdgeAssignment =
+            convertMergesToAssignments(
+                mergeOrder.subList(0, solutionNum), numEdges);
+
+        List<Set<Integer>> nodeClusters = new ArrayList<Set<Integer>>(numRows);
+        for (int i = 0; i < numRows; ++i) 
+            nodeClusters.add(new HashSet<Integer>());
+        
+        // Ignore the original partition labeling, and use our own cluster
+        // labeling to ensure that the IDs are contiguous.
+        int clusterId = 0;
+
+        // For each of the partitions, add the partion's cluster ID to all the
+        // nodes that are connected by one of the partition's edges
+        for (Integer cluster : bestEdgeAssignment.keySet()) {
+            Set<Integer> edgePartition = bestEdgeAssignment.get(cluster);
+            for (Integer edgeId : edgePartition) {
+                Edge e = edgeList.get(edgeId);
+                nodeClusters.get(e.from).add(clusterId);
+                nodeClusters.get(e.to).add(clusterId);
+            }
+            // Update the cluster id
+            clusterId++;
+        }
+
+        Assignment[] nodeAssignments = new Assignment[numRows];
+        for (int i = 0; i < nodeAssignments.length; ++i) {
+            nodeAssignments[i] = 
+                new SoftAssignment(nodeClusters.get(i));
+        }
+        return nodeAssignments;        
+    }
+
+    /**
+     * Returns the number of clustering solutions found by this instances for
+     * the prior clustering run.
+     *
+     * @returns the number of solutions, or {@code 0} if no solutions are
+     *          available.
+     */
+    public int numberOfSolutions() {
+        return (mergeOrder == null) ? 0 : mergeOrder.size();
+    }
     
     /**
      * A utility data structure for representing a directed edge between two
@@ -483,5 +637,52 @@ public class LinkClustering implements Clustering, java.io.Serializable {
             return  "(" + from + "->" + to + ")";
         }
     }
-    
+
+    /**
+     * A utility class that represents the edge similarity matrix, where the
+     * similarity values are lazily computed on demand, rather than stored
+     * internally.  While computationally more expensive, this class provides an
+     * enormous benefit for clustering a graph where the similarity matrix
+     * cannot fit into memory.
+     */
+    private class LazySimilarityMatrix extends AbstractMatrix {
+
+        private final List<Edge> edgeList;
+
+        private final SparseMatrix sm;
+
+        public LazySimilarityMatrix(List<Edge> edgeList, SparseMatrix sm) {
+            this.edgeList = edgeList;
+            this.sm = sm;
+        }
+        
+        public int columns() {
+            return edgeList.size();
+        }
+
+        public double get(int row, int column) {
+            Edge e1 = edgeList.get(row);
+            Edge e2 = edgeList.get(column);
+            
+            double sim = getEdgeSimilarity(sm, e1, e2);
+            return sim;
+        }
+        
+        public DoubleVector getRowVector(int row) {
+            int cols = columns();
+            DoubleVector vec = new DenseVector(cols);
+            for (int c = 0; c < cols; ++c) {
+                vec.set(c, get(row, c));
+            }
+            return vec;
+        }
+
+        public int rows() {
+            return edgeList.size();
+        }
+
+        public void set(int row, int columns, double val) {
+            throw new UnsupportedOperationException();
+        }
+    }
 }

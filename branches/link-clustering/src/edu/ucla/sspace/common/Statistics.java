@@ -98,7 +98,7 @@ public class Statistics {
     /**
      * Returns the mean value of the collection of numbers
      */
-    public static double mean(Collection<Number> values) {
+    public static double mean(Collection<? extends Number> values) {
         double sum = 0d;
         for (Number n : values)
             sum += n.doubleValue();
@@ -168,7 +168,7 @@ public class Statistics {
     /**
      * Returns the standard deviation of the collection of numbers
      */
-    public static double stddev(Collection<Number> values) {
+    public static double stddev(Collection<? extends Number> values) {
         double mean = mean(values);
         double sum = 0d;
         for (Number n : values) {
