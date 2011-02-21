@@ -193,7 +193,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
 
         String inMemProp =
             props.getProperty(KEEP_SIMILARITY_MATRIX_IN_MEMORY_PROPERTY);
-        boolean keepSimMatrixInMem = (inMemProp != null) ?
+        boolean keepSimMatrixInMem = (inMemProp != null) 
             ? Boolean.parseBoolean(inMemProp) : true;
 
         // IMPLEMENTATION NOTE: Ahn et al. used single-linkage HAC, which can be
