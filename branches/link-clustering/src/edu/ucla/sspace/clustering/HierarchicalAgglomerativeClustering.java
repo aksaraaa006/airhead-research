@@ -738,13 +738,13 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
         // are reduced, where merging a cluster will causes all the pairings
         // pointing to it constinuents recalculated.
         final Map<Integer,Pairing> clusterSimilarities =
-            new ConcurrentHashMap<Integer,Pairing>();
+            new ConcurrentHashMap<Integer,Pairing>(clusterAssignment.size());
 
         // For each cluster, find the most similar cluster.  Use the current
         // thread as the task key so any other thread executing this method
         // won't conflict.
-        Object taskKey = Thread.currentThread();
-        WORK_QUEUE.registerTaskGroup(taskKey, clusterAssignment.size());
+        Object taskKey = 
+            WORK_QUEUE.registerTaskGroup(clusterAssignment.size());
         for (Integer clusterId : clusterAssignment.keySet()) {
             final Integer clustId = clusterId;
             WORK_QUEUE.add(taskKey, new Runnable() {
@@ -830,8 +830,8 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
                 = new ConcurrentSkipListMap<Double,Integer>();
             // Use size()-1 as the number of tasks because we skip adding a task
             // for computing the new cluster's similarity to itself
-            WORK_QUEUE.registerTaskGroup(taskKey, 
-                                         clusterSimilarities.size() - 1);
+            taskKey = 
+                WORK_QUEUE.registerTaskGroup(clusterSimilarities.size() - 1);
 
             for (Map.Entry<Integer,Pairing> entry :
                      clusterSimilarities.entrySet()) {
