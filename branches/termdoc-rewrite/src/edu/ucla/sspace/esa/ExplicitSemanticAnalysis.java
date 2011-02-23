@@ -24,6 +24,7 @@ package edu.ucla.sspace.esa;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 
+import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
@@ -84,6 +85,31 @@ public class ExplicitSemanticAnalysis extends GenericTermDocumentVectorSpace {
     public ExplicitSemanticAnalysis() throws IOException {
         super(true, new ConcurrentHashMap<String, Integer>(),
               new SvdlibcSparseBinaryMatrixBuilder());
+
+        // We use a synchronized and growable array list in order to save space.
+        // Since the GrowableArrayList does the growing whenever set is called,
+        // the number of synchronization calls are minimized.
+        documentLabels = Collections.synchronizedList(
+                new GrowableArrayList<String>());
+    }
+
+    /**
+     * Constructs a new {@code ExplicitSemanticAnalysis} using the provided
+     * objects for processing.
+     *
+     * @param termToIndex The {@link ConcurrentMap} used to map strings to
+     *        indices.
+     * @param termDocumentMatrixBuilder The {@link MatrixBuilder} used to write
+     *        document vectors to disk which later get processed in {@link
+     *        #processSpace(Properties) processSpace}.
+     *
+     * @throws IOException if this instance encounters any errors when creatng
+     *         the backing array files required for processing
+     */
+    public ExplicitSemanticAnalysis(
+            ConcurrentMap<String, Integer> termToIndex,
+            MatrixBuilder termDocumentMatrixBuilder) throws IOException {
+        super(true, termToIndex, termDocumentMatrixBuilder);
 
         // We use a synchronized and growable array list in order to save space.
         // Since the GrowableArrayList does the growing whenever set is called,

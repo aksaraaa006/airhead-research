@@ -50,8 +50,10 @@ public class HierarchicalAgglomerativeClusteringTests {
         vectors.add(newVec(new int[] { 3, 4, 5 }, 100));
         SparseMatrix m = Matrices.asSparseMatrix(vectors);
 
-        List<Merge> mergeOrder = HierarchicalAgglomerativeClustering.
-            buildDendogram(m, ClusterLinkage.SINGLE_LINKAGE, SimType.COSINE);
+        HierarchicalAgglomerativeClustering hac =
+            new HierarchicalAgglomerativeClustering();
+        List<Merge> mergeOrder = hac.buildDendogram(
+                m, ClusterLinkage.SINGLE_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
         assertEquals(1, mergeOrder.get(0).mergedCluster());
@@ -69,8 +71,10 @@ public class HierarchicalAgglomerativeClusteringTests {
         vectors.add(newVec(new int[] { 3, 4, 5 }, 100));
         SparseMatrix m = Matrices.asSparseMatrix(vectors);
 
-        List<Merge> mergeOrder = HierarchicalAgglomerativeClustering.
-            buildDendogram(m, ClusterLinkage.COMPLETE_LINKAGE, SimType.COSINE);
+        HierarchicalAgglomerativeClustering hac =
+            new HierarchicalAgglomerativeClustering();
+        List<Merge> mergeOrder = hac.buildDendogram(
+            m, ClusterLinkage.COMPLETE_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
         assertEquals(1, mergeOrder.get(0).mergedCluster());
@@ -88,8 +92,10 @@ public class HierarchicalAgglomerativeClusteringTests {
         vectors.add(newVec(new int[] { 3, 4, 5 }, 100));
         SparseMatrix m = Matrices.asSparseMatrix(vectors);
 
-        List<Merge> mergeOrder = HierarchicalAgglomerativeClustering.
-            buildDendogram(m, ClusterLinkage.MEAN_LINKAGE, SimType.COSINE);
+        HierarchicalAgglomerativeClustering hac =
+            new HierarchicalAgglomerativeClustering();
+        List<Merge> mergeOrder = hac.buildDendogram(
+            m, ClusterLinkage.MEAN_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
         assertEquals(1, mergeOrder.get(0).mergedCluster());
@@ -107,8 +113,10 @@ public class HierarchicalAgglomerativeClusteringTests {
         vectors.add(newVec(new int[] { 3, 4, 5 }, 100));
         SparseMatrix m = Matrices.asSparseMatrix(vectors);
 
-        List<Merge> mergeOrder = HierarchicalAgglomerativeClustering.
-            buildDendogram(m, ClusterLinkage.MEDIAN_LINKAGE, SimType.COSINE);
+        HierarchicalAgglomerativeClustering hac =
+            new HierarchicalAgglomerativeClustering();
+        List<Merge> mergeOrder = hac.buildDendogram(
+            m, ClusterLinkage.MEDIAN_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
         assertEquals(1, mergeOrder.get(0).mergedCluster());

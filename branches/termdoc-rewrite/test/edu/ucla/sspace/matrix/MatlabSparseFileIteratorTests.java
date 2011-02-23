@@ -60,15 +60,15 @@ public class MatlabSparseFileIteratorTests {
     }
     
     public static File getMatlabFile() throws Exception {
-	File f = File.createTempFile("unit-test",".dat");
-	PrintWriter pw = new PrintWriter(f);
-	pw.println("1 1 2.3");
-	pw.println("1 3 4.2");
-	pw.println("2 2 1.3");
-	pw.println("2 3 2.2");
-	pw.println("3 1 3.8");
-	pw.println("3 3 0.5"); 
-	pw.close();
-	return f;
+        File f = File.createTempFile("unit-test",".dat");
+        PrintWriter pw = new PrintWriter(f);
+        pw.println("1 1 2.3");
+        pw.println("1 3 4.2");
+        pw.println("2 2 1.3");
+        pw.println("2 3 2.2");
+        pw.println("3 1 3.8");
+        pw.println("3 3 0.5"); 
+        pw.close();
+        return f;
     }
 }

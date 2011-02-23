@@ -26,10 +26,10 @@ import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 import edu.ucla.sspace.matrix.LogEntropyTransform;
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
-import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
 
@@ -43,6 +43,8 @@ import java.io.IOError;
 import java.io.IOException;
 
 import java.util.Properties;
+
+import java.util.concurrent.ConcurrentMap;;
 
 
 /**
@@ -212,10 +214,36 @@ public class LatentSemanticAnalysis extends GenericTermDocumentVectorSpace {
      */
     private Matrix documentSpace;
     
+    /**
+     * Creates a new {@link LatentSemanticAnalysis} instance.
+     */
     public LatentSemanticAnalysis() throws IOException {
         super();
 
         documentSpace = null;
+    }
+
+    /**
+     * Constructs a new {@code LatentSemanticAnalysis} using the provided
+     * objects for processing.
+     *
+     * @param readHeaderToken If true, the first token of each document will be
+     *        read and passed to {@link #handleDocumentHeader(int, String)
+     *        handleDocumentHeader}, which discards the header.
+     * @param termToIndex The {@link ConcurrentMap} used to map strings to
+     *        indices.
+     * @param termDocumentMatrixBuilder The {@link MatrixBuilder} used to write
+     *        document vectors to disk which later get processed in {@link
+     *        #processSpace(Properties) processSpace}.
+     *
+     * @throws IOException if this instance encounters any errors when creatng
+     *         the backing array files required for processing
+     */
+    public LatentSemanticAnalysis(
+            boolean readHeaderToken,
+            ConcurrentMap<String, Integer> termToIndex,
+            MatrixBuilder termDocumentMatrixBuilder) throws IOException {
+        super(readHeaderToken, termToIndex, termDocumentMatrixBuilder);
     }
 
     /**

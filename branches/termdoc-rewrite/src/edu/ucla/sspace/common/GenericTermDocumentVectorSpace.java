@@ -79,14 +79,11 @@ import java.util.logging.Logger;
  * <p>
  *
  * This class is thread-safe for concurrent calls of {@link
- * #processDocument(BufferedReader) processDocument}, if either the default
- * constructor is used or a {@link ConcurrentMap} is passed to {@link
- * #GenericTermDocumentVectorSpace(Boolean, Map<String, Integer>, MatrixBuilder)
- * GenericTermDocumentVectorSpace}.  Once {@link #processSpace(Transform)
- * processSpace} has been called, no further calls to {@link
- * #processDocument(BufferedReader) processDocument} should be made.  This
- * implementation does not support access to the semantic vectors until after
- * {@link #processSpace(Properties) processSpace} has been called.
+ * #processDocument(BufferedReader) processDocument}.  Once {@link
+ * #processSpace(Transform) processSpace} has been called, no further calls to
+ * {@link #processDocument(BufferedReader) processDocument} should be made.
+ * This implementation does not support access to the semantic vectors until
+ * after {@link #processSpace(Properties) processSpace} has been called.
  *
  * @see Transform
  * @see SVD
@@ -150,8 +147,17 @@ public abstract class GenericTermDocumentVectorSpace implements SemanticSpace {
     }
 
     /**
-     * Constructs the {@code GenericTermDocumentVectorSpace} using the specified
-     * properties for configuration.
+     * Constructs the {@code GenericTermDocumentVectorSpace} using the provided
+     * objects for processing.
+     *
+     * @param readHeaderToken If true, the first token of each document will be
+     *        read and passed to {@link #handleDocumentHeader(int, String)
+     *        handleDocumentHeader}, which by default discards the header.
+     * @param termToIndex The {@link ConcurrentMap} used to map strings to
+     *        indices.
+     * @param termDocumentMatrixBuilder The {@link MatrixBuilder} used to write
+     *        document vectors to disk which later get processed in {@link
+     *        #processSpace(Properties) processSpace}.
      *
      * @throws IOException if this instance encounters any errors when creatng
      *         the backing array files required for processing

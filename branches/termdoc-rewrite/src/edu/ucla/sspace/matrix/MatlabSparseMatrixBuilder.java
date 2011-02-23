@@ -157,13 +157,13 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
         if (isFinished)
             throw new IllegalStateException(
                 "Cannot add rows to a MatrixBuilder that is finished");
-        for (int i = 0; i < column.length; ++i) {
-            if (column[i] != 0d) {
-                // NB: Matlab sparse format is in [row col val] format
+        for (int r = 0; r < column.length; ++r) {
+            if (column[r] != 0d) {
+                // NB: Matlab sparse format is in [col row val] format
                 //
                 // NOTE: Matlab indices start at 1, not 0, so update all the
                 // row and column values to be Matlab formatted.
-                addEntry(i + 1, curColumn + 1, column[i]);
+                addEntry(r + 1, curColumn + 1, column[r]);
             }
         }
         return ++curColumn;
@@ -179,12 +179,12 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
 
         int[] nonZero = column.getElementIndices();
         
-        for (int i : nonZero) {
-            // NB: Matlab sparse format is in [row col  val] format
+        for (int r : nonZero) {
+            // NB: Matlab sparse format is in [col row val] format
             //
             // NOTE: Matlab indices start at 1, not 0, so update all the row
             // and column values to be Matlab formatted.
-            addEntry(i + 1, curColumn + 1, column.get(i).doubleValue());
+            addEntry(r + 1, curColumn + 1, column.get(r).doubleValue());
         }
         return ++curColumn;
     }
@@ -199,21 +199,21 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
                 "Cannot add columns to a MatrixBuilder that is finished");
         if (column instanceof SparseVector) {
             SparseVector s = (SparseVector)column;
-            for (int i : s.getNonZeroIndices()) {
-                // NB: Matlab sparse format is in [row col val] format
+            for (int r : s.getNonZeroIndices()) {
+                // NB: Matlab sparse format is in [col row val] format
                 //
                 // NOTE: Matlab indices start at 1, not 0, so update all the
                 // column and column values to be Matlab formatted.
-                addEntry(i + 1, curColumn + 1, column.get(i));
+                addEntry(r + 1, curColumn + 1, column.get(r));
             }
         }
         else {
-            for (int i = 0; i < column.length(); ++i) {
-                double d = column.get(i);
+            for (int r = 0; r < column.length(); ++r) {
+                double d = column.get(r);
                 if (d != 0d) {
                     // NOTE: Matlab indices start at 1, not 0, so update all
                     // the row and column values to be Matlab formatted.
-                    addEntry(i + 1, curColumn + 1, d);
+                    addEntry(r + 1, curColumn + 1, d);
                 }
             }
         }
@@ -221,7 +221,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
     }
 
     private void addEntry(int row, int col, double value) {
-        if (!transposeData)
+        if (transposeData)
             matrixWriter.println(row + " " + col + " " + value);
         else
             matrixWriter.println(col + " " + row + " " + value);
