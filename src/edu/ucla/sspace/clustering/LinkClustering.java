@@ -30,6 +30,7 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseHashMatrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SparseSymmetricMatrix;
+import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.MultiMap;
@@ -369,7 +370,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
     private Matrix calculateEdgeSimMatrix(
             final List<Edge> edgeList, final SparseMatrix sm) {
 
-        int numEdges = edgeList.size();
+        final int numEdges = edgeList.size();
         final Matrix edgeSimMatrix = 
             new SparseSymmetricMatrix(
                 new SparseHashMatrix(numEdges, numEdges));
@@ -379,7 +380,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
             final int row = i;
             WORK_QUEUE.add(key, new Runnable() {
                     public void run() {
-                        for (int j = 0; j < row; ++j) {
+                        for (int j = row; j < numEdges; ++j) {
                             Edge e1 = edgeList.get(row);
                             Edge e2 = edgeList.get(j);
                             
