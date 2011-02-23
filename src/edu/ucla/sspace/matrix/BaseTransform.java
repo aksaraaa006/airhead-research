@@ -96,9 +96,12 @@ public abstract class BaseTransform implements Transform {
             // and having it transformed.
             for (int row = 0; row < matrix.rows(); ++row) {
                 for (int col = 0; col < matrix.columns(); ++col) {
-                    double newValue = 
-                            transform.transform(row, col, matrix.get(row, col));
-                    transformed.set(row, col, newValue);
+                    double oldValue = matrix.get(row, col);
+                    if (oldValue != 0d) {
+                        double newValue = 
+                            transform.transform(row, col, oldValue);
+                        transformed.set(row, col, newValue);
+                    }
                 }
             }
         }

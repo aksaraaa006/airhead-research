@@ -55,8 +55,8 @@ class MatlabSparseFileIterator implements Iterator<MatrixEntry> {
         }
         else {
             String[] rowColVal = line.split("\\s+");
-            int col = Integer.parseInt(rowColVal[0]) - 1;
-            int row = Integer.parseInt(rowColVal[1]) - 1;
+            int row = Integer.parseInt(rowColVal[0]) - 1;
+            int col = Integer.parseInt(rowColVal[1]) - 1;
             double value = Double.parseDouble(rowColVal[2]);
             next = new SimpleEntry(row, col, value);
         }
