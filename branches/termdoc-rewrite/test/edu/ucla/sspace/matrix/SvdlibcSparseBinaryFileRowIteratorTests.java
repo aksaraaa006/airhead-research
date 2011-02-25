@@ -59,7 +59,6 @@ public class SvdlibcSparseBinaryFileRowIteratorTests {
         // Check that there are no more rows.
         assertFalse(it.hasNext());
     }
-    
 
     public static File getSparseBinarySVDLIBCFile() throws Exception {
         File f = File.createTempFile("unit-test",".dat");

@@ -180,7 +180,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
         int[] nonZero = column.getElementIndices();
         
         for (int r : nonZero) {
-            // NB: Matlab sparse format is in [col row val] format
+            // NB: Matlab sparse format is in [row col val] format
             //
             // NOTE: Matlab indices start at 1, not 0, so update all the row
             // and column values to be Matlab formatted.
@@ -200,7 +200,7 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
         if (column instanceof SparseVector) {
             SparseVector s = (SparseVector)column;
             for (int r : s.getNonZeroIndices()) {
-                // NB: Matlab sparse format is in [col row val] format
+                // NB: Matlab sparse format is in [row col val] format
                 //
                 // NOTE: Matlab indices start at 1, not 0, so update all the
                 // column and column values to be Matlab formatted.
@@ -222,9 +222,9 @@ public class MatlabSparseMatrixBuilder implements MatrixBuilder {
 
     private void addEntry(int row, int col, double value) {
         if (transposeData)
-            matrixWriter.println(row + " " + col + " " + value);
-        else
             matrixWriter.println(col + " " + row + " " + value);
+        else
+            matrixWriter.println(row + " " + col + " " + value);
     }
 
     /**

@@ -28,6 +28,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class DiagonalMatrixTest {
+
     @Test public void testDefaultConstructor() {
         DiagonalMatrix matrix = new DiagonalMatrix(5);
         for (int i = 0; i < 5; ++i)
@@ -43,6 +44,7 @@ public class DiagonalMatrixTest {
             }
         }
     }
+
     @Test public void testArrayConstructor() {
         double[] values = {6, 5, 4, 3, 2, 1};
         DiagonalMatrix matrix = new DiagonalMatrix(values);

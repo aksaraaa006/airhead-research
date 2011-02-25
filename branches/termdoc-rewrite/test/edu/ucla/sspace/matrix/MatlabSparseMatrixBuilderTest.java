@@ -50,8 +50,8 @@ public class MatlabSparseMatrixBuilderTest {
         String[] colRowValue = line.split("\\s+");
 
         // Matlab indices are off by one, so add 1 to each index.
-        assertEquals(row+1, Integer.parseInt(colRowValue[1]));
-        assertEquals(col+1, Integer.parseInt(colRowValue[0]));
+        assertEquals(row+1, Integer.parseInt(colRowValue[0]));
+        assertEquals(col+1, Integer.parseInt(colRowValue[1]));
         assertEquals(value, Double.parseDouble(colRowValue[2]), .000001);
     }
 

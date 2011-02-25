@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2011 Keith Stevens
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -21,9 +21,10 @@
 
 package edu.ucla.sspace.matrix;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOError;
 import java.io.IOException;
 
@@ -33,33 +34,71 @@ import java.util.NoSuchElementException;
 
 /**
  * An iterator for sequentially accessing the data of a {@link
- * MatrixIO.Format.MATLAB_SPARSE} formatted file.
+ * MatrixIO.Format.SVDLIBC_DENSE_BINARY} formatted file.
+ *
+ * @author Keith Stevens
  */
-class MatlabSparseFileIterator implements Iterator<MatrixEntry> {
+class SvdlibcDenseBinaryFileIterator implements Iterator<MatrixEntry> {
 
-    private final BufferedReader matrixFileReader;
+    /**
+     * The {@link DataInputStream} holding the matrix data.
+     */
+    private final DataInputStream dis;
 
+    /**
+     * The next {@link MatrixEntry} to be returned.
+     */
     private MatrixEntry next;
+    
+    /**
+     * The number of rows in the matrix.
+     */
+    private int rows;
 
-    public MatlabSparseFileIterator(File matrixFile) throws IOException {
-        matrixFileReader = new BufferedReader(new FileReader(matrixFile));
-        advance();
+    /**
+     * The number of columns in the matrix.
+     */
+    private int cols;
+
+    /**
+     * The column number of the next value to return
+     */
+    private int curCol;
+
+    /**
+     * The row number of the next value to return
+     */
+    private int curRow;
+
+    public SvdlibcDenseBinaryFileIterator(File matrixFile) throws IOException {
+        dis = new DataInputStream(
+            new BufferedInputStream(new FileInputStream(matrixFile)));
+        rows = dis.readInt();
+        cols = dis.readInt();
+        curCol = 0;         
+        curRow= 0;
+        next = advance();
     }
 
-    private void advance() throws IOException {
-        String line = matrixFileReader.readLine();
-        if (line == null) {
-            next = null;
-            // If the end of the file has been reached, close the reader
-            matrixFileReader.close();
+    private MatrixEntry advance() throws IOException {        
+        if (curRow >= rows) 
+            return null;
+
+        // Check whether we have exhaused all the data points in the current
+        // column
+        if (curCol >= cols) {
+            curCol = 0;
+            curRow++;
         }
-        else {
-            String[] rowColVal = line.split("\\s+");
-            int row = Integer.parseInt(rowColVal[0]) - 1;
-            int col = Integer.parseInt(rowColVal[1]) - 1;
-            double value = Double.parseDouble(rowColVal[2]);
-            next = new SimpleEntry(row, col, value);
+
+        // If the last row has been read, return null.
+        if (curRow >= rows) {
+            dis.close();
+            return null;
         }
+
+        // Read the next data point and return it.
+        return new SimpleEntry(curRow, curCol++, dis.readFloat());
     }
 
     public boolean hasNext() {
@@ -71,7 +110,7 @@ class MatlabSparseFileIterator implements Iterator<MatrixEntry> {
             throw new NoSuchElementException("No futher entries");
         MatrixEntry me = next;
         try {
-            advance();
+            next = advance();
         } catch (IOException ioe) {
             throw new IOError(ioe);
         }

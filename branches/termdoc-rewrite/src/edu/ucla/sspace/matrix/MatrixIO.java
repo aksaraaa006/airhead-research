@@ -194,21 +194,6 @@ public class MatrixIO {
          * CLUTO manual</a>.
          */
         CLUTO_SPARSE,
-
-        /**
-         * The sparse text format supported by <a
-         * href="http://arc2.cc.gatech.edu/cluster.html">Eigen Cluster</a>.  See
-         * more details <a href="http://arc2.cc.gatech.edu/howto.html">here</a>.
-         */
-        EIGEN_SPARSE,
-
-        /**
-         * The dense text format supported by <a
-         * href="http://arc2.cc.gatech.edu/cluster.html">Eigen Cluster</a>.  See
-         * more details <a href="http://arc2.cc.gatech.edu/howto.html">here</a>.
-         */
-        EIGEN_DENSE,
-
     }
 
     /**
@@ -312,8 +297,20 @@ public class MatrixIO {
     public static Iterator<MatrixEntry> getMatrixFileIterator(
              File matrixFile, Format fileFormat) throws IOException {
         switch(fileFormat) {
+            case DENSE_TEXT: 
+                return new DenseTextFileIterator(matrixFile);
             case SVDLIBC_SPARSE_BINARY: 
                 return new SvdlibcSparseBinaryFileIterator(matrixFile);
+            case SVDLIBC_SPARSE_TEXT: 
+                return new SvdlibcSparseTextFileIterator(matrixFile);
+            case SVDLIBC_DENSE_BINARY:
+                return new SvdlibcDenseBinaryFileIterator(matrixFile);
+            case CLUTO_SPARSE:
+                return new ClutoSparseFileIterator(matrixFile);
+            case CLUTO_DENSE:
+                // Cluto dense and svdlibc's dense text formats are equivalent.
+            case SVDLIBC_DENSE_TEXT:
+                return new SvdlibcDenseTextFileIterator(matrixFile);
             case MATLAB_SPARSE: 
                 return new MatlabSparseFileIterator(matrixFile);
         }
@@ -717,8 +714,28 @@ public class MatrixIO {
                 return array;
             }
 
-            case CLUTO_SPARSE:
-                break;
+            case CLUTO_SPARSE: {
+                String line = br.readLine();
+                if (line == null)
+                    throw new IOException("Empty input Matrix");
+
+                String[] numRowsColsNonZeros = line.split("\\s+");
+                int rows = Integer.parseInt(numRowsColsNonZeros[0]);
+                int cols = Integer.parseInt(numRowsColsNonZeros[1]);
+                int nonZeros = Integer.parseInt(numRowsColsNonZeros[2]);
+
+                double[][] array = new double[rows][cols];
+                for (int row = 0; row < rows; ++row) {
+                    String[] indexValues = br.readLine().split("\\s+");
+                    for (int i = 0; i < indexValues.length / 2; ++i) {
+                        int col = Integer.parseInt(indexValues[i*2])-1;
+                        double value = Double.parseDouble(indexValues[i*2+1]);
+                        array[row][col] = value;
+                    }
+                }
+
+                return array;
+            }
 
             case SVDLIBC_SPARSE_TEXT: {
                 String line = br.readLine();
@@ -764,9 +781,20 @@ public class MatrixIO {
 
             // These two formats are equivalent
             case CLUTO_DENSE:
-            case SVDLIBC_DENSE_TEXT:
-                // TODO IMPLEMENT ME.
-                break;
+            case SVDLIBC_DENSE_TEXT: {
+                String[] numRowsCols = br.readLine().split("\\s+");
+                int rows = Integer.parseInt(numRowsCols[0]);
+                int cols = Integer.parseInt(numRowsCols[1]);
+
+                double[][] array = new double[rows][cols];
+                for (int row = 0; row < rows; ++row) {
+                    String[] values = br.readLine().split("\\s+");
+                    for (int col = 0; col < cols; ++col)
+                        array[row][col] = Double.parseDouble(values[col]);
+                }
+                br.close();
+                return array;
+            }
 
             case SVDLIBC_SPARSE_BINARY: {
                 DataInputStream in = new DataInputStream(
@@ -895,7 +923,7 @@ public class MatrixIO {
             return readMatlabSparse(matrix, matrixType, transposeOnRead);
 
         case CLUTO_SPARSE:
-            break;
+            return readClutoSparse(matrix, matrixType, transposeOnRead);
 
         case SVDLIBC_SPARSE_TEXT:
             return readSparseSVDLIBCtext(matrix, matrixType, transposeOnRead);
@@ -916,6 +944,52 @@ public class MatrixIO {
                         "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its "+
                         "inclusion and it will be quickly added");
+    }
+
+    /**
+     * Creates a {@code Matrix} from the data encoded as {@link
+     * Format#CLUTO_SPARSE} in provided file.
+     *
+     * @param matrix The matrix file to read from
+     * @param matrixType The expected format of {@code matrix}
+     * @param transposeOnRead If true, the returned matrix will be a transposed
+     *        form of the data in {@code matrix}.
+     *
+     * @return A {@link SparseMatrix} containing the data in {@code matrix}.
+     */
+    private static Matrix readClutoSparse(File matrix, Type matrixType,
+                                          boolean transposeOnRead)
+            throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(matrix));
+
+        String[] rowCol = br.readLine().split("\\s+");
+
+        // unknown number of rows, so do a quick scan to determine it
+        int rows = Integer.parseInt(rowCol[0]);
+        int cols = Integer.parseInt(rowCol[1]);
+
+        // Create the matrix.
+        Matrix m = (transposeOnRead)
+            ? Matrices.create(cols, rows, matrixType)
+            : Matrices.create(rows, cols, matrixType);
+
+        // Cluto Sparse stores each row's values on a single line in the form of 
+        // "col value" tuples with everything separated by space.
+        int row = 0;
+        for (String line = null; (line = br.readLine()) != null; ++row) {
+            String[] colValuePairs = line.split("\\s+");
+            for (int i = 0; i < colValuePairs.length; i+=2) {
+                int col = Integer.parseInt(colValuePairs[i]) - 1;
+                double value = Double.parseDouble(colValuePairs[i+1]);
+                // Store the value in the matrix.
+                if (transposeOnRead)
+                    m.set(col, row, value);
+                else
+                    m.set(row, col, value);
+            }
+        }
+
+        return m;
     }
 
     /**
@@ -1119,7 +1193,7 @@ public class MatrixIO {
         // overhead from resorting the row data for the matrix, which can be
         // significant in large matrices.
         if (transposeOnRead) {
-            DoubleVector[] rowArr = new DoubleVector[cols];
+            SparseDoubleVector[] rowArr = new SparseDoubleVector[cols];
             int entriesSeen = 0;
             int col = 0;
             int curRow = 0;
@@ -1131,12 +1205,12 @@ public class MatrixIO {
                     indices[i] = dis.readInt();
                     vals[i] = dis.readFloat();
                 }
-                DoubleVector rowVec = 
+                SparseDoubleVector rowVec = 
                     new CompactSparseVector(indices, vals, rows);
                 rowArr[curRow] = rowVec;
                 ++curRow;                
             }
-            m = Matrices.asMatrix(Arrays.asList(rowArr));
+            m = Matrices.asSparseMatrix(Arrays.asList(rowArr));
         }
         else {
             m = Matrices.create(rows, cols, matrixType);
@@ -1425,8 +1499,8 @@ public class MatrixIO {
             // the matrix to its correct size
             int maxRowSeen = 0;
             int maxColSeen = 0;
-            for (int j = 0; j < matrix.columns(); ++j) {
-                for (int i = 0; i < matrix.rows(); ++i) {
+            for (int i = 0; i < matrix.rows(); ++i) {
+                for (int j = 0; j < matrix.columns(); ++j) {
                     if (matrix.get(i,j) == 0)
                         continue;
                     if (j > maxColSeen)
@@ -1448,40 +1522,6 @@ public class MatrixIO {
             }
             pw.close();
             break;                        
-        }
-
-        case EIGEN_SPARSE: {
-            PrintWriter pw = new PrintWriter(output);
-            if (matrix instanceof SparseMatrix) {
-                SparseMatrix smat = (SparseMatrix) matrix;
-                pw.printf("%d %d\n", matrix.rows(), matrix.columns());
-                for (int r = 0; r < matrix.rows(); ++r) {
-                    SparseDoubleVector v = smat.getRowVector(r);
-                    int[] nonZeros = v.getNonZeroIndices();
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(nonZeros.length).append(" ");
-                    for (int index : nonZeros) {
-                        sb.append(index).append(" ");
-                        sb.append(v.get(index)).append(" ");
-                    }
-                    pw.println(sb.toString());
-                }
-            }
-            pw.close();
-            break;
-        }
-
-        case EIGEN_DENSE: {
-            PrintWriter pw = new PrintWriter(output);
-            pw.printf("%d %d\n", matrix.rows(), matrix.columns());
-            for (int r = 0; r < matrix.rows(); ++r) {
-                StringBuilder sb = new StringBuilder();
-                for (int c = 0; c < matrix.columns(); ++c)
-                    sb.append(matrix.get(r, c)).append(" ");
-                pw.println(sb.toString());
-            }
-            pw.close();
-            break;
         }
 
         default:

@@ -31,7 +31,6 @@ import static org.junit.Assert.*;
 
 
 public class SvdTests {
-
     
     @Test public void testSvdlibj() throws Exception {
         Matrix m = new YaleSparseMatrix(4,2);
@@ -40,8 +39,6 @@ public class SvdTests {
         m.set(1,0,1);
         m.set(1,1,3);
         Matrix[] arr = SVD.svd(m, SVD.Algorithm.SVDLIBJ, 2);
-
-
 
         // Test the U matrix
         Matrix u = arr[0];
@@ -70,4 +67,53 @@ public class SvdTests {
         assertEquals(.40, v.get(1,1), .01);
     }
 
+    private static File getTestMatrixFile() throws Exception {
+        String matrixContents =
+            "5 7\n" +
+            "1 1 0 0 0 0 1\n" +
+            "0 1 1 0 0 0 0\n" +
+            "1 0 0 0 0 0 0\n" +
+            "0 0 0 1 1 1 0\n" +
+            "0 0 0 1 0 1 1";
+
+        // Write the test matrix to disk.
+        File testMatrix = File.createTempFile("testmatrix", "dat");
+        PrintWriter writer = new PrintWriter(testMatrix);
+        writer.write(matrixContents);
+        writer.close();
+        return testMatrix;
+    }
+
+    public static void testReducedResults(Matrix[] result) {
+        // Test the U matrix.
+        Matrix U = result[0];
+        double[][] expectedU = {
+            {0.207897,0.219768,0.0510758,0.557152,0.258973,0.557152,0.466871},
+            {-0.520537,-0.601064,-0.220005,0.300532,0.220005,0.300532,-0.300532}};
+        for (int row = 0; row < U.rows(); ++row)
+            for (int col = 0; col < U.columns(); ++col)
+                assertEquals(expectedU[col][row], U.get(row, col), .000001);
+
+        // Test the S matrix.
+        Matrix S = result[1];
+        double[] expectedS = {2.30278, 1.93185};
+        for (int row = 0; row < S.rows(); ++row)
+            assertEquals(expectedS[row], S.get(row, row), .000001);
+
+        // Test the Vt matrix.
+        Matrix Vt = result[2];
+        double[][] expectedVt = {
+            {0.38846, 0.117616, 0.0902812, 0.596357, 0.686639},
+            {-0.73615, -0.425017, -0.26945, 0.425017, 0.155567}};
+        for (int row = 0; row < Vt.rows(); ++row)
+            for (int col = 0; col < Vt.columns(); ++col)
+                assertEquals(expectedVt[row][col], Vt.get(row, col), .000001);
+    }
+
+    @Test public void testSvdlibcCluto() throws Exception {
+        File testMatrix = getTestMatrixFile();
+        Matrix[] result = SVD.svd(testMatrix, SVD.Algorithm.SVDLIBC,
+                                  MatrixIO.Format.CLUTO_DENSE, 2);
+        testReducedResults(result);
+    }
 }

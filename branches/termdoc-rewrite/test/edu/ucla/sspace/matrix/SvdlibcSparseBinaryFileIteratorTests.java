@@ -31,6 +31,23 @@ import static org.junit.Assert.*;
 
 public class SvdlibcSparseBinaryFileIteratorTests {
 
+   @Test(expected=UnsupportedOperationException.class)
+    public void testRemove() throws Exception {
+        File f = getSparseBinarySVDLIBCFile();
+        Iterator<MatrixEntry> it = new SvdlibcSparseBinaryFileIterator(f);
+        it.remove();
+    }
+
+    @Test(expected=NoSuchElementException.class)
+    public void testEmptyNext() throws Exception {
+        File f = getSparseBinarySVDLIBCFile();
+        Iterator<MatrixEntry> it = new SvdlibcSparseBinaryFileIterator(f);
+
+        while (it.hasNext())
+            it.next();
+        it.next();
+    }
+
     @Test public void testIterator() throws Exception {
         File f = getSparseBinarySVDLIBCFile();
         Iterator<MatrixEntry> it = new SvdlibcSparseBinaryFileIterator(f);

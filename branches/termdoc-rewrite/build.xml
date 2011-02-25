@@ -25,6 +25,7 @@
   <property name="lib.dir" value="lib"/>
   <property name="build.dir" value="classes"/>
   <property name="report.dir" value="reports"/>
+  <property name="coverage.html.dir" value="${report.dir}/cobertura-html"/>
   <property name="src.dir" value="src"/>
   <property name="dist.dir" value="dist"/>
   <property name="test.dir" value="test"/>
@@ -34,9 +35,19 @@
   <property name="tools.dir" value="tools"/>
   <property name="version" value="1.1"/>
   
+
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
   </path>
+
+  <path id="cobertura.classpath">
+    <fileset dir="${lib.dir}">
+      <include name="cobertura.jar" />
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
+  <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
 
   <path id="run-classpath">
     <path refid="classpath"/>
@@ -76,6 +87,7 @@
        <compilerarg value="-g"/>
        <include name="src/**"/>
        <include name="lib/**"/>
+       <include name="test/**"/>
        <exclude name="opt/"/>
     </javac>  
   </target>
@@ -404,6 +416,45 @@
     **
     **-->
 
+  <target name="instrument">
+    <delete dir="classes/instrumented" />
+    <cobertura-instrument todir="classes/instrumented">
+      <fileset dir="classes">
+        <include name="edu/ucla/sspace/**/*.class"/>
+      </fileset>
+    </cobertura-instrument>
+  </target>
+
+  <target name="coverage" depends="instrument">
+    <delete dir="reports" />
+    <mkdir dir="reports" />
+
+    <junit printSummary="yes" fork="true" haltonerror="no">
+      <jvmarg value="-Xmx1g"/>
+      <jvmarg value="-debug"/>
+
+      <classpath location="${build.dir}/instrumented"/>
+      <classpath refid="run-classpath"/> 
+      <classpath refid="cobertura.classpath" />
+      <formatter type="plain"/>    
+
+      <!-- Comment block for excluding the testing a specific set of files.
+      <test name="edu.ucla.sspace.Package.SingleTestNameHere" todir="${report.dir}"/>
+      -->
+
+      <batchtest fork="yes" todir="${report.dir}">
+        <fileset dir="${test.dir}">
+          <include name="**/*Test.java"/>
+          <include name="**/*Tests.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="coverage-report">
+    <cobertura-report srcdir="${src.dir}" destdir="${coverage.html.dir}" />
+  </target>
+
   <target name="test" depends="compile-tests">
     <delete dir="reports"/>
     <mkdir dir="reports"/>
@@ -411,12 +462,14 @@
     <junit printsummary="yes" fork="yes" haltonfailure="no">
       <jvmarg value="-Xmx1g"/>
       <jvmarg value="-debug"/>
+      <classpath location="${build.instrumented.dir}"/>
       <classpath refid="run-classpath"/> 
       <formatter type="plain"/>    
 
       <!-- Comment block for excluding the testing a specific set of files.
-      <test name="edu.ucla.sspace.Package.SingleTestNameHere" todir="${report.dir}"/>
-           -->
+      <test name="edu.ucla.sspace.package.SingleTestNameHere" todir="${report.dir}"/>
+      -->
+
       <batchtest fork="yes" todir="${report.dir}">
         <fileset dir="${test.dir}">
           <include name="**/*Test*.java"/>
