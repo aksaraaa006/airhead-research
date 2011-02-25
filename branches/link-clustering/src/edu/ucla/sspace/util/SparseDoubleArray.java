@@ -54,7 +54,7 @@ import java.util.NoSuchElementException;
  * iteration will be faster, {@code O(k)}, than using {@link
  * #getElementIndices()} and {@link #getPrimitive(int)} together, {@code O(k *
  * log(k))}, where {@code k} is the number of non-zero indices.  The iterator
- * returned by this class is <i>not</t> thread-safe and will not throw an
+ * returned by this class is <i>not</i> thread-safe and will not throw an
  * exception if the array is concurrently modified during iteration.
  *
  * @see SparseArray

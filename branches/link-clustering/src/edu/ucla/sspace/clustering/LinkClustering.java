@@ -81,7 +81,7 @@ import java.util.logging.Logger;
  *
  * <p> Note that this class is <i>not</i> thread-safe.  Each call to clustering
  * will cache local information about the clustering result to facilitate the
- * {@link #getSolution(int)} and {@link #getDensity(int)} functions.
+ * {@link #getSolution(int)} and {@link #getSolutionDensity(int)} functions.
  *
  * This class provides one configurable property:
  *
