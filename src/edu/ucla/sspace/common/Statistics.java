@@ -21,9 +21,13 @@
 
 package edu.ucla.sspace.common;
 
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import edu.ucla.sspace.util.IntegerMap;
@@ -124,6 +128,42 @@ public class Statistics {
             sum += d;
         return sum / values.length;
     } 
+
+    /**
+     * Returns the median value of the collection of numbers
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends Number & Comparable> T median(Collection<T> values) {
+        if (values.isEmpty())
+            throw new IllegalArgumentException(
+                "No median in an empty collection");
+        List<T> sorted = new ArrayList<T>(values);
+        
+        Collections.sort(sorted);
+        return sorted.get(sorted.size() / 2);
+    }
+
+    /**
+     * Returns the median value of the array of ints
+     */
+    public static double median(int[] values) {
+        if (values.length == 0)
+            throw new IllegalArgumentException("No median in an empty array");        
+        int[] sorted = Arrays.copyOf(values, values.length);
+        Arrays.sort(sorted);
+        return sorted[sorted.length/2];
+    }
+
+    /**
+     * Returns the median value of the array of doubles
+     */
+    public static double median(double[] values) {
+        if (values.length == 0)
+            throw new IllegalArgumentException("No median in an empty array");        
+        double[] sorted = Arrays.copyOf(values, values.length);
+        Arrays.sort(sorted);
+        return sorted[sorted.length/2];
+    }
 
     /**
      * Randomly sets {@code valuesToSet} values to {@code true} for a sequence
