@@ -49,96 +49,96 @@ import java.util.Set;
  */
 public class EvaluationWordsi extends BaseWordsi {
 
-  /**
-   * The underlying {@link SemanticSpace} that provides word senses.
-   */
-  private final SemanticSpace wordSpace;
+    /**
+     * The underlying {@link SemanticSpace} that provides word senses.
+     */
+    private final SemanticSpace wordSpace;
 
-  /**
-   * The {@link AssignmentReporter} used to report sense labels for generated
-   * contexts.
-   */
-  private final AssignmentReporter reporter;
+    /**
+     * The {@link AssignmentReporter} used to report sense labels for generated
+     * contexts.
+     */
+    private final AssignmentReporter reporter;
 
-  /**
-   * Creates a new {@link EvaluationWordsi}.
-   *
-   * @param acceptedWords The set of accepted words.  Only these words will have
-   *        context vectors generated.
-   * @param extractor The {@link ContextExtractor} responsible for generating
-   *        context vectors.
-   * @param sspace The {@link SemanticSpace} responsible for provided existing
-   *        word senses.
-   * @param reporter The {@link AssignmentReporter} reponsible for reporting
-   *        sense labelings.
-   */
-  public EvaluationWordsi(Set<String> acceptedWords,
-                          ContextExtractor extractor,
-                          SemanticSpace sspace,
-                          AssignmentReporter reporter) {
-    super(acceptedWords, extractor, false);
-    this.wordSpace = sspace;
-    this.reporter = reporter;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public Set<String> getWords() {
-    return wordSpace.getWords();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public Vector getVector(String term) {
-    return wordSpace.getVector(term);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void handleContextVector(String focusKey,
-                                  String secondaryKey,
-                                  SparseDoubleVector context) {
-    // Find the most similar existing word sense.
-    int senseNumber = 0;
-    int bestSense = 0;
-    double bestSimilarity = -1;
-
-    while (true) {
-      // Create the word sense key based on the sense number.
-      Vector wordSense = getVector((senseNumber == 0)
-          ? focusKey
-          : focusKey + "-" + senseNumber);
-
-      // If no word sense exists then we have examined all known word senses.
-      if (wordSense == null)
-        break;
-
-      // Compute the similarity of this context vector to the current word
-      // sense.
-      double similarity = Similarity.cosineSimilarity(wordSense, context);
-      if (similarity > bestSimilarity) {
-        bestSimilarity = similarity;
-        bestSense = senseNumber;
-      }
-
-      senseNumber++;
+    /**
+     * Creates a new {@link EvaluationWordsi}.
+     *
+     * @param acceptedWords The set of accepted words.  Only these words will
+     *        have context vectors generated.
+     * @param extractor The {@link ContextExtractor} responsible for generating
+     *        context vectors.
+     * @param sspace The {@link SemanticSpace} responsible for provided existing
+     *        word senses.
+     * @param reporter The {@link AssignmentReporter} reponsible for reporting
+     *        sense labelings.
+     */
+    public EvaluationWordsi(Set<String> acceptedWords,
+                            ContextExtractor extractor,
+                            SemanticSpace sspace,
+                            AssignmentReporter reporter) {
+        super(acceptedWords, extractor);
+        this.wordSpace = sspace;
+        this.reporter = reporter;
     }
 
-    // If a reporter is provided, report the sense labeling.
-    if (reporter != null)
-      reporter.updateAssignment(focusKey, secondaryKey, bestSense);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public Set<String> getWords() {
+        return wordSpace.getWords();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Vector getVector(String term) {
+        return wordSpace.getVector(term);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void handleContextVector(String focusKey,
+                                    String secondaryKey,
+                                    SparseDoubleVector context) {
+        // Find the most similar existing word sense.
+        int senseNumber = 0;
+        int bestSense = 0;
+        double bestSimilarity = -1;
+
+        while (true) {
+            // Create the word sense key based on the sense number.
+            Vector wordSense = getVector((senseNumber == 0)
+                    ? focusKey
+                    : focusKey + "-" + senseNumber);
+
+            // If no word sense exists then we have examined all known word senses.
+            if (wordSense == null)
+                break;
+
+            // Compute the similarity of this context vector to the current word
+            // sense.
+            double similarity = Similarity.cosineSimilarity(wordSense, context);
+            if (similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                bestSense = senseNumber;
+            }
+
+            senseNumber++;
+        }
+
+        // If a reporter is provided, report the sense labeling.
+        if (reporter != null)
+            reporter.updateAssignment(focusKey, secondaryKey, bestSense);
+    }
 
 
-  /**
-   * {@inheritDoc}
-   */
-  public void processSpace(Properties props) {
-    if (reporter != null)
-      reporter.finalizeReport();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public void processSpace(Properties props) {
+        if (reporter != null)
+            reporter.finalizeReport();
+    }
 }
 

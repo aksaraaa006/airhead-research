@@ -42,93 +42,85 @@ import java.util.Queue;
  */
 public class WordOccrrenceContextGenerator implements ContextGenerator {
 
-  /**
-   * The {@link BasisMapping} used to represent the feature space.
-   */
-  private final BasisMapping<String, String> basis;
+    /**
+     * The {@link BasisMapping} used to represent the feature space.
+     */
+    private final BasisMapping<String, String> basis;
 
-  /**
-   * The type of weight to apply to a the co-occurrence word based on its
-   * relative location
-   */
-  private final WeightingFunction weighting;
+    /**
+     * The type of weight to apply to a the co-occurrence word based on its
+     * relative location
+     */
+    private final WeightingFunction weighting;
 
-  /**
-   * The number of words to consider in one direction to create the symmetric
-   * window
-   */
-  private final int windowSize;
+    /**
+     * The number of words to consider in one direction to create the symmetric
+     * window
+     */
+    private final int windowSize;
 
-  /**
-   * Creates a new {@link WordOccrrenceContextGenerator}.
-   *
-   * @param weighting The {@link WeightingFunction} used to score each word
-   *        co-occrrence, based on the distance from the focus word
-   * @param windowSize The size of the sliding symmetric window composing a
-   *        context
-   */
-  public WordOccrrenceContextGenerator(BasisMapping<String, String> basis,
-                                       WeightingFunction weighting,
-                                       int windowSize) {
-    this.basis = basis;
-    this.weighting = weighting;
-    this.windowSize = windowSize;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public SparseDoubleVector generateContext(Queue<String> prevWords,
-                                            Queue<String> nextWords) {
-    SparseDoubleVector meaning = new CompactSparseVector();
-    addContextTerms(meaning, prevWords, -1 * prevWords.size());
-    addContextTerms(meaning, nextWords, 1);
-    return meaning;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public int getVectorLength() {
-    return basis.numDimensions();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void setReadOnly() {
-    basis.setReadOnly();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void unsetReadOnly() {
-    basis.unsetReadOnly();
-  }
-
-  /**
-   * Adds a feature for each word in the context that has a valid dimension.
-   * Feature are scored based on the context word's distance from the focus
-   * word.
-   */
-  protected void addContextTerms(SparseDoubleVector meaning,
-                                 Queue<String> words,
-                                 int distance) {
-    // Iterate through each of the context words.
-    for (String term : words) {
-      if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
-        // Ignore any features that have no valid dimension.
-        int dimension = basis.getDimension(term);
-        if (dimension == -1)
-          continue;
-
-        // Add the feature to the context vector and increase the distance from
-        // the focus word.
-        meaning.set(dimension, weighting.weight(distance, windowSize));
-        ++distance;
-      }
+    /**
+     * Creates a new {@link WordOccrrenceContextGenerator}.
+     *
+     * @param weighting The {@link WeightingFunction} used to score each word
+     *                co-occrrence, based on the distance from the focus word
+     * @param windowSize The size of the sliding symmetric window composing a
+     *                context
+     */
+    public WordOccrrenceContextGenerator(BasisMapping<String, String> basis,
+                                         WeightingFunction weighting,
+                                         int windowSize) {
+        this.basis = basis;
+        this.weighting = weighting;
+        this.windowSize = windowSize;
     }
-  }
-}
 
+    /**
+     * {@inheritDoc}
+     */
+    public SparseDoubleVector generateContext(Queue<String> prevWords,
+                                              Queue<String> nextWords) {
+        SparseDoubleVector meaning = new CompactSparseVector();
+        addContextTerms(meaning, prevWords, -1 * prevWords.size());
+        addContextTerms(meaning, nextWords, 1);
+        return meaning;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorLength() {
+        return basis.numDimensions();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setReadOnly(boolean readOnly) {
+        basis.setReadOnly(readOnly);
+    }
+
+    /**
+     * Adds a feature for each word in the context that has a valid dimension.
+     * Feature are scored based on the context word's distance from the focus
+     * word.
+     */
+    protected void addContextTerms(SparseDoubleVector meaning,
+                                   Queue<String> words,
+                                   int distance) {
+        // Iterate through each of the context words.
+        for (String term : words) {
+            if (!term.equals(IteratorFactory.EMPTY_TOKEN)) {
+                // Ignore any features that have no valid dimension.
+                int dimension = basis.getDimension(term);
+                if (dimension == -1)
+                    continue;
+
+                // Add the feature to the context vector and increase the
+                // distance from the focus word.
+                meaning.set(dimension, weighting.weight(distance, windowSize));
+                ++distance;
+            }
+        }
+    }
+}

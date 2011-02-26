@@ -14,93 +14,87 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
+ * TODO: JAVADOOOOOC
  * @author Keith Stevens
  */
 public class RandomIndexingDependencyContextGenerator
-    implements DependencyContextGenerator {
+        implements DependencyContextGenerator {
 
-  private final DependencyPermutationFunction<TernaryVector> permFunc;
+    private final DependencyPermutationFunction<TernaryVector> permFunc;
 
-  private final Map<String, TernaryVector> indexMap;
+    private final Map<String, TernaryVector> indexMap;
 
-  private final int indexVectorLength;
+    private final int indexVectorLength;
 
-  private final int pathLength;
+    private final int pathLength;
 
-  /**
-   * The filter that accepts only dependency paths that match predefined
-   * criteria.
-   */
-  private final DependencyPathAcceptor acceptor;
+    /**
+     * The filter that accepts only dependency paths that match predefined
+     * criteria.
+     */
+    private final DependencyPathAcceptor acceptor;
 
-  private boolean readOnly;
+    private boolean readOnly;
 
-  public RandomIndexingDependencyContextGenerator(
-          DependencyPermutationFunction<TernaryVector> permFunc,
-          DependencyPathAcceptor acceptor,
-          Map<String, TernaryVector> indexMap,
-          int indexVectorLength,
-          int pathLength) {
-      this.permFunc = permFunc;
-      this.acceptor = acceptor;
-      this.indexMap = indexMap;
-      this.indexVectorLength = indexVectorLength;
-      this.pathLength = pathLength;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public SparseDoubleVector generateContext(DependencyTreeNode[] tree,
-                                            int focusIndex) {
-    DependencyTreeNode focusNode = tree[focusIndex];
-
-    SparseDoubleVector meaning = new CompactSparseVector(indexVectorLength);
-
-    Iterator<DependencyPath> paths = new FilteredDependencyIterator(
-            focusNode, acceptor, pathLength);
-
-    while (paths.hasNext()) {
-        DependencyPath path = paths.next();
-        if (readOnly && !indexMap.containsKey(path.last().word()))
-            continue;
-
-        TernaryVector termVector = indexMap.get(path.last().word());
-        if (permFunc != null)
-            termVector = permFunc.permute(termVector, path);
-        add(meaning, termVector);
+    public RandomIndexingDependencyContextGenerator(
+                    DependencyPermutationFunction<TernaryVector> permFunc,
+                    DependencyPathAcceptor acceptor,
+                    Map<String, TernaryVector> indexMap,
+                    int indexVectorLength,
+                    int pathLength) {
+            this.permFunc = permFunc;
+            this.acceptor = acceptor;
+            this.indexMap = indexMap;
+            this.indexVectorLength = indexVectorLength;
+            this.pathLength = pathLength;
     }
-    return meaning;
-  }
 
-  /**
-   * {@inheritDoc}
-   */
-  public int getVectorLength() {
-      return indexVectorLength;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public SparseDoubleVector generateContext(DependencyTreeNode[] tree,
+                                              int focusIndex) {
+        DependencyTreeNode focusNode = tree[focusIndex];
 
-  /**
-   * {@inheritDoc}
-   */
-  public void setReadOnly() {
-      readOnly = true;
-  }
+        SparseDoubleVector meaning = new CompactSparseVector(indexVectorLength);
 
-  /**
-   * {@inheritDoc}
-   */
-  public void unsetReadOnly() {
-      readOnly = false;
-  }
+        Iterator<DependencyPath> paths = new FilteredDependencyIterator(
+                focusNode, acceptor, pathLength);
 
-  /**
-   * Adds a {@link TernaryVector} to a {@link IntegerVector}
-   */
-  private void add(SparseDoubleVector dest, TernaryVector src) {
-    for (int p : src.positiveDimensions())
-      dest.add(p, 1);
-    for (int n : src.negativeDimensions())
-      dest.add(n, -1);
-  }
+        while (paths.hasNext()) {
+            DependencyPath path = paths.next();
+            if (readOnly && !indexMap.containsKey(path.last().word()))
+                continue;
+
+            TernaryVector termVector = indexMap.get(path.last().word());
+            if (permFunc != null)
+                termVector = permFunc.permute(termVector, path);
+            add(meaning, termVector);
+        }
+        return meaning;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorLength() {
+        return indexVectorLength;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+    /**
+     * Adds a {@link TernaryVector} to a {@link IntegerVector}
+     */
+    private void add(SparseDoubleVector dest, TernaryVector src) {
+        for (int p : src.positiveDimensions())
+            dest.add(p, 1);
+        for (int n : src.negativeDimensions())
+            dest.add(n, -1);
+    }
 }

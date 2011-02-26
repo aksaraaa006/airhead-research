@@ -63,14 +63,14 @@ public abstract class AbstractBasisMapping<T, K> implements BasisMapping<T, K>,
      * Set to {@code true} when the {@link BasisMapping} should not create new
      * dimensions for unseen keys.
      */
-    private boolean readonly;
+    private boolean readOnly;
 
     /**
      * Creates a new {@link AbstractBasisMapping}.
      */
     public AbstractBasisMapping() {
         mapping = new HashMap<K, Integer>();
-        readonly = false;
+        readOnly = false;
         indexToKeyCache = new ArrayList<K>();
     }
 
@@ -110,7 +110,7 @@ public abstract class AbstractBasisMapping<T, K> implements BasisMapping<T, K>,
      */
     protected int getDimensionInternal(K key) {
         Integer index = mapping.get(key);
-        if (readonly)
+        if (readOnly)
             return (index == null) ? -1: index;
 
         if (index == null) {     
@@ -147,14 +147,14 @@ public abstract class AbstractBasisMapping<T, K> implements BasisMapping<T, K>,
     /**
      * {@inheritDoc}
      */
-    public void setReadOnly() {
-        readonly = true;
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void unsetReadOnly() {
-        readonly = false;
+    public boolean isReadOnly() {
+        return readOnly;
     }
 }

@@ -42,9 +42,10 @@ import edu.ucla.sspace.util.ReflectionUtil;
 import edu.ucla.sspace.wordsi.ContextExtractor;
 import edu.ucla.sspace.wordsi.DependencyContextExtractor;
 import edu.ucla.sspace.wordsi.DependencyContextGenerator;
-import edu.ucla.sspace.wordsi.PseudoWordDependencyContextExtractor;
-import edu.ucla.sspace.wordsi.SenseEvalDependencyContextExtractor;
 import edu.ucla.sspace.wordsi.WordOccrrenceDependencyContextGenerator;
+
+import edu.ucla.sspace.wordsi.psd.PseudoWordDependencyContextExtractor;
+import edu.ucla.sspace.wordsi.semeval.SemEvalDependencyContextExtractor;
 
 import java.io.IOException;
 
@@ -78,133 +79,135 @@ import java.util.Iterator;
  */
 public class DVWordsiMain extends GenericWordsiMain {
 
-  /**
-   * The {@link DependencyPathBasisMapping} used to generate feature indices for
-   * dependency paths.
-   */
-  private DependencyPathBasisMapping basis;
+    /**
+     * The {@link DependencyPathBasisMapping} used to generate feature indices
+     * for dependency paths.
+     */
+    private DependencyPathBasisMapping basis;
 
-  public static void main(String[] args) throws Exception {
-    DVWordsiMain main = new DVWordsiMain();
-    main.run(args);
-  }
+    public static void main(String[] args) throws Exception {
+        DVWordsiMain main = new DVWordsiMain();
+        main.run(args);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void addExtraOptions(ArgOptions options) {
-    super.addExtraOptions(options);
+    /**
+     * {@inheritDoc}
+     */
+    protected void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
 
-    options.addOption('p', "pathAcceptor",
-                      "Specifies the DependencyPathAcceptor to use when " +
-                      "validating paths as features.  (Default: Universal)",
-                      true, "CLASSNAME", "Optional");
-    options.addOption('G', "weightingFunction",
-                      "Specifies the class that will weight dependency paths." +
-                      "(Default: None)",
-                      true, "CLASSNAME", "Optional");
-    options.addOption('B', "basisMapping",
-                      "Specifies the class that deterine what aspect of a " +
-                      "DependencyPath will as a feature in the word space. " +
-                      "(Default: WordBasedBasisMapping)",
-                      true, "CLASSNAME", "Optional");
-  }
+        options.addOption('p', "pathAcceptor",
+                          "Specifies the DependencyPathAcceptor to use when " +
+                          "validating paths as features. (Default: Universal)",
+                          true, "CLASSNAME", "Optional");
+        options.addOption('G', "weightingFunction",
+                          "Specifies the class that will weight dependency " +
+                          "paths. (Default: None)",
+                          true, "CLASSNAME", "Optional");
+        options.addOption('B', "basisMapping",
+                          "Specifies the class that deterine what aspect of " +
+                          "a DependencyPath will as a feature in the word " +
+                          "space. (Default: WordBasedBasisMapping)",
+                          true, "CLASSNAME", "Optional");
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void handleExtraOptions() {
-    // Load the basis map from disk if one is specified.  Otherwise try to load
-    // one from the command line.  If neither option is provided, default to a
-    // WordBasedBasisMapping.
-    if (argOptions.hasOption('L'))
-      basis = loadObject(openLoadFile());
-    else if (argOptions.hasOption('B'))
-      basis = ReflectionUtil.getObjectInstance(argOptions.getStringOption('B'));
-    else
-      basis = new WordBasedBasisMapping();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected void handleExtraOptions() {
+        // Load the basis map from disk if one is specified.  Otherwise try to
+        // load one from the command line.  If neither option is provided,
+        // default to a WordBasedBasisMapping.
+        if (argOptions.hasOption('L'))
+            basis = loadObject(openLoadFile());
+        else if (argOptions.hasOption('B'))
+            basis = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption('B'));
+        else
+            basis = new WordBasedBasisMapping();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void postProcessing() {
-    if (argOptions.hasOption('S'))
-      saveObject(openSaveFile(), basis);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected void postProcessing() {
+        if (argOptions.hasOption('S'))
+            saveObject(openSaveFile(), basis);
+    }
 
-  protected DependencyContextGenerator getContextGenerator() {
-    // Create the acceptor.
-    DependencyPathAcceptor acceptor;
-    if (argOptions.hasOption('p'))
-      acceptor = ReflectionUtil.getObjectInstance(
-          argOptions.getStringOption('p'));
-    else 
-      acceptor = new UniversalPathAcceptor();
+    protected DependencyContextGenerator getContextGenerator() {
+        // Create the acceptor.
+        DependencyPathAcceptor acceptor;
+        if (argOptions.hasOption('p'))
+            acceptor = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption('p'));
+        else 
+            acceptor = new UniversalPathAcceptor();
 
-    // Create the weighter.
-    DependencyPathWeight weight;
-    if (argOptions.hasOption('G'))
-      weight = ReflectionUtil.getObjectInstance(
-            argOptions.getStringOption('G'));
-    else
-      weight = new FlatPathWeight();
+        // Create the weighter.
+        DependencyPathWeight weight;
+        if (argOptions.hasOption('G'))
+            weight = ReflectionUtil.getObjectInstance(
+                        argOptions.getStringOption('G'));
+        else
+            weight = new FlatPathWeight();
 
-    // Set to read only if in evaluation mode.
-    if (argOptions.hasOption('e'))
-      basis.setReadOnly();
+        // Set to read only if in evaluation mode.
+        if (argOptions.hasOption('e'))
+            basis.setReadOnly(true);
 
-    return new WordOccrrenceDependencyContextGenerator(
-                basis, weight, acceptor, windowSize());
-  }
+        return new WordOccrrenceDependencyContextGenerator(
+                                basis, weight, acceptor, windowSize());
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected ContextExtractor getExtractor() {
-    DependencyContextGenerator generator = 
-        getContextGenerator();
+    /**
+     * {@inheritDoc}
+     */
+    protected ContextExtractor getExtractor() {
+        DependencyContextGenerator generator = 
+                getContextGenerator();
 
-    // If the evaluation type is for semEval, use a
-    // SenseEvalDependencyContextExtractor.
-    if (argOptions.hasOption('E'))
-      return new SenseEvalDependencyContextExtractor(
-          new CoNLLDependencyExtractor(), generator);
+        // If the evaluation type is for semEval, use a
+        // SemEvalDependencyContextExtractor.
+        if (argOptions.hasOption('E'))
+            return new SemEvalDependencyContextExtractor(
+                    new CoNLLDependencyExtractor(), generator);
 
-    // If the evaluation type is for pseudoWord, use a
-    // PseudoWordDependencyContextExtractor.
-    if (argOptions.hasOption('P'))
-      return new PseudoWordDependencyContextExtractor(
-          new CoNLLDependencyExtractor(), generator, getPseudoWordMap());
+        // If the evaluation type is for pseudoWord, use a
+        // PseudoWordDependencyContextExtractor.
+        if (argOptions.hasOption('P'))
+            return new PseudoWordDependencyContextExtractor(
+                    new CoNLLDependencyExtractor(), 
+                    generator, getPseudoWordMap());
 
-    // Otherwise return the normal extractor.
-    return new DependencyContextExtractor(
-            new CoNLLDependencyExtractor(), generator);
-  }
+        // Otherwise return the normal extractor.
+        return new DependencyContextExtractor(
+                        new CoNLLDependencyExtractor(), generator);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected SSpaceFormat getSpaceFormat() {
-    return SSpaceFormat.SPARSE_BINARY;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
+    }
 
-  /**
-   * Throws {@link UnsupportedOperationException}.
-   */
-  protected void addFileIterators(Collection<Iterator<Document>> docIters,
-                                  String[] fileNames) throws IOException {
-    throw new UnsupportedOperationException(
-        "A file based document iterator does not exist");
-  }
+    /**
+     * Throws {@link UnsupportedOperationException}.
+     */
+    protected void addFileIterators(Collection<Iterator<Document>> docIters,
+                                    String[] fileNames) throws IOException {
+        throw new UnsupportedOperationException(
+                "A file based document iterator does not exist");
+    }
 
-  /**
-   * Adds {@link DependencyFileDocumentIterator}s for each file name provided.
-   */
-  protected void addDocIterators(Collection<Iterator<Document>> docIters,
-                                 String[] fileNames) throws IOException {
-    // All the documents are listed in one file, with one document per line
-    for (String s : fileNames)
-      docIters.add(new DependencyFileDocumentIterator(s));
-  }
+    /**
+     * Adds {@link DependencyFileDocumentIterator}s for each file name provided.
+     */
+    protected void addDocIterators(Collection<Iterator<Document>> docIters,
+                                   String[] fileNames) throws IOException {
+        // All the documents are listed in one file, with one document per line
+        for (String s : fileNames)
+            docIters.add(new DependencyFileDocumentIterator(s));
+    }
 }

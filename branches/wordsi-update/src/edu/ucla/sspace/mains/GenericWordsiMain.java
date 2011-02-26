@@ -19,12 +19,13 @@ import edu.ucla.sspace.wordsi.ContextExtractor;
 import edu.ucla.sspace.wordsi.ContextGenerator;
 import edu.ucla.sspace.wordsi.EvaluationWordsi;
 import edu.ucla.sspace.wordsi.GeneralContextExtractor;
-import edu.ucla.sspace.wordsi.PseudoWordContextExtractor;
-import edu.ucla.sspace.wordsi.PseudoWordReporter;
-import edu.ucla.sspace.wordsi.SenseEvalContextExtractor;
-import edu.ucla.sspace.wordsi.SenseEvalReporter;
 import edu.ucla.sspace.wordsi.StreamingWordsi;
 import edu.ucla.sspace.wordsi.WaitingWordsi;
+
+import edu.ucla.sspace.wordsi.psd.PseudoWordContextExtractor;
+import edu.ucla.sspace.wordsi.psd.PseudoWordReporter;
+import edu.ucla.sspace.wordsi.semeval.SemEvalContextExtractor;
+import edu.ucla.sspace.wordsi.semeval.SemEvalReporter;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -154,8 +155,8 @@ public abstract class GenericWordsiMain extends GenericMain {
     private ObjectInputStream loadStream = null;
 
     /**
-    * {@inheritDoc}
-    */
+     * {@inheritDoc}
+     */
     protected void addExtraOptions(ArgOptions options) {
         // Set the three runtime mode arguments.
         options.addOption('s', "streamingClustering", 
@@ -271,12 +272,12 @@ public abstract class GenericWordsiMain extends GenericMain {
             ContextGenerator generator) {
         // If experimentation mode is set, mark the generator as read only.
         if (argOptions.hasOption('e'))
-            generator.setReadOnly();
+            generator.setReadOnly(true);
 
         // If the evaluation type is for semEval, use a
-        // SenseEvalContextExtractor.
+        // SemEvalContextExtractor.
         if (argOptions.hasOption('E'))
-            return new SenseEvalContextExtractor(
+            return new SemEvalContextExtractor(
                     generator, windowSize(), argOptions.getStringOption('E'));
 
         // If the evaluation type is for pseudoWord, use a
@@ -318,7 +319,6 @@ public abstract class GenericWordsiMain extends GenericMain {
      */
     protected SemanticSpace getSpace() {
         ArgOptions options = argOptions;
-
         // Setup the assignment reporter.  When training, the assignment report
         // will only be used If the evaluation mode will be for pseudoWord.
         boolean trackSecondaryKeys = false;
@@ -334,8 +334,9 @@ public abstract class GenericWordsiMain extends GenericMain {
             // If the evaluation type is not set, report an error and exit.
             if (!options.hasOption('E') && !options.hasOption('P')) {
                 usage();
-                System.out.println("An Evaluation Type must be set when " +
-                                   "evaluating Wordsi");
+                System.out.println(
+                        "An Evaluation Type must be set when evaluating " +
+                        " a trained Wordsi model.");
                 System.exit(1);
             }
 
@@ -345,8 +346,7 @@ public abstract class GenericWordsiMain extends GenericMain {
                 SemanticSpace sspace = SemanticSpaceIO.load(
                         options.getStringOption('e'));
                 if (options.hasOption('E'))
-                    reporter = new SenseEvalReporter(System.out);
-
+                    reporter = new SemEvalReporter(System.out);
                 return new EvaluationWordsi(
                         getAcceptedWords(), getExtractor(), sspace, reporter);
             } catch (IOException ioe) {
@@ -359,7 +359,6 @@ public abstract class GenericWordsiMain extends GenericMain {
                 System.getProperties().setProperty(
                         OnlineClustering.NUM_CLUSTERS_PROPERTY,
                         options.getStringOption('c'));
-
             Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator =
                 ReflectionUtil.getObjectInstance(options.getStringOption('s'));
             return new StreamingWordsi(getAcceptedWords(), getExtractor(), 
@@ -398,7 +397,8 @@ public abstract class GenericWordsiMain extends GenericMain {
     }
 
     /**
-     * Returns an {@link ObjectInputStream} for the file referred to by the {@code
+     * Returns an {@link ObjectInputStream} for the file referred to by the
+     * {@code
      * --Load} option or {@link null} if the option was not used.
      */
     protected ObjectInputStream openLoadFile() {

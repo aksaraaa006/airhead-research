@@ -76,14 +76,14 @@ public interface BasisMapping<T,E> {
     int numDimensions();    
 
     /**
-     * Sets the basis mapping into a read only state.  This is intended for when
+     * Sets the read only state of the basis mapping.  This is intended for when
      * the basis mapping is needed to map to a known set of values, and any
      * unknown values are left unmapped.
      */
-    void setReadOnly();
+    void setReadOnly(boolean readOnly);
 
     /**
-     * Unsets the read only state.
+     * Returns true if the {@link BasisMapping} is read only, false otherwise.
      */
-    void unsetReadOnly();
+    boolean isReadOnly();
 }

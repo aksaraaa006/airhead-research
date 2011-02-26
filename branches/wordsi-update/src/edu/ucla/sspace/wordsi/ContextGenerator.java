@@ -62,31 +62,26 @@ import java.util.Queue;
  */
 public interface ContextGenerator {
 
-  /**
-   * Returns a {@link SparseDoubleVector} that represents the context composed
-   * of the set of {@code prevWords} before the focus word and the set of {@code
-   * nextWords} after the focus word.  Since sparse vectors are returned, if a
-   * second order vector is generated, it is recommended that the vector also be
-   * sparsed or have very few dimensions.
-   */
-  SparseDoubleVector generateContext(Queue<String> prevWords,
-                                     Queue<String> nextWords);
+    /**
+     * Returns a {@link SparseDoubleVector} that represents the context composed
+     * of the set of {@code prevWords} before the focus word and the set of {@code
+     * nextWords} after the focus word.    Since sparse vectors are returned, if a
+     * second order vector is generated, it is recommended that the vector also be
+     * sparsed or have very few dimensions.
+     */
+    SparseDoubleVector generateContext(Queue<String> prevWords,
+                                       Queue<String> nextWords);
 
-  /**
-   * Returns the maximum number of dimensions used to represent any given
-   * context.
-   */
-  int getVectorLength();
+    /**
+     * Returns the maximum number of dimensions used to represent any given
+     * context.
+     */
+    int getVectorLength();
 
-  /**
-   * Sets the {@link ContextGenerator} into a read only mode, which prevents any
-   * new features from being generated.  While in read only mode, only features
-   * that previously existed will contribute to context vectors.
-   */
-  void setReadOnly();
-
-  /**
-   * Unsets the read only mode.
-   */
-  void unsetReadOnly();
+    /**
+     * Sets the read only mode of the {@link ContextGenerator}.    While in read
+     * only mode, only features that previously existed will contribute to context
+     * vectors.
+     */
+    void setReadOnly(boolean readOnly);
 }

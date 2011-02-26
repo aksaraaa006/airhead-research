@@ -47,9 +47,10 @@ import edu.ucla.sspace.vector.TernaryVector;
 import edu.ucla.sspace.wordsi.ContextExtractor;
 import edu.ucla.sspace.wordsi.DependencyContextExtractor;
 import edu.ucla.sspace.wordsi.DependencyContextGenerator;
-import edu.ucla.sspace.wordsi.PseudoWordDependencyContextExtractor;
-import edu.ucla.sspace.wordsi.SenseEvalDependencyContextExtractor;
 import edu.ucla.sspace.wordsi.RandomIndexingDependencyContextGenerator;
+
+import edu.ucla.sspace.wordsi.psd.PseudoWordDependencyContextExtractor;
+import edu.ucla.sspace.wordsi.semeval.SemEvalDependencyContextExtractor;
 
 import java.io.IOException;
 
@@ -160,9 +161,9 @@ public class DVRIWordsiMain extends GenericWordsiMain {
                 permFunc, acceptor, indexMap, vectorLength, pathLength);
 
     // If the evaluation type is for semEval, use a
-    // SenseEvalDependencyContextExtractor.
+    // SemEvalDependencyContextExtractor.
     if (argOptions.hasOption('E'))
-      return new SenseEvalDependencyContextExtractor(
+      return new SemEvalDependencyContextExtractor(
           new CoNLLDependencyExtractor(), generator);
 
     // If the evaluation type is for pseudoWord, use a

@@ -25,10 +25,6 @@ import edu.ucla.sspace.dependency.DependencyTreeNode;
 
 import edu.ucla.sspace.vector.SparseDoubleVector;
 
-import java.io.BufferedReader;
-
-import java.util.Queue;
-
 
 /**
  * An interface for generating context vectors from raw unparsed text.  A
@@ -62,30 +58,24 @@ import java.util.Queue;
  */
 public interface DependencyContextGenerator {
 
-  /**
-   * Returns a {@link SparseDoubleVector} that represents the context composed
-   * of the set of {@code prevWords} before the focus word and the set of {@code
-   * nextWords} after the focus word.  Since sparse vectors are returned, if a
-   * second order vector is generated, it is recommended that the vector also be
-   * sparsed or have very few dimensions.
-   */
-  SparseDoubleVector generateContext(DependencyTreeNode[] tree, int focusIndex);
+    /**
+     * Returns a {@link SparseDoubleVector} that represents the context composed
+     * of the set of {@code prevWords} before the focus word and the set of
+     * {@code nextWords} after the focus word.  Since sparse vectors are
+     * returned, if a second order vector is generated, it is recommended that
+     * the vector also be sparsed or have very few dimensions.
+     */
+    SparseDoubleVector generateContext(DependencyTreeNode[] tree, int focusIndex);
 
-  /**
-   * Returns the maximum number of dimensions used to represent any given
-   * context.
-   */
-  int getVectorLength();
+    /**
+     * Returns the maximum number of dimensions used to represent any given
+     * context.
+     */
+    int getVectorLength();
 
-  /**
-   * Sets the {@link ContextGenerator} into a read only mode, which prevents any
-   * new features from being generated.  While in read only mode, only features
-   * that previously existed will contribute to context vectors.
-   */
-  void setReadOnly();
-
-  /**
-   * Unsets the read only mode.
-   */
-  void unsetReadOnly();
+    /**
+     * Sets the read only mode of the {@link ContextGenerator}.  When set to
+     * read only, it prevents any new features from being generated.
+     */
+    void setReadOnly(boolean readOnly);
 }

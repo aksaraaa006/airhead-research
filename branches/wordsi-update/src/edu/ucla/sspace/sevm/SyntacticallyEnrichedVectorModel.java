@@ -430,9 +430,9 @@ public class SyntacticallyEnrichedVectorModel
                 }
             }
         }
-        termBasis.setReadOnly();
-        focusBasis.setReadOnly();
-        relationBasis.setReadOnly();
+        termBasis.setReadOnly(true);
+        focusBasis.setReadOnly(true);
+        relationBasis.setReadOnly(true);
     }
 
     public SparseDoubleVector contextualize(Iterator<DependencyPath> paths) {
@@ -490,6 +490,6 @@ public class SyntacticallyEnrichedVectorModel
     public void setSemanticFilter(Set<String> semanticsToRetain) {
         for (String term : semanticsToRetain)
             focusBasis.getDimension(term);
-        focusBasis.setReadOnly();
+        focusBasis.setReadOnly(true);
     }
 }

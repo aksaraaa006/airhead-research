@@ -25,6 +25,7 @@ import edu.ucla.sspace.common.Similarity.SimType;
 
 import edu.ucla.sspace.clustering.Cluster;
 import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering;
+import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
 import edu.ucla.sspace.clustering.OnlineClustering;
 
 import edu.ucla.sspace.matrix.Matrices;
@@ -56,151 +57,161 @@ import java.util.Set;
  */
 public class StreamingWordsi extends BaseWordsi {
 
-  /**
-   * The type of clustering used for {@code StreamingWordsi}.  This specifies
-   * how {@link Wordsi} will merge it's context vectors into different senses.
-   */
-  private GeneratorMap<OnlineClustering<SparseDoubleVector>> clusterMap;
+    /**
+     * The type of clustering used for {@code StreamingWordsi}.  This specifies
+     * how {@link Wordsi} will merge it's context vectors into different senses.
+     */
+    private GeneratorMap<OnlineClustering<SparseDoubleVector>> clusterMap;
 
-  private final Map<String, SparseDoubleVector> wordSpace;
+    /**
+     * The final word space generated, with one vector for each induced word
+     * sense.  Word senses are stored as "focusTerm[-senseNum]".  A sense number
+     * is only provided if it is larger than 0.
+     */
+    private final Map<String, SparseDoubleVector> wordSpace;
 
-  /**
-   * The {@link AssignmentReporter} responsible for generating an assignment
-   * report based on the clustering assignments.  This may be {@code null}.
-   */
-  private final AssignmentReporter reporter;
+    /**
+     * The {@link AssignmentReporter} responsible for generating an assignment
+     * report based on the clustering assignments.    This may be {@code null}.
+     */
+    private final AssignmentReporter reporter;
 
-  /**
-   * Creates a new {@link StreamingWordsi}.
-   *
-   * @param acceptedWords The set of words that {@link Wordsi} should represent.
-   *        This may be {@code null} or empty}.
-   * @param extractor The {@link ContextExtractor} used to parse documents
-   * @param trackSecondaryKeys If true, cluster assignments and secondary keys
-   *        will be tracked.  If this is false, the {@link AssignmentReporter}
-   *        will not be used.
-   * @param clusterGenerator A {@link Generator} responsible for creating new
-   *        instances of a {@link OnlineClustering} algorithm.
-   * @param reporter The {@link AssignmentReporter} responsible for generating a
-   *        report that details the cluster assignments.  This may be {@link
-   *        null}.  If {@code trackSecondaryKeys} is false, this is not used.
-   */
-  public StreamingWordsi(
-      Set<String> acceptedWords,
-      ContextExtractor extractor,
-      Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator,
-      AssignmentReporter reporter) {
-    super(acceptedWords, extractor, reporter != null); 
-    clusterMap = new GeneratorMap<OnlineClustering<SparseDoubleVector>>(
-            clusterGenerator);
-    this.reporter = reporter;
-    this.wordSpace = new HashMap<String, SparseDoubleVector>();
-  }
+    /**
+     * Creates a new {@link StreamingWordsi}.
+     *
+     * @param acceptedWords The set of words that {@link Wordsi} should
+     *         represent.  This may be {@code null} or empty}.
+     * @param extractor The {@link ContextExtractor} used to parse documents
+     * @param trackSecondaryKeys If true, cluster assignments and secondary keys
+     *        will be tracked.    If this is false, the {@link
+     *        AssignmentReporter} will not be used.
+     * @param clusterGenerator A {@link Generator} responsible for creating new
+     *        instances of a {@link OnlineClustering} algorithm.
+     * @param reporter The {@link AssignmentReporter} responsible for generating
+     *        a report that details the cluster assignments. This may be {@link
+     *        null}. If {@code trackSecondaryKeys} is false, this is not used.
+     */
+    public StreamingWordsi(
+            Set<String> acceptedWords,
+            ContextExtractor extractor,
+            Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator,
+            AssignmentReporter reporter) {
+        super(acceptedWords, extractor); 
+        clusterMap = new GeneratorMap<OnlineClustering<SparseDoubleVector>>(
+                        clusterGenerator);
+        this.reporter = reporter;
+
+        this.wordSpace = new HashMap<String, SparseDoubleVector>();
+    }
  
-  /**
-   * {@inheritDoc}
-   */
-  public Set<String> getWords() {
-    return wordSpace.keySet();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public SparseDoubleVector getVector(String term) {
-    return wordSpace.get(term);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void handleContextVector(String focusKey,
-                                  String secondaryKey,
-                                  SparseDoubleVector context) {
-    OnlineClustering<SparseDoubleVector> clustering = clusterMap.get(focusKey);
-    int contextId = clustering.addVector(context);
-    mapSecondaryKey(secondaryKey, focusKey, contextId);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void processSpace(Properties props) {
-    double mergeThreshold = .15;
-
-    // Iterate through all of the clusters and perform an agglomerative cluster
-    // over the learned word senses.  If there is a reporter, the cluster
-    // assignments are reported.
-    for (Map.Entry<String, OnlineClustering<SparseDoubleVector>> entry :
-         clusterMap.entrySet()) {
-      // Form a list of centroid vectors, which will be clustered by HAC.
-      List<SparseDoubleVector> centroids = new ArrayList<SparseDoubleVector>();
-      List<Cluster<SparseDoubleVector>> clusters =
-        entry.getValue().getClusters();
-
-      for (Cluster<SparseDoubleVector> cluster : clusters)
-        centroids.add(cluster.centroid());
-
-      // Cluster the centroids with a threshold.
-      int[] assignments = HierarchicalAgglomerativeClustering.clusterRows(
-          Matrices.asSparseMatrix(centroids), 
-          mergeThreshold,
-          HierarchicalAgglomerativeClustering.ClusterLinkage.MEAN_LINKAGE,
-          SimType.COSINE);
-
-      // Combine clusters determined to be merged by HAC.
-      List<Cluster<SparseDoubleVector>> newClusters =
-        new ArrayList<Cluster<SparseDoubleVector>>();
-
-      // When a new assignment index is encountered, create an empty cluster.
-      // The first cluster assigned to that index becomes the initial value.
-      // Later clusters assigned to that index are merged into the primary
-      // cluster.
-      for (int i = 0; i < assignments.length; ++i) {
-        int assignment = assignments[i];
-        while (assignment >= newClusters.size())
-          newClusters.add(null);
-        Cluster<SparseDoubleVector> cluster = newClusters.get(assignment);
-        if (cluster == null)
-          newClusters.set(assignment, clusters.get(i));
-        else
-          cluster.merge(clusters.get(i));
-      }
-
-      // Store a mapping for each word sense to it's induced word sense, i.e.,
-      // the centroid.
-      String primaryKey = entry.getKey();
-      wordSpace.put(primaryKey, newClusters.get(0).centroid());
-      for (int i = 1; i < newClusters.size(); ++i)
-        wordSpace.put(primaryKey+"-"+i, newClusters.get(i).centroid());
-
-      // If there is no reporter, skip any post processing.
-      if (reporter == null)
-        continue;
-
-      // Get the set of context labels for each data point for the given word.
-      String[] contextLabels = contextLabels(primaryKey);
-      if (contextLabels.length == 0)
-        continue;
-
-      // Output the assignments for a single clustering.
-      int clusterId = 0;
-      for (Cluster<SparseDoubleVector> cluster : newClusters) {
-        BitSet contextIds = cluster.dataPointIds();
-        for (int contextId = contextIds.nextSetBit(0); contextId >= 0;
-             contextId = contextIds.nextSetBit(contextId + 1)) {
-          reporter.updateAssignment(
-              primaryKey, contextLabels[contextId], clusterId); 
-             }
-        clusterId++;
-      }
+    /**
+     * {@inheritDoc}
+     */
+    public Set<String> getWords() {
+        return wordSpace.keySet();
     }
 
-    // Null out the cluster map so that the garbage collector can reclaim it and
-    // any data associated with the Clusters.
-    clusterMap = null;
+    /**
+     * {@inheritDoc}
+     */
+    public SparseDoubleVector getVector(String term) {
+        return wordSpace.get(term);
+    }
 
-    if (reporter != null)
-      reporter.finalizeReport();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public void handleContextVector(String focusKey,
+                                    String secondaryKey,
+                                    SparseDoubleVector context) {
+        OnlineClustering<SparseDoubleVector> clustering = 
+            clusterMap.get(focusKey);
+        int contextId = clustering.addVector(context);
+        if (reporter != null)
+            reporter.assignContextToKey(focusKey, secondaryKey, contextId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void processSpace(Properties props) {
+        double mergeThreshold = .15;
+
+        // Iterate through all of the clusters and perform an agglomerative
+        // cluster over the learned word senses.  If there is a reporter, the
+        // cluster assignments are reported.
+        for (Map.Entry<String, OnlineClustering<SparseDoubleVector>> entry :
+                 clusterMap.entrySet()) {
+            // Form a list of centroid vectors, which will be clustered by HAC.
+            List<SparseDoubleVector> centroids =
+                new ArrayList<SparseDoubleVector>();
+            List<Cluster<SparseDoubleVector>> clusters =
+                entry.getValue().getClusters();
+
+            for (Cluster<SparseDoubleVector> cluster : clusters)
+                centroids.add(cluster.centroid());
+
+            // Cluster the centroids with a threshold.
+            int[] assignments = HierarchicalAgglomerativeClustering.clusterRows(
+                    Matrices.asSparseMatrix(centroids), 
+                    mergeThreshold,
+                    ClusterLinkage.MEAN_LINKAGE,
+                    SimType.COSINE);
+
+            // Combine clusters determined to be merged by HAC.
+            List<Cluster<SparseDoubleVector>> newClusters =
+                new ArrayList<Cluster<SparseDoubleVector>>();
+
+            // When a new assignment index is encountered, create an empty
+            // cluster.  The first cluster assigned to that index becomes the
+            // initial value.  Later clusters assigned to that index are merged
+            // into the primary cluster.
+            for (int i = 0; i < assignments.length; ++i) {
+                int assignment = assignments[i];
+                while (assignment >= newClusters.size())
+                    newClusters.add(null);
+                Cluster<SparseDoubleVector> cluster = newClusters.get(assignment);
+                if (cluster == null)
+                    newClusters.set(assignment, clusters.get(i));
+                else
+                    cluster.merge(clusters.get(i));
+            }
+
+            // Store a mapping for each word sense to it's induced word sense,
+            // i.e., the centroid.
+            String primaryKey = entry.getKey();
+            wordSpace.put(primaryKey, newClusters.get(0).centroid());
+            for (int i = 1; i < newClusters.size(); ++i)
+                wordSpace.put(primaryKey+"-"+i, newClusters.get(i).centroid());
+
+            // If there is no reporter, skip any post processing.
+            if (reporter == null)
+                continue;
+
+            // Get the set of context labels for each data point for the given
+            // word.
+            String[] contextLabels = reporter.contextLabels(primaryKey);
+            if (contextLabels.length == 0)
+                continue;
+
+            // Output the assignments for a single clustering.
+            int clusterId = 0;
+            for (Cluster<SparseDoubleVector> cluster : newClusters) {
+                BitSet contextIds = cluster.dataPointIds();
+                for (int contextId = contextIds.nextSetBit(0); contextId >= 0;
+                         contextId = contextIds.nextSetBit(contextId + 1)) {
+                    reporter.updateAssignment(
+                            primaryKey, contextLabels[contextId], clusterId); 
+                }
+                clusterId++;
+            }
+        }
+
+        // Null out the cluster map so that the garbage collector can reclaim it
+        // and any data associated with the Clusters.
+        clusterMap = null;
+
+        if (reporter != null)
+            reporter.finalizeReport();
+    }
 }

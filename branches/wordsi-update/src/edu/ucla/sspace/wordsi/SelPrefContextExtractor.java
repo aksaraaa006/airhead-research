@@ -57,142 +57,146 @@ import java.util.Queue;
  */
 public class SelPrefContextExtractor implements ContextExtractor {
 
-  /**
-   * The {@link DependencyExtractor} used to extract parse trees from the
-   * already parsed documents
-   */
-  protected final DependencyExtractor extractor;
+    /**
+     * The {@link DependencyExtractor} used to extract parse trees from the
+     * already parsed documents
+     */
+    protected final DependencyExtractor extractor;
 
-  /**
-   * A basis mapping from dependency paths to the the dimensions that
-   * represent the content of those paths.
-   */
-  private final DependencyPathBasisMapping basisMapping;
+    /**
+     * A basis mapping from dependency paths to the the dimensions that
+     * represent the content of those paths.
+     */
+    private final DependencyPathBasisMapping basisMapping;
 
-  /**
-   * A function that weights {@link DependencyPath} instances according to
-   * some criteria.
-   */
-  private final DependencyPathWeight weighter;
+    /**
+     * A function that weights {@link DependencyPath} instances according to
+     * some criteria.
+     */
+    private final DependencyPathWeight weighter;
 
-  /**
-   * The filter that accepts only dependency paths that match predefined
-   * criteria.
-   */
-  private final DependencyPathAcceptor acceptor;
+    /**
+     * The filter that accepts only dependency paths that match predefined
+     * criteria.
+     */
+    private final DependencyPathAcceptor acceptor;
 
-  private final SelectionalPreferenceSpace sspace;
+    /**
+     * The {@link SelectionalPreferenceSpace} which provides context vectors
+     * based on the focus word and it's neighboring terms.
+     */
+    private final SelectionalPreferenceSpace sspace;
 
-  /**
-   * Creates a new {@link SelPrefContextExtractor}.
-   *
-   * @param extractor The {@link DependencyExtractor} that parses the document
-   *        and returns a valid dependency tree
-   * @param basisMapping A mapping from dependency paths to feature indices
-   * @param weighter A weighting function for dependency paths
-   * @param acceptor An accepting function that validates dependency paths which
-   *        may serve as features
-   */
-  public SelPrefContextExtractor(DependencyExtractor extractor,
-                                 DependencyPathBasisMapping basisMapping,
-                                 DependencyPathWeight weighter,
-                                 DependencyPathAcceptor acceptor,
-                                 SelectionalPreferenceSpace sspace) {
-    this.extractor = extractor;
-    this.basisMapping = basisMapping;
-    this.weighter = weighter;
-    this.acceptor = acceptor;
-    this.sspace = sspace;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public int getVectorLength() {
-    return basisMapping.numDimensions();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void processDocument(BufferedReader document, Wordsi wordsi) {
-    try {
-      // Handle the context header, if one exists.  Context headers are assumed
-      // to be the first line in a document.
-      String contextHeader = handleContextHeader(document);
-
-      // Iterate over all of the parseable dependency parsed sentences in the
-      // document.
-      for (DependencyTreeNode[] nodes = null; 
-           (nodes = extractor.readNextTree(document)) != null; ) {
-
-        // Skip empty documents.
-        if (nodes.length == 0)
-          continue;            
-
-        // Examine the paths for each word in the sentence.
-        for (int wordIndex = 0; wordIndex < nodes.length; ++wordIndex) {
-          DependencyTreeNode focusNode = nodes[wordIndex];
-
-          // Get the focus word, i.e., the primary key, and the secondary key.
-          // These steps are made as protected methods so that the
-          // SenseEvalDependencyContextExtractor
-          // PseudoWordDependencyContextExtractor can manage only the keys,
-          // instead of the document traversal.
-          String focusWord = getPrimaryKey(focusNode);
-          String secondarykey = getSecondaryKey(focusNode, contextHeader);
-
-          // Ignore any focus words that are unaccepted by Wordsi.
-          if (!acceptWord(focusWord, contextHeader, wordsi))
-            continue;
-
-          // Create a new context vector.
-          SparseDoubleVector contextVector = sspace.contextualize(
-            new FilteredDependencyIterator(nodes[wordIndex], acceptor, 1));
-
-          wordsi.handleContextVector(focusWord, secondarykey, contextVector);
-        }
-        document.close();
-      }
-    } catch (IOException ioe) {
-      throw new IOError(ioe);
+    /**
+     * Creates a new {@link SelPrefContextExtractor}.
+     *
+     * @param extractor The {@link DependencyExtractor} that parses the document
+     *                and returns a valid dependency tree
+     * @param basisMapping A mapping from dependency paths to feature indices
+     * @param weighter A weighting function for dependency paths
+     * @param acceptor An accepting function that validates dependency paths which
+     *                may serve as features
+     */
+    public SelPrefContextExtractor(DependencyExtractor extractor,
+                                   DependencyPathBasisMapping basisMapping,
+                                   DependencyPathWeight weighter,
+                                   DependencyPathAcceptor acceptor,
+                                   SelectionalPreferenceSpace sspace) {
+        this.extractor = extractor;
+        this.basisMapping = basisMapping;
+        this.weighter = weighter;
+        this.acceptor = acceptor;
+        this.sspace = sspace;
     }
-  }
 
-  /**
-   * Returns true if {@link Wordsi} should generate a context vector for
-   * {@code focusWord}.  
-   */
-  protected boolean acceptWord(String focusWord, 
-                               String contextHeader,
-                               Wordsi wordsi) {
-    return wordsi.acceptWord(focusWord);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorLength() {
+        return basisMapping.numDimensions();
+    }
 
-  /**
-   * Returns the token for the primary key, i.e. the focus word.  This is just
-   * the text of the {@code focusNode}.
-   */
-  protected String getPrimaryKey(DependencyTreeNode focusNode) {
-    return focusNode.word();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    public void processDocument(BufferedReader document, Wordsi wordsi) {
+        try {
+            // Handle the context header, if one exists.  Context headers are
+            // assumed to be the first line in a document.
+            String contextHeader = handleContextHeader(document);
 
-  /**
-   * Returns the token for the secondary key.  If a {@code contextHeader} is
-   * provided, this is the {@code contextHeader}, otherwise it is the word for
-   * the {@code focusNode}.
-   */
-  protected String getSecondaryKey(DependencyTreeNode focusNode,
-                                   String contextHeader) {
-    return (contextHeader == null) ? focusNode.word() : contextHeader;
-  }
+            // Iterate over all of the parseable dependency parsed sentences in
+            // the document.
+            for (DependencyTreeNode[] nodes = null; 
+                     (nodes = extractor.readNextTree(document)) != null; ) {
 
-  /**
-   * Returns the string for the context header.  In this case, it is {@code
-   * null}.
-   */
-  protected String handleContextHeader(BufferedReader document)
-      throws IOException {
-    return null;
-  }
+                // Skip empty documents.
+                if (nodes.length == 0)
+                    continue;                        
+
+                // Examine the paths for each word in the sentence.
+                for (int wordIndex = 0; wordIndex < nodes.length; ++wordIndex) {
+                    DependencyTreeNode focusNode = nodes[wordIndex];
+
+                    // Get the focus word, i.e., the primary key, and the
+                    // secondary key.  These steps are made as protected methods
+                    // so that the SenseEvalDependencyContextExtractor
+                    // PseudoWordDependencyContextExtractor can manage only the
+                    // keys, instead of the document traversal.
+                    String focusWord = getPrimaryKey(focusNode);
+                    String secondarykey = getSecondaryKey(focusNode, contextHeader);
+
+                    // Ignore any focus words that are unaccepted by Wordsi.
+                    if (!acceptWord(focusWord, contextHeader, wordsi))
+                        continue;
+
+                    // Create a new context vector.
+                    SparseDoubleVector contextVector = sspace.contextualize(
+                        new FilteredDependencyIterator(nodes[wordIndex], acceptor, 1));
+
+                    wordsi.handleContextVector(focusWord, secondarykey, contextVector);
+                }
+                document.close();
+            }
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+    }
+
+    /**
+     * Returns true if {@link Wordsi} should generate a context vector for
+     * {@code focusWord}.    
+     */
+    protected boolean acceptWord(String focusWord, 
+                                 String contextHeader,
+                                 Wordsi wordsi) {
+        return wordsi.acceptWord(focusWord);
+    }
+
+    /**
+     * Returns the token for the primary key, i.e. the focus word.  This is just
+     * the text of the {@code focusNode}.
+     */
+    protected String getPrimaryKey(DependencyTreeNode focusNode) {
+        return focusNode.word();
+    }
+
+    /**
+     * Returns the token for the secondary key.  If a {@code contextHeader} is
+     * provided, this is the {@code contextHeader}, otherwise it is the word for
+     * the {@code focusNode}.
+     */
+    protected String getSecondaryKey(DependencyTreeNode focusNode,
+                                     String contextHeader) {
+        return (contextHeader == null) ? focusNode.word() : contextHeader;
+    }
+
+    /**
+     * Returns the string for the context header.  In this case, it is {@code
+     * null}.
+     */
+    protected String handleContextHeader(BufferedReader document)
+            throws IOException {
+        return null;
+    }
 }
