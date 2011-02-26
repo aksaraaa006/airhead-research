@@ -21,8 +21,13 @@
 
 package edu.ucla.sspace.common;
 
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import edu.ucla.sspace.util.IntegerMap;
@@ -95,6 +100,72 @@ public class Statistics {
     }
 
     /**
+     * Returns the mean value of the collection of numbers
+     */
+    public static double mean(Collection<? extends Number> values) {
+        double sum = 0d;
+        for (Number n : values)
+            sum += n.doubleValue();
+        return sum / values.size();
+    }
+
+    /**
+     * Returns the mean value of the array of ints
+     */
+    public static double mean(int[] values) {
+        double sum = 0d;
+        for (int i : values)
+            sum += i;
+        return sum / values.length;
+    }
+
+    /**
+     * Returns the mean value of the array of doubles
+     */
+    public static double mean(double[] values) {
+        double sum = 0d;
+        for (double d : values)
+            sum += d;
+        return sum / values.length;
+    } 
+
+    /**
+     * Returns the median value of the collection of numbers
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends Number & Comparable> T median(Collection<T> values) {
+        if (values.isEmpty())
+            throw new IllegalArgumentException(
+                "No median in an empty collection");
+        List<T> sorted = new ArrayList<T>(values);
+        
+        Collections.sort(sorted);
+        return sorted.get(sorted.size() / 2);
+    }
+
+    /**
+     * Returns the median value of the array of ints
+     */
+    public static double median(int[] values) {
+        if (values.length == 0)
+            throw new IllegalArgumentException("No median in an empty array");        
+        int[] sorted = Arrays.copyOf(values, values.length);
+        Arrays.sort(sorted);
+        return sorted[sorted.length/2];
+    }
+
+    /**
+     * Returns the median value of the array of doubles
+     */
+    public static double median(double[] values) {
+        if (values.length == 0)
+            throw new IllegalArgumentException("No median in an empty array");        
+        double[] sorted = Arrays.copyOf(values, values.length);
+        Arrays.sort(sorted);
+        return sorted[sorted.length/2];
+    }
+
+    /**
      * Randomly sets {@code valuesToSet} values to {@code true} for a sequence
      * from [0:{@code range}).
      *
@@ -132,5 +203,44 @@ public class Statistics {
             }
         }
         return values;
+    }
+
+    /**
+     * Returns the standard deviation of the collection of numbers
+     */
+    public static double stddev(Collection<? extends Number> values) {
+        double mean = mean(values);
+        double sum = 0d;
+        for (Number n : values) {
+            double d = n.doubleValue() - mean;
+            sum += d*d;
+        }
+        return Math.sqrt(sum / values.size());
+    }
+
+    /**
+     * Returns the standard deviation of the values in the int array
+     */
+    public static double stddev(int[] values) {
+        double mean = mean(values);
+        double sum = 0d;
+        for (int i : values) {
+            double d = i - mean;
+            sum += d*d;
+        }
+        return Math.sqrt(sum / values.length);
+    }
+
+    /**
+     * Returns the standard deviation of the values in the double array
+     */
+    public static double stddev(double[] values) {
+        double mean = mean(values);
+        double sum = 0d;
+        for (double d : values) {
+            double d2 = d - mean;
+            sum += d2 * d2;
+        }
+        return Math.sqrt(sum / values.length);
     }
 }

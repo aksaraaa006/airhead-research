@@ -824,7 +824,7 @@ public class Similarity {
 
     /**
      * Computes the <a href="http://en.wikipedia.org/wiki/Jaccard_index">Jaccard
-     * index</a> comparing the similarity both {@code DoubleVector}s when viewed
+     * index</a> comparing the similarity both {@code IntegerVector}s when viewed
      * as sets of samples.
      */
     public static double jaccardIndex(IntegerVector a, IntegerVector b) {
