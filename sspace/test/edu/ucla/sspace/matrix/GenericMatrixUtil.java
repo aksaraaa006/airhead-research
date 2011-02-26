@@ -29,9 +29,9 @@ import static org.junit.Assert.*;
 /**
  * A general purpose class for testing {@link Matrix} instances.
  */
-public class GenericMatrixTests {
+public class GenericMatrixUtil {
 
-    @Test public static void testSet(Matrix m) {
+    public static void testSet(Matrix m) {
         int rows = m.rows();
         int cols = m.columns();
         for (int trials = 0; trials < 100; ++trials) {
@@ -43,7 +43,7 @@ public class GenericMatrixTests {
       }      
     }
     
-    @Test public static void testGet(Matrix m) {
+    public static void testGet(Matrix m) {
         int rows = m.rows();
         int cols = m.columns();
         for (int trials = 0; trials < 100; ++trials) {

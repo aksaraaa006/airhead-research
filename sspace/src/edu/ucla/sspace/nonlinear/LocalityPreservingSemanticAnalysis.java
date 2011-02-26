@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.nonlinear;
 
+import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.Similarity;
 
@@ -28,46 +29,23 @@ import edu.ucla.sspace.matrix.AffinityMatrixCreator;
 import edu.ucla.sspace.matrix.AffinityMatrixCreator.EdgeType;
 import edu.ucla.sspace.matrix.AffinityMatrixCreator.EdgeWeighting;
 import edu.ucla.sspace.matrix.LocalityPreservingProjection;
-import edu.ucla.sspace.matrix.LogEntropyTransform;
-import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
-import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
-import edu.ucla.sspace.matrix.MatrixBuilder;
+import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
 import edu.ucla.sspace.matrix.Transform;
 
-import edu.ucla.sspace.text.IteratorFactory;
+import edu.ucla.sspace.util.LoggerUtil;
+import edu.ucla.sspace.util.ReflectionUtil;
 
-import edu.ucla.sspace.util.SparseArray;
-import edu.ucla.sspace.util.SparseIntHashArray;
-
-import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.Vector;
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-import java.io.PrintWriter;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -163,11 +141,13 @@ import java.util.logging.Logger;
  *
  * @see Transform
  * @see LocalityPreservingProjection
+ * @see GenericTermDocumentVectorSpace
  * @see LSA
  * 
  * @author David Jurgens
  */
-public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
+public class LocalityPreservingSemanticAnalysis
+        extends GenericTermDocumentVectorSpace {
 
     /** 
      * The prefix for naming publically accessible properties
@@ -209,37 +189,6 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
         "lpsa-semantic-space";
 
     /**
-     * The logger used to record all output
-     */
-    private static final Logger LOGGER = 
-        Logger.getLogger(LocalityPreservingSemanticAnalysis.class.getName());
-
-    /**
-     * A mapping from a word to the row index in the that word-document matrix
-     * that contains occurrence counts for that word.
-     */
-    private final ConcurrentMap<String,Integer> termToIndex;
-
-    /**
-     * The counter for recording the current, largest word index in the
-     * word-document matrix.
-     */
-    private final AtomicInteger termIndexCounter;
-    
-    /**
-     * The builder used to construct the term-document matrix as new documents
-     * are processed.
-     */
-    private final MatrixBuilder termDocumentMatrixBuilder;
-
-    /**
-     * The word space of the LPSA model, which is the left factor matrix of the
-     * SVD of the word-document matrix.  This matrix is only available after the
-     * {@link #processSpace(Properties) processSpace} method has been called.
-     */
-    private Matrix wordSpace;
-    
-    /**
      * Constructs the {@code LocalityPreservingSemanticAnalysis} using the system properties
      * for configuration.
      *
@@ -247,135 +196,8 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
      *         the backing array files required for processing
      */
     public LocalityPreservingSemanticAnalysis() throws IOException {
-        this(System.getProperties());
-    }
-
-    /**
-     * Constructs the {@code LocalityPreservingSemanticAnalysis} using the specified
-     * properties for configuration.
-     *
-     * @throws IOException if this instance encounters any errors when creatng
-     *         the backing array files required for processing
-     */
-    public LocalityPreservingSemanticAnalysis(Properties properties) 
-            throws IOException {
-        termToIndex = new ConcurrentHashMap<String,Integer>();
-        termIndexCounter = new AtomicInteger(0);
-
-        // Use the transposed SVDLIBC sparse builder since the LPP uses that
-        // format internally for its initial constructions.  In this format the
-        // data rows will become the columns of the matrix.
-        termDocumentMatrixBuilder = new SvdlibcSparseBinaryMatrixBuilder(true);
-
-        wordSpace = null;
-    }   
-
-    /**
-     * Parses the document.
-     *
-     * <p>
-     *
-     * This method is thread-safe and may be called in parallel with separate
-     * documents to speed up overall processing time.
-     *
-     * @param document {@inheritDoc}
-     */
-    public void processDocument(BufferedReader document) throws IOException {
-        // Create a mapping for each term that is seen in the document to the
-        // number of times it has been seen.  This mapping would more elegantly
-        // be a SparseArray<Integer> however, the length of the sparse array
-        // isn't known ahead of time, which prevents it being used by the
-        // MatrixBuilder.  Note that the SparseArray implementation would also
-        // incur an additional performance hit since each word would have to be
-        // converted to its index form for each occurrence, which results in a
-        // double Map look-up.
-        Map<String,Integer> termCounts = new HashMap<String,Integer>(1000);
-        Iterator<String> documentTokens = IteratorFactory.tokenize(document);
-
-        // for each word in the text document, keep a count of how many times it
-        // has occurred
-        while (documentTokens.hasNext()) {
-            String word = documentTokens.next();
-            
-            // Skip added empty tokens for words that have been filtered out
-            if (word.equals(IteratorFactory.EMPTY_TOKEN))
-                continue;
-            
-            // Add the term to the total list of terms to ensure it has a proper
-            // index.  If the term was already added, this method is a no-op
-            addTerm(word);
-            Integer termCount = termCounts.get(word);
-
-            // update the term count
-            termCounts.put(word, (termCount == null) 
-                           ? 1
-                           : 1 + termCount.intValue());
-        }
-
-        document.close();
-
-        // Check that we actually loaded in some terms before we increase the
-        // documentIndex.  This could possibly save some dimensions in the final
-        // array for documents that were essentially blank.  If we didn't see
-        // any terms, just perform no updates. 
-        if (termCounts.isEmpty())
-            return;
-
-        // Get the total number of terms encountered so far, including any new
-        // unique terms found in the most recent document
-        int totalNumberOfUniqueWords = termIndexCounter.get();
-
-        // Convert the Map count to a SparseArray
-        SparseArray<Integer> documentColumn = 
-            new SparseIntHashArray(totalNumberOfUniqueWords);
-        for (Map.Entry<String,Integer> e : termCounts.entrySet())
-            documentColumn.set(termToIndex.get(e.getKey()), e.getValue());
-
-        // Update the term-document matrix with the results of processing the
-        // document.
-        termDocumentMatrixBuilder.addColumn(documentColumn);
-    }
-    
-    /**
-     * Adds the term to the list of terms and gives it an index, or if the term
-     * has already been added, does nothing.
-     */
-    private void addTerm(String term) {
-        Integer index = termToIndex.get(term);
-
-        if (index == null) {
-
-            synchronized(this) {
-                // recheck to see if the term was added while blocking
-                index = termToIndex.get(term);
-                // if some other thread has not already added this term while
-                // the current thread was blocking waiting on the lock, then add
-                // it.
-                if (index == null) {
-                    index = Integer.valueOf(termIndexCounter.getAndIncrement());
-                    termToIndex.put(term, index);
-                }
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Set<String> getWords() {
-        return Collections.unmodifiableSet(termToIndex.keySet());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Vector getVector(String word) {
-        // determine the index for the word
-        Integer index = termToIndex.get(word);
-        
-        return (index == null)
-            ? null
-            : wordSpace.getRowVector(index.intValue());
+        super(false, new ConcurrentHashMap<String, Integer>(),
+              new SvdlibcSparseBinaryMatrixBuilder(true));
     }
 
     /**
@@ -387,13 +209,6 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
 
     /**
      * {@inheritDoc}
-     */
-    public int getVectorLength() {
-        return wordSpace.columns();
-    }
-
-    /**
-     * {@inheritDoc}
      *
      * @param properties {@inheritDoc} See this class's {@link
      *        LocalityPreservingSemanticAnalysis javadoc} for the full list of
@@ -401,48 +216,15 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
      */
     public void processSpace(Properties properties) {
         try {
-            // first ensure that we are no longer writing to the matrix
-            termDocumentMatrixBuilder.finish();
-            // Get the finished matrix file from the builder
-            File termDocumentMatrix = termDocumentMatrixBuilder.getFile();
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine("stored term-document matrix in format " + 
-                        termDocumentMatrixBuilder.getMatrixFormat()
-                        + " at " + termDocumentMatrix.getAbsolutePath());
-            }
-
-            // By default, do no tranformation on the data prior to LPP.
-            File transformedMatrix = termDocumentMatrix;
-
+            Transform transform = null;
             // If the user specified a transform, then apply it and update the
             // matrix file
             String transformClass = 
                 properties.getProperty(MATRIX_TRANSFORM_PROPERTY);
-            if (transformClass != null) {
-                Transform transform  = null;
-                try {
-                    Class clazz = Class.forName(transformClass);
-                    transform = (Transform)(clazz.newInstance());
-                } 
-                // perform a general catch here due to the number of possible
-                // things that could go wrong.  Rethrow all exceptions as an
-                // error.
-                catch (Exception e) {
-                    throw new Error(e);
-                } 
+            if (transformClass != null)
+                transform = ReflectionUtil.getObjectInstance(transformClass);
 
-                LOGGER.info("performing " + transform + " transform");
-                
-
-                // Convert the raw term counts using the specified transform
-                transformedMatrix = transform.transform(termDocumentMatrix, 
-                    termDocumentMatrixBuilder.getMatrixFormat());
-
-                if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine("transformed matrix to " + 
-                                transformedMatrix.getAbsolutePath());
-                }
-            }
+            MatrixFile transformedMatrix = processSpace(transform);
 
             // Set all of the default properties
             int dimensions = 300; 
@@ -497,19 +279,11 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
                 }
             }
 
-            LOGGER.info("reducing to " + dimensions + " dimensions");
-            File tiMap = new File("term-index.map");
-            PrintWriter pw = new PrintWriter(tiMap);
-//             edu.ucla.sspace.util.SerializableUtil.save(termToIndex, tiMap);
-            for (Map.Entry<String,Integer> e : termToIndex.entrySet())
-                pw.println(e.getKey() + "\t" + e.getValue());
-            pw.close();
-            LOGGER.info("wrote term-index map to " + tiMap);
-           
+            LoggerUtil.verbose(LOG, "reducing to %d dimensions", dimensions);
 
             Matrix termDocMatrix = MatrixIO.readMatrix(
-                transformedMatrix, 
-                termDocumentMatrixBuilder.getMatrixFormat(), 
+                transformedMatrix.getFile(), 
+                transformedMatrix.getFormat(), 
                 Matrix.Type.SPARSE_IN_MEMORY, true);
 
             // Calculate the affinity matrix for the term-doc matrix
@@ -520,21 +294,7 @@ public class LocalityPreservingSemanticAnalysis implements SemanticSpace {
             // Using the affinity matrix as a guide to locality, project the
             // co-occurrence matrix into the lower dimensional subspace
             wordSpace = LocalityPreservingProjection.project(
-                termDocMatrix, affinityMatrix, dimensions);
-            
-            /*
-            File projectedFile = LocalityPreservingProjection.project(
-                transformedMatrix, 
-                termDocumentMatrixBuilder.getMatrixFormat(),
-                true, // the matrix is written so the data points are columns
-                dimensions,
-                Similarity.SimType.COSINE, 
-                edgeType, edgeTypeParam, weighting, edgeWeightParam);
-                
-            // Load the word space as sparse in memory
-            wordSpace = MatrixIO.readMatrix(projectedFile, Format.DENSE_TEXT);
-            */
-
+                    termDocMatrix, affinityMatrix, dimensions);
         } catch (IOException ioe) {
             //rethrow as Error
             throw new IOError(ioe);

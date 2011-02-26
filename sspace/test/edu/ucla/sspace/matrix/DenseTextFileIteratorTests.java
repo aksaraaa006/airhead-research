@@ -29,24 +29,24 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class MatlabSparseFileIteratorTests {
+public class DenseTextFileIteratorTests {
 
     private static final double[][] testMatrix = {
-        {2.3, 0, 4.2},
-        {0, 1.3, 2.2},
-        {3.8, 0, 0.5}};
-
+        {1.5, 0.0, 2.5},
+        {0.0, 1.1, 3.1},
+        {1.1, 3.3, 4.1}};
+    
     @Test(expected=UnsupportedOperationException.class)
     public void testRemove() throws Exception {
-        File f = getMatlabFile();
-        Iterator<MatrixEntry> it = new MatlabSparseFileIterator(f);
+        File f = getDenseTextFile();
+        Iterator<MatrixEntry> it = new DenseTextFileIterator(f);
         it.remove();
     }
 
     @Test(expected=NoSuchElementException.class)
     public void testEmptyNext() throws Exception {
-        File f = getMatlabFile();
-        Iterator<MatrixEntry> it = new MatlabSparseFileIterator(f);
+        File f = getDenseTextFile();
+        Iterator<MatrixEntry> it = new DenseTextFileIterator(f);
 
         while (it.hasNext())
             it.next();
@@ -54,24 +54,31 @@ public class MatlabSparseFileIteratorTests {
     }
 
     @Test public void testIterator() throws Exception {
-        File f = getMatlabFile();
-        Iterator<MatrixEntry> it = new MatlabSparseFileIterator(f);
+        File f = getDenseTextFile();
+        Iterator<MatrixEntry> it = new DenseTextFileIterator(f);
 
+        int count = 0;
         while (it.hasNext()) {
-            MatrixEntry me = it.next();
-            int row = me.row();
-            int column = me.column();
-            assertEquals(testMatrix[row][column], me.value(), .01);
+            MatrixEntry entry = it.next();
+            int row = entry.row();
+            int col = entry.column();
+            assertEquals(testMatrix[row][col], entry.value(), .01);
+            count++;
         }
-        assertFalse(it.hasNext());
+
+        assertEquals(testMatrix.length * testMatrix[0].length, count);
     }
-    
-    public static File getMatlabFile() throws Exception {
+
+    public static File getDenseTextFile() throws Exception {
         File f = File.createTempFile("unit-test",".dat");
         PrintWriter pw = new PrintWriter(f);
-        for (int r = 0; r < testMatrix.length; ++r)
+        
+        for (int r = 0; r < testMatrix.length; ++r) {
             for (int c = 0; c < testMatrix[0].length; ++c)
-                pw.printf("%d %d %f\n", r+1, c+1, testMatrix[r][c]);
+                pw.printf("%f ", (float)testMatrix[r][c]);
+            pw.println();
+        }
+
         pw.close();
         return f;
     }

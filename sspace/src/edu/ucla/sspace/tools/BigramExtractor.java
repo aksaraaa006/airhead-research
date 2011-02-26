@@ -23,10 +23,9 @@ package edu.ucla.sspace.tools;
 
 import edu.ucla.sspace.common.ArgOptions;
 
-import edu.ucla.sspace.mains.LoggerUtil;
-
 import edu.ucla.sspace.text.IteratorFactory;
 
+import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.TrieMap;
 
 import java.io.BufferedReader;

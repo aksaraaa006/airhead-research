@@ -78,13 +78,13 @@ public class AtomicGrowingSparseHashMatrixTests {
     @Test public void testSet() {
         Matrix m = new AtomicGrowingSparseHashMatrix();
         m.set(100, 100, 0);
-        GenericMatrixTests.testSet(m);
+        GenericMatrixUtil.testSet(m);
     }
 
     @Test public void testGet() {
         Matrix m = new AtomicGrowingSparseHashMatrix();
         m.set(100, 100, 0);
-        GenericMatrixTests.testGet(m);
+        GenericMatrixUtil.testGet(m);
     }
 
     @Test public void testRowVector() {
