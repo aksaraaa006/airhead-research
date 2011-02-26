@@ -57,6 +57,8 @@ import java.util.NoSuchElementException;
  *
  * This class with automatically close the stream up on finishing or upon error.
  * All {@link IOException} instances are rethrown as {@link IOError}.
+ *
+ * @author David Jurgens
  */
 public class LineReader implements Iterable<String> {
 
