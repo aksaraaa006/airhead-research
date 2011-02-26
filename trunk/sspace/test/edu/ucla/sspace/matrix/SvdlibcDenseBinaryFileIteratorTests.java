@@ -29,24 +29,24 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class MatlabSparseFileIteratorTests {
+public class SvdlibcDenseBinaryFileIteratorTests {
 
     private static final double[][] testMatrix = {
-        {2.3, 0, 4.2},
-        {0, 1.3, 2.2},
-        {3.8, 0, 0.5}};
-
+        {1.5, 0.0, 2.5},
+        {0.0, 1.1, 3.1},
+        {1.1, 3.3, 4.1}};
+    
     @Test(expected=UnsupportedOperationException.class)
     public void testRemove() throws Exception {
-        File f = getMatlabFile();
-        Iterator<MatrixEntry> it = new MatlabSparseFileIterator(f);
+        File f = getDenseBinarySVDLIBCFile();
+        Iterator<MatrixEntry> it = new SvdlibcDenseBinaryFileIterator(f);
         it.remove();
     }
 
     @Test(expected=NoSuchElementException.class)
     public void testEmptyNext() throws Exception {
-        File f = getMatlabFile();
-        Iterator<MatrixEntry> it = new MatlabSparseFileIterator(f);
+        File f = getDenseBinarySVDLIBCFile();
+        Iterator<MatrixEntry> it = new SvdlibcDenseBinaryFileIterator(f);
 
         while (it.hasNext())
             it.next();
@@ -54,25 +54,34 @@ public class MatlabSparseFileIteratorTests {
     }
 
     @Test public void testIterator() throws Exception {
-        File f = getMatlabFile();
-        Iterator<MatrixEntry> it = new MatlabSparseFileIterator(f);
+        File f = getDenseBinarySVDLIBCFile();
+        Iterator<MatrixEntry> it = new SvdlibcDenseBinaryFileIterator(f);
 
+        int count = 0;
         while (it.hasNext()) {
-            MatrixEntry me = it.next();
-            int row = me.row();
-            int column = me.column();
-            assertEquals(testMatrix[row][column], me.value(), .01);
+            MatrixEntry entry = it.next();
+            int row = entry.row();
+            int col = entry.column();
+            assertEquals(testMatrix[row][col], entry.value(), .01);
+            count++;
         }
-        assertFalse(it.hasNext());
+
+        assertEquals(testMatrix.length * testMatrix[0].length, count);
     }
     
-    public static File getMatlabFile() throws Exception {
+
+    public static File getDenseBinarySVDLIBCFile() throws Exception {
         File f = File.createTempFile("unit-test",".dat");
-        PrintWriter pw = new PrintWriter(f);
+        DataOutputStream dos = new DataOutputStream(new FileOutputStream(f));
+        
+        dos.writeInt(testMatrix.length);
+        dos.writeInt(testMatrix[0].length);
+
         for (int r = 0; r < testMatrix.length; ++r)
             for (int c = 0; c < testMatrix[0].length; ++c)
-                pw.printf("%d %d %f\n", r+1, c+1, testMatrix[r][c]);
-        pw.close();
+                dos.writeFloat((float)testMatrix[r][c]);
+
+        dos.close();
         return f;
     }
 }

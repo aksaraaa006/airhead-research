@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.matrix;
 
+import edu.ucla.sspace.vector.SparseDoubleVector;
+
 import java.io.*;
 import java.util.*;
 
@@ -29,71 +31,57 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class SvdlibcSparseBinaryFileIteratorTests {
-
-   @Test(expected=UnsupportedOperationException.class)
-    public void testRemove() throws Exception {
-        File f = getSparseBinarySVDLIBCFile();
-        Iterator<MatrixEntry> it = new SvdlibcSparseBinaryFileIterator(f);
-        it.remove();
-    }
-
-    @Test(expected=NoSuchElementException.class)
-    public void testEmptyNext() throws Exception {
-        File f = getSparseBinarySVDLIBCFile();
-        Iterator<MatrixEntry> it = new SvdlibcSparseBinaryFileIterator(f);
-
-        while (it.hasNext())
-            it.next();
-        it.next();
-    }
+public class SvdlibcSparseBinaryFileRowIteratorTests {
 
     @Test public void testIterator() throws Exception {
         File f = getSparseBinarySVDLIBCFile();
-        Iterator<MatrixEntry> it = new SvdlibcSparseBinaryFileIterator(f);
-        MatrixEntry me = it.next();
-        // Col 0
-        assertEquals(0, me.column());
-        assertEquals(0, me.row());
-        me = it.next();
-        assertEquals(0, me.column());
-        assertEquals(2, me.row());
-        me = it.next();
-        // Col 1
-        assertEquals(1, me.column());
-        assertEquals(1, me.row());
-        me = it.next();
-        // Col 2
-        assertEquals(2, me.column());
-        assertEquals(0, me.row());
-        me = it.next();
-        assertEquals(2, me.column());
-        assertEquals(1, me.row());
-        me = it.next();
-        assertEquals(2, me.column());
-        assertEquals(2, me.row());
+        Iterator<SparseDoubleVector> it =
+            new SvdlibcSparseBinaryFileRowIterator(f);
 
+        // Check row 1.
+        SparseDoubleVector vector = it.next();
+        assertEquals(2, vector.getNonZeroIndices().length);
+        assertEquals(2.3, vector.get(0), .0001);
+        assertEquals(3.8, vector.get(2), .0001);
+
+        // Check row 2.
+        vector = it.next();
+        assertEquals(1, vector.getNonZeroIndices().length);
+        assertEquals(1.3, vector.get(1), .0001);
+
+        // Check row 3.
+        vector = it.next();
+        assertEquals(3, vector.getNonZeroIndices().length);
+        assertEquals(4.2, vector.get(0), .0001);
+        assertEquals(2.2, vector.get(1), .0001);
+        assertEquals(0.5, vector.get(2), .0001);
+
+        // Check that there are no more rows.
         assertFalse(it.hasNext());
     }
-    
 
     public static File getSparseBinarySVDLIBCFile() throws Exception {
         File f = File.createTempFile("unit-test",".dat");
         DataOutputStream pw = new DataOutputStream(new FileOutputStream(f));
+
+        // Write the header data.
         pw.writeInt(3);
         pw.writeInt(3);
         pw.writeInt(6);
 
+        // Write row 1.
         pw.writeInt(2);
         pw.writeInt(0);
         pw.writeFloat(2.3f);
         pw.writeInt(2);
         pw.writeFloat(3.8f);
 
+        // Write row 2.
         pw.writeInt(1);
         pw.writeInt(1);
         pw.writeFloat(1.3f);
 
+        // Write row 3.
         pw.writeInt(3);
         pw.writeInt(0);
         pw.writeFloat(4.2f);

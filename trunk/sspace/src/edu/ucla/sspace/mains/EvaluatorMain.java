@@ -45,6 +45,8 @@ import edu.ucla.sspace.evaluation.WordSimilarityReport;
 import edu.ucla.sspace.evaluation.WordPrimingReport;
 import edu.ucla.sspace.evaluation.WordPrimingTest;
 
+import edu.ucla.sspace.util.LoggerUtil;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

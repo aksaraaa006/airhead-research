@@ -22,38 +22,32 @@
 package edu.ucla.sspace.esa;
 
 import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.common.GenericTermDocumentVectorSpace;
 
-import edu.ucla.sspace.matrix.GrowingSparseMatrix;
-import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.MatrixBuilder;
+import edu.ucla.sspace.matrix.MatrixFile;
+import edu.ucla.sspace.matrix.MatrixIO;
+import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.SvdlibcSparseBinaryMatrixBuilder;
+import edu.ucla.sspace.matrix.TfIdfTransform;
 
-import edu.ucla.sspace.vector.CompactSparseVector;
-import edu.ucla.sspace.vector.DenseVector;
-import edu.ucla.sspace.vector.DoubleVector;
-import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.util.GrowableArrayList;
+import edu.ucla.sspace.util.SparseArray;
+import edu.ucla.sspace.util.SparseHashArray;
+
+import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.Vectors;
 
-import edu.ucla.sspace.text.IteratorFactory;
-
-import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -72,144 +66,108 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens 
  */
-public class ExplicitSemanticAnalysis implements SemanticSpace {
+public class ExplicitSemanticAnalysis extends GenericTermDocumentVectorSpace {
+
     public static final String ESA_SSPACE_NAME =
         "esa-semantic-space";
 
     /**
-     * The logger for this class based on the fully qualified class name
+     * A mapping from document indices to document labels.  This {@link List}
+     * must both be thread safe and able to dynamically grow it's current length
+     * since multiple calls to {@link List#set} can be made in parallel, and the
+     * final number of documents is unknown.
      */
-    private static final Logger ESA_LOGGER = 
-        Logger.getLogger(ExplicitSemanticAnalysis.class.getName());
-        
-    /**
-     * The term by wiki article occurrence matrix.  This field is set in
-     * {@link processDocument(BufferedReader) processDocument}.
-     */
-    private SparseMatrix termWikiMatrix;
+    private final List<String> documentLabels;
 
     /**
-     * A mapping from a term to it's row index in {@code termWikiMatrix}.
+     * Constructs a new {@link ExplicitSemanticAnalysis} instance.
      */
-    private final ConcurrentMap<String, Integer> termToIndex;
+    public ExplicitSemanticAnalysis() throws IOException {
+        super(true, new ConcurrentHashMap<String, Integer>(),
+              new SvdlibcSparseBinaryMatrixBuilder());
 
-    /**
-     * The total number of articles seen so far.
-     */
-    private AtomicInteger articleCount;
-
-    /**
-     * The total number of terms seen so far.
-     */
-    private AtomicInteger termCounter;
-
-    public ExplicitSemanticAnalysis() {
-        termToIndex = new ConcurrentHashMap<String, Integer>();
-        termWikiMatrix = new GrowingSparseMatrix();
-        articleCount = new AtomicInteger(0);
-        termCounter = new AtomicInteger(0);
+        // We use a synchronized and growable array list in order to save space.
+        // Since the GrowableArrayList does the growing whenever set is called,
+        // the number of synchronization calls are minimized.
+        documentLabels = Collections.synchronizedList(
+                new GrowableArrayList<String>());
     }
 
     /**
-     * Parses the provided Wikipedia article.
+     * Constructs a new {@code ExplicitSemanticAnalysis} using the provided
+     * objects for processing.
      *
-     * @param article A wikipedia article.
+     * @param termToIndex The {@link ConcurrentMap} used to map strings to
+     *        indices.
+     * @param termDocumentMatrixBuilder The {@link MatrixBuilder} used to write
+     *        document vectors to disk which later get processed in {@link
+     *        #processSpace(Properties) processSpace}.
+     *
+     * @throws IOException if this instance encounters any errors when creatng
+     *         the backing array files required for processing
      */
-    public void processDocument(BufferedReader article) throws IOException {
-        Map<String, Integer> termCounts =
-            new LinkedHashMap<String, Integer>(1 << 10, 16f);    
+    public ExplicitSemanticAnalysis(
+            ConcurrentMap<String, Integer> termToIndex,
+            MatrixBuilder termDocumentMatrixBuilder) throws IOException {
+        super(true, termToIndex, termDocumentMatrixBuilder);
 
-        Iterator<String> articleTokens = IteratorFactory.tokenize(article);
+        // We use a synchronized and growable array list in order to save space.
+        // Since the GrowableArrayList does the growing whenever set is called,
+        // the number of synchronization calls are minimized.
+        documentLabels = Collections.synchronizedList(
+                new GrowableArrayList<String>());
+    }
 
-        if (!articleTokens.hasNext())
-            return;
+    /**
+     * Stores {@link header} at index {@link docIndex}.
+     */
+    protected void handleDocumentHeader(int docIndex, String header) {
+        documentLabels.set(docIndex, header);
+    }
 
-        String articleName = articleTokens.next();
+    /**
+     * Returns a {@link SparseArray} containing document labels for any non zero
+     * value in the given {@link Vector}.  The given {@link Vector}s are
+     * expected to have the same dimensionality as this {@link
+     * ExplicitSemanticAnalysis} word space.  Under ESA, these returned document
+     * labels can be considered the wikipedia articles that best describe the
+     * vector created by combining each of the term vectors in a fragment of
+     * text.
+     */
+    public SparseArray<String> getDocumentDescriptors(Vector documentVector) {
+        if (documentVector.length() != getVectorLength())
+            throw new IllegalArgumentException(
+                    "An documentVector with an invalid length cannot be " +
+                    "interpreted by ESA.");
 
-        // for each word in the text article, keep a count of how many
-        // times it has occurred
-        while (articleTokens.hasNext()) {
-            String word = articleTokens.next();
-                
-            // Add the term to the total list of terms to ensure it has a
-            // proper index.  If the term was already added, this method is
-            // a no-op
-            addTerm(word);
-            Integer termCount = termCounts.get(word);
+        SparseArray<String> docLabels = new SparseHashArray<String>();
 
-            // update the term count
-            termCounts.put(word, (termCount == null) 
-                    ? Integer.valueOf(1)
-                    : Integer.valueOf(1 + termCount.intValue()));
+        // Extract the indices which are non zero and add the corresponding
+        // document label to docLabels.
+        if (documentVector instanceof SparseVector) {
+            int[] nonZeros = ((SparseVector) documentVector).getNonZeroIndices();
+            for (int index : nonZeros)
+                docLabels.set(index, documentLabels.get(index));
+        } else {
+            for (int index = 0; index < documentVector.length(); index++)
+                if (documentVector.getValue(index).doubleValue() != 0d)
+                    docLabels.set(index, documentLabels.get(index));
         }
 
-        article.close();
-
-        // check that we actually loaded in some terms before we increase the
-        // articleCount.    This could possibly save some dimensions in the
-        // final array for articles that were essentially blank.    If we didn't
-        // see any terms, just return 0
-        if (termCounts.isEmpty())
-            return;
-
-        int articleIndex = articleCount.getAndIncrement();
-
-        // Once the article has been fully parsed, output all of the sparse
-        // data points using the writer.    Synchronize on the writer to prevent
-        // any interleaving of output by other threads
-        synchronized(termWikiMatrix) {
-            for (Map.Entry<String, Integer> e : termCounts.entrySet()) {
-                String term = e.getKey();
-                int count = e.getValue().intValue();
-                int termIndex = termToIndex.get(term).intValue();
-                termWikiMatrix.set(termIndex, articleIndex, count);
-            }
-        }
+        return docLabels;
     }
 
     /**
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-        // Compute the TF-IDf score for each entry in the matrix.
-        int rows = termWikiMatrix.rows();
-        int cols = termWikiMatrix.columns();
-        DoubleVector docCounts = new DenseVector(cols);
-        for (int row = 0; row < rows; ++row) {
-            SparseDoubleVector v = termWikiMatrix.getRowVector(row);
-            for (int index : v.getNonZeroIndices())
-                docCounts.add(index, v.get(index));
-        }
-
-        for (int row = 0; row < rows; ++row) {
-            SparseDoubleVector v = termWikiMatrix.getRowVector(row);
-            int[] nonZero = v.getNonZeroIndices();
-
-            double idf = Math.log(articleCount.get() / nonZero.length);
-            for (int index : nonZero) {
-                double tf = v.get(index) * docCounts.get(index);
-                v.set(index, tf * idf);
-            }
-        }
-    }
-
-    /**
-     * Adds the term to the list of terms and gives it an index, or if the term
-     * has already been added, does nothing.
-     */
-    private void addTerm(String term) {
-        Integer index = termToIndex.get(term);
-        if (index == null) {
-            synchronized(this) {
-                // recheck to see if the term was added while blocking
-                index = termToIndex.get(term);
-
-                // if some other thread has not already added this term while
-                // the current thread was blocking waiting on the lock, then add
-                // it.
-                if (index == null)
-                    termToIndex.put(term, termCounter.getAndIncrement());
-            }
+        try {
+            MatrixFile processedSpace = processSpace(
+                    new TfIdfTransform());
+            wordSpace = MatrixIO.readMatrix(
+                    processedSpace.getFile(), processedSpace.getFormat());
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
         }
     }
 
@@ -219,29 +177,4 @@ public class ExplicitSemanticAnalysis implements SemanticSpace {
     public String getSpaceName() {
         return ESA_SSPACE_NAME;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public int getVectorLength() {
-        return articleCount.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Vector getVector(String word) {
-        Integer index = termToIndex.get(word);
-        if (index != null)
-            return Vectors.immutable(
-                    termWikiMatrix.getRowVector(index.intValue()));
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Set<String> getWords() {
-        return Collections.unmodifiableSet(termToIndex.keySet());
-    }        
 }
