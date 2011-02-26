@@ -42,7 +42,7 @@ import java.util.logging.Logger;
  *   level for normal output.</td></tr>
  *
  *   <tr><td>{@link Level.FINE}</td><td>Information about the current state of
- *   document processin, or detailed information about the state of the semantic
+ *   document processing, or detailed information about the state of the semantic
  *   space.  This level should be used for verbose output.</td></tr>
 
  *   <tr><td>{@link Level.FINER}</td><td>Detailed information about the current

@@ -29,6 +29,9 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
+import edu.ucla.sspace.matrix.OnDiskMatrix;
+
+import edu.ucla.sspace.util.WorkQueue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,6 +42,7 @@ import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -46,6 +50,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,12 +77,12 @@ import java.util.logging.Logger;
  * process.  For example, to view the clustering solution after four steps, the
  * following code might be used:
  *
- *<pre>
+ *<pre name="code" class="java:nocontrols:nogutter">
  *   Matrix matrix; 
- *   List<Merge> merges = buildDendogram(matrix, ...);
- *   List<Merge> fourMergeSteps = merges.subList(0, 4);
- *   MultiMap<Integer,Integer> clusterToRows =  new HashMultiMap<Integer,Integer>();
- *   for (int i = 0; i < matrix.rows(); ++i)
+ *   List&lt;Merge&gt; merges = buildDendogram(matrix, ...);
+ *   List&lt;Merge&gt; fourMergeSteps = merges.subList(0, 4);
+ *   MultiMap&lt;Integer,Integer&gt; clusterToRows =  new HashMultiMap&lt;Integer,Integer&gt;();
+ *   for (int i = 0; i &lt; matrix.rows(); ++i)
  *       clusterToElements.put(i, i);
  *
  *   for (Merge m : fourMergeSteps) {
@@ -118,7 +126,7 @@ import java.util.logging.Logger;
  *
  * <dt> <i>Property:</i> <code><b>{@value #SIMILARITY_FUNCTION_PROPERTY}
  *      </b></code> <br>
- *      <i>Default:</i> {@link SimType#COSINE}
+ *      <i>Default:</i> {@link SimType#COSINE COSINE}
  *
  * <dd style="padding-top: .5em"> This property specifies the name of {@link
  *       SimType} to use when computing the similarity of two data points. </p>
@@ -224,6 +232,11 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
      */
     private static final Logger LOGGER =
         Logger.getLogger(HierarchicalAgglomerativeClustering.class.getName());
+
+    /**
+     * The work used by all HAC instances to perform multi-threaded operations.
+     */
+    private static final WorkQueue WORK_QUEUE = new WorkQueue();
 
     /**
      * {@inheritDoc}
@@ -543,11 +556,11 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
 
 
     /**
-     * Builds a dendrogram of the rows of similarity matrix by iteratelyve
+     * Builds a dendrogram of the rows of similarity matrix by iteratively
      * linking each row according to the linkage policy in a bottom up manner.
      * The dendrogram is represented as a series of merge steps for the rows of
      * the similarity matrix, where each row is initially assigned to its own
-     * cluster. 
+     * cluster.
      *
      * @param similarityMatrix a square matrix whose (i, j) values denote the
      *        similarity of row i to row j.
@@ -561,15 +574,22 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
      */
     public List<Merge> buildDendrogram(Matrix similarityMatrix, 
                                        ClusterLinkage linkage) {
+
         if (similarityMatrix.rows() != similarityMatrix.columns())
             throw new IllegalArgumentException(
                 "Similarity matrix must be square");
+
+        if (!(similarityMatrix instanceof OnDiskMatrix)) {
+            LOGGER.fine("Similarity matrix supports fast multi-threaded " +
+                        "access; switching to multi-threaded clustering");
+            return buildDendogramMultithreaded(similarityMatrix, linkage);
+        }
 
         int rows = similarityMatrix.rows();
 
         // Create the initial set of clusters where each row is originally in
         // its own cluster
-        Map<Integer,Set<Integer>> clusterAssignment = 
+        final Map<Integer,Set<Integer>> clusterAssignment = 
             generateInitialAssignment(rows);
 
         LOGGER.finer("Calculating initial inter-cluster similarity using " 
@@ -578,23 +598,23 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
         // similarity.  This mapping will be update as the number of clusters
         // are reduced, where merging a cluster will causes all the pairings
         // pointing to it constinuents recalculated.
-        Map<Integer,Pairing> clusterSimilarities =
+        final Map<Integer,Pairing> clusterSimilarities =
             new HashMap<Integer,Pairing>();
 
         // For each cluster, find the most similar cluster
         for (Integer clusterId : clusterAssignment.keySet()) {
             clusterSimilarities.put(clusterId,
-                 findMostSimilar(clusterAssignment, clusterId, 
-                                 linkage, similarityMatrix));
+                findMostSimilar(clusterAssignment, clusterId, 
+                                linkage, similarityMatrix));
         }
 
-
         LOGGER.finer("Assigning clusters");
-        List<Merge> merges = new ArrayList<Merge>(rows - 1);
-        
+        List<Merge> merges = new ArrayList<Merge>(rows - 1);       
 
         // Perform rows-1 merges to merge all elements
         for (int mergeIter = 0; mergeIter < rows - 1; ++mergeIter) {
+            LOGGER.finer("Computing dendogram merge" 
+                         + mergeIter + "/" + (rows-1));
 
             // Find the two clusters that have the highest similarity
             int cluster1index = 0;
@@ -698,7 +718,304 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
         }
 
         return merges;
+
     }
+
+    private List<Merge> buildDendogramMultithreaded(
+            final Matrix similarityMatrix, final ClusterLinkage linkage) {
+
+        int rows = similarityMatrix.rows();
+
+        // Create the initial set of clusters where each row is originally in
+        // its own cluster
+        final Map<Integer,Set<Integer>> clusterAssignment = 
+            generateInitialAssignment(rows);
+
+        LOGGER.finer("Calculating initial inter-cluster similarity using " 
+                    + linkage);
+        // Generate the initial set of cluster pairings based on the highest
+        // similarity.  This mapping will be update as the number of clusters
+        // are reduced, where merging a cluster will causes all the pairings
+        // pointing to it constinuents recalculated.
+        final Map<Integer,Pairing> clusterSimilarities =
+            new ConcurrentHashMap<Integer,Pairing>(clusterAssignment.size());
+
+        // For each cluster, find the most similar cluster.  Use the current
+        // thread as the task key so any other thread executing this method
+        // won't conflict.
+        Object taskKey = 
+            WORK_QUEUE.registerTaskGroup(clusterAssignment.size());
+        for (Integer clusterId : clusterAssignment.keySet()) {
+            final Integer clustId = clusterId;
+            WORK_QUEUE.add(taskKey, new Runnable() {
+                    public void run() {
+                          clusterSimilarities.put(clustId,
+                              findMostSimilar(clusterAssignment, clustId, 
+                                              linkage, similarityMatrix));
+                    }
+                });
+        }        
+        WORK_QUEUE.await(taskKey);
+
+        LOGGER.finer("Assigning clusters");
+        List<Merge> merges = new ArrayList<Merge>(rows - 1);
+        
+
+        // Perform rows-1 merges to merge all elements
+        for (int mergeIter = 0; mergeIter < rows - 1; ++mergeIter) {
+            LOGGER.finer("Computing dendogram merge " + mergeIter);
+            System.out.println("Computing dendogram merge " 
+                               + mergeIter + "/" + (rows-1));
+
+
+            // Find the two clusters that have the highest similarity
+            int cluster1index = 0;
+            int cluster2index = 0;
+            double highestSimilarity = -1;
+
+            // For each cluster, look at the cluster with the highest
+            // similarity, and select the two with the global max
+            for (Map.Entry<Integer,Pairing> e : 
+                     clusterSimilarities.entrySet()) {
+
+                Pairing p = e.getValue();
+                Integer i = e.getKey();
+                Integer j = p.pairedIndex;
+                if (p.similarity > highestSimilarity) {
+                    cluster1index = i;
+                    cluster2index = j;
+                    highestSimilarity = p.similarity;
+                }
+            }            
+
+            // Order the indices so that the smaller index is first
+            if (cluster1index > cluster2index) {
+                int tmp = cluster2index;
+                cluster2index = cluster1index;
+                cluster1index = tmp;
+            }
+
+            // Track that the two clusters will be merged.  Always use the lower
+            // of the two values as the new cluster assignment.
+            Merge merge = 
+                new Merge(cluster1index, cluster2index, highestSimilarity);
+            merges.add(merge);
+
+            final Set<Integer> cluster1 = clusterAssignment.get(cluster1index);
+            Set<Integer> cluster2 = clusterAssignment.get(cluster2index);
+
+            LOGGER.log(Level.FINER, 
+                       "Merged cluster {0} with {1}, similarity {2}",
+                       new Object[] { cluster1index, cluster2index, 
+                                      highestSimilarity });
+
+            // Update the cluster assignments, adding in elements from the
+            // second cluster and remove all references to the second merged-in
+            // cluster.
+            cluster1.addAll(cluster2);
+            clusterAssignment.remove(cluster2index);
+            clusterSimilarities.remove(cluster2index);
+
+            // When down to just one cluster, stop the iteration
+            if (clusterAssignment.size() == 1)
+                break;
+
+            // Recalculate the inter-cluster similarity of a cluster in two cases:
+            // 
+            // 1) a cluster that paired with either of these two (i.e. was most
+            // similar to one of them before the merge).  
+            //
+            // 2) the most similar cluster to the newly merged cluster
+            final ConcurrentNavigableMap<Double,Integer> mostSimilarMap 
+                = new ConcurrentSkipListMap<Double,Integer>();
+            // Use size()-1 as the number of tasks because we skip adding a task
+            // for computing the new cluster's similarity to itself
+            taskKey = 
+                WORK_QUEUE.registerTaskGroup(clusterSimilarities.size() - 1);
+
+            for (Map.Entry<Integer,Pairing> entry :
+                     clusterSimilarities.entrySet()) {
+                
+                // Thread-local state variables
+                final Map.Entry<Integer,Pairing> e = entry;
+                final Integer clusterId = e.getKey();
+                final Pairing p = e.getValue();
+                final int c1index = cluster1index;
+                final int c2index = cluster2index;
+
+                // Skip self comparisons for the merged clustering
+                if (clusterId == c1index)
+                    continue;
+                
+                WORK_QUEUE.add(taskKey, new Runnable() {
+                        public void run() {                            
+                            // Task-local state variables to use while
+                            // recalculating the similarities
+                            double mostSimilarToMerged = -1;
+                            Integer mostSimilarToMergedId = null;            
+
+                            // First, calculate the similarity between this
+                            // cluster and the newly merged cluster
+                            double simToNewCluster = 
+                                getSimilarity(similarityMatrix, cluster1,
+                                              clusterAssignment.get(clusterId), 
+                                              linkage);
+
+                            // If this cluster is now the most similar to
+                            // the newly-merged cluster update its mapping
+                            if (simToNewCluster > mostSimilarToMerged) {
+                                mostSimilarToMerged = simToNewCluster;
+                                mostSimilarToMergedId = clusterId;
+                            }
+
+                            // Second, if the pair was previously paired with
+                            // one of the merged clusters, recompute what its
+                            // most similar is
+                            if (p.pairedIndex == c1index 
+                                    || p.pairedIndex == c2index) {
+                                // Reassign with the new most-similar
+                                e.setValue(findMostSimilar(clusterAssignment,
+                                         clusterId, linkage, similarityMatrix));
+                            }
+                      
+                            // Once all of the cluster for this thread has been
+                            // processed, update the similarity map.
+                            mostSimilarMap.put(mostSimilarToMerged,
+                                               mostSimilarToMergedId);
+                        }
+                    });
+            }
+            
+            // Run each thread's comparisons
+            WORK_QUEUE.await(taskKey);
+
+            // Collect the results from the similarity map.  The highest
+            // similarity should be the largest key in the map, with the
+            // clustering as the value.  Note that if there were ties in the
+            // highest similarity, the cluster is selected by the last thread,
+            // which is still arbitrarily fair.
+            Map.Entry<Double,Integer> highest = mostSimilarMap.lastEntry();
+        
+            // Update the new most similar to the newly-merged cluster
+            clusterSimilarities.put(cluster1index, 
+                                    new Pairing(highest.getKey(), 
+                                                highest.getValue()));
+        }
+
+        return merges;
+    }
+
+    /*
+            // Recalculate the inter-cluster similarity of a cluster in two cases:
+            // 
+            // 1) a cluster that paired with either of these two (i.e. was most
+            // similar to one of them before the merge).  
+            //
+            // 2) the most similar cluster to the newly merged cluster
+            Collection<Runnable> similarityTasks = new ArrayList<Runnable>();
+            
+            // Dump the map's entries into a list so we can partition them among
+            // different processing threads.  Although it's a linear operation,
+            // this avoids two potential issues: (1) Having to create a new
+            // Runnable for each comparison, and (2) Having a large number of
+            // concurrent writes trying to update the most-similar value
+            // (high-write contention).
+            List<Map.Entry<Integer,Pairing>> toPartition = 
+                new ArrayList<Map.Entry<Integer,Pairing>>(
+                    clusterSimilarities.entrySet());
+
+            int numThreads = WORK_QUEUE.numThreads();
+            int comparisonsPerThread = toPartition.size() / numThreads;
+
+            final ConcurrentNavigableMap<Double,Integer> mostSimilarMap 
+                = new ConcurrentSkipListMap<Double,Integer>();
+
+            final int c1index = cluster1index;
+            final int c2index = cluster2index;
+
+            for (int th = 0; th < numThreads; ++th) {
+                int start = th * comparisonsPerThread;
+                int end = Math.min((th + 1) * comparisonsPerThread, 
+                                   toPartition.size());
+                final List<Map.Entry<Integer,Pairing>> clustersToUpdate =
+                    toPartition.subList(start, end);                               
+                
+                similarityTasks.add(new Runnable() {
+                        public void run() {
+                            
+                            // Thread-local state variables to use while
+                            // recalculating the similarities
+                            double mostSimilarToMerged = -1;
+                            Integer mostSimilarToMergedId = null;            
+
+                            for (Map.Entry<Integer,Pairing> e :
+                                     clustersToUpdate) {
+
+                                Integer clusterId = e.getKey();
+                                Pairing p = e.getValue();
+
+                                // Skip self comparisons for the merged
+                                // clustering
+                                if (clusterId == c1index)
+                                    continue;
+
+                                // First, calculate the similarity between this
+                                // cluster and the newly merged cluster
+                                double simToNewCluster = 
+                                    getSimilarity(similarityMatrix, cluster1,
+                                              clusterAssignment.get(clusterId), 
+                                              linkage);
+
+                                // If this cluster is now the most similar to
+                                // the newly-merged cluster update its mapping
+                                if (simToNewCluster > mostSimilarToMerged) {
+                                    mostSimilarToMerged = simToNewCluster;
+                                    mostSimilarToMergedId = clusterId;
+                                }
+
+                                // Second, if the pair was previously paired with
+                                // one of the merged clusters, recompute what its
+                                // most similar is
+                                if (p.pairedIndex == c1index 
+                                        || p.pairedIndex == c2index) {
+                                    // Reassign with the new most-similar
+                                    e.setValue(findMostSimilar(
+                                                  clusterAssignment,
+                                                  clusterId, linkage, 
+                                                  similarityMatrix));
+                                }
+                            }
+
+                            // Once all of the clusters for this thread have
+                            // been processed, update the similarit map.  We do
+                            // this last to minimize the contention on the map
+                            mostSimilarMap.put(mostSimilarToMerged,
+                                               mostSimilarToMergedId);
+                        }
+                    });
+            }
+            
+            // Run each thread's comparisons
+            WORK_QUEUE.run(similarityTasks);
+
+            // Collect the results from the similarity map.  The highest
+            // similarity should be the largest key in the map, with the
+            // clustering as the value.  Note that if there were ties in the
+            // highest similarity, the cluster is selected by the last thread,
+            // which is still arbitrarily fair.
+            Map.Entry<Double,Integer> highest = mostSimilarMap.lastEntry();
+        
+            // Update the new most similar to the newly-merged cluster
+            clusterSimilarities.put(cluster1index, 
+                                    new Pairing(highest.getKey(), 
+                                                highest.getValue()));
+        }
+
+        return merges;
+    }
+
+     */
+
 
     /**
      * For the current cluster, finds the most similar cluster using the
