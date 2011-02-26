@@ -132,15 +132,15 @@ public class RelationPathBasisMapping implements DependencyPathBasisMapping {
     /**
      * {@inheritDoc}
      */
-    public void setReadOnly() {
-        readOnly = true;
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void unsetReadOnly() {
-        readOnly = false;
+    public boolean isReadOnly() {
+        return readOnly;
     }
 
     /**

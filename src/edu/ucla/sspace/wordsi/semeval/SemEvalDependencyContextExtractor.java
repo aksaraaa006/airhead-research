@@ -19,7 +19,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.wordsi;
+package edu.ucla.sspace.wordsi.semeval;
+
+import edu.ucla.sspace.wordsi.DependencyContextExtractor;
+import edu.ucla.sspace.wordsi.DependencyContextGenerator;
+import edu.ucla.sspace.wordsi.Wordsi;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
 import edu.ucla.sspace.dependency.DependencyTreeNode;
@@ -38,39 +42,39 @@ import java.io.IOException;
  *
  * @author Keith Stevens
  */
-public class SenseEvalDependencyContextExtractor
-    extends DependencyContextExtractor  {
+public class SemEvalDependencyContextExtractor
+        extends DependencyContextExtractor {
 
-  /**
-   * Creates a new {@link SenseEvalDependencyContextExtractor}.
-   *
-   * @param extractor The {@link DependencyExtractor} that parses the document
-   *        and returns a valid dependency tree
-   * @param basisMapping A mapping from dependency paths to feature indices
-   * @param weighter A weighting function for dependency paths
-   * @param acceptor An accepting function that validates dependency paths which
-   *        may serve as features
-   */
-  public SenseEvalDependencyContextExtractor(
-      DependencyExtractor extractor,
-      DependencyContextGenerator generator) {
-    super(extractor, generator, true);
-  }
+    /**
+     * Creates a new {@link SemEvalDependencyContextExtractor}.
+     *
+     * @param extractor The {@link DependencyExtractor} that parses the document
+     *        and returns a valid dependency tree
+     * @param basisMapping A mapping from dependency paths to feature indices
+     * @param weighter A weighting function for dependency paths
+     * @param acceptor An accepting function that validates dependency paths
+     *        which may serve as features
+     */
+    public SemEvalDependencyContextExtractor(
+            DependencyExtractor extractor,
+            DependencyContextGenerator generator) {
+        super(extractor, generator, true);
+    }
 
-  /**
-   * Returns true if the {@code focusWord} equals the {@code contextHeader}.
-   */
-  protected boolean acceptWord(DependencyTreeNode focusNode,
-                               String contextHeader,
-                               Wordsi wordsi) {
-    return focusNode.lemma().equals(contextHeader);
-  }
+    /**
+     * Returns true if the {@code focusWord} equals the {@code contextHeader}.
+     */
+    protected boolean acceptWord(DependencyTreeNode focusNode,
+                                 String contextHeader,
+                                 Wordsi wordsi) {
+        return focusNode.lemma().equals(contextHeader);
+    }
 
-  /**
-   * Returns the word of the {@code focusNode}
-   */
-  protected String getSecondaryKey(DependencyTreeNode focusNode,
-                                   String contextHeader) {
-    return focusNode.lemma();
-  }
+    /**
+     * Returns the word of the {@code focusNode}
+     */
+    protected String getSecondaryKey(DependencyTreeNode focusNode,
+                                     String contextHeader) {
+        return focusNode.lemma();
+    }
 }

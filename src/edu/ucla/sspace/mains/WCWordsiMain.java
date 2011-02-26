@@ -36,7 +36,6 @@ import edu.ucla.sspace.wordsi.ContextExtractor;
 import edu.ucla.sspace.wordsi.ContextGenerator;
 import edu.ucla.sspace.wordsi.GeneralContextExtractor;
 import edu.ucla.sspace.wordsi.WordOccrrenceContextGenerator;
-import edu.ucla.sspace.wordsi.SenseEvalContextExtractor;
 
 import java.util.Map;
 

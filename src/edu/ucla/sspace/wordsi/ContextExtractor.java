@@ -28,7 +28,7 @@ import java.io.BufferedReader;
  * An interface for extracting context vectors from a document and passing on
  * the vector to a {@link Wordsi} implementation.  Implementations are
  * recomended to use either a {@link ContextGenerator} or a {@link BasisMapping}
- * that is serializable.  Use of a {@link ContextGenerator} or {@link
+ * that is serializable.  Use of a {@link ContextGenerator} or a {@link
  * BasisMapping} separates the feature space from the text traveral, allowing
  * the feature space to be reused, even if a different text traversal method
  * needs to be used.
@@ -37,16 +37,16 @@ import java.io.BufferedReader;
  */
 public interface ContextExtractor {
 
-  /**
-   * Processes the content of {@code document} and calls {@link
-   * Wordsi#handleContextVector} for each context vector that can be extracted
-   * from {@code document}.
-   */
-  void processDocument(BufferedReader document, Wordsi wordsi);
+    /**
+     * Processes the content of {@code document} and calls {@link
+     * Wordsi#handleContextVector} for each context vector that can be extracted
+     * from {@code document}.
+     */
+    void processDocument(BufferedReader document, Wordsi wordsi);
 
-  /**
-   * Returns the maximum number of dimensions used to represent any given
-   * context.
-   */
-  int getVectorLength();
+    /**
+     * Returns the maximum number of dimensions used to represent any given
+     * context.
+     */
+    int getVectorLength();
 }

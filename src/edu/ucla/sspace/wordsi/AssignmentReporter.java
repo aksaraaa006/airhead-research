@@ -25,9 +25,9 @@ import java.io.OutputStream;
 
 
 /**
- * An interface for reporting the results of a {@link Wordsi} run.  Reports can
+ * An interface for reporting the results of a {@link Wordsi} run. Reports can
  * take several forms, such as the number of times each word was assigned to
- * each cluster or  something similar to the SenseEval/SemEval word sense
+ * each cluster or something similar to the SenseEval/SemEval word sense
  * induction output, which requires a cluster labeling for each word context
  * generated.
  *
@@ -35,15 +35,38 @@ import java.io.OutputStream;
  */
 public interface AssignmentReporter {
 
-  /**
-   * Updates the assignment report with the knowledge that {@code primaryKey}
-   * and {@code secondaryKey} were associated with {@code clusterId} once.
-   */
-  void updateAssignment(String primaryKey, String secondaryKey, int clusterId);
+    /**
+     * Updates the assignment report with the knowledge that {@code primaryKey}
+     * and {@code secondaryKey} were associated with {@code clusterId} once.
+     */
+    void updateAssignment(String primaryKey,
+                          String secondaryKey,
+                          int clusterId);
 
-  /**
-   * Finalizes the assignment report.  Any output streams must be closed and any
-   * unreported data must be reported.
-   */
-  void finalizeReport();
+    /**
+     * Finalizes the assignment report.  Any output streams must be closed and
+     * any unreported data must be reported.
+     */
+    void finalizeReport();
+
+    /**
+     * Records a contexts identifier for an instance of {@code primaryKey}.  The
+     * identifies recorded are{@code secondaryKey} and {@code contextId}.
+     * {@code secondaryKey} can be any string.  {@code contextId} can should be
+     * between 0 and the total number of contexts that will be observed, i.e.
+     * contexts for a single {@code primaryKey} simply get idsj based on the
+     * order in which they are processed.
+     */
+    void assignContextToKey(String primaryKey,
+                            String secondaryKey,
+                            int contextId);
+
+    /**
+     * Returns the secondary keys assigned to this {@code primaryKey} based on
+     * their associated context ids.  This list can be used if a {@link Wordsi}
+     * algorithm needs to report it's clustering assignments.  Reporting
+     * SenseEval/SemEval or Pseudo Word Disambiguation assignments are two good
+     * use cases which require this functionality.
+     */
+    String[] contextLabels(String primaryKey);
 }

@@ -32,150 +32,66 @@ import java.io.BufferedReader;
 
 
 /**
- * A base impelementation of {@link Wordsi}.  This base class manages the set of
- * acceptable words and secondary key assignments.
+ * This base class accepts or rejects key words based on a set of {@code
+ * acceptedWords} and dispatches calls to a {@link ContextExtractor} so that
+ * {@link Wordsi} sub-classes will be called with each generated vector.
  *
  * @author Keith Stevens
  */
 public abstract class BaseWordsi implements Wordsi, SemanticSpace {
 
-  /**
-   * The set of words which should be represented by {@link Wordsi}.
-   */
-  private final Set<String> acceptedWords;
+    /**
+     * The set of words which should be represented by {@link Wordsi}.
+     */
+    private final Set<String> acceptedWords;
 
-  /**
-   * A mapping from primary keys to secondary keys to the set of data point ids
-   * that were assigned to each secondary key.
-   */
-  private final Map<String, Map<String, BitSet>> contextAssignments;
-  
-  /**
-   * If true, the assignments made to secondary keys will be tracked, if false,
-   * no tracking will be made.
-   */
-  private final boolean trackSecondaryKeys;
+    /**
+     * The {@link ContextExtractor} responsible for parsing documents and creating
+     * context vectors.
+     */
+    private ContextExtractor extractor;
 
-  /**
-   * The {@link ContextExtractor} responsible for parsing documents and creating
-   * context vectors.
-   */
-  private ContextExtractor extractor;
-
-  /**
-   * Creates a new {@link BaseWordsi}.
-   *
-   * @param acceptedWords The set of words which {@link Wordsi} should
-   *        represent, may be {@code null} or empty.
-   * @param trackSecondaryKeys If true, secondary key assignments will be
-   *        tracked
-   */
-  public BaseWordsi(Set<String> acceptedWords,
-                    ContextExtractor extractor,
-                    boolean trackSecondaryKeys) {
-    this.acceptedWords = acceptedWords;
-    this.extractor = extractor;
-    this.trackSecondaryKeys = trackSecondaryKeys;
-
-    contextAssignments = new HashMap<String, Map<String, BitSet>>();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public boolean acceptWord(String word) {
-    return acceptedWords == null || 
-           acceptedWords.isEmpty() ||
-           acceptedWords.contains(word);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public String getSpaceName() {
-    return "Wordsi";
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public int getVectorLength() {
-    return extractor.getVectorLength();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public void processDocument(BufferedReader document) {
-    extractor.processDocument(document, this);
-  }
-
-  /**
-   * Records an assignment of {@code contextId} to {@code secondaryKey} and
-   * {@code primaryKey}.
-   */
-  protected void mapSecondaryKey(String secondaryKey,
-                                 String primaryKey,
-                                 int contextId) {
-    // Don't make the mapping if tracking is not set.
-    if (!trackSecondaryKeys)
-      return;
-
-    // Get the mapping from secondary keys to context ids.
-    Map<String, BitSet> termContexts = contextAssignments.get(primaryKey);
-    if (termContexts == null) {
-      synchronized (this) {
-        termContexts = contextAssignments.get(primaryKey);
-        if (termContexts == null) {
-          termContexts = new HashMap<String, BitSet>();
-          contextAssignments.put(primaryKey, termContexts);
-        }
-      }
+    /**
+     * Creates a new {@link BaseWordsi}.
+     *
+     * @param acceptedWords The set of words which {@link Wordsi} should
+     *        represent, may be {@code null} or empty.
+     * @param trackSecondaryKeys If true, secondary key assignments will be
+     *        tracked
+     */
+    public BaseWordsi(Set<String> acceptedWords,
+                      ContextExtractor extractor) {
+        this.acceptedWords = acceptedWords;
+        this.extractor = extractor;
     }
 
-    // Get the set of context id's made to the secondary key.
-    BitSet contextIds = termContexts.get(secondaryKey);
-    if (contextIds == null) {
-      synchronized (this) { 
-        contextIds = termContexts.get(secondaryKey);
-        if (contextIds == null) {
-          contextIds = new BitSet();
-          termContexts.put(secondaryKey, contextIds);
-        }
-      }
+    /**
+     * {@inheritDoc}
+     */
+    public boolean acceptWord(String word) {
+        return acceptedWords == null || 
+               acceptedWords.isEmpty() ||
+               acceptedWords.contains(word);
     }
 
-    // Update the set of context ids assigned to the secondary key.
-    synchronized (contextIds) {
-      contextIds.set(contextId);
+    /**
+     * {@inheritDoc}
+     */
+    public String getSpaceName() {
+        return "Wordsi";
     }
-  }
 
-  /**
-   * Return an array mapping context ids to secondary keys.  Returns an empty
-   * array if there was no tracking done.
-   */
-  protected String[] contextLabels(String primaryKey) {
-    Map<String, BitSet> termContexts = contextAssignments.get(primaryKey);
-    if (termContexts == null)
-      return new String[0];
-
-    // Compute the total number of assignments made.
-    int totalAssignments = 0;
-    for (Map.Entry<String, BitSet> entry : termContexts.entrySet())
-      totalAssignments = Math.max(totalAssignments, entry.getValue().length());
-    //+= entry.getValue().cardinality();
-    
-    // Fill in each assignment with the secondary key attached to each context
-    // id.
-    String[] contextLabels = new String[totalAssignments];
-    for (Map.Entry<String, BitSet> entry : termContexts.entrySet()) {
-      BitSet contextIds = entry.getValue();
-      for (int contextId = contextIds.nextSetBit(0); contextId >= 0;
-           contextId = contextIds.nextSetBit(contextId+1))
-        contextLabels[contextId] = entry.getKey();
+    /**
+     * {@inheritDoc}
+     */
+    public int getVectorLength() {
+        return extractor.getVectorLength();
     }
-    return contextLabels;
-  }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void processDocument(BufferedReader document) {
+        extractor.processDocument(document, this);
+    }
 }
-
