@@ -29,7 +29,15 @@ import edu.ucla.sspace.vector.Vectors;
 
 
 /**
- * A {@code SparseMatrix} 
+ * A decorator around a {@code SparseMatrix} that keeps only the upper
+ * triangular values while providing a symmetric view of the data.  This class
+ * only records changes values where row &gt; col.  For all other values, the
+ * row and column values are swapped and then the backing matrix is updated.
+ * Note, that if the provided backing matrix has existing values for indices row
+ * &lt; col, these values will be ignored and never returned from any method.
+ *
+ * <p>The primary benfit of this class is for storing large symmetric matrices
+ * if half of the memory.
  *
  * @author David Jurgens
  */
@@ -55,6 +63,9 @@ public class SparseSymmetricMatrix extends AbstractMatrix implements SparseMatri
         return backing.columns();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override public double get(int row, int column) {
         // Swap the ordering so only the upper triangular is read
         if (row > column) {
