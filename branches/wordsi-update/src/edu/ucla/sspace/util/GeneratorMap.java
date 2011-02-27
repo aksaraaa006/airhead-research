@@ -190,11 +190,7 @@ public class GeneratorMap<T> implements Map<String, T>, Serializable {
         return termToItem.remove(key);
     }
 
-    public void setReadOnly() {
-        readOnly = true;
-    }
-
-    public void unsetReadOnly() {
-        readOnly = false;
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 }

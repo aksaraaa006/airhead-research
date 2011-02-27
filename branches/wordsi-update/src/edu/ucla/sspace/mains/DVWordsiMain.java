@@ -135,15 +135,7 @@ public class DVWordsiMain extends GenericWordsiMain {
             saveObject(openSaveFile(), basis);
     }
 
-    protected DependencyContextGenerator getContextGenerator() {
-        // Create the acceptor.
-        DependencyPathAcceptor acceptor;
-        if (argOptions.hasOption('p'))
-            acceptor = ReflectionUtil.getObjectInstance(
-                    argOptions.getStringOption('p'));
-        else 
-            acceptor = new UniversalPathAcceptor();
-
+    protected DependencyPathWeight getWeighter() {
         // Create the weighter.
         DependencyPathWeight weight;
         if (argOptions.hasOption('G'))
@@ -151,13 +143,27 @@ public class DVWordsiMain extends GenericWordsiMain {
                         argOptions.getStringOption('G'));
         else
             weight = new FlatPathWeight();
+        return weight;
+    }
 
+    protected DependencyPathAcceptor getAcceptor() {
+        // Create the acceptor.
+        DependencyPathAcceptor acceptor;
+        if (argOptions.hasOption('p'))
+            acceptor = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption('p'));
+        else 
+            acceptor = new UniversalPathAcceptor();
+        return acceptor;
+    }
+
+    protected DependencyContextGenerator getContextGenerator() {
         // Set to read only if in evaluation mode.
         if (argOptions.hasOption('e'))
             basis.setReadOnly(true);
 
         return new WordOccrrenceDependencyContextGenerator(
-                                basis, weight, acceptor, windowSize());
+                basis, getWeighter(), getAcceptor(), windowSize());
     }
 
     /**
