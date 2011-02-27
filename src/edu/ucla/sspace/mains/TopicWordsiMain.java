@@ -31,27 +31,29 @@ import java.util.Map;
 
 
 /**
+ * A main for running a wordsi model over topic signatures for documents.
+ *
  * @author Keith Stevens
  */
 public class TopicWordsiMain extends GenericWordsiMain {
 
-  /**
-   * {@inheritDoc}
-   */
-  protected ContextExtractor getExtractor() {
-    // Create the new generator.
-    return new TopicModelContextExtractor();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected ContextExtractor getExtractor() {
+        // Create the new generator.
+        return new TopicModelContextExtractor();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected SSpaceFormat getSpaceFormat() {
-    return SSpaceFormat.SPARSE_BINARY;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
+    }
 
-  public static void main(String[] args) throws Exception {
-    TopicWordsiMain main = new TopicWordsiMain();
-    main.run(args);
-  }
+    public static void main(String[] args) throws Exception {
+        TopicWordsiMain main = new TopicWordsiMain();
+        main.run(args);
+    }
 }

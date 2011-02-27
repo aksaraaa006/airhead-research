@@ -68,74 +68,75 @@ import java.util.Map;
  */
 public class WCWordsiMain extends GenericWordsiMain {
 
-  /**
-   * The {@link BasisMapping} responsible for creating feature indices for
-   * features keyed by strings, with each feature being described by a string.
-   */
-  private BasisMapping<String, String> basis;
+    /**
+     * The {@link BasisMapping} responsible for creating feature indices for
+     * features keyed by strings, with each feature being described by a string.
+     */
+    private BasisMapping<String, String> basis;
 
-  /**
-   * The {@link WeightingFunction} responsible for scoring each word
-   * co-occurrence.
-   */
-  private WeightingFunction weighting;
+    /**
+     * The {@link WeightingFunction} responsible for scoring each word
+     * co-occurrence.
+     */
+    private WeightingFunction weighting;
 
-  /**
-   * {@inheritDoc}.
-   */
-  protected void addExtraOptions(ArgOptions options) {
-    super.addExtraOptions(options);
+    /**
+     * {@inheritDoc}.
+     */
+    protected void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
 
-    options.addOption('G', "weightingFunction",
-                      "Specifies the class that will weight co-occurrences " +
-                      "based on the window distance. (Default: None)",
-                      true, "CLASSNAME", "Optional");
-  }
+        options.addOption('G', "weightingFunction",
+                          "Specifies the class that will weight " +
+                          "co-occurrences based on the window distance. " +
+                          "(Default: None)",
+                          true, "CLASSNAME", "Optional");
+    }
 
-  protected void handleExtraOptions() {
-    // Create the weighting function.  If one is specified by the command
-    // line, create a new instance of it, otherwise default to
-    // LinearWeighting.
-    if (argOptions.hasOption('G'))
-      weighting = ReflectionUtil.getObjectInstance(
-          argOptions.getStringOption('G'));
-    else 
-      weighting = new LinearWeighting();
+    protected void handleExtraOptions() {
+        // Create the weighting function.    If one is specified by the command
+        // line, create a new instance of it, otherwise default to
+        // LinearWeighting.
+        if (argOptions.hasOption('G'))
+            weighting = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption('G'));
+        else 
+            weighting = new LinearWeighting();
 
-    // If the -L option is given, load the basis mapping from disk.
-    if (argOptions.hasOption('L'))
-      basis = loadObject(openLoadFile());
-    else 
-      basis = new StringBasisMapping();
-  }
+        // If the -L option is given, load the basis mapping from disk.
+        if (argOptions.hasOption('L'))
+            basis = loadObject(openLoadFile());
+        else 
+            basis = new StringBasisMapping();
+    }
 
-  /**
-   * Saves the {@code basis} to disk.
-   */
-  protected void postProcessing() {
-    if (argOptions.hasOption('S'))
-      saveObject(openSaveFile(), basis);
-  }
+    /**
+     * Saves the {@code basis} to disk.
+     */
+    protected void postProcessing() {
+        if (argOptions.hasOption('S'))
+            saveObject(openSaveFile(), basis);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected ContextExtractor getExtractor() {
-    // Create the new generator.
-    ContextGenerator generator = new WordOccrrenceContextGenerator(
-        basis, weighting, windowSize());
-    return contextExtractorFromGenerator(generator);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected ContextExtractor getExtractor() {
+        // Create the new generator.
+        ContextGenerator generator = new WordOccrrenceContextGenerator(
+                basis, weighting, windowSize());
+        return contextExtractorFromGenerator(generator);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected SSpaceFormat getSpaceFormat() {
-    return SSpaceFormat.SPARSE_BINARY;
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SPARSE_BINARY;
+    }
 
-  public static void main(String[] args) throws Exception {
-    WCWordsiMain main = new WCWordsiMain();
-    main.run(args);
-  }
+    public static void main(String[] args) throws Exception {
+        WCWordsiMain main = new WCWordsiMain();
+        main.run(args);
+    }
 }

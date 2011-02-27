@@ -67,68 +67,60 @@ import java.util.Iterator;
  */
 public class DVWCWordsiMain extends DVWordsiMain {
 
-  /**
-   * The {@link BasisMapping} responsible for creating feature indices for
-   * features keyed by strings, with each feature being described by a string.
-   */
-  private BasisMapping<String, String> basis;
+    /**
+     * The {@link BasisMapping} responsible for creating feature indices for
+     * features keyed by strings, with each feature being described by a string.
+     */
+    private BasisMapping<String, String> basis;
 
-  public static void main(String[] args) throws Exception {
-    DVWCWordsiMain main = new DVWCWordsiMain();
-    main.run(args);
-  }
+    public static void main(String[] args) throws Exception {
+        DVWCWordsiMain main = new DVWCWordsiMain();
+        main.run(args);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void addExtraOptions(ArgOptions options) {
-    super.addExtraOptions(options);
+    /**
+     * {@inheritDoc}
+     */
+    protected void addExtraOptions(ArgOptions options) {
+        super.addExtraOptions(options);
 
-    options.addOption('O', "usePartsOfSpeech",
-                      "If provided, parts of speech will be used as part " +
-                      "of the word occurrence features.", 
-                      false, null, "Optional");
-  }
+        options.addOption('H', "usePartsOfSpeech",
+                          "If provided, parts of speech will be used as part " +
+                          "of the word occurrence features.", 
+                          false, null, "Optional");
+        options.addOption('O', "useWordOrdering",
+                          "If provided, parts of speech will be used as part " +
+                          "of the word occurrence features.", 
+                          false, null, "Optional");
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void handleExtraOptions() {
-    // If the -L option is given, load the basis mapping from disk.
-    if (argOptions.hasOption('L'))
-      basis = loadObject(openLoadFile());
-    else 
-      basis = new StringBasisMapping();
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected void handleExtraOptions() {
+        // If the -L option is given, load the basis mapping from disk.
+        if (argOptions.hasOption('L'))
+            basis = loadObject(openLoadFile());
+        else 
+            basis = new StringBasisMapping();
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected void postProcessing() {
-    if (argOptions.hasOption('S'))
-      saveObject(openSaveFile(), basis);
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected void postProcessing() {
+        if (argOptions.hasOption('S'))
+            saveObject(openSaveFile(), basis);
+    }
 
-  /**
-   * {@inheritDoc}
-   */
-  protected DependencyContextGenerator getContextGenerator() {
-      /*
-    WeightingFunction weighting;
-    // Create the weighting function.  If one is specified by the command
-    // line, create a new instance of it, otherwise default to
-    // LinearWeighting.
-    if (argOptions.hasOption('G'))
-      weighting = ReflectionUtil.getObjectInstance(
-          argOptions.getStringOption('G'));
-    else 
-      weighting = new LinearWeighting();
-      */
-
-    boolean usePos = argOptions.hasOption('P');
-    boolean useOrder = argOptions.hasOption('G');
-    
-    return new PartOfSpeechOccurrenceDependencyContextGenerator(
-            basis, usePos, useOrder, windowSize());
-  }
+    /**
+     * {@inheritDoc}
+     */
+    protected DependencyContextGenerator getContextGenerator() {
+        boolean usePos = argOptions.hasOption('H');
+        boolean useOrder = argOptions.hasOption('O');
+        
+        return new PartOfSpeechOccurrenceDependencyContextGenerator(
+                        basis, usePos, useOrder, windowSize());
+    }
 }
