@@ -132,8 +132,8 @@ class ClutoWrapper {
                              ((matrix instanceof SparseMatrix) 
                               ? MatrixIO.Format.CLUTO_SPARSE
                               : MatrixIO.Format.CLUTO_DENSE));
-        return cluster(clusterAssignment, matrix, clmethod, crtFun,
-                       numClusters, outputFile);
+        return cluster(clusterAssignment, matrixFile, clmethod, crtFun,
+                       outputFile, numClusters);
     }
 
 
