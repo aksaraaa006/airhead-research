@@ -36,50 +36,29 @@ import edu.ucla.sspace.vector.Vectors;
  * Note, that if the provided backing matrix has existing values for indices row
  * &lt; col, these values will be ignored and never returned from any method.
  *
- * <p>The primary benfit of this class is for storing large symmetric matrices
- * if half of the memory.
+ * <p>The primary benfit of this class is for storing large symmetric sparse
+ * matrices in half of the memory.
  *
  * @author David Jurgens
+ *
+ * @see SymmetricMatrix
  */
-public class SparseSymmetricMatrix extends AbstractMatrix implements SparseMatrix {
+public class SparseSymmetricMatrix extends SymmetricMatrix 
+        implements SparseMatrix, java.io.Serializable {
 
-    /**
-     * The matrix whose values back this matrix.
-     */
-    private final SparseMatrix backing;
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructs a sparse matrix with the specified dimensions.
      */
     public SparseSymmetricMatrix(SparseMatrix backing) {
-        // TODO: check that the backing matrix is already symmetric?
-        this.backing = backing;
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    public int columns() {
-        return backing.columns();
+        super(backing);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public double get(int row, int column) {
-        // Swap the ordering so only the upper triangular is read
-        if (row > column) {
-            int tmp = column;
-            column = row;
-            row = tmp;
-        }
-        return backing.get(row, column);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public SparseDoubleVector getColumnVector(int column) {
+    @Override public SparseDoubleVector getColumnVector(int column) {
         int rows = rows();
         SparseHashDoubleVector col = new SparseHashDoubleVector(rows);
         for (int r = 0; r < rows; ++r)
@@ -90,7 +69,7 @@ public class SparseSymmetricMatrix extends AbstractMatrix implements SparseMatri
     /**
      * {@inheritDoc}
      */
-    public SparseDoubleVector getRowVector(int row) {
+    @Override public SparseDoubleVector getRowVector(int row) {
         int cols = columns();
         SparseHashDoubleVector rowVec = new SparseHashDoubleVector(cols);
         for (int c = 0; c < cols; ++c)
@@ -98,23 +77,4 @@ public class SparseSymmetricMatrix extends AbstractMatrix implements SparseMatri
         return rowVec;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public int rows() {
-        return backing.rows();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public void set(int row, int column, double val) {
-        // Swap the ordering so only the upper triangular is written to
-        if (row > column) {
-            int tmp = column;
-            column = row;
-            row = tmp;
-        }
-        backing.set(row, column, val);
-    }
 }
