@@ -1,0 +1,14 @@
+#A list of Google Summer of Code project ideas
+
+= Introduction =
+
+This is the ideas page for Google Summer of Code.  We have listed a handful of interesting project ideas that would benefit not on the S-Space package, but the many researchers that use the package for their projects worldwide.  Our key goals are to make the package more useful, more flexible, and more reliable.  
+
+This page is just an overview of some major projects that the team has been thinking of doing.  If any interest you, please send us an email our development list s-space-research-dev@googlegroups.com.  Also, this list is not comprehensive, ff you have any ideas beyond what we've listed, we're very interested to hear them, so please share any other ideas you have via the mailing list, and we can find a way to turn the idea into a full GSoC project.
+
+= GSoC Project List =
+
+||Task||Difficulty||Description||Rationale||Requirements||
+||Implement a GUI for the S-Space Package|| Entry level || Currently, the S-Space package only works via the command line.  For many people, this is a cumbersome model.  This GUI should give users the flexibility to run a variety of Semantic Space models over a variety of corpora.  Ideally a user would be able to select parameters for each Semantic Space model, such as the number of dimensions, a matrix transform, the form of dimensionality reduction, word filters, and so on from a series of simple menus.  The user could then select their corpus of choice, possibly have a chance to clean the corpus, and then decide where to save the final semantic space. || A GUI interface significantly lowers the bar for playing around with a variety of semantic space algorithms.  With a GUI, users would be able to easily select one or more algorithms, run them, and then plug them into their application.  || Front End Design ||
+||Implement a S-Space algorithm in Hadoop || High || All but one of the S-Space algorithms are implemented with the default java threading framework.  This form of parallelism has a number of limitations as the number of cores increases.  The Hadoop framework is an effective method of utilizing a large number of parallel machines for highly parallel tasks.  This task would require the student to find similar processing patterns in the S-Space algorithms, and create a simplified Hadoop processing system for as much of the parallel similarities as possible. || Hadoops parallelism can scale to a massive number of nodes, which is becoming increasingly necessary as the amount of text data available increases. This project would let researchers already using hadoop leverage their setup fully utilize the S-Space package. || Familiarity with Hadoop ||
+----------------------------------------------------------
