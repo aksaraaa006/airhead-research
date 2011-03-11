@@ -29,7 +29,7 @@ How to get started:
   # Download or check out the latest source code
   # Join our mailing list, s-space-research-dev@googlegroups.com
   # Download a corpus to play around with some of the algorithms.  A `txt` version of one of Project Gutenberg's [http://www.gutenberg.org/browse/scores/top top 100 books] makes a great start.  (If you have some space available the [http://americannationalcorpus.org/OANC/index.html#download Open American Corpus] or a [http://download.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 Wikipedia snapshot] make for interesting corpora.) 
-  # Run any of the algorithms over your corpus to build a semantic space.  Load it into SemanicSpaceExplorer and see what you can discover.
+  # Run any of the algorithms over your corpus to build a semantic space.  Load it into [http://code.google.com/p/airhead-research/wiki/SemanticSpaceExplorer SemanicSpaceExplorer] and see what you can discover.
     * Do the neighbors of words seem to capture some related properties? 
     * Are neighbors synonyms or are they related in a different way?  
     * How does word frequency affect your results?  
