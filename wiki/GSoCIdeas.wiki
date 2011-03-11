@@ -24,6 +24,20 @@ Things you can expect from us:
   * Constant encouragement.  Your work really matters to researchers around the world and we want you to know it.
   * Respect for your passion and development skills.  
 
+How to get started:
+  # Read up on http://en.wikipedia.org/wiki/Statistical_semantics distributional semantics] to get an idea of what we do and what kinds of problems people are solving with the S-Space Package.
+  # Download or check out the latest source code
+  # Join our mailing list, s-space-research-dev@googlegroups.com
+  # Download a corpus to play around with some of the algorithms.  A `txt` version of one of Project Gutenberg's [http://www.gutenberg.org/browse/scores/top top 100 books] makes a great start.  (If you have some space available the [http://americannationalcorpus.org/OANC/index.html#download Open American Corpus] or a [http://download.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 Wikipedia snapshot] make for interesting corpora.) 
+  # Run any of the algorithms over your corpus to build a semantic space.  Load it into SemanicSpaceExplorer and see what you can discover.
+    * Do the neighbors of words seem to capture some related properties? 
+    * Are neighbors synonyms or are they related in a different way?  
+    * How does word frequency affect your results?  
+    * How do the neighbors change between different algorithms?
+  # If you're feeling ambitious, consider reading Turney and Pantel (2010) [http://www.patrickpantel.com/cgi-bin/web/tools/getfile.pl?type=paper&id=2010/jair10.pdf survey] of the different distributional approaches.  This will provide more context for what you might be working on, but don't feel obligated to read all of it. :)
+  # Email us!  We love to hear from our users.
+  
+
 = GSoC Project List =
 
 
