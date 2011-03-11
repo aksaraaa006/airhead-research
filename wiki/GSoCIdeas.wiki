@@ -3,6 +3,7 @@
 = Introduction =
 
 This is the ideas page for Google Summer of Code.  We have listed a handful of interesting project ideas that would benefit not on the S-Space package, but the many researchers that use the package for their projects worldwide.  Our key goals are to make the package more useful, more flexible, and more reliable.  
+ Our projects are designed to give you a taste for both high quality development and exposure to interesting research questions.  We want to feed for your passion for development and research with interesting, challenging and meaningful projects!
 
 This page is just an overview of some major projects that the team has been thinking of doing.  If any interest you, please send us an email our development list s-space-research-dev@googlegroups.com.  Also, this list is not comprehensive, ff you have any ideas beyond what we've listed, we're very interested to hear them, so please share any other ideas you have via the mailing list, and we can find a way to turn the idea into a full GSoC project.
 
