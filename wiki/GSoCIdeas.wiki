@@ -34,7 +34,7 @@ How to get started:
     * Are neighbors synonyms or are they related in a different way?  
     * How does word frequency affect your results?  
     * How do the neighbors change between different algorithms?
-  # If you're feeling ambitious, consider reading Turney and Pantel (2010) [http://www.patrickpantel.com/cgi-bin/web/tools/getfile.pl?type=paper&id=2010/jair10.pdf survey] of the different distributional approaches.  This will provide more context for what you might be working on, but don't feel obligated to read all of it. :)
+  # If you're feeling ambitious, consider reading Turney and Pantel's (2010) [http://www.patrickpantel.com/cgi-bin/web/tools/getfile.pl?type=paper&id=2010/jair10.pdf survey] of the different distributional approaches.  This will provide more context for what you might be working on, but don't feel obligated to read all of it. :)
   # Email us!  We love to hear from our users.
   
 
