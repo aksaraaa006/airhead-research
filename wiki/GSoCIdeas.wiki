@@ -40,14 +40,7 @@ Things you can expect from us:
   <td> Implement an interactive GUI for the S-Space Package </td>
   <td> Easy </td>
 
-  <td> Currently, the S-Space package is only accessed via the command line.
-For many people, this is an unfamiliar model.  A S-Space Package GUI should give
-users the flexibility to run a variety of Semantic Space models over a variety
-of corpora.  Ideally a user would be able to select parameters for each Semantic
-Space model, such as the number of dimensions, a matrix transform, the form of
-dimensionality reduction, word filters, and so on from a series of simple menus.
-The user could then select their corpus of choice, possibly have a chance to
-clean the corpus, and then decide where to save the final semantic space. </td>
+  <td> Currently, the S-Space package is only accessed via the command line. For many people, this is an unfamiliar model.  A S-Space Package GUI should give users the flexibility to run a variety of Semantic Space models over a variety of corpora.  Ideally a user would be able to select parameters for each Semantic Space model, such as the number of dimensions, a matrix transform, the form of dimensionality reduction, word filters, and so on from a series of simple menus.  The user could then select their corpus of choice, possibly have a chance to clean the corpus, and then decide where to save the final semantic space. </td>
 
   <td> A GUI interface significantly lowers the bar for playing around with a
 variety of semantic space algorithms.  With a GUI, users would be able to easily
