@@ -25,7 +25,7 @@ Things you can expect from us:
   * Respect for your passion and development skills.  
 
 How to get started:
-  # Read up on http://en.wikipedia.org/wiki/Statistical_semantics distributional semantics] to get an idea of what we do and what kinds of problems people are solving with the S-Space Package.
+  # Read up on [http://en.wikipedia.org/wiki/Statistical_semantics distributional semantics] to get an idea of what we do and what kinds of problems people are solving with the S-Space Package.
   # Download or check out the latest source code
   # Join our mailing list, s-space-research-dev@googlegroups.com
   # Download a corpus to play around with some of the algorithms.  A `txt` version of one of Project Gutenberg's [http://www.gutenberg.org/browse/scores/top top 100 books] makes a great start.  (If you have some space available the [http://americannationalcorpus.org/OANC/index.html#download Open American Corpus] or a [http://download.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2 Wikipedia snapshot] make for interesting corpora.) 
