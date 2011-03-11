@@ -1,4 +1,4 @@
-A list of Google Summer of Code project ideas
+#summary A list of Google Summer of Code project ideas
 
 = Introduction =
 
@@ -8,9 +8,197 @@ This page is just an overview of some major projects that the team has been thin
 
 = GSoC Project List =
 
-||Task||Difficulty||Description||Rationale||Requirements||
-||Implement a GUI for the S-Space Package|| Entry level || Currently, the S-Space package only works via the command line.  For many people, this is a cumbersome model.  This GUI should give users the flexibility to run a variety of Semantic Space models over a variety of corpora.  Ideally a user would be able to select parameters for each Semantic Space model, such as the number of dimensions, a matrix transform, the form of dimensionality reduction, word filters, and so on from a series of simple menus.  The user could then select their corpus of choice, possibly have a chance to clean the corpus, and then decide where to save the final semantic space. || A GUI interface significantly lowers the bar for playing around with a variety of semantic space algorithms.  With a GUI, users would be able to easily select one or more algorithms, run them, and then plug them into their application.  || Front End Design ||
-||Implement a S-Space algorithm in Hadoop || High || All but one of the S-Space algorithms are implemented with the default java threading framework.  This form of parallelism has a number of limitations as the number of cores increases.  The Hadoop framework is an effective method of utilizing a large number of parallel machines for highly parallel tasks.  This task would require the student to find similar processing patterns in the S-Space algorithms, and create a simplified Hadoop processing system for as much of the parallel similarities as possible. || Hadoops parallelism can scale to a massive number of nodes, which is becoming increasingly necessary as the amount of text data available increases. This project would let researchers already using hadoop leverage their setup fully utilize the S-Space package. || Familiarity with Hadoop ||
-||Visualize S-Spaces as graphs|| Medium || Take a build Semantic Space model paired with a method of forming links between words in the space and visualize the network as a graph.  This will involve integrating a graph visualization package, such as [http://gephi.org/ Gelphi], with the S-Space package. || The complete structure of Semantic Space models is currently unknown.  By visualizing these spaces as graphical models, researchers will be more capable of distinguishing between each type of build space.  They can then determine, visually, which type of space solves a particular type of problem.  || Familiarity with graphs ||
-||Integrate S-Space models and the SemanticSpaceExplorer in a web app||Medium||This would involve creating a simple web app that stores a trained semantic space model and allows other uses the ability to explore the content of this semantic space.  Currently, the SemanticSpaceExplorer permits some simple exploration, such as the nearest neighboors.  The current features in the explorer should be made available in the webapp, along with other possible expansions to the explorer such as clusterings of the words in the space.||This is yet another visual method of exploring a Semantic space model||Front end design||
-||Implement a new clustering algorithm|| Medium || The S-Space package is currently trying to integrate a variety of innovative and efficient clustering algorithms.  We already have a number of algorithms implemented, but are constantly on the look out for new algorithms, or ones we've not had the time to implement efficiently.  We generally look for two key aspects for clustering algorithms: efficient computation time with sparse data sets and an ability to infer the number of clusters via parameters. || A number of clustering algorithms have been proposed through different research fields, many times outside of machine learning literature.  We would like the S-Space package to be a good resource of effective clustering algorithms for word spaces.  These algorithms will let researchers discover more relations within the word spaces. || An interest in machine learning ||
+
+<table cellpadding="5" border="1" cellspacing="2">
+
+<tr>
+  <td>*Task*</td>
+  <td>*Difficulty*</td>
+  <td width="400">*Description*</td>
+  <td width="400">*Rationale*</td>
+  <td>*Ideal Deliverables*</td>
+  <td>*Skill Requirements*</td>
+</tr>
+<tr>
+  <td> Implement an interactive GUI for the S-Space Package </td>
+  <td> Easy </td>
+
+  <td> Currently, the S-Space package is only accessed via the command line.
+For many people, this is an unfamiliar model.  A S-Space Package GUI should give
+users the flexibility to run a variety of Semantic Space models over a variety
+of corpora.  Ideally a user would be able to select parameters for each Semantic
+Space model, such as the number of dimensions, a matrix transform, the form of
+dimensionality reduction, word filters, and so on from a series of simple menus.
+The user could then select their corpus of choice, possibly have a chance to
+clean the corpus, and then decide where to save the final semantic space. </td>
+
+  <td> A GUI interface significantly lowers the bar for playing around with a
+variety of semantic space algorithms.  With a GUI, users would be able to easily
+select one or more algorithms, run them, and then plug them into their
+application.  For a good example of an easy to use interface for a complex set
+of algorithms, see [http://www.cs.waikato.ac.nz/ml/weka/ Weka]'s GUI.</td>
+  
+  <td>
+A GUI that exposes the ability to 
+  # load and filter input corpora (e.g. remove [http://en.wikipedia.org/wiki/Stop_words stop words]) using features provided by S-Space Package,
+  # run all of the semantic-space building algorithms, with algorithm-specific options for customizing them build,
+  # analyze the resulting semantic space and interact with it, much like how the SemanticSpaceExporer tool operates on the command line, and
+  # plug in new algorithms easily to let researchers rapidly prototype.
+  </td>
+
+  <td> 
+  # Java 
+  # Familiarity with GUI Design 
+  # Swing / AWT 
+  # A strong desire to make software "Just Work"
+  </td>
+</tr>
+
+
+<tr>
+  <td>Integrate S-Spaces with Graph Visualization and Community Detection</td>
+  <td> Medium to Hard </td>
+  <td> Once of the nice properties of a semantic space is that it is
+a <i>space</i>.  You can think about the connections between words in terms
+of distances, angles, vectors, etc.  This project seeks to extend this idea
+by visualizing a Semantic Space model as a graph.  The project will start
+with the idea of visualizing the space by representing words as vertices and
+connecting nearby neighbors with edges.  We then would like to add support
+for [http://en.wikipedia.org/wiki/Community_structure community detection]
+to help group related words into semantic categories.  Our target graph
+visualization platform is [http://gephi.org/ Gelphi] 
+  </td>
+  <td> The complete structure of Semantic Space models is currently hard to
+visualize using a command-line interface.  By visualizing these spaces as
+graphical models, researchers will be more capable of distinguishing the
+features of each algorithm's semantic space.  They can then visually
+determine which type of space best captures the semantics for solving their
+particular type of problem. Furthermore, community structure helps
+researchers assess global properties of the space, such as its conceptual
+organization.
+  </td>
+  <td> 
+ # Integration with Gephi to display a semantic space as a graph 
+ # Different community detection algorithms implemented for the graph. (This can be as easy (e.g. [http://en.wikipedia.org/wiki/Minimum_cut min-cut]) difficult (e.g. [http://en.wikipedia.org/wiki/Clique_percolation_method clique percolation]) as you would like.  You can also implement more than one if you choose.) 
+ # Integration with Gephi to display community structure 
+  </td>
+
+  <td>
+  # Java 
+  # Familiarity with Gephi or other graphing software 
+  # Familiarity with graph data structures and algorithms 
+
+  </td>
+</tr>
+<tr>
+  <td>Create a web service around Semantic Space models</td>
+  <td>Medium</td>
+  <td>
+Semantic spaces for millions of words can often grow into the tens of
+gigabytes and take significant resources to compute.  While the model only
+needs to be created once, sharing its data is prohibitively intensive on
+network bandwidth.  This project focuses on exposing semantic space data as
+a network application.  Users can query the different semantic spaces with
+remote method calls to access information much like they would if the data
+was local.  Our target platform for this is
+[https://appengine.google.com/start Google app engine].
+  </td>
+  <td>
+This project aims at increasing the accessibility of semantic space data.
+As new semantic space models are built, their contents can be rapidly
+disseminated via web service without having to download the entire data set.
+Furthermore, the web service allows for semantic-space using applications to
+access the data in a light-weight manner, which opens the possibility of
+using the data in other web-apps.  
+  </td>
+  
+  <td>
+
+  # A simple web service that can expose the contents of a semantic space via method call 
+  # A client-side API in both Java and Javascript for clients to access the data 
+  # Additional functionality for requesting the semantic space data in pre-processed forms, e.g. select 100 neighbors and cluster them. 
+
+  </td>
+  <td>
+
+  # Java 
+  # Familiarity with networking or remote API calls 
+  # Javascript experience is a plus. 
+
+  </td>
+</tr>
+
+<tr>
+  <td> Implement new clustering algorithms</td>
+  <td> Medium-High </td>
+  <td> [http://en.wikipedia.org/wiki/Cluster_analysis Clustering] is fundamental
+to many data applications and is often essential in analyzing data.  The S-Space
+package is currently integrating a variety of innovative and efficient
+clustering algorithms such as [http://en.wikipedia.org/wiki/Hierarchical_clustering hierarchical] clustering and [http://en.wikipedia.org/wiki/Cluster_analysis#Spectral_clustering spectral] clustering.  Our ultimate goal is to provide a robust, _diverse_
+library of algorithms for researchers to use in analyzing data.  Your task would
+be to select one or more clustering algorithms and implement them according to
+our clustering API.  This ensures that other researchers can easily assimilate
+your work and use it in new applications.  Ideally, we would like you to select
+an algorithm with two key aspects: efficient computation time with sparse data
+sets and an ability to infer the number of clusters via parameters. (We can help
+guide you on different algorithms)</td>
+  <td> A number of clustering algorithms have been proposed through different
+research fields, many times outside of machine learning literature.  We
+would like the S-Space package to be a good resource of effective clustering
+algorithms for word spaces.  These algorithms will let researchers discover
+more relations both within the word spaces and in broader research areas. 
+  </td>
+
+  <td>
+
+  # A simple web service that can expose the contents of a semantic space via method call 
+  # A client-side API in both Java and Javascript for clients to access the data 
+  # Additional functionality for requesting the semantic space data in pre-processed forms, e.g. select 100 neighbors and cluster them. 
+
+  </td>
+  <td>
+
+  # Java 
+  # Computer Science Theory 
+  # Familiarity with machine learning 
+  # Linear algebra is a plus 
+  # Concurrent programming is a big plus 
+
+  </td>
+</tr>
+
+<tr>
+  <td>Implement a S-Space algorithm in Hadoop </td>
+  <td> High </td>
+  <td> All but one of the S-Space algorithms are implemented with the default
+java threading framework.  This form of parallelism has a number of limitations
+as the number of cores increases.  The Hadoop framework is an effective method
+of utilizing a large number of parallel machines for highly parallel tasks.
+This task would require the student to find similar processing patterns in the
+S-Space algorithms, and create a simplified Hadoop processing system for as much
+of the parallel similarities as possible. </td> 
+  <td> Hadoop's parallelism can scale to a massive number of nodes, which is
+becoming increasingly necessary as the amount of text data available
+increases. This project would let researchers already using hadoop leverage
+their setup fully utilize the S-Space package. </td>
+  
+  <td> 
+
+  # Extend the current Hadoop infrastucture in the S-Space Package to easily work with new algorithms.
+  # Implement HAL as an easy first start
+  # Implement BEAGLE as a second case
+  # Extend the Hadoop infrastructure to distribute other computationally intensive operations, such as finding the nearest-neighbor in a large semantic space or computing an affinity matrix.
+
+  </td>
+
+
+  <td> 
+
+  # Java 
+  # Familiarity with concurrent and/or distributed programming (Hadoop is a plus) 
+  # Access to a Hadoop server is a definite plus 
+
+  </td>
+</tr>
+
+</table>
