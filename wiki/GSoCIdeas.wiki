@@ -1,4 +1,5 @@
 #summary A list of Google Summer of Code project ideas
+#labels GSoC
 
 = Introduction =
 
