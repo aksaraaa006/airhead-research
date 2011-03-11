@@ -6,6 +6,23 @@ This is the ideas page for Google Summer of Code.  We have listed a handful of i
 
 This page is just an overview of some major projects that the team has been thinking of doing.  If any interest you, please send us an email our development list s-space-research-dev@googlegroups.com.  Also, this list is not comprehensive, ff you have any ideas beyond what we've listed, we're very interested to hear them, so please share any other ideas you have via the mailing list, and we can find a way to turn the idea into a full GSoC project.
 
+New things you will learn as a part of working with us:
+  * Industrial-quality Java development with a focus on scalability, memory efficiency and concurrency
+  * All about the [http://en.wikipedia.org/wiki/Distributional_hypothesis Distributional Hypothesis] and [http://en.wikipedia.org/wiki/Statistical_semantics distributional semantics]
+  * New and interesting ideas in [http://en.wikipedia.org/wiki/Natural_language_processing Natural Language Processing] and [http://en.wikipedia.org/wiki/Computational_linguistics Computational Linguistics]
+
+Tools you will learn in your projects (if you didn't know them already)
+  * [http://ant.apache.org/ Ant]
+  * [http://subversion.tigris.org/ Subversion]
+  * [http://java.sun.com/developer/technicalArticles/J2SE/concurrency/ Concurrent] Java programming
+  * Writing unit tests with [http://www.junit.org/ jUnit]
+
+Things you can expect from us:
+  * Guidance to help you select your project and future directions.  We want you have a clear vision of what you're getting into and hopefully a lot of excitement as well.
+  * Full support via email, IM, and IRC for all your questions to ensure you are able to keep making progress.  Getting stuck or not knowing what to do next is frustrating; we want your development experience to be both fun and challenging!
+  * Constant encouragement.  Your work really matters to researchers around the world and we want you to know it.
+  * Respect for your passion and development skills.  
+
 = GSoC Project List =
 
 
