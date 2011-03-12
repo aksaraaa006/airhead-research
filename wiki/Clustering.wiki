@@ -1,0 +1,13 @@
+#summary An overview of the clustering algorithms supported in the S-Space Package
+
+= Introduction =
+
+This section is currently under construction pending the 2.0 release from the merge of the [http://code.google.com/p/airhead-research/source/browse/#svn%2Fbranches%2Fwordsi-update wordsi-update branch].  Upon release, the S-Space Package will fully support:
+
+|| *Algorithm* || *Concurrent* || Option for automatically selecting the number of clusters || Option for fixed number of clusters || *References* ||
+|| Hierarchical Agglomerative Clustering || yes || yes ||  yes || [http://en.wikipedia.org/wiki/Hierarchical_clustering Wikipedia page] ||
+|| Spectral Clustering || no || yes || yes || ||
+|| Link Clustering || yes || yes || no ||  ||
+|| K-means with the Gap Statistic || no || yes || no || ||
+|| Streaming K-Means || yes || yes || yes ||  ||
+|| Clustering by Committee || yes || yes || no || ||
