@@ -19,37 +19,31 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.svs;
+package edu.ucla.sspace.sevm;
 
-import edu.ucla.sspace.common.SemanticSpace;
+import edu.ucla.sspace.basis.BasisMapping;
+import edu.ucla.sspace.basis.StringBasisMapping;
+
+import edu.ucla.sspace.common.SelectionalPreferenceSpace;
 
 import edu.ucla.sspace.dependency.DependencyExtractor;
-import edu.ucla.sspace.dependency.DependencyExtractorManager;
 import edu.ucla.sspace.dependency.DependencyIterator;
 import edu.ucla.sspace.dependency.DependencyPath;
 import edu.ucla.sspace.dependency.DependencyRelationAcceptor;
 import edu.ucla.sspace.dependency.DependencyPathWeight;
 import edu.ucla.sspace.dependency.DependencyRelation;
 import edu.ucla.sspace.dependency.DependencyTreeNode;
-import edu.ucla.sspace.dependency.FlatPathWeight;
-import edu.ucla.sspace.dependency.UniversalRelationAcceptor;
 
-import edu.ucla.sspace.matrix.AtomicGrowingSparseMatrix;
-
-import edu.ucla.sspace.text.IteratorFactory;
-
-import edu.ucla.sspace.util.Pair;
-import edu.ucla.sspace.util.ReflectionUtil;
+import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.YaleSparseMatrix;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseScaledDoubleVector;
-import edu.ucla.sspace.vector.Vector;
-import edu.ucla.sspace.vector.Vectors;
-import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,11 +65,6 @@ import java.util.logging.Logger;
  * collection of vectors to represent a word.  This implementaiton is based on
  * the following paper:
  *    
- *   <li style="font-family:Garamond, Georgia, serif">Katrin Erk and Sebastian
- *   Sebastian Padó, "A structured vector space model for word meaning in
- *   context," in <i>Annual Meeting of the ACL</i>, Honolulu, Hawaii.
- *   2008.</li>
- *
  * <p>
  *
  * This model requires a dependency parsed corpus.  When processing, three types
@@ -85,44 +74,6 @@ import java.util.logging.Logger;
  * tokens that are governed by word in the REL relationship.  The first vector
  * is referred to as a lemma vector and the later two are called selectional
  * preference vectors.  In all cases REL is a dependency relationship.
- *
- * <p>
- *
- * This class defines the following configurable properties that may be set
- * using either the System properties or using the {@link
- * StructuredVectorSpace#StructuredVectorSpace(DependencyExtractor, Properties)}
- * constructor.
- *
- * <dl style="margin-left: 1em">
- *
- * <dt> <i>Property:</i> <code><b>{@value #DEPENDENCY_ACCEPTOR_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@link UniversalRelationAcceptor}
- *
- * <dd style="padding-top: .5em">This property sets {@link
- *      DependencyRelationAcceptor} to use for validating dependency paths.  If a
- *      path is rejected it will not influence either the lemma vector or the
- *      selectional preference vectors. </p>
- *
- * <dt> <i>Property:</i> <code><b>{@value #DEPENDENCY_PATH_LENGTH_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@value DEFAULT_DEPENDENCY_PATH_LENGTH}
- *
- * <dd style="padding-top: .5em">This property sets the maximal length a
- *      dependency path can be for it to be accepted.  Paths beyond this length
- *      will not contribute towards either the lemma vectors or selectional
- *      preference vectors. </p>
- *
- * <dt> <i>Property:</i> <code><b>{@value #DEPENDENCY_WEIGHT_PROPERTY}
- *      </b></code> <br>
- *      <i>Default:</i> {@link FlatPathWeight}
- *
- * <dd style="padding-top: .5em">This property sets the {@link
- *      DependencyPathWeight} method to use for scoring a dependency path.  This
- *      score will only influence the lemma vector and not the selectional
- *      preference vectors. </p>
- *
- * </dl>
  *
  * </p>
  *
@@ -152,14 +103,17 @@ import java.util.logging.Logger;
  *
  * @author Keith Stevens
  */
-public class StructuredVectorSpace implements SemanticSpace {
+public class SyntacticallyEnrichedVectorModel
+  implements SelectionalPreferenceSpace, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
-     * The base prefix for all {@code StructuredVectorSpace}
+     * The base prefix for all {@code SyntacticallyEnrichedVectorModel}
      * properties.
      */
     public static final String PROPERTY_PREFIX =
-        "edu.ucla.sspace.dri.StructuredVectorSpace";
+        "edu.ucla.sspace.dri.SyntacticallyEnrichedVectorModel";
 
     /**
      * The property for setting the {@link DependencyRelationAcceptor}.
@@ -186,7 +140,7 @@ public class StructuredVectorSpace implements SemanticSpace {
     public static final int DEFAULT_DEPENDENCY_PATH_LENGTH = 1;
 
     /**
-     * The Semantic Space name for {@link StructuredVectorSpace}
+     * The Semantic Space name for {@link SyntacticallyEnrichedVectorModel}
      */
     public static final String SSPACE_NAME = 
         "structured-vector-space";
@@ -200,19 +154,13 @@ public class StructuredVectorSpace implements SemanticSpace {
      * The logger used to record all output
      */
     private static final Logger LOGGER =
-        Logger.getLogger(StructuredVectorSpace.class.getName());
+        Logger.getLogger(SyntacticallyEnrichedVectorModel.class.getName());
 
-    /**
-     * A mapping from a vector name to it's row index.  These vector names
-     * include the lemma vectors.
-     */
-    private Map<String, Integer> termToRowIndex;
+    private final BasisMapping<String, String> termBasis;
 
-    /**
-     * A mapping from a co-occurring word to it's column index.  These feature
-     * strings are only for lemmas.
-     */
-    private Map<String, Integer> termToFeatureIndex;
+    private final BasisMapping<String, String> relationBasis;
+
+    private final BasisMapping<String, String> focusBasis;
 
     /**
      * A Mapping from lemmas to their selectional preference vectors.  The inner
@@ -224,10 +172,17 @@ public class StructuredVectorSpace implements SemanticSpace {
     private Map<String, Map<String, SparseDoubleVector>> selPrefMap;
 
     /**
-     * The co-occurrence matrix representing the lemma vectors and selectional
-     * preference vectors.
+     * The matrix that stores the full second order word vectors.  
      */
-    private AtomicGrowingSparseMatrix cooccurrenceMatrix;
+    private SparseMatrix secondOrderWordSpace;
+
+    private int numFeatures;
+
+    private int numRelations;
+
+    private int numRows;
+
+    private int numColumns;
 
     /**
      * The {@link DependencyExtractor} being used for parsing corpora.
@@ -250,73 +205,40 @@ public class StructuredVectorSpace implements SemanticSpace {
     private final int pathLength;
 
     /**
-     * An optional set of words that restricts the set of semantic vectors that
-     * this instance will retain.
+     * Create a new instance of {@code SyntacticallyEnrichedVectorModel}. 
      */
-    private Set<String> semanticFilter;
+    public SyntacticallyEnrichedVectorModel(
+        BasisMapping<String, String> termBasis,
+        BasisMapping<String, String> relationBasis,
+        DependencyExtractor parser,
+        DependencyRelationAcceptor acceptor,
+        DependencyPathWeight weighter,
+        int pathLength) {
+        this.termBasis = termBasis;
+        this.relationBasis = relationBasis;
+        this.parser = parser;
+        this.acceptor = acceptor;
+        this.weighter = weighter;
+        this.pathLength = pathLength;
 
-    /**
-     * Creates a new instance of {@code StructuredVectorSpace} that takes
-     * ownership of a {@link DependencyExtractor} and uses the System provided
-     * properties to specify other class objects.
-     */
-    public StructuredVectorSpace() {
-        this(System.getProperties());
-    }
-
-    /**
-     * Create a new instance of {@code StructuredVectorSpace} which
-     * takes ownership
-     */
-    public StructuredVectorSpace(Properties properties) {
-        this.parser = DependencyExtractorManager.getDefaultExtractor();
-
-        // Load the maximum dependency path length.
-        String pathLengthProp =
-            properties.getProperty(DEPENDENCY_PATH_LENGTH_PROPERTY);
-        pathLength = (pathLengthProp != null)
-            ? Integer.parseInt(pathLengthProp)
-            : DEFAULT_DEPENDENCY_PATH_LENGTH;
-
-        // Load the path acceptor.
-        String acceptorProp = 
-            properties.getProperty(DEPENDENCY_ACCEPTOR_PROPERTY);
-        acceptor = (acceptorProp != null)
-            ? (DependencyRelationAcceptor) 
-                ReflectionUtil.getObjectInstance(acceptorProp)
-            : new UniversalRelationAcceptor();
-
-        // Load the path weight function.
-        String weighterProp = 
-            properties.getProperty(DEPENDENCY_WEIGHT_PROPERTY);
-        weighter = (weighterProp!= null)
-            ? (DependencyPathWeight) 
-                ReflectionUtil.getObjectInstance(weighterProp)
-            : new FlatPathWeight();
-
-        cooccurrenceMatrix = new AtomicGrowingSparseMatrix();
-        termToRowIndex = new ConcurrentHashMap<String,Integer>();
-        termToFeatureIndex = new ConcurrentHashMap<String,Integer>();
+        focusBasis = new StringBasisMapping();
         selPrefMap =
             new ConcurrentHashMap<String, Map<String, SparseDoubleVector>>();
-        semanticFilter = new HashSet<String>();
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-        return Collections.unmodifiableSet(termToRowIndex.keySet());
+        return Collections.unmodifiableSet(termBasis.keySet());
     }
 
     /**
      * {@inheritDoc}
      */
-    public Vector getVector(String term) {
-        Integer termIndex = termToRowIndex.get(term);
-        return (termIndex != null)
-            ? cooccurrenceMatrix.getRowVectorUnsafe(termIndex)
-            : null;
+    public SparseDoubleVector getVector(String term) {
+        int index = focusBasis.getDimension(term);
+        return (index < 0) ? null : secondOrderWordSpace.getRowVector(index);
     }
 
     /**
@@ -330,7 +252,7 @@ public class StructuredVectorSpace implements SemanticSpace {
      * {@inheritDoc}
      */
     public int getVectorLength() {
-        return cooccurrenceMatrix.columns();
+        return secondOrderWordSpace.columns();
     }
 
     /**
@@ -355,15 +277,14 @@ public class StructuredVectorSpace implements SemanticSpace {
                     continue;
 
                 // Skip words that are rejected by the semantic filter.
-                if (!acceptWord(focusWord))
+                int focusIndex = focusBasis.getDimension(focusWord);
+                if (focusIndex < 0)
                     continue;
-
-                int focusIndex = getIndexFor(focusWord, termToRowIndex);
 
                 // Create the path iterator for all acceptable paths rooted at
                 // the focus word in the sentence.
                 Iterator<DependencyPath> pathIter = 
-                    new DependencyIterator(nodes[i], acceptor, 1);
+                    new DependencyIterator(nodes[i], acceptor, pathLength);
 
                 // Count each co-occurence the focus word has with words that
                 // are one relation away.  Since each focus word has several
@@ -384,12 +305,14 @@ public class StructuredVectorSpace implements SemanticSpace {
                     if (otherTerm.equals(EMPTY_STRING))
                         continue;
 
-                    int featureIndex =
-                        getIndexFor(otherTerm, termToFeatureIndex);
+                    int featureIndex = termBasis.getDimension(otherTerm);
+                    if (featureIndex <= 0)
+                      continue;
 
                     // Determine the expectation vector name and retrieve the
                     // row index for that vector.
                     DependencyRelation relation = path.iterator().next();
+
                     // Check whether the current term is the head node in the 
                     // relation.  If so, the relation will come after.
                     String orderedRelation = 
@@ -397,13 +320,10 @@ public class StructuredVectorSpace implements SemanticSpace {
                         ? relation.relation() + "-"
                         : "_" + relation.relation();
 
-                    // Increment the score for this co-occurence.
-                    cooccurrenceMatrix.addAndGet(focusIndex, featureIndex, 1);
-
                     // Get the mapping of selectional preferences for the focus
                     // word.
-                    Map<String, SparseDoubleVector> preferences = selPrefMap.get(
-                        focusWord);
+                    Map<String, SparseDoubleVector> preferences =
+                      selPrefMap.get(focusWord);
                     if (preferences == null) {
                         synchronized (selPrefMap) {
                             preferences = selPrefMap.get(focusWord);
@@ -417,8 +337,8 @@ public class StructuredVectorSpace implements SemanticSpace {
 
                     // Get the selection preference vector for the relation that
                     // the focus word has with the feature word.
-                    SparseDoubleVector relationPreferenceCounts = preferences.get(
-                        orderedRelation);
+                    SparseDoubleVector relationPreferenceCounts =
+                      preferences.get(orderedRelation);
                     if (relationPreferenceCounts  == null) {
                         synchronized (preferences) {
                             relationPreferenceCounts = preferences.get(
@@ -438,6 +358,9 @@ public class StructuredVectorSpace implements SemanticSpace {
                     synchronized (relationPreferenceCounts) {
                         relationPreferenceCounts.add(featureIndex, score);
                     }
+
+                    // Add the ordered relation to the set of known relations.
+                    int relIndex = relationBasis.getDimension(orderedRelation);
                 }
             }
         }
@@ -446,58 +369,113 @@ public class StructuredVectorSpace implements SemanticSpace {
     }
 
     /**
-     * Returns the index in the co-occurence matrix for this word.  If the word
-     * was not previously assigned an index, this method adds one for it and
-     * returns that index.
-     */
-    private final int getIndexFor(String word,
-                                  Map<String, Integer> termToIndex) {
-        Integer index = termToIndex.get(word);
-        if (index == null) {     
-            synchronized(this) {
-                // recheck to see if the term was added while blocking
-                index = termToIndex.get(word);
-                // if another thread has not already added this word while the
-                // current thread was blocking waiting on the lock, then add it.
-                if (index == null) {
-                    int i = termToIndex.size();
-                    termToIndex.put(word, i);
-                    return i; // avoid the auto-boxing to assign i to index
-                }
-            }
-        }
-        return index;
-    }
-
-    /**
-     * Does nothing that modifies the space.
-     *
-     * @param properties {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        numRows = focusBasis.numDimensions();
+        numRelations = relationBasis.numDimensions();
+        numFeatures = termBasis.numDimensions();
+        numColumns = numRelations * numRelations * termBasis.numDimensions();
+        secondOrderWordSpace = new YaleSparseMatrix(numRows, numColumns);
+
+        System.out.printf("numRows: %d\nnumRelations: %d\nnumFeatures: %d\n",
+                          numRows, numRelations, numFeatures);
         // Add in code for the transform here after the new transform changes
         // are in place.
         for (Map.Entry<String, Map<String, SparseDoubleVector>> preferenceEntry :
                 selPrefMap.entrySet()) {
             String focusTerm = preferenceEntry.getKey();
+            int termIndex = focusBasis.getDimension(focusTerm);
             Map<String, SparseDoubleVector> preferenceMap =
               preferenceEntry.getValue();
             for (Map.Entry<String, SparseDoubleVector> relationPreferences :
                     preferenceMap.entrySet()) {
-                String relation = relationPreferences.getKey();
+                // Get the index corresponding to the current relation.
+                int relation1Index = relationBasis.getDimension(
+                    relationPreferences.getKey());
                 SparseDoubleVector preferenceCounts =
                     relationPreferences.getValue();
-                SparseDoubleVector preferences = new CompactSparseVector(
-                    cooccurrenceMatrix.columns());
+
+                // Iterate through all of the non zero values for this relation.
+                // Multiply the value for each co-occurring term against the
+                // feature values for that co-occurring term, this projects 
+                // the single occurrence feature into a space that has the
+                // weighted second order values for every co-occuring term.
                 for (int index : preferenceCounts.getNonZeroIndices()) {
                     double weight = preferenceCounts.get(index);
-                    SparseDoubleVector lemmaVector = new SparseScaledDoubleVector(
-                        cooccurrenceMatrix.getRowVector(index), weight);
-                    VectorMath.add(preferences, lemmaVector);
+                    String occurringTerm =
+                      termBasis.getDimensionDescription(index);
+
+                    System.out.printf("%s %d\n", occurringTerm, index);
+                    Map<String, SparseDoubleVector> occurringMap =
+                      selPrefMap.get(occurringTerm);
+                    for (Map.Entry<String, SparseDoubleVector> occurringEntry :
+                            occurringMap.entrySet()) {
+                        // Get the index corresponding to the indirect relation.
+                        int relation2Index = relationBasis.getDimension(
+                            occurringEntry.getKey());
+                        SparseDoubleVector secondCounts =
+                          occurringEntry.getValue();
+                        for (int secondIndex : secondCounts.getNonZeroIndices()) {
+                            double weight2 = secondCounts.get(secondIndex);
+                            int featureIndex =
+                              relation1Index * numFeatures * numRelations +
+                              relation2Index * numFeatures +
+                              secondIndex;
+                            double oldValue = secondOrderWordSpace.get(
+                                termIndex, featureIndex);
+                            secondOrderWordSpace.set(termIndex, featureIndex,
+                                weight2 * weight + oldValue);
+                        }
+                    }
                 }
-                preferenceMap.put(relation, preferences);
             }
         }
+        termBasis.setReadOnly(true);
+        focusBasis.setReadOnly(true);
+        relationBasis.setReadOnly(true);
+    }
+
+    public SparseDoubleVector contextualize(Iterator<DependencyPath> paths) {
+        SparseDoubleVector contextVector = new CompactSparseVector(numFeatures);
+        while (paths.hasNext()) {
+            DependencyPath path = paths.next();
+
+            // Skip any paths longer than 1 relation.
+            if (path.length() > 1)
+                continue;
+
+            DependencyRelation relation = path.lastRelation();
+            String occurringTerm = path.last().word();
+            String focusTerm = path.first().word();
+
+            String orderedRelation = (relation.headNode().equals(path.first()))
+              ? relation.relation() + "-"
+              : "-" + relation.relation(); 
+
+            // Get the index corresponding to the current relation.
+            int relation1Index = relationBasis.getDimension(orderedRelation);
+
+            Map<String, SparseDoubleVector> prefs = selPrefMap.get(occurringTerm);
+            if (prefs == null)
+                continue;
+
+            SparseDoubleVector focusVector = getVector(focusTerm);
+            for (Map.Entry<String, SparseDoubleVector> entry :
+                    prefs.entrySet()) {
+                int relation2Index =
+                    relationBasis.getDimension(entry.getKey());
+                SparseDoubleVector secondCounts = entry.getValue();
+                for (int secondIndex : secondCounts.getNonZeroIndices()) {
+                    double weight2 = secondCounts.get(secondIndex);
+                    int featureIndex = secondIndex * numRows * numRelations +
+                                       relation2Index * numRelations +
+                                       relation1Index;
+                    contextVector.add(
+                        featureIndex, weight2*focusVector.get(featureIndex));
+                }
+            }
+        }
+        return contextVector;
     }
 
     /**
@@ -510,15 +488,8 @@ public class StructuredVectorSpace implements SemanticSpace {
      *        computed.
      */
     public void setSemanticFilter(Set<String> semanticsToRetain) {
-        semanticFilter.clear();
-        semanticFilter.addAll(semanticsToRetain);
-    }
-
-    /**
-     * Returns true if there is no semantic filter list or the word is in the
-     * filter list.
-     */
-    private boolean acceptWord(String word) {
-        return semanticFilter.isEmpty() || semanticFilter.contains(word);
+        for (String term : semanticsToRetain)
+            focusBasis.getDimension(term);
+        focusBasis.setReadOnly(true);
     }
 }
