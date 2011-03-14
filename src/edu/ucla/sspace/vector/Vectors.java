@@ -253,6 +253,16 @@ public class Vectors {
         return new SynchronizedVector(vector);
     }
 
+    public static DoubleVector scaleByMagnitude(DoubleVector vector) {
+        if (vector instanceof SparseDoubleVector)
+            return scaleByMagnitude((SparseDoubleVector) vector);
+        return new ScaledDoubleVector(vector, 1d/vector.magnitude());
+    }
+
+    public static DoubleVector scaleByMagnitude(SparseDoubleVector vector) {
+        return new SparseScaledDoubleVector(vector, 1d/vector.magnitude());
+    }
+
     /**
      * Returns a subview for the given {@code DoubleVector} with a specified
      * offset and length.
