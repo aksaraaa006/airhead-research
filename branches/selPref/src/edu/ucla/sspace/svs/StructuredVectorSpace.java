@@ -34,15 +34,19 @@ import edu.ucla.sspace.dependency.DependencyTreeNode;
 import edu.ucla.sspace.dependency.FlatPathWeight;
 import edu.ucla.sspace.dependency.UniversalRelationAcceptor;
 
-import edu.ucla.sspace.matrix.AtomicGrowingSparseHashMatrix;
+import edu.ucla.sspace.matrix.AtomicGrowingSparseMatrix;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.ReflectionUtil;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseScaledDoubleVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -200,21 +204,30 @@ public class StructuredVectorSpace implements SemanticSpace {
 
     /**
      * A mapping from a vector name to it's row index.  These vector names
-     * include the lemma vector and the selectional preference vectors.
+     * include the lemma vectors.
      */
     private Map<String, Integer> termToRowIndex;
 
     /**
      * A mapping from a co-occurring word to it's column index.  These feature
-     * strings are only raw tokens.
+     * strings are only for lemmas.
      */
     private Map<String, Integer> termToFeatureIndex;
+
+    /**
+     * A Mapping from lemmas to their selectional preference vectors.  The inner
+     * maps correspond to the possible relationships for each selectional
+     * preference, which are represented as REL- for instances in which the term
+     * governs the relationship and -REL for when the term is governed in the
+     * relationship
+     */
+    private Map<String, Map<String, SparseDoubleVector>> selPrefMap;
 
     /**
      * The co-occurrence matrix representing the lemma vectors and selectional
      * preference vectors.
      */
-    private AtomicGrowingSparseHashMatrix cooccurrenceMatrix;
+    private AtomicGrowingSparseMatrix cooccurrenceMatrix;
 
     /**
      * The {@link DependencyExtractor} being used for parsing corpora.
@@ -281,9 +294,11 @@ public class StructuredVectorSpace implements SemanticSpace {
                 ReflectionUtil.getObjectInstance(weighterProp)
             : new FlatPathWeight();
 
-        cooccurrenceMatrix = new AtomicGrowingSparseHashMatrix();
+        cooccurrenceMatrix = new AtomicGrowingSparseMatrix();
         termToRowIndex = new ConcurrentHashMap<String,Integer>();
         termToFeatureIndex = new ConcurrentHashMap<String,Integer>();
+        selPrefMap =
+            new ConcurrentHashMap<String, Map<String, SparseDoubleVector>>();
         semanticFilter = new HashSet<String>();
     }
 
@@ -322,9 +337,6 @@ public class StructuredVectorSpace implements SemanticSpace {
      * {@inheritDoc}
      */
     public void processDocument(BufferedReader document) throws IOException {
-        Map<Pair<Integer>,Double> matrixEntryToCount = 
-            new HashMap<Pair<Integer>,Double>();
-
         // Iterate over all of the parseable dependency parsed sentences in the
         // document.
         for (DependencyTreeNode[] nodes = null;
@@ -380,42 +392,57 @@ public class StructuredVectorSpace implements SemanticSpace {
                     DependencyRelation relation = path.iterator().next();
                     // Check whether the current term is the head node in the 
                     // relation.  If so, the relation will come after.
-                    String termExpectation = 
+                    String orderedRelation = 
                         (relation.headNode().word().equals(focusWord))
-                        ? focusWord + "|" + relation.relation()
-                        : relation.relation() + "|" + focusWord;
-                    int rowIndex = getIndexFor(termExpectation, termToRowIndex);
+                        ? relation.relation() + "-"
+                        : "_" + relation.relation();
 
                     // Increment the score for this co-occurence.
-                    incrementCount(matrixEntryToCount, rowIndex, 
-                                   featureIndex, 1);
+                    cooccurrenceMatrix.addAndGet(focusIndex, featureIndex, 1);
+
+                    // Get the mapping of selectional preferences for the focus
+                    // word.
+                    Map<String, SparseDoubleVector> preferences = selPrefMap.get(
+                        focusWord);
+                    if (preferences == null) {
+                        synchronized (selPrefMap) {
+                            preferences = selPrefMap.get(focusWord);
+                            if (preferences == null) {
+                              preferences =
+                                  new HashMap<String, SparseDoubleVector>();
+                              selPrefMap.put(focusWord, preferences);
+                            }
+                        }
+                    }
+
+                    // Get the selection preference vector for the relation that
+                    // the focus word has with the feature word.
+                    SparseDoubleVector relationPreferenceCounts = preferences.get(
+                        orderedRelation);
+                    if (relationPreferenceCounts  == null) {
+                        synchronized (preferences) {
+                            relationPreferenceCounts = preferences.get(
+                                orderedRelation);
+                            if (relationPreferenceCounts  == null) {
+                              relationPreferenceCounts =
+                                new CompactSparseVector();
+                              preferences.put(
+                                  orderedRelation, relationPreferenceCounts);
+                            }
+                        }
+                    }
+
+                    // Set the feature value for the co-occurrence with this
+                    // relationship type.
                     double score = weighter.scorePath(path);
-                    incrementCount(matrixEntryToCount, focusIndex, 
-                                   featureIndex, score);
+                    synchronized (relationPreferenceCounts) {
+                        relationPreferenceCounts.add(featureIndex, score);
+                    }
                 }
             }
         }
 
-        // Once the document has been processed, update the co-occurrence matrix
-        // accordingly.
-        for (Map.Entry<Pair<Integer>,Double> e : matrixEntryToCount.entrySet()){
-            Pair<Integer> p = e.getKey();
-            cooccurrenceMatrix.addAndGet(p.x, p.y, e.getValue());
-        }    
         document.close();
-    }
-
-    /**
-     * Increments the value in a given map for a given cell entry by some
-     * amount.
-     */
-    private void incrementCount(Map<Pair<Integer>, Double> matrixEntryToCount,
-                                int rowIndex, int featureIndex,
-                                double value) {
-        Pair<Integer> p = new Pair<Integer>(rowIndex, featureIndex);
-        Double curCount = matrixEntryToCount.get(p);
-        matrixEntryToCount.put(p, (curCount == null)
-                               ? value : value + curCount);
     }
 
     /**
@@ -448,11 +475,29 @@ public class StructuredVectorSpace implements SemanticSpace {
      * @param properties {@inheritDoc}
      */
     public void processSpace(Properties properties) {
-        System.out.println("# Feature Column_Index");
-        for (Map.Entry<String, Integer> featureEntry : 
-                termToFeatureIndex.entrySet())
-            System.out.printf("%s %d\n",
-                              featureEntry.getKey(), featureEntry.getValue());
+        // Add in code for the transform here after the new transform changes
+        // are in place.
+        for (Map.Entry<String, Map<String, SparseDoubleVector>> preferenceEntry :
+                selPrefMap.entrySet()) {
+            String focusTerm = preferenceEntry.getKey();
+            Map<String, SparseDoubleVector> preferenceMap =
+              preferenceEntry.getValue();
+            for (Map.Entry<String, SparseDoubleVector> relationPreferences :
+                    preferenceMap.entrySet()) {
+                String relation = relationPreferences.getKey();
+                SparseDoubleVector preferenceCounts =
+                    relationPreferences.getValue();
+                SparseDoubleVector preferences = new CompactSparseVector(
+                    cooccurrenceMatrix.columns());
+                for (int index : preferenceCounts.getNonZeroIndices()) {
+                    double weight = preferenceCounts.get(index);
+                    SparseDoubleVector lemmaVector = new SparseScaledDoubleVector(
+                        cooccurrenceMatrix.getRowVector(index), weight);
+                    VectorMath.add(preferences, lemmaVector);
+                }
+                preferenceMap.put(relation, preferences);
+            }
+        }
     }
 
     /**

@@ -25,8 +25,6 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.Matrix;
-import edu.ucla.sspace.matrix.MatrixIO;
-import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
@@ -34,9 +32,7 @@ import edu.ucla.sspace.vector.ScaledDoubleVector;
 import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.SparseVector;
 import edu.ucla.sspace.vector.VectorMath;
-import edu.ucla.sspace.vector.VectorIO;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.IOError;
