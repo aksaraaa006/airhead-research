@@ -177,9 +177,9 @@ more relations both within the word spaces and in broader research areas.
 
   <td>
 
-  # A simple web service that can expose the contents of a semantic space via method call 
-  # A client-side API in both Java and Javascript for clients to access the data 
-  # Additional functionality for requesting the semantic space data in pre-processed forms, e.g. select 100 neighbors and cluster them. 
+  # One or more clustering algorithms implemented to match the Clustering interface.
+  # An analysis of each algorithm's performance and scalability on co-occurrence data
+  # A multi-threaded and/or Hadoop-based implementation of the same algorithm (stretch goal)
 
   </td>
   <td>
