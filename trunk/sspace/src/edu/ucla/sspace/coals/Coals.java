@@ -21,11 +21,6 @@
 
 package edu.ucla.sspace.coals;
 
-import edu.ucla.sspace.common.Similarity;
-import edu.ucla.sspace.util.MultiMap;
-import edu.ucla.sspace.util.BoundedSortedMultiMap;
-import edu.ucla.sspace.vector.Vector;
-import java.util.Map;
 
 import edu.ucla.sspace.common.SemanticSpace;
 
@@ -34,44 +29,40 @@ import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.AtomicGrowingSparseMatrix;
 import edu.ucla.sspace.matrix.CorrelationTransform;
 import edu.ucla.sspace.matrix.MatlabSparseMatrixBuilder;
+import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.MatrixBuilder;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.Normalize;
+import edu.ucla.sspace.matrix.SparseMatrix;
 import edu.ucla.sspace.matrix.SVD;
 import edu.ucla.sspace.matrix.Transform;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
-import edu.ucla.sspace.text.StringUtils;
 import edu.ucla.sspace.text.IteratorFactory;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
@@ -80,7 +71,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -95,14 +85,19 @@ import java.util.logging.Logger;
  * href="http://www.cnbc.cmu.edu/~plaut/papers/pdf/RohdeGonnermanPlautSUB-CogSci.COALS.pdf">here</a></p>
  *
  * COALS first computes a term by term co-occurrance using a ramped 4-word
- * window. Once all documents have been processed, the raw counts are converted
- * into correlations.  Negative values are replaced with 0, and all other values
- * are replaced with their square root.    
- * From there, the semantic similarity of two words is best evaluated as the 
- * correlation of their vectors.
+ * window. Once all documents have been processed, the co-occurrence matrix will
+ * be re ordered such that only the {@code N} most frequent terms have their
+ * semantic vectors retained and only the {@code M} most frequent terms are used
+ * as co-occurrence features.  These values can be set by the {@value
+ *#MAX_WORDS_PROPERTY} and {@value MAX_DIMENSIONS_PROPERTY} properties,
+ * resepctively.  After re ordering the semantic vectors and features, {@link
+ * CorrelationTransform} is used to rerank all co-occurrence scores.  As part of
+ * this transform, all negative correlations are dropped and replaced with a 0.
+ * Finally, and optionally, the {@link SVD} is used to reduce the semantic
+ * space.  To set the number of retained dimensions via {@link SVD}, set the
+ * {@value REDUCE_DIMENSION_PROPERTY} property.
  *
- * As of right now this class is not thread safe, and still relies on the Jama
- * Matrix class.  It also does not accept any Properties.
+ * @author Keith Stevens
  */
 public class Coals implements SemanticSpace {
 
@@ -172,10 +167,9 @@ public class Coals implements SemanticSpace {
         Logger.getLogger(Coals.class.getName());
 
     /**
-     * The matrix used for storing weight co-occurrence statistics of those
-     * words that occur both before and after.
+     * A mapping from each word to the vector the represents its semantics
      */
-    private AtomicGrowingSparseMatrix cooccurrenceMatrix;
+    private Map<String, SparseDoubleVector> wordToSemantics;
 
     /**
      * A mapping from word to index number.
@@ -214,7 +208,7 @@ public class Coals implements SemanticSpace {
     public Coals() {
         termToIndex = new HashMap<String, Integer>();
         totalWordFreq = new ConcurrentHashMap<String, AtomicInteger>();
-        cooccurrenceMatrix = new AtomicGrowingSparseMatrix();
+        wordToSemantics = new HashMap<String, SparseDoubleVector>(1024, 4f);
         finalCorrelation = null;
     }
 
@@ -252,6 +246,8 @@ public class Coals implements SemanticSpace {
      */
     public void processDocument(BufferedReader document) throws IOException {
         Map<String, Integer> wordFreq = new HashMap<String, Integer>();
+        Map<String, SparseDoubleVector> wordDocSemantics =
+            new HashMap<String, SparseDoubleVector>();
 
         // Setup queues to track the set of previous and next words in a
         // context.
@@ -274,35 +270,62 @@ public class Coals implements SemanticSpace {
             // Get the focus word
             String focusWord = nextWords.remove();
             if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-                int focusIndex = getIndexFor(focusWord); 
+                getIndexFor(focusWord);
+
                 // Update the frequency count of the focus word.
                 Integer focusFreq = wordFreq.get(focusWord);
                 wordFreq.put(focusWord, (focusFreq == null)
                         ? 1
                         : 1 + focusFreq.intValue());
 
+                // Get the temprorary semantics for the focus word, create a new
+                // vector for them if needed.
+                SparseDoubleVector focusSemantics = wordDocSemantics.get(
+                        focusWord);
+                if (focusSemantics == null) {
+                    focusSemantics = new SparseHashDoubleVector(
+                            Integer.MAX_VALUE);
+                    wordDocSemantics.put(focusWord, focusSemantics);
+                }
+
+                // Process the previous words.
                 int offset = 4 - prevWords.size();
                 for (String word : prevWords) {
                     offset++;
                     if (word.equals(IteratorFactory.EMPTY_TOKEN))
                         continue;
-                    int index = getIndexFor(word); 
-                    cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
+                    int index = getIndexFor(word);
+                    focusSemantics.add(index, offset);
                 }
 
+                // Process the next words.
                 offset = 5;
                 for (String word : nextWords) {
                     offset--;
                     if (word.equals(IteratorFactory.EMPTY_TOKEN))
                         continue;
-                    int index = getIndexFor(word); 
-                    cooccurrenceMatrix.addAndGet(focusIndex, index, offset);
+                    int index = getIndexFor(word);
+                    focusSemantics.add(index, offset);
                 }
             }
 
             prevWords.offer(focusWord);
             if (prevWords.size() > 4)
                 prevWords.remove();
+        }
+
+        // Add the temporary vectors for each word in this document to the 
+        // actual semantic fectors.
+        for (Map.Entry<String, SparseDoubleVector> e :
+                wordDocSemantics.entrySet()) {
+            SparseDoubleVector focusSemantics = getSemanticVector(
+                    e.getKey());
+            // Get the non zero indices before hand so that they are cached
+            // during the synchronized section.
+            focusSemantics.getNonZeroIndices();
+            synchronized (focusSemantics) {
+                VectorMath.add(focusSemantics, e.getValue());
+            }
         }
 
         // Store the total frequency counts of the words seen in this document
@@ -317,11 +340,38 @@ public class Coals implements SemanticSpace {
     }
 
     /**
+     * Returns the current semantic vector for the provided word, or if the word
+     * is not currently in the semantic space, a vector is added for it and
+     * returned.
+     *
+     * @param word a word
+     *
+     * @return the {@code SemanticVector} for the provide word.
+     */
+    private SparseDoubleVector getSemanticVector(String word) {
+        SparseDoubleVector v = wordToSemantics.get(word);
+        if (v == null) {
+            // lock on the word in case multiple threads attempt to add it at
+            // once
+            synchronized(this) {
+                // recheck in case another thread added it while we were waiting
+                // for the lock
+                v = wordToSemantics.get(word);
+                if (v == null) {
+                    v = new CompactSparseVector();
+                    wordToSemantics.put(word, v);
+                }
+            }
+        }
+        return v;
+    }
+
+    /**
      * Returns the index in the co-occurence matrix for this word.  If the word
      * was not previously assigned an index, this method adds one for it and
      * returns that index.
      */
-    private final int getIndexFor(String word) {
+    private int getIndexFor(String word) {
         Integer index = termToIndex.get(word);
         if (index == null) {     
             synchronized(this) {
@@ -396,7 +446,29 @@ public class Coals implements SemanticSpace {
         }
     }
 
+    /**
+     * Returns a {@link Matrix} that contains {@code maxWords} and {@code
+     * maxDimensions} columns.  If {@code maxWords} is 0, then all words will be
+     * returned in the semantic {@link Matrix}.  If {@code maxDimensions} is
+     * larger than the number of observed features, then all observed features
+     * will be maintained.  The resulting rows and columns are both ordred based
+     * on the frequency of each term, in descending order, {@code termToIndex}
+     * is modified to account for these changed.
+     */
     private Matrix buildMatrix(int maxWords, int maxDimensions) {
+        // Convert the vectors in the semantic map to a matrix.
+        SparseDoubleVector[] vectorList =
+            new SparseDoubleVector[wordToSemantics.size()];
+        for (Map.Entry<String, SparseDoubleVector> e :
+                wordToSemantics.entrySet())
+            vectorList[getIndexFor(e.getKey())] = e.getValue();
+        SparseMatrix matrix = Matrices.asSparseMatrix(
+                Arrays.asList(vectorList));
+
+        // If maxwords was set to 0, save all words.
+        if (maxWords == 0)
+            maxWords = wordToSemantics.size();
+
         COALS_LOGGER.info("Forming the inverse mapping from terms to indices.");
         // Calculate an inverse mapping from index to word since the binary file
         // stores things by index number.
@@ -412,7 +484,6 @@ public class Coals implements SemanticSpace {
                     totalWordFreq.entrySet());
         Collections.sort(wordCountList, new EntryComp());
 
-
         // Calculate the new term to index mapping based on the order of the
         // word frequencies.
         COALS_LOGGER.info("Generating the index masks.");
@@ -424,6 +495,11 @@ public class Coals implements SemanticSpace {
 
         int[] rowMask = new int[maxWords];
         int[] colMask = new int[wordCount];
+
+        // Create a new vector list to store the word semantics that will be
+        // retained.  When this method exits, it will throw away all the other
+        // vectors.
+        SparseDoubleVector[] newVectorList = new SparseDoubleVector[maxWords];
 
         // For each of the terms that we have a mapping, add row and column
         // maskings for the indices of the first maxWords terms.  For all other
@@ -441,7 +517,11 @@ public class Coals implements SemanticSpace {
             if (termCount < maxWords) {
                 if (termCount <  wordCount)
                     colMask[termCount] = oldIndex;
-                rowMask[termCount] = oldIndex;
+                // Add the vector for this reserved word to the new vector list.
+                newVectorList[termCount] = vectorList[oldIndex];
+                
+                // Record the new dimension for this term.
+                rowMask[termCount] = termCount;
                 termToIndex.put(entry.getKey(), termCount);
                 termCount++;
             }
@@ -450,8 +530,10 @@ public class Coals implements SemanticSpace {
                 termToIndex.remove(entry.getKey());
         }
 
+        wordToSemantics = null;
+        matrix = Matrices.asSparseMatrix(Arrays.asList(newVectorList));
         // Return a masked version of the original matrix.
-        return new CellMaskedSparseMatrix(cooccurrenceMatrix, rowMask, colMask);
+        return new CellMaskedSparseMatrix(matrix, rowMask, colMask);
     }
 
     private class EntryComp
