@@ -44,6 +44,7 @@ import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseHashDoubleVector;
 import edu.ucla.sspace.vector.Vector;
 import edu.ucla.sspace.vector.Vectors;
+import edu.ucla.sspace.vector.VectorMath;
 
 import edu.ucla.sspace.text.IteratorFactory;
 
@@ -240,6 +241,8 @@ public class Coals implements SemanticSpace {
      */
     public void processDocument(BufferedReader document) throws IOException {
         Map<String, Integer> wordFreq = new HashMap<String, Integer>();
+        Map<String, SparseDoubleVector> wordDocSemantics =
+            new HashMap<String, SparseDoubleVector>();
 
         // Setup queues to track the set of previous and next words in a
         // context.
@@ -262,42 +265,62 @@ public class Coals implements SemanticSpace {
             // Get the focus word
             String focusWord = nextWords.remove();
             if (!focusWord.equals(IteratorFactory.EMPTY_TOKEN)) {
-                int focusIndex = getIndexFor(focusWord); 
+                getIndexFor(focusWord);
+
                 // Update the frequency count of the focus word.
                 Integer focusFreq = wordFreq.get(focusWord);
                 wordFreq.put(focusWord, (focusFreq == null)
                         ? 1
                         : 1 + focusFreq.intValue());
 
-                SparseDoubleVector focusSemantics = getSemanticVector(
+                // Get the temprorary semantics for the focus word, create a new
+                // vector for them if needed.
+                SparseDoubleVector focusSemantics = wordDocSemantics.get(
                         focusWord);
+                if (focusSemantics == null) {
+                    focusSemantics = new SparseHashDoubleVector(
+                            Integer.MAX_VALUE);
+                    wordDocSemantics.put(focusWord, focusSemantics);
+                }
 
+                // Process the previous words.
                 int offset = 4 - prevWords.size();
                 for (String word : prevWords) {
                     offset++;
                     if (word.equals(IteratorFactory.EMPTY_TOKEN))
                         continue;
                     int index = getIndexFor(word);
-                    synchronized(focusSemantics) {
-                        focusSemantics.add(index, offset);
-                    }
+                    focusSemantics.add(index, offset);
                 }
 
+                // Process the next words.
                 offset = 5;
                 for (String word : nextWords) {
                     offset--;
                     if (word.equals(IteratorFactory.EMPTY_TOKEN))
                         continue;
                     int index = getIndexFor(word);
-                    synchronized(focusSemantics) {
-                        focusSemantics.add(index, offset);
-                    }
+                    focusSemantics.add(index, offset);
                 }
             }
 
             prevWords.offer(focusWord);
             if (prevWords.size() > 4)
                 prevWords.remove();
+        }
+
+        // Add the temporary vectors for each word in this document to the 
+        // actual semantic fectors.
+        for (Map.Entry<String, SparseDoubleVector> e :
+                wordDocSemantics.entrySet()) {
+            SparseDoubleVector focusSemantics = getSemanticVector(
+                    e.getKey());
+            // Get the non zero indices before hand so that they are cached
+            // during the synchronized section.
+            focusSemantics.getNonZeroIndices();
+            synchronized (focusSemantics) {
+                VectorMath.add(focusSemantics, e.getValue());
+            }
         }
 
         // Store the total frequency counts of the words seen in this document
