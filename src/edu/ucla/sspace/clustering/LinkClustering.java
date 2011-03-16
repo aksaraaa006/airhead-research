@@ -197,13 +197,10 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         boolean keepSimMatrixInMem = (inMemProp != null) 
             ? Boolean.parseBoolean(inMemProp) : true;
 
-        // IMPLEMENTATION NOTE: Ahn et al. used single-linkage HAC, which can be
-        // efficiently implemented in O(n^2) time as a special case of HAC.
-        // However, we currently don't optimize for this special case and
-        // instead use our HAC class.  Because of the complexity of the edge
-        // similarity function, we build our own similarity matrix and then pass
-        // it in, rather than passing in the edge matrix directly.
-
+        // Create a similarity matrix for the edges.  This will be passed to
+        // HAC.  We create our own similarity matrix so that we can use custom
+        // edge-similarity functions and to optionally support keeping the
+        // matrix out of memory by computing its values on the fly.
         final int rows = sm.rows();
         numRows = rows;
         LOGGER.fine("Generating link similarity matrix for " + rows + " nodes");
