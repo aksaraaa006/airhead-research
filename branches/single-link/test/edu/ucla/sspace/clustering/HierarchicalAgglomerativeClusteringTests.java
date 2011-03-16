@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
  */
 public class HierarchicalAgglomerativeClusteringTests {
 
-    @Test public void testSingleLinkageDendogram() {
+    @Test public void testSingleLinkageDendrogram() {
         List<SparseDoubleVector> vectors = new ArrayList<SparseDoubleVector>();
         vectors.add(newVec(new int[] { 1, 2 }, 100));
         vectors.add(newVec(new int[] { 1, 2 }, 100));
@@ -52,7 +52,7 @@ public class HierarchicalAgglomerativeClusteringTests {
 
         HierarchicalAgglomerativeClustering hac =
             new HierarchicalAgglomerativeClustering();
-        List<Merge> mergeOrder = hac.buildDendogram(
+        List<Merge> mergeOrder = hac.buildDendrogram(
                 m, ClusterLinkage.SINGLE_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
@@ -62,6 +62,46 @@ public class HierarchicalAgglomerativeClusteringTests {
         assertEquals(0, mergeOrder.get(2).remainingCluster());
         assertEquals(2, mergeOrder.get(2).mergedCluster());
     }
+
+    @Test public void testSingleLinkageDendrogramWithProvidedSimMatrix() {
+        
+        List<DoubleVector> v = new ArrayList<DoubleVector>();
+        v.add(Vectors.asVector(new double[] { 0,    1,   .25, .125, 0,  0}));
+        v.add(Vectors.asVector(new double[] { 1,    0,   0, 0,      0,  0}));
+        v.add(Vectors.asVector(new double[] { .25,  0, 0,   .8,     0,  0}));
+        v.add(Vectors.asVector(new double[] { .125, 0,   .8,  0,   .2,  0}));
+        v.add(Vectors.asVector(new double[] { 0,    0,   0,   .2,   0, .9}));
+        v.add(Vectors.asVector(new double[] { 0,    0,   0,   0,   .9,  0}));
+
+        Matrix similarityMatrix = Matrices.asMatrix(v);
+
+        HierarchicalAgglomerativeClustering hac =
+            new HierarchicalAgglomerativeClustering();
+        List<Merge> mergeOrder = hac.buildDendrogram(similarityMatrix,
+                                                    ClusterLinkage.SINGLE_LINKAGE);
+        assertEquals(5, mergeOrder.size());
+
+        // {0, 1} {2} {3} {4} {5}
+        assertEquals(0, mergeOrder.get(0).remainingCluster());
+        assertEquals(1, mergeOrder.get(0).mergedCluster());
+
+        // {0, 1} {2} {3} {4, 5}
+        assertEquals(4, mergeOrder.get(1).remainingCluster());
+        assertEquals(5, mergeOrder.get(1).mergedCluster());
+
+        // {0, 1} {2, 3} {4, 5}
+        assertEquals(2, mergeOrder.get(2).remainingCluster());
+        assertEquals(3, mergeOrder.get(2).mergedCluster());
+
+        // {0, 1, 2, 3} {4, 5}
+        assertEquals(0, mergeOrder.get(3).remainingCluster());
+        assertEquals(2, mergeOrder.get(3).mergedCluster());
+
+        // {0, 1, 2, 3, 4, 5}
+        assertEquals(0, mergeOrder.get(4).remainingCluster());
+        assertEquals(4, mergeOrder.get(4).mergedCluster());
+    }
+
 
     @Test public void testCompleteLinkageDendrogram() {
         List<SparseDoubleVector> vectors = new ArrayList<SparseDoubleVector>();
@@ -73,7 +113,7 @@ public class HierarchicalAgglomerativeClusteringTests {
 
         HierarchicalAgglomerativeClustering hac =
             new HierarchicalAgglomerativeClustering();
-        List<Merge> mergeOrder = hac.buildDendogram(
+        List<Merge> mergeOrder = hac.buildDendrogram(
             m, ClusterLinkage.COMPLETE_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
@@ -84,7 +124,7 @@ public class HierarchicalAgglomerativeClusteringTests {
         assertEquals(2, mergeOrder.get(2).mergedCluster());
     }
 
-    @Test public void testMeanLinkageDendogram() {
+    @Test public void testMeanLinkageDendrogram() {
         List<SparseDoubleVector> vectors = new ArrayList<SparseDoubleVector>();
         vectors.add(newVec(new int[] { 1, 2 }, 100));
         vectors.add(newVec(new int[] { 1, 2 }, 100));
@@ -94,7 +134,7 @@ public class HierarchicalAgglomerativeClusteringTests {
 
         HierarchicalAgglomerativeClustering hac =
             new HierarchicalAgglomerativeClustering();
-        List<Merge> mergeOrder = hac.buildDendogram(
+        List<Merge> mergeOrder = hac.buildDendrogram(
             m, ClusterLinkage.MEAN_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
@@ -105,7 +145,7 @@ public class HierarchicalAgglomerativeClusteringTests {
         assertEquals(2, mergeOrder.get(2).mergedCluster());
     }
 
-    @Test public void testMedianLinkageDendogram() {
+    @Test public void testMedianLinkageDendrogram() {
         List<SparseDoubleVector> vectors = new ArrayList<SparseDoubleVector>();
         vectors.add(newVec(new int[] { 1, 2 }, 100));
         vectors.add(newVec(new int[] { 1, 2 }, 100));
@@ -115,7 +155,7 @@ public class HierarchicalAgglomerativeClusteringTests {
 
         HierarchicalAgglomerativeClustering hac =
             new HierarchicalAgglomerativeClustering();
-        List<Merge> mergeOrder = hac.buildDendogram(
+        List<Merge> mergeOrder = hac.buildDendrogram(
             m, ClusterLinkage.MEDIAN_LINKAGE, SimType.COSINE);
         assertEquals(3, mergeOrder.size());
         assertEquals(0, mergeOrder.get(0).remainingCluster());
