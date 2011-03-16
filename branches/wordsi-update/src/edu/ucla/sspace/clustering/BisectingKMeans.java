@@ -79,9 +79,6 @@ public class BisectingKMeans implements Clustering {
             return new Assignments(numClusters, assignments);
         }
 
-        // Instantiate a KMeansClustering instance which will be used to bisect
-        KMeansClustering kmeans = new KMeansClustering();
-
         // Create a count of cluster assignments.
         int[] numAssignments = new int[numClusters];
 
@@ -95,7 +92,7 @@ public class BisectingKMeans implements Clustering {
 
         // Make the first bisection.
         Assignment[] assignments =
-            kmeans.cluster(dataPoints, 2, props).assignments();
+            DirectClustering.cluster(dataPoints, 2, 10).assignments();
 
         // Count the number of assignments made to each cluster and move the
         // vectors in to the corresponding list.
@@ -129,7 +126,7 @@ public class BisectingKMeans implements Clustering {
             // Split the largest cluster.
             Matrix clusterToSplit = Matrices.asMatrix(originalCluster);
             Assignment[] newAssignments = 
-                kmeans.cluster(clusterToSplit, 2, props).assignments();
+                DirectClustering.cluster(clusterToSplit, 2, 10).assignments();
 
             // Clear the lists for cluster being split and the new cluster.
             // Also clear the number of assignments.

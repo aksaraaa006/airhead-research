@@ -1,12 +1,35 @@
+/*
+ * Copyright 2011 Keith Stevens 
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package edu.ucla.sspace.clustering;
 
-import edu.ucla.sspace.clustering.ClutoClustering.Criterion;
-import edu.ucla.sspace.clustering.ClutoClustering.Method;
+import edu.ucla.sspace.clustering.DirectClustering.SeedAlgorithm;
+import edu.ucla.sspace.clustering.criterion.CriterionFunction;
+import edu.ucla.sspace.clustering.criterion.I1Function;
 
 import edu.ucla.sspace.matrix.ClutoSparseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
+import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
@@ -97,14 +120,10 @@ public class GapStatistic implements Clustering {
      */
     private static final String DEFAULT_NUM_REFERENCE_DATA_SETS = "5";
 
-    private static final String DEFAULT_METHOD = "KMEANS";
-
     /**
      * A random number generator for creating reference data sets.
      */
     private static final Random random = new Random();
-
-    private static final Criterion CRITERION = Criterion.H2;
 
     /**
      * {@inheritDoc}
@@ -122,35 +141,24 @@ public class GapStatistic implements Clustering {
      * using the the Gap Statistic .
      */
     public Assignments cluster(Matrix m,
-                                int maxClusters,
-                                Properties props) {
+                               int maxClusters,
+                               Properties props) {
         int startSize = Integer.parseInt(props.getProperty(
                 NUM_CLUSTERS_START, DEFAULT_NUM_CLUSTERS_START));
         int numGaps = Integer.parseInt(props.getProperty(
                 NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
         int numIterations = maxClusters - startSize;
-        Method method = Method.valueOf(props.getProperty(
-                METHOD_PROPERTY, DEFAULT_METHOD));
 
         verbose("Generating the reference data set");
         // Generate the reference data sets.
         ReferenceDataGenerator generator = new ReferenceDataGenerator(m);
-        File[] gapFiles = new File[numGaps];
+        MatrixFile[] gapFiles = new MatrixFile[numGaps];
         for (int i = 0; i < numGaps; ++i)
             gapFiles[i] = generator.generateTestData();
 
-        // Transfer the data set to a cluto matrix file.
-        File matrixFile = null;
-        try {
-            matrixFile = File.createTempFile("cluto-input",".matrix");
-            MatrixIO.writeMatrix(m, matrixFile, Format.CLUTO_SPARSE);
-        } catch (IOException ioe) {
-            throw new IOError(ioe); 
-        }
-
         double[] gapResults = new double[numIterations];
         double[] gapStds = new double[numIterations];
-        File[] gapAssignments = new File[numIterations];
+        Assignments[] gapAssignments = new Assignments[numIterations];
 
         // Set up the concurrent data structures so we can process the documents
         // concurrently
@@ -165,8 +173,8 @@ public class GapStatistic implements Clustering {
         // Compute the gap statistic for each iteration.
         for (int i = 0; i < numIterations; ++i) 
             workQueue.offer(getRunnableCluster(
-                        i, startSize, numGaps, matrixFile, gapFiles,
-                        method, gapResults, gapStds, gapAssignments,
+                        i, startSize, numGaps, m, gapFiles,
+                        gapResults, gapStds, gapAssignments,
                         iterationsProcessed));
 
         // Wait until all the documents have been processed
@@ -179,7 +187,7 @@ public class GapStatistic implements Clustering {
 
         // Setup files to store  store what the previous gap statistic was and
         // the previous clustering assignment. 
-        File bestAssignments = null;
+        Assignments bestAssignments = null;
         double bestGap = Double.NEGATIVE_INFINITY;
         int bestK = 0;
         for (int i = 0; i < numIterations; ++i) {
@@ -198,145 +206,68 @@ public class GapStatistic implements Clustering {
             verbose("current: gap: %f, k: %d", bestGap, bestK);
         }
 
-        // Extract the cluster assignments based on the best found value of k.
-        Assignment[] assignments = new Assignment[m.rows()];
-        try {
-            ClutoWrapper.extractAssignments(bestAssignments, assignments);
-        } catch (IOException ioe) {
-            throw new IOError(ioe);
-        }
-
         // Delete the matrix and assignment files so that there is not an
         // abundance of open files.
-        matrixFile.delete();
-        for (File gapFile : gapFiles)
-            gapFile.delete();
-        for (File assignmentFile : gapAssignments)
-            assignmentFile.delete();
+        for (MatrixFile gapFile : gapFiles)
+            gapFile.getFile().delete();
 
         verbose("final bestK: %d", bestK);
-        return new Assignments(bestK, assignments);
+        return bestAssignments;
     }
 
     private Runnable getRunnableCluster(final int i,
                                 final int startSize,
                                 final int numGaps,
-                                final File matrixFile,
-                                final File[] gapFiles, 
-                                final Method method,
+                                final Matrix matrix,
+                                final MatrixFile[] gapFiles, 
                                 final double[] gapResults,
                                 final double[] gapStds,
-                                final File[] gapAssignments,
+                                final Assignments[] gapAssignments,
                                 final Semaphore iterationsProcessed) {
         return new Runnable() {
             public void run() {
                 int k = i+startSize;
-                String result = null;
-                try {
-                    verbose("Clustering reference data for %d clusters\n", k);
+                CriterionFunction function = new I1Function();
+                SeedAlgorithm seed = SeedAlgorithm.RANDOM;
+                verbose("Clustering reference data for %d clusters\n", k);
 
-                    // Compute the score for the reference data sets with k
-                    // clusters.
-                    double referenceScore = 0;
-                    double[] referenceScores = new double[numGaps];
-                    for (int j = 0; j < numGaps; ++j) {
-                        File outputFile = File.createTempFile(
-                                "gap-clustering-output", ".matrix");
-                        try {
-                        result = ClutoWrapper.cluster(null,
-                                                      gapFiles[j],
-                                                      method.getClutoName(),
-                                                      CRITERION.getClutoName(),
-                                                      outputFile,
-                                                      k);
-                        outputFile.delete();
-                        } catch (Error e) {
-                            // The ClutoWrapper throws an error when cluto
-                            // crashes.  If this happens, we don't want the
-                            // system to crash and die, so assume that larger
-                            // values of K cannot be used and use the previous
-                            // clustering solutition as the best.
-                            throw new IOException(String.format(
-                                        "Cluto experienced an error clustering " +
-                                        "with %d clusters.  Returning %d as the " +
-                                        "best clusteirng solution", k+1, k+1));
-                        }
-
-                        referenceScores[j] = Math.log(extractScore(result));
-                        referenceScore += referenceScores[j];
-                    }
-                    referenceScore /= numGaps;
-
-                    // Compute the standard deviation for the reference scores.
-                    double referenceStdev = 0;
-                    for (double score : referenceScores)
-                        referenceStdev += Math.pow(score - referenceScore, 2);
-                    referenceStdev /= numGaps;
-                    referenceStdev = Math.sqrt(referenceStdev);
-
-                    verbose("Clustering original data for %d clusters\n", k);
-                    // Compute the score for the original data set with k
-                    // clusters.
-                    File outFile =
-                        File.createTempFile("gap-clustering-output", ".matrix");
-
-                    try {
-                    result = ClutoWrapper.cluster(null,
-                                                  matrixFile,
-                                                  method.getClutoName(),
-                                                  CRITERION.getClutoName(),
-                                                  outFile,
-                                                  k);
-                    } catch (Error e) {
-                        // The ClutoWrapper throws an error when cluto crashes.
-                        // If this happens, we don't want the system to crash
-                        // and die, so assume that larger values of K cannot be
-                        // used and use the previous clustering solutition as
-                        // the best.
-                        throw new IOException(String.format(
-                                    "Cluto experienced an error clustering " +
-                                    "with %d clusters.  Returning %d as the " +
-                                    "best clusteirng solution", k+1, k+1));
-                    }
-
-                    // Compute the difference between the two scores.  If the
-                    // current score is less than the previous score, then the
-                    // previous assignment is considered best.
-                    double gap = Math.log(extractScore(result));
-                    verbose("gap-1: %f, referenceScore: %f", gap, referenceScore);
-                    gap = referenceScore - gap;
-
-                    gapResults[i] = gap;
-                    gapStds[i] = referenceStdev;
-                    gapAssignments[i] = outFile;
-
-                    verbose("completed iteration %d\n", i);
-                } catch (IOException ioe) {
-                    throw new IOError(ioe);
-                } finally {
-                    iterationsProcessed.release();
+                // Compute the score for the reference data sets with k
+                // clusters.
+                double referenceScore = 0;
+                double[] referenceScores = new double[numGaps];
+                for (int j = 0; j < numGaps; ++j) {
+                    Assignments result = DirectClustering.cluster(
+                            gapFiles[j].load(), k, 10, seed, function);
+                    referenceScores[j] = Math.log(function.score());
                 }
+                referenceScore /= numGaps;
+
+                // Compute the standard deviation for the reference scores.
+                double referenceStdev = 0;
+                for (double score : referenceScores)
+                    referenceStdev += Math.pow(score - referenceScore, 2);
+                referenceStdev /= numGaps;
+                referenceStdev = Math.sqrt(referenceStdev);
+
+                verbose("Clustering original data for %d clusters\n", k);
+                // Compute the score for the original data set with k
+                // clusters.
+                Assignments result = DirectClustering.cluster(
+                        matrix, k, 10, seed, function);
+
+                // Compute the difference between the two scores.  If the
+                // current score is less than the previous score, then the
+                // previous assignment is considered best.
+                double gap = Math.log(function.score());
+                gap = referenceScore - gap;
+
+                gapResults[i] = gap;
+                gapStds[i] = referenceStdev;
+                gapAssignments[i] = result;
+
+                verbose("completed iteration %d\n", i);
             }
         };
-    }
-    /**
-     * Extracts the score of the objective function for a given set of
-     * clustering assignments.  This requires scraping the output from Cluto to
-     * find the line specifiying the score.
-     */
-    private double extractScore(String clutoOutput) throws IOException {
-        double score = 0;
-        BufferedReader reader =
-            new BufferedReader(new StringReader(clutoOutput));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            if (line.contains("[I2=") || line.contains("[H2=")) {
-                String[] split = line.split("=");
-                int endOfIndex = split[1].indexOf("]");
-                return Double.parseDouble(split[1].substring(0, endOfIndex));
-            }
-        }
-        return 0;
     }
 
     /**
@@ -442,7 +373,7 @@ public class GapStatistic implements Clustering {
          * reference data points from a data distribution similar to the
          * original.
          */
-        public File generateTestData() {
+        public MatrixFile generateTestData() {
             verbose("Generating a new reference set");
 
             // Assume that data is sparse.
@@ -471,18 +402,10 @@ public class GapStatistic implements Clustering {
                     column.set(col, value);
                 }
                 builder.addColumn(column);
-                /*} else {
-                    // Set all values in the column.
-                    for (int j = 0; j < cols; ++j) {
-                        double value = random.nextDouble();
-                        values[j] = value * (maxValues[j] - minValues[j]) + 
-                                    minValues[j];
-                    }
-                }
-                */
             }
             builder.finish();
-            return builder.getFile();
+
+            return builder.getMatrixFile();
         }
 
         /**
