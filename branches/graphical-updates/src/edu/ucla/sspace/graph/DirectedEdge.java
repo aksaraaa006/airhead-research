@@ -23,28 +23,17 @@ package edu.ucla.sspace.graph;
 
 
 /**
- * An interface for edges in multigraphs.  In a multigraph, two vertices
- * v<sub>1</sub> and v<sub>2</sub> may have mulitple edges between then provided
- * that the for any two edges {@code !e1.equals(e2)}.
- *
- * <p> This interface allows for a multigraph to have mutliple <i>types</i> of
- * edges that extend from a common type.  For example, a graph that represents
- * cities may contain edges indicating the different types of transportation
- * (e.g. car, train, bus) between two cities, where those types each have their
- * own subtypes (e.g., airline carrier, bus company, etc.)
- *
- * @see Multigraph
+ * An interface for representing a <a
+ * href="http://en.wikipedia.org/wiki/Directed_graph">directed edge</a> between
+ * two vertices.  This interface can be seen as a refinement of the {@link
+ * #equal(Object) equals} method that takes into account the orientation of the
+ * edge.
  */
-public interface TypedEdge<T> extends Edge {
+public interface DirectedEdge extends Edge {
 
     /**
-     * Returns the type of information conveyed by this edge.
-     */
-    T edgeType();
-
-    /**
-     * Returns {@code true} if the other edge is considered equivalent to this
-     * edge in a multigrpah.
+     * Returns {@code true} if {@code o} connects the same two vertices and have
+     * the same edge orientation.
      */
     boolean equals(Object o);
 

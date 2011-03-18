@@ -68,8 +68,8 @@ public interface Graph {
     void clearEdges();
 
     /**
-     * Returns {@code true} if this graph contains an edge from {@code vertex1}
-     * to {@code vertex2}.
+     * Returns {@code true} if this graph contains an edge between {@code
+     * vertex1} and {@code vertex2}.
      */
     boolean containsEdge(int vertex1, int vertex2);
 
@@ -104,6 +104,19 @@ public interface Graph {
      */
     boolean removeVertex(int vertex);    
     
+    /**
+     * Returns a view of this graph containing only the specified vertices.
+     * Only edges connecting two vertices in the provided set will be viewable
+     * in the subgraph.  Any changes to the subgraph will be reflected in this
+     * graph and vice versa.
+     *
+     * @param vertices the vertices to include in the subgraph
+     *
+     * @throws IllegalArgumentException if {@code vertices} contains vertices
+     *         not present in this graph
+     */
+    Graph subgraph(Set<Integer> vertices);
+
     /**
      * Returns the set of vertices in this graph.
      */
