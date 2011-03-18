@@ -30,11 +30,21 @@ import java.util.Set;
  * multigraph contains a set of vertices and a list of edges between vertices,
  * where multiple, parallel edges may exist between two vertices.
  *
+ * <p> The edge type parameter for a multigraph is used to distinguish between
+ * different edges between the same two nodes.  For example, a multigraph may
+ * represents cities with edges indicating the different types of transportation
+ * (e.g. car, train, bus) between two cities.  Edge type may additionally have
+ * their own subtypes (e.g., airline carrier, bus company, etc.).  This
+ * multigraph class only considers the value of the edge type to determine if
+ * two edges are equal, i.e. two edges between the same nodes are equal if for
+ * their edge types t1 and t2, {@code t1.equals(t2)}.
+
+ *
  * @param T a class type whose values are used to distinguish between edge types
  * 
  * @author David Jurgens
  */
-public interface MultiGraph<T> extends Graph {
+public interface Multigraph<T> extends Graph {
 
     /**
      * Adds an edge of the <i>default</i> type between the two vertices,
@@ -73,6 +83,11 @@ public interface MultiGraph<T> extends Graph {
     Set<TypedEdge<T>> edges();
 
     /**
+     * Returns the set of edge types currently present in this graph.
+     */
+    Set<T> edgeTypes();
+
+    /**
      * Returns the set of typed edges connected to the vertex.
      */
     Set<TypedEdge<T>> getAdjacencyList(int vertex);
@@ -89,5 +104,18 @@ public interface MultiGraph<T> extends Graph {
      * removed.
      */
     boolean removeEdge(int vertex1, int vertex2, T edgeType);
+
+    /**
+     * {@inheritDoc}
+     */
+    Multigraph subgraph(Set<Integer> vertices);
+
+    /**
+     * Returns a subgraph of this graph containing only the specified vertices
+     * and edges of the specified types.  Note that if all of the vertices are
+     * specified, this method can be used to extract edge-type-specific versions
+     * of this multigraph.
+     */
+    Multigraph subgraph(Set<Integer> vertices, Set<T> edgeTypes);
         
 }

@@ -25,13 +25,14 @@ import java.util.Set;
 
 
 /**
- * An interface specification for interacting with <a
- * href="http://en.wikipedia.org/wiki/Directed_graph">directed graph</a>
- * objects.
+ * An interface specification for interacting with directed <a
+ * href="http://en.wikipedia.org/wiki/Multigraph"> multigraph</a> objects.  This
+ * interface refines the {@link Multigraph} interface by providing information
+ * on the edge orientations as well as the in and out degree of its vertices.
  *
  * @author David Jurgens
  */
-public interface DirectedMultiGraph<T> extends MultiGraph, DirectedGraph {
+public interface DirectedMultigraph<T> extends Multigraph, DirectedGraph {
 
     /**
      * Returns the number of directed edges of the specified type where {@code
@@ -43,13 +44,13 @@ public interface DirectedMultiGraph<T> extends MultiGraph, DirectedGraph {
      * Returns the set of all directed edges of all edge types where {@code
      * vertex} is the head of the edge
      */
-    Set<TypedEdge<T>> inEdges(int vertex);
+    Set<? extends DirectedTypedEdge<T>> inEdges(int vertex);
 
     /**
      * Returns the set of all directed edges of the specified type where {@code
      * vertex} is the head of the edge
      */
-    Set<TypedEdge<T>> inEdges(int vertex, T edgeType);
+    Set<? extends DirectedTypedEdge<T>> inEdges(int vertex, T edgeType);
 
     /**
      * Returns the number of directed edges of the specified type where {@code
@@ -63,13 +64,23 @@ public interface DirectedMultiGraph<T> extends MultiGraph, DirectedGraph {
      * vertex} is the tail of the edge, i.e. the edge originates at {@code
      * vertex}
      */
-    Set<TypedEdge<T>> outEdges(int vertex);    
+    Set<? extends DirectedTypedEdge<T>> outEdges(int vertex);    
 
     /**
      * Returns the set of all directed edges of the specified type where {@code
      * vertex} is the tail of the edge, i.e. the edge originates at {@code
      * vertex}
      */
-    Set<TypedEdge<T>> outEdges(int vertex, T edgeType);    
+    Set<? extends DirectedTypedEdge<T>> outEdges(int vertex, T edgeType);    
+
+//     /**
+//      * {@inheritDoc}
+//      */
+//     DirectedMultigraph subgraph(Set<Integer> vertices);
+
+//     /**
+//      * {@inheritDoc}
+//      */
+//     DirectedMultigraph subgraph(Set<Integer> vertices, Set<T> edgeTypes);
     
 }

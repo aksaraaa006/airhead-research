@@ -43,7 +43,7 @@ public interface DirectedGraph extends Graph {
      * Returns the set of directed edges where {@code vertex} is the head of the
      * edge
      */
-    Set<? extends Edge> inEdges(int vertex);
+    Set<? extends DirectedEdge> inEdges(int vertex);
 
     /**
      * Returns the number of directed edges where {@code vertex} is the tail of
@@ -55,6 +55,11 @@ public interface DirectedGraph extends Graph {
      * Returns the set of directed edges where {@code vertex} is the tail of the
      * edge, i.e. the edge originates at {@code vertex}
      */
-    Set<? extends Edge> outEdges(int vertex);    
+    Set<? extends DirectedEdge> outEdges(int vertex);    
+
+//     /**
+//      * {@inheritDoc}
+//      */
+//     DirectedGraph subgraph(Set<Integer> vertices);
     
 }

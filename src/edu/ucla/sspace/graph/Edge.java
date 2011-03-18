@@ -22,10 +22,26 @@
 package edu.ucla.sspace.graph;
 
 
+/**
+ * An interface for representing an edge between two vertices.
+ */
 public interface Edge {
 
+    /**
+     * Returns the index of the tail vertex, i.e. from where the edge
+     * originates.
+     */
     int from();
 
+    /**
+     * Returns the index of the head vertex, i.e. where the edge points to.
+     */
     int to();
+
+    /**
+     * Returns {@code true} if {@code o} connects the same two vertices
+     * regardless of the edge orientation.
+     */
+    boolean equals(Object o);
 
 }
