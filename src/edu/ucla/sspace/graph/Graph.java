@@ -26,8 +26,24 @@ import java.util.Set;
 
 /**
  * An interface specification for interacting with <a
- * href="http://en.wikipedia.org/wiki/Graph_(mathematics)">Graph</a> objects.  A
- * graph is represented as a set of edges and vertices.
+ * href="http://en.wikipedia.org/wiki/Graph_(mathematics)">Graph</a> objects.
+ * This interface assumes the most general contract for interacting with a graph
+ * as a set of edges and vertices.  This interface permits the following
+ * behaviors of a graph: <ul>
+ *
+ * <li> Multiple edges between two vertices (a {@link Multigraph}).
+ *
+ * <li> Weights associated with each edge (a {@link WeightedGraph});
+ *
+ * <li> Directionality between edges, i.e. an edge x-&gt;y is not equal to
+ *      x&lt;-y (a {@link DirectedGraph})
+ *
+ * <li> Self-loops
+ *
+ * </ul>
+ *
+ * Implementations may enforce any, some, or all of these behaviors to fully
+ * define their behavior.
  *
  * @author David Jurgens
  */
@@ -82,6 +98,19 @@ public interface Graph {
      * Returns the set of edges connected to the provided vertex.
      */
     Set<? extends Edge> getAdjacencyList(int vertex);
+
+    /**
+     * Returns the {@code Edge} instance connecting the two vertices or {@code
+     * null} if the vertices are not connected.
+     */
+    Edge getEdge(int vertex1, int vertex2);
+
+    /**
+     * Computes whether this graph is acyclic with its current set of edges, and
+     * returns {@code true} if this graph contains cycles, {@code false} if
+     * acyclic.
+     */
+    boolean hasCycles();
 
     /**
      * Returns the number of edges in this graph.
