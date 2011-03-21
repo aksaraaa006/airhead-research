@@ -29,7 +29,9 @@ import java.util.Set;
  * href="http://en.wikipedia.org/wiki/Graph_(mathematics)">Graph</a> objects.
  * This interface refines the {@link Graph} interface to associate each edge
  * with a numeric value reflecting the strength of connection between the two
- * vertices.
+ * vertices.  
+ *
+ * <p> This interface permits having 0 or negative edge weights.
  *
  * @author David Jurgens
  */
@@ -56,17 +58,30 @@ public interface WeightedGraph extends Graph {
      * @return {@code true} if the vertex was not previously present or the
      *         weight between the edges was changed
      */
-    boolean addEdge(int vertex1, int vertex2, boolean weight);
+    boolean addEdge(int vertex1, int vertex2, double weight);
 
     /**
      * Returns the set of edges contained in this graph.
      */
-    Set<? extends WeightedEdge> edges();
+    @Override Set<? extends WeightedEdge> edges();
 
     /**
      * Returns the set of edges connected to the provided vertex.
      */
-    Set<? extends WeightedEdge> getAdjacencyList(int vertex);
+    @Override Set<? extends WeightedEdge> getAdjacencyList(int vertex);
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override WeightedEdge getEdge(int vertex1, int vertex2);
+
+    /**
+     * Returns the weigth for the edge connecting the two vertices.
+     *
+     * @throws IllegalArgumentException if an edge does not exist between the
+     *         two vertices.
+     */
+    double getEdgeWeight(int vertex1, int vertex2);
     
 //     /**
 //      * {@inheritDoc}

@@ -23,18 +23,34 @@ package edu.ucla.sspace.graph;
 
 
 /**
- * An interface for representing an edge between two vertices.
+ * An interface for representing an undirected edge between two vertices.  The
+ * {@code from} and {@code to} methods reflect only a naming convention used to
+ * distinguish between the two vertices connected by this edge.
+ *
+ * <p> Note that futher refinements of the {@code Edge} interface may contain
+ * further conditions for edge equality.  In order to guarantee symmetry of the
+ * {@link Object#equals(Object) equals} method, implementations are encouraged
+ * to implement equals using a symmetric check:
+ *
+ *<pre>
+ *    public boolean equals(Object o) {
+ *        if (o instanceof Edge) {
+ *            Edge e = (Edge)o;
+ *            boolean isEqual = true; // fill in with implementation specifics
+ *            return isEqual &amp;&amp; o.equals(e); 
+ *        }
+ *    }
+ *</pre>
  */
 public interface Edge {
 
     /**
-     * Returns the index of the tail vertex, i.e. from where the edge
-     * originates.
+     * Returns the index of the tail vertex
      */
     int from();
 
     /**
-     * Returns the index of the head vertex, i.e. where the edge points to.
+     * Returns the index of the head vertex
      */
     int to();
 

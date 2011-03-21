@@ -90,6 +90,12 @@ public interface WeightedMultigraph<T> extends Multigraph, WeightedGraph {
      */
     Set<WeightedTypedEdge<T>> getAdjacencyList(int vertex);
 
+    /**
+     * Returns an arbitrary edge connecting the two vertices if the edges are
+     * connected by one or more edges.
+     */
+    @Override WeightedTypedEdge<T> getEdge(int vertex1, int vertex2);
+
 //     /**
 //      * {@inheritDoc}
 //      */

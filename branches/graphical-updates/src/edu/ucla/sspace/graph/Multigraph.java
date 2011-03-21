@@ -93,6 +93,19 @@ public interface Multigraph<T> extends Graph {
     Set<TypedEdge<T>> getAdjacencyList(int vertex);
 
     /**
+     * Returns an arbitrary edge connecting the two vertices if the edges are
+     * connected by one or more edges.
+     */
+    @Override Edge getEdge(int vertex1, int vertex2);
+
+    /**
+     * Returns the set of {@link TypedEdge} instances that connect the two
+     * vertices.  If no edges connect the vertices, the set will be empty but
+     * non-{@code null}.
+     */
+    Set<TypedEdge<T>> getEdges(int vertex1, int vertex2);
+
+    /**
      * Removes <i>all</i> edges between {@code vertex1} and {@code vertex2},
      * returning {@code true} if any edges were removed
      */
