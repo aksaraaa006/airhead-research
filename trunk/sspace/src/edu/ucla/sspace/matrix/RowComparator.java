@@ -48,8 +48,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A utility class for finding the {@code k} most-similar words to a provided
- * word in a {@link SemanticSpace}.  The comparisons required for generating the
- * list maybe be run in parallel by configuring an instance of this class to use
+ * row in a {@link Matrix}.  The comparisons required for generating the list
+ * maybe be run in parallel by configuring an instance of this class to use
  * multiple threads. <p>
  *
  * All instances of this class are thread-safe.

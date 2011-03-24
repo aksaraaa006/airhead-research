@@ -34,7 +34,7 @@ import edu.ucla.sspace.vector.Vectors;
  * arrays which keeps the non-zero column values in column order.  Lookups are
  * O(log n) where n is the number of non-zero values for the largest row.  The
  * size of this matrix is fixed, and attempts to access rows or columns beyond
- * the size will throw an {@link IndexOutOfBounds} exception.
+ * the size will throw an {@link IndexOutOfBoundsException}.
  *
  * @author David Jurgens
  */

@@ -149,9 +149,9 @@ public class AffinityMatrixCreator {
      * @param edgeTypeParam an optional parameter to the {@link EdgeType}
      *        selection process.  If the selected {@code EdgeType} does not take
      *        a parameter, this value is unused.
-     * @param edgeWeight the weighting scheme to use for edges in the affinity
+     * @param weighting the weighting scheme to use for edges in the affinity
      *        matrix
-     * @param edgeWeightParam an optional parameter to the {@link EdgeWeight}
+     * @param edgeWeightParam an optional parameter to the {@link EdgeWeighting}
      *        when deciding on the weighting for an edge.  If the selected
      *        {@code EdgeWeight} does not take a parameter, this value is
      *        unused.
@@ -245,9 +245,9 @@ public class AffinityMatrixCreator {
      * @param edgeTypeParam an optional parameter to the {@link EdgeType}
      *        selection process.  If the selected {@code EdgeType} does not take
      *        a parameter, this value is unused.
-     * @param edgeWeight the weighting scheme to use for edges in the affinity
+     * @param weighting the weighting scheme to use for edges in the affinity
      *        matrix
-     * @param edgeWeightParam an optional parameter to the {@link EdgeWeight}
+     * @param edgeWeightParam an optional parameter to the {@link EdgeWeighting}
      *        when deciding on the weighting for an edge.  If the selected
      *        {@code EdgeWeight} does not take a parameter, this value is
      *        unused.
@@ -284,9 +284,9 @@ public class AffinityMatrixCreator {
      * @param edgeTypeParam an optional parameter to the {@link EdgeType}
      *        selection process.  If the selected {@code EdgeType} does not take
      *        a parameter, this value is unused.
-     * @param edgeWeight the weighting scheme to use for edges in the affinity
+     * @param weighting the weighting scheme to use for edges in the affinity
      *        matrix
-     * @param edgeWeightParam an optional parameter to the {@link EdgeWeight}
+     * @param edgeWeightParam an optional parameter to the {@link EdgeWeighting}
      *        when deciding on the weighting for an edge.  If the selected
      *        {@code EdgeWeight} does not take a parameter, this value is
      *        unused.

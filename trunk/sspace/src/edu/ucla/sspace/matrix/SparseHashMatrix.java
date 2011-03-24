@@ -35,7 +35,7 @@ import edu.ucla.sspace.vector.Vectors;
  * this class potentially uses more memory than {@code YaleSparseMatrix}, but
  * provides O(1) access instead of O(log(n)).  The size of this matrix is fixed,
  * and attempts to access rows or columns beyond the size will throw an {@link
- * IndexOutOfBounds} exception.
+ * IndexOutOfBoundsException}.
  *
  * @author David Jurgens
  */

@@ -34,6 +34,7 @@ import edu.ucla.sspace.text.OneLinePerDocumentIterator;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.LimitedIterator;
+import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.ReflectionUtil;
 
 import java.io.BufferedReader;

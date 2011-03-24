@@ -22,7 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.DoubleVector;
-
+import edu.ucla.sspace.vector.SparseVector;
 
 /**
  * An interface specification for interacting with {@code Matrix} objects.
@@ -161,7 +161,7 @@ public interface Matrix {
      * itself.
      *
      * @param column The column to update.
-     * @param columns The values to update into {@code column}.
+     * @param values The values to update into {@code column}.
      */
     void setColumn(int column, double[] values);
 
@@ -181,9 +181,9 @@ public interface Matrix {
      * itself.
      *
      * @param row The row to update.
-     * @param columns The values to update into {@code row}.
+     * @param values The values to update into {@code row}.
      */
-    void setRow(int row, double[] columns);
+    void setRow(int row, double[] values);
 
     /**
      * Sets the values for the row of this {@code Matrix} using the provided

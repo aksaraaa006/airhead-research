@@ -294,7 +294,7 @@ public class ClutoSparseMatrixBuilder implements MatrixBuilder {
     }
 
     /**
-     * Returns {@link MatrixIO.Format.CLUTO_SPARSE.
+     * Returns {@link MatrixIO#Format.CLUTO_SPARSE.
      * CLUTO_SPARSE}.
      */
     public Format getMatrixFormat() {

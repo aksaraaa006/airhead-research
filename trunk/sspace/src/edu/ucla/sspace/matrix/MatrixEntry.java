@@ -25,7 +25,7 @@ package edu.ucla.sspace.matrix;
 /**
  * An abstraction of the entries in a matrix.
  *
- * @see MatrixIO#getIterator(File,MatrixIO.Format)
+ * @see MatrixIO#getMatrixFileIterator(File,MatrixIO.Format)
  */
 public interface MatrixEntry {
 

@@ -22,6 +22,7 @@
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.vector.SparseDoubleVector;
+import edu.ucla.sspace.vector.SparseVector;
 
 /**
  * An interface for sparse {@code Matrix} implementations whose backing data

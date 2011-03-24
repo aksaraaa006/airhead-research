@@ -79,7 +79,7 @@ public class SvdlibjDriver {
      * Computes the SVD of the matrix in the provided file in the specified
      * format.
      *
-     * @param file the file containing the matrix to be decomposed
+     * @param matrix the file containing the matrix to be decomposed
      * @param format the format of the data in the file
      * @param dimensions the number of singular values to return
      *

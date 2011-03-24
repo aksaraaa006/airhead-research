@@ -69,7 +69,7 @@ public class ArrayMatrix implements Matrix {
     /**
      * Create a {@code ArrayMatrix} from a two dimensional array.
      *
-     * @param matrix2D The two dimensional array this {@code ArrayMatrix} will
+     * @param matrix2d The two dimensional array this {@code ArrayMatrix} will
     *                represent.
      * @throws IllegalArgumentExceptiona if matrix2d is invalid.
      */

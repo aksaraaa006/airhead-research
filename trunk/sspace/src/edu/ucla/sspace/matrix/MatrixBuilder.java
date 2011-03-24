@@ -25,6 +25,7 @@ import edu.ucla.sspace.matrix.MatrixIO.Format;
 
 import edu.ucla.sspace.util.SparseArray;
 
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.Vector;
 
 import java.io.File;
@@ -83,7 +84,7 @@ public interface MatrixBuilder {
      *
      * @return the index at which the column is present.
      *
-     * @throwns IllegalStateException if {@code finish} has been called, thereby
+     * @throws IllegalStateException if {@code finish} has been called, thereby
      *         signaling that no further data will be added to the matrix
      */
     int addColumn(SparseArray<? extends Number> column);

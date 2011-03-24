@@ -71,8 +71,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author David Jurgens
  *
- * @see AtomicGrowingSparsMatrix
- * @see Matrices#synchronized(Matrix)
+ * @see AtomicGrowingSparseMatrix
+ * @see Matrices#synchronizedMatrix(Matrix)
  */
 public class AtomicGrowingSparseHashMatrix 
         implements AtomicMatrix, SparseMatrix {
