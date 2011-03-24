@@ -35,6 +35,8 @@ import edu.ucla.sspace.vector.Vectors;
  * row and column values are swapped and then the backing matrix is updated.
  * Note, that if the provided backing matrix has existing values for indices row
  * &lt; col, these values will be ignored and never returned from any method.
+ * Note the original perfomance characteristics of the backing matrix are
+ * retained by this class.
  *
  * <p>The primary benfit of this class is for storing large symmetric sparse
  * matrices in half of the memory.

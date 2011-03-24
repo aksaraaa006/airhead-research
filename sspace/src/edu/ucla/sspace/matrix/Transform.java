@@ -30,7 +30,8 @@ import java.io.IOException;
  * support both a {@link Matrix} and a serialized {@link Matrix} stored in a
  * {@code File}, in one of the supported matrix formats.  Implementations are
  * strongly encouraged to implement the {@code toString} method, as many {@link
- * SemanticSpace} implementations will use this when serializing.
+ * edu.ucla.sspace.common.SemanticSpace} implementations will use this when
+ * serializing.
  *
  * @author David Jurgens
  */
@@ -57,8 +58,8 @@ public interface Transform {
      * result to the file for the output matrix.
      *
      * @param inputMatrixFile a file containing a matrix in the specified format
-     * @param format the format of the input matrix, and the format in which the
-     *        output matrix will be written
+     * @param inputFormat the format of the input matrix, and the format in
+     *        which the output matrix will be written
      * @param outputMatrixFile the file to which the transformed matrix will be
      *        written
      *
@@ -71,7 +72,7 @@ public interface Transform {
     /**
      * Returns a transformed matrix based on the given matrix.
      *
-     * @param matrix the matrix to be transformed
+     * @param input the matrix to be transformed
      *
      * @return the transformed version of the input matrix
      */

@@ -209,7 +209,7 @@ public class MatrixIO {
      * @param current the format of the {@code matrix} file
      * @param desired the format of the returned matrix file
      *
-     * @returns a matrix file with the same data in the desired format
+     * @return a matrix file with the same data in the desired format
      *
      * @throws IOException if any error occurs while reading the input matrix or
      *         wring the output matrix
@@ -229,7 +229,7 @@ public class MatrixIO {
      * @param transpose {@code true} if data in the input matrix should be
      *        transposed while converting formats to the output matrix.
      *
-     * @returns a matrix file with the same data in the desired format
+     * @return a matrix file with the same data in the desired format
      *
      * @throws IOException if any error occurs while reading the input matrix or
      *         wring the output matrix
@@ -289,8 +289,8 @@ public class MatrixIO {
      * returened.  Conversely, for dense matrix formats, all of the entries,
      * including zero entries will be returned.
      *
-     * @param file the file containing matrix data in the specified format
-     * @param format the format of the matrix file
+     * @param matrixFile the file containing matrix data in the specified format
+     * @param fileFormat the format of the matrix file
      *
      * @return an interator over the entries in the matrix file
      */

@@ -502,7 +502,6 @@
       <fileset dir="${src.dir}/" includes="**/*.java"/>      
       <fileset dir="${hadoop.dir}/" includes="**/*.java"/>
 
-
       <bottom><![CDATA[
    <!-- Note: these links rely on the Syntaxhighlighter files being hosted at this location. -->
    <link type="text/css" rel="stylesheet" href="http://howard.ross.work.googlepages.com/SyntaxHighlighter.css"></link>  

@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * write. The matrix is still stored in a dense row-column order on disk, so
  * in-order column accesses to elments in a row will perform much better than
  * sequential row accesses to the same column.  However calls to {@link
- * #getRowVector(int) getRowVector} and {@link getColumnVector(int)
+ * #getRowVector(int) getRowVector} and {@link #getColumnVector(int)
  * getColumnVector} will return {@link SparseVector} instances.  This class is
  * intended for large matrices that need to be on disk due to their dimensions,
  * but whose data is mostly sparse <p>
