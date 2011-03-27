@@ -35,6 +35,9 @@ import java.util.List;
 
 
 /**
+ * This {@link HybridBaseFunction} uses the {@link E1Function} and the {@link
+ * I1Function}.
+ *
  * @author Keith Stevens
  */
 public class H1Function extends HybridBaseFunction {

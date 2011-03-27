@@ -247,9 +247,17 @@ public class ClutoDenseMatrixBuilder implements MatrixBuilder {
     }
 
     /**
+     * {@inheritDoc}
      */
     public Format getMatrixFormat() {
         return MatrixIO.Format.CLUTO_SPARSE;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public MatrixFile getMatrixFile() {
+        return new MatrixFile(getFile(), getMatrixFormat());
     }
 
     /**

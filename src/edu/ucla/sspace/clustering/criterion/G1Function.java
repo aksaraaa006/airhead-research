@@ -33,6 +33,11 @@ import java.util.List;
 
 
 /**
+ * This {@link CriterionFunction} interprets the dataset as a set of vertices in
+ * a graph and measures the best cuts of these vertices.  This reduces to a
+ * comparison between computed centroids and the centroid for the dataset as a
+ * whole, and is fairly similar to the {@link E1Function}.
+ *
  * @author Keith Stevens
  */
 public class G1Function extends BaseFunction {

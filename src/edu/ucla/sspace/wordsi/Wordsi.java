@@ -88,9 +88,10 @@ public interface Wordsi {
      *
      * @param primaryKey The primary key for {@code contextVector}
      * @param secondarykey A secondary key for {@code contextVector}
-     * @param contextVector a {@code SparseDoubleVector} that represents a single
-     *        context for a word
+     * @param contextVector a {@code SparseDoubleVector} that represents a
+     *        single context for a word
      */
     void handleContextVector(String primaryKey, String secondaryKey,
-            SparseDoubleVector contextVector); }
+                             SparseDoubleVector contextVector);
+}
 

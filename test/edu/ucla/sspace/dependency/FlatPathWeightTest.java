@@ -29,7 +29,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class FlatPathWeightTest extends AbstractPathTest {
+public class FlatPathWeightTest extends AbstractPathTestBase {
 
     @Test public void testSimplePath() {
         String[][] pathString = {{"cat", "n", "Rel", "dog", "n"}};

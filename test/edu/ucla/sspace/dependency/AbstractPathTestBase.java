@@ -30,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class AbstractPathTest {
+public class AbstractPathTestBase {
 
     protected DependencyPath makePath(String[][] pathString) {
         List<DependencyRelation> path = new LinkedList<DependencyRelation>();

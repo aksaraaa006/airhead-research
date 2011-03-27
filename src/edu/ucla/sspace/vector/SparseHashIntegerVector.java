@@ -105,6 +105,7 @@ public class SparseHashIntegerVector extends SparseHashVector<Integer>
      */
     public void set(int index, int value) {
         vector.set(index, value);
+        magnitude = -1;
     }
 
     /**

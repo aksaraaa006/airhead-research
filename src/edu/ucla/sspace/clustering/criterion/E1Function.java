@@ -33,6 +33,10 @@ import java.util.List;
 
 
 /**
+ * This {@link CriterionFunction} measures the external differences between
+ * clusters.  It gives a better score to clustering solutions with centroids
+ * that are more distant from the centroid for the data set as a whole.
+ *
  * @author Keith Stevens
  */
 public class E1Function extends BaseFunction {

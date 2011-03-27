@@ -30,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class LengthPathWeightTest extends AbstractPathTest {
+public class LengthPathWeightTest extends AbstractPathTestBase {
 
     @Test public void testSimplePath() {
         String[][] pathString = {{"cat", "n", "Rel", "dog", "n"}};

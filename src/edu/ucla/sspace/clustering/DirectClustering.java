@@ -562,8 +562,7 @@ public class DirectClustering implements Clustering {
         double optimalSingleCost = 0;
         double[] distances = new double[numDataPoints];
         for (int i = 0; i < numDataPoints; ++i) {
-            distances[i] = KMeansClustering.distance(
-                    singleCentroid, dataPoints.getRowVector(i));
+            distances[i] = distance(singleCentroid, dataPoints.getRowVector(i));
             optimalSingleCost += distances[i];
         }
 
