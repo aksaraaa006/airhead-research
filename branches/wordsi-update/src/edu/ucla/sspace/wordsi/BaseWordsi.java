@@ -46,8 +46,8 @@ public abstract class BaseWordsi implements Wordsi, SemanticSpace {
     private final Set<String> acceptedWords;
 
     /**
-     * The {@link ContextExtractor} responsible for parsing documents and creating
-     * context vectors.
+     * The {@link ContextExtractor} responsible for parsing documents and
+     * creating context vectors.
      */
     private ContextExtractor extractor;
 

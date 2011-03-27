@@ -23,6 +23,9 @@ package edu.ucla.sspace.clustering.criterion;
 
 
 /**
+ * This {@link HybridBaseFunction} uses the {@link E1Function} and the {@link
+ * I1Function}.
+ *
  * @author Keith Stevens
  */
 public class H2Function extends HybridBaseFunction {

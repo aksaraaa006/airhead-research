@@ -27,6 +27,11 @@ import java.util.List;
 
 
 /**
+ * This {@link CriterionFunction} measures the amount of internal similarity for
+ * each computed centroid.  Centroids with higher internal similarity are given
+ * higher scores.  It uses the magnitude of each centroid as the basis for this
+ * measurement.
+ *
  * @author Keith Stevens
  */
 public class I2Function extends BaseFunction {

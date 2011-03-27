@@ -39,22 +39,22 @@ public class MatlabSparseFileIteratorTests {
         assertEquals(0, me.column());
         assertEquals(0, me.row());
         me = it.next();
-        assertEquals(0, me.column());
-        assertEquals(2, me.row());
+        assertEquals(0, me.row());
+        assertEquals(2, me.column());
         me = it.next();
         // Col 1
-        assertEquals(1, me.column());
         assertEquals(1, me.row());
-        me = it.next();
         assertEquals(1, me.column());
-        assertEquals(2, me.row());
+        me = it.next();
+        assertEquals(1, me.row());
+        assertEquals(2, me.column());
         me = it.next();
         // Col 2
-        assertEquals(2, me.column());
-        assertEquals(0, me.row());
-        me = it.next();
-        assertEquals(2, me.column());
         assertEquals(2, me.row());
+        assertEquals(0, me.column());
+        me = it.next();
+        assertEquals(2, me.row());
+        assertEquals(2, me.column());
 
         assertFalse(it.hasNext());
     }

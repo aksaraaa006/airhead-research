@@ -156,11 +156,6 @@ public class StreamingKMeans<T extends DoubleVector>
     private final double gamma;
 
     /**
-     * The {@link KMeansClustering} to use for weighted centroids.
-     */
-    private final KMeansClustering approxCluster;
-
-    /**
      * Creates a new generator using the system properties.
      */
     public StreamingKMeans() {
@@ -185,8 +180,6 @@ public class StreamingKMeans<T extends DoubleVector>
 	    gamma = Math.max(
                 4*alpha*alpha*alpha*cofl*cofl + 2*alpha*alpha*cofl,
                 beta*kofl+ 1);
-
-        approxCluster = new KMeansClustering();
     }
 
     /**
@@ -195,7 +188,7 @@ public class StreamingKMeans<T extends DoubleVector>
      */
     public OnlineClustering<T> generate() {
         return new StreamingKMeansClustering<T>(
-                approxCluster, alpha, beta, gamma, numClusters, logNumPoints);
+                alpha, beta, gamma, numClusters, logNumPoints);
     }
 
     /**
@@ -283,16 +276,9 @@ public class StreamingKMeans<T extends DoubleVector>
         private final double facilityThreshold;
 
         /**
-         * The offline {@link KMeansClustering} implementation to use when
-         * condensing centroids.
-         */
-        private final KMeansClustering approxCluster;
-
-        /**
          * Creates a new instance of online KMeans clustering.
          */
-        public StreamingKMeansClustering(KMeansClustering approxCluster,
-                                         double alpha, double beta, 
+        public StreamingKMeansClustering(double alpha, double beta, 
                                          double gamma, int numClusters,
                                          double logNumPoints) {
             // Create initial data structures.
@@ -305,7 +291,6 @@ public class StreamingKMeans<T extends DoubleVector>
             this.alpha = alpha;
             this.beta = beta;
             this.gamma = gamma;
-            this.approxCluster = approxCluster;
             this.logNumPoints = logNumPoints;
 
             // Precompute the thresholds, which are constants as well.
