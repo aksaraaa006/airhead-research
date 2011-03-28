@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.clustering;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -62,5 +63,9 @@ public class SoftAssignment implements Assignment {
      */
     public int[] assignments() {
         return assignments;
+    }
+
+    public String toString() {
+        return Arrays.toString(assignments);
     }
 }
