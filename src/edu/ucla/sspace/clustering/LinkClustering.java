@@ -281,7 +281,6 @@ public class LinkClustering implements Clustering, java.io.Serializable {
                               divisionStart, divisionEnd);
             WORK_QUEUE.add(key, new Runnable() {
                     public void run() {
-
                         // Get the merges for this particular partitioning of
                         // the links
                         List<Merge> mergeSteps = 
@@ -315,7 +314,10 @@ public class LinkClustering implements Clustering, java.io.Serializable {
                             for (Integer cluster : clusterToElements.keySet()) {
                                 Set<Integer> linkPartition =
                                     clusterToElements.get(cluster);
-                                int numLinks = linkPartition.size();
+                                // Special case for partition with two nodes
+                                if (linkPartition.size() == 1)
+                                    continue; // density = 0
+                                int edgesInPartition = linkPartition.size();
                                 BitSet nodesInPartition = new BitSet(rows);
                                 for (Integer linkIndex : linkPartition) {
                                     Edge link = edgeList.get(linkIndex);
@@ -326,9 +328,10 @@ public class LinkClustering implements Clustering, java.io.Serializable {
                                 // This reflects the density of this particular
                                 // cluster
                                 double clusterDensity =
-                                    (numLinks - (numNodes - 1d))
-                                    / (((numNodes * (numNodes - 1d)) / 2d)
-                                       - (numLinks - 1));                
+                                    edgesInPartition * 
+                                    ((edgesInPartition - (numNodes - 1d)) 
+                                     / ((numNodes - 1) * (numNodes - 2)));
+                                    
                                 clusterDensitySum += clusterDensity;
                             }
 
@@ -345,8 +348,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
                             }
                             
                             // Update the density of this particular partition
-                            partitionDensities[i] =
-                                partitionDensity;
+                            partitionDensities[i] = partitionDensity;
                             
                             // Check whether this is the highest density seen in
                             // this division thus far
@@ -538,6 +540,55 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         int[] impost2edges = getImpostNeighbors(sm, impost2);
         double similarity = Similarity.jaccardIndex(impost1edges, impost2edges);
         return similarity;
+    }
+
+    /**
+     * Calculates the density of the provided partitioning.  Subclasses should
+     * override this method only if they need to redefine the density to take
+     * into account the network structure (e.g. for a k-partite network).
+     *
+     * @param clusterToElements a mapping from a cluster's ordinal to the set of
+     *        ids of the edges contained within it.
+     * @param edgeList the list of edges that are being clustered.  Note that
+     *        the size of this list is the number of edges in the graph.
+     * @param numVertices the number of vertices being clustered
+     * @return the density of this partition.
+     */
+    protected double calculatePartitionDensity(
+            MultiMap<Integer,Integer> clusterToElements,
+            List<Edge> edgeList,
+            int numVertices) {
+
+        int numEdges = edgeList.size();
+
+        // Compute the cluster density for each division of this partition
+        double clusterDensitySum = 0d;
+        for (Integer cluster : clusterToElements.keySet()) {
+            Set<Integer> linkPartition = clusterToElements.get(cluster);
+            // Special case for partition with two nodes
+            if (linkPartition.size() == 1)
+                continue; // cluster density = 0
+            int edgesInPartition = linkPartition.size();
+            BitSet nodesInPartition = new BitSet(numVertices);
+            for (Integer linkIndex : linkPartition) {
+                Edge link = edgeList.get(linkIndex);
+                nodesInPartition.set(link.from);
+                nodesInPartition.set(link.to);
+            }
+            int numNodes = nodesInPartition.cardinality();
+            // This reflects the density of this particular cluster weighted by
+            // the number of edges in it
+            double clusterDensity = edgesInPartition * 
+                ((edgesInPartition - (numNodes - 1d)) 
+                 / ((numNodes - 1) * (numNodes - 2)));
+            
+            clusterDensitySum += clusterDensity;
+        }
+
+        // Compute the density for the total partitioning solution across all
+        // clusters
+        double partitionDensity = (2d / numEdges) * clusterDensitySum;
+        return partitionDensity;
     }
 
     /**

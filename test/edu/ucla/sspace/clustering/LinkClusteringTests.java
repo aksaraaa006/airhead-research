@@ -115,7 +115,9 @@ public class LinkClusteringTests {
         for (int i = 0; i < numSol; ++i) {
             System.out.printf("Solution %d had density %f%n", i,
                              linkClustering.getSolutionDensity(i));
-            assertEquals(9, linkClustering.getSolution(i).length);            
+            assertEquals(9, linkClustering.getSolution(i).length);
+            System.out.printf("Solution %d: %s%n", i, 
+                              Arrays.toString(linkClustering.getSolution(i)));
         }
     }
 

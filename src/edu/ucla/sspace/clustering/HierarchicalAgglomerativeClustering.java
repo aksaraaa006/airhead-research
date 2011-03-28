@@ -968,8 +968,8 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
         // Perform rows-1 merges to merge all elements
         for (int mergeIter = 0; mergeIter < rows - 1; ++mergeIter) {
             if (LOGGER.isLoggable(Level.FINE))
-                LOGGER.fine("Computing dendrogram merge {0}/{1}",
-                            new Object[] { mergeIter, rows-1 });        
+                LOGGER.log(Level.FINE, "Computing dendrogram merge {0}/{1}",
+                           new Object[] { mergeIter, rows-1 });
             System.out.println("Computing dendrogram merge " 
                                + mergeIter + "/" + (rows-1));
 
