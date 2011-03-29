@@ -133,7 +133,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      * The work used by all {@code LinkClustering} instances to perform
      * multi-threaded operations.
      */
-    private static final WorkQueue WORK_QUEUE = new WorkQueue();
+    private static final WorkQueue WORK_QUEUE = new WorkQueue(1);
     
     /**
      * The merges for the prior run of this clustering algorithm
@@ -308,37 +308,8 @@ public class LinkClustering implements Clustering, java.io.Serializable {
                                    clusterToElements.remove(m.mergedCluster()));
                             }
 
-                            // Based on the link partitioning, calculate the
-                            // partition density for each cluster
-                            double clusterDensitySum = 0d;
-                            for (Integer cluster : clusterToElements.keySet()) {
-                                Set<Integer> linkPartition =
-                                    clusterToElements.get(cluster);
-                                // Special case for partition with two nodes
-                                if (linkPartition.size() == 1)
-                                    continue; // density = 0
-                                int edgesInPartition = linkPartition.size();
-                                BitSet nodesInPartition = new BitSet(rows);
-                                for (Integer linkIndex : linkPartition) {
-                                    Edge link = edgeList.get(linkIndex);
-                                    nodesInPartition.set(link.from);
-                                    nodesInPartition.set(link.to);
-                                }
-                                int numNodes = nodesInPartition.cardinality();
-                                // This reflects the density of this particular
-                                // cluster
-                                double clusterDensity =
-                                    edgesInPartition * 
-                                    ((edgesInPartition - (numNodes - 1d)) 
-                                     / ((numNodes - 1) * (numNodes - 2)));
-                                    
-                                clusterDensitySum += clusterDensity;
-                            }
-
-                            // Compute the density for the total partitioning
-                            // solution across all clusters
-                            double partitionDensity = 
-                                (2d / numEdges) * clusterDensitySum;
+                            double partitionDensity = calculatePartitionDensity(
+                                clusterToElements, edgeList, rows);
 
                             if (LOGGER.isLoggable(Level.FINER)) {
                                 LOGGER.log(Level.FINER,
@@ -535,11 +506,72 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         else
             return 0d;
 
+        /*
+         * IMPLEMENTATION NOTE: the default edge similarity is the Jaccard index
+         * of the inclusive neighbor sets of the impost nodes, which includes
+         * the keystone node.  Calling Similarity.jaccardIndex() would require
+         * an Arrays.copy to create a new array for the non-zero indices and
+         * keystone node.  Given that this similarity operation is one of the
+         * most-called in the program, we have opted to inline the function here
+         * to avoid the Arrays.copy (and the method call overhead).
+         *
+         * The method used below was determined to be the fastest method
+         * available in the link clustering scenario where nodes are connected
+         * to a small set of nodes (< 500) and where the indices of those nodes
+         * may range in the tens of thousands and beyond.  (Should the indices
+         * be smaller (< 1000), the BitSet variant of the JaccardIndex is likely
+         * to be faster.)
+         */
+
         // Determine the overlap between the neighbors of the impost nodes
-        int[] impost1edges = getImpostNeighbors(sm, impost1);
-        int[] impost2edges = getImpostNeighbors(sm, impost2);
-        double similarity = Similarity.jaccardIndex(impost1edges, impost2edges);
-        return similarity;
+        int[] impost1edges = sm.getRowVector(impost1).getNonZeroIndices();
+        int[] impost2edges = sm.getRowVector(impost2).getNonZeroIndices();
+
+        // Identify which of the two edge sets is smaller.  We will iterate over
+        // the smaller set, using the smaller bitset for indexing.  Benchmarking
+        // showed this was ~10% faster in some cases.
+        int[] smaller = null;
+        int[] larger = null;
+        int smallerIndex = -1, largerIndex = -1;
+        if (impost1edges.length > impost2edges.length) {
+            larger = impost1edges;
+            smaller = impost2edges;
+            largerIndex = impost1;
+            smallerIndex = impost2;
+        }
+        else {
+            larger = impost2edges;
+            smaller = impost1edges;
+            largerIndex = impost2;
+            smallerIndex = impost1;
+        }
+        
+        // IMPLEMENTATION NOTE: normally, we would need to sort the larger
+        // array.  However, the contract for SparseVector indicates the returned
+        // indices must be returned in sorted order.  Therefore, we can elide
+        // the sort while still calling Arrays.binarySearch.  The sort call is
+        // left in place, but commented out for the reader's benefit.
+        //
+        // Arrays.sort(larger);
+            
+        int inCommon = 0; 
+        for (int j : smaller) {
+            if (j == largerIndex || Arrays.binarySearch(larger, j) >= 0)
+                inCommon++;
+        }
+
+        // Check whether the impost node with the smaller number of connections
+        // overlaps with the impost node with fewer connections or is contained
+        // within that node's neighbors
+        if (smallerIndex == largerIndex 
+                || Arrays.binarySearch(larger, smallerIndex) >= 0)
+            inCommon++;
+        
+        // The -1/+1 logic is for counting the impost nodes
+        double unionSize = (impost1edges.length - (inCommon - 1)) 
+            + impost2edges.length + 1;
+
+        return inCommon / unionSize;
     }
 
     /**
@@ -589,17 +621,6 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         // clusters
         double partitionDensity = (2d / numEdges) * clusterDensitySum;
         return partitionDensity;
-    }
-
-    /**
-     * Returns an array containing the row indices of the neighbors of the
-     * impost node and the row index of the impost node itself.
-     */
-    private static int[] getImpostNeighbors(SparseMatrix sm, int rowIndex) {
-        int[] impost1edges = sm.getRowVector(rowIndex).getNonZeroIndices();
-        int[] neighbors = Arrays.copyOf(impost1edges, impost1edges.length + 1);
-        neighbors[neighbors.length - 1] = rowIndex;
-        return neighbors;
     }
 
     /**
