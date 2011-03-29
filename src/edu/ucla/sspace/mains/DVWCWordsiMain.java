@@ -33,7 +33,9 @@ import edu.ucla.sspace.hal.WeightingFunction;
 import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.wordsi.DependencyContextGenerator;
-import edu.ucla.sspace.wordsi.PartOfSpeechOccurrenceDependencyContextGenerator;
+import edu.ucla.sspace.wordsi.OccurrenceDependencyContextGenerator;
+import edu.ucla.sspace.wordsi.OrderingDependencyContextGenerator;
+import edu.ucla.sspace.wordsi.PartOfSpeechDependencyContextGenerator;
 
 import java.io.IOException;
 
@@ -117,10 +119,12 @@ public class DVWCWordsiMain extends DVWordsiMain {
      * {@inheritDoc}
      */
     protected DependencyContextGenerator getContextGenerator() {
-        boolean usePos = argOptions.hasOption('H');
-        boolean useOrder = argOptions.hasOption('O');
-        
-        return new PartOfSpeechOccurrenceDependencyContextGenerator(
-                        basis, usePos, useOrder, windowSize());
+        if (argOptions.hasOption('H'))
+            return new PartOfSpeechDependencyContextGenerator(
+                    basis, windowSize());
+        if (argOptions.hasOption('O'))
+            return new OrderingDependencyContextGenerator(
+                    basis, windowSize());
+        return new OccurrenceDependencyContextGenerator(basis, windowSize());
     }
 }

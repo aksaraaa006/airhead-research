@@ -36,7 +36,7 @@ import java.io.IOException;
 /**
  * This {@link ContextExtractor} reads in documents that have been dependency
  * parsed.  Contexts are defined by a {@link FilteredDependencyIterator}, which
- * is used to  traverse all possible dependency paths rooted at each word of
+ * is used to traverse all possible dependency paths rooted at each word of
  * interest in a document.  Each reachable and valid {@link DependencyPath}
  * forms a feature and is weighted by a {@link DependencyPathWeight}.
  *
@@ -79,11 +79,11 @@ public class DependencyContextExtractor implements ContextExtractor {
      * Creates a new {@link DependencyContextExtractor}.
      *
      * @param extractor The {@link DependencyExtractor} that parses the document
-     *                and returns a valid dependency tree
+     *        and returns a valid dependency tree
      * @param generator The {@link DependencyContextGenerator} used to created
-     *                context vectors based on a {@link DependencyTreeNode}.
+     *        context vectors based on a {@link DependencyTreeNode}.
      * @param readheader If true, the first line in a dependency tree document
-     *                will be discarded from the tree and used as a header.
+     *        will be discarded from the tree and used as a header.
      */
     public DependencyContextExtractor(DependencyExtractor extractor,
                                       DependencyContextGenerator generator,
@@ -136,7 +136,8 @@ public class DependencyContextExtractor implements ContextExtractor {
                 // Create a new context vector.
                 SparseDoubleVector focusMeaning = generator.generateContext(
                                 nodes, wordIndex);
-                wordsi.handleContextVector(focusWord, secondarykey, focusMeaning);
+                wordsi.handleContextVector(
+                        focusWord, secondarykey, focusMeaning);
             }
             document.close();
         } catch (IOException ioe) {

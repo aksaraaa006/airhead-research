@@ -1,3 +1,23 @@
+/*
+ * Copyright 2010 Keith Stevens 
+ *
+ * This file is part of the S-Space package and is covered under the terms and
+ * conditions therein.
+ *
+ * The S-Space package is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation and distributed hereunder to you.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND NO REPRESENTATIONS OR WARRANTIES,
+ * EXPRESS OR IMPLIED ARE MADE.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, WE MAKE
+ * NO REPRESENTATIONS OR WARRANTIES OF MERCHANT- ABILITY OR FITNESS FOR ANY
+ * PARTICULAR PURPOSE OR THAT THE USE OF THE LICENSED SOFTWARE OR DOCUMENTATION
+ * WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER
+ * RIGHTS.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package edu.ucla.sspace.wordsi;
 
@@ -16,11 +36,19 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 
-/**
- * TODO: JAVADOC
+
+/** 
+ * An abstract {@link DependencyContextGenerator} that creates a context vector
+ * for a node in an array of {@link DependencyTreeNode}s by using any form of
+ * co-occurrence information in the tree.  The {@link windowSize} words prior to
+ * the focus word will be marked as having a negative index with respect to the
+ * focus word and the words after the focus word will be marked with a positive
+ * index.  Subclasses need only implement {@link #getFeature(DependencyTreeNode,
+ * int) getFeature}.
+ *
  * @author Keith Stevens
  */
-public class PartOfSpeechOccurrenceDependencyContextGenerator
+public abstract class AbstractOccurrenceDependencyContextGenerator
         implements DependencyContextGenerator {
 
     /**
@@ -29,27 +57,18 @@ public class PartOfSpeechOccurrenceDependencyContextGenerator
     private final BasisMapping<String, String> basis;
 
     /**
-     * A function that weights {@link DependencyPath} instances according to
-     * some criteria.
+     * The maximum distance, left or right, from the focus word that will count
+     * as a feature for any focus word.
      */
-    /**
-     * The type of weight to apply to a the co-occurrence word based on its
-     * relative location
-     */
-    private final boolean usePos;
-
-    private final boolean useOrder;
-
     private final int windowSize;
 
-    public PartOfSpeechOccurrenceDependencyContextGenerator(
+    /**
+     * Constructs a new {@link AbstractOccurrenceDependencyContextGenerator}.
+     */
+    public AbstractOccurrenceDependencyContextGenerator(
             BasisMapping<String, String> basis,
-            boolean usePos,
-            boolean useOrder,
             int windowSize) {
         this.basis = basis;
-        this.usePos = usePos;
-        this.useOrder = useOrder;
         this.windowSize = windowSize;
     }
 
@@ -59,12 +78,12 @@ public class PartOfSpeechOccurrenceDependencyContextGenerator
     public SparseDoubleVector generateContext(DependencyTreeNode[] tree,
                                               int focusIndex) {
         Queue<String> prevWords = new ArrayDeque<String>();
-        for (int i = Math.max(0, focusIndex-windowSize); i < focusIndex; ++i)
+        for (int i = Math.max(0, focusIndex-windowSize-1); i < focusIndex; ++i)
             prevWords.add(getFeature(tree[i], i-focusIndex));
                 
         Queue<String> nextWords = new ArrayDeque<String>();
         for (int i = focusIndex+1;
-                 i < Math.min(focusIndex+windowSize, tree.length); ++i)
+                 i < Math.min(focusIndex+windowSize+1, tree.length); ++i)
             nextWords.add(getFeature(tree[i], i-focusIndex));
 
         SparseDoubleVector focusMeaning = new CompactSparseVector();
@@ -73,13 +92,11 @@ public class PartOfSpeechOccurrenceDependencyContextGenerator
         return focusMeaning;
     }
 
-    private String getFeature(DependencyTreeNode node, int index) {
-        if (useOrder)
-                return node.word() + "-" + index;
-        if (usePos)
-                return node.word() + "-" + node.pos();
-        return node.word();
-    }
+    /**
+     * Returns a string representing the {@link DependencyTreeNode} which is
+     * {@link dist} nodes away from the focus word currently being processed.
+     */
+    protected abstract String getFeature(DependencyTreeNode node, int dist);
 
     /**
      * Adds a feature for each word in the context that has a valid dimension.
