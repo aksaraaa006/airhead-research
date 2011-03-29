@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Keith Stevens 
+ * Copyright 2009 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,20 +19,31 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.common;
+package edu.ucla.sspace.vector;
 
-import edu.ucla.sspace.dependency.DependencyPath;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import edu.ucla.sspace.vector.SparseDoubleVector;
-
-import java.util.Iterator;
+import static org.junit.Assert.*;
 
 
 /**
  * @author Keith Stevens
  */
-public interface SelectionalPreferenceSpace extends SemanticSpace {
+public class VectorIOTest {
 
-  public SparseDoubleVector contextualize(Iterator<DependencyPath> paths);
+    @Test public void testSparseToString() {
+        Vector vector = new CompactSparseVector(new double[]{0, 0, 0, 1});
+        assertEquals("3,1.0", VectorIO.toString(vector));
+    }
 
+    @Test public void testSparseToString2() {
+        Vector vector = new CompactSparseVector(new double[]{0, 1, 0, 5});
+        assertEquals("1,1.0;3,5.0", VectorIO.toString(vector));
+    }
+
+    @Test public void testDenseToString() {
+        Vector vector = new DenseVector(new double[]{0, 1, 0, 5});
+        assertEquals("0.0 1.0 0.0 5.0", VectorIO.toString(vector));
+    }
 }

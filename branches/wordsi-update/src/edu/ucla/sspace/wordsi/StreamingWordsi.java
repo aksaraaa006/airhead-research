@@ -83,8 +83,8 @@ public class StreamingWordsi extends BaseWordsi {
      *         represent.  This may be {@code null} or empty}.
      * @param extractor The {@link ContextExtractor} used to parse documents
      * @param trackSecondaryKeys If true, cluster assignments and secondary keys
-     *        will be tracked.    If this is false, the {@link
-     *        AssignmentReporter} will not be used.
+     *        will be tracked. If this is false, the {@link AssignmentReporter}
+     *        will not be used.
      * @param clusterGenerator A {@link Generator} responsible for creating new
      *        instances of a {@link OnlineClustering} algorithm.
      * @param reporter The {@link AssignmentReporter} responsible for generating
@@ -170,7 +170,8 @@ public class StreamingWordsi extends BaseWordsi {
                 int assignment = assignments[i];
                 while (assignment >= newClusters.size())
                     newClusters.add(null);
-                Cluster<SparseDoubleVector> cluster = newClusters.get(assignment);
+                Cluster<SparseDoubleVector> cluster = newClusters.get(
+                        assignment);
                 if (cluster == null)
                     newClusters.set(assignment, clusters.get(i));
                 else

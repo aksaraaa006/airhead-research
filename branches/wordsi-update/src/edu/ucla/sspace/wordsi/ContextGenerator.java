@@ -64,10 +64,10 @@ public interface ContextGenerator {
 
     /**
      * Returns a {@link SparseDoubleVector} that represents the context composed
-     * of the set of {@code prevWords} before the focus word and the set of {@code
-     * nextWords} after the focus word.    Since sparse vectors are returned, if a
-     * second order vector is generated, it is recommended that the vector also be
-     * sparsed or have very few dimensions.
+     * of the set of {@code prevWords} before the focus word and the set of
+     * {@code nextWords} after the focus word.  Since sparse vectors are
+     * returned, if a second order vector is generated, it is recommended that
+     * the vector also be sparsed or have very few dimensions.
      */
     SparseDoubleVector generateContext(Queue<String> prevWords,
                                        Queue<String> nextWords);
@@ -79,9 +79,9 @@ public interface ContextGenerator {
     int getVectorLength();
 
     /**
-     * Sets the read only mode of the {@link ContextGenerator}.    While in read
-     * only mode, only features that previously existed will contribute to context
-     * vectors.
+     * Sets the read only mode of the {@link ContextGenerator}.  While in read
+     * only mode, only features that previously existed will contribute to
+     * context vectors.
      */
     void setReadOnly(boolean readOnly);
 }
