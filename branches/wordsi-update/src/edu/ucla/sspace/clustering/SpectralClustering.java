@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.clustering;
 
-
 import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;

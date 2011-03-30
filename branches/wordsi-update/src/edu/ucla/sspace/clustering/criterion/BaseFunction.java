@@ -274,7 +274,8 @@ public abstract class BaseFunction implements CriterionFunction {
             int sparseIndex = 0;
             for (int i = 0; i < c.length(); ++i) {
                 double value = c.get(i);
-                if (i == nonZeros[sparseIndex])
+                if (sparseIndex < nonZeros.length &&
+                    i == nonZeros[sparseIndex])
                     value += sv.get(nonZeros[sparseIndex++]);
                 newCentroid.set(i, value);
             }

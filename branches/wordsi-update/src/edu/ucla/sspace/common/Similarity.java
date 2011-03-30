@@ -661,6 +661,35 @@ public class Similarity {
                 if (!sparseIndicesA.contains(nonZero))
                     sum += Math.pow(b.get(nonZero), 2);
             return sum;
+        } else if (b instanceof SparseVector) {
+            // If b is sparse, use a special case where we use the cached
+            // magnitude of a and the sparsity of b to avoid most of the
+            // computations.
+            SparseVector sb = (SparseVector) b;
+            int[] bNonZero = sb.getNonZeroIndices();
+            double sum = 0;
+
+            // Get the magnitude for a.  This value will often only be computed
+            // once for the first vector once since the DenseVector caches the
+            // magnitude, thus saving a large amount of computation.
+            double aMagnitude = Math.pow(a.magnitude(), 2);
+
+            // Compute the difference between the nonzero values of b and the
+            // corresponding values for a.
+            for (int index : bNonZero) {
+                double value = a.get(index);
+                // Decrement a's value at this index from it's magnitude.
+                aMagnitude -= Math.pow(value, 2);
+                sum += Math.pow(value - b.get(index), 2);
+            }
+
+            // Since the rest of b's values are 0, the difference between a and
+            // b for these values is simply the magnitude of indices which have
+            // not yet been traversed in a.  This corresponds to the modified
+            // magnitude that was computed.
+            sum += aMagnitude;
+
+            return (sum < 0d) ? 0 : Math.sqrt(sum);
         }
 
         double sum = 0;

@@ -19,11 +19,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.wordsi;
-
-import edu.ucla.sspace.common.*;
+package edu.ucla.sspace.wordsi.psd;
 
 import edu.ucla.sspace.vector.*;
+
+import edu.ucla.sspace.wordsi.*;
 
 import java.io.*;
 
@@ -42,57 +42,59 @@ import static org.junit.Assert.*;
 /**
  * @author Keith Stevens
  */
-public class GeneralContextExtractorTest {
+public class PseudoWordContextExtractorTest {
 
-    private Map <String, SparseDoubleVector> termMap;
-
+    SparseDoubleVector testVector;
     @Test public void testProcessDocument() {
-        ContextExtractor extractor = new GeneralContextExtractor(
-                new MockGenerator(), 5);
+        Map<String, String> termMap = new HashMap<String, String>();
+        ContextExtractor extractor = new PseudoWordContextExtractor(
+                new MockGenerator(), 3, termMap);
         MockWordsi wordsi = new MockWordsi(null, extractor);
 
-        String text = "the brown foxes jumped over a cats";
+        termMap.put("cat", "catdog");
 
-        termMap = new HashMap<String, SparseDoubleVector>();
-        termMap.put("the",
-                    new CompactSparseVector(new double[]{0, 1, 0, 0, 1, 2, 1}));
-        termMap.put("brown",
-                    new CompactSparseVector(new double[]{0, 1, 0, 1, 2, 1, 1}));
-        termMap.put("foxes",
-                    new CompactSparseVector(new double[]{0, 1, 0, 1, 2, 1, 1}));
-        termMap.put("jumped",
-                    new CompactSparseVector(new double[]{0, 1, 0, 1, 2, 2, 0}));
-        termMap.put("over",
-                    new CompactSparseVector(new double[]{0, 1, 0, 1, 1, 2, 1}));
-        termMap.put("a",
-                    new CompactSparseVector(new double[]{0, 0, 0, 1, 2, 2, 1}));
-        termMap.put("cats",
-                    new CompactSparseVector(new double[]{0, 1, 0, 0, 1, 2, 1}));
+        String text = "the brown foxes cat jumped over a cats";
 
+        testVector = new CompactSparseVector(new double[] {0,0,0,1});
         extractor.processDocument(
                 new BufferedReader(new StringReader(text)), wordsi);
         assertTrue(wordsi.called);
     }
 
+    @Test public void testEmptyProcessDocument() {
+        Map<String, String> termMap = new HashMap<String, String>();
+        ContextExtractor extractor = new PseudoWordContextExtractor(
+                new MockGenerator(), 3, termMap);
+        MockWordsi wordsi = new MockWordsi(null, extractor);
+
+        String text = "the brown foxes cat jumped over a cats";
+
+        extractor.processDocument(
+                new BufferedReader(new StringReader(text)), wordsi);
+        assertFalse(wordsi.called);
+    }
+
+
     @Test public void testVectorLength() {
-        ContextExtractor extractor = new GeneralContextExtractor(
-                new MockGenerator(), 5);
-        assertEquals(7, extractor.getVectorLength());
+        ContextExtractor extractor = new PseudoWordContextExtractor(
+                new MockGenerator(), 5, new HashMap<String, String>());
+        assertEquals(4, extractor.getVectorLength());
     }
 
     class MockGenerator implements ContextGenerator {
         public SparseDoubleVector generateContext(Queue<String> prev,
                                                   Queue<String> next) {
-            SparseDoubleVector v = new CompactSparseVector(7);
-            for (String word : prev)
-                v.add(word.length(), 1);
-            for (String word : next)
-                v.add(word.length(), 1);
-            return v;
+            assertEquals("the", prev.remove());
+            assertEquals("brown", prev.remove());
+            assertEquals("foxes", prev.remove());
+            assertEquals("jumped", next.remove());
+            assertEquals("over", next.remove());
+            assertEquals("a", next.remove());
+            return testVector;
         }
 
         public int getVectorLength() {
-            return 7;
+            return 4;
         }
 
         public void setReadOnly(boolean r) {
@@ -116,10 +118,9 @@ public class GeneralContextExtractorTest {
                                         String secondaryKey,
                                         SparseDoubleVector v) {
             called = true;
-            assertEquals(primaryKey, secondaryKey);
-            assertTrue(termMap.containsKey(primaryKey));
-            SparseDoubleVector expected = termMap.get(primaryKey);
-            assertEquals(VectorIO.toString(expected), VectorIO.toString(v));
+            assertEquals("cat", secondaryKey);
+            assertEquals("catdog", primaryKey);
+            assertEquals(testVector, v);
         }
 
         public Vector getVector(String word) {

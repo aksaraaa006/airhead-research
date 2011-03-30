@@ -414,11 +414,14 @@
       <formatter type="plain"/>
 
       <!-- Example test when doing debugging of single classes 
+      <test
+        name="edu.ucla.sspace.wordsi.psd.PseudoWordDependencyContextExtractorTest" todir="${report.dir}"/>
+          <include name="**/*Tests.java"/>
       -->
       <batchtest fork="yes" todir="${report.dir}">
         <fileset dir="${test.dir}">
-          <include name="**/*Test.java"/>
-          <include name="**/*Tests.java"/>
+          <include name="**/wordsi/**/*Test.java"/>
+          <include name="**/wordsi/*Test.java"/>
         </fileset>
       </batchtest>
 
