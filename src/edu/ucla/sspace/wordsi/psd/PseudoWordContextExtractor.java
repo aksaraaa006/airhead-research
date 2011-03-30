@@ -130,7 +130,8 @@ public class PseudoWordContextExtractor implements ContextExtractor {
             if (!replacementWord.equals(EMPTY)) {
                 SparseDoubleVector contextVector = generator.generateContext(
                         prevWords, nextWords);
-                wordsi.handleContextVector(focusWord, replacementWord, contextVector);
+                wordsi.handleContextVector(
+                        focusWord, replacementWord, contextVector);
             }
 
             // Advance the sliding window to the right.
@@ -141,9 +142,9 @@ public class PseudoWordContextExtractor implements ContextExtractor {
     }
 
     /**
-     * If {@code token} is part of a pseudo word, the replacement psedo word will
-     * be stored in {@code nextWords} and {@code token} is stored in {@code
-     * nextRealWords}.    Otherwise, {@code token} is stored in {@code nextWords}
+     * If {@code token} is part of a pseudo word, the replacement psedo word
+     * will be stored in {@code nextWords} and {@code token} is stored in {@code
+     * nextRealWords}.  Otherwise, {@code token} is stored in {@code nextWords}
      * and and empty string is stored in {@code nextRealWords}.
      */
     private void addNextToken(String token,

@@ -90,9 +90,10 @@ public class BisectingKMeans implements Clustering {
         for (int c = 0; c < numClusters; ++c)
             clusters.set(0, new ArrayList<DoubleVector>());
 
+        Clustering clustering = new DirectClustering();
         // Make the first bisection.
         Assignment[] assignments =
-            DirectClustering.cluster(dataPoints, 2, 10).assignments();
+            clustering.cluster(dataPoints, 2, props).assignments();
 
         // Count the number of assignments made to each cluster and move the
         // vectors in to the corresponding list.
@@ -126,7 +127,7 @@ public class BisectingKMeans implements Clustering {
             // Split the largest cluster.
             Matrix clusterToSplit = Matrices.asMatrix(originalCluster);
             Assignment[] newAssignments = 
-                DirectClustering.cluster(clusterToSplit, 2, 10).assignments();
+                clustering.cluster(dataPoints, 2, props).assignments();
 
             // Clear the lists for cluster being split and the new cluster.
             // Also clear the number of assignments.
@@ -159,5 +160,9 @@ public class BisectingKMeans implements Clustering {
             }
         }
         return new Assignments(numClusters, assignments);
+    }
+
+    public String toString() {
+        return "BisectingKMeans";
     }
 }

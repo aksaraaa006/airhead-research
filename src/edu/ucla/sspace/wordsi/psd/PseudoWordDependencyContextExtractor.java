@@ -51,6 +51,9 @@ import java.util.Map;
 public class PseudoWordDependencyContextExtractor 
       extends DependencyContextExtractor {
 
+    /**
+     * The mapping used between tokens and their pseudoword replacement.
+     */
     private Map<String, String> pseudoWordMap;
 
     /**
@@ -77,11 +80,12 @@ public class PseudoWordDependencyContextExtractor
      */
     public void processDocument(BufferedReader document, Wordsi wordsi) {
         try {
-            // Handle the context header, if one exists.    Context headers are
+            // Handle the context header, if one exists.  Context headers are
             // assumed to be the first line in a document and to contain an
             // integer specifying which line the focus word is on..
             String contextHeader = handleContextHeader(document);
-            int focusIndex = Integer.parseInt(contextHeader.split("\\s+")[3]);
+            String[] contextTokens = contextHeader.split("\\s+");
+            int focusIndex = Integer.parseInt(contextTokens[3]);
 
             // Extract the dependency trees and skip any that are empty.
             DependencyTreeNode[] nodes = extractor.readNextTree(document);
@@ -98,13 +102,13 @@ public class PseudoWordDependencyContextExtractor
                 return;
 
             // Ignore any focus words that are unaccepted by Wordsi.
-            if (!acceptWord(focusNode, contextHeader, wordsi))
+            if (!acceptWord(focusNode, contextTokens[1], wordsi))
                 return;
 
             // Create a new context vector and send it to the Wordsi model.
             SparseDoubleVector focusMeaning = generator.generateContext(
                     nodes, focusIndex);
-            wordsi.handleContextVector(focusWord, secondarykey, focusMeaning);
+            wordsi.handleContextVector(secondarykey, focusWord, focusMeaning);
 
             // Close up the document.
             document.close();
@@ -119,6 +123,7 @@ public class PseudoWordDependencyContextExtractor
     protected boolean acceptWord(DependencyTreeNode focusNode,
                                  String contextHeader,
                                  Wordsi wordsi) {
-        return pseudoWordMap.containsKey(focusNode.word());
+        return pseudoWordMap.containsKey(focusNode.word()) &&
+               focusNode.word().equals(contextHeader);
     }
 }

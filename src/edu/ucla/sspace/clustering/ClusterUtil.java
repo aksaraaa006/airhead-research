@@ -107,53 +107,9 @@ public class ClusterUtil {
                 continue;
 
             int assignment = assignments[i].assignments()[0];
-            objective += distance(
-                    centroids[assignment], dataPoints.getRowVector(i));
+            objective += Math.pow(Similarity.euclideanDistance(
+                    centroids[assignment], dataPoints.getRowVector(i)), 2);
         }
         return objective;
-    }
-
-    /**
-     * Computes the euclidean distance between {@code v2} and {@code v2}.
-     * {@code v1} is expected to be a dense vector representing a centroid and
-     * {@code v2} is expected to be a data point.  When {@code v2} is sparse,
-     * this method uses a special case formutlation of euclidean distance that
-     * relies on the cached magnitude of {@code v1} in order to have a runtime
-     * that is nearly linear with respect to the number of non zero values in
-     * {@code v2}.  
-     */
-    public static double distance(DoubleVector v1, DoubleVector v2) {
-        // If v2 is not sparse, just use the default implementation for
-        // euclidean distance.
-        if (!(v2 instanceof SparseVector))
-            return Similarity.euclideanDistance(v1, v2);
-
-        // If v2 is sparse, use a special case where we use the cached magnitude
-        // of v1 and the sparsity of v2 to avoid most of the computations.
-        SparseVector sv2 = (SparseVector)v2;
-        int[] sv2NonZero = sv2.getNonZeroIndices();
-        double sum = 0;
-
-        // Get the magnitude for v1.  This value will only be computed once for
-        // the centroid since the DenseVector caches the magnitude, thus saving
-        // a large amount of computation.
-        double v1Magnitude = Math.pow(v1.magnitude(), 2);
-
-        // Compute the difference between the nonzero values of v2 and the
-        // corresponding values for v1.
-        for (int index : sv2NonZero) {
-            double value = v1.get(index);
-            // Decrement v1's value at this index from it's magnitude.
-            v1Magnitude -= Math.pow(value, 2);
-            sum += Math.pow(value - v2.get(index), 2);
-        }
-
-        // Since the rest of v2's values are 0, the difference between v1 and v2
-        // for these values is simply the magnitude of indices which have not
-        // yet been traversed in v1.  This corresponds to the modified
-        // magnitude that was computed.
-        sum += v1Magnitude;
-
-        return Math.sqrt(sum);
     }
 }

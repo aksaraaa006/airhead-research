@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.wordsi.semeval;
+package edu.ucla.sspace.wordsi.psd;
 
 import edu.ucla.sspace.dependency.*;
 
@@ -47,15 +47,15 @@ import static org.junit.Assert.*;
 /**
  * @author Keith Stevens
  */
-public class SemEvalDependencyContextExtractorTest {
+public class PseudoWordDependencyContextExtractorTest {
 
     public static final String SINGLE_PARSE = 
-        "cat.n.1\n" + 
+        "target: cat absolute_position: 4 relative_position: 4 prior_trees: 0 after_trees: 0\n" + 
         "1   Mr. _   NNP NNP _   2   NMOD    _   _\n" +
         "2   Holt    _   NNP NNP _   3   SBJ _   _\n" +
         "3   is  _   VBZ VBZ _   0   ROOT    _   _\n" +
         "4   a   _   DT  DT  _   5   NMOD    _   _\n" +
-        "5   cat cat.n.1 NN  NN  _   3   PRD _   _\n" +
+        "5   cat _ NN  NN  _   3   PRD _   _\n" +
         "6   for _   IN  IN  _   5   NMOD    _   _\n" +
         "7   the _   DT  DT  _   9   NMOD    _   _\n" +
         "8   Literary    _   NNP NNP _   9   NMOD    _   _\n" +
@@ -68,33 +68,35 @@ public class SemEvalDependencyContextExtractorTest {
 
     @Test public void testProcessDocument() throws Exception {
         testVector = new CompactSparseVector(new double[] {0, 0, 1, 0});
+        Map<String, String> termMap = new HashMap<String, String>();
         DependencyContextExtractor extractor =
-            new SemEvalDependencyContextExtractor(
-                    new CoNLLDependencyExtractor(), new MockGenerator());
+            new PseudoWordDependencyContextExtractor(
+                    new CoNLLDependencyExtractor(), 
+                    new MockGenerator(), termMap);
         MockWordsi wordsi = new MockWordsi(null, extractor);
 
+        termMap.put("cat", "catdog");
         extractor.processDocument(
-                new BufferedReader(new StringReader(SINGLE_PARSE)), 
-                wordsi);
+                new BufferedReader(new StringReader(SINGLE_PARSE)), wordsi);
         assertTrue(wordsi.called);
     }
 
     @Test public void testAcceptWord() {
-        SemEvalDependencyContextExtractor extractor = 
-            new SemEvalDependencyContextExtractor(null, null);
-        DependencyTreeNode node = new SimpleDependencyTreeNode(
-                "cat", "n", "c", null);
-        assertTrue(extractor.acceptWord(node, "c", null));
-        assertFalse(extractor.acceptWord(node, "cat", null));
-        assertFalse(extractor.acceptWord(node, "", null));
-    }
+        Map<String, String> termMap = new HashMap<String, String>();
+        termMap.put("cat", "catdog");
+        PseudoWordDependencyContextExtractor extractor = 
+            new PseudoWordDependencyContextExtractor(null, null, termMap);
 
-    @Test public void testGetSecondaryKey() {
-        SemEvalDependencyContextExtractor extractor = 
-            new SemEvalDependencyContextExtractor(null, null);
         DependencyTreeNode node = new SimpleDependencyTreeNode(
                 "cat", "n", "c", null);
-        assertEquals("c", extractor.getSecondaryKey(node, "header"));
+        assertTrue(extractor.acceptWord(node, "cat", null));
+        assertFalse(extractor.acceptWord(node, "cat.n.1", null));
+
+        node = new SimpleDependencyTreeNode("c", "n", "c", null);
+        assertFalse(extractor.acceptWord(node, "cat", null));
+
+        node = new SimpleDependencyTreeNode("", "n", "c", null);
+        assertFalse(extractor.acceptWord(node, "", null));
     }
 
     class MockGenerator implements DependencyContextGenerator {
@@ -102,7 +104,6 @@ public class SemEvalDependencyContextExtractorTest {
         public SparseDoubleVector generateContext(DependencyTreeNode[] nodes,
                                                   int index) {
             assertEquals("cat", nodes[index].word());
-            assertEquals("cat.n.1", nodes[index].lemma());
             return testVector;
         }
 
@@ -131,8 +132,8 @@ public class SemEvalDependencyContextExtractorTest {
                                         String secondaryKey,
                                         SparseDoubleVector v) {
             called = true;
-            assertEquals("cat.n.1", secondaryKey);
-            assertEquals("cat", primaryKey);
+            assertEquals("cat", secondaryKey);
+            assertEquals("catdog", primaryKey);
             assertEquals(testVector, v);
         }
 

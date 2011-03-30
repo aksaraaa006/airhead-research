@@ -127,18 +127,19 @@ public class WaitingWordsi extends BaseWordsi {
      * @param acceptedWords The set of words that {@link Wordsi} should
      *        represent.  This may be {@code null} or empty}.
      * @param extractor The {@link ContextExtractor} used to parse documents.
-     * @param clustering The {@link Clustering} algorithm to use on each data set.
-     * @param reporter The {@link AssignmentReporter} responsible for generating a
-     *        report that details the cluster assignments.  This may be {@link
+     * @param clustering The {@link Clustering} algorithm to use on each data
+     *        set.
+     * @param reporter The {@link AssignmentReporter} responsible for generating
+     *        a report that details the cluster assignments.  This may be {@link
      *        null}.  If {@code trackSecondaryKeys} is false, this is not used.
      * @param numClusters Specifies the number of clusters to generate for each
      *        term.
      */
     public WaitingWordsi(Set<String> acceptedWords,
-                                             ContextExtractor extractor,
-                                             Clustering clustering,
-                                             AssignmentReporter reporter,
-                                             int numClusters) {
+                         ContextExtractor extractor,
+                         Clustering clustering,
+                         AssignmentReporter reporter,
+                         int numClusters) {
         super(acceptedWords, extractor);
 
         this.clustering = clustering;
@@ -191,7 +192,7 @@ public class WaitingWordsi extends BaseWordsi {
 
         // Record the association.
         if (reporter != null)
-            reporter.assignContextToKey(secondaryKey, focusKey, contextId);
+            reporter.assignContextToKey(focusKey, secondaryKey, contextId);
     }
 
     /**

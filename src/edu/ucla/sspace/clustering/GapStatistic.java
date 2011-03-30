@@ -21,7 +21,6 @@
 
 package edu.ucla.sspace.clustering;
 
-import edu.ucla.sspace.clustering.DirectClustering.SeedAlgorithm;
 import edu.ucla.sspace.clustering.criterion.CriterionFunction;
 import edu.ucla.sspace.clustering.criterion.I1Function;
 
@@ -228,7 +227,6 @@ public class GapStatistic implements Clustering {
             public void run() {
                 int k = i+startSize;
                 CriterionFunction function = new I1Function();
-                SeedAlgorithm seed = SeedAlgorithm.RANDOM;
                 verbose("Clustering reference data for %d clusters\n", k);
 
                 // Compute the score for the reference data sets with k
@@ -237,7 +235,7 @@ public class GapStatistic implements Clustering {
                 double[] referenceScores = new double[numGaps];
                 for (int j = 0; j < numGaps; ++j) {
                     Assignments result = DirectClustering.cluster(
-                            gapFiles[j].load(), k, 10, seed, function);
+                            gapFiles[j].load(), k, 10, function);
                     referenceScores[j] = Math.log(function.score());
                 }
                 referenceScore /= numGaps;
@@ -253,7 +251,7 @@ public class GapStatistic implements Clustering {
                 // Compute the score for the original data set with k
                 // clusters.
                 Assignments result = DirectClustering.cluster(
-                        matrix, k, 10, seed, function);
+                        matrix, k, 10, function);
 
                 // Compute the difference between the two scores.  If the
                 // current score is less than the previous score, then the
