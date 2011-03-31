@@ -30,7 +30,9 @@
   <property name="test.dir" value="test"/>
   <property name="dist.dir" value="dist"/>
   <property name="test.dir" value="test"/>
+  <property name="data.dir" value="data"/>
   <property name="hadoop.dir" value="opt/hadoop"/>
+  <property name="parsing.dir" value="opt/parsing"/>
   <property name="package" value="edu.ucla.sspace"/>
   <property name="bin.dir" value="bin"/>
   <property name="tools.dir" value="tools"/>
@@ -109,6 +111,17 @@
        <include name="**"/>
     </javac>
   </target>
+
+  <target name="parsing" depends="compile">
+    <echo>Compiling Parsing classes</echo>  
+    <javac srcdir="opt/parsing/" destdir="classes"
+           classpathref="classpath" debug="true" debuglevel="lines,source">
+       <compilerarg value="-Xlint"/>
+       <compilerarg value="-g"/>
+       <include name="**"/>
+    </javac>
+  </target>
+
 
   <!-- Removes all class files and built jar executables -->
   <target name="clean">
