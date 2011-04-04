@@ -970,19 +970,33 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
             if (LOGGER.isLoggable(Level.FINE))
                 LOGGER.log(Level.FINE, "Computing dendrogram merge {0}/{1}",
                            new Object[] { mergeIter, rows-1 });
-            System.out.println("Computing dendrogram merge " 
-                               + mergeIter + "/" + (rows-1));
+//             System.out.println("Computing dendrogram merge " 
+//                                + mergeIter + "/" + (rows-1));
+
+//             System.out.printf("cur cluster assignments: %s%n", 
+//                               Arrays.toString(rowToCurClusterIndex));
 
             // Find the two data points that have the highest similarity
             int row1index = 0;
             int row2index = 0;
             double highestSimilarity = -1;
 
+
+//             HashSet<Integer> set = new HashSet<Integer>();
+//             for (int i : rowToCurClusterIndex)
+//                 set.add(i);
+//             System.out.println(set);
+
             // For each cluster, look at the cluster with the highest
             // similarity, and select the two with the global max
             for (int r = 0; r < rowToMostSimilar.length; ++r) {                
                 double sim = rowToMostSimilarValue[r];
                 if (sim > highestSimilarity) {
+                    int r1 = r;
+                    int r2 = rowToMostSimilar[r];
+                    if (r2 < 0 || rowToCurClusterIndex[r1] == rowToCurClusterIndex[r2])
+                        continue;
+
                     row1index = r;
                     row2index = rowToMostSimilar[r];
                     highestSimilarity = sim;
@@ -999,15 +1013,16 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
             int cluster1index = rowToCurClusterIndex[row1index];
             int cluster2index = rowToCurClusterIndex[row2index];
 
+//             System.out.printf("r1: %d, r2: %d, c1: %d, c2: %d%n", 
+//                               row1index, row2index, cluster1index, cluster2index);
+
             // Order the indices so that the smaller index is first
             if (cluster1index > cluster2index) {
                 int tmp = cluster2index;
                 cluster2index = cluster1index;
                 cluster1index = tmp;
             }
-
-            
-
+           
             // Track that the two clusters will be merged.  Always use the lower
             // of the two values as the new cluster assignment.
             Merge merge = 
@@ -1020,15 +1035,18 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
                         new Object[] { cluster1index, cluster2index, 
                                        highestSimilarity });
             }
-            
+
             // Update the similarity for the second row so that it is no longer
             // merged with another row.  Even if it is more similar, we maintain
             // the invariant that only the cluster1index is valid after a merge
             // operation
-            rowToMostSimilarValue[cluster2index] = Double.MIN_VALUE;
+            rowToMostSimilarValue[row1index] = Double.MIN_VALUE;
+            rowToMostSimilarValue[row2index] = Double.MIN_VALUE;
             
             // For all the data points not in this cluster, find the most
-            // similar data point to the next cluster.
+            // similar data point to the now-merged cluster.  Note that this
+            // process doesn't need to update the nearest neighbors of these
+            // nodes, as they should still be valid post-merge.
             int mostSimRow = -1;
             double highestSim = Double.MIN_VALUE;
             for (int r = 0; r < rows; r++) {                
@@ -1055,6 +1073,117 @@ public class HierarchicalAgglomerativeClustering implements Clustering {
 
         return merges;
     }
+
+//     /**
+//      * Builds a dengram using multi-threaded behavior for {@link
+//      * Linkage#SINGLE_LINKAGE} merging, which is a special case.  Unlike other
+//      * linkage types, single linkage can be performed in O(n<sup>2</sup>) time.
+//      *
+//      * @param similarityMatrix an in-memory {@code Matrix} whose values indicate
+//      *        the similarity of the row and column indices.
+//      *
+//      * @return the full series of merges for the dendrogram
+//      */
+//     private List<Merge> buildSingleLinkageDendrogramMultithreaded2(
+//             final Matrix similarityMatrix) {
+
+//         final int rows = similarityMatrix.rows();
+
+//         LOGGER.finer("Finding most similar points for single linkage");
+
+//         Merge[] possibleMerges = new Merge[rows];
+//         int[] curCluster = new int[rows];
+        
+//         // For each row, find its most similar row (in parallel), updating the
+//         // relative indices of the rowToMostSimilar arrays with the results.
+//         for (int r = 0; r < rows; ++r) {
+//             curCluster[r] = r;
+//             double highestSim = Double.MIN_VALUE;
+//             int bestRow = -1;
+//             for (int r2 = 0; r2 < rows; ++r2) {
+//                 if (r == r2)
+//                     continue;
+//                 double s = similarityMatrix.get(r, r2);
+//                 if (s > highestSim) {
+//                      bestRow = r2;
+//                     highestSim = s;
+//                 }
+//             }
+//             possibleMerges[r] = new Merge(r, bestRow, highestSim);
+//         }
+
+//         LOGGER.finer("Assigning clusters");
+//         List<Merge> merges = new ArrayList<Merge>(rows - 1);
+
+//         // Perform rows-1 merges to merge all elements
+//         for (int mergeIter = 0; mergeIter < rows - 1; ++mergeIter) {
+//             if (LOGGER.isLoggable(Level.FINE))
+//                 LOGGER.log(Level.FINE, "Computing dendrogram merge {0}/{1}",
+//                            new Object[] { mergeIter, rows-1 });
+//             System.out.println("Computing dendrogram merge " 
+//                                + mergeIter + "/" + (rows-1));
+
+//             System.out.println(Arrays.toString(possibleMerges));
+            
+//             Merge mostSimilarMerge = null;
+//             int mostSimIndex = -1;
+//             for (int i = 0; i < possibleMerges.length; ++i) {
+//                 Merge m = possibleMerges[i];
+//                 if (m == null || m.merged == -1 || m.remaining == -1)
+//                     continue;
+//                 else if (curCluster[m.remaining] ==
+//                          curCluster[m.merged])
+//                     continue;
+//                 else if (mostSimilarMerge == null
+//                         || mostSimilarMerge.similarity < m.similarity) {
+//                     mostSimilarMerge = m;
+//                     mostSimIndex = i;
+//                 }
+//             }
+//             possibleMerges[mostSimIndex] = null;
+            
+//             // Order the indices so that the smaller index is first
+//             if (mostSimilarMerge.remaining > mostSimilarMerge.merged) {
+//                 int tmp = mostSimilarMerge.remaining;
+//                 mostSimilarMerge.remaining = mostSimilarMerge.merged;
+//                 mostSimilarMerge.merged = tmp;
+//             }
+//             merges.add(mostSimilarMerge);
+//             System.out.println(mostSimilarMerge);
+
+//             curCluster[mostSimilarMerge.merged] = 
+//                 curCluster[mostSimilarMerge.remaining];
+
+//             int mostSimRow = -1;
+//             double highestSim = Double.MIN_VALUE;
+//             for (int r = 0; r < rows; ++r) {
+//                 int cId = curCluster[r];
+//                 if (cId == mostSimilarMerge.remaining) {
+//                     continue;
+//                 }
+//                 else if (cId == mostSimilarMerge.merged) {
+//                     curCluster[r] = curCluster[mostSimilarMerge.remaining];
+//                     continue;
+//                 }
+
+//                 double sim = Math.max(similarityMatrix.get(r, mostSimilarMerge.merged),
+//                                       similarityMatrix.get(r, mostSimilarMerge.remaining));
+//                 if (sim > highestSim) {
+//                     highestSim = sim;
+//                     mostSimRow = r;
+//                 }
+//             }
+//             System.out.println("possible: " +                 new Merge(mostSimilarMerge.remaining, mostSimRow,
+//                                                                         highestSim));
+
+//             possibleMerges[mostSimilarMerge.remaining] = 
+//                 new Merge(mostSimilarMerge.remaining, mostSimRow,
+//                           highestSim);
+//         }
+
+//         return merges;
+//     }
+
 
     /**
      * For the current cluster, finds the most similar cluster using the

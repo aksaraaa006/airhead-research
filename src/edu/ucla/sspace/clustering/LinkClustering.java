@@ -133,7 +133,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
      * The work used by all {@code LinkClustering} instances to perform
      * multi-threaded operations.
      */
-    private static final WorkQueue WORK_QUEUE = new WorkQueue(1);
+    private static final WorkQueue WORK_QUEUE = new WorkQueue();
     
     /**
      * The merges for the prior run of this clustering algorithm
@@ -213,20 +213,32 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         final List<Edge> edgeList = new ArrayList<Edge>();
         this.edgeList = edgeList;
 
+//         BitSet counted = new BitSet(rows);
         for (int r = 0; r < rows; ++r) {
             SparseDoubleVector row = sm.getRowVector(r);
             int[] edges = row.getNonZeroIndices();
+
             for (int col : edges) {
                 // Always add edges from the upper triangular
-                if (r > col)
+                if (r > col) {
                     edgeList.add(new Edge(r, col));
+//                     counted.set(r); 
+//                     counted.set(col);
+                }
                 // Otherwise, we only add the edge from the lower triangular if
                 // it wasn't present in the upper.  This avoids counting
                 // duplicate edges.
-                else if (r < col && sm.get(col, r) == 0)
+                else if (r < col && sm.get(col, r) == 0) {
                     edgeList.add(new Edge(r, col));
+//                     counted.set(r); 
+//                     counted.set(col);
+                }
             }
         }
+
+//         for (int r = 0; r < rows; ++r) 
+//             if (!counted.get(r))
+//                 System.out.printf("Row %d not connected to any other rows%n", r);
 
         final int numEdges = edgeList.size();
         LOGGER.fine("Number of edges to cluster: " + numEdges);
@@ -239,6 +251,10 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         final List<Merge> mergeOrder = 
             new HierarchicalAgglomerativeClustering().
                 buildDendrogram(edgeSimMatrix, ClusterLinkage.SINGLE_LINKAGE);
+        
+//         for (Merge mer : mergeOrder)
+//             System.out.println(mer);
+
         this.mergeOrder = mergeOrder;
 
         LOGGER.fine("Calculating partition densitities");
@@ -250,9 +266,6 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         // the total partitioning needlessly.
         int partitionDivisions = Runtime.getRuntime().availableProcessors();
         final int mergesPerDivision = mergeOrder.size() / partitionDivisions;
-
-        System.out.printf("Using %d divisions of %d merges each%n",
-                          partitionDivisions, mergesPerDivision);
 
         // Register a task group for calculating each of the group's partition
         // densitities
@@ -277,8 +290,6 @@ public class LinkClustering implements Clustering, java.io.Serializable {
             final int divisionEnd = Math.min(mergeStart + mergesPerDivision,
                                              mergeOrder.size());
 
-            System.out.printf("Calculating densitities of [%d, %d]%n", 
-                              divisionStart, divisionEnd);
             WORK_QUEUE.add(key, new Runnable() {
                     public void run() {
                         // Get the merges for this particular partitioning of
@@ -453,6 +464,9 @@ public class LinkClustering implements Clustering, java.io.Serializable {
             clusterToElements.putMulti(m.remainingCluster(), 
                 clusterToElements.remove(m.mergedCluster()));
         }           
+
+//         System.out.printf("Merge for %d steps moved from %d clusters to %d clusters%n",
+//                           merges.size(), numOriginalClusters, clusterToElements.size());
 
         return clusterToElements;
     }
