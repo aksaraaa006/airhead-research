@@ -196,6 +196,7 @@ public class LinkClustering implements Clustering, java.io.Serializable {
 
         String inMemProp =
             props.getProperty(KEEP_SIMILARITY_MATRIX_IN_MEMORY_PROPERTY);
+
         boolean keepSimMatrixInMem = (inMemProp != null) 
             ? Boolean.parseBoolean(inMemProp) : true;
 
@@ -205,7 +206,6 @@ public class LinkClustering implements Clustering, java.io.Serializable {
         // matrix out of memory by computing its values on the fly.
         final int rows = sm.rows();
         numRows = rows;
-        LOGGER.fine("Generating link similarity matrix for " + rows + " nodes");
 
         //  Rather than create an O(row^3) matrix for representing the edges,
         // compress the edge matrix by getting a mapping for each edge to a row
@@ -242,7 +242,14 @@ public class LinkClustering implements Clustering, java.io.Serializable {
 
         final int numEdges = edgeList.size();
         LOGGER.fine("Number of edges to cluster: " + numEdges);
-        
+
+        if (!keepSimMatrixInMem) {
+            LOGGER.fine("Switching to out-of-core edge similarity matrix mode");
+        }
+        else {
+            LOGGER.fine("Generating link similarity matrix for " 
+                        + rows + " nodes");
+        }        
         Matrix edgeSimMatrix = 
             getEdgeSimMatrix(edgeList, sm, keepSimMatrixInMem);
         
