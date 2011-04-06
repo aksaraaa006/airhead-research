@@ -21,16 +21,10 @@
 
 package edu.ucla.sspace.clustering;
 
-import edu.ucla.sspace.common.Similarity;
-
-import edu.ucla.sspace.clustering.HierarchicalAgglomerativeClustering.ClusterLinkage;
-
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
-import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.MultiMap;
-import edu.ucla.sspace.util.WorkQueue;
 
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
@@ -56,6 +50,22 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
+/**
+ * A special case of {@link LinkClustering} for handling <a
+ * href="http://en.wikipedia.org/wiki/Glossary_of_graph_theory#Independence">k-partite</a>
+ * graphs, where the vertices are separable into <i>k</i> sets and all edges
+ * terminate in two different sets.  This class provides no input validation
+ * that the input matrix actually maintains the k-partitite property; all
+ * provided matrices are assumed to be correct.
+ *
+ * <p> Note that although this class implements the {@link Clustering}
+ * interface, users will almost entirely want to call the overload {@link
+ * #cluster(Matrix,Properties,int,List)}, which specifies the partitioning of
+ * the input matrix into different sets.  All other {@code cluster} methods will
+ * assume the matrix is in one partition, which is likely not what the user
+ * intends.
+ */
 public class KPartiteLinkClustering extends LinkClustering {
 
     private static final long serialVersionUID = 1L;
@@ -77,6 +87,11 @@ public class KPartiteLinkClustering extends LinkClustering {
      */
     private List<Integer> rowToSet;
 
+    public KPartiteLinkClustering() {
+        numSeparations = -1;
+        rowToSet = null;
+    }
+
     /**
      * <i>Ignores the specified number of clusters</i> and returns the
      * clustering solution according to the partition density.
@@ -86,8 +101,8 @@ public class KPartiteLinkClustering extends LinkClustering {
      * @throws IllegalArgumentException if {@code matrix} is not square, or is
      *         not an instance of {@link SparseMatrix}
      */
-    public Assignment[] cluster(Matrix matrix, int numClusters, 
-                                Properties props) {
+    @Override public Assignment[] cluster(Matrix matrix, int numClusters, 
+                                          Properties props) {
         LOGGER.warning("PartitionLink clustering has been called without " +
                        "specifying the k-partiteness in the graph.  Assuming " +
                        "all nodes are part of one partition, which is " +
@@ -101,7 +116,7 @@ public class KPartiteLinkClustering extends LinkClustering {
      * @throws IllegalArgumentException if {@code matrix} is not square, or is
      *         not an instance of {@link SparseMatrix}
      */
-    public Assignment[] cluster(Matrix matrix, Properties props) { 
+    @Override public Assignment[] cluster(Matrix matrix, Properties props) { 
         LOGGER.warning("PartitionLink clustering has been called without " +
                        "specifying the k-partiteness in the graph.  Assuming " +
                        "all nodes are part of one partition, which is " +
@@ -110,12 +125,18 @@ public class KPartiteLinkClustering extends LinkClustering {
     }
 
     /**
-     * 
+     * Clusters the partitions of the input matrix according to their
+     * partiteness, returning the cluster assignments for each row.
+     *
      * <p> Note that this implementation does not check that the k-partite-ness
      * of the graph is consistent.  Any violations (i.e. edges betwen the
      * k-disjoint sets) will not be caught and will subsequently affect the
      * results.
      *
+     * @param matrix the matrix whose rows are to be clustered using the
+     *        positive values on the rows interpreted as edges
+     * @param props properties used to configure the run-time.  See {@link
+     *        LinkClustering} for a list of properties
      * @param numPartitions the number of disjoint sets in the graph represented
      *        as the matrix
      * @param rowToPartition a mapping from a row index to its partition

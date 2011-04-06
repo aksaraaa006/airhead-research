@@ -72,7 +72,6 @@ public class LinkClusteringTool {
         
         opts.addOption('h', "help", "Generates a help message and exits",
                           false, null, "Program Options");
-
         opts.addOption('w', "weighted", "Uses a weighted edge simiarity",
                           false, null, "Program Options");
         opts.addOption('p', "kpartite", "Uses the k-partite link clustering",
@@ -81,6 +80,14 @@ public class LinkClusteringTool {
                           "out of main memory, which slows processing but " +
                           "allows much larger graphs to be clustered",
                           false, null, "Program Options");
+        opts.addOption('d', "printDensities", "Prints all the cluster " +
+                       "densities to the specified file", true, "FILE",
+                       "Program Options");
+        opts.addOption('a', "saveAllSolutions", "Saves the communities for all"+
+                       "possible partitionings", true, "FILE_PREFIX",
+                       "Program Options");
+        opts.addOption('n', "saveNthSolutions", "Saves only every nth solution"+
+                       " when -a is used", true, "INT", "Program Options");
         opts.addOption('v', "verbose", "Turns on verbose output",
                           false, null, "Program Options");
         opts.addOption('V', "verbVerbose", "Turns on very verbose output",
@@ -142,7 +149,7 @@ public class LinkClusteringTool {
                 continue;
             }
             
-            if (isKPartite && arr.length != 4 
+            if (isKPartite && arr.length != 5
                     || isWeighted && arr.length < 3
                     || arr.length < 2) {
                 System.out.printf("missing data on line %d:%n%s%n", 
@@ -192,14 +199,40 @@ public class LinkClusteringTool {
             // NOTE: this could include duplicate edges, but we skip the check.
             ++numEdges;
             
-            if (isKPartite) {
-                String partitionName = arr[3];
-                Integer pId = partitionToIndex.get(partitionName);
-                if (pId == null) {
-                    pId = partitionToIndex.size();
-                    partitionToIndex.put(partitionName, pId);
+           if (isKPartite) {
+                String vert1partition = arr[3];
+                Integer v1pId = partitionToIndex.get(vert1partition);
+                if (v1pId == null) {
+                    v1pId = partitionToIndex.size();
+                    partitionToIndex.put(vert1partition, v1pId);
                 }
-                partitionMapping.add(pId);
+                
+                // Check that vertex 1 isn't in a different partition
+                Integer p = partitionMapping.get(ver1row);
+                if (p != null && !p.equals(v1pId)) {
+                    throw new IllegalStateException(String.format(
+                        "Line %d: vertex %d is specified as being in two " +
+                        "partitions: %s and %d", lineNo, ver1, 
+                        partitionToIndex.inverse().get(p), vert1partition));
+                }
+                partitionMapping.set(ver1row, v1pId);
+
+                String vert2partition = arr[4];
+                Integer v2pId = partitionToIndex.get(vert2partition);
+                if (v2pId == null) {
+                    v2pId = partitionToIndex.size();
+                    partitionToIndex.put(vert2partition, v2pId);
+                }
+                
+                // Check that vertex 1 isn't in a different partition
+                p = partitionMapping.get(ver2row);
+                if (p != null && !p.equals(v2pId)) {
+                    throw new IllegalStateException(String.format(
+                        "Line %d: vertex %d is specified as being in two " +
+                        "partitions: %s and %d", lineNo, ver2, 
+                        partitionToIndex.inverse().get(p), vert2partition));
+                }
+                partitionMapping.set(ver2row, v2pId);
             }
 
             lineNo++;
@@ -216,20 +249,58 @@ public class LinkClusteringTool {
                    Math.max(sm.rows(), sm.columns()), 0);
         
         Assignment[] assignments = null;
-        // Special case for k-partite
+        LinkClustering lc = null;
+        // Special case for k-partite to use the partite overload
         if (isKPartite) {
             KPartiteLinkClustering kplc = new KPartiteLinkClustering();
+            lc = kplc;
             assignments = kplc.cluster(sm, System.getProperties(),
                                        partitionToIndex.size(), 
                                        partitionMapping);
         }
         else {
-            LinkClustering lc = (isWeighted)
+            lc = (isWeighted)
                 ? new WeightedLinkClustering()
                 : new LinkClustering();
             assignments = lc.cluster(sm, System.getProperties());
         }
+        
+        info(LOGGER, "writing partitioning with highest density");
+        writeCommunities(assignments, keyToRow.inverse(), 
+                         opts.getPositionalArg(1));
 
+        if (opts.hasOption('a')) {
+            String outputSolPrefix = opts.getStringOption('a');
+            int stepSize = (opts.hasOption('n'))
+                ? opts.getIntOption('n')
+                : 1;
+            int numSolutions = lc.numberOfSolutions();
+            for (int i = 0; i < numSolutions; i+= stepSize) {
+                Assignment[] solution = lc.getSolution(i);
+                writeCommunities(solution, keyToRow.inverse(),
+                                 outputSolPrefix + "_" + i);
+            }
+        }
+
+        if (opts.hasOption('d')) {
+            String densitiesFile = opts.getStringOption('d');
+            try {
+                PrintWriter pw = new PrintWriter(densitiesFile);
+                int numSolutions = lc.numberOfSolutions();
+                for (int i = 0; i < numSolutions; i++) {
+                    pw.println(i + " " + lc.getSolutionDensity(i));
+                }
+                pw.close();
+            }
+            catch (IOException ioe) {
+                throw new IOError(ioe);
+            }
+        }
+    }
+
+    private static void writeCommunities(Assignment[] assignments, 
+                                         BiMap<Integer,String> rowToKey,
+                                         String fileName) {
         // Write the result
         MultiMap<String,Integer> clusterToRows = 
             new HashMultiMap<String,Integer>();
@@ -239,15 +310,10 @@ public class LinkClusteringTool {
             for (int clusterId : assignments[i].assignments()) {
                 clusterToRows.put("cluster_" + clusterId, i);
             }
-        }
-        
-        info(LOGGER, "Found %d clusters for optimal solution%n",
-             clusterToRows.size());
-            
-        BiMap<Integer,String> rowToKey = keyToRow.inverse();
+        }                   
         
         try {
-            PrintWriter output = new PrintWriter(opts.getPositionalArg(1));
+            PrintWriter output = new PrintWriter(fileName);
             for (String clusterId : clusterToRows.keySet()) {
                 Set<Integer> rows = clusterToRows.get(clusterId);
                 StringBuilder sb = new StringBuilder();
@@ -273,21 +339,21 @@ public class LinkClusteringTool {
     private static void usage(ArgOptions options) {
         System.out.println(
             "Link Clustering 1.0, " +
-            "based on the community detection method of\n" +
+            "based on the community detection method of\n\n" +
             "\tYong-Yeol Ahn, James P. Bagrow, and Sune Lehmann. 2010.\n" +
             "\tLink communities reveal multiscale complexity in networks.\n" +
             "\tNature, (466):761–764, August.\n\n" +
             "usage: java -jar lc.jar [options] edge_file communities.txt \n\n" 
             + options.prettyPrint() +
             "\nThe edge file format is:\n" +
-            "   vertex1 vertex2 [weight] [partition#]\n" +
+            "   vertex1 vertex2 [weight] [partition_for_v1 partition_for_v2]\n" +
             "where vertices may be named using any contiguous sequence of " +
             "characters or\n" +
             "numbers.  Weights may be any non-zero double value.  Partitions " +
             "can be\n" +
             "named using any contiguous sequence of characters or numbers.  " +
             "Lines beginning\n" +
-            "with '#' are treated as comments and skipped\n\n"+
+            "with '#' are treated as comments and skipped.\n\n"+
             OptionDescriptions.HELP_DESCRIPTION);
     }
 
