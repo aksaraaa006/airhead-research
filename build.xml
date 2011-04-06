@@ -424,6 +424,21 @@
     </jar>
   </target>
 
+  <target name="lc-jar" depends="compile">
+    <jar destfile="${tools.dir}/lc.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="LinkClustering"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.tools.LinkClusteringTool"/>
+      </manifest>
+    </jar>
+  </target>
+
   <!--
     **
     ** 
