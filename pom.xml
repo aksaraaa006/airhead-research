@@ -11,10 +11,11 @@
     Semantic Spaces as well as a highly-scalable library for designing new
     distributional semantics algorithms. Distributional algorithms process text
     corpora and represent the semantic for words as high dimensional feature
-    vectors. These approaches are known by many names, such as word spaces,
-  semantic spaces, or distributed semantics and rest upon the Distributional
-  Hypothesis: words that appear in similar contexts have similar
-  meanings.</description> 
+    vectors. This package also includes matrices, vectors, and numerous
+    clustering algorithms. These approaches are known by many names, such as
+    word spaces, semantic spaces, or distributed semantics and rest upon the
+    Distributional Hypothesis: words that appear in similar contexts have
+    similar meanings.</description> 
   <url>http://code.google.com/p/airhead-research/</url>
 
   <licenses>
