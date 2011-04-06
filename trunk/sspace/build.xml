@@ -19,7 +19,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  -->
 
-<project name="semanticspaces" default="compile">
+<project name="semanticspaces" default="compile"
+         xmlns:artifact="antlib:org.apache.maven.artifact.ant">
   <property file="build.properties"/>
 
   <property name="lib.dir" value="lib"/>
@@ -35,7 +36,15 @@
   <property name="bin.dir" value="bin"/>
   <property name="tools.dir" value="tools"/>
   <property name="version" value="1.6"/>
-  
+
+  <!-- define Maven coordinates, repository url and artifacts name etc -->
+  <property name="groupId" value="edu.ucla.sspace" />
+  <property name="artifactId" value="sspace" />
+  <property name="maven-repository-url" value="https://oss.sonatype.org/service/local/staging/deploy/maven2/" />
+  <property name="maven-repository-id" value="sonatype-nexus-staging" />
+  <property name="maven-jar" value="${dist.dir}/${artifactId}-${version}.jar" />
+  <property name="maven-javadoc-jar" value="${dist.dir}/${artifactId}-${version}-javadoc.jar" />
+  <property name="maven-sources-jar" value="${dist.dir}/${artifactId}-${version}-src.jar" />
 
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -133,8 +142,62 @@
     </javac>
   </target>
 
-  <target name="dist" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar">
-    <!-- TODO: Create jar executables for all of the major algorithms -->
+  <!--
+       Create the distribution jars for the libraries, javadoc, and source 
+       files.
+  -->
+  <target name="dist" depends="clean,compile"
+          description="Generate the full distribution">
+    <!-- build the main artifact -->
+    <jar jarfile="${maven-jar}" basedir="${build.dir}" />
+
+    <!-- build the javadoc artifact -->
+    <javadoc sourcepath="${src.dir}" destdir="javadoc" />
+    <jar jarfile="${maven-javadoc-jar}">
+        <fileset dir="javadoc" />
+    </jar>
+
+    <!-- build the sources artifact -->
+    <jar jarfile="${maven-sources-jar}">
+        <fileset dir="${src.dir}" />
+    </jar>
+  </target>
+
+  <!--
+       Deploy the distribution jars to the maven repository.
+  -->
+  <target name="deploy" depends="dist" description="deploy to Nexus">
+    <!-- sign and deploy the main artifact -->
+    <artifact:mvn>
+      <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
+      <arg value="-Durl=${maven-repository-url}" />
+      <arg value="-DrepositoryId=${maven-repository-id}" />
+      <arg value="-DpomFile=pom.xml" />
+      <arg value="-Dfile=${maven-jar}" />
+      <arg value="-Pgpg" />
+    </artifact:mvn>
+
+    <!-- sign and deploy the sources artifact -->
+    <artifact:mvn>
+      <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
+      <arg value="-Durl=${maven-repository-url}" />
+      <arg value="-DrepositoryId=${maven-repository-id}" />
+      <arg value="-DpomFile=pom.xml" />
+      <arg value="-Dfile=${maven-sources-jar}" />
+      <arg value="-Dclassifier=sources" />
+      <arg value="-Pgpg" />
+    </artifact:mvn>
+
+    <!-- sign and deploy the javadoc artifact -->
+    <artifact:mvn>
+      <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
+      <arg value="-Durl=${maven-repository-url}" />
+      <arg value="-DrepositoryId=${maven-repository-id}" />
+      <arg value="-DpomFile=pom.xml" />
+      <arg value="-Dfile=${maven-javadoc-jar}" />
+      <arg value="-Dclassifier=javadoc" />
+      <arg value="-Pgpg" />
+    </artifact:mvn>
   </target>
 
   <target name="tools" depends="sse-jar,svd-jar,tc-jar">
