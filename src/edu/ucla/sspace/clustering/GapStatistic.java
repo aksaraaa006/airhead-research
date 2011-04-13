@@ -159,40 +159,16 @@ public class GapStatistic implements Clustering {
         double[] gapStds = new double[numIterations];
         Assignments[] gapAssignments = new Assignments[numIterations];
 
-        // Set up the concurrent data structures so we can process the documents
-        // concurrently
-        final BlockingQueue<Runnable> workQueue =
-            new LinkedBlockingQueue<Runnable>();
-        for (int i = 0; i < Runtime.getRuntime().availableProcessors(); ++i) {
-            Thread t = new WorkerThread(workQueue);
-            t.start();
-        }
-        final Semaphore iterationsProcessed = new Semaphore(0); 
-
-        // Compute the gap statistic for each iteration.
-        for (int i = 0; i < numIterations; ++i) 
-            workQueue.offer(getRunnableCluster(
-                        i, startSize, numGaps, m, gapFiles,
-                        gapResults, gapStds, gapAssignments,
-                        iterationsProcessed));
-
-        // Wait until all the documents have been processed
-        try {
-            iterationsProcessed.acquire(numIterations);
-        } catch (InterruptedException ie) {
-            throw new Error("interrupted while waiting for terms to " +
-                            "finish reprocessing", ie);
-        }
-
-        // Setup files to store  store what the previous gap statistic was and
-        // the previous clustering assignment. 
         Assignments bestAssignments = null;
         double bestGap = Double.NEGATIVE_INFINITY;
         int bestK = 0;
+        // Compute the gap statistic for each iteration.
         for (int i = 0; i < numIterations; ++i) {
+            clusterIteration(i, startSize, numGaps, m, gapFiles,
+                             gapResults, gapStds, gapAssignments);
             if (bestGap >= (gapResults[i] - gapStds[i])) {
-                verbose("bestGap: %f, newGap: %f", bestGap, 
-            gapResults[i] - gapStds[i]);
+                verbose("bestGap: %f, newGap: %f",
+                        bestGap, gapResults[i] - gapStds[i]);
                 verbose("Found best clustering with %d clusters\n",
                         (i + startSize));
                 break;
@@ -202,7 +178,6 @@ public class GapStatistic implements Clustering {
             bestGap = gapResults[i];
             bestAssignments = gapAssignments[i];
             bestK = i + startSize;
-            verbose("current: gap: %f, k: %d", bestGap, bestK);
         }
 
         // Delete the matrix and assignment files so that there is not an
@@ -210,62 +185,52 @@ public class GapStatistic implements Clustering {
         for (MatrixFile gapFile : gapFiles)
             gapFile.getFile().delete();
 
-        verbose("final bestK: %d", bestK);
         return bestAssignments;
     }
 
-    private Runnable getRunnableCluster(final int i,
-                                final int startSize,
-                                final int numGaps,
-                                final Matrix matrix,
-                                final MatrixFile[] gapFiles, 
-                                final double[] gapResults,
-                                final double[] gapStds,
-                                final Assignments[] gapAssignments,
-                                final Semaphore iterationsProcessed) {
-        return new Runnable() {
-            public void run() {
-                int k = i+startSize;
-                CriterionFunction function = new I1Function();
-                verbose("Clustering reference data for %d clusters\n", k);
+    private void clusterIteration(int i, int startSize, int numGaps,
+                                  Matrix matrix, MatrixFile[] gapFiles, 
+                                  double[] gapResults, double[] gapStds,
+                                  Assignments[] gapAssignments) {
+        int k = i+startSize;
+        CriterionFunction function = new I1Function();
+        verbose("Clustering reference data for %d clusters\n", k);
 
-                // Compute the score for the reference data sets with k
-                // clusters.
-                double referenceScore = 0;
-                double[] referenceScores = new double[numGaps];
-                for (int j = 0; j < numGaps; ++j) {
-                    Assignments result = DirectClustering.cluster(
-                            gapFiles[j].load(), k, 10, function);
-                    referenceScores[j] = Math.log(function.score());
-                }
-                referenceScore /= numGaps;
+        // Compute the score for the reference data sets with k
+        // clusters.
+        double referenceScore = 0;
+        double[] referenceScores = new double[numGaps];
+        for (int j = 0; j < numGaps; ++j) {
+            Assignments result = DirectClustering.cluster(
+                    gapFiles[j].load(), k, 10, function);
+            referenceScores[j] = Math.log(function.score());
+        }
+        referenceScore /= numGaps;
 
-                // Compute the standard deviation for the reference scores.
-                double referenceStdev = 0;
-                for (double score : referenceScores)
-                    referenceStdev += Math.pow(score - referenceScore, 2);
-                referenceStdev /= numGaps;
-                referenceStdev = Math.sqrt(referenceStdev);
+        // Compute the standard deviation for the reference scores.
+        double referenceStdev = 0;
+        for (double score : referenceScores)
+            referenceStdev += Math.pow(score - referenceScore, 2);
+        referenceStdev /= numGaps;
+        referenceStdev = Math.sqrt(referenceStdev);
 
-                verbose("Clustering original data for %d clusters\n", k);
-                // Compute the score for the original data set with k
-                // clusters.
-                Assignments result = DirectClustering.cluster(
-                        matrix, k, 10, function);
+        verbose("Clustering original data for %d clusters\n", k);
+        // Compute the score for the original data set with k
+        // clusters.
+        Assignments result = DirectClustering.cluster(
+                matrix, k, 10, function);
 
-                // Compute the difference between the two scores.  If the
-                // current score is less than the previous score, then the
-                // previous assignment is considered best.
-                double gap = Math.log(function.score());
-                gap = referenceScore - gap;
+        // Compute the difference between the two scores.  If the
+        // current score is less than the previous score, then the
+        // previous assignment is considered best.
+        double gap = Math.log(function.score());
+        gap = referenceScore - gap;
 
-                gapResults[i] = gap;
-                gapStds[i] = referenceStdev;
-                gapAssignments[i] = result;
+        gapResults[i] = gap;
+        gapStds[i] = referenceStdev;
+        gapAssignments[i] = result;
 
-                verbose("completed iteration %d\n", i);
-            }
-        };
+        verbose("completed iteration %d\n", i);
     }
 
     /**

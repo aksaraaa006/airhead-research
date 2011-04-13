@@ -84,9 +84,9 @@ do
     CTYPE=-s
     run_all StreamingKMeans stkm $testSeg
     CTYPE=-b
-    #run_all ClusteringByCommittee cbc $testSeg
-    #run_all CKVWSpectralClustering06 sc06 $testSeg
-    #run_all GapStatistic gs-kmeans $testSeg
+    run_all ClusteringByCommittee cbc $testSeg
+    run_all CKVWSpectralClustering06 sc06 $testSeg
+    run_all GapStatistic gs-kmeans $testSeg
   done
 done
 }

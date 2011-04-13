@@ -328,6 +328,8 @@ public abstract class GenericWordsiMain extends GenericMain {
             reporter = new PseudoWordReporter(System.out);
         }
 
+        int numClusters = options.getIntOption('c', 0);
+
         // If Wordsi is being used in an evaluation mode, set up word space
         // accordingly.
         if (options.hasOption('e')) {
@@ -355,20 +357,18 @@ public abstract class GenericWordsiMain extends GenericMain {
         } else if (options.hasOption('s')) {
             // Create a StreamingWordsi instance that uses the specified online 
             // cluster generator.
-            if (options.hasOption('c'))
-                System.getProperties().setProperty(
-                        OnlineClustering.NUM_CLUSTERS_PROPERTY,
-                        options.getStringOption('c'));
+            System.getProperties().setProperty(
+                    OnlineClustering.NUM_CLUSTERS_PROPERTY,
+                    options.getStringOption('c'));
             Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator =
                 ReflectionUtil.getObjectInstance(options.getStringOption('s'));
-            return new StreamingWordsi(getAcceptedWords(), getExtractor(), 
-                                       clusterGenerator, reporter);
+            return new StreamingWordsi(getAcceptedWords(), getExtractor(),
+                                       clusterGenerator, reporter, numClusters);
         } else if (options.hasOption('b')) {
             // Create a WaitingWordsi instance that uses the specified batch
             // clustering implementation.
             Clustering clustering = 
                 ReflectionUtil.getObjectInstance(options.getStringOption('b'));
-            int numClusters = options.getIntOption('c', 0);
             return new WaitingWordsi(getAcceptedWords(), getExtractor(), 
                                      clustering, reporter, numClusters);
         } else {

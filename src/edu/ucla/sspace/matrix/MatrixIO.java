@@ -924,7 +924,7 @@ public class MatrixIO {
             return readMatlabSparse(matrix, matrixType, transposeOnRead);
 
         case CLUTO_SPARSE:
-            break;
+            return readClutoSparse(matrix, matrixType, transposeOnRead);
 
         case SVDLIBC_SPARSE_TEXT:
             return readSparseSVDLIBCtext(matrix, matrixType, transposeOnRead);
@@ -945,6 +945,46 @@ public class MatrixIO {
                         "currently supported. Email " + 
                         "s-space-research-dev@googlegroups.com to request its "+
                         "inclusion and it will be quickly added");
+    }
+
+    /**
+     * Creates a {@code Matrix} from the data encoded as {@link
+     * Format#CLUTO_SPARSE} in provided file.
+     *
+     */
+    private static Matrix readClutoSparse(File matrix, Type matrixType,
+                                          boolean transposeOnRead) 
+            throws IOException{
+        BufferedReader br = new BufferedReader(new FileReader(matrix));
+
+        // Get the meta data for the matrix.
+        String[] rowColNonzeroTok = br.readLine().split("\\s+");
+        int rows = Integer.parseInt(rowColNonzeroTok[0]);
+        int cols = Integer.parseInt(rowColNonzeroTok[1]);
+        int nonZeros = Integer.parseInt(rowColNonzeroTok[2]);
+
+        // Create the data matrix.
+        Matrix dataMatrix = (transposeOnRead)
+            ? Matrices.create(cols, rows, matrixType)
+            : Matrices.create(rows, cols, matrixType);
+
+        // Read each row from the file stream and set the values into the
+        // matrix.
+        int row = 0;
+        for (String line = null; (line = br.readLine()) != null; ) {
+            String[] indexVals = line.split("\\s+");
+            for (int i = 0; i < indexVals.length; ) {
+                int col = Integer.parseInt(indexVals[i++]);
+                double val = Double.parseDouble(indexVals[i++]);
+                if (transposeOnRead)
+                    dataMatrix.set(col, row, val);
+                else
+                    dataMatrix.set(row, col, val);
+            }
+            row++;
+        }
+
+        return dataMatrix;
     }
 
     /**
