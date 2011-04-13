@@ -77,6 +77,11 @@ public class StreamingWordsi extends BaseWordsi {
     private final AssignmentReporter reporter;
 
     /**
+     * The maximum number of clusters permitted.
+     */
+    private final int numClusters;
+
+    /**
      * Creates a new {@link StreamingWordsi}.
      *
      * @param acceptedWords The set of words that {@link Wordsi} should
@@ -95,11 +100,13 @@ public class StreamingWordsi extends BaseWordsi {
             Set<String> acceptedWords,
             ContextExtractor extractor,
             Generator<OnlineClustering<SparseDoubleVector>> clusterGenerator,
-            AssignmentReporter reporter) {
+            AssignmentReporter reporter,
+            int numClusters) {
         super(acceptedWords, extractor); 
         clusterMap = new GeneratorMap<OnlineClustering<SparseDoubleVector>>(
                         clusterGenerator);
         this.reporter = reporter;
+        this.numClusters = numClusters;
 
         this.wordSpace = new HashMap<String, SparseDoubleVector>();
     }
@@ -142,41 +149,16 @@ public class StreamingWordsi extends BaseWordsi {
         // cluster assignments are reported.
         for (Map.Entry<String, OnlineClustering<SparseDoubleVector>> entry :
                  clusterMap.entrySet()) {
-            // Form a list of centroid vectors, which will be clustered by HAC.
-            List<SparseDoubleVector> centroids =
-                new ArrayList<SparseDoubleVector>();
-            List<Cluster<SparseDoubleVector>> clusters =
-                entry.getValue().getClusters();
 
-            for (Cluster<SparseDoubleVector> cluster : clusters)
-                centroids.add(cluster.centroid());
+            // First forcefully condense everything down to the required number
+            // of clusters.
+            List<Cluster<SparseDoubleVector>> newClusters = clusterStream(
+                entry.getValue().getClusters(), numClusters, 0.0);
 
-            // Cluster the centroids with a threshold.
-            int[] assignments = HierarchicalAgglomerativeClustering.clusterRows(
-                    Matrices.asSparseMatrix(centroids), 
-                    mergeThreshold,
-                    ClusterLinkage.MEAN_LINKAGE,
-                    SimType.COSINE);
-
-            // Combine clusters determined to be merged by HAC.
-            List<Cluster<SparseDoubleVector>> newClusters =
-                new ArrayList<Cluster<SparseDoubleVector>>();
-
-            // When a new assignment index is encountered, create an empty
-            // cluster.  The first cluster assigned to that index becomes the
-            // initial value.  Later clusters assigned to that index are merged
-            // into the primary cluster.
-            for (int i = 0; i < assignments.length; ++i) {
-                int assignment = assignments[i];
-                while (assignment >= newClusters.size())
-                    newClusters.add(null);
-                Cluster<SparseDoubleVector> cluster = newClusters.get(
-                        assignment);
-                if (cluster == null)
-                    newClusters.set(assignment, clusters.get(i));
-                else
-                    cluster.merge(clusters.get(i));
-            }
+            // Then try to merge these new centroids based on the similarity
+            // threshold.
+            newClusters = clusterStream(entry.getValue().getClusters(),
+                                        0, mergeThreshold);
 
             // Store a mapping for each word sense to it's induced word sense,
             // i.e., the centroid.
@@ -214,5 +196,54 @@ public class StreamingWordsi extends BaseWordsi {
 
         if (reporter != null)
             reporter.finalizeReport();
+    }
+
+    private List<Cluster<SparseDoubleVector>> clusterStream(
+            List<Cluster<SparseDoubleVector>> clusters,
+            int numClusters,
+            double threshold) {
+        // Form a list of centroid vectors, which will be clustered by HAC.
+        List<SparseDoubleVector> centroids =
+            new ArrayList<SparseDoubleVector>();
+
+        for (Cluster<SparseDoubleVector> cluster : clusters)
+            centroids.add(cluster.centroid());
+
+        // Cluster the centroids with a threshold.
+        int[] assignments;
+        if (numClusters != 0) {
+            assignments = HierarchicalAgglomerativeClustering.partitionRows(
+                Matrices.asSparseMatrix(centroids), 
+                numClusters,
+                ClusterLinkage.MEAN_LINKAGE,
+                SimType.COSINE);
+        } else {
+            assignments = HierarchicalAgglomerativeClustering.clusterRows(
+                Matrices.asSparseMatrix(centroids), 
+                threshold,
+                ClusterLinkage.MEAN_LINKAGE,
+                SimType.COSINE);
+        }
+
+        // Combine clusters determined to be merged by HAC.
+        List<Cluster<SparseDoubleVector>> newClusters =
+            new ArrayList<Cluster<SparseDoubleVector>>();
+
+        // When a new assignment index is encountered, create an empty
+        // cluster.  The first cluster assigned to that index becomes the
+        // initial value.  Later clusters assigned to that index are merged
+        // into the primary cluster.
+        for (int i = 0; i < assignments.length; ++i) {
+            int assignment = assignments[i];
+            while (assignment >= newClusters.size())
+                newClusters.add(null);
+            Cluster<SparseDoubleVector> cluster = newClusters.get(assignment);
+            if (cluster == null)
+                newClusters.set(assignment, clusters.get(i));
+            else
+                cluster.merge(clusters.get(i));
+        }
+
+        return newClusters;
     }
 }
