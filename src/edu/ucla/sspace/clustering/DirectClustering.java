@@ -225,15 +225,22 @@ public class DirectClustering implements Clustering {
         // Compute the initial set of assignments for each data point based on
         // the initial assignments.
         int[] initialAssignments = new int[matrix.rows()];
-        for (int i = 0; i < matrix.rows(); ++i) {
-            DoubleVector vector = matrix.getRowVector(i);
-            double bestSimilarity = 0;
-            for (int c = 0; c < numClusters; ++c) {
-                double similarity = Similarity.cosineSimilarity(
-                        centers[c], vector);
-                if (similarity >= bestSimilarity) {
-                    bestSimilarity = similarity;
-                    initialAssignments[i] = c;
+
+        // If there is to be only one cluster, then everything will be auto
+        // assigned to the first cluster.  This is just a special case that only
+        // comes up when comparing other solutions to the non-solution.
+        if (numClusters != 1) {
+            for (int i = 0; i < matrix.rows(); ++i) {
+
+                DoubleVector vector = matrix.getRowVector(i);
+                double bestSimilarity = 0;
+                for (int c = 0; c < numClusters; ++c) {
+                    double similarity = Similarity.cosineSimilarity(
+                            centers[c], vector);
+                    if (similarity >= bestSimilarity) {
+                        bestSimilarity = similarity;
+                        initialAssignments[i] = c;
+                    }
                 }
             }
         }

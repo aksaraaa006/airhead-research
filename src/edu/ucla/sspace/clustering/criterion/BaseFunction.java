@@ -132,7 +132,7 @@ public abstract class BaseFunction implements CriterionFunction {
         assignments = initialAssignments;
         matrix = new ArrayList<DoubleVector>(m.rows());
         for (int i = 0; i < m.rows(); ++i)
-            matrix.add(Vectors.scaleByMagnitude(m.getRowVector(i)));
+            matrix.add(m.getRowVector(i));
 
         // Initialize the cluster information.
         centroids = new DoubleVector[numClusters];
@@ -276,7 +276,7 @@ public abstract class BaseFunction implements CriterionFunction {
                 double value = c.get(i);
                 if (sparseIndex < nonZeros.length &&
                     i == nonZeros[sparseIndex])
-                    value += sv.get(nonZeros[sparseIndex++]);
+                    value -= sv.get(nonZeros[sparseIndex++]);
                 newCentroid.set(i, value);
             }
         } else {

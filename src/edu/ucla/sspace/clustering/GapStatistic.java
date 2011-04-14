@@ -23,6 +23,8 @@ package edu.ucla.sspace.clustering;
 
 import edu.ucla.sspace.clustering.criterion.CriterionFunction;
 import edu.ucla.sspace.clustering.criterion.I1Function;
+import edu.ucla.sspace.clustering.criterion.I2Function;
+import edu.ucla.sspace.clustering.criterion.H2Function;
 
 import edu.ucla.sspace.matrix.ClutoSparseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
@@ -32,10 +34,14 @@ import edu.ucla.sspace.matrix.MatrixFile;
 import edu.ucla.sspace.matrix.MatrixIO;
 import edu.ucla.sspace.matrix.MatrixIO.Format;
 import edu.ucla.sspace.matrix.MatrixBuilder;
+import edu.ucla.sspace.matrix.RowMagnitudeTransform;
 import edu.ucla.sspace.matrix.SparseMatrix;
+import edu.ucla.sspace.matrix.TfIdfDocStripedTransform;
+import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.util.WorkerThread;
 
+import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.SparseHashDoubleVector ;
 
@@ -148,12 +154,17 @@ public class GapStatistic implements Clustering {
                 NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
         int numIterations = maxClusters - startSize;
 
+        Transform tfidf = new TfIdfDocStripedTransform();
+        Transform rowMag = new RowMagnitudeTransform();
+        m = rowMag.transform(tfidf.transform(m));
+
         verbose("Generating the reference data set");
         // Generate the reference data sets.
         ReferenceDataGenerator generator = new ReferenceDataGenerator(m);
-        MatrixFile[] gapFiles = new MatrixFile[numGaps];
+        Matrix[] gapMatrices = new Matrix[numGaps];
         for (int i = 0; i < numGaps; ++i)
-            gapFiles[i] = generator.generateTestData();
+            gapMatrices[i] = rowMag.transform(tfidf.transform(
+                    generator.generateTestData().load()));
 
         double[] gapResults = new double[numIterations];
         double[] gapStds = new double[numIterations];
@@ -164,13 +175,9 @@ public class GapStatistic implements Clustering {
         int bestK = 0;
         // Compute the gap statistic for each iteration.
         for (int i = 0; i < numIterations; ++i) {
-            clusterIteration(i, startSize, numGaps, m, gapFiles,
+            clusterIteration(i, startSize, m, gapMatrices,
                              gapResults, gapStds, gapAssignments);
             if (bestGap >= (gapResults[i] - gapStds[i])) {
-                verbose("bestGap: %f, newGap: %f",
-                        bestGap, gapResults[i] - gapStds[i]);
-                verbose("Found best clustering with %d clusters\n",
-                        (i + startSize));
                 break;
             }
 
@@ -180,30 +187,27 @@ public class GapStatistic implements Clustering {
             bestK = i + startSize;
         }
 
-        // Delete the matrix and assignment files so that there is not an
-        // abundance of open files.
-        for (MatrixFile gapFile : gapFiles)
-            gapFile.getFile().delete();
-
         return bestAssignments;
     }
 
-    private void clusterIteration(int i, int startSize, int numGaps,
-                                  Matrix matrix, MatrixFile[] gapFiles, 
+    private void clusterIteration(int i, int startSize, 
+                                  Matrix matrix, Matrix[] gapMatrices, 
                                   double[] gapResults, double[] gapStds,
                                   Assignments[] gapAssignments) {
         int k = i+startSize;
-        CriterionFunction function = new I1Function();
+        int numGaps = gapMatrices.length;
+        CriterionFunction function = new H2Function();
         verbose("Clustering reference data for %d clusters\n", k);
 
         // Compute the score for the reference data sets with k
         // clusters.
         double referenceScore = 0;
         double[] referenceScores = new double[numGaps];
-        for (int j = 0; j < numGaps; ++j) {
+        for (int j = 0; j < gapMatrices.length; ++j) {
             Assignments result = DirectClustering.cluster(
-                    gapFiles[j].load(), k, 10, function);
+                    gapMatrices[j], k, 1, function);
             referenceScores[j] = Math.log(function.score());
+            referenceScore += referenceScores[j];
         }
         referenceScore /= numGaps;
 
@@ -218,7 +222,7 @@ public class GapStatistic implements Clustering {
         // Compute the score for the original data set with k
         // clusters.
         Assignments result = DirectClustering.cluster(
-                matrix, k, 10, function);
+                matrix, k, 1, function);
 
         // Compute the difference between the two scores.  If the
         // current score is less than the previous score, then the
@@ -230,7 +234,6 @@ public class GapStatistic implements Clustering {
         gapStds[i] = referenceStdev;
         gapAssignments[i] = result;
 
-        verbose("completed iteration %d\n", i);
     }
 
     /**
@@ -343,12 +346,10 @@ public class GapStatistic implements Clustering {
             MatrixBuilder builder = new ClutoSparseMatrixBuilder();
             for (int i = 0; i < rows; ++i) {
                 int cols = minValues.length;
-                //double[] values = new double[cols];
 
                 // If the average number of values per row is significantly
                 // smaller than the total number of columns then select a subset
                 // to be non zero.
-                //if (averageNumValuesPerRow < cols / 2) {
                 SparseHashDoubleVector column =
                     new SparseHashDoubleVector(cols);
                 int numNonZeros =
