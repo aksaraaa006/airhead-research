@@ -109,7 +109,6 @@ public class DependencyContextExtractor implements ContextExtractor {
             // assumed to be the first line in a document.
             String contextHeader = handleContextHeader(document);
 
-            System.err.println(contextHeader);
             // Iterate over all of the parseable dependency parsed sentences in
             // the document.
             DependencyTreeNode[] nodes = extractor.readNextTree(document);

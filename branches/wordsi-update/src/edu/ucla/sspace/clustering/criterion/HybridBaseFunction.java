@@ -124,11 +124,12 @@ public abstract class HybridBaseFunction implements CriterionFunction {
         assignments = initialAssignments;
         matrix = new ArrayList<DoubleVector>(m.rows());
         for (int i = 0; i < m.rows(); ++i)
-            matrix.add(Vectors.scaleByMagnitude(m.getRowVector(i)));
+            matrix.add(m.getRowVector(i));
 
         // Initialize the cluster information.
         centroids = new DoubleVector[numClusters];
         clusterSizes = new int[numClusters];
+        simToComplete = new double[numClusters];
         e1Costs = new double[numClusters];
         i1Costs = new double[numClusters];
 
@@ -144,7 +145,7 @@ public abstract class HybridBaseFunction implements CriterionFunction {
         }
 
         // Compute the complete summation vector.
-        completeCentroid = new DenseVector(m.rows());
+        completeCentroid = new DenseVector(m.columns());
         for (DoubleVector v : matrix)
             VectorMath.add(completeCentroid, v);
 

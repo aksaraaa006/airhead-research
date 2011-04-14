@@ -974,7 +974,7 @@ public class MatrixIO {
         for (String line = null; (line = br.readLine()) != null; ) {
             String[] indexVals = line.split("\\s+");
             for (int i = 0; i < indexVals.length; ) {
-                int col = Integer.parseInt(indexVals[i++]);
+                int col = Integer.parseInt(indexVals[i++]) - 1;
                 double val = Double.parseDouble(indexVals[i++]);
                 if (transposeOnRead)
                     dataMatrix.set(col, row, val);
