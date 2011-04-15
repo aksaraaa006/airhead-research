@@ -32,6 +32,7 @@ import static org.junit.Assert.*;
 /**
  * Tests for the {@link TimeSpan} class.
  */
+@SuppressWarnings("deprecation")
 public class TimeSpanTests {
 
     @Test public void testAddCalendar() {

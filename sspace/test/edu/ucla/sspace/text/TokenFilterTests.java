@@ -54,7 +54,6 @@ public class TokenFilterTests {
         assertTrue(filter.accept(""));
     }
 
-
     @Test public void testMultipleInclude() throws IOException {
         File toInclude = createFileWithText("include\nthree\nwords");
         File toInclude2 = createFileWithText("foo\nbar\nbaz");
@@ -71,7 +70,6 @@ public class TokenFilterTests {
         assertFalse(filter.accept("qux"));
         assertFalse(filter.accept("quux"));
     }
-
 
     @Test public void testLayeredExcludeFirst() throws IOException {
         File toExclude = createFileWithText("include");
