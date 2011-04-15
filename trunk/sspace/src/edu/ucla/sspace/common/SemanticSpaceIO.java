@@ -495,20 +495,21 @@ public class SemanticSpaceIO {
                     int[] nz = sdv.getNonZeroIndices();
                     sb = new StringBuilder(nz.length * 4);
                     // special case the first
-                    sb.append(0).append(",").append(sdv.get(0));
+                    sb.append(nz[0]).append(",").append(sdv.get(nz[0]));
                     for (int i = 1; i < nz.length; ++i)
-                        sb.append(",").append(i).append(",").append(sdv.get(i));
+                        sb.append(",").append(nz[i]).append(",").
+                            append(sdv.getValue(nz[i]).doubleValue());
                 }
                 else {
                     SparseVector sv = (SparseVector)vector;
                     int[] nz = sv.getNonZeroIndices();                    
                     sb = new StringBuilder(nz.length * 4);
                     // special case the first
-                    sb.append(0).append(",")
-                        .append(sv.getValue(0).doubleValue());
+                    sb.append(nz[0]).append(",")
+                        .append(sv.getValue(nz[0]).doubleValue());
                     for (int i = 1; i < nz.length; ++i)
-                        sb.append(",").append(i).append(",").
-                            append(sv.getValue(i).doubleValue());
+                        sb.append(",").append(nz[i]).append(",").
+                            append(sv.getValue(nz[i]).doubleValue());
                 }
             }
             
