@@ -228,6 +228,8 @@ public class GapStatistic implements Clustering {
         // current score is less than the previous score, then the
         // previous assignment is considered best.
         double gap = Math.log(function.score());
+        verbose("Completed iteration with referenceScore: %f, gap:%f\n",
+                referenceScore, gap);
         gap = referenceScore - gap;
 
         gapResults[i] = gap;

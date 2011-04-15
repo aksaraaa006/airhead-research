@@ -71,7 +71,7 @@ public abstract class HybridBaseFunction implements CriterionFunction {
 
     /**
      * The cost computed for each cluster.  This is maintained seperatly so that
-     * update can modify only the  two relevant clusters being modified.
+     * update can modify only the two relevant clusters being modified.
      */
     protected double[] e1Costs;
 
@@ -82,7 +82,7 @@ public abstract class HybridBaseFunction implements CriterionFunction {
 
     /**
      * The cost computed for each cluster.  This is maintained seperatly so that
-     * update can modify only the  two relevant clusters being modified.
+     * update can modify only the two relevant clusters being modified.
      */
     protected double[] i1Costs;
 
@@ -184,15 +184,11 @@ public abstract class HybridBaseFunction implements CriterionFunction {
         int currentClusterIndex = assignments[currentVectorIndex];
 
         // Setup the inital cost for the individual changes.
-        double bestE1Cost = 0;
-        double bestI1Cost = 0;
-
-        // Setup the initial total cost for the individual changes.
-        double bestE1Score = e1Cost;
-        double bestI1Score = i1Cost;
+        double bestE1Delta = 0;
+        double bestI1Delta = 0;
 
         // Setup the best cost and index for the best cost.
-        double bestNewCost = 0;
+        double bestTotal = totalCost;
         int bestDeltaIndex = -1;
 
         // Get the current vector.
@@ -200,25 +196,24 @@ public abstract class HybridBaseFunction implements CriterionFunction {
 
         // Get the base cost for removing the data point from the current
         // cluster.
-        double baseE1Cost = 0;
-        double baseI1Cost = 0;
+        double baseE1Delta = 0;
+        double baseI1Delta = 0;
 
         // Get the current centroid without the current data point assigned to
         // it.  Compute the cost delta with that point removed from the cluster.
         DoubleVector altCurrentCentroid = BaseFunction.subtract(
                 centroids[currentClusterIndex], vector);
-        // Remove the cost of the current cost and add the cost of the altered
-        // centroid for external and internal functions.
-        if (clusterSizes[currentClusterIndex] > 1) {
-            bestE1Score -= e1Costs[currentClusterIndex];
-            baseE1Cost = e1Func.getOldCentroidScore(
-                    altCurrentCentroid, clusterSizes[currentClusterIndex] - 1);
-            bestE1Score += baseE1Cost;
 
-            bestI1Score -= i1Costs[currentClusterIndex];
-            baseI1Cost = i1Func.getOldCentroidScore(
+        // Remove the cost of the current cost and add the cost of the altered
+        // centroid for the base deltas.
+        if (clusterSizes[currentClusterIndex] > 1) {
+            baseE1Delta = e1Func.getOldCentroidScore(
                     altCurrentCentroid, clusterSizes[currentClusterIndex] - 1);
-            bestI1Score += baseI1Cost; 
+            baseE1Delta -= e1Costs[currentClusterIndex];
+
+            baseI1Delta = i1Func.getOldCentroidScore(
+                    altCurrentCentroid, clusterSizes[currentClusterIndex] - 1);
+            baseI1Delta -= i1Costs[currentClusterIndex];
         }
 
         // Compute the cost delta for moving that data point to each of the
@@ -232,34 +227,38 @@ public abstract class HybridBaseFunction implements CriterionFunction {
             // alternate cluster.  Do this by first removing the old cost and
             // then adding the new cost of the changed centroid for external and
             // internal functions.
-            double newE1Score = bestE1Score - e1Costs[i];
-            double newE1Cost = e1Func.getNewCentroidScore(i, vector);
-            newE1Score += newE1Cost;
+            double newE1Delta = e1Func.getNewCentroidScore(i, vector);
+            newE1Delta -= e1Costs[i];
 
-            double newI1Score = bestI1Score - i1Costs[i];
-            double newI1Cost = i1Func.getNewCentroidScore(i, vector);
-            newI1Score += newI1Cost;
+            double newI1Delta = i1Func.getNewCentroidScore(i, vector);
+            newI1Delta -= i1Costs[i];
 
             // If the new score is better than the old score, update the best
             // values.
+            double newI1Score = i1Cost + newI1Delta + baseI1Delta;
+            double newE1Score = e1Cost + newE1Delta + baseE1Delta;
             double newScore = newI1Score / newE1Score;
-            if (newScore > totalCost && newScore > bestNewCost) {
-                bestNewCost = newScore;
-                bestE1Score = newE1Score;
-                bestI1Score = newI1Score;
-                bestE1Cost = newE1Cost;
-                bestI1Cost = newI1Cost;
+
+            if (newScore > bestTotal) {
+                bestTotal = newScore;
+                bestE1Delta = newE1Delta;
+                bestI1Delta = newI1Delta;
                 bestDeltaIndex = i;
             }
         }
 
         // If the best delta index was modified, make an update and return true.
         if (bestDeltaIndex >= 0) {
-            e1Costs[currentClusterIndex] += baseE1Cost;
-            i1Costs[currentClusterIndex] += baseI1Cost;
+            // Update the scores.
+            e1Costs[currentClusterIndex] += baseE1Delta;
+            i1Costs[currentClusterIndex] += baseI1Delta;
 
-            e1Costs[bestDeltaIndex] += bestE1Cost;
-            i1Costs[bestDeltaIndex] += bestI1Cost;
+            e1Costs[bestDeltaIndex] += bestE1Delta;
+            i1Costs[bestDeltaIndex] += bestI1Delta;
+
+            e1Cost += baseE1Delta + bestE1Delta;
+            i1Cost += baseI1Delta + bestI1Delta;
+            totalCost = i1Cost / e1Cost;
 
             // Update the sizes.
             clusterSizes[currentClusterIndex]--;
