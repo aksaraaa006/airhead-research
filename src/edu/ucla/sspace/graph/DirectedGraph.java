@@ -57,6 +57,18 @@ public interface DirectedGraph extends Graph {
      */
     Set<? extends DirectedEdge> outEdges(int vertex);    
 
+    /**
+     * Returns the set of vertices that point to this vertex.  That is, the set
+     * of vertices for which there is an incoming edge to the vertex.
+     */
+    Set<Integer> predecessors(int vertex);
+
+    /**
+     * Returns the set of vertices that can be reached by following the outgoing
+     * edges from this vertex.
+     */
+    Set<Integer> successors(int vertex);
+
 //     /**
 //      * {@inheritDoc}
 //      */

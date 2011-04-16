@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.graph;
 
+import java.util.Map;
 import java.util.Set;
 
 
@@ -95,6 +96,25 @@ public interface WeightedMultigraph<T> extends Multigraph, WeightedGraph {
      * connected by one or more edges.
      */
     @Override WeightedTypedEdge<T> getEdge(int vertex1, int vertex2);
+
+    /**
+     * Returns the <i>minimum</i> edge weight for all edges connecting the two
+     * vertices.
+     *
+     * @throws IllegalArgumentException if an edge does not exist between the
+     *         two vertices.
+     */
+    @Override double getEdgeWeight(int vertex1, int vertex2);
+
+
+    /**
+     * Returns the weight for each edge connecting the two vertices.
+     *
+     * @throws IllegalArgumentException if an edge does not exist between the
+     *         two vertices.
+     */
+    Map<WeightedTypedEdge,Double> getEdgeWeights(int vertex1, int vertex2);
+
 
 //     /**
 //      * {@inheritDoc}

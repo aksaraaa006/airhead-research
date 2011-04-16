@@ -21,33 +21,17 @@
 
 package edu.ucla.sspace.graph;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Set;
 
 
 /**
- * An interface specification for interacting with <a
- * href="http://en.wikipedia.org/wiki/Graph_(mathematics)">Graph</a> objects.
- * This interface assumes the most general contract for interacting with a graph
- * as a set of edges and vertices.  This interface permits the following
- * behaviors of a graph: <ul>
  *
- * <li> Multiple edges between two vertices (a {@link Multigraph}).
- *
- * <li> Weights associated with each edge (a {@link WeightedGraph});
- *
- * <li> Directionality between edges, i.e. an edge x-&gt;y is not equal to
- *      x&lt;-y (a {@link DirectedGraph})
- *
- * <li> Self-loops
- *
- * </ul>
- *
- * Implementations may enforce any, some, or all of these behaviors to fully
- * define their behavior.
  *
  * @author David Jurgens
  */
-public interface Graph {
+public interface DynamicGraph extends Graph {
 
     /**
      * Adds a vertex with the provided index to the graph, returning {@code true}
@@ -64,6 +48,10 @@ public interface Graph {
      */
     boolean addVertex(int i);
 
+    boolean addVertex(int i, Calendar start, Calendar end);
+    boolean addVertex(int i, Date start, Date end);
+    boolean addVertex(int i, long start, long end);
+
     /**
      * Adds an edge between the two vertices, returning {@code true} if the edge
      * was not previously present.  Implemenations are free to decide the
@@ -72,6 +60,9 @@ public interface Graph {
      * vertex2}).
      */
     boolean addEdge(int vertex1, int vertex2);
+    boolean addEdge(int vertex1, int vertex2, Calendar start, Calendar end);
+    boolean addEdge(int vertex1, int vertex2, Date start, Date end);
+    boolean addEdge(int vertex1, int vertex2, long start, long end);
 
     /**
      * Removes all the edges and vertices from this graph
@@ -90,32 +81,28 @@ public interface Graph {
     boolean containsEdge(int vertex1, int vertex2);
 
     /**
+     * Returns {@code true} if this graph contains an edge between {@code
+     * vertex1} and {@code vertex2}.
+     */
+    boolean containsEdge(int vertex1, int vertex2, Calendar atTime);
+    boolean containsEdge(int vertex1, int vertex2, Date atTime);
+    boolean containsEdge(int vertex1, int vertex2, long atTime);
+
+    /**
      * Returns the set of edges contained in this graph.
      */
-    Set<? extends Edge> edges();
+    Set<? extends TemporalEdge> edges();
 
     /**
      * Returns the set of edges connected to the provided vertex.
      */
-    Set<? extends Edge> getAdjacencyList(int vertex);
-
-    /**
-     * Returns the set of vertices that are connected to the specified vertex.
-     */
-    Set<Integer> getAdjacentVertices(int vertex);
+    Set<? extends TemporalEdge> getAdjacencyList(int vertex);
 
     /**
      * Returns the {@code Edge} instance connecting the two vertices or {@code
      * null} if the vertices are not connected.
      */
-    Edge getEdge(int vertex1, int vertex2);
-
-    /**
-     * Computes whether this graph is acyclic with its current set of edges, and
-     * returns {@code true} if this graph contains cycles, {@code false} if
-     * acyclic.
-     */
-    boolean hasCycles();
+    TemporalEdge getEdge(int vertex1, int vertex2);
 
     /**
      * Returns the number of edges in this graph.
@@ -150,6 +137,14 @@ public interface Graph {
      *         not present in this graph
      */
     Graph subgraph(Set<Integer> vertices);
+
+    Graph subgraph(Set<Integer> vertices, Calendar atTime);
+    Graph subgraph(Set<Integer> vertices, Date atTime);
+    Graph subgraph(Set<Integer> vertices, long atTime);
+
+    Graph subgraph(Set<Integer> vertices, Calendar startTime, Calendar endTime);
+    Graph subgraph(Set<Integer> vertices, Date startTime, Date endTime);
+    Graph subgraph(Set<Integer> vertices, long startTime, long endTime);
 
     /**
      * Returns the set of vertices in this graph.
