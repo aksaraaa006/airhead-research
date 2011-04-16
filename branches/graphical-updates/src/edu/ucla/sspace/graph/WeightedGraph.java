@@ -76,7 +76,7 @@ public interface WeightedGraph extends Graph {
     @Override WeightedEdge getEdge(int vertex1, int vertex2);
 
     /**
-     * Returns the weigth for the edge connecting the two vertices.
+     * Returns the weight for the edge connecting the two vertices.
      *
      * @throws IllegalArgumentException if an edge does not exist between the
      *         two vertices.

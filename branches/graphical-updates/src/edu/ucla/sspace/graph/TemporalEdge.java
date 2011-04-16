@@ -23,23 +23,19 @@ package edu.ucla.sspace.graph;
 
 
 /**
- * An exception for cases where a change to a graph has resulted in an invalid
- * construction according to its design contract.  For example, this might
- * include adding an edge to an acyclic-by-contract graph that would cause it to
- * become cyclic.  Callers should catch this exception if the construction of
- * the graph may be repealed, i.e. if the operation that caused this exception
- * may be rolled back and the program continue as expected.
+ * An interface for representing a edge in a {@link DynamicGraph}, where each
+ * edge is associated with a specific time.
  */
-public class GraphConstructionException extends RuntimeException {
+public interface TemporalEdge extends Edge {
 
-    private static final long serialVersionUID = 1L;
+    /**
+     * Returns {@code true} if {@code o} connects the same two vertices
+     * at the same time.
+     */
+    boolean equals(Object o);
 
-    public GraphConstructionException() {
-        super();
-    }
-
-    public GraphConstructionException(String message) {
-        super(message);
-    }
-
+    /**
+     * Returns milliseconds since the epoch when this edge occurrend.
+     */
+    long time();
 }
