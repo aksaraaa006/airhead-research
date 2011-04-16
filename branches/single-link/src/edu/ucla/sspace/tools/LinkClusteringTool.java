@@ -35,6 +35,7 @@ import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.SparseMatrix;
 
 import edu.ucla.sspace.util.BiMap;
+import edu.ucla.sspace.util.GrowableArrayList;
 import edu.ucla.sspace.util.HashBiMap;
 import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.LineReader;
@@ -126,7 +127,7 @@ public class LinkClusteringTool {
         // mapping from partition name to index.
         BiMap<String,Integer> partitionToIndex 
             = new HashBiMap<String,Integer>();
-        List<Integer> partitionMapping = new ArrayList<Integer>();
+        List<Integer> partitionMapping = new GrowableArrayList<Integer>();
 
         // This matrix is what LinkClustering will use for input.
         SparseMatrix sm = new GrowingSparseMatrix();
@@ -137,6 +138,9 @@ public class LinkClusteringTool {
         
         int lineNo = 0;
         for (String line : new LineReader(new File(opts.getPositionalArg(0)))) {
+            if (lineNo > 0 && lineNo % 100000 == 0) {
+                LOGGER.fine("Processing line " + lineNo);
+            }
             if (line.startsWith("#")) {
                 lineNo++;
                 continue;
@@ -149,10 +153,10 @@ public class LinkClusteringTool {
                 continue;
             }
             
-            if (isKPartite && arr.length != 5
+            if (isKPartite && arr.length < 5
                     || isWeighted && arr.length < 3
                     || arr.length < 2) {
-                System.out.printf("missing data on line %d:%n%s%n", 
+                System.out.printf("missing data on line %d?%n%s%n", 
                                   lineNo, line);
                 return;
             }
@@ -211,8 +215,8 @@ public class LinkClusteringTool {
                 Integer p = partitionMapping.get(ver1row);
                 if (p != null && !p.equals(v1pId)) {
                     throw new IllegalStateException(String.format(
-                        "Line %d: vertex %d is specified as being in two " +
-                        "partitions: %s and %d", lineNo, ver1, 
+                        "Line %d: vertex %s is specified as being in two " +
+                        "partitions: %s and %s", lineNo, ver1, 
                         partitionToIndex.inverse().get(p), vert1partition));
                 }
                 partitionMapping.set(ver1row, v1pId);
@@ -228,8 +232,8 @@ public class LinkClusteringTool {
                 p = partitionMapping.get(ver2row);
                 if (p != null && !p.equals(v2pId)) {
                     throw new IllegalStateException(String.format(
-                        "Line %d: vertex %d is specified as being in two " +
-                        "partitions: %s and %d", lineNo, ver2, 
+                        "Line %d: vertex %s is specified as being in two " +
+                        "partitions: %s and %s", lineNo, ver2, 
                         partitionToIndex.inverse().get(p), vert2partition));
                 }
                 partitionMapping.set(ver2row, v2pId);
@@ -342,7 +346,7 @@ public class LinkClusteringTool {
             "based on the community detection method of\n\n" +
             "\tYong-Yeol Ahn, James P. Bagrow, and Sune Lehmann. 2010.\n" +
             "\tLink communities reveal multiscale complexity in networks.\n" +
-            "\tNature, (466):761–764, August.\n\n" +
+            "\tNature, (466):761-764, August.\n\n" +
             "usage: java -jar lc.jar [options] edge_file communities.txt \n\n" 
             + options.prettyPrint() +
             "\nThe edge file format is:\n" +
