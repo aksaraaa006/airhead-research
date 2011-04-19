@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.matrix.Matrix;
 
-import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DenseDynamicMagnitudeVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.VectorMath;
 
@@ -95,31 +95,31 @@ public class G1Function extends BaseFunction {
     public void setup(Matrix m, int[] initialAssignments, int numClusters) {
         super.setup(m, initialAssignments, numClusters);
 
-        completeCentroid = new DenseVector(m.rows());
+        completeCentroid = new DenseDynamicMagnitudeVector(m.columns());
         for (DoubleVector v : matrix)
             VectorMath.add(completeCentroid, v);
 
         for (int c = 0; c < centroids.length; ++c)
-            simToComplete[c] = Similarity.cosineSimilarity(
-                    centroids[c], completeCentroid);
+            simToComplete[c] = dotProduct(completeCentroid, centroids[c]);
     }
 
     /**
      * {@inheritDoc}
      */
-    protected double getOldCentroidScore(DoubleVector altCurrentCentroid,
+    protected double getOldCentroidScore(DoubleVector vector,
+                                         int oldCentroidIndex,
                                          int altClusterSize) {
-        double newScore = Similarity.cosineSimilarity(
-                altCurrentCentroid, completeCentroid);
-        newScore /= Math.pow(altCurrentCentroid.magnitude(), 2);
+        double newScore = simToComplete[oldCentroidIndex];
+        newScore -= dotProduct(completeCentroid, vector);
+        newScore /= subtractedMagnitudeSqrd(
+                centroids[oldCentroidIndex], vector);
         return newScore;
     }
 
     protected double getNewCentroidScore(int newCentroidIndex,
                                          DoubleVector dataPoint) {
-        double newScore = Similarity.cosineSimilarity(
-                dataPoint, completeCentroid);
-        newScore += simToComplete[newCentroidIndex];
+        double newScore = simToComplete[newCentroidIndex];
+        newScore += dotProduct(completeCentroid, dataPoint);
         newScore /= modifiedMagnitudeSqrd(
                 centroids[newCentroidIndex], dataPoint);
         return newScore;
@@ -130,5 +130,17 @@ public class G1Function extends BaseFunction {
      */
     public boolean maximize() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected void updateScores(int newCentroidIndex,
+                                int oldCentroidIndex,
+                                DoubleVector vector) {
+        simToComplete[newCentroidIndex] += dotProduct(
+                completeCentroid, vector);
+        simToComplete[oldCentroidIndex] -= dotProduct(
+                completeCentroid, vector);
     }
 }

@@ -34,7 +34,6 @@ import edu.ucla.sspace.matrix.Matrix;
 
 import edu.ucla.sspace.util.ReflectionUtil;
 
-import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledDoubleVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -258,11 +257,11 @@ public class DirectClustering implements Clustering {
         // point, try to assign it to a new cluster.  If no data point is moved
         // in an iteration, end the iterations.
         boolean changed = true;
-        while(changed) {
+        while (changed) {
             changed = false;
             Collections.shuffle(indices);
             for (int index : indices)
-                changed = criterion.update(index);
+                changed |= criterion.update(index);
         }
     }
 

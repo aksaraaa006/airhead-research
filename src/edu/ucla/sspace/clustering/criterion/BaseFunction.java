@@ -23,6 +23,8 @@ package edu.ucla.sspace.clustering.criterion;
 
 import edu.ucla.sspace.matrix.Matrix;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.DenseDynamicMagnitudeVector;
 import edu.ucla.sspace.vector.DenseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
@@ -45,11 +47,10 @@ import java.util.List;
  *
  * Sub classes must implement {@link #getOldCentroidScore(DoubleVector, int)
  * getOldCentroidScore} and {@link #getNewCentroidScore(int, DoubleVector)
- * getNewCentroidScore}.  The
- * first function returns the score for the current datapoints cluster
- * assignment when that data point is removed from the data point.  The second
- * function returns the score for an anternate cluster when the current data
- * point is placed in that cluster.
+ * getNewCentroidScore}.  The first function returns the score for the current
+ * datapoints cluster assignment when that data point is removed from the data
+ * point.  The second function returns the score for an anternate cluster when
+ * the current data point is placed in that cluster.
  *
  * </p>
  *
@@ -150,10 +151,14 @@ public abstract class BaseFunction implements CriterionFunction {
             clusterSizes[assignment]++;
         }
 
+        SparseDoubleVector empty = new CompactSparseVector(m.columns());
         // Compute the cost of each centroid.
-        for (int c = 0; c < numClusters; ++c)
+        for (int c = 0; c < numClusters; ++c) {
+            centroids[c] = new DenseDynamicMagnitudeVector(
+                    centroids[c].toArray());
             if (clusterSizes[c] != 0)
-                costs[c] = getOldCentroidScore(centroids[c], clusterSizes[c]);
+                costs[c] = getOldCentroidScore(empty, c, clusterSizes[c]);
+        }
     }
 
     /**
@@ -170,12 +175,12 @@ public abstract class BaseFunction implements CriterionFunction {
 
         // Get the current centroid without the current data point assigned to
         // it.  Compute the cost delta with that point removed from the cluster.
-        DoubleVector altCurrentCentroid = subtract(
-                centroids[currentClusterIndex], vector);
+        //DoubleVector altCurrentCentroid = subtract(
+        //        centroids[currentClusterIndex], vector);
         double deltaBase = (clusterSizes[currentClusterIndex] == 1)
             ? 0
-            : getOldCentroidScore(
-                    altCurrentCentroid, clusterSizes[currentClusterIndex] - 1);
+            : getOldCentroidScore(vector, currentClusterIndex,
+                                  clusterSizes[currentClusterIndex] - 1);
         deltaBase -= costs[currentClusterIndex];
 
         // Compute the cost delta for moving that data point to each of the
@@ -216,13 +221,15 @@ public abstract class BaseFunction implements CriterionFunction {
             double newDelta = bestDelta - deltaBase;
             costs[currentClusterIndex] += deltaBase;
             costs[bestDeltaIndex] += newDelta;
+            updateScores(bestDeltaIndex, currentClusterIndex, vector);
 
             // Update the sizes.
             clusterSizes[currentClusterIndex]--;
             clusterSizes[bestDeltaIndex]++;
 
             // Update the centroids.
-            centroids[currentClusterIndex] = altCurrentCentroid;
+            centroids[currentClusterIndex] = subtract(
+                centroids[currentClusterIndex], vector);
             centroids[bestDeltaIndex] = VectorMath.add(
                 centroids[bestDeltaIndex], vector);
 
@@ -242,9 +249,9 @@ public abstract class BaseFunction implements CriterionFunction {
      * @param altCurrentCentroid The current updated cluster centroid
      * @param altClusterSize The current updated cluster size
      */
-    protected abstract double getOldCentroidScore(
-            DoubleVector altCurrentCentroid,
-            int altClusterSize);
+    protected abstract double getOldCentroidScore(DoubleVector vector,
+                                                  int oldCentroidIndex,
+                                                  int altClusterSize);
 
     /**
      * Returns the new score for the cluster centroid indexed by {@code
@@ -259,11 +266,16 @@ public abstract class BaseFunction implements CriterionFunction {
     protected abstract double getNewCentroidScore(int newCentroidIndex,
                                                   DoubleVector dataPoint);
 
+    protected void updateScores(int newCentroidIndex,
+                                int oldCentroidIndex,
+                                DoubleVector vector) {
+    }
+
     /**
      * Returns a {@link DoubleVector} that is equal to {@code c - v}.
      */
     protected static DoubleVector subtract(DoubleVector c, DoubleVector v) {
-        DoubleVector newCentroid = new DenseVector(c.length());
+        DoubleVector newCentroid = new DenseDynamicMagnitudeVector(c.length());
 
         // Special case sparse double vectors so that we don't incure a possibly
         // log n get operation for each zero value, as that's the common case
@@ -277,12 +289,12 @@ public abstract class BaseFunction implements CriterionFunction {
                 if (sparseIndex < nonZeros.length &&
                     i == nonZeros[sparseIndex])
                     value -= sv.get(nonZeros[sparseIndex++]);
+
                 newCentroid.set(i, value);
             }
-        } else {
+        } else
             for (int i = 0; i < c.length(); ++i)
                 newCentroid.set(i, c.get(i) - v.get(i));
-        }
         return newCentroid;
     }
 
@@ -351,5 +363,54 @@ public abstract class BaseFunction implements CriterionFunction {
      */
     protected static double modifiedMagnitude(DoubleVector c, DoubleVector v) {
         return Math.sqrt(modifiedMagnitudeSqrd(c, v));
+    }
+
+    /**
+     * Returns the magnitude squared of {@code c} as if {@code v} was added to
+     * the vector.  We do this because it would be more costly, garbage
+     * collection wise, to create a new vector for each alternate cluster and
+     * then throw away all but one of them.
+     */
+    protected static double subtractedMagnitudeSqrd(DoubleVector c,
+                                                   DoubleVector v) {
+        if (v instanceof SparseDoubleVector) {
+            SparseDoubleVector sv = (SparseDoubleVector) v;
+            int[] nonZeros = sv.getNonZeroIndices();
+
+            double magnitude = Math.pow(c.magnitude(), 2);
+            for (int i : nonZeros) {
+                double value = c.get(i);
+                magnitude -= Math.pow(value, 2);
+                magnitude += Math.pow(value - v.get(i), 2);
+            }
+            return magnitude;
+        } else {
+            double magnitude = 0;
+            for (int i = 0; i < c.length(); ++i)
+                magnitude += Math.pow(c.get(i) - v.get(i), 2);
+            return magnitude;
+        }
+    }
+
+    /**
+     * Returns the magnitude of {@code c} as if {@code v} was added to the the
+     * vector.  We do this because it would be more costly, garbage collection
+     * wise, to create a new vector for each alternate cluster and * vector.
+     */
+    protected static double subtractedMagnitude(DoubleVector c, DoubleVector v) {
+        return Math.sqrt(subtractedMagnitudeSqrd(c, v));
+    }
+
+    protected static double dotProduct(DoubleVector a, DoubleVector b) {
+        double dot = 0;
+        if (b instanceof SparseDoubleVector) {
+            SparseDoubleVector sb = (SparseDoubleVector) b;
+            int[] nonZeroB = sb.getNonZeroIndices();
+            for (int nz : nonZeroB)
+                dot += a.get(nz) * b.get(nz);
+        } else
+            for (int c = 0; c < a.length(); ++c)
+                dot += a.get(c) * b.get(c);
+        return dot;
     }
 }

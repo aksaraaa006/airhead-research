@@ -186,8 +186,8 @@ class ClutoWrapper {
         for (String line = null; (line = stdout.readLine()) != null; ) 
             output.append(line).append("\n");
         clutoOutput = output.toString();
-        //if (LOGGER.isLoggable(Level.FINE))
-        System.err.println(clutoOutput);
+        if (LOGGER.isLoggable(Level.FINE))
+            System.err.println(clutoOutput);
 	    
         int exitStatus = 0;
         try {

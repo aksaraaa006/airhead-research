@@ -68,9 +68,11 @@ public class I2Function extends BaseFunction {
     /**
      * {@inheritDoc}
      */
-    protected double getOldCentroidScore(DoubleVector altCurrentCentroid,
+    protected double getOldCentroidScore(DoubleVector vector,
+                                         int oldCentroidIndex,
                                          int altClusterSize) {
-        return altCurrentCentroid.magnitude();
+        return subtractedMagnitude(centroids[oldCentroidIndex], vector);
+        //altCurrentCentroid.magnitude();
     }
 
     /**

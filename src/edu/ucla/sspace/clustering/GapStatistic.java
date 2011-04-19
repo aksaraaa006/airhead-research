@@ -204,6 +204,7 @@ public class GapStatistic implements Clustering {
         double referenceScore = 0;
         double[] referenceScores = new double[numGaps];
         for (int j = 0; j < gapMatrices.length; ++j) {
+            verbose("Clustering reference data %d \n", j);
             Assignments result = DirectClustering.cluster(
                     gapMatrices[j], k, 1, function);
             referenceScores[j] = Math.log(function.score());
@@ -235,7 +236,6 @@ public class GapStatistic implements Clustering {
         gapResults[i] = gap;
         gapStds[i] = referenceStdev;
         gapAssignments[i] = result;
-
     }
 
     /**

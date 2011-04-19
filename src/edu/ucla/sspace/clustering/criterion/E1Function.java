@@ -25,7 +25,7 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.matrix.Matrix;
 
-import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.DenseDynamicMagnitudeVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.VectorMath;
 
@@ -94,23 +94,23 @@ public class E1Function extends BaseFunction {
     public void setup(Matrix m, int[] initialAssignments, int numClusters) {
         super.setup(m, initialAssignments, numClusters);
 
-        completeCentroid = new DenseVector(m.rows());
+        completeCentroid = new DenseDynamicMagnitudeVector(m.rows());
         for (DoubleVector v : matrix)
             VectorMath.add(completeCentroid, v);
 
         for (int c = 0; c < centroids.length; ++c)
-            simToComplete[c] = Similarity.cosineSimilarity(
-                    centroids[c], completeCentroid);
+            simToComplete[c] = dotProduct(centroids[c], completeCentroid);
     }
 
     /**
      * {@inheritDoc}
      */
-    protected double getOldCentroidScore(DoubleVector altCurrentCentroid,
+    protected double getOldCentroidScore(DoubleVector vector,
+                                         int oldCentroidIndex,
                                          int altClusterSize) {
-        double newScore = Similarity.cosineSimilarity(
-                altCurrentCentroid, completeCentroid);
-        newScore /= altCurrentCentroid.magnitude();
+        double newScore = simToComplete[oldCentroidIndex];
+        newScore -= dotProduct(completeCentroid, vector);
+        newScore /= subtractedMagnitude(centroids[oldCentroidIndex], vector);
         newScore *= altClusterSize;
         return newScore;
     }
@@ -120,8 +120,7 @@ public class E1Function extends BaseFunction {
      */
     protected double getNewCentroidScore(int newCentroidIndex,
                                          DoubleVector dataPoint) {
-        double newScore = Similarity.cosineSimilarity(
-                dataPoint, completeCentroid);
+        double newScore = dotProduct(completeCentroid, dataPoint);
         newScore += simToComplete[newCentroidIndex];
         newScore /= modifiedMagnitude(centroids[newCentroidIndex], dataPoint);
         newScore *= (clusterSizes[newCentroidIndex] + 1);
@@ -133,5 +132,17 @@ public class E1Function extends BaseFunction {
      */
     public boolean maximize() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected void updateScores(int newCentroidIndex,
+                                int oldCentroidIndex,
+                                DoubleVector vector) {
+        simToComplete[newCentroidIndex] += dotProduct(
+                completeCentroid, vector);
+        simToComplete[oldCentroidIndex] -= dotProduct(
+                completeCentroid, vector);
     }
 }
