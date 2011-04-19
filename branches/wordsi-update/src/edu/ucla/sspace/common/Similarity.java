@@ -341,6 +341,18 @@ public class Similarity {
                 dotProduct += aValue * bValue;
             }
         }
+
+        // Check if the second vector is sparse.  If so, use only the non-zero
+        // indices of b to speed up the computation by avoiding zero
+        // multiplications.
+        else if (b instanceof SparseVector) {
+            SparseVector svB = (SparseVector)b;
+            int[] nzB = svB.getNonZeroIndices();
+
+            for (int nz : nzB)
+                dotProduct += b.get(nz) + a.get(nz);
+        }
+
         // Otherwise, just assume both are dense and compute the full amount
         else {
             // Swap the vectors such that the b is the shorter vector and a is

@@ -25,8 +25,10 @@ import edu.ucla.sspace.common.Similarity;
 
 import edu.ucla.sspace.matrix.Matrix;
 
-import edu.ucla.sspace.vector.DenseVector;
+import edu.ucla.sspace.vector.CompactSparseVector;
+import edu.ucla.sspace.vector.DenseDynamicMagnitudeVector;
 import edu.ucla.sspace.vector.DoubleVector;
+import edu.ucla.sspace.vector.SparseDoubleVector;
 import edu.ucla.sspace.vector.Vectors;
 import edu.ucla.sspace.vector.VectorMath;
 
@@ -135,7 +137,7 @@ public abstract class HybridBaseFunction implements CriterionFunction {
 
         // Initialize the clusters.
         for (int c = 0; c < numClusters; ++c)
-            centroids[c] = new DenseVector(m.columns());
+            centroids[c] = new DenseDynamicMagnitudeVector(m.columns());
 
         // Form the cluster composite vectors, i.e. unscaled centroids.
         for (int i = 0; i < m.rows(); ++i) {
@@ -145,7 +147,7 @@ public abstract class HybridBaseFunction implements CriterionFunction {
         }
 
         // Compute the complete summation vector.
-        completeCentroid = new DenseVector(m.columns());
+        completeCentroid = new DenseDynamicMagnitudeVector(m.columns());
         for (DoubleVector v : matrix)
             VectorMath.add(completeCentroid, v);
 
@@ -158,17 +160,18 @@ public abstract class HybridBaseFunction implements CriterionFunction {
         i1Func = getInternalFunction();
         e1Func = getExternalFunction();
 
+        SparseDoubleVector empty = new CompactSparseVector(m.columns());
         // Compute the cost of each centroid.
         for (int c = 0; c < numClusters; ++c) {
             if (clusterSizes[c] != 0) {
                 // Compute the internal costs.
                 i1Costs[c] = i1Func.getOldCentroidScore(
-                        centroids[c], clusterSizes[c]);
+                        empty, c, clusterSizes[c]);
                 i1Cost += i1Costs[c];
 
                 // Compute the external costs.
                 e1Costs[c] = e1Func.getOldCentroidScore(
-                        centroids[c], clusterSizes[c]);
+                        empty, c, clusterSizes[c]);
                 e1Cost += e1Costs[c];
             }
         }
@@ -199,20 +202,17 @@ public abstract class HybridBaseFunction implements CriterionFunction {
         double baseE1Delta = 0;
         double baseI1Delta = 0;
 
-        // Get the current centroid without the current data point assigned to
-        // it.  Compute the cost delta with that point removed from the cluster.
-        DoubleVector altCurrentCentroid = BaseFunction.subtract(
-                centroids[currentClusterIndex], vector);
-
         // Remove the cost of the current cost and add the cost of the altered
         // centroid for the base deltas.
         if (clusterSizes[currentClusterIndex] > 1) {
             baseE1Delta = e1Func.getOldCentroidScore(
-                    altCurrentCentroid, clusterSizes[currentClusterIndex] - 1);
+                    vector, currentClusterIndex, 
+                    clusterSizes[currentClusterIndex] - 1);
             baseE1Delta -= e1Costs[currentClusterIndex];
 
             baseI1Delta = i1Func.getOldCentroidScore(
-                    altCurrentCentroid, clusterSizes[currentClusterIndex] - 1);
+                    vector, currentClusterIndex, 
+                    clusterSizes[currentClusterIndex] - 1);
             baseI1Delta -= i1Costs[currentClusterIndex];
         }
 
@@ -256,6 +256,9 @@ public abstract class HybridBaseFunction implements CriterionFunction {
             e1Costs[bestDeltaIndex] += bestE1Delta;
             i1Costs[bestDeltaIndex] += bestI1Delta;
 
+            e1Func.updateScores(bestDeltaIndex, currentClusterIndex, vector);
+            i1Func.updateScores(bestDeltaIndex, currentClusterIndex, vector);
+
             e1Cost += baseE1Delta + bestE1Delta;
             i1Cost += baseI1Delta + bestI1Delta;
             totalCost = i1Cost / e1Cost;
@@ -265,7 +268,8 @@ public abstract class HybridBaseFunction implements CriterionFunction {
             clusterSizes[bestDeltaIndex]++;
 
             // Update the centroids.
-            centroids[currentClusterIndex] = altCurrentCentroid;
+            centroids[currentClusterIndex] = BaseFunction.subtract(
+                centroids[currentClusterIndex], vector);
             centroids[bestDeltaIndex] = VectorMath.add(
                 centroids[bestDeltaIndex], vector);
 
