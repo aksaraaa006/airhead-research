@@ -28,6 +28,7 @@ import edu.ucla.sspace.clustering.criterion.H2Function;
 
 import edu.ucla.sspace.matrix.ClutoSparseMatrixBuilder;
 import edu.ucla.sspace.matrix.ArrayMatrix;
+import edu.ucla.sspace.matrix.Matrices;
 import edu.ucla.sspace.matrix.Matrix;
 import edu.ucla.sspace.matrix.Matrix.Type;
 import edu.ucla.sspace.matrix.MatrixFile;
@@ -41,9 +42,10 @@ import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.util.WorkerThread;
 
+import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.SparseDoubleVector;
-import edu.ucla.sspace.vector.SparseHashDoubleVector ;
+import edu.ucla.sspace.vector.SparseHashDoubleVector;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -51,6 +53,8 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.StringReader;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
@@ -154,6 +158,7 @@ public class GapStatistic implements Clustering {
                 NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
         int numIterations = maxClusters - startSize;
 
+        verbose("Transforming the original data set");
         Transform tfidf = new TfIdfDocStripedTransform();
         Transform rowMag = new RowMagnitudeTransform();
         m = rowMag.transform(tfidf.transform(m));
@@ -164,7 +169,7 @@ public class GapStatistic implements Clustering {
         Matrix[] gapMatrices = new Matrix[numGaps];
         for (int i = 0; i < numGaps; ++i)
             gapMatrices[i] = rowMag.transform(tfidf.transform(
-                    generator.generateTestData().load()));
+                    generator.generateTestData()));
 
         double[] gapResults = new double[numIterations];
         double[] gapStds = new double[numIterations];
@@ -341,9 +346,11 @@ public class GapStatistic implements Clustering {
          * reference data points from a data distribution similar to the
          * original.
          */
-        public MatrixFile generateTestData() {
+        public Matrix generateTestData() {
             verbose("Generating a new reference set");
 
+            List<SparseDoubleVector> vectors =
+                new ArrayList<SparseDoubleVector>();
             // Assume that data is sparse.
             MatrixBuilder builder = new ClutoSparseMatrixBuilder();
             for (int i = 0; i < rows; ++i) {
@@ -352,8 +359,7 @@ public class GapStatistic implements Clustering {
                 // If the average number of values per row is significantly
                 // smaller than the total number of columns then select a subset
                 // to be non zero.
-                SparseHashDoubleVector column =
-                    new SparseHashDoubleVector(cols);
+                SparseDoubleVector column = new CompactSparseVector(cols);
                 int numNonZeros =
                     (int) (random.nextGaussian() * stdevNumValuesPerRow +
                            averageNumValuesPerRow);
@@ -367,11 +373,12 @@ public class GapStatistic implements Clustering {
                             (maxValues[col] - minValues[col]) + minValues[col];
                     column.set(col, value);
                 }
-                builder.addColumn(column);
+                vectors.add(column);
             }
-            builder.finish();
+            //builder.finish();
 
-            return builder.getMatrixFile();
+            return Matrices.asSparseMatrix(vectors);
+            //return builder.getMatrixFile();
         }
 
         /**

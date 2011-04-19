@@ -31,9 +31,11 @@ import edu.ucla.sspace.common.Similarity;
 import edu.ucla.sspace.common.Statistics;
 
 import edu.ucla.sspace.matrix.Matrix;
+import edu.ucla.sspace.matrix.*;
 
 import edu.ucla.sspace.util.ReflectionUtil;
 
+import edu.ucla.sspace.vector.*;
 import edu.ucla.sspace.vector.DoubleVector;
 import edu.ucla.sspace.vector.ScaledDoubleVector;
 import edu.ucla.sspace.vector.SparseVector;
@@ -229,6 +231,7 @@ public class DirectClustering implements Clustering {
         // assigned to the first cluster.  This is just a special case that only
         // comes up when comparing other solutions to the non-solution.
         if (numClusters != 1) {
+            int nc = 0;
             for (int i = 0; i < matrix.rows(); ++i) {
 
                 DoubleVector vector = matrix.getRowVector(i);
@@ -236,6 +239,7 @@ public class DirectClustering implements Clustering {
                 for (int c = 0; c < numClusters; ++c) {
                     double similarity = Similarity.cosineSimilarity(
                             centers[c], vector);
+                    nc++;
                     if (similarity >= bestSimilarity) {
                         bestSimilarity = similarity;
                         initialAssignments[i] = c;
