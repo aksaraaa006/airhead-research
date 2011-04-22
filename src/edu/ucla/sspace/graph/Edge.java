@@ -45,6 +45,23 @@ package edu.ucla.sspace.graph;
 public interface Edge {
 
     /**
+     * Clones the contents associated with this edge, returning the copy mapped
+     * to the provided vertices.
+     */
+    <T extends Edge> T clone(int from, int to);
+
+    /**
+     * Returns {@code true} if {@code o} connects the same two vertices
+     * regardless of the edge orientation.
+     */
+    boolean equals(Object o);
+
+    /**
+     * Returns a copy of this edge pointing in the opposite direction.
+     */
+    Edge flip();
+
+    /**
      * Returns the index of the tail vertex
      */
     int from();
@@ -53,11 +70,5 @@ public interface Edge {
      * Returns the index of the head vertex
      */
     int to();
-
-    /**
-     * Returns {@code true} if {@code o} connects the same two vertices
-     * regardless of the edge orientation.
-     */
-    boolean equals(Object o);
-
+    
 }

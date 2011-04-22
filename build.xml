@@ -83,7 +83,7 @@
     <!-- Compile all of the classes and put the results in the classes
 	 directory -->
      <javac srcdir="./" destdir="classes" classpathref="classpath" 
-	    debug="true" debuglevel="lines,source">
+	    debug="true" debuglevel="lines,source" encoding="utf-8">
        <compilerarg value="-Xlint"/>
        <compilerarg value="-g"/>
        <include name="src/**"/>
@@ -454,15 +454,19 @@
       <classpath refid="cobertura.classpath" />
       <formatter type="plain"/>    
 
-      <!-- Example test when doing debugging of single classes 
-      <test name="edu.ucla.sspace.package.Class" todir="${report.dir}"/>
-      -->
+      <!-- Example test when doing debugging of single classes       -->
+      <test name="edu.ucla.sspace.package.util.OpenIntSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.package.graph.SparseUndirectedGraphTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.package.graph.SparseSymmetricEdgeSetTests" todir="${report.dir}"/>
+
+        <!-- 
       <batchtest fork="yes" todir="${report.dir}">
-        <fileset dir="${test.dir}">
-          <include name="**/*Test.java"/>
-          <include name="**/*Tests.java"/>
+        <fileset dir="${test.dir}"> 
+          <include name="*Test.java"/>
+          <include name="*Tests.java"/>
         </fileset>
       </batchtest>
+      -->
     </junit>
   </target>
 
@@ -484,13 +488,17 @@
       <!-- Example test when doing debugging of single classes 
       <test name="edu.ucla.sspace.package.Class" todir="${report.dir}"/>
       -->
+      <test name="edu.ucla.sspace.util.OpenIntSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.SparseUndirectedGraphTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.SparseSymmetricEdgeSetTests" todir="${report.dir}"/>
+      <!--
       <batchtest fork="yes" todir="${report.dir}">
         <fileset dir="${test.dir}">
           <include name="**/*Test.java"/>
           <include name="**/*Tests.java"/>
         </fileset>
       </batchtest>
-
+      -->
     </junit>
   </target>
 

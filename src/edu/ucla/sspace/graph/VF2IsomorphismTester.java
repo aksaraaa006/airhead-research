@@ -38,6 +38,7 @@ import edu.ucla.sspace.util.SortedMultiMap;
  * An interface for algorithms that detect whether two graphs are <a
  * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphic</a>.
  */
+//@SuppressWarnings("unchecked")
 public class VF2IsomorphismTester implements IsomorphismTester {
 
     public VF2IsomorphismTester() { }
@@ -45,7 +46,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
     /**
      * Returns {@code true} if the graphs are isomorphism of each other.
      */
-    public boolean areIsomorphic(Graph g1, Graph g2) {
+    public boolean areIsomorphic(Graph2<? extends Edge> g1, 
+                                 Graph2<? extends Edge> g2) {
         // If there are different number of nodes, or if the difference in
         // degrees would prevent a valid mapping, short circuit early and return
         // false.
@@ -56,7 +58,9 @@ public class VF2IsomorphismTester implements IsomorphismTester {
     }
 
     private Set<Pair<Integer>> generateCandidateMappings(
-            Graph g1, Graph g2, BiMap<Integer,Integer> mapping) {
+            Graph2<? extends Edge> g1, 
+            Graph2<? extends Edge> g2,
+            BiMap<Integer,Integer> mapping) {
 
         Set<Integer> unmappedG1Vertices = g1.vertices();
         unmappedG1Vertices.removeAll(mapping.keySet());
@@ -111,7 +115,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      * mapping would still constitute a valid isomorphic mapping between g1 and
      * g2.
      */
-    private boolean isFeasible(Graph g1, Graph g2, 
+    private boolean isFeasible(Graph2<? extends Edge> g1,
+                               Graph2<? extends Edge> g2, 
                                BiMap<Integer,Integer> mapping, 
                                Pair<Integer> candidate) {
         return rPred(g1, g2, mapping, candidate)
@@ -125,7 +130,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      * Returns {@code true} if the provided mapping can be used to generate a
      * valid isomorphism between g1 and g2.
      */
-    private boolean match(Graph g1, Graph g2, BiMap<Integer,Integer> mapping) {
+    private boolean match(Graph2<? extends Edge> g1, Graph2<? extends Edge> g2,
+                          BiMap<Integer,Integer> mapping) {
         // BASE CASE: If the mapping is complete (maps all the vertices), then
         // we have a valid isomorphism, so return true.
         if (mapping.size() == g2.vertices().size()) {
@@ -156,7 +162,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return false;
     }
 
-    private boolean rPred(Graph g1, Graph g2, BiMap<Integer,Integer> mapping,
+    private boolean rPred(Graph2<? extends Edge> g1, Graph2<? extends Edge> g2,
+                          BiMap<Integer,Integer> mapping,
                           Pair<Integer> candidate) {
         // Rename to follow algorithm's notation in the paper
         int n = candidate.x;
@@ -208,7 +215,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return true;
     }
 
-    private boolean rSucc(Graph g1, Graph g2, BiMap<Integer,Integer> mapping,
+    private boolean rSucc(Graph2<? extends Edge> g1, Graph2<? extends Edge> g2,
+                          BiMap<Integer,Integer> mapping,
                           Pair<Integer> candidate) {
         // Rename to follow algorithm's notation in the paper
         int n = candidate.x;
@@ -260,8 +268,9 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return true;
     }
 
-    private boolean rIn(Graph g1, Graph g2, BiMap<Integer,Integer> mapping,
-                          Pair<Integer> candidate) {
+    private boolean rIn(Graph2<? extends Edge> g1, Graph2<? extends Edge> g2,
+                        BiMap<Integer,Integer> mapping,
+                        Pair<Integer> candidate) {
         // Rename to follow algorithm's notation in the paper
         int n = candidate.x;
         int m = candidate.y;
@@ -289,7 +298,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return nPred.size() == mPred.size();
     }
 
-    private boolean rOut(Graph g1, Graph g2, BiMap<Integer,Integer> mapping,
+    private boolean rOut(Graph2<? extends Edge> g1, Graph2<? extends Edge> g2,
+                         BiMap<Integer,Integer> mapping,
                          Pair<Integer> candidate) {
         // Rename to follow algorithm's notation in the paper
         int n = candidate.x;
@@ -318,7 +328,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return nPred.size() == mPred.size();
     }
     
-    private boolean rNew(Graph g1, Graph g2, BiMap<Integer,Integer> mapping,
+    private boolean rNew(Graph2<? extends Edge> g1, Graph2<? extends Edge> g2,
+                         BiMap<Integer,Integer> mapping,
                          Pair<Integer> candidate) {
         // Rename to follow algorithm's notation in the paper
         int n = candidate.x;
@@ -355,10 +366,10 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      * that for undirected graphs, this set is made of all adjacent vertices
      * that are not currently in the mapping.
      */
-    private Set<Integer> findTOut(Graph g, Set<Integer> mapped) {
+    private Set<Integer> findTOut(Graph2<? extends Edge> g, Set<Integer> mapped) {
         Set<Integer> tOut = new HashSet<Integer>();
-        if (g instanceof DirectedGraph) {
-            DirectedGraph dg = (DirectedGraph)g;
+        if (g instanceof DirectedGraph2) {
+            DirectedGraph2 dg = (DirectedGraph2)g;
             for (Integer i : mapped) {
                 for (Integer out : dg.successors(i)) {
                     if (!mapped.contains(out))
@@ -384,10 +395,10 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      * edges that point to a vertex in the set of currently mapped vertices.
      * Note that for undirected graphs, this set is empty.
      */
-    private Set<Integer> findTIn(Graph g, Set<Integer> mapped) {
+    private Set<Integer> findTIn(Graph2 g, Set<Integer> mapped) {
         Set<Integer> tIn = new HashSet<Integer>();
-        if (g instanceof DirectedGraph) {
-            DirectedGraph dg = (DirectedGraph)g;
+        if (g instanceof DirectedGraph2) {
+            DirectedGraph2 dg = (DirectedGraph2)g;
             for (Integer i : mapped) {
                 for (Integer in : dg.predecessors(i)) {
                     if (!mapped.contains(in))
@@ -402,15 +413,16 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return tIn;
     } 
 
-    private Set<Integer> successors(Graph g, Integer vertex) {
-        return (g instanceof DirectedGraph) 
-            ? ((DirectedGraph)g).successors(vertex)
+    private Set<Integer> successors(Graph2 g, Integer vertex) {
+        return (g instanceof DirectedGraph2) 
+            ? ((DirectedGraph2)g).successors(vertex)
             : new HashSet<Integer>();
     }
 
-    private Set<Integer> predecessors(Graph g, Integer vertex) {
-        return (g instanceof DirectedGraph) 
-            ? ((DirectedGraph)g).predecessors(vertex)
+    @SuppressWarnings("unchecked") // FIXME
+    private Set<Integer> predecessors(Graph2 g, Integer vertex) {
+        return (g instanceof DirectedGraph2) 
+            ? ((DirectedGraph2)g).predecessors(vertex)
             : g.getAdjacentVertices(vertex);
     }
 }
