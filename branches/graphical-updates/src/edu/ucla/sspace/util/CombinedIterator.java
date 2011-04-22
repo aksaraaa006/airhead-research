@@ -53,7 +53,7 @@ public class CombinedIterator<T> implements Iterator<T> {
      * The iterator that was last used to return an element.  This field is
      * needed to support {@code remove}
      */
-    private Iterator<T> prev;
+    private Iterator<T> toRemoveFrom;
 
     /**
      * Constructs a {@code CombinedIterator} from all of the provided iterators.
@@ -78,7 +78,7 @@ public class CombinedIterator<T> implements Iterator<T> {
      */
     private void advance() {
 	if (!current.hasNext()) {
-	    prev = current;
+	    toRemoveFrom = current;
 	    current = iters.poll();
 	}
     }
@@ -99,6 +99,10 @@ public class CombinedIterator<T> implements Iterator<T> {
 	    throw new NoSuchElementException();
 	}
 	T t = current.next();
+        // Once an element has been drawn from the iterator, the current
+        // iterator should be used for any subsequent remove call.
+        if (toRemoveFrom != current)
+            toRemoveFrom = current;
 	advance();
 	return t;
     }
@@ -108,9 +112,9 @@ public class CombinedIterator<T> implements Iterator<T> {
      * {@code remove} method.
      */
     public synchronized void remove() {
-	if (prev == null) {
+	if (toRemoveFrom == null) {
 	    throw new NoSuchElementException();
 	}	
-	prev.remove();
+	toRemoveFrom.remove();
     }
 }

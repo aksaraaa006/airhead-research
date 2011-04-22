@@ -26,12 +26,11 @@ package edu.ucla.sspace.graph;
  * An interface for algorithms that detect whether two graphs are <a
  * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphic</a>.
  */
-public interface IsomorphismTester {
+public interface IsomorphismDetector {
 
     /**
      * Returns {@code true} if the graphs are isomorphism of each other.
      */
-    boolean areIsomorphic(Graph2<? extends Edge> g1, 
-                          Graph2<? extends Edge> g2);
+    boolean areIsomorphic(Graph g1, Graph g2);
 
 }
