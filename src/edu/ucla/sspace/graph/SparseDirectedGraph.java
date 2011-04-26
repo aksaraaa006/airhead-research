@@ -41,7 +41,7 @@ import edu.ucla.sspace.util.OpenIntSet;
  * @author David Jurgens
  */
 public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirectedEdgeSet>
-        implements DirectedGraph2 {
+        implements DirectedGraph {
 
     private static final long serialVersionUID = 1L;
 

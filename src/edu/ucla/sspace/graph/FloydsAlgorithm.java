@@ -30,8 +30,8 @@ public class FloydsAlgorithm {
 
     public FloydsAlgorithm() { }
 
-    public Matrix computeAllPairsDistance(Graph g) {
-        int verts = g.numVertices();
+    public Matrix computeAllPairsDistance(Graph<? extends Edge> g) {
+        int verts = g.order();
 
         // dm = shorthand for distanceMatrix
         Matrix dm = new ArrayMatrix(verts, verts);

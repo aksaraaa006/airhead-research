@@ -31,7 +31,7 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface DirectedGraph extends Graph {
+public interface DirectedGraph extends Graph<DirectedEdge> {
 
     /**
      * Returns the number of directed edges where {@code vertex} is the head of
@@ -69,9 +69,9 @@ public interface DirectedGraph extends Graph {
      */
     Set<Integer> successors(int vertex);
 
-//     /**
-//      * {@inheritDoc}
-//      */
-//     DirectedGraph subgraph(Set<Integer> vertices);
+    /**
+     * {@inheritDoc}
+     */
+    Graph<DirectedEdge> subgraph(Set<Integer> vertices);
     
 }

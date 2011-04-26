@@ -33,7 +33,8 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface WeightedDirectedGraph extends WeightedGraph, DirectedGraph {
+public interface WeightedDirectedGraph  {
+    // extends WeightedGraph, DirectedGraph {
 
     /**
      * Returns the set of directed edges where {@code vertex} is the head of the

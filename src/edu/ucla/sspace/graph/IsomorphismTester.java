@@ -31,7 +31,7 @@ public interface IsomorphismTester {
     /**
      * Returns {@code true} if the graphs are isomorphism of each other.
      */
-    boolean areIsomorphic(Graph2<? extends Edge> g1, 
-                          Graph2<? extends Edge> g2);
+    boolean areIsomorphic(Graph<? extends Edge> g1, 
+                          Graph<? extends Edge> g2);
 
 }
