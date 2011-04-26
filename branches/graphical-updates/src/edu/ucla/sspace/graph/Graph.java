@@ -47,11 +47,11 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface Graph {
+public interface Graph<E extends Edge> {
 
     /**
-     * Adds a vertex with the provided index to the graph, returning {@code true}
-     * if the vertex was not previously present.
+     * Adds a vertex with the provided index to the graph, returning {@code
+     * true} if the vertex was not previously present (optional operation).
      *
      * @param i a non-negative index for a vertex.  If the graph has size bounds
      *        (i.e. a limited number of vertices), the implementation may throw
@@ -66,7 +66,7 @@ public interface Graph {
 
     /**
      * Adds an edge between the two vertices, returning {@code true} if the edge
-     * was not previously present.  
+     * was not previously present (optional operation).
      *
      * <p> If adding this edge would violate some structural constraints on the
      * graph, implementations may return {@code false} or throw a {@link
@@ -86,15 +86,16 @@ public interface Graph {
      * 
      * @see #containsEdge(int, int)
      */
-    boolean addEdge(Edge edge);
-    boolean addEdge(int from, int to);
+    boolean addEdge(E edge);
+
     /**
-     * Removes all the edges and vertices from this graph
+     * Removes all the edges and vertices from this graph (optional operation).
      */
     void clear();
 
     /**
-     * Removes all the edges in this graph, retaining all the vertices.
+     * Removes all the edges in this graph, retaining all the vertices (optional
+     * operation).
      */
     void clearEdges();
 
@@ -104,26 +105,28 @@ public interface Graph {
     boolean containsVertex(int vertex);
 
     /**
-     * Returns {@code true} if this graph contains an edge between {@code
-     * vertex1} and {@code vertex2}.
+     * Returns {@code true} if this graph contains an edge between {@code from}
+     * and {@code to}.  Imeplementations are free to define whether the ordering
+     * of the vertices matters.
      */
-    boolean containsEdge(int vertex1, int vertex2);
+    boolean containsEdge(int from, int to);
 
     /**
      * Returns {@code true} if this graph contains an edge of the specific type
      * between {@code vertex1} and {@code vertex2}.
      */
-    boolean containsEdge(Edge e);
+    boolean containsEdge(E e);
 
     /**
-     * Returns the set of edges contained in this graph.
+     * Returns the set of edges contained in this graph.  It is expected that
+     * changes to this set be reflected in the backing graph.
      */
-    Set<? extends Edge> edges();
+    Set<E> edges();
 
     /**
      * Returns the set of edges connected to the provided vertex.
      */
-    Set<? extends Edge> getAdjacencyList(int vertex);
+    Set<E> getAdjacencyList(int vertex);
 
     /**
      * Returns the set of vertices that are connected to the specified vertex.
@@ -134,7 +137,7 @@ public interface Graph {
      * Returns the {@code Edge} instance connecting the two vertices or {@code
      * null} if the vertices are not connected.
      */
-    Edge getEdge(int vertex1, int vertex2);
+    E getEdge(int vertex1, int vertex2);
 
     /**
      * Computes whether this graph is acyclic with its current set of edges, and
@@ -146,27 +149,22 @@ public interface Graph {
     /**
      * Returns the number of edges in this graph.
      */
-    int numEdges();
+    int size();
 
     /**
      * Returns the number of vertices in this graph.
      */
-    int numVertices();
+    int order();
 
     /**
      * Removes the edge from {@code vertex1} to {@code vertex2}, returning
-     * {@code true} if the edge existed and was removed.
+     * {@code true} if the edge existed and was removed (optional operation).
      */
-    boolean removeEdge(int vertex1, int vertex2);
+    boolean removeEdge(E e);
 
     /**
-     * Removes the edge from {@code vertex1} to {@code vertex2}, returning
-     * {@code true} if the edge existed and was removed.
-     */
-    boolean removeEdge(Edge e);
-
-    /**
-     * Removes the vertex and all of its connected edges from the graph.
+     * Removes the vertex and all of its connected edges from the graph
+     * (optional operation).
      */
     boolean removeVertex(int vertex);    
     
@@ -181,7 +179,7 @@ public interface Graph {
      * @throws IllegalArgumentException if {@code vertices} contains vertices
      *         not present in this graph
      */
-    Graph subgraph(Set<Integer> vertices);
+    Graph<E> subgraph(Set<Integer> vertices);
 
     /**
      * Returns the set of vertices in this graph.

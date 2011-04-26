@@ -32,7 +32,8 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface DirectedMultigraph<T> extends Multigraph, DirectedGraph {
+public interface DirectedMultigraph<T>  {
+// extends Multigraph, DirectedGraph {
 
     /**
      * Returns the number of directed edges of the specified type where {@code

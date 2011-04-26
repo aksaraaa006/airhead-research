@@ -43,7 +43,7 @@ import edu.ucla.sspace.util.IntegerMap;
  * @author David Jurgens
  */
 public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
-        implements Graph2<T>, java.io.Serializable {
+        implements Graph<T>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -367,7 +367,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
     /**
      * {@inheritDoc}
      */
-    public Graph2<T> subgraph(Set<Integer> vertices) {
+    public Graph<T> subgraph(Set<Integer> vertices) {
         return new Subgraph(vertices);
     }
 
@@ -767,7 +767,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      * subgraphs or to the backing graph are automatically detected and
      * incorporated at call time.
      */
-    protected class Subgraph implements Graph2<T> {
+    protected class Subgraph implements Graph<T> {
         
         /**
          * A mapping from the index of a vertex in this subgraph to the vertex
@@ -1162,7 +1162,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
         /**
          * {@inheritDoc}
          */
-        public Graph2<T> subgraph(Set<Integer> vertices) {
+        public Graph<T> subgraph(Set<Integer> vertices) {
             checkForUpdates();
             // Calculate the indices for the requested vertices in the backing
             // graph

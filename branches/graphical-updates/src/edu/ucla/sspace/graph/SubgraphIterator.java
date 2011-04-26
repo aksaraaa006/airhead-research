@@ -43,21 +43,21 @@ import java.util.Set;
  * in memory at one time, but may hold some arbitrary number of them in memory
  * and compute the rest as needed.
  */
-public class SubgraphIterator implements Iterator<Graph> {
+public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
 
-    private final Graph g;
+    private final Graph<T> g;
 
     private final int subgraphSize;
 
     private Iterator<Integer> vertexIter;
 
-    private Queue<Graph> nextSubgraphs;
+    private Queue<Graph<T>> nextSubgraphs;
 
-    public SubgraphIterator(Graph g, int subgraphSize) {
+    public SubgraphIterator(Graph<T> g, int subgraphSize) {
         this.g = g;
         this.subgraphSize = subgraphSize;
         vertexIter = g.vertices().iterator();
-        nextSubgraphs = new ArrayDeque<Graph>();
+        nextSubgraphs = new ArrayDeque<Graph<T>>();
     }
 
     private void advance() {
@@ -103,11 +103,11 @@ public class SubgraphIterator implements Iterator<Graph> {
         return nextSubgraphs.isEmpty() && !vertexIter.hasNext();
     }
 
-    public Graph next() {
+    public Graph<T> next() {
         if (nextSubgraphs.isEmpty()) 
             throw new NoSuchElementException();
-        Graph next = nextSubgraphs.poll();
-
+        Graph<T> next = nextSubgraphs.poll();
+        
         // If we've exhausted the current set of subgraphs, queue up more of
         // them, generated from the remaining vertices
         if (nextSubgraphs.isEmpty())
