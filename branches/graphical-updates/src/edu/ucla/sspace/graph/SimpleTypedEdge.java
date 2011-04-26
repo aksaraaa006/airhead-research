@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.graph;
 
-public class SimpleEdge implements Edge, java.io.Serializable {
+public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -29,22 +29,37 @@ public class SimpleEdge implements Edge, java.io.Serializable {
 
     private final int to;
 
-    public SimpleEdge(int from, int to) {
+    private final T type;
+
+    public SimpleTypedEdge(T edgeType, int from, int to) {
+        this.type = edgeType;
         this.from = from;
         this.to = to;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
-    public <T extends Edge> T clone(int from, int to) {
-        return (T)(new SimpleEdge(from, to));
-    }   
+    public <E extends Edge> E clone(int from, int to) {
+        return (E)(new SimpleTypedEdge(type, from, to));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public T edgeType() {
+        return type;
+    }
     
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
             // REMINDER: fix me
-            return (e.from() == from && e.to() == to)
-                || (e.to() == from && e.from() == to);
+            return e.from() == from && e.to() == to;
         }
         return false;
     }
@@ -53,19 +68,28 @@ public class SimpleEdge implements Edge, java.io.Serializable {
         return from ^ to;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Edge flip() {
         return new SimpleEdge(to, from);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int from() {
         return from;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int to() { 
         return to;
     }
 
     public String toString() {
-        return "(" + from + "<-->" + to + ")";
+        return "(" + from + "<-->" + to + "):" + type;
     }
 }

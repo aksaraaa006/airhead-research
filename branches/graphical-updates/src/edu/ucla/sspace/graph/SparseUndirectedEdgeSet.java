@@ -32,14 +32,14 @@ import edu.ucla.sspace.util.OpenIntSet;
 /**
  *
  */
-public class SparseSymmetricEdgeSet extends AbstractSet<Edge> 
+public class SparseUndirectedEdgeSet extends AbstractSet<Edge> 
         implements EdgeSet<Edge> {
         
     private final int rootVertex;
     
     private final OpenIntSet edges;
     
-    public SparseSymmetricEdgeSet(int rootVertex) {
+    public SparseUndirectedEdgeSet(int rootVertex) {
         this.rootVertex = rootVertex;
         edges = new OpenIntSet();
     }
@@ -50,22 +50,14 @@ public class SparseSymmetricEdgeSet extends AbstractSet<Edge>
      */
     public boolean add(Edge e) {
         int toAdd = -1;
-        if (e.from() == rootVertex) {
-            toAdd = e.to();
-        }
-        else {
-            if (e.to() != rootVertex)
-                return false;
-            // else e.to() == rootVertex
+        if (e.from() == rootVertex) 
+            toAdd = e.to();        
+        else if (e.to() == rootVertex)
             toAdd = e.from();
-        }
-
-        // Only add the vertex if the index for it is greated than this vertex.
-        // In a set of EdgeSets, this ensure that for two indices i,j only one
-        // edge is ever present
-        if (rootVertex < toAdd)
-            return edges.add(toAdd);
-        return false;
+        else
+            return false;
+        
+        return edges.add(toAdd);
     }
 
     /**
@@ -89,10 +81,9 @@ public class SparseSymmetricEdgeSet extends AbstractSet<Edge>
     public boolean contains(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-            if (e.to() == rootVertex) 
-                return e.from() > rootVertex && edges.contains(e.from());
-            else
-                return e.from() == rootVertex && edges.contains(e.to());
+            return (e.to() == rootVertex) 
+                ? edges.contains(e.from())
+                : e.from() == rootVertex && edges.contains(e.to());
         }
         return false;
     }
@@ -126,10 +117,9 @@ public class SparseSymmetricEdgeSet extends AbstractSet<Edge>
     public boolean remove(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-            if (e.to() == rootVertex) 
-                return e.from() > rootVertex && edges.remove(e.from());
-            else
-                return e.from() == rootVertex && edges.remove(e.to());
+            return (e.to() == rootVertex) 
+                ? edges.remove(e.from())
+                : e.from() == rootVertex && edges.remove(e.to());
         }
         return false;
     }

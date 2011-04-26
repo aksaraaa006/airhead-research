@@ -22,29 +22,81 @@
 package edu.ucla.sspace.util;
 
 import java.util.AbstractSet;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-public class OpenIntSet extends AbstractSet<Integer> {
 
+/**
+ * A {@link Set} implementation specialized for storing {@code int} values with
+ * efficient storagage and look-up.  Internally, this class uses <a
+ * href="http://en.wikipedia.org/wiki/Open_addressing">open addressing</a> to
+ * represent the set of {@code int} values in the set.  This provides amortized
+ * O(1) access to the {@code get}, {@code set} and {@code remove} operations.
+ * In particular, the {@code remove} operation is designed for supporting access
+ * behaviors where elements are frequently added and removed.
+ *
+ * <p> This class overloads the common set operations with primitive accessors.
+ * This enables callers to avoid autoboxing {@link Integer} values to their
+ * primitive equivalents.
+ *
+ * <p> This class is not thread safe.
+ *
+ * @author David Jurgens
+ */
+public class OpenIntSet extends AbstractSet<Integer> 
+        implements java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * The value in the buckets that indicates an empty position where a new
+     * value may be stored
+     */
     private static final int EMPTY_MARKER = 0; // default array value
+
+    /**
+     * The value in the buckets that incidates the existing value has been
+     * deleted and a new value may be stored.  
+     */
     private static final int DELETED_MARKER = Integer.MAX_VALUE;
     
+    /**
+     * The buckets that store the non-negative values in this set.
+     */
     private int[] buckets;
     
+    /**
+     * True if a value equal to the {@code EMPTY_MARKER} has been stored in this
+     * set.
+     */
     private boolean isEmptyMarkerValuePresent;
+
+    /**
+     * True if a value equal to the {@code DELETED_MARKER} has been stored in
+     * this set.
+     */
     private boolean isDeletedMarkerValuePresent;
 
+    /**
+     * The number of elements in this set
+     */
+    private int size;
 
-    int size;
-
+    /**
+     * Constructs an {@code OpenIntSet} with the default size (4).
+     */
     public OpenIntSet() {
         this(4);
     }
-
+    
+    /**
+     * Constructs an {@code OpenIntSet} with storage for the specified number of
+     * elements.
+     */
     public OpenIntSet(int size) {
         // find the next power of two greater than the size
         int n = 1;
@@ -59,11 +111,18 @@ public class OpenIntSet extends AbstractSet<Integer> {
         size = 0;
     }
 
+    /**
+     * Constructs an {@code OpenIntSet} that will contain all the values in the
+     * provided set.
+     */
     public OpenIntSet(Collection<Integer> ints) {
         this(ints.size());
         addAll(ints);
     }
 
+    /**
+     * Adds the integer value to this set.
+     */
     public boolean add(Integer i) {
         return add(i.intValue());
     }
@@ -90,11 +149,11 @@ public class OpenIntSet extends AbstractSet<Integer> {
             return false;
         }
 
-        int maxMisses = buckets.length >> 2; // div by 4
-        int bucket = findIndex(buckets, i, maxMisses);
+
+        int bucket = findIndex(buckets, i);
         while (bucket == -1) {
             rebuildTable();
-            bucket = findIndex(buckets, i, maxMisses);
+            bucket = findIndex(buckets, i);
         }
 
         int curVal = buckets[bucket];
@@ -110,29 +169,33 @@ public class OpenIntSet extends AbstractSet<Integer> {
         }
     }
 
-    private static int findIndex(int[] buckets, int i, int maxMisses) {
-       
-        int repeat = i % buckets.length;
-        int misses = 0;
+    /**
+     * Returns the index where {@code i} would be in the provided array (which
+     * include the case where an open slot exists) or {@code -1} if the probe
+     * was unable to find both {@code i} and any position where {@code i} might
+     * be stored.
+     */
+    private static int findIndex(int[] buckets, int i) {      
+        // Hash the value of i into a slot.  Note that because we're using the
+        // bitwise-and to perform the mod, the slot will always be positive even
+        // if i is negative.
+        int slot = i & (buckets.length - 1);
+        int initial = slot;
         
-        for (int j = repeat; misses < buckets.length;
-                 j = (j+1) % buckets.length, ++misses) {
-                
-            // Check whether the linear probe has exceeded the number of
-            // allowable steps
-            if (misses > maxMisses) 
-                return -1;           
-
+        do {
             // If the value indicates an available space to put i (it's empty or
             // contains a deleted value), or if the space already contains i,
             // then return the index
-            int val = buckets[j];
+            int val = buckets[slot];
             if (val == EMPTY_MARKER || val == DELETED_MARKER || val == i)
-                return j;        
-        }
-        
-        assert false : "unhandled branch in findIndex";
-        return -1;
+                return slot;        
+
+        } while ((slot = (slot + 1) % buckets.length) != initial);
+
+        // If the linear probe has wrapped all the way around the array and if
+        // so, return a negative index.  This should only happen if the array is
+        // completely full and cannot be grown.
+        return -1;           
     }
     
     @Override public boolean contains(Object o) {
@@ -151,13 +214,12 @@ public class OpenIntSet extends AbstractSet<Integer> {
 
         // Otherwise, find which bucket this value should be in and check if the
         // value is in that bucket.
-        int bucket = findIndex(buckets, i, buckets.length);
-        return buckets[bucket] == i;
+        int bucket = findIndex(buckets, i);
+        return bucket >= 0 && buckets[bucket] == i;
     }
 
     @Override public void clear() {
-        for (int i = 0; i < buckets.length; ++i)
-            buckets[i] = 0;
+        Arrays.fill(buckets, 0);
         isEmptyMarkerValuePresent = false;
         isDeletedMarkerValuePresent = false;
         size = 0;
@@ -179,7 +241,7 @@ public class OpenIntSet extends AbstractSet<Integer> {
             // For all non-empty, non-deleted cells, find the new index for that
             // cell's value in the new table
             if (i != EMPTY_MARKER && i != DELETED_MARKER) {
-                int index = findIndex(newBuckets, i, newSize);
+                int index = findIndex(newBuckets, i);
                 newBuckets[index] = i;
             }
         }
@@ -203,7 +265,7 @@ public class OpenIntSet extends AbstractSet<Integer> {
         }
         else {
             // Find where i would be located in the table
-            int bucket = findIndex(buckets, i, buckets.length);
+            int bucket = findIndex(buckets, i);
             // If the bucket contained the value to be removed, then perform a
             // lazy delete and just mark its index as deleted.  This saves time
             // having to shift over all the elements in the table.
@@ -259,13 +321,6 @@ public class OpenIntSet extends AbstractSet<Integer> {
                     ++j;
                 }
                     
-                // if (j == buckets.length) {
-                //     nextIndex = -1;
-                //     next = -1;
-                // }
-                // else {
-                //     nextIndex = j;
-                // next = b
                 nextIndex = (j == buckets.length) ? -1 : j;
                 next = (nextIndex >= 0) ? buckets[nextIndex] : -1;
             }
@@ -295,7 +350,7 @@ public class OpenIntSet extends AbstractSet<Integer> {
 
         public void remove() {
             if (alreadyRemoved)
-                throw new NoSuchElementException();
+                throw new IllegalStateException();
             alreadyRemoved = true;
             OpenIntSet.this.remove(cur);
         }

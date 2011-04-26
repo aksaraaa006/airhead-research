@@ -445,7 +445,7 @@
     <delete dir="reports" />
     <mkdir dir="reports" />
 
-    <junit printSummary="yes" fork="true" haltonerror="no">
+    <junit printSummary="yes" fork="true" haltonerror="no" timeout="1000">
       <jvmarg value="-Xmx1g"/>
       <jvmarg value="-debug"/>
 
@@ -455,9 +455,9 @@
       <formatter type="plain"/>    
 
       <!-- Example test when doing debugging of single classes       -->
-      <test name="edu.ucla.sspace.package.util.OpenIntSetTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.package.graph.SparseUndirectedGraphTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.package.graph.SparseSymmetricEdgeSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.OpenIntSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.SparseUndirectedGraphTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.SparseSymmetricEdgeSetTests" todir="${report.dir}"/>
 
         <!-- 
       <batchtest fork="yes" todir="${report.dir}">
@@ -478,7 +478,7 @@
     <delete dir="reports"/>
     <mkdir dir="reports"/>
 
-    <junit printsummary="yes" fork="yes" haltonfailure="no">
+    <junit printsummary="yes" fork="yes" haltonfailure="no" timeout="5000">
       <jvmarg value="-Xmx1g"/>
       <jvmarg value="-debug"/>
       <classpath location="${build.instrumented.dir}"/>

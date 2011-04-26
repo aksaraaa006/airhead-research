@@ -24,6 +24,14 @@ package edu.ucla.sspace.graph;
 import java.util.Set;
 
 
+/**
+ * A subinterface of {@link Set} that provides an abstraction over the set of
+ * edges that are connected to a single vertex.  In addition, the interface
+ * provides utility methods for interacting with the {@link Edge} objects stored
+ * within the set on the basis of their vertex indices.
+ *
+ * @param <T> the type of {@link Edge} being stored within this set.
+ */
 public interface EdgeSet<T extends Edge> extends Set<T> {  
 
     /**
@@ -43,35 +51,15 @@ public interface EdgeSet<T extends Edge> extends Set<T> {
     Set<Integer> connected();
 
     /**
-     * Adds an edge between the root vertex and the provided vertex.
-     *
-     * @returns {@code true} if the edge between the root and provided vertex
-     *          was not previously present and was successfully added, {@code
-     *          false} otherwise
-     */
-    boolean connect(int vertex);   
-
-    /**
      * Returns true if the root vertex is connected to the provided vertex.
      */
     boolean connects(int vertex);
 
     /**
-     * Removes the edge between the root vertex and the provided vertex.
-     *
-     * @returns {@code true} if the edge between the root and provided vertex
-     *          was present and subsequenetly removed, {@code false} if the edge
-     *          was not present to begin with.
+     * Returns the set of {@link Edge} instances that connect the root vertex
+     * with this vertex or an empty set if no such edges exist.
      */
-    boolean disconnect(int vertex);
-
-    /**
-     * Returns the {@link Edge} that connects the root vertex with this vertex
-     * or {@code null} if no such edges exist.  If this edge set supports
-     * parallel edges between two vertices, an implementation is left free to
-     * decide which of the possible edges is returned.
-     */
-    T getEdge(int vertex);
+    Set<T> getEdges(int vertex);
 
     /**
      * Returns the vertex to which all edges in this set are connected.

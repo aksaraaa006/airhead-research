@@ -78,7 +78,6 @@ public class CombinedIterator<T> implements Iterator<T> {
      */
     private void advance() {
 	if (!current.hasNext()) {
-	    toRemoveFrom = current;
 	    current = iters.poll();
 	}
     }

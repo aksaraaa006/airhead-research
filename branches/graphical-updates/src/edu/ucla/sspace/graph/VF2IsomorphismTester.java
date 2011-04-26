@@ -51,8 +51,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         // If there are different number of nodes, or if the difference in
         // degrees would prevent a valid mapping, short circuit early and return
         // false.
-        if (g1.numVertices() != g2.numVertices() 
-                || g1.numEdges() != g2.numEdges())
+        if (g1.order() != g2.order() 
+                || g1.size() != g2.size())
             return false;
         return match(g1, g2, new HashBiMap<Integer,Integer>());
     }

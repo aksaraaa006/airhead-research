@@ -87,7 +87,6 @@ public interface Graph2<E extends Edge> {
      * @see #containsEdge(int, int)
      */
     boolean addEdge(E edge);
-    // boolean addEdge(int from, int to);
 
     /**
      * Removes all the edges and vertices from this graph (optional operation).
@@ -150,12 +149,12 @@ public interface Graph2<E extends Edge> {
     /**
      * Returns the number of edges in this graph.
      */
-    int numEdges();
+    int size();
 
     /**
      * Returns the number of vertices in this graph.
      */
-    int numVertices();
+    int order();
 
     /**
      * Removes the edge from {@code vertex1} to {@code vertex2}, returning
@@ -180,7 +179,7 @@ public interface Graph2<E extends Edge> {
      * @throws IllegalArgumentException if {@code vertices} contains vertices
      *         not present in this graph
      */
-    Graph2<? extends E> subgraph(Set<Integer> vertices);
+    Graph2<E> subgraph(Set<Integer> vertices);
 
     /**
      * Returns the set of vertices in this graph.

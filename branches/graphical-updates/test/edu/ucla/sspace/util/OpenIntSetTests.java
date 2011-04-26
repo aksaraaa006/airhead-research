@@ -53,6 +53,21 @@ public class OpenIntSetTests {
         assertEquals(1, test.size());
     }
 
+    @Test public void testAddNegative() {
+        Set<Integer> test = new OpenIntSet();
+        assertTrue(test.add(-1));
+        assertEquals(1, test.size());
+    }
+
+    @Test public void testAddPositiveAndNegative() {
+        Set<Integer> test = new OpenIntSet();
+        for (int i = 1; i <= 10; ++i) {
+            assertTrue(test.add(i));
+            assertTrue(test.add(-i));
+        }
+        assertEquals(20, test.size());
+    }
+
     @Test public void testEmptyMarker() {
         Set<Integer> test = new OpenIntSet();
         assertTrue(test.add(0));
@@ -60,14 +75,12 @@ public class OpenIntSetTests {
         assertTrue(test.contains(0));
     }
 
-
     @Test public void testDeletedMarker() {
         Set<Integer> test = new OpenIntSet();
         assertTrue(test.add(Integer.MAX_VALUE));
         assertEquals(1, test.size());
         assertTrue(test.contains(Integer.MAX_VALUE));
     }
-
 
     @Test public void testAddTwice() {
         Set<Integer> test = new OpenIntSet();
@@ -89,6 +102,24 @@ public class OpenIntSetTests {
         Set<Integer> test = new OpenIntSet();
         test.add(1);
         assertTrue(test.contains(1));
+    }
+
+    @Test public void testContainsNegative() {
+        Set<Integer> test = new OpenIntSet();
+        test.add(-1);
+        assertTrue(test.contains(-1));
+    }
+
+    @Test public void testContainsPositiveAndNegative() {
+        Set<Integer> test = new OpenIntSet();
+        for (int i = 1; i <= 10; ++i) {
+            assertTrue(test.add(i));
+            assertTrue(test.add(-i));
+        }
+        for (int i = 1; i <= 10; ++i) {
+            assertTrue(test.contains(i));
+            assertTrue(test.contains(-i));
+        }
     }
    
     @Test public void addRandom() {
@@ -168,7 +199,7 @@ public class OpenIntSetTests {
         it.next();
     }
 
-    @Test(expected=NoSuchElementException.class)  public void testEmptyIteratorRemove() {
+    @Test(expected=IllegalStateException.class)  public void testEmptyIteratorRemove() {
         Set<Integer> test = new OpenIntSet();
         Iterator<Integer> it = test.iterator();
         it.remove();
@@ -186,6 +217,16 @@ public class OpenIntSetTests {
         it.remove();
         assertEquals(9, test.size());
         assertFalse(test.contains(i));
+    }
+
+    @Test(expected=IllegalStateException.class)  public void testEmptyIteratorRemoveTwice() {
+        Set<Integer> test = new OpenIntSet();
+        for (int i = 0; i < 10; ++i) {
+            test.add(i);
+        }
+        Iterator<Integer> it = test.iterator();
+        it.remove();
+        it.remove();
     }
 
 
