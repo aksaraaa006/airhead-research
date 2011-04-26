@@ -21,7 +21,7 @@
 
 package edu.ucla.sspace.graph;
 
-public class SimpleEdge implements Edge, java.io.Serializable {
+public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -29,22 +29,21 @@ public class SimpleEdge implements Edge, java.io.Serializable {
 
     private final int to;
 
-    public SimpleEdge(int from, int to) {
+    public SimpleDirectedEdge(int from, int to) {
         this.from = from;
         this.to = to;
     }
     
     @SuppressWarnings("unchecked")
     public <T extends Edge> T clone(int from, int to) {
-        return (T)(new SimpleEdge(from, to));
+        return (T)(new SimpleDirectedEdge(from, to));
     }   
     
     public boolean equals(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
             // REMINDER: fix me
-            return (e.from() == from && e.to() == to)
-                || (e.to() == from && e.from() == to);
+            return e.from() == from && e.to() == to;
         }
         return false;
     }
@@ -53,8 +52,8 @@ public class SimpleEdge implements Edge, java.io.Serializable {
         return from ^ to;
     }
 
-    public Edge flip() {
-        return new SimpleEdge(to, from);
+    public DirectedEdge flip() {
+        return new SimpleDirectedEdge(to, from);
     }
 
     public int from() {

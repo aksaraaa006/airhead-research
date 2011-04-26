@@ -40,64 +40,20 @@ import edu.ucla.sspace.util.OpenIntSet;
  *
  * @author David Jurgens
  */
-public class SparseUndirectedGraph extends AbstractGraph<Edge> {
+public class SparseUndirectedGraph extends AbstractGraph<Edge,SparseUndirectedEdgeSet> {
 
     private static final long serialVersionUID = 1L;
 
     public SparseUndirectedGraph() { }
+
+    public SparseUndirectedGraph(Set<Integer> vertices) {
+        super(vertices);
+    }
     
     /**
      * Creates a sparse edge set that treats all edges as symmetric.
      */
-    @Override protected EdgeSet<Edge> createEdgeSet(int vertex) {
-        return new SparseSymmetricEdgeSet(vertex);
-    }
-
-    ////
-    //
-    // Implementation note: @Override the three ordering sensitive methods.  If
-    // we didn't then the AbstractGraph could possibly select the EdgeSet for
-    // the vertex with the higher index, which would not perform any of thte
-    // operations by construction.
-    //
-    //// 
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public boolean addEdge(int vertex1, int vertex2) {
-        // Make sure v1 < v2 so that the right edge set will be selected 
-        if (vertex1 > vertex2) {
-            int tmp = vertex2;
-            vertex2 = vertex1;
-            vertex1 = tmp;
-        }
-        return super.addEdge(vertex1, vertex2);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public Edge getEdge(int vertex1, int vertex2) {
-        // Make sure v1 < v2 so that the right edge set will be selected 
-        if (vertex1 > vertex2) {
-            int tmp = vertex2;
-            vertex2 = vertex1;
-            vertex1 = tmp;
-        }
-        return super.getEdge(vertex1, vertex2);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override public boolean removeEdge(int vertex1, int vertex2) {
-        // Make sure v1 < v2 so that the right edge set will be selected 
-        if (vertex1 > vertex2) {
-            int tmp = vertex2;
-            vertex2 = vertex1;
-            vertex1 = tmp;
-        }
-        return super.removeEdge(vertex1, vertex2);
+    @Override protected SparseUndirectedEdgeSet createEdgeSet(int vertex) {
+        return new SparseUndirectedEdgeSet(vertex);
     }
 }
