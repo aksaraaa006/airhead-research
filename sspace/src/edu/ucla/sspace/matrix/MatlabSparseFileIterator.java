@@ -41,13 +41,20 @@ class MatlabSparseFileIterator implements Iterator<MatrixEntry> {
 
     private MatrixEntry next;
 
+    /**
+     * The line number for the matrix values that have just been read.
+     */
+    private int lineNo;
+
     public MatlabSparseFileIterator(File matrixFile) throws IOException {
         matrixFileReader = new BufferedReader(new FileReader(matrixFile));
+        lineNo = 0;
         advance();
     }
 
     private void advance() throws IOException {
         String line = matrixFileReader.readLine();
+        lineNo++;
         if (line == null) {
             next = null;
             // If the end of the file has been reached, close the reader
@@ -55,6 +62,9 @@ class MatlabSparseFileIterator implements Iterator<MatrixEntry> {
         }
         else {
             String[] rowColVal = line.split("\\s+");
+            if (rowColVal.length != 3)
+                throw new MatrixIOException(
+                    "Incorrect number of values on line: " + lineNo);
             int row = Integer.parseInt(rowColVal[0]) - 1;
             int col = Integer.parseInt(rowColVal[1]) - 1;
             double value = Double.parseDouble(rowColVal[2]);
