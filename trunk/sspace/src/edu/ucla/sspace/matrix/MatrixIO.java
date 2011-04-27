@@ -769,7 +769,6 @@ public class MatrixIO {
                 
             case CLUTO_SPARSE:
                 return readClutoSparse(matrix, matrixType, transposeOnRead);
-                break;
                 
             case SVDLIBC_SPARSE_TEXT:
                 return readSparseSVDLIBCtext(matrix, matrixType, transposeOnRead);

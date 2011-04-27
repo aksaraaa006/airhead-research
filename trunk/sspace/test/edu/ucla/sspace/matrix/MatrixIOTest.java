@@ -216,6 +216,7 @@ public class MatrixIOTest {
      * Tests that a result double array contains the same data values as in
      * {@code testMatrix}.
      */
+    @SuppressWarnings("deprecation")
     public static void testReadDoubleArray(double[][] resultMatrix) {
         assertEquals(testMatrix.length, resultMatrix.length); 
         assertEquals(testMatrix[0].length, resultMatrix[0].length); 
@@ -489,6 +490,7 @@ public class MatrixIOTest {
      * Test the reading of double arrays from matrix files.
      */
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromMatlabSparse() throws Exception {
         File matlab = getMatlabFile();
         double[][] resultMatrix =
@@ -496,6 +498,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromSVDLIBCSparseText() throws Exception {
         File svdlibcSparseText = getSparseSVDLIBCFile();
         double[][] resultMatrix =
@@ -504,6 +507,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromSVDLIBCSparseBinary() throws Exception {
         File svdlibcSparseText = getSparseBinarySVDLIBCFile();
         double[][] resultMatrix =
@@ -512,6 +516,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromSVDLIBCDenseText() throws Exception {
         File mFile = getSVDLIBCDenseTextFile();
         double[][] resultMatrix = MatrixIO.readMatrixArray(
@@ -519,6 +524,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromSVDLIBCDenseBinary() throws Exception {
         File mFile = getSVDLIBCDenseBinaryFile();
         double[][] resultMatrix = MatrixIO.readMatrixArray(
@@ -526,6 +532,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromClutoSparse() throws Exception {
         // Note that CLUTO Dense and SVDLIBC Dense Text are the same format.
         File mFile = getClutoSparseFile();
@@ -534,6 +541,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromClutoDense() throws Exception {
         // Note that CLUTO Dense and SVDLIBC Dense Text are the same format.
         File mFile = getSVDLIBCDenseTextFile();
@@ -542,6 +550,7 @@ public class MatrixIOTest {
         testReadDoubleArray(resultMatrix);
     }
 
+    @SuppressWarnings("deprecation")
     @Test public void readMatrixArrayFromDenseText() throws Exception {
         File mFile = getDenseTextFile();
         double[][] resultMatrix = MatrixIO.readMatrixArray(

@@ -97,7 +97,7 @@
        <compilerarg value="-g"/>
        <include name="src/**"/>
        <include name="lib/**"/>
-       <include name="test/**"/>
+       <exclude name="test/**"/>
        <exclude name="opt/"/>
     </javac>  
   </target>
@@ -143,7 +143,7 @@
   </target>
 
 
-  <target name="binaries" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar,beagle-jar,rri-jar">
+  <target name="binaries" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar,beagle-jar,rri-jar"/>
 
   <!--
        Create the distribution jars for the libraries, javadoc, and source 
