@@ -142,11 +142,14 @@
     </javac>
   </target>
 
+
+  <target name="binaries" depends="lsa-jar,ri-jar,coals-jar,hal-jar,fdtri-jar,isa-jar,purandare-jar,esa-jar,vsm-jar,beagle-jar,rri-jar">
+
   <!--
        Create the distribution jars for the libraries, javadoc, and source 
        files.
   -->
-  <target name="dist" depends="clean,compile"
+  <target name="dist" depends="clean,compile,binaries"
           description="Generate the full distribution">
     <!-- build the main artifact -->
     <jar jarfile="${maven-jar}" basedir="${build.dir}" />
@@ -340,6 +343,36 @@
 	<attribute name="Implementation-Title" value="Random Indexing"/>
 	<attribute name="Implementation-Version" value="${version}"/>
 	<attribute name="Main-Class" value="edu.ucla.sspace.mains.RandomIndexingMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="beagle-jar" depends="compile">
+    <jar destfile="${bin.dir}/beagle.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Random Indexing"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.BeagleMain"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="rri-jar" depends="compile">
+    <jar destfile="${bin.dir}/rri.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Random Indexing"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.mains.ReflectiveRandomIndexingMain"/>
       </manifest>
     </jar>
   </target>

@@ -87,18 +87,24 @@ class SvdlibcSparseBinaryFileIterator implements Iterator<MatrixEntry> {
             dis.close();
         }
         else {
-            // Check whether we have exhaused all the data points in the current
-            // column
-            while (curColEntry == nzInCurCol) {
-                curColEntry = 0;
-                nzInCurCol = dis.readInt();
-                curCol++;
+            try {
+                // Check whether we have exhaused all the data points in the
+                // current column
+                while (curColEntry == nzInCurCol) {
+                    curColEntry = 0;
+                    nzInCurCol = dis.readInt();
+                    curCol++;
+                }
+                int row = dis.readInt();
+                double value = dis.readFloat();
+                next = new SimpleEntry(row, curCol, value);
+                curColEntry++;
+                entry++;
+            } catch (IOException ioe) {
+                // Rethrow wrapped exception
+                throw new MatrixIOException(
+                    "Missing data when reading.  Truncated file?", ioe);
             }
-            int row = dis.readInt();
-            double value = dis.readFloat();
-            next = new SimpleEntry(row, curCol, value);
-            curColEntry++;
-            entry++;
         }
     }
 
