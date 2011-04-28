@@ -124,6 +124,10 @@ class VectorView<T extends Number> implements Vector<T>, Serializable  {
      *         v}</ul>
      */
     public VectorView(Vector v, int offset, int length, boolean isImmutable) {
+        if (v == null) {
+            throw new NullPointerException(
+                "Cannot create a view of a null vector");
+        }
         vector = v;
         vectorOffset = offset;
         vectorLength = length;

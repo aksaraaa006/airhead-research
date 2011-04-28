@@ -543,7 +543,10 @@ public class ArgOptions {
         return (o == null) ? false : optionToValue.containsKey(o);
     }
 
-
+    /**
+     * Returns a pretty-print formated string describing all of the options and
+     * their arguments.
+     */
     public String prettyPrint() {
         // make a pass through to find out how wide the printing needs to be
         int maxNameLength = -1;
@@ -588,6 +591,20 @@ public class ArgOptions {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Returns a string description of the options that are currently set and
+     * their values.
+     */
+    public String toString() {
+        StringBuilder s = new StringBuilder(12 * optionToValue.size());
+        s.append("Options[");
+        for (Map.Entry<Option,String> e : optionToValue.entrySet()) {
+            s.append(e.getKey()).append("=").append(e.getValue()).append(",");
+        }
+        s.setCharAt(s.length()-1, ']');
+        return s.toString();
     }
     
     private void printOption(Set<Option> options, String optionCategory,
@@ -676,7 +693,7 @@ public class ArgOptions {
         public int hashCode() {
             return longName.hashCode();
         }
-
+        
         public boolean hasValue() {
             return valueName != null;
         }
