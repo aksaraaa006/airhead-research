@@ -55,6 +55,8 @@ public class Vectors {
      * @return a mutable {@code DoubleVector} view of {@code v}
      */
     public static DoubleVector asDouble(Vector v) {
+        if (v == null)
+            throw new NullPointerException("Cannot re-type a null vector");
         // NOTE: Special case the the sparse classes first to becase the
         // base interfaces of DoubleVectors and IntegerVectors matches as well.
         if (v instanceof SparseIntegerVector)
@@ -72,6 +74,8 @@ public class Vectors {
     }
 
     public static SparseDoubleVector asDouble(SparseIntegerVector v) {
+        if (v == null)
+            throw new NullPointerException("Cannot re-type a null vector");
         return new IntAsSparseDoubleVector(v);
     }
 
@@ -85,6 +89,8 @@ public class Vectors {
      * @return a {@code Vector} view of the array
      */
     public static DoubleVector asVector(double[] array) {
+        if (array == null)
+            throw new NullPointerException("Cannot wrap a null array");
         return new DoubleArrayAsVector(array);
     }
 
@@ -98,6 +104,8 @@ public class Vectors {
      * @return a {@code Vector} view of the array
      */
     public static IntegerVector asVector(int[] array) {
+        if (array == null)
+            throw new NullPointerException("Cannot wrap a null array");
         return new IntArrayAsVector(array);
     }
 

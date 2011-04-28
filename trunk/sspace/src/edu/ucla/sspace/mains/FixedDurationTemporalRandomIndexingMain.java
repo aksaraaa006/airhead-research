@@ -415,10 +415,9 @@ public class FixedDurationTemporalRandomIndexingMain {
             interestingWordNeighbors = 
                 argOptions.getIntOption("printInterestingTokenNeighbors");        
         }
-
         if (argOptions.hasOption("printInterestingTokenShifts")) {
-            printInterestingTokenShifts =
-                argOptions.getBooleanOption("printInterestingTokenShifts");
+            printInterestingTokenShifts = true;
+                LOGGER.info("Recording interesting token shifts");
         }
         if (argOptions.hasOption("printInterestingTokenNeighborComparison")) {
             compareNeighbors = true;
@@ -524,13 +523,12 @@ public class FixedDurationTemporalRandomIndexingMain {
             // update the vectors
             SortedMap<Long,double[]> temporalSemantics = 
                 wordToTemporalSemantics.get(word);
-            DoubleVector vector =
-                Vectors.asDouble(semanticPartition.getVector(word));
-            double[] semantics = zeroVector;
-            // If the word was not in the current partition, then give it the
-            // zero vector
-            if (semantics != null)
-                semantics = vector.toArray();
+            Vector v = semanticPartition.getVector(word);
+            // If the wor was not present in the current partition, then just
+            // use the zero vector.  Otherwise, use it distirbution.
+            double[] semantics = (v == null) 
+                ? zeroVector
+                : Vectors.asDouble(v).toArray();
 
             temporalSemantics.put(currentSemanticPartitionStartTime,
                                   semantics);
@@ -545,6 +543,8 @@ public class FixedDurationTemporalRandomIndexingMain {
      * @param dateString the date of the last semantic partition.
      */
     private void printSemanticShifts(String dateString) throws IOException {
+
+        LOGGER.fine("Writing semantic shifts for " + dateString);
 
         // Once we have all the vectors for each word in each sspace,
         // calculate how much the vector has changed.
@@ -678,7 +678,7 @@ public class FixedDurationTemporalRandomIndexingMain {
             throws IOException {
         
         LOGGER.info("printing the most similar words for the semantic partition" +
-                    "starting at: " + dateString);
+                    " starting at: " + dateString);
 
         // generate the similarity lists
         for (String toExamine : interestingWords) {
@@ -689,11 +689,11 @@ public class FixedDurationTemporalRandomIndexingMain {
 
             if (mostSimilar != null) {
                 File neighborFile = 
-                    new File(outputDir, toExamine + "-" + dateString);
+                    new File(outputDir, toExamine + "-" + dateString + ".txt");
                 neighborFile.createNewFile(); // iff it doesn't already exist
                 
                 File neighborComparisonFile = new File(outputDir,
-                    toExamine + "_neighbor-comparisons_" + dateString);
+                    toExamine + "_neighbor-comparisons_" + dateString + ".txt");
                 neighborComparisonFile.createNewFile(); // see above comment
                     
 
@@ -889,17 +889,16 @@ public class FixedDurationTemporalRandomIndexingMain {
                         // operation can be very slow due to I/O requirements,
                         // and is not mandatory when computing the shifts
                         if (writeSemanticPartitions) {
-                            LOGGER.info("writing semantic partition starting at:" + 
-                                        dateString);
+                            LOGGER.info("writing semantic partition starting " +
+                                        "at: " + dateString);
                             // save the current contets of the semantic space
-                            printSpace(fdTri, "-" + dateString + "-");
+                            printSpace(fdTri, "-" + dateString);
                         }
 
                         // Add the semantics from the current semantic partition
                         // for each of the interesting words
                         updateTemporalSemantics(curSSpaceStartTime.get(),
                                                 fdTri);
-                        
                         if (writeSemanticShifts) 
                             printSemanticShifts(dateString);
 
@@ -965,10 +964,12 @@ public class FixedDurationTemporalRandomIndexingMain {
                                 ;
 
                             // Check whether the time for this document would
-                            // exceed the maximum time span for any TRI partition.
-                            // Loop to ensure that if this thread does loop and
-                            // another thread has an earlier time that exceeds
-                            // the time period, then this thread will block
+                            // exceed the maximum time span for any TRI
+                            // partition.  Loop to ensure that if this thread
+                            // does loop and another thread has an earlier time
+                            // that would cause this thread's time span to
+                            // exceeds the other thread's time period, then this
+                            // thread will block and loop again.
                             while (!timeSpan.insideRange(
                                    curSSpaceStartTime.get(), docTime)) {
                                 try {
