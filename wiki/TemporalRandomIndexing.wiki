@@ -37,11 +37,17 @@ FD-TRI can be invoked either directly as a class or using the fd-tri.jar target:
   * `java edu.ucla.sspace.tri.FixedDurationTemporalRandomIndexingMain [options] <output-dir>`
   * `java -jar ft-tri.jar [options] <output-dir>`
 
-FD-TRI provides a large number of configurable options.
+== Corpus Input ==
+
+Each document in the input corpus needs a timestamp to indicate when it was created.  We use the [http://en.wikipedia.org/wiki/Unix_time unix timestamp] for all timestamps.  Furthermore the input corpus needs to be sorted so that the earliest occurring document appears first and the latest occurring document appears last.
+
+== Program Options == 
+
+FD-TRI provides a large number of configurable options for analyzing the changes of words.
 
   * At least one of the following options is required to specify where the input documents are located:
     * `-d, --docFile=FILE[,FILE...]` one or more files where each line is a [TemporalDocument temporal document]
-    * `-f, --fileList=FILE[,FILE...]` one or more files, each containing a list of [TemporalDocument temporal document files
+    * `-f, --fileList=FILE[,FILE...]` one or more files, each containing a list of [TemporalDocument temporal document files]
 
   * The timespan string indicates the length of each semantic partition of the slice.
     * `-T, --timespan=Date String` the Timespan for each semantic partition
@@ -88,7 +94,7 @@ FD-TRI provides a large number of configurable options.
 
 A typical usage might look like:
 {{{
-java -server -Xmx4g -jar fd-tri.jar --verbose --threads=4 --vectorLength=10000 --tokenFilter=stoplist.txt=exclude --interestTokenList=wordsToWatch.txt  --printInterestingTokenShifts --printInterestingTokenNeighbors
+java -server -Xmx4g -jar fd-tri.jar --verbose --threads=4 --vectorLength=10000 --tokenFilter=exclude=stoplist.txt --interestTokenList=wordsToWatch.txt  --printInterestingTokenShifts --printInterestingTokenNeighbors
 }}}
 
 
