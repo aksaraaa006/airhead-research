@@ -35,12 +35,28 @@ import edu.ucla.sspace.util.SortedMultiMap;
 
 
 /**
- * An interface for algorithms that detect whether two graphs are <a
- * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphic</a>.
+ * An implementation of the VF2 algorithm for detecting isomorphic graphs.  This
+ * algorithm may be found in:
+ * <ul>
+ *
+ *   <li style="font-family:Garamond, Georgia, serif"> Luigi P. Cordella,
+ *      Pasquale Foggia, Carlo Sansone, and Mario Vento.  A (Sub)Graph
+ *      Isomorphism Algorithm for Matching Large Graphs.  <i>IEEE Transactions
+ *      on Pattern Analysis and Machine Intelligence,</i> <b>26:10</b>.  2004.
+ *      Available <a
+ *      href="http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=1323804">here</a>
+ *
+ * </ul>
+ *
+ * This class is thread-safe.
+ *
+ * @author David Jurgens
  */
-//@SuppressWarnings("unchecked")
 public class VF2IsomorphismTester implements IsomorphismTester {
 
+    /**
+     * Cretes an instance of the {@code VF2IsomorphismTester}.
+     */
     public VF2IsomorphismTester() { }
 
     /**
@@ -54,17 +70,32 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         if (g1.order() != g2.order() 
                 || g1.size() != g2.size())
             return false;
+
         return match(g1, g2, new HashBiMap<Integer,Integer>());
     }
 
+    /**
+     * Generates a set of candidate mappings from a vertex in {@code g1} to a
+     * vertex in {@code g2}, using the an existing {@code mapping} for which
+     * vertices have already been mapped.  This method applies a further constraint that two
+     * vertices may be mapped only if their in-degree and out-degree are
+     * equivalent.  Furthermore, if the two graphs contain a different number of
+     * degrees, which implies that at least one vertex is unmappable, this
+     * method returns the empty set to indicate that no mapping will satisify
+     * the isomorphism constraint.
+     *
+     * @param mapping an existing mapping from vertices in {@code g1} to {@code
+     *        g2}.  Vertices in this mapping will not be returned as candidate
+     *        pairs
+     */
     private Set<Pair<Integer>> generateCandidateMappings(
             Graph<? extends Edge> g1, 
             Graph<? extends Edge> g2,
             BiMap<Integer,Integer> mapping) {
 
-        Set<Integer> unmappedG1Vertices = g1.vertices();
+        Set<Integer> unmappedG1Vertices = new HashSet<Integer>(g1.vertices());
         unmappedG1Vertices.removeAll(mapping.keySet());
-        Set<Integer> unmappedG2Vertices = g2.vertices();
+        Set<Integer> unmappedG2Vertices = new HashSet<Integer>(g2.vertices());
         unmappedG2Vertices.removeAll(mapping.inverse().keySet());
 
 
@@ -77,7 +108,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         SortedMultiMap<Integer,Integer> degreeToG2Vertex
             = new TreeMultiMap<Integer,Integer>();
         for (Integer vertex : unmappedG2Vertices) {
-            degreeToG1Vertex.put(g2.getAdjacentVertices(vertex).size(), vertex);
+            degreeToG2Vertex.put(g2.getAdjacentVertices(vertex).size(), vertex);
         }
 
         Set<Pair<Integer>> candidates = new HashSet<Pair<Integer>>();
@@ -106,6 +137,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
                     candidates.add(new Pair<Integer>(i,j));
 
         }
+        
+        System.out.println("Found candidates: " + candidates);
 
         return candidates;
     }
@@ -121,9 +154,9 @@ public class VF2IsomorphismTester implements IsomorphismTester {
                                Pair<Integer> candidate) {
         return rPred(g1, g2, mapping, candidate)
             && rSucc(g1, g2, mapping, candidate)
-            &&  rIn(g1, g2, mapping, candidate)
+            && rIn(g1, g2, mapping, candidate)
             && rOut(g1, g2, mapping, candidate)
-            && rNew(g1, g2, mapping, candidate);
+            && rNew(g1, g2, mapping, candidate);        
     }
 
     /**
@@ -132,9 +165,12 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      */
     private boolean match(Graph<? extends Edge> g1, Graph<? extends Edge> g2,
                           BiMap<Integer,Integer> mapping) {
+        System.out.println("Current proposed mapping: " + mapping);
         // BASE CASE: If the mapping is complete (maps all the vertices), then
         // we have a valid isomorphism, so return true.
-        if (mapping.size() == g2.vertices().size()) {
+        if (mapping.size() == g2.order()) {
+            System.out.printf("%s%n%s%n", g1, g2);
+            System.out.println("Found complete mapping: " + mapping);
             return true;
         }
         
@@ -171,7 +207,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         // Compute the intersection of the sucessors of n and the nodes that
         // have already been mapped
-        Set<Integer> nPred = predecessors(g1, n);
+        Set<Integer> nPred = new HashSet<Integer>(predecessors(g1, n));
         nPred.retainAll(mapping.keySet());
         found_n_mapping:
         for (int nPrime : nPred) {
@@ -192,7 +228,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         // Calculate the intersection of the predecessors of m with the nodes in
         // the current mapping that are a part of g2
-        Set<Integer> mPred = predecessors(g2, m);
+        Set<Integer> mPred = new HashSet<Integer>(predecessors(g2, m));
         mPred.retainAll(mapping.values());
         
         found_m_mapping:
@@ -245,7 +281,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         // Calculate the intersection of the successors of m with the nodes in
         // the current mapping that are a part of g2
-        Set<Integer> mSucc = successors(g2, m);
+        Set<Integer> mSucc = new HashSet<Integer>(successors(g2, m));
         mSucc.retainAll(mapping.values());
         
         found_m_mapping:
@@ -277,22 +313,22 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         // Compute the intersection of the sucessors of n and the nodes that
         // are note yet mapped in g1
-        Set<Integer> nSucc = successors(g1, n);
+        Set<Integer> nSucc = new HashSet<Integer>(successors(g1, n));
         Set<Integer> tIn1 = findTIn(g1, mapping.keySet());
         nSucc.retainAll(tIn1);
 
         // Compute the intersection of the sucessors of m and the nodes that
         // are note yet mapped in g2
-        Set<Integer> mSucc = successors(g2, m);
+        Set<Integer> mSucc = new HashSet<Integer>(successors(g2, m));
         Set<Integer> tIn2 = findTIn(g2, mapping.inverse().keySet());
         mSucc.retainAll(tIn2);
 
         if (nSucc.size() != mSucc.size())
             return false;
         
-        Set<Integer> nPred = predecessors(g1, n);
+        Set<Integer> nPred = new HashSet<Integer>(predecessors(g1, n));
         nPred.retainAll(tIn1);
-        Set<Integer> mPred = predecessors(g2, m);
+        Set<Integer> mPred = new HashSet<Integer>(predecessors(g2, m));
         mPred.retainAll(tIn2);
 
         return nPred.size() == mPred.size();
@@ -307,22 +343,22 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         // Compute the intersection of the sucessors of n and the nodes that
         // are note yet mapped in g1
-        Set<Integer> nSucc = successors(g1, n);
+        Set<Integer> nSucc = new HashSet<Integer>(successors(g1, n));
         Set<Integer> tOut1 = findTOut(g1, mapping.keySet());
         nSucc.retainAll(tOut1);
 
         // Compute the intersection of the sucessors of m and the nodes that
         // are note yet mapped in g2
-        Set<Integer> mSucc = successors(g2, m);
+        Set<Integer> mSucc = new HashSet<Integer>(successors(g2, m));
         Set<Integer> tOut2 = findTOut(g2, mapping.inverse().keySet());
         mSucc.retainAll(tOut2);
 
         if (nSucc.size() != mSucc.size())
             return false;
         
-        Set<Integer> nPred = predecessors(g1, n);
+        Set<Integer> nPred = new HashSet<Integer>(predecessors(g1, n));
         nPred.retainAll(tOut1);
-        Set<Integer> mPred = predecessors(g2, m);
+        Set<Integer> mPred = new HashSet<Integer>(predecessors(g2, m));
         mPred.retainAll(tOut2);
 
         return nPred.size() == mPred.size();
@@ -341,10 +377,18 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         nodes1.removeAll(findTOut(g1, mapping.keySet()));
         nodes1.removeAll(findTIn(g1, mapping.keySet()));
         
+//         System.out.printf("For node %d, T-out: %s, T-in: %s%n",
+//                           n, findTOut(g1, mapping.keySet()),
+//                           findTIn(g1, mapping.keySet()));
+
         Set<Integer> nodes2 = new HashSet<Integer>(g2.vertices());
-        nodes1.removeAll(mapping.inverse().keySet());
-        nodes1.removeAll(findTOut(g2, mapping.inverse().keySet()));
-        nodes1.removeAll(findTIn(g2, mapping.inverse().keySet()));
+        nodes2.removeAll(mapping.inverse().keySet());
+        nodes2.removeAll(findTOut(g2, mapping.inverse().keySet()));
+        nodes2.removeAll(findTIn(g2, mapping.inverse().keySet()));
+
+//         System.out.printf("For node %d, T-out: %s, T-in: %s%n",
+//                           m, findTOut(g2, mapping.inverse().keySet()),
+//                           findTIn(g2, mapping.inverse().keySet()));
         
         // Create temporary copies of the N-tilde sets so that we can mutate
         Set<Integer> n1tmp = new HashSet<Integer>(nodes1);
@@ -381,7 +425,11 @@ public class VF2IsomorphismTester implements IsomorphismTester {
             // Since the graph is undirected, just include all of the edges from
             // the current mapping
             for (Integer i : mapped) { 
-                for (Integer adj : g.getAdjacentVertices(i)) {
+                Set<Integer> adjacent = g.getAdjacentVertices(i);
+                // some vertices may not have any other adjacent vertices
+                if (adjacent == null)
+                    continue;
+                for (Integer adj : adjacent) {
                     if (!mapped.contains(adj))
                         tOut.add(adj);
                 }
@@ -413,14 +461,24 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         return tIn;
     } 
 
+    /**
+     * Returns those vertices that can be reached from {@code vertex} or the empty
+     * set if {@code g} is not a directed graph.
+     */
     private Set<Integer> successors(Graph g, Integer vertex) {
         return (g instanceof DirectedGraph) 
             ? ((DirectedGraph)g).successors(vertex)
             : new HashSet<Integer>();
     }
 
-    @SuppressWarnings("unchecked") // FIXME
+    /**
+     * Returns those vertices that point to from {@code vertex} or all the
+     * adjacent vertices if {@code g} is not a directed graph.
+     */
+    @SuppressWarnings("unchecked") 
     private Set<Integer> predecessors(Graph g, Integer vertex) {
+        // The DirectedGraph cast seems to change the return type of the set
+        // from Set<Integer> to just Set
         return (g instanceof DirectedGraph) 
             ? ((DirectedGraph)g).predecessors(vertex)
             : g.getAdjacentVertices(vertex);

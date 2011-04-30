@@ -30,18 +30,26 @@ import java.util.Set;
 
 
 /**
- * An implementation of the EnumerateSubgraphs method from Wernicke (2006).  For
- * full details see:
- * <ul>
+ * An implementation of the EnumerateSubgraphs (ESU) method from Wernicke
+ * (2006).  For full details see: <ul>
  *
  * <li style="font-family:Garamond, Georgia, serif"> Sebastian
  *   Wernicke. Efficient detection of network motifs. <i>in</i> IEEE/ACM
  *   Transactions on Computational Biology and Bioinformatics.
  * </li>
+ * </ul>
  *
- * </ul> This implementation does not store the entire set of possible subgraphs
+ * In summary, this iterator returns all possible size-<i>k</i> subgraphs of the
+ * input graph through an efficient traversal.
+ *
+ * <p> This implementation does not store the entire set of possible subgraphs
  * in memory at one time, but may hold some arbitrary number of them in memory
  * and compute the rest as needed.
+ *
+ * <p> This class is not thread-safe and does not support the {@link #remove()}
+ * method.
+ *
+ * @author David Jurgens
  */
 public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
 
@@ -56,8 +64,16 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
     public SubgraphIterator(Graph<T> g, int subgraphSize) {
         this.g = g;
         this.subgraphSize = subgraphSize;
+        if (g == null)
+            throw new NullPointerException();
+        if (subgraphSize < 1)
+            throw new IllegalArgumentException("size must be positive");
+        if (subgraphSize > g.order())
+            throw new IllegalArgumentException("size must not be greater " 
+                + "than the number of vertices in the graph");
         vertexIter = g.vertices().iterator();
         nextSubgraphs = new ArrayDeque<Graph<T>>();
+        advance();
     }
 
     private void advance() {
@@ -65,7 +81,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
             Integer nextVertex = vertexIter.next();
             // Determine the set of vertices that are greater than this vertex
             Set<Integer> extension = new HashSet<Integer>();
-            for (Integer v : g.vertices())
+            for (Integer v : g.getAdjacentVertices(nextVertex))
                 if (v > nextVertex)
                     extension.add(v);
             Set<Integer> subgraph = new HashSet<Integer>();
@@ -79,7 +95,9 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
         // If we found a set of vertices that match the required subgraph size,
         // create a snapshot of it from the original graph and 
         if (subgraph.size() == subgraphSize) {
-            nextSubgraphs.add(g.subgraph(subgraph));
+            Graph<T> sub = g.subgraph(subgraph);
+            nextSubgraphs.add(sub);
+            System.out.printf("found subgraph for %s: %s%n", subgraph, sub);
             return;
         }
         Iterator<Integer> iter = extension.iterator();
@@ -88,10 +106,33 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
             Integer w = iter.next();
             iter.remove();
 
+            // The next extension is formed from all edges to vertices whose
+            // indices are greater than the currently selected vertex, w, and
+            // that point to a vertex in the exclusive neighborhood of w.  The
+            // exclusive neighborhood is defined relative to a set of vertices
+            // N: all vertices that are adjacent to w but are not in N or the
+            // neighbors of N.  In this case, N is the current subgraph's
+            // vertices
             Set<Integer> nextExtension = new HashSet<Integer>(extension);
+            next_vertex:
             for (Integer n : g.getAdjacentVertices(w))
-                if (n > v)
+                // Perform the fast vertex value test and check for whether the
+                // vertex is currently in the subgraph
+                if (n > v && !subgraph.contains(n)) {
+                    // Then perform the most expensive exclusive-neighborhood
+                    // test that looks at the neighbors of the vertices in the
+                    // current subgraph
+                    for (int inCur : subgraph) {
+                        // If we find n within the neighbors of a vertex in the
+                        // current subgraph, then skip the remaining checks and
+                        // examine another vertex adjacent to w.
+                        if (g.getAdjacentVertices(inCur).contains(n))
+                            continue next_vertex;
+                    }
+                    // Otherwise, n is in the exclusive neighborhood of w, so
+                    // add it to the future extension.
                     nextExtension.add(n);
+                }
             Set<Integer> nextSubgraph = new HashSet<Integer>(subgraph);
             nextSubgraph.add(w);
             
@@ -100,7 +141,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
     }
 
     public boolean hasNext() {
-        return nextSubgraphs.isEmpty() && !vertexIter.hasNext();
+        return !nextSubgraphs.isEmpty();
     }
 
     public Graph<T> next() {

@@ -22,11 +22,13 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -375,14 +377,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      * Returns a description of the graph as the sequence of its edges.
      */
     public String toString() {
-        StringBuilder sb = new StringBuilder(numEdges * 8);
-        sb.append('{');
-        for (EdgeSet<T> edges : vertexToEdges.values()) {
-            for (T e : edges) 
-                sb.append(e.toString()).append(',');
-        }
-        sb.setCharAt(sb.length() - 1, '}');
-        return sb.toString();
+        // REMINDER: make this more efficient with a StringBuilder
+        return "{ vertices: " + vertices() + ", edges: " + edges() + "}";
     }
 
     /**
@@ -1011,7 +1007,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             if (vertexInBacking == null)
                 return null;
             EdgeSet<T> adjList = vertexToEdges.get(vertexInBacking);
-
+            assert adjList != null 
+                : "subgraph vertex has no EdgeSet in the backing graph";
             return new SubgraphAdjacencyListView(vertex, adjList);
         }
         
@@ -1025,6 +1022,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             if (vertexInBacking == null)
                 return null;
             EdgeSet<T> adjList = vertexToEdges.get(vertexInBacking);
+            assert adjList != null 
+                : "subgraph vertex has no EdgeSet in the backing graph";
             return new SubgraphAdjacentVerticesView(adjList.connected());
         }
         
@@ -1145,6 +1144,10 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             Set<Integer> verticesInBacking = vertexMapping.inverse().keySet();
             for (Integer v : vertexMapping.values()) {
                 EdgeSet<T> edges = AbstractGraph.this.getEdgeSet(v);
+                // Some vertices may not have any edges so their EdgeSet will be
+                // null
+                if (edges == null)
+                    continue;
                 for (Integer c : edges.connected()) {
                     // Because the backing graph maintains symmetric edges for
                     // all the edge sets, we need to avoid double counting an
@@ -1182,6 +1185,11 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             return new Subgraph(mapped, this);
         }
         
+        public String toString() {
+            return "{ vertices: " + vertices() + ", edges: " + edges() + "}";
+        }
+
+
         /**
          * {@inheritDoc}
          */
@@ -1470,60 +1478,77 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             }
 
             public int size() {
-                int sz = 0;
-                Iterator<T> it = iterator();
-                while (it.hasNext()) {
-                    it.next();
-                    sz++;
-                }
-                return sz;
+                return Subgraph.this.size();
             }
 
             /**
-             * An {@code Iterator} that filters throguh all the edges in the
-             * backing graph, returning only those that
-             * are present in the current subgraph.
+             * An {@code Iterator} that combines all the iterators returned by
+             * {@link #getAdjacencyList(int)} for the vertices in this subgraph
+             * and filters the results to remove symmetric edges found in two
+             * lists.
              */
             private class SubgraphEdgeIterator implements Iterator<T> {
 
-                /**
-                 * An iterator over all of the edges in the backing graph
-                 */
-                private Iterator<T> allEdges;
+                private final Iterator<Iterator<T>> adjacencyLists;
 
-                /**
-                 * The next edge to return
-                 */
+                private Iterator<T> curIter;
+
                 private T next;
+                
+                private T cur;
 
                 /**
-                 * The current edge that was just returned.
-                 */
-                private T cur; 
-
-                /**
-                 * Creates an iterator over the edges in the current subgraph
-                 * for the vertex in the 
+                 * Creates an iterator that combines the adjacency lists
+                 * iterators for all the vertices in this subgraph.
                  */
                 public SubgraphEdgeIterator() {
-                    allEdges = AbstractGraph.this.edges().iterator();
-                    cur = null;
+                    List<Iterator<T>> iters = 
+                        new ArrayList<Iterator<T>>(vertexMapping.size());
+                    Subgraph.this.checkForUpdates();
+                    for (Map.Entry<Integer,Integer> e 
+                             : vertexMapping.entrySet()) {
+                        EdgeSet<T> adjList = getEdgeSet(e.getValue());
+                        assert adjList != null : "subgraph modified prior to " +
+                            "iteration";
+                        Set<T> subAdjList = 
+                            new SubgraphAdjacencyListView(e.getKey(), adjList);
+//                         System.out.printf("%d -> %d : %s%n", e.getKey(), e.getValue(), subAdjList);
+                        iters.add(subAdjList.iterator());
+                    }
+                    adjacencyLists = iters.iterator();
                     advance();
                 }
 
                 private void advance() {
                     next = null;
-                    while (allEdges.hasNext()) {
-                        T n = allEdges.next();
-                        // See if this edge points to any of the vertices in the
-                        // current subgraph
-                        if ((vertexMapping.inverse().containsKey(n.from())
-                                 || vertexMapping.inverse().containsKey(n.to()))
-                                && n.to() < n.from()) {
-                            next = n;
-                            break;
-                        }
-                    }
+                    // If there are no more elements in the current adjacency
+                    // list and there are no futher adjacency lists to use, the
+                    // iterator is finished
+                    if ((curIter == null || !curIter.hasNext()) 
+                            && !adjacencyLists.hasNext())
+                        return;
+
+                    do {
+                        // Find an edge iterator with at least one edge
+                        while ((curIter == null || !curIter.hasNext()) 
+                                   && adjacencyLists.hasNext())                           
+                            curIter = adjacencyLists.next();
+
+                        // If we didn't find one, short circuit
+                        if (curIter == null || !curIter.hasNext())
+                            return;                   
+
+                        // Get the next edge to examine
+                        T e = curIter.next();
+
+                        // The backing graph stores symmetric edges in order to
+                        // maintain the adjacency lists.  To account for this,
+                        // we toss out edges that will have their symmetric
+                        // version counted, using the edge's to and from to make
+                        // the distinction.
+                        if (e.from() < e.to()) 
+                            next = e;
+                    } while (next == null); 
                 }
 
                 public boolean hasNext() {
@@ -1531,27 +1556,18 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                 }
 
                 public T next() {
-                    if (next == null)
+                    if (!hasNext())
                         throw new NoSuchElementException();
-
-                    // Get the next edge, which still has indices to the
-                    // backing graph
                     cur = next;
                     advance();
-                    
-                    // Because the edge has the wrong vertices, make a call to
-                    // the subclass to create a view with the correct indices.
-                    Integer v1 = vertexMapping.inverse().get(cur.from());
-                    Integer v2 = vertexMapping.inverse().get(cur.to());
-                    T correctedView = cur.<T>clone(v1, v2);
-                    return correctedView;
+                    return cur;                    
                 }
 
                 public void remove() {
                     if (cur == null) 
                         throw new NoSuchElementException("No edge to remove");
-                    cur = null;
                     Subgraph.this.removeEdge(cur);
+                    cur = null;
                 }
             }
         }

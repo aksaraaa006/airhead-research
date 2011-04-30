@@ -83,6 +83,10 @@ public class Statistics {
         return entropy;
     }
 
+    public static int factorial(int i) {
+        return -1;
+    }
+
     /**
      * Returns the base-2 logarithm of {@code d}.
      */
@@ -174,8 +178,12 @@ public class Statistics {
      * @param range the total number of values in the sequence.
      */
     public static BitSet randomDistribution(int valuesToSet, int range) {
-        if (valuesToSet >= range)
-            throw new IllegalArgumentException("too many values for range");
+        if (valuesToSet < 0 || range <= 0) 
+            throw new IllegalArgumentException("must specificy a positive " +
+                "range and non-negative number of values to set.");       
+        if (valuesToSet > range)
+            throw new IllegalArgumentException("too many values (" + valuesToSet
+                + ") for range " + range);
         BitSet values = new BitSet(range);
         // We will be setting fewer than half of the values, so set everything
         // to false, and mark true until the desired number is reached
