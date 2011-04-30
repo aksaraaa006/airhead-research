@@ -568,7 +568,7 @@ public class SparseUndirectedGraphTests {
         
         Iterator<Edge> iter = edges.iterator();
         while (iter.hasNext()) {
-            System.out.println(iter.next());
+            iter.next();
             iter.remove();
         }
         assertEquals(0, g.size());
@@ -597,7 +597,6 @@ public class SparseUndirectedGraphTests {
             
             for (int j = 0; j < 10; ++j) {
                 Edge e = new SimpleEdge(i, j);
-                System.out.println(e);
                 if (i == j)
                     assertFalse(adjacencyList.contains(e));
                 else
@@ -1106,6 +1105,61 @@ public class SparseUndirectedGraphTests {
         assertEquals(4, subgraph.order());
         assertEquals(9, g.order());
         assertEquals( (4*3)/2, subgraph.size());
+    }
+
+
+    /******************************************************************
+     *
+     *
+     * SubgraphEdgeView tests 
+     *
+     *
+     ******************************************************************/
+
+    @Test public void testSubgraphEdges() {
+        Graph<Edge> g = new SparseUndirectedGraph();
+
+        // fully connected
+        for (int i = 0; i < 10; i++)  {
+            g.addVertex(i);
+        }
+        g.addEdge(new SimpleEdge(0, 1));
+        g.addEdge(new SimpleEdge(0, 2));
+        g.addEdge(new SimpleEdge(1, 2));
+
+        assertEquals(3, g.size());
+
+        Set<Integer> verts = new HashSet<Integer>();
+        for (int i = 0; i < 3; ++i)
+            verts.add(i);
+
+        Graph<Edge> sub = g.subgraph(verts);
+        assertEquals(3, sub.order());
+        assertEquals(3, sub.size());
+     
+        Set<Edge> edges = sub.edges();
+        assertEquals(3, edges.size());
+        int j = 0; 
+        Iterator<Edge> iter = edges.iterator();
+        while (iter.hasNext()) {
+            iter.next();
+            j++;
+        }
+        assertEquals(3, j);
+
+        verts.clear();
+        for (int i = 3; i < 6; ++i)
+            verts.add(i);
+
+        sub = g.subgraph(verts);
+        assertEquals(3, sub.order());
+        assertEquals(0, sub.size());
+    
+        edges = sub.edges();
+        assertEquals(0, edges.size());
+
+        iter = edges.iterator();
+        assertFalse(iter.hasNext());
     }
 
 

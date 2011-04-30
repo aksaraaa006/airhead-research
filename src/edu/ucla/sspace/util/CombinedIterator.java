@@ -67,8 +67,7 @@ public class CombinedIterator<T> implements Iterator<T> {
      * provided collection.
      */
     public CombinedIterator(Collection<Iterator<T>> iterators) {
-	iters = new ArrayDeque<Iterator<T>>();
-	iters.addAll(iterators);
+	iters = new ArrayDeque<Iterator<T>>(iterators);
 	current = iters.poll();
     }
 
