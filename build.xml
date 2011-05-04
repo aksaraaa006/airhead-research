@@ -489,6 +489,7 @@
       <test name="edu.ucla.sspace.graph.SamplingSubgraphIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.OpenIntSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SparseUndirectedGraphTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.SparseDirectedGraphTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SparseSymmetricEdgeSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SubgraphIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.VF2IsomorphismTesterTests" todir="${report.dir}"/>

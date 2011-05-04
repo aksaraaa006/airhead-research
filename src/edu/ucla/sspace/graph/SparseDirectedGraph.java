@@ -22,21 +22,25 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import edu.ucla.sspace.util.OpenIntSet;
-
 
 /**
- * A undirected {@link Graph} implementation backed by a adjacency matrix.  This
- * class performs best for graphs with a small number of edges.
+ * An implementation of {@link DirectedGraph} that uses a sparse backing
+ * representation.  This implementation assumes that the total number of edges
+ * is less than the {@code n}<sup>2</sup> possible, where {@code n} is the
+ * number of vertices.
+ *
+ * <p> This class supports all optional {@link Graph} and {@link DirectedGraph}
+ * methods.  All returned {@link DirectedEdge}-based collections will reflect
+ * the state of the graph and may be modified to change the graph; i.e., adding
+ * an edge to the adjacency list of a vertex or edge list of the graph will add
+ * that edge in the backing graph.  Adding vertices by adding to the {@link
+ * #vertices()} set is supported.  Adding edges by adding a vertex to the set of
+ * adjacent vertex is <i>not</i> supported.
  *
  * @author David Jurgens
  */
@@ -45,10 +49,32 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Creates an empty directed graph
+     */
     public SparseDirectedGraph() { }
+
+    /**
+     * Creates a directed graph with the provided vertices
+     */
+    public SparseDirectedGraph(Set<Integer> vertices) {
+        super(vertices);
+    }
+
+    /**
+     * Creates a directed graph with a copy of all the vertices and edges in
+     * {@code g}.
+     */
+    public SparseDirectedGraph(Graph<? extends DirectedEdge> g) {
+        for (Integer v : g.vertices())
+            addVertex(v);
+        for (DirectedEdge e : g.edges())
+            addEdge(e);
+    }
     
     /**
-     * Creates a sparse edge set that treats all edges as symmetric.
+     * Creates an {@link EdgeSet} for storing {@link DirectedEdge} instances for
+     * the specified vertex.
      */
     @Override protected SparseDirectedEdgeSet createEdgeSet(int vertex) {
         return new SparseDirectedEdgeSet(vertex);
@@ -90,16 +116,33 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
      * {@inheritDoc}
      */
     public Set<Integer> predecessors(int vertex) {
-        throw new Error();
+        Set<Integer> preds = new HashSet<Integer>();
+        for (DirectedEdge e : inEdges(vertex))
+            preds.add(e.from());
+        return preds;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public DirectedGraph subgraph(Set<Integer> vertices) {
+        Graph<DirectedEdge> subgraph = super.subgraph(vertices);
+        return new SubgraphAdaptor(subgraph);
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<Integer> successors(int vertex) {
-        throw new Error();
+        Set<Integer> succs = new HashSet<Integer>();
+        for (DirectedEdge e : outEdges(vertex))
+            succs.add(e.to());
+        return succs;
     }
 
+    /***
+     * 
+     */
     private class EdgeSetDecorator extends AbstractSet<DirectedEdge> {
 
         private final Set<DirectedEdge> edges;
@@ -169,6 +212,120 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
                 throw new UnsupportedOperationException();
             }
         }
+    }
+
+    /**
+     * A decorator over the {@link Graph} returned by {@link #subgraph(Set)}
+     * that extends the functionality to support the {@link DirectedGraph}
+     * interface.
+     */ 
+    private class SubgraphAdaptor extends GraphAdaptor<DirectedEdge> 
+            implements DirectedGraph, java.io.Serializable  {
+
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * Constructs a new adaptor over the provided subgraph.
+         */
+        public SubgraphAdaptor(Graph<DirectedEdge> subgraph) {
+            super(subgraph);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int inDegree(int vertex) {
+            int degree = 0;
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return 0;
+            for (DirectedEdge e : edges) {
+                if (e.to() == vertex)
+                    degree++;
+            }
+            return degree;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<? extends DirectedEdge> inEdges(int vertex) {
+            // REMINDER: this is probably best wrapped with yet another
+            // decorator class to avoid the O(n) penality of iteration over all
+            // the edges
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return null;
+
+            Set<DirectedEdge> in = new HashSet<DirectedEdge>();
+            for (DirectedEdge e : edges) {
+                if (e.to() == vertex)
+                    in.add(e);
+            }
+            return in;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int outDegree(int vertex) {
+            int degree = 0;
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return 0;
+            for (DirectedEdge e : edges) {
+                if (e.from() == vertex)
+                    degree++;
+            }
+            return degree;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<? extends DirectedEdge> outEdges(int vertex) {
+            // REMINDER: this is probably best wrapped with yet another
+            // decorator class to avoid the O(n) penality of iteration over all
+            // the edges
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return null;
+            Set<DirectedEdge> out = new HashSet<DirectedEdge>();
+            for (DirectedEdge e : edges) {
+                if (e.from() == vertex)
+                    out.add(e);
+            }
+            return out;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<Integer> predecessors(int vertex) {
+            Set<Integer> preds = new HashSet<Integer>();
+            for (DirectedEdge e : inEdges(vertex))
+                preds.add(e.from());
+            return preds;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<Integer> successors(int vertex) {
+            Set<Integer> succs = new HashSet<Integer>();
+            for (DirectedEdge e : outEdges(vertex))
+                succs.add(e.to());
+            return succs;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public DirectedGraph subgraph(Set<Integer> vertices) {
+            Graph<DirectedEdge> g = super.subgraph(vertices);
+            return new SubgraphAdaptor(g);
+        }
+
     }
 
 }

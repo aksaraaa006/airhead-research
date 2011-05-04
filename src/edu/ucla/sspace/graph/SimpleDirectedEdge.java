@@ -65,6 +65,6 @@ public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
     }
 
     public String toString() {
-        return "(" + from + "<-->" + to + ")";
+        return "(" + from + "->" + to + ")";
     }
 }

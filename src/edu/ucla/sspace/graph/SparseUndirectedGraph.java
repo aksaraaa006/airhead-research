@@ -21,22 +21,22 @@
 
 package edu.ucla.sspace.graph;
 
-import java.util.AbstractSet;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
-
-import edu.ucla.sspace.util.OpenIntSet;
 
 
 /**
- * A undirected {@link Graph} implementation backed by a adjacency matrix.  This
- * class performs best for graphs with a small number of edges.
+ * An undirected implementation of {@link Graph} that uses a sparse backing
+ * representation.  This implementation assumes that the total number of edges
+ * is less than the {@code n}<sup>2</sup> possible, where {@code n} is the
+ * number of vertices.
+ *
+ * <p> This class supports all optional {@link Graph}.  All returned {@link
+ * Edge}-based collections will reflect the state of the graph and may be
+ * modified to change the graph; i.e., adding an edge to the adjacency list of a
+ * vertex or edge list of the graph will add that edge in the backing graph.
+ * Adding vertices by adding to the {@link #vertices()} set is supported.
+ * Adding edges by adding a vertex to the set of adjacent vertex is <i>not</i>
+ * supported.
  *
  * @author David Jurgens
  */
@@ -44,10 +44,27 @@ public class SparseUndirectedGraph extends AbstractGraph<Edge,SparseUndirectedEd
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Creates an empty undirected graph
+     */
     public SparseUndirectedGraph() { }
 
+    /**
+     * Creates an undirected graph with no edges and the provided set of vertices
+     */
     public SparseUndirectedGraph(Set<Integer> vertices) {
         super(vertices);
+    }
+
+    /**
+     * Creates an undirected graph with a copy of all the vertices and edges in
+     * {@code g}.
+     */
+    public SparseUndirectedGraph(Graph<? extends Edge> g) {
+        for (Integer v : g.vertices())
+            addVertex(v);
+        for (Edge e : g.edges())
+            addEdge(e);
     }
     
     /**
