@@ -79,6 +79,7 @@ public class VF2IsomorphismTesterTests {
         g2.addEdge(new SimpleEdge(4, 5));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
+
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 

@@ -68,7 +68,7 @@ public class CombinedIterator<T> implements Iterator<T> {
      */
     public CombinedIterator(Collection<Iterator<T>> iterators) {
 	iters = new ArrayDeque<Iterator<T>>(iterators);
-	current = iters.poll();
+        advance();
     }
 
     /**
@@ -76,9 +76,11 @@ public class CombinedIterator<T> implements Iterator<T> {
      * elements.
      */
     private void advance() {
-	if (!current.hasNext()) {
-	    current = iters.poll();
-	}
+        if (current == null || !current.hasNext()) {
+            do {
+                current = iters.poll();
+            } while (current != null && !current.hasNext());
+        }
     }
 
     /**

@@ -45,6 +45,17 @@ import java.util.Set;
  * Implementations may enforce any, some, or all of these behaviors to fully
  * define their behavior.
  *
+ * <p> All implementations are also encourage to support two general purpose
+ * constructors: a no-arg constructor that creates an empty graph, and a second
+ * constructor that takes in a {@link Graph} instance of the appropriate type
+ * and makes a copy of its vertices and edges.  This second constructor allows
+ * the user to easily make a copy of the graph.
+ *
+ * <p> All operations that may modify the state of the {@code Graph} are
+ * optional.  Implementations that are read-only (or only support some subset of
+ * the operations) should throw an {@link UnsupportedOperationException} if such
+ * methods are called.
+ *
  * @author David Jurgens
  */
 public interface Graph<E extends Edge> {
@@ -115,7 +126,7 @@ public interface Graph<E extends Edge> {
      * Returns {@code true} if this graph contains an edge of the specific type
      * between {@code vertex1} and {@code vertex2}.
      */
-    boolean containsEdge(E e);
+    boolean containsEdge(Edge e);
 
     /**
      * Returns the set of edges contained in this graph.  It is expected that
@@ -147,11 +158,6 @@ public interface Graph<E extends Edge> {
     boolean hasCycles();
 
     /**
-     * Returns the number of edges in this graph.
-     */
-    int size();
-
-    /**
      * Returns the number of vertices in this graph.
      */
     int order();
@@ -167,12 +173,27 @@ public interface Graph<E extends Edge> {
      * (optional operation).
      */
     boolean removeVertex(int vertex);    
+
+    /**
+     * Returns the number of edges in this graph.
+     */
+    int size();
     
     /**
-     * Returns a view of this graph containing only the specified vertices.
-     * Only edges connecting two vertices in the provided set will be viewable
-     * in the subgraph.  Any changes to the subgraph will be reflected in this
-     * graph and vice versa.
+     * Returns a view of this graph containing only the specified vertices where
+     * the returned graph's vertinces are renamed (0, ..., n).  This renaming is
+     * to ensure a conceptual distance between the "new" returned graph and the
+     * backing graph in terms of vertex labeling; for example, adding vertex
+     * <i>n</i> to the subgraph may not necessarily correspond to vertex
+     * <i>n</i> in the backing graph.
+     *
+     * <p> Only edges connecting two vertices in the provided set will be
+     * viewable in the subgraph.  Any changes to the subgraph will be reflected
+     * in this graph and vice versa.  
+     *
+     * <p> This view allows for direct manipulation of a part of the graph.  For
+     * example, clearing this subgraph will remove all of its corresponding
+     * vertices and edges from the backing graph.
      *
      * @param vertices the vertices to include in the subgraph
      *
@@ -184,6 +205,5 @@ public interface Graph<E extends Edge> {
     /**
      * Returns the set of vertices in this graph.
      */
-    Set<Integer> vertices();
-    
+    Set<Integer> vertices();    
 }

@@ -44,24 +44,78 @@ import java.util.Set;
  * </li>
  * </ul>
  *
+ * <p> Callers specify how much of the backing graph should be sampled using an
+ * array of probabilities.  Each probability corresponds to how likely a
+ * subgraph with {@code k} vertices will be expanded to include {@code k+1}
+ * vertices.  The product of all the probabilities is the percentage of the
+ * subgraphs that are expected to be sampled.  For example, to sample 25% of the
+ * size-3 subgraphs, the probilities {@code [1, 1, .25]} or {@code [1, .5, .5]}
+ * may be used.  In general, it is preferrable to set only the last probability
+ * to the percentage of subgraphs desired (as in the first of the previous two
+ * examples) as it is less likely to prune away unintentionally larger portions
+ * of the possible subgraph space.  See the reference for further details on
+ * performance.
+ *
  * <p> This class is not thread-safe and does not support the {@link #remove()}
  * method.
  *
  * @author David Jurgens
  */
 public class SamplingSubgraphIterator<T extends Edge> 
-        implements Iterator<Graph<T>> {
+        implements Iterator<Graph<T>>, java.io.Serializable  {
 
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * The graph whose subgraphs are being iterated
+     */
     private final Graph<T> g;
 
+    /**
+     * The size of the subgraph to return
+     */
     private final int subgraphSize;
 
+    /**
+     * An interator over the vertices of {@code g}.
+     */
     private Iterator<Integer> vertexIter;
 
+    /**
+     * An internal queue of the next sequence of subgraphs to return.  This
+     * queue is periodically filled through expanding the next series of
+     * subgraphs for a vertex.
+     */
     private Queue<Graph<T>> nextSubgraphs;
 
+    /**
+     * An array of probabilities where each index {@code i} corresponds to the
+     * probability of expanding the subgraph at depth {@code i}.  This array is
+     * the same size as the the number of desired vertices in the subgraph.
+     */
     private final double[] traversalProbabilitiesAtDepth;
 
+    /**
+     * Constructs an iterator over all the subgraphs of {@code g} with the
+     * specified subgraph size, where the list of probabilities is used to
+     * decide probabilistically whether the next level of expansion should be
+     * taken.
+     *
+     * @param g a graph
+     * @param subgraphSize the size of the subgraphs to return
+     * @param traversalProbabilitiesAtDepth an array of probabilities where each
+     *        index {@code i} corresponds to the probability of expanding the
+     *        subgraph at depth {@code i}.  This array must be the same size as
+     *        the the number of desired vertices in the subgraph.
+     *
+     * @throws IllegalArgumentException if <ul><li>subgraphSize is less than 1
+     *         or is greater than the number of vertices of {@code g}, <li> the
+     *         number of traversal probabilities does not equal the size of the
+     *         subgraph, or <li> the any of the probabilities are outsize the
+     *         range (0, 1].
+     * @throws NullPointerException if {@code g} or {@code
+     *         traversalProbabilitiesAtDepth} is {@code null}
+     */
     public SamplingSubgraphIterator(Graph<T> g, int subgraphSize,
                                     double[] traversalProbabilitiesAtDepth) {
         this.g = g;
@@ -93,8 +147,13 @@ public class SamplingSubgraphIterator<T extends Edge>
         advance();
     }
 
+    /**
+     * If the {@code nextSubgraphs} queue is empty, expands the graph frontier
+     * of the next available vertex, if one exists, and the subgraphs reachable
+     * from it to the queue.
+     */
     private void advance() {
-        if (nextSubgraphs.isEmpty() && vertexIter.hasNext()) {
+        while (nextSubgraphs.isEmpty() && vertexIter.hasNext()) {
             Integer nextVertex = vertexIter.next();
             // Determine the set of vertices that are greater than this vertex
             Set<Integer> extension = new HashSet<Integer>();
@@ -107,6 +166,16 @@ public class SamplingSubgraphIterator<T extends Edge>
         }
     }
 
+    /**
+     * For the set of vertices in {@code subgraph}, and the next set of
+     * reachable vertices in {@code extension}, creates the non-duplicated
+     * subgraphs and adds them to {@code nextSubgraphs}.
+     *
+     * @param subgraph the current set of vertices making up the subgraph
+     * @param extension the set of vertices that may be added to {@code
+     *        subgraph} to expand the current subgraph
+     * @param v the vertex from which the next expansion will take place
+     */
     private void extendSubgraph(Set<Integer> subgraph, Set<Integer> extension, 
                                 Integer v) {
         // If we found a set of vertices that match the required subgraph size,
@@ -199,10 +268,16 @@ public class SamplingSubgraphIterator<T extends Edge>
         }
     }
 
+    /**
+     * Returns {@code true} if there are more subgraphs to return
+     */
     public boolean hasNext() {
         return !nextSubgraphs.isEmpty();
     }
 
+    /**
+     * Returns the next subgraph from the backing graph.
+     */ 
     public Graph<T> next() {
         if (nextSubgraphs.isEmpty()) 
             throw new NoSuchElementException();
@@ -215,7 +290,10 @@ public class SamplingSubgraphIterator<T extends Edge>
         return next;
     }
 
-    public void remove() {
+   /**
+     * Throws an {@link UnsupportedOperationException} if called.
+     */ 
+     public void remove() {
         throw new UnsupportedOperationException(
             "Cannot remove subgraphs during iteration");
     }

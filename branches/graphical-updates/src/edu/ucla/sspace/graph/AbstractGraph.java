@@ -39,8 +39,21 @@ import edu.ucla.sspace.util.IntegerMap;
 
 
 /**
- * A undirected {@link Graph} implementation backed by a adjacency matrix.  This
- * class performs best for graphs with a small number of edges.
+ * A base class for many {@link Graph} implementations.  The core functionality
+ * of this class is provided by the {@link EdgeSet} instances returned by the
+ * subclass for specifying how edges are to be stored and which edges are valid.
+ * All calls to these sets are wrapped to ensure proper state is maintained by
+ * this {@code AbstractGraph} instance.
+ *
+ * <p> This class support all optional {@link Graph} methods provided that the
+ * {@link EdgeSet} implementations used by the subclass also support them.
+ * Furthermore, all methods that return collections of {@link Edge} instance can
+ * be used to modify the state of this graph by any of their respective mutation
+ * methods (e.g., adding or removing {@code Edge} instances).  In addition,
+ * changes to the set of vertices returned by {@link #vertices()} has the same
+ * effect as adding and removing vertices to this graph.  Subclasses that wish
+ * to avoid this behavior may override these calls and wrap this classes return
+ * value in a {@link Collections#unmodifiableSet(Set)}.
  *
  * @author David Jurgens
  */
@@ -130,14 +143,14 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
     public boolean addEdge(T e) {
         EdgeSet<T> from = addIfAbsent(e.from());
         EdgeSet<T> to = addIfAbsent(e.to());
-        
-        boolean isNew = from.add(e);                   
-        if (isNew) 
-            numEdges++;
+
         // Add this edge for the vertex to which the edge is pointing.  This
         // double-add behavior is necessary to ensure that the EdgeSet for each
         // vertices contains all the edges that connect to that vertex.
+        boolean isNew = from.add(e);
         to.add(e);
+        if (isNew) 
+            numEdges++;
         
         return isNew;
     }
@@ -177,7 +190,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      */
     public boolean containsEdge(int vertex1, int vertex2) {
         EdgeSet<T> e1 = getEdgeSet(vertex1);
-        return e1 != null && e1.connects(vertex1);
+        return e1 != null && e1.connects(vertex2);
     }
 
     /**
@@ -695,6 +708,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
 
             private T cur;
             
+            private int curRoot = -1;
+            
             public EdgeViewIterator() {
                 vertices = vertexToEdges.values().iterator();
                 advance();
@@ -711,8 +726,11 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                     return;
                 do {
                     // Find an edge iterator with at least one edge
-                    while ((edges == null || !edges.hasNext()) && vertices.hasNext())
-                        edges = vertices.next().iterator();
+                    while ((edges == null || !edges.hasNext()) && vertices.hasNext()) {
+                        S edgeSet = vertices.next();
+                        curRoot = edgeSet.getRoot();
+                        edges = edgeSet.iterator();
+                    }
                     // If we didn't find one, short circuit
                     if (edges == null || !edges.hasNext())
                         return;                   
@@ -724,7 +742,12 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                     // we toss out edges that will have their symmetric
                     // version counted, using the edge's to and from to make
                     // the distinction.
-                    if (e.from() < e.to()) 
+//                     System.out.printf("Root: %d, e.from(): %d, e.to(): %d -> %s%n",
+//                                       curRoot, e.from(), e.to(), 
+//                                       (curRoot == e.from() && curRoot < e.to())
+//                                       || (curRoot == e.to() && curRoot < e.from()));
+                    if ((curRoot == e.from() && curRoot < e.to())
+                        || (curRoot == e.to() && curRoot < e.from()))
                         next = e;
                 } while (next == null); 
             }
@@ -961,8 +984,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
          * {@inheritDoc}
          */
         public boolean containsEdge(int vertex1, int vertex2) {
-            return (!(vertexMapping.containsKey(vertex1) 
-                      && vertexMapping.containsKey(vertex2)))
+            return (vertexMapping.containsKey(vertex1) 
+                    && vertexMapping.containsKey(vertex2))
                 && AbstractGraph.this.containsEdge(
                        vertexMapping.get(vertex1),
                        vertexMapping.get(vertex2));
@@ -1489,9 +1512,11 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
              */
             private class SubgraphEdgeIterator implements Iterator<T> {
 
-                private final Iterator<Iterator<T>> adjacencyLists;
+                private final Iterator<SubgraphAdjacencyListView> adjacencyLists;
 
                 private Iterator<T> curIter;
+
+                private int curRoot;
 
                 private T next;
                 
@@ -1502,20 +1527,33 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                  * iterators for all the vertices in this subgraph.
                  */
                 public SubgraphEdgeIterator() {
-                    List<Iterator<T>> iters = 
-                        new ArrayList<Iterator<T>>(vertexMapping.size());
                     Subgraph.this.checkForUpdates();
+
+                    // Create a list for all the wrapped adjacency lists of the
+                    // vertices in this subgraph
+                    List<SubgraphAdjacencyListView> lists = 
+                        new ArrayList<SubgraphAdjacencyListView>(
+                            vertexMapping.size());
+                    
+                    // Loop over all vertices in the subggraph and wrap their
+                    // adjacency lists
                     for (Map.Entry<Integer,Integer> e 
                              : vertexMapping.entrySet()) {
-                        EdgeSet<T> adjList = getEdgeSet(e.getValue());
+
+                        // Get the list using the backing vertex
+                        S adjList = getEdgeSet(e.getValue());
                         assert adjList != null : "subgraph modified prior to " +
                             "iteration";
-                        Set<T> subAdjList = 
+
+                        // Wrap it to only return the edges present in this
+                        // subgraph
+                        SubgraphAdjacencyListView subAdjList = 
                             new SubgraphAdjacencyListView(e.getKey(), adjList);
-//                         System.out.printf("%d -> %d : %s%n", e.getKey(), e.getValue(), subAdjList);
-                        iters.add(subAdjList.iterator());
+
+                        // Add the list to the total list of lists
+                        lists.add(subAdjList);
                     }
-                    adjacencyLists = iters.iterator();
+                    adjacencyLists = lists.iterator();
                     advance();
                 }
 
@@ -1531,8 +1569,17 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                     do {
                         // Find an edge iterator with at least one edge
                         while ((curIter == null || !curIter.hasNext()) 
-                                   && adjacencyLists.hasNext())                           
-                            curIter = adjacencyLists.next();
+                                   && adjacencyLists.hasNext()) {
+                            
+                            // Get the next adjacency list
+                            SubgraphAdjacencyListView adjList = 
+                                adjacencyLists.next();
+                            // Record what the root vertex is for it
+                            curRoot = adjList.rootInSubgraph;
+                            // Set the current iterator to return this list's
+                            // edges
+                            curIter = adjList.iterator();
+                        }
 
                         // If we didn't find one, short circuit
                         if (curIter == null || !curIter.hasNext())
@@ -1546,7 +1593,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                         // we toss out edges that will have their symmetric
                         // version counted, using the edge's to and from to make
                         // the distinction.
-                        if (e.from() < e.to()) 
+                        if ((curRoot == e.from() && curRoot < e.to())
+                                || (curRoot == e.to() && curRoot < e.from()))
                             next = e;
                     } while (next == null); 
                 }

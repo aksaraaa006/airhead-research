@@ -51,16 +51,44 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
+public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
+                                                         java.io.Serializable {
 
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * The graph whose subgraphs are being iterated
+     */
     private final Graph<T> g;
 
+    /**
+     * The size of the subgraph to return
+     */
     private final int subgraphSize;
 
+    /**
+     * An interator over the vertices of {@code g}.
+     */
     private Iterator<Integer> vertexIter;
 
+    /**
+     * An internal queue of the next sequence of subgraphs to return.  This
+     * queue is periodically filled through expanding the next series of
+     * subgraphs for a vertex.
+     */
     private Queue<Graph<T>> nextSubgraphs;
 
+    /**
+     * Constructs an iterator over all the subgraphs of {@code g} with the
+     * specified subgraph size.
+     *
+     * @param g a graph
+     * @param subgraphSize the size of the subgraphs to return
+     *
+     * @throws IllegalArgumentException if subgraphSize is less than 1 or is
+     *         greater than the number of vertices of {@code g}
+     * @throws NullPointerException if {@code g} is {@code null}
+     */
     public SubgraphIterator(Graph<T> g, int subgraphSize) {
         this.g = g;
         this.subgraphSize = subgraphSize;
@@ -76,8 +104,13 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
         advance();
     }
 
+    /**
+     * If the {@code nextSubgraphs} queue is empty, expands the graph frontier
+     * of the next available vertex, if one exists, and the subgraphs reachable
+     * from it to the queue.
+     */
     private void advance() {
-        if (nextSubgraphs.isEmpty() && vertexIter.hasNext()) {
+        while (nextSubgraphs.isEmpty() && vertexIter.hasNext()) {
             Integer nextVertex = vertexIter.next();
             // Determine the set of vertices that are greater than this vertex
             Set<Integer> extension = new HashSet<Integer>();
@@ -90,14 +123,24 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
         }
     }
 
+    /**
+     * For the set of vertices in {@code subgraph}, and the next set of
+     * reachable vertices in {@code extension}, creates the non-duplicated
+     * subgraphs and adds them to {@code nextSubgraphs}.
+     *
+     * @param subgraph the current set of vertices making up the subgraph
+     * @param extension the set of vertices that may be added to {@code
+     *        subgraph} to expand the current subgraph
+     * @param v the vertex from which the next expansion will take place
+     */
     private void extendSubgraph(Set<Integer> subgraph, Set<Integer> extension, 
                                 Integer v) {
         // If we found a set of vertices that match the required subgraph size,
         // create a snapshot of it from the original graph and 
         if (subgraph.size() == subgraphSize) {
             Graph<T> sub = g.subgraph(subgraph);
+            // System.out.printf("Made subgraph of vertices %s: %s%n", subgraph, sub);
             nextSubgraphs.add(sub);
-            System.out.printf("found subgraph for %s: %s%n", subgraph, sub);
             return;
         }
         Iterator<Integer> iter = extension.iterator();
@@ -114,6 +157,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
             // neighbors of N.  In this case, N is the current subgraph's
             // vertices
             Set<Integer> nextExtension = new HashSet<Integer>(extension);
+
             next_vertex:
             for (Integer n : g.getAdjacentVertices(w))
                 // Perform the fast vertex value test and check for whether the
@@ -140,10 +184,16 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
         }
     }
 
+    /**
+     * Returns {@code true} if there are more subgraphs to return
+     */
     public boolean hasNext() {
         return !nextSubgraphs.isEmpty();
     }
 
+    /**
+     * Returns the next subgraph from the backing graph.
+     */ 
     public Graph<T> next() {
         if (nextSubgraphs.isEmpty()) 
             throw new NoSuchElementException();
@@ -156,6 +206,9 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>> {
         return next;
     }
 
+    /**
+     * Throws an {@link UnsupportedOperationException} if called.
+     */ 
     public void remove() {
         throw new UnsupportedOperationException(
             "Cannot remove subgraphs during iteration");

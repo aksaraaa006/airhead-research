@@ -34,26 +34,26 @@ import static org.junit.Assert.*;
 /**
  *
  */
-public class SparseUndirectedGraphTests { 
+public class SparseDirectedGraphTests { 
 
     @Test public void testConstructor() {
         Set<Integer> vertices = new HashSet<Integer>();
         for (int i = 0; i < 10; ++i)
             vertices.add(i);
-        Graph<Edge> g = new SparseUndirectedGraph(vertices);
+        Graph<DirectedEdge> g = new SparseDirectedGraph(vertices);
         assertEquals(vertices.size(), g.order());
     }
 
     @Test(expected=NullPointerException.class) public void testConstructor1NullArg() {
-        Graph<Edge> g = new SparseUndirectedGraph((Set<Integer>)null);
+        Graph<DirectedEdge> g = new SparseDirectedGraph((Graph<? extends DirectedEdge>)null);
     }
 
     @Test(expected=NullPointerException.class) public void testConstructor2NullArg() {
-        Graph<Edge> g = new SparseUndirectedGraph((Graph<? extends Edge>)null);
+        Graph<DirectedEdge> g = new SparseDirectedGraph((Set<Integer>)null);
     }
 
     @Test public void testAddVertex() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         assertTrue(g.addVertex(0));
         assertEquals(1, g.order());
         assertTrue(g.containsVertex(0));
@@ -68,15 +68,15 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testContainsEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 100; ++i)
             for (int j = i + 1; j < 100; ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
 
         for (int i = 0; i < 100; ++i) {
             for (int j = i + 1; j < 100; ++j) {
-                g.containsEdge(new SimpleEdge(i, j));
-                g.containsEdge(new SimpleEdge(j, i));
+                g.containsEdge(new SimpleDirectedEdge(i, j));
+                g.containsEdge(new SimpleDirectedEdge(j, i));
                 g.containsEdge(i, j);
                 g.containsEdge(j, i);
             }
@@ -84,28 +84,28 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAddEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        g.addEdge(new SimpleEdge(0, 1));
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        g.addEdge(new SimpleDirectedEdge(0, 1));
         assertEquals(2, g.order());
         assertEquals(1, g.size());
-        assertTrue(g.containsEdge(new SimpleEdge(0, 1)));
+        assertTrue(g.containsEdge(new SimpleDirectedEdge(0, 1)));
 
-        g.addEdge(new SimpleEdge(0, 2));
+        g.addEdge(new SimpleDirectedEdge(0, 2));
         assertEquals(3, g.order());
         assertEquals(2, g.size());
-        assertTrue(g.containsEdge(new SimpleEdge(0, 2)));
+        assertTrue(g.containsEdge(new SimpleDirectedEdge(0, 2)));
 
-        g.addEdge(new SimpleEdge(3, 4));
+        g.addEdge(new SimpleDirectedEdge(3, 4));
         assertEquals(5, g.order());
         assertEquals(3, g.size());
-        assertTrue(g.containsEdge(new SimpleEdge(3, 4)));
+        assertTrue(g.containsEdge(new SimpleDirectedEdge(3, 4)));
     }
 
     @Test public void testRemoveLesserVertexWithEdges() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         for (int i = 1; i < 100; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
         }
        
@@ -116,10 +116,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testRemoveHigherVertexWithEdges() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         for (int i = 0; i < 99; ++i) {
-            Edge e = new SimpleEdge(100, i);
+            DirectedEdge e = new SimpleDirectedEdge(100, i);
             g.addEdge(e);
         }
         
@@ -131,7 +131,7 @@ public class SparseUndirectedGraphTests {
 
 
     @Test public void testRemoveVertex() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
         }
@@ -145,15 +145,15 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testRemoveEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         for (int i = 1; i < 100; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
         }
         
         for (int i = 99; i > 0; --i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             assertTrue(g.removeEdge(e));
             assertEquals(i-1, g.size());
             assertFalse(g.containsEdge(e));
@@ -162,7 +162,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testVertexIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -174,10 +174,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testEdgeIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> control = new HashSet<Edge>();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 1; i <= 100; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
             control.add(e);
         }
@@ -185,7 +185,7 @@ public class SparseUndirectedGraphTests {
         assertEquals(control.size(), g.size());
         assertEquals(control.size(), g.edges().size());
         int returned = 0;
-        for (Edge e : g.edges()) {
+        for (DirectedEdge e : g.edges()) {
             assertTrue(control.contains(e));
             returned++;
         }
@@ -193,10 +193,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testEdgeIteratorSmall() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> control = new HashSet<Edge>();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 1; i <= 5; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
             control.add(e);
         }
@@ -204,8 +204,8 @@ public class SparseUndirectedGraphTests {
         assertEquals(control.size(), g.size());
         assertEquals(control.size(), g.edges().size());
         int returned = 0;
-        for (Edge e : g.edges()) {
-            System.out.println(e);
+        for (DirectedEdge e : g.edges()) {
+            //System.out.println(e);
             assertTrue(control.contains(e));
             returned++;
         }
@@ -213,10 +213,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testEdgeIteratorSmallReverse() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> control = new HashSet<Edge>();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 1; i <= 5; ++i) {
-            Edge e = new SimpleEdge(i, 0);
+            DirectedEdge e = new SimpleDirectedEdge(i, 0);
             g.addEdge(e);
             control.add(e);
         }
@@ -224,41 +224,59 @@ public class SparseUndirectedGraphTests {
         assertEquals(control.size(), g.size());
         assertEquals(control.size(), g.edges().size());
         int returned = 0;
-        for (Edge e : g.edges()) {
-            System.out.println(e);
+        for (DirectedEdge e : g.edges()) {
+            System.out.println("reverse case: " + e);
             assertTrue(control.contains(e));
             returned++;
         }
         assertEquals(control.size(), returned);
     }
 
+    @Test public void testEdgeIteratorBidirectionalEdges() {
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+
+        // Graph from the paper
+        for (int i = 0; i < 3; i++)  {
+            for (int j = i+1; j < 3; j++)  {
+                g.addEdge(new SimpleDirectedEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(j, i));
+            }
+        }
+        
+        int numEdges = 0;
+        for (DirectedEdge e : g.edges()) {
+            numEdges++;
+        }
+        assertEquals(6, numEdges);
+    }
 
     @Test public void testAdjacentEdges() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> control = new HashSet<Edge>();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 1; i <= 100; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
             control.add(e);
         }
         
-        Set<Edge> test = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = g.getAdjacencyList(0);
         assertEquals(control, test);
     }
+
     @Test public void testAdjacencyListSize() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
         assertEquals( (10 * 9) / 2, g.size());
         assertEquals(10, g.order());
         
-        Set<Edge> adjList = g.getAdjacencyList(0);
+        Set<DirectedEdge> adjList = g.getAdjacencyList(0);
         assertEquals(9, adjList.size());
 
         adjList = g.getAdjacencyList(1);
@@ -276,18 +294,18 @@ public class SparseUndirectedGraphTests {
 
 
     @Test public void testAdjacentEdgesRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> control = new HashSet<Edge>();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 1; i <= 100; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
             control.add(e);
         }
         
-        Set<Edge> test = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = g.getAdjacencyList(0);
         assertEquals(control, test);
 
-        Edge removed = new SimpleEdge(0, 1);
+        Edge removed = new SimpleDirectedEdge(0, 1);
         assertTrue(test.remove(removed));
         assertTrue(control.remove(removed));
         assertEquals(control, test);
@@ -295,18 +313,18 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacentEdgesAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> control = new HashSet<Edge>();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 1; i <= 100; ++i) {
-            Edge e = new SimpleEdge(0, i);
+            DirectedEdge e = new SimpleDirectedEdge(0, i);
             g.addEdge(e);
             control.add(e);
         }
         
-        Set<Edge> test = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = g.getAdjacencyList(0);
         assertEquals(control, test);
 
-        Edge added = new SimpleEdge(0, 101);
+        DirectedEdge added = new SimpleDirectedEdge(0, 101);
         assertTrue(test.add(added));
         assertTrue(control.add(added));
         assertEquals(control, test);
@@ -317,12 +335,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testClear() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -340,12 +358,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testClearEdges() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -363,10 +381,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testToString() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i)
             for (int j = i + 1; j < 10; ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         g.toString();
 
         // only vertices
@@ -379,6 +397,48 @@ public class SparseUndirectedGraphTests {
         
     }
 
+    /*******
+     *
+     * Tests for problematic graph
+     *
+     *******/
+
+    @Test public void testProblematicGraph() {
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        g.addEdge(new SimpleDirectedEdge(0,1));
+        g.addEdge(new SimpleDirectedEdge(0,2));
+        g.addEdge(new SimpleDirectedEdge(0,3));
+        g.addEdge(new SimpleDirectedEdge(0,4));
+        g.addEdge(new SimpleDirectedEdge(1,2));
+        g.addEdge(new SimpleDirectedEdge(2,3));
+        g.addEdge(new SimpleDirectedEdge(3,4));
+        g.addEdge(new SimpleDirectedEdge(1,3));
+        g.addEdge(new SimpleDirectedEdge(4,5));
+        g.addEdge(new SimpleDirectedEdge(5,6));
+        g.addEdge(new SimpleDirectedEdge(6,4));
+        g.addEdge(new SimpleDirectedEdge(0,7));
+        g.addEdge(new SimpleDirectedEdge(6,7));
+        g.addEdge(new SimpleDirectedEdge(7,0));
+        g.addEdge(new SimpleDirectedEdge(7,6));
+        g.addEdge(new SimpleDirectedEdge(7,8));
+        g.addEdge(new SimpleDirectedEdge(8,9));
+        g.addEdge(new SimpleDirectedEdge(10,11));
+        g.addEdge(new SimpleDirectedEdge(11,12));
+        g.addEdge(new SimpleDirectedEdge(10,12));
+        
+        assertEquals(13, g.order());
+        int i = 0;
+        for (int v : g.vertices())
+            i++;
+        assertEquals(13, i);
+        assertEquals(20, g.size());
+        i = 0;
+        for (DirectedEdge e : g.edges())
+            i++;
+        assertEquals(20, i);
+        
+    }
+
     /******************************************************************
      *
      *
@@ -388,7 +448,7 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     @Test public void testVertexSetAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -408,7 +468,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testVertexSetAddFromGraph() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -429,7 +489,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testVertexSetRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -450,7 +510,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testVertexSetRemoveFromGraph() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -468,7 +528,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testVertexSetIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -489,7 +549,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test(expected=NoSuchElementException.class) public void testVertexSetIteratorTooFar() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -508,7 +568,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test(expected=IllegalStateException.class) public void testVertexSetIteratorRemoveTwice() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -526,7 +586,7 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test(expected=IllegalStateException.class) public void testVertexSetIteratorRemoveEarly() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<Integer> control = new HashSet<Integer>();
         for (int i = 0; i < 100; ++i) {
             g.addVertex(i);
@@ -548,37 +608,37 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     @Test public void testEdgeViewAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> edges = g.edges();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> edges = g.edges();
         assertEquals(g.size(), edges.size());
-        edges.add(new SimpleEdge(0, 1));
+        edges.add(new SimpleDirectedEdge(0, 1));
         assertEquals(2, g.order());
         assertEquals(1, g.size());
         assertEquals(1, edges.size());
-        assertTrue(g.containsEdge(new SimpleEdge(0, 1)));
-        assertTrue(edges.contains(new SimpleEdge(0, 1)));
+        assertTrue(g.containsEdge(new SimpleDirectedEdge(0, 1)));
+        assertTrue(edges.contains(new SimpleDirectedEdge(0, 1)));
     }
 
     @Test public void testEdgeViewRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> edges = g.edges();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> edges = g.edges();
         assertEquals(g.size(), edges.size());
-        edges.add(new SimpleEdge(0, 1));
-        edges.remove(new SimpleEdge(0, 1));
+        edges.add(new SimpleDirectedEdge(0, 1));
+        edges.remove(new SimpleDirectedEdge(0, 1));
         assertEquals(2, g.order());
         assertEquals(0, g.size());
         assertEquals(0, edges.size());
-        assertFalse(g.containsEdge(new SimpleEdge(0, 1)));
-        assertFalse(edges.contains(new SimpleEdge(0, 1)));
+        assertFalse(g.containsEdge(new SimpleDirectedEdge(0, 1)));
+        assertFalse(edges.contains(new SimpleDirectedEdge(0, 1)));
     }
 
     @Test public void testEdgeViewIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> edges = g.edges();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> edges = g.edges();
 
-        Set<Edge> control = new HashSet<Edge>();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 0; i < 100; i += 2)  {
-            Edge e = new SimpleEdge(i, i+1);
+            DirectedEdge e = new SimpleDirectedEdge(i, i+1);
             g.addEdge(e); // all disconnected
             control.add(e);
         }
@@ -588,21 +648,21 @@ public class SparseUndirectedGraphTests {
         assertEquals(50, g.size());
         assertEquals(50, edges.size());
         
-        Set<Edge> test = new HashSet<Edge>();
-        for (Edge e : edges)
+        Set<DirectedEdge> test = new HashSet<DirectedEdge>();
+        for (DirectedEdge e : edges)
             test.add(e);
         assertEquals(control.size(), test.size());
-        for (Edge e : test)
+        for (DirectedEdge e : test)
             assertTrue(control.contains(e));        
     }
 
     @Test public void testEdgeViewIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> edges = g.edges();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> edges = g.edges();
 
-        Set<Edge> control = new HashSet<Edge>();
+        Set<DirectedEdge> control = new HashSet<DirectedEdge>();
         for (int i = 0; i < 10; i += 2)  {
-            Edge e = new SimpleEdge(i, i+1);
+            DirectedEdge e = new SimpleDirectedEdge(i, i+1);
             g.addEdge(e); // all disconnected
             control.add(e);
         }
@@ -611,7 +671,7 @@ public class SparseUndirectedGraphTests {
         assertEquals(5, g.size());
         assertEquals(5, edges.size());
         
-        Iterator<Edge> iter = edges.iterator();
+        Iterator<DirectedEdge> iter = edges.iterator();
         while (iter.hasNext()) {
             iter.next();
             iter.remove();
@@ -631,18 +691,18 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     @Test public void testAdjacencyList() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i)
             for (int j = i + 1; j < 10; ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
 
         for (int i = 0; i < 10; ++i) {
-            Set<Edge> adjacencyList = g.getAdjacencyList(i);
+            Set<DirectedEdge> adjacencyList = g.getAdjacencyList(i);
             assertEquals(9, adjacencyList.size());
             
             for (int j = 0; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
-                if (i == j)
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
+                if (i >= j)
                     assertFalse(adjacencyList.contains(e));
                 else
                     assertTrue(adjacencyList.contains(e));
@@ -651,13 +711,13 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacencyListRemoveEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i)
             for (int j = i + 1; j < 10; ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
 
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
-        Edge e = new SimpleEdge(0, 1);
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
+        DirectedEdge e = new SimpleDirectedEdge(0, 1);
         assertTrue(adjacencyList.contains(e));
         assertTrue(adjacencyList.remove(e));
         assertEquals(8, adjacencyList.size());
@@ -665,15 +725,15 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacencyListAddEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i)
             for (int j = i + 2; j < 10; ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
 
         assertEquals( (10 * 9) / 2 - 9, g.size());
 
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
-        Edge e = new SimpleEdge(0, 1);
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
+        DirectedEdge e = new SimpleDirectedEdge(0, 1);
         assertFalse(adjacencyList.contains(e));
         assertFalse(g.containsEdge(e));
         
@@ -685,19 +745,19 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacencyListIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
 
-        Set<Edge> test = new HashSet<Edge>();
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = new HashSet<DirectedEdge>();
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
         assertEquals(9, adjacencyList.size());
         
-        Iterator<Edge> it = adjacencyList.iterator();
+        Iterator<DirectedEdge> it = adjacencyList.iterator();
         int i = 0;
         while (it.hasNext())
             assertTrue(test.add(it.next()));
@@ -705,26 +765,26 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacencyListNoVertex() {
-        Graph<Edge> g = new SparseUndirectedGraph();
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);        
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);        
         assertEquals(null, adjacencyList);
     }
 
     @Test(expected=NoSuchElementException.class)
     public void testAdjacencyListIteratorNextOffEnd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
 
-        Set<Edge> test = new HashSet<Edge>();
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = new HashSet<DirectedEdge>();
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
         assertEquals(9, adjacencyList.size());
         
-        Iterator<Edge> it = adjacencyList.iterator();
+        Iterator<DirectedEdge> it = adjacencyList.iterator();
         int i = 0;
         while (it.hasNext())
             assertTrue(test.add(it.next()));
@@ -733,21 +793,21 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacencyListIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
 
-        Set<Edge> test = new HashSet<Edge>();
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = new HashSet<DirectedEdge>();
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
         assertEquals(9, adjacencyList.size());
         
-        Iterator<Edge> it = adjacencyList.iterator();
+        Iterator<DirectedEdge> it = adjacencyList.iterator();
         assertTrue(it.hasNext());
-        Edge e = it.next();
+        DirectedEdge e = it.next();
         it.remove();
         assertFalse(adjacencyList.contains(e));
         assertEquals(8, adjacencyList.size());
@@ -757,37 +817,37 @@ public class SparseUndirectedGraphTests {
 
     @Test(expected=IllegalStateException.class)
     public void testAdjacencyListIteratorRemoveFirst() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
 
-        Set<Edge> test = new HashSet<Edge>();
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = new HashSet<DirectedEdge>();
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
         assertEquals(9, adjacencyList.size());
         
-        Iterator<Edge> it = adjacencyList.iterator();
+        Iterator<DirectedEdge> it = adjacencyList.iterator();
         it.remove();
     }
 
     @Test(expected=IllegalStateException.class)
     public void testAdjacencyListIteratorRemoveTwice() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
 
-        Set<Edge> test = new HashSet<Edge>();
-        Set<Edge> adjacencyList = g.getAdjacencyList(0);
+        Set<DirectedEdge> test = new HashSet<DirectedEdge>();
+        Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);
         assertEquals(9, adjacencyList.size());
         
-        Iterator<Edge> it = adjacencyList.iterator();
+        Iterator<DirectedEdge> it = adjacencyList.iterator();
         assertTrue(it.hasNext());
         it.next();
         it.remove();
@@ -804,10 +864,10 @@ public class SparseUndirectedGraphTests {
 
 
     @Test public void testAdjacentVertices() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
@@ -822,10 +882,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test(expected=UnsupportedOperationException.class) public void testAdjacentVerticesAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
@@ -836,10 +896,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test(expected=UnsupportedOperationException.class) public void testAdjacentVerticesRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
@@ -850,10 +910,10 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testAdjacentVerticesIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
@@ -868,10 +928,10 @@ public class SparseUndirectedGraphTests {
 
 
     @Test(expected=UnsupportedOperationException.class) public void testAdjacentVerticesIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
         for (int i = 0; i < 10; ++i) {
             for (int j = i + 1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 g.addEdge(e);
             }
         }
@@ -893,12 +953,12 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     @Test public void testSubgraph() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -909,18 +969,18 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
     }
 
     @Test public void testSubgraphContainsVertex() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -931,7 +991,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);        
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);        
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
         for (int i = 0; i < 5; ++i)
@@ -943,12 +1003,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testSubgraphContainsEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -959,18 +1019,18 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);        
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);        
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
         for (int i = 0; i < 5; ++i) {
             for (int j = i+1; j < 5; ++j) {
-                assertTrue(subgraph.containsEdge(new SimpleEdge(i, j)));
+                assertTrue(subgraph.containsEdge(new SimpleDirectedEdge(i, j)));
             }
         }
 
         for (int i = 5; i < 10; ++i) {
             for (int j = i+1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
+                DirectedEdge e = new SimpleDirectedEdge(i, j);
                 assertTrue(g.containsEdge(e));
                 assertFalse(subgraph.containsEdge(e));
             }
@@ -978,12 +1038,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testSubgraphAddEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -994,12 +1054,12 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
 
         // Add an edge to a new vertex
-        assertTrue(subgraph.addEdge(new SimpleEdge(0, 5)));
+        assertTrue(subgraph.addEdge(new SimpleDirectedEdge(0, 5)));
         assertEquals( (5 * 4) / 2 + 1, subgraph.size());
         assertEquals(6, subgraph.order());
         assertEquals(11, g.order());
@@ -1007,12 +1067,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testSubgraphRemoveEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1023,12 +1083,12 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
 
         // Remove an existing edge
-        assertTrue(subgraph.removeEdge(new SimpleEdge(0, 1)));
+        assertTrue(subgraph.removeEdge(new SimpleDirectedEdge(0, 1)));
         assertEquals( (5 * 4) / 2 - 1, subgraph.size());
         assertEquals(5, subgraph.order());
         assertEquals(10, g.order());
@@ -1036,7 +1096,7 @@ public class SparseUndirectedGraphTests {
 
         // Remove a non-existent edge, which should have no effect even though
         // the edge is present in the backing graph
-        assertFalse(subgraph.removeEdge(new SimpleEdge(0, 6)));
+        assertFalse(subgraph.removeEdge(new SimpleDirectedEdge(0, 6)));
         assertEquals( (5 * 4) / 2 - 1, subgraph.size());
         assertEquals(5, subgraph.order());
         assertEquals(10, g.order());
@@ -1054,12 +1114,12 @@ public class SparseUndirectedGraphTests {
 
 
     @Test public void testSubgraphVerticesAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1070,7 +1130,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
 
@@ -1086,12 +1146,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testSubgraphVerticesRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1102,7 +1162,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
 
@@ -1118,12 +1178,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testSubgraphVerticesIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1134,7 +1194,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
 
@@ -1162,15 +1222,15 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     @Test public void testSubgraphEdges() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             g.addVertex(i);
         }
-        g.addEdge(new SimpleEdge(0, 1));
-        g.addEdge(new SimpleEdge(0, 2));
-        g.addEdge(new SimpleEdge(1, 2));
+        g.addEdge(new SimpleDirectedEdge(0, 1));
+        g.addEdge(new SimpleDirectedEdge(0, 2));
+        g.addEdge(new SimpleDirectedEdge(1, 2));
 
         assertEquals(3, g.size());
 
@@ -1178,14 +1238,14 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 3; ++i)
             verts.add(i);
 
-        Graph<Edge> sub = g.subgraph(verts);
+        Graph<DirectedEdge> sub = g.subgraph(verts);
         assertEquals(3, sub.order());
         assertEquals(3, sub.size());
      
-        Set<Edge> edges = sub.edges();
+        Set<DirectedEdge> edges = sub.edges();
         assertEquals(3, edges.size());
         int j = 0; 
-        Iterator<Edge> iter = edges.iterator();
+        Iterator<DirectedEdge> iter = edges.iterator();
         while (iter.hasNext()) {
             iter.next();
             j++;
@@ -1218,12 +1278,12 @@ public class SparseUndirectedGraphTests {
 
 
     @Test public void testSubgraphAdjacencyListContains() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1234,24 +1294,24 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
-        Set<Edge> adjList = subgraph.getAdjacencyList(0);
+        Set<DirectedEdge> adjList = subgraph.getAdjacencyList(0);
 
         for (int i = 1; i < 5; ++i)
-            assertTrue(adjList.contains(new SimpleEdge(0, i)));
+            assertTrue(adjList.contains(new SimpleDirectedEdge(0, i)));
 
         for (int i = 5; i < 10; ++i)
-            assertFalse(adjList.contains(new SimpleEdge(0, i)));
+            assertFalse(adjList.contains(new SimpleDirectedEdge(0, i)));
     }
 
     @Test public void testSubgraphAdjacencyListSize() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1262,9 +1322,9 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
-        Set<Edge> adjList = subgraph.getAdjacencyList(0);
+        Set<DirectedEdge> adjList = subgraph.getAdjacencyList(0);
         assertEquals(4, adjList.size());
 
         adjList = subgraph.getAdjacencyList(1);
@@ -1281,12 +1341,12 @@ public class SparseUndirectedGraphTests {
     }
 
     @Test public void testSubgraphAdjacencyListAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1297,11 +1357,11 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
-        Set<Edge> adjList = subgraph.getAdjacencyList(0);
+        Set<DirectedEdge> adjList = subgraph.getAdjacencyList(0);
         // Add an edge to a new vertex
-        assertTrue(adjList.add(new SimpleEdge(0, 5)));
+        assertTrue(adjList.add(new SimpleDirectedEdge(0, 5)));
     }
 
     /******************************************************************
@@ -1313,12 +1373,12 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     @Test public void testSubgraphAdjacentVertices() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1329,7 +1389,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
         Set<Integer> adjacent = subgraph.getAdjacentVertices(0);
         assertEquals(4, adjacent.size());
@@ -1352,12 +1412,12 @@ public class SparseUndirectedGraphTests {
 
 
     @Test(expected=UnsupportedOperationException.class) public void testSubgraphAdjacentVerticesAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1368,19 +1428,19 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
         Set<Integer> adjacent = subgraph.getAdjacentVertices(0);
         adjacent.add(0);
     }
 
     @Test(expected=UnsupportedOperationException.class) public void testSubgraphAdjacentVerticesRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1391,19 +1451,19 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
         Set<Integer> adjacent = subgraph.getAdjacentVertices(0);
         adjacent.remove(0);
     }
 
     @Test public void testSubgraphAdjacentVerticesIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1414,7 +1474,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         
         vertices.remove(0); // now is the adjacent vertices of 0
 
@@ -1432,12 +1492,12 @@ public class SparseUndirectedGraphTests {
 
     @Test(expected=UnsupportedOperationException.class) 
     public void testSubgraphAdjacentVerticesIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1448,7 +1508,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         vertices.remove(0); // now is the adjacent vertices of 0
         
         Set<Integer> adjacent = subgraph.getAdjacentVertices(0);        
@@ -1468,12 +1528,12 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
     public void testSubgraphWhenVerticesRemovedFromBacking() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1484,7 +1544,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
 
         g.removeVertex(0);
         assertEquals(4, subgraph.order());
@@ -1494,16 +1554,16 @@ public class SparseUndirectedGraphTests {
         assertFalse(subgraph.containsVertex(1));
 
         g.removeVertex(2);
-        assertFalse(subgraph.containsEdge(new SimpleEdge(2,3)));
+        assertFalse(subgraph.containsEdge(new SimpleDirectedEdge(2,3)));
     }
 
     public void testSubgraphVertexIteratorWhenVerticesRemovedFromBacking() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1514,7 +1574,7 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
         Iterator<Integer> it = subgraph.vertices().iterator();
         g.removeVertex(0);
         int i = 0;
@@ -1524,12 +1584,12 @@ public class SparseUndirectedGraphTests {
     }
 
     public void testSubgraphEdgesWhenVerticesRemovedFromBacking() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.addEdge(new SimpleDirectedEdge(i, j));
         }    
 
         // (n * (n-1)) / 2
@@ -1540,11 +1600,11 @@ public class SparseUndirectedGraphTests {
         for (int i = 0; i < 5; ++i)
             vertices.add(i);
 
-        Graph<Edge> subgraph = g.subgraph(vertices);
-        Set<Edge> edges = subgraph.edges();
+        Graph<DirectedEdge> subgraph = g.subgraph(vertices);
+        Set<DirectedEdge> edges = subgraph.edges();
         g.removeVertex(0);
         assertEquals((4 * 3) / 2, edges.size());
-        assertFalse(edges.contains(new SimpleEdge(0, 1)));
+        assertFalse(edges.contains(new SimpleDirectedEdge(0, 1)));
     }
 
 }

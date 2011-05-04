@@ -138,8 +138,6 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         }
         
-        System.out.println("Found candidates: " + candidates);
-
         return candidates;
     }
 
@@ -165,12 +163,11 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      */
     private boolean match(Graph<? extends Edge> g1, Graph<? extends Edge> g2,
                           BiMap<Integer,Integer> mapping) {
-        System.out.println("Current proposed mapping: " + mapping);
         // BASE CASE: If the mapping is complete (maps all the vertices), then
         // we have a valid isomorphism, so return true.
         if (mapping.size() == g2.order()) {
-            System.out.printf("%s%n%s%n", g1, g2);
-            System.out.println("Found complete mapping: " + mapping);
+//             System.out.printf("%s%n%s%n", g1, g2);
+//             System.out.println("Found complete mapping: " + mapping);
             return true;
         }
         

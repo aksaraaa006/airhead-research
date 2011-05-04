@@ -22,26 +22,44 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.OpenIntSet;
 
 
 /**
+ * An {@link EdgeSet} implementation that stores {@link DirectedEdge} instances
+ * for a vertex.
  *
+ * @author David Jurgens
  */
 public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge> 
         implements EdgeSet<DirectedEdge> {
         
+    /**
+     * The vertex to which all edges in the set are connected
+     */
     private final int rootVertex;
     
+    /**
+     * The set of vertices to which this vertex has an edge
+     */
     private final OpenIntSet outEdges;
 
+    /**
+     * The set of vertices that have an edge to the root vertex
+     */
     private final OpenIntSet inEdges;
-    
+
+    /**
+     * Creates a new {@code SparseDirectedEdgeSet} for the specfied vertex.
+     */
     public SparseDirectedEdgeSet(int rootVertex) {
         this.rootVertex = rootVertex;
         outEdges = new OpenIntSet();
@@ -66,7 +84,7 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
      * {@inheritDoc}
      */
     public Set<Integer> connected() {
-        throw new Error("fixme");
+        return new CombinedSet();
     }
 
     /**
@@ -155,9 +173,26 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
         return inEdges.size() + outEdges.size();
     }
 
+    /**
+     * A wrapper around the set of {@link DirectedEdge} instances that either
+     * point to the root (the in-edges) or originate from the root (out-edges).
+     * This class is a utility to expose both edges sets while allowing
+     * modifications to the returned sets to be reflected in this {@code
+     * SparseDirectedEdgeSet}.
+     */
     private class EdgeSetWrapper extends AbstractSet<DirectedEdge> {
         
+        /**
+         * The set of vertices linked to the root vertex according the {@code
+         * areInEdge} property
+         */
         private final Set<Integer> vertices;
+
+        /**
+         * {@code true} if the edges being wraped are in-edges (point to the
+         * root), or {@code false} if the edges are out-edges (originate from
+         * the root).
+         */
         private final boolean areInEdges;
 
         public EdgeSetWrapper(Set<Integer> vertices, boolean areInEdges) {
@@ -254,7 +289,7 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
         }
 
         public boolean hasNext() {
-            return inVertices.hasNext() || inVertices.hasNext();
+            return inVertices.hasNext() || outVertices.hasNext();
         }
 
         public DirectedEdge next() {
@@ -276,7 +311,30 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
         }
 
         public void remove() {
+            if (lastRemovedFrom == null)
+                throw new IllegalStateException("No element to remove");
             lastRemovedFrom.remove();
+        }
+    }
+
+    private class CombinedSet extends AbstractSet<Integer> {
+
+        @Override public boolean contains(Object o) {
+            if (!(o instanceof Integer))
+                return false;
+            Integer i = (Integer)o;
+            return inEdges.contains(i) || outEdges.contains(i);
+        }
+
+        @Override public Iterator<Integer> iterator() {
+            List<Iterator<Integer>> iters = new ArrayList<Iterator<Integer>>();
+            iters.add(inEdges.iterator());
+            iters.add(outEdges.iterator());
+            return new CombinedIterator<Integer>(iters);
+        }
+
+        @Override public int size() {
+            return inEdges.size() + outEdges.size();
         }
     }
 }
