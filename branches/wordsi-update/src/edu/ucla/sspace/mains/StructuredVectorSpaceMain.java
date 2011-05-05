@@ -25,16 +25,25 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.common.SemanticSpace;
 import edu.ucla.sspace.common.SemanticSpaceIO.SSpaceFormat;
 
+import edu.ucla.sspace.dependency.DependencyPathAcceptor;
 import edu.ucla.sspace.dependency.DependencyExtractor;
+import edu.ucla.sspace.dependency.DependencyExtractorManager;
+import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.svs.StructuredVectorSpace;
 
+import edu.ucla.sspace.util.ReflectionUtil;
+import edu.ucla.sspace.util.SerializableUtil;
+
+import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 
 import java.util.Properties;
 
 /**
+ * NOTE: NOT MEANT TO BE PART OF WORDSI-UPDATE.
+ *
  * An executable class for running {@link StructuredVectorSpace}
  * (StructuredVectorSpace) from the command line.  This class takes in several
  * command line arguments.
@@ -128,9 +137,6 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
         options.addOption('a', "pathAcceptor",
                           "The DependencyPathAcceptor to use",
                           true, "CLASSNAME", "Algorithm Options");
-        options.addOption('W', "pathWeighter",
-                          "The DependencyPathWeight to use",
-                          true, "CLASSNAME", "Algorithm Options");
     }
 
     public static void main(String[] args) {
@@ -157,27 +163,37 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
         // Ensure that the configured DependencyExtactor is in place prior to
         // constructing the SVS
         setupDependencyExtractor();        
-        return new StructuredVectorSpace();
+
+        DependencyPathAcceptor acceptor;
+        if (argOptions.hasOption("pathAcceptor"))
+            acceptor = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption("pathAcceptor"));
+        else
+            acceptor = new UniversalPathAcceptor();
+
+        DependencyExtractor extractor = 
+            DependencyExtractorManager.getDefaultExtractor();
+        return new StructuredVectorSpace(extractor, acceptor);
     }
 
     /**
      * {@inheritDoc}
      */
     protected Properties setupProperties() {
-        // use the System properties in case the user specified them as
-        // -Dprop=<val> to the JVM directly.
-        Properties props = System.getProperties();
+        return System.getProperties();
+    }
 
-        if (argOptions.hasOption("pathAcceptor"))
-            props.setProperty(
-                    StructuredVectorSpace.DEPENDENCY_ACCEPTOR_PROPERTY,
-                    argOptions.getStringOption("pathAcceptor"));
+    /**
+     * {@inheritDoc}
+     */
+    protected void saveSSpace(SemanticSpace sspace, File outputFile)
+            throws IOException{
+        
+        long startTime = System.currentTimeMillis();
+        SerializableUtil.save(sspace, outputFile);
+        long endTime = System.currentTimeMillis();
 
-        if (argOptions.hasOption("pathWeighter"))
-            props.setProperty(
-                    StructuredVectorSpace.DEPENDENCY_WEIGHT_PROPERTY,
-                    argOptions.getStringOption("pathWeighter"));
-
-        return props;
+        verbose("printed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
     }
 }
