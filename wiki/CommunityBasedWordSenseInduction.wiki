@@ -1,0 +1,9 @@
+#summary A summary of the Word Sense Induction by Community Detection algorithm and tool.
+
+= Introduction =
+
+_forthcoming_
+
+= Details =
+
+_forthcoming_
