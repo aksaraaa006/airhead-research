@@ -43,19 +43,23 @@ public class FloydsAlgorithm {
             WeightedGraph wg = (WeightedGraph)g;
             for (int i = 0; i < verts; ++i) {
                 for (int j = 0; j < verts; ++j) {
-                    // NOTE: this code should still work for WeightedMultigraph
-                    // instances, as getEdgeWeight is contracted to return the
-                    // minimum weight of all edges
-                    dm.set(i, j,
-                        g.containsEdge(i,j)
-                            ? wg.getEdgeWeight(i,j) : Double.MAX_VALUE);
+                    Double weight = Double.MAX_VALUE;
+                    Set<WeightedEdge> edges = wg.getEdges(i, j);
+                    if (edges != null) {
+                        for (WeightedEdge e : edges) {
+                            if (e.from() == i && e.to() == j
+                                    && e.weight() < weight)
+                                weight = e.weight();
+                        }
+                    }
+                    dm.set(i, j, weight);
                 }
             }
         }
         // If unweighted, assume unit distance for all edges
         else {
             for (int i = 0; i < verts; ++i) {
-                Set<Integer> adjacent = g.getAdjacentVertices(i);
+                Set<Integer> adjacent = g.getNeighbors(i);
                 for (int j = 0; j < verts; ++j) {
                     dm.set(i, j,
                         (adjacent.contains(j)) 

@@ -41,9 +41,9 @@ public class GenericGraph<T extends Edge>
      */
     public GenericGraph(Graph<? extends T> g) {
         for (int v : g.vertices())
-            addVertex(v);
+            add(v);
         for (T edge : g.edges())
-            addEdge(edge);
+            add(edge);
     }
 
     @Override protected GenericEdgeSet<T> createEdgeSet(int vertex) {

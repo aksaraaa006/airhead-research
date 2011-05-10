@@ -73,7 +73,7 @@ public interface Graph<E extends Edge> {
      * @throws IllegalArgumentException if {@code i} is negative or beyond the
      *         number of representable vertices in the current instance
      */
-    boolean addVertex(int i);
+    boolean add(int i);
 
     /**
      * Adds an edge between the two vertices, returning {@code true} if the edge
@@ -97,7 +97,7 @@ public interface Graph<E extends Edge> {
      * 
      * @see #containsEdge(int, int)
      */
-    boolean addEdge(E edge);
+    boolean add(E edge);
 
     /**
      * Removes all the edges and vertices from this graph (optional operation).
@@ -113,20 +113,27 @@ public interface Graph<E extends Edge> {
     /**
      * Returns {@code true} if this graph a vertex with the specified index
      */
-    boolean containsVertex(int vertex);
+    boolean contains(int vertex);
 
     /**
      * Returns {@code true} if this graph contains an edge between {@code from}
      * and {@code to}.  Imeplementations are free to define whether the ordering
      * of the vertices matters.
      */
-    boolean containsEdge(int from, int to);
+    boolean contains(int from, int to);
 
     /**
      * Returns {@code true} if this graph contains an edge of the specific type
      * between {@code vertex1} and {@code vertex2}.
      */
-    boolean containsEdge(Edge e);
+    boolean contains(Edge e);
+
+    /**
+     * Returns the number of edges that connect this vertex to other vertices in
+     * this graph.  If the provided vertex is not in graph, this method returns
+     * {@code 0}.
+     */
+    int degree(int vertex);
 
     /**
      * Returns the set of edges contained in this graph.  It is expected that
@@ -142,13 +149,13 @@ public interface Graph<E extends Edge> {
     /**
      * Returns the set of vertices that are connected to the specified vertex.
      */
-    Set<Integer> getAdjacentVertices(int vertex);
+    Set<Integer> getNeighbors(int vertex);
 
     /**
-     * Returns the {@code Edge} instance connecting the two vertices or {@code
+     * Returns the {@code Edge} instances connecting the two vertices or {@code
      * null} if the vertices are not connected.
      */
-    E getEdge(int vertex1, int vertex2);
+    Set<E> getEdges(int vertex1, int vertex2);
 
     /**
      * Computes whether this graph is acyclic with its current set of edges, and
@@ -166,13 +173,13 @@ public interface Graph<E extends Edge> {
      * Removes the edge from {@code vertex1} to {@code vertex2}, returning
      * {@code true} if the edge existed and was removed (optional operation).
      */
-    boolean removeEdge(E e);
+    boolean remove(E e);
 
     /**
      * Removes the vertex and all of its connected edges from the graph
      * (optional operation).
      */
-    boolean removeVertex(int vertex);    
+    boolean remove(int vertex);    
 
     /**
      * Returns the number of edges in this graph.
@@ -201,7 +208,7 @@ public interface Graph<E extends Edge> {
      *         not present in this graph
      */
     Graph<E> subgraph(Set<Integer> vertices);
-
+    
     /**
      * Returns the set of vertices in this graph.
      */

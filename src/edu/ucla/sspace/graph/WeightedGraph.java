@@ -35,57 +35,32 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface WeightedGraph extends Graph {
-
-    /**
-     * Adds an edge between the two vertices with the <i>default</i> weight,
-     * returning {@code true} if the edge was not previously present.
-     * Implemenations are free to decide the behavior for cases where <ul> <li>
-     * no default weight has been specified <li> one or both of the vertices are
-     * not currently in the graph, and <li> whether self-edges are allowed
-     * (i.e. {@code vertex1 == vertex2}). </ul>
-     */
-    boolean addEdge(int vertex1, int vertex2);
-
-    /**
-     * Adds an edge between the two vertices with the specified weight,
-     * returning {@code true} if the edge was not previously present or the
-     * weight between the edges was changed.  Implemenations are free to decide
-     * the behavior for cases where one or both of the vertices are not
-     * currently in the graph, and whether self-edges are allowed (i.e. {@code
-     * vertex1 == vertex2}).
-     *
-     * @return {@code true} if the vertex was not previously present or the
-     *         weight between the edges was changed
-     */
-    boolean addEdge(int vertex1, int vertex2, double weight);
+public interface WeightedGraph extends Graph<WeightedEdge> {
 
     /**
      * Returns the set of edges contained in this graph.
      */
-    @Override Set<? extends WeightedEdge> edges();
+    @Override Set<WeightedEdge> edges();
 
     /**
      * Returns the set of edges connected to the provided vertex.
      */
-    @Override Set<? extends WeightedEdge> getAdjacencyList(int vertex);
+    @Override Set<WeightedEdge> getAdjacencyList(int vertex);
     
     /**
      * {@inheritDoc}
      */
-    @Override WeightedEdge getEdge(int vertex1, int vertex2);
+    @Override Set<WeightedEdge> getEdges(int vertex1, int vertex2);
 
     /**
-     * Returns the weight for the edge connecting the two vertices.
-     *
-     * @throws IllegalArgumentException if an edge does not exist between the
-     *         two vertices.
+     * Returns the sum of the weights for all edges connected to this vertex.
+     * If this vertex is not in the graph, {@code 0} is returned.
      */
-    double getEdgeWeight(int vertex1, int vertex2);
-    
-//     /**
-//      * {@inheritDoc}
-//      */
-//     WeightedGraph subgraph(Set<Integer> vertices);
+    double strength(int vertex);
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override WeightedGraph subgraph(Set<Integer> vertices);
     
 }

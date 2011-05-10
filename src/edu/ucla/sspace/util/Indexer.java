@@ -30,25 +30,40 @@ import java.util.Set;
 
 
 /** 
- * A utility class for mapping a set of objects to unique indices.
+ * A utility class for mapping a set of objects to unique indices.  The indices
+ * returned by this class will always being at {@code 0}.
+ *
+ * @see Counter
  */
 public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
                                    java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * A mapping from each item to its index.
+     */
     private final Map<T,Integer> indices;
 
+    /**
+     * Creates an empty {@code Indexer} with no mappings.
+     */
     public Indexer() {
         indices = new HashMap<T,Integer>();
     }
 
+    /**
+     * Creates an {@code Indexer} with indices for all of the provided items.
+     */
     public Indexer(Collection<? extends T> items) {
         this();
         for (T item : items)
             add(item);
     }
 
+    /**
+     * Adds the item and creates an index for it, returning that index.
+     */
     public int add(T item) {
         Integer i = indices.get(item);
         if (i == null) {
@@ -63,19 +78,48 @@ public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
         return i;
     }
 
+    /**
+     * Removes all of the item-index mappings.
+     */
+    public void clear() {
+        indices.clear();
+    }
+
+    /**
+     * Returns {@code true} if the item has a corresponding index
+     */
     public boolean contains(T item) {
         return indices.containsKey(item);
     }
 
+    /**
+     * Returns the index for the item or {@code -1} if the item has not been
+     * assigned an index.
+     */
     public int get(T item) {
-        return indices.get(item);
+        Integer i = indices.get(item);
+        return (i == null) ? -1 : i;
     }
 
+    /**
+     * Returns an iterator over all the objects and their corresponding indices.
+     * The returned iterator does not support {@code remove}.
+     */
     public Iterator<Map.Entry<T,Integer>> iterator() {
         return Collections.unmodifiableSet(indices.entrySet()).iterator();
     }
 
+    /**
+     * Returns the number of items that are mapped to indices.
+     */
     public int size() {
         return indices.size();
+    }
+
+    /**
+     * Returns a string representation of the objects and their indices.
+     */
+    public String toString() {
+        return indices.toString();
     }
 }

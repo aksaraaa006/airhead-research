@@ -34,6 +34,12 @@ import java.util.Set;
 public interface DirectedGraph extends Graph<DirectedEdge> {
 
     /**
+     * {@inheritDoc} If the two vertices have bidirectional edges, this set will
+     * include two edges.
+     */
+    @Override Set<DirectedEdge> getEdges(int vertex1, int vertex2);
+
+    /**
      * Returns the number of directed edges where {@code vertex} is the head of
      * the edge, i.e. the edge points to {@code vertex}.
      */

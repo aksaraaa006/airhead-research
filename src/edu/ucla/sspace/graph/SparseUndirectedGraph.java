@@ -62,9 +62,9 @@ public class SparseUndirectedGraph extends AbstractGraph<Edge,SparseUndirectedEd
      */
     public SparseUndirectedGraph(Graph<? extends Edge> g) {
         for (Integer v : g.vertices())
-            addVertex(v);
+            add(v);
         for (Edge e : g.edges())
-            addEdge(e);
+            add(e);
     }
     
     /**

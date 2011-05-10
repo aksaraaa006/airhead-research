@@ -37,18 +37,18 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testStarGraph() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(0, 1));
-        g1.addEdge(new SimpleEdge(0, 2));
-        g1.addEdge(new SimpleEdge(0, 3));
-        g1.addEdge(new SimpleEdge(0, 4));
-        g1.addEdge(new SimpleEdge(0, 5));
+        g1.add(new SimpleEdge(0, 1));
+        g1.add(new SimpleEdge(0, 2));
+        g1.add(new SimpleEdge(0, 3));
+        g1.add(new SimpleEdge(0, 4));
+        g1.add(new SimpleEdge(0, 5));
 
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addEdge(new SimpleEdge(1, 0));
-        g2.addEdge(new SimpleEdge(1, 2));
-        g2.addEdge(new SimpleEdge(1, 3));
-        g2.addEdge(new SimpleEdge(1, 4));
-        g2.addEdge(new SimpleEdge(1, 5));
+        g2.add(new SimpleEdge(1, 0));
+        g2.add(new SimpleEdge(1, 2));
+        g2.add(new SimpleEdge(1, 3));
+        g2.add(new SimpleEdge(1, 4));
+        g2.add(new SimpleEdge(1, 5));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
@@ -57,11 +57,11 @@ public class VF2IsomorphismTesterTests {
     @Test public void testEdgelessGraphSame() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
         for (int i = 0; i < 3; ++i)
-            g1.addVertex(i);
+            g1.add(i);
 
         Graph<Edge> g2 = new SparseUndirectedGraph();
         for (int i = 3; i < 6; ++i)
-            g2.addVertex(i);
+            g2.add(i);
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
@@ -69,14 +69,14 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testSameTriangle() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(0, 1));
-        g1.addEdge(new SimpleEdge(0, 2));
-        g1.addEdge(new SimpleEdge(1, 2));
+        g1.add(new SimpleEdge(0, 1));
+        g1.add(new SimpleEdge(0, 2));
+        g1.add(new SimpleEdge(1, 2));
 
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addEdge(new SimpleEdge(3, 4));
-        g2.addEdge(new SimpleEdge(3, 5));
-        g2.addEdge(new SimpleEdge(4, 5));
+        g2.add(new SimpleEdge(3, 4));
+        g2.add(new SimpleEdge(3, 5));
+        g2.add(new SimpleEdge(4, 5));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
 
@@ -85,16 +85,16 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testSquare() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(1, 2));
-        g1.addEdge(new SimpleEdge(1, 4));
-        g1.addEdge(new SimpleEdge(3, 2));
-        g1.addEdge(new SimpleEdge(3, 4));
+        g1.add(new SimpleEdge(1, 2));
+        g1.add(new SimpleEdge(1, 4));
+        g1.add(new SimpleEdge(3, 2));
+        g1.add(new SimpleEdge(3, 4));
 
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addEdge(new SimpleEdge(1, 3));
-        g2.addEdge(new SimpleEdge(1, 4));
-        g2.addEdge(new SimpleEdge(2, 3));
-        g2.addEdge(new SimpleEdge(2, 4));
+        g2.add(new SimpleEdge(1, 3));
+        g2.add(new SimpleEdge(1, 4));
+        g2.add(new SimpleEdge(2, 3));
+        g2.add(new SimpleEdge(2, 4));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
@@ -102,18 +102,18 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testSquareWithSpoke() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(1, 2));
-        g1.addEdge(new SimpleEdge(1, 4));
-        g1.addEdge(new SimpleEdge(3, 2));
-        g1.addEdge(new SimpleEdge(3, 4));
-        g1.addEdge(new SimpleEdge(4, 5));
+        g1.add(new SimpleEdge(1, 2));
+        g1.add(new SimpleEdge(1, 4));
+        g1.add(new SimpleEdge(3, 2));
+        g1.add(new SimpleEdge(3, 4));
+        g1.add(new SimpleEdge(4, 5));
 
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addEdge(new SimpleEdge(1, 3));
-        g2.addEdge(new SimpleEdge(1, 4));
-        g2.addEdge(new SimpleEdge(2, 3));
-        g2.addEdge(new SimpleEdge(2, 4));
-        g2.addEdge(new SimpleEdge(4, 5));
+        g2.add(new SimpleEdge(1, 3));
+        g2.add(new SimpleEdge(1, 4));
+        g2.add(new SimpleEdge(2, 3));
+        g2.add(new SimpleEdge(2, 4));
+        g2.add(new SimpleEdge(4, 5));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
@@ -121,20 +121,20 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testSquareWithTwoSpokes() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(1, 2));
-        g1.addEdge(new SimpleEdge(1, 4));
-        g1.addEdge(new SimpleEdge(3, 2));
-        g1.addEdge(new SimpleEdge(3, 4));
-        g1.addEdge(new SimpleEdge(4, 5));
-        g1.addEdge(new SimpleEdge(3, 6));
+        g1.add(new SimpleEdge(1, 2));
+        g1.add(new SimpleEdge(1, 4));
+        g1.add(new SimpleEdge(3, 2));
+        g1.add(new SimpleEdge(3, 4));
+        g1.add(new SimpleEdge(4, 5));
+        g1.add(new SimpleEdge(3, 6));
 
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addEdge(new SimpleEdge(1, 3));
-        g2.addEdge(new SimpleEdge(1, 4));
-        g2.addEdge(new SimpleEdge(2, 3));
-        g2.addEdge(new SimpleEdge(2, 4));
-        g2.addEdge(new SimpleEdge(4, 5));
-        g2.addEdge(new SimpleEdge(2, 6));
+        g2.add(new SimpleEdge(1, 3));
+        g2.add(new SimpleEdge(1, 4));
+        g2.add(new SimpleEdge(2, 3));
+        g2.add(new SimpleEdge(2, 4));
+        g2.add(new SimpleEdge(4, 5));
+        g2.add(new SimpleEdge(2, 6));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
@@ -142,11 +142,11 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testDifferentOrders() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addVertex(0);
+        g1.add(0);
         
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addVertex(0);
-        g2.addVertex(1);
+        g2.add(0);
+        g2.add(1);
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertFalse(isoTest.areIsomorphic(g1, g2));
@@ -154,11 +154,11 @@ public class VF2IsomorphismTesterTests {
 
     @Test public void testDifferentSize() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(0, 1));
+        g1.add(new SimpleEdge(0, 1));
         
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addVertex(0);
-        g2.addVertex(1);
+        g2.add(0);
+        g2.add(1);
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertFalse(isoTest.areIsomorphic(g1, g2));
@@ -174,33 +174,33 @@ public class VF2IsomorphismTesterTests {
         // i = 7
         // j = 8
         Graph<Edge> g1 = new SparseUndirectedGraph();
-        g1.addEdge(new SimpleEdge(1, 5)); // a - g
-        g1.addEdge(new SimpleEdge(1, 6)); // a - h
-        g1.addEdge(new SimpleEdge(1, 7)); // a - i
-        g1.addEdge(new SimpleEdge(2, 5)); // b - g
-        g1.addEdge(new SimpleEdge(2, 6)); // b - h
-        g1.addEdge(new SimpleEdge(2, 8)); // b - j
-        g1.addEdge(new SimpleEdge(3, 5)); // c - g
-        g1.addEdge(new SimpleEdge(3, 7)); // c - i
-        g1.addEdge(new SimpleEdge(3, 8)); // c - j
-        g1.addEdge(new SimpleEdge(4, 6)); // d - h
-        g1.addEdge(new SimpleEdge(4, 7)); // d - i
-        g1.addEdge(new SimpleEdge(4, 8)); // d - j
+        g1.add(new SimpleEdge(1, 5)); // a - g
+        g1.add(new SimpleEdge(1, 6)); // a - h
+        g1.add(new SimpleEdge(1, 7)); // a - i
+        g1.add(new SimpleEdge(2, 5)); // b - g
+        g1.add(new SimpleEdge(2, 6)); // b - h
+        g1.add(new SimpleEdge(2, 8)); // b - j
+        g1.add(new SimpleEdge(3, 5)); // c - g
+        g1.add(new SimpleEdge(3, 7)); // c - i
+        g1.add(new SimpleEdge(3, 8)); // c - j
+        g1.add(new SimpleEdge(4, 6)); // d - h
+        g1.add(new SimpleEdge(4, 7)); // d - i
+        g1.add(new SimpleEdge(4, 8)); // d - j
 
         // Other graph just with numeric edges
         Graph<Edge> g2 = new SparseUndirectedGraph();
-        g2.addEdge(new SimpleEdge(1, 2)); 
-        g2.addEdge(new SimpleEdge(1, 4)); 
-        g2.addEdge(new SimpleEdge(1, 5));
-        g2.addEdge(new SimpleEdge(2, 3));
-        g2.addEdge(new SimpleEdge(2, 6));
-        g2.addEdge(new SimpleEdge(3, 4));
-        g2.addEdge(new SimpleEdge(3, 7));
-        g2.addEdge(new SimpleEdge(4, 8));
-        g2.addEdge(new SimpleEdge(5, 6));
-        g2.addEdge(new SimpleEdge(5, 8));
-        g2.addEdge(new SimpleEdge(6, 7));
-        g2.addEdge(new SimpleEdge(7, 8));
+        g2.add(new SimpleEdge(1, 2)); 
+        g2.add(new SimpleEdge(1, 4)); 
+        g2.add(new SimpleEdge(1, 5));
+        g2.add(new SimpleEdge(2, 3));
+        g2.add(new SimpleEdge(2, 6));
+        g2.add(new SimpleEdge(3, 4));
+        g2.add(new SimpleEdge(3, 7));
+        g2.add(new SimpleEdge(4, 8));
+        g2.add(new SimpleEdge(5, 6));
+        g2.add(new SimpleEdge(5, 8));
+        g2.add(new SimpleEdge(6, 7));
+        g2.add(new SimpleEdge(7, 8));
 
         IsomorphismTester isoTest = new VF2IsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));

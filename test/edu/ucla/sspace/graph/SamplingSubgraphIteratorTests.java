@@ -42,7 +42,7 @@ public class SamplingSubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, 3, new double[] { 1, 1, 1});
@@ -54,7 +54,7 @@ public class SamplingSubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, -1, new double[] { 1, 1, 1});
@@ -70,7 +70,7 @@ public class SamplingSubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, 20, new double[] { 1, 1, 1});
@@ -82,7 +82,7 @@ public class SamplingSubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, 3, new double[] { -1, 1, 1});
@@ -94,7 +94,7 @@ public class SamplingSubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, 3, new double[] { 2, 1, 1});
@@ -106,7 +106,7 @@ public class SamplingSubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, 3, new double[] { 1, 1, 1, 1});
@@ -117,17 +117,17 @@ public class SamplingSubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
-        g.addEdge(new SimpleEdge(1, 2));
-        g.addEdge(new SimpleEdge(1, 3));
-        g.addEdge(new SimpleEdge(1, 4));
-        g.addEdge(new SimpleEdge(1, 5));
-        g.addEdge(new SimpleEdge(2, 3));
-        g.addEdge(new SimpleEdge(2, 6));
-        g.addEdge(new SimpleEdge(2, 7));
-        g.addEdge(new SimpleEdge(3, 8));
-        g.addEdge(new SimpleEdge(3, 9));
+        g.add(new SimpleEdge(1, 2));
+        g.add(new SimpleEdge(1, 3));
+        g.add(new SimpleEdge(1, 4));
+        g.add(new SimpleEdge(1, 5));
+        g.add(new SimpleEdge(2, 3));
+        g.add(new SimpleEdge(2, 6));
+        g.add(new SimpleEdge(2, 7));
+        g.add(new SimpleEdge(3, 8));
+        g.add(new SimpleEdge(3, 9));
         
         // Note that ESU = Rand-ESU when all the probabilities are 1, so we
         // expect this to work.
@@ -145,17 +145,17 @@ public class SamplingSubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
-        g.addEdge(new SimpleEdge(1, 2));
-        g.addEdge(new SimpleEdge(1, 3));
-        g.addEdge(new SimpleEdge(1, 4));
-        g.addEdge(new SimpleEdge(1, 5));
-        g.addEdge(new SimpleEdge(2, 3));
-        g.addEdge(new SimpleEdge(2, 6));
-        g.addEdge(new SimpleEdge(2, 7));
-        g.addEdge(new SimpleEdge(3, 8));
-        g.addEdge(new SimpleEdge(3, 9));
+        g.add(new SimpleEdge(1, 2));
+        g.add(new SimpleEdge(1, 3));
+        g.add(new SimpleEdge(1, 4));
+        g.add(new SimpleEdge(1, 5));
+        g.add(new SimpleEdge(2, 3));
+        g.add(new SimpleEdge(2, 6));
+        g.add(new SimpleEdge(2, 7));
+        g.add(new SimpleEdge(3, 8));
+        g.add(new SimpleEdge(3, 9));
         
         int iters = 100;
         int totalSubgraphsSeen = 0;
@@ -182,7 +182,7 @@ public class SamplingSubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
 
         SamplingSubgraphIterator<Edge> iter = new SamplingSubgraphIterator<Edge>(g, 3, new double[] { 1, 1, 1});

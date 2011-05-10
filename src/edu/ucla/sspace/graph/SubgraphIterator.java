@@ -114,7 +114,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
             Integer nextVertex = vertexIter.next();
             // Determine the set of vertices that are greater than this vertex
             Set<Integer> extension = new HashSet<Integer>();
-            for (Integer v : g.getAdjacentVertices(nextVertex))
+            for (Integer v : g.getNeighbors(nextVertex))
                 if (v > nextVertex)
                     extension.add(v);
             Set<Integer> subgraph = new HashSet<Integer>();
@@ -159,7 +159,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
             Set<Integer> nextExtension = new HashSet<Integer>(extension);
 
             next_vertex:
-            for (Integer n : g.getAdjacentVertices(w))
+            for (Integer n : g.getNeighbors(w))
                 // Perform the fast vertex value test and check for whether the
                 // vertex is currently in the subgraph
                 if (n > v && !subgraph.contains(n)) {
@@ -170,7 +170,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
                         // If we find n within the neighbors of a vertex in the
                         // current subgraph, then skip the remaining checks and
                         // examine another vertex adjacent to w.
-                        if (g.getAdjacentVertices(inCur).contains(n))
+                        if (g.getNeighbors(inCur).contains(n))
                             continue next_vertex;
                     }
                     // Otherwise, n is in the exclusive neighborhood of w, so

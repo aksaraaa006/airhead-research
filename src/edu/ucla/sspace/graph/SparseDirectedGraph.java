@@ -67,9 +67,9 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
      */
     public SparseDirectedGraph(Graph<? extends DirectedEdge> g) {
         for (Integer v : g.vertices())
-            addVertex(v);
+            add(v);
         for (DirectedEdge e : g.edges())
-            addEdge(e);
+            add(e);
     }
     
     /**
@@ -155,7 +155,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             // Rather than add the edge to the set directly, add it to the
             // graph, which will propagate the edge to the appropriate EdgeSet
             // instances.
-            return addEdge(e);
+            return add(e);
         }
 
         @Override public boolean contains(Object o) {
@@ -172,7 +172,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             // Rather than removing the edge to the set directly, removing it
             // from the graph, which will remove the edge froma the appropriate
             // EdgeSet instances.
-            return removeEdge((DirectedEdge)o);
+            return remove((DirectedEdge)o);
         }
 
         @Override public int size() {
@@ -204,7 +204,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
                 // REMINDER: I think this method would be extremely problematic
                 // to actually implement.  The call to iter.remove() would leave
                 // the symmetric edge in place in the AbstractGraph, while
-                // calling removeEdge() would likely result in a concurrent
+                // calling remove() would likely result in a concurrent
                 // modification to the EdgeSet being iterated over, which may
                 // have unpredictable results. Therefore, we just throw an
                 // exception to indicate it's not supported until we can

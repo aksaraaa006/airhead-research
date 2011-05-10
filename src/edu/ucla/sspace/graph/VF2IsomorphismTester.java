@@ -102,13 +102,13 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         SortedMultiMap<Integer,Integer> degreeToG1Vertex
             = new TreeMultiMap<Integer,Integer>();
         for (Integer vertex : unmappedG1Vertices) {
-            degreeToG1Vertex.put(g1.getAdjacentVertices(vertex).size(), vertex);
+            degreeToG1Vertex.put(g1.getNeighbors(vertex).size(), vertex);
         }
         
         SortedMultiMap<Integer,Integer> degreeToG2Vertex
             = new TreeMultiMap<Integer,Integer>();
         for (Integer vertex : unmappedG2Vertices) {
-            degreeToG2Vertex.put(g2.getAdjacentVertices(vertex).size(), vertex);
+            degreeToG2Vertex.put(g2.getNeighbors(vertex).size(), vertex);
         }
 
         Set<Pair<Integer>> candidates = new HashSet<Pair<Integer>>();
@@ -422,7 +422,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
             // Since the graph is undirected, just include all of the edges from
             // the current mapping
             for (Integer i : mapped) { 
-                Set<Integer> adjacent = g.getAdjacentVertices(i);
+                Set<Integer> adjacent = g.getNeighbors(i);
                 // some vertices may not have any other adjacent vertices
                 if (adjacent == null)
                     continue;
@@ -478,6 +478,6 @@ public class VF2IsomorphismTester implements IsomorphismTester {
         // from Set<Integer> to just Set
         return (g instanceof DirectedGraph) 
             ? ((DirectedGraph)g).predecessors(vertex)
-            : g.getAdjacentVertices(vertex);
+            : g.getNeighbors(vertex);
     }
 }

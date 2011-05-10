@@ -37,49 +37,8 @@ import java.util.Set;
  *
  * @see TypedEdge
  */
-public interface WeightedMultigraph<T> extends Multigraph, WeightedGraph {
-
-    /**
-     * Adds an edge of the <i>default</i> weight and type between the two
-     * vertices, returning {@code true} if the edge was not previously present.
-     * Implementations are free to decide what the default edge type is, or to
-     * throw an exception upon adding an edge if no default type has been set.
-     */
-    boolean addEdge(int vertex1, int vertex2);
-
-    /**
-     * Adds an edge between the two vertices with the specified weight and
-     * <i>default</i> type, returning {@code true} if the edge was not previously
-     * present or the weight between the edges was changed.  Implemenations are
-     * free to decide the behavior for cases where one or both of the vertices
-     * are not currently in the graph, and whether self-edges are allowed
-     * (i.e. {@code vertex1 == vertex2}).
-     *
-     * @return {@code true} if the vertex was not previously present or the
-     *         weight between the edges was changed
-     */
-    boolean addEdge(int vertex1, int vertex2, double weight);
-
-    /**
-     * Adds an edge of the provided type between the two vertices with the
-     * <i>default</i> edge weight, returning {@code true} if the edge was not
-     * previously present.  Implementations are free to decide upon the
-     * appropriate behavior of the default edge weight.
-     */
-    boolean addEdge(int vertex1, int vertex2, T edgeType);
-
-    /**
-     * Adds an edge between the two vertices with the specified weight,
-     * returning {@code true} if the edge was not previously present or the
-     * weight between the edges was changed.  Implemenations are free to decide
-     * the behavior for cases where one or both of the vertices are not
-     * currently in the graph, and whether self-edges are allowed (i.e. {@code
-     * vertex1 == vertex2}).
-     *
-     * @return {@code true} if the vertex was not previously present or the
-     *         weight between the edges was changed
-     */
-    boolean addEdge(int vertex1, int vertex2, T edgeType, double weight);
+public interface WeightedMultigraph<T>  {
+// extends Multigraph, WeightedGraph {
 
     /**
      * Returns the set of typed edges in the graph
@@ -95,26 +54,7 @@ public interface WeightedMultigraph<T> extends Multigraph, WeightedGraph {
      * Returns an arbitrary edge connecting the two vertices if the edges are
      * connected by one or more edges.
      */
-    @Override WeightedTypedEdge<T> getEdge(int vertex1, int vertex2);
-
-    /**
-     * Returns the <i>minimum</i> edge weight for all edges connecting the two
-     * vertices.
-     *
-     * @throws IllegalArgumentException if an edge does not exist between the
-     *         two vertices.
-     */
-    @Override double getEdgeWeight(int vertex1, int vertex2);
-
-
-    /**
-     * Returns the weight for each edge connecting the two vertices.
-     *
-     * @throws IllegalArgumentException if an edge does not exist between the
-     *         two vertices.
-     */
-    Map<WeightedTypedEdge,Double> getEdgeWeights(int vertex1, int vertex2);
-
+    WeightedTypedEdge<T> getEdge(int vertex1, int vertex2);
 
 //     /**
 //      * {@inheritDoc}

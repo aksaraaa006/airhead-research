@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.util;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -67,7 +68,7 @@ public class Counter<T> implements Iterable<Map.Entry<T,Integer>>,
      * Creates a {@code Counter} whose initial state has counted all of the
      * specified items.
      */
-    public Counter(Colletion<? extends T> items) {
+    public Counter(Collection<? extends T> items) {
         this();
         for (T item : items)
             count(item);
