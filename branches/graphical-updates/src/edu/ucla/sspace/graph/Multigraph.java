@@ -44,32 +44,12 @@ import java.util.Set;
  * 
  * @author David Jurgens
  */
-public interface Multigraph<T> extends Graph {
-
-    /**
-     * Adds an edge of the <i>default</i> type between the two vertices,
-     * returning {@code true} if the edge was not previously present.
-     * Implementations are free to decide what the default edge type is, or to
-     * throw an exception upon adding an edge if no default type has been set.
-     */
-    boolean addEdge(int vertex1, int vertex2);
-
-    /**
-     * Adds an edge of the provided type between the two vertices, returning
-     * {@code true} if the edge was not previously present.
-     */
-    boolean addEdge(int vertex1, int vertex2, T edgeType);
+public interface Multigraph<T> extends Graph<TypedEdge<T>> {
 
     /**
      * Removes all the edges in the graph with the specified edge type.
      */
     void clearEdges(T edgeType);
-
-    /**
-     * Returns {@code true} if there exists an edge between {@code vertex1} and
-     * {@code vertex2} of <i>any</i> type.
-     */
-    boolean containsEdge(int vertex1, int vertex2);
 
     /**
      * Returns {@code true} if there exists an edge between {@code vertex1} and
@@ -80,7 +60,7 @@ public interface Multigraph<T> extends Graph {
     /**
      * Returns the set of typed edges in the graph
      */
-    Set<TypedEdge<T>> edges();
+    @Override Set<TypedEdge<T>> edges();
 
     /**
      * Returns the set of edge types currently present in this graph.
@@ -90,45 +70,28 @@ public interface Multigraph<T> extends Graph {
     /**
      * Returns the set of typed edges connected to the vertex.
      */
-    Set<TypedEdge<T>> getAdjacencyList(int vertex);
-
-    /**
-     * Returns an arbitrary edge connecting the two vertices if the edges are
-     * connected by one or more edges.
-     */
-    @Override Edge getEdge(int vertex1, int vertex2);
+    @Override Set<TypedEdge<T>> getAdjacencyList(int vertex);
 
     /**
      * Returns the set of {@link TypedEdge} instances that connect the two
      * vertices.  If no edges connect the vertices, the set will be empty but
      * non-{@code null}.
      */
-    Set<TypedEdge<T>> getEdges(int vertex1, int vertex2);
-
-    /**
-     * Removes <i>all</i> edges between {@code vertex1} and {@code vertex2},
-     * returning {@code true} if any edges were removed
-     */
-    boolean removeEdge(int vertex1, int vertex2);
-
-    /**
-     * Removes the edge between {@code vertex1} and {@code vertex2} with the
-     * provided type, returning {@code true} if the edge existed and was
-     * removed.
-     */
-    boolean removeEdge(int vertex1, int vertex2, T edgeType);
+    @Override Set<TypedEdge<T>> getEdges(int vertex1, int vertex2);
 
     /**
      * {@inheritDoc}
      */
-    Multigraph subgraph(Set<Integer> vertices);
+    @Override Multigraph<T> subgraph(Set<Integer> vertices);
 
     /**
      * Returns a subgraph of this graph containing only the specified vertices
      * and edges of the specified types.  Note that if all of the vertices are
      * specified, this method can be used to extract edge-type-specific versions
-     * of this multigraph.
+     * of this multigraph.  Any attempt subsequent attempt to add an edge of a
+     * type <i>other</i> than the specified types to this subgraph will fail.
+     * Implementations are free to specify whether this will be an exception
      */
-    Multigraph subgraph(Set<Integer> vertices, Set<T> edgeTypes);
+    Multigraph<T> subgraph(Set<Integer> vertices, Set<T> edgeTypes);
         
 }

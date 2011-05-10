@@ -50,15 +50,15 @@ public abstract class GraphAdaptor<T extends Edge> implements Graph<T> {
     /**
      * {@inheritDoc}
      */
-    public boolean addVertex(int i) {
-        return g.addVertex(i);
+    public boolean add(int i) {
+        return g.add(i);
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean addEdge(T edge) {
-        return g.addEdge(edge);
+    public boolean add(T edge) {
+        return g.add(edge);
     }
 
     /**
@@ -78,22 +78,29 @@ public abstract class GraphAdaptor<T extends Edge> implements Graph<T> {
     /**
      * {@inheritDoc}
      */
-    public boolean containsVertex(int vertex) {
-        return g.containsVertex(vertex);
+    public boolean contains(int vertex) {
+        return g.contains(vertex);
     }
     
     /**
      * {@inheritDoc}
      */
-    public boolean containsEdge(int from, int to) {
-        return g.containsEdge(from, to);
+    public boolean contains(int from, int to) {
+        return g.contains(from, to);
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean containsEdge(Edge e) {
-        return g.containsEdge(e);
+    public boolean contains(Edge e) {
+        return g.contains(e);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int degree(int vertex) {
+        return g.degree(vertex);
     }
 
     /**
@@ -113,15 +120,15 @@ public abstract class GraphAdaptor<T extends Edge> implements Graph<T> {
     /**
      * {@inheritDoc}
      */
-    public Set<Integer> getAdjacentVertices(int vertex) {
-        return g.getAdjacentVertices(vertex);
+    public Set<Integer> getNeighbors(int vertex) {
+        return g.getNeighbors(vertex);
     }
 
     /**
      * {@inheritDoc}
      */
-    public T getEdge(int vertex1, int vertex2) {
-        return g.getEdge(vertex1, vertex2);
+    public Set<T> getEdges(int vertex1, int vertex2) {
+        return g.getEdges(vertex1, vertex2);
     }
 
     /**
@@ -141,15 +148,15 @@ public abstract class GraphAdaptor<T extends Edge> implements Graph<T> {
     /**
      * {@inheritDoc}
      */
-    public boolean removeEdge(T e) {
-        return g.removeEdge(e);
+    public boolean remove(T e) {
+        return g.remove(e);
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean removeVertex(int vertex) {
-        return g.removeVertex(vertex);
+    public boolean remove(int vertex) {
+        return g.remove(vertex);
     }
 
     /**

@@ -42,7 +42,7 @@ public class SubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
@@ -54,7 +54,7 @@ public class SubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, -1);
@@ -70,7 +70,7 @@ public class SubgraphIteratorTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < 10;  ++j)
-                g.addEdge(new SimpleEdge(i, j));
+                g.add(new SimpleEdge(i, j));
         }    
 
         SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 20);
@@ -81,17 +81,17 @@ public class SubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
-        g.addEdge(new SimpleEdge(1, 2));
-        g.addEdge(new SimpleEdge(1, 3));
-        g.addEdge(new SimpleEdge(1, 4));
-        g.addEdge(new SimpleEdge(1, 5));
-        g.addEdge(new SimpleEdge(2, 3));
-        g.addEdge(new SimpleEdge(2, 6));
-        g.addEdge(new SimpleEdge(2, 7));
-        g.addEdge(new SimpleEdge(3, 8));
-        g.addEdge(new SimpleEdge(3, 9));
+        g.add(new SimpleEdge(1, 2));
+        g.add(new SimpleEdge(1, 3));
+        g.add(new SimpleEdge(1, 4));
+        g.add(new SimpleEdge(1, 5));
+        g.add(new SimpleEdge(2, 3));
+        g.add(new SimpleEdge(2, 6));
+        g.add(new SimpleEdge(2, 7));
+        g.add(new SimpleEdge(3, 8));
+        g.add(new SimpleEdge(3, 9));
 
         SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
         int numSubgraphs = 0;
@@ -107,11 +107,11 @@ public class SubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
-        g.addEdge(new SimpleEdge(1, 2));
-        g.addEdge(new SimpleEdge(1, 3));
-        g.addEdge(new SimpleEdge(2, 3));
+        g.add(new SimpleEdge(1, 2));
+        g.add(new SimpleEdge(1, 3));
+        g.add(new SimpleEdge(2, 3));
 
         SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
         int numSubgraphs = 0;
@@ -127,7 +127,7 @@ public class SubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
 
         SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
@@ -151,8 +151,8 @@ public class SubgraphIteratorTests {
         // Graph from the paper
         for (int i = 0; i < 3; i++)  {
             for (int j = i+1; j < 3; j++)  {
-                g.addEdge(new SimpleDirectedEdge(i, j));
-                g.addEdge(new SimpleDirectedEdge(j, i));
+                g.add(new SimpleDirectedEdge(i, j));
+                g.add(new SimpleDirectedEdge(j, i));
             }
         }
 
@@ -170,30 +170,30 @@ public class SubgraphIteratorTests {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
 
 
-        g.addEdge(new SimpleDirectedEdge(0, 1));
-        g.addEdge(new SimpleDirectedEdge(0, 2));
+        g.add(new SimpleDirectedEdge(0, 1));
+        g.add(new SimpleDirectedEdge(0, 2));
 
         checkSize(1, 3, g);
         
         // Add an edge, which should increase the subgraphs to 3
-        g.addEdge(new SimpleDirectedEdge(0, 3));
+        g.add(new SimpleDirectedEdge(0, 3));
         checkSize(3, 3, g);
 
-        g.addEdge(new SimpleDirectedEdge(0, 4));
+        g.add(new SimpleDirectedEdge(0, 4));
         checkSize(6, 3, g);
 
         // Add an edge that only completes a cycle but does not increase the
         // reachable set for any vertex
-        g.addEdge(new SimpleDirectedEdge(1, 2));
+        g.add(new SimpleDirectedEdge(1, 2));
         checkSize(6, 3, g);
 
-        g.addEdge(new SimpleDirectedEdge(2, 3));
+        g.add(new SimpleDirectedEdge(2, 3));
         checkSize(7, 3, g);
 
-        g.addEdge(new SimpleDirectedEdge(3, 4));
+        g.add(new SimpleDirectedEdge(3, 4));
         checkSize(8, 3, g);
 
-        g.addEdge(new SimpleDirectedEdge(1, 3));
+        g.add(new SimpleDirectedEdge(1, 3));
         checkSize(9, 3, g);
     }
 
@@ -213,17 +213,17 @@ public class SubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
-        g.addEdge(new SimpleDirectedEdge(1, 2));
-        g.addEdge(new SimpleDirectedEdge(1, 3));
-        g.addEdge(new SimpleDirectedEdge(1, 4));
-        g.addEdge(new SimpleDirectedEdge(1, 5));
-        g.addEdge(new SimpleDirectedEdge(2, 3));
-        g.addEdge(new SimpleDirectedEdge(2, 6));
-        g.addEdge(new SimpleDirectedEdge(2, 7));
-        g.addEdge(new SimpleDirectedEdge(3, 8));
-        g.addEdge(new SimpleDirectedEdge(3, 9));
+        g.add(new SimpleDirectedEdge(1, 2));
+        g.add(new SimpleDirectedEdge(1, 3));
+        g.add(new SimpleDirectedEdge(1, 4));
+        g.add(new SimpleDirectedEdge(1, 5));
+        g.add(new SimpleDirectedEdge(2, 3));
+        g.add(new SimpleDirectedEdge(2, 6));
+        g.add(new SimpleDirectedEdge(2, 7));
+        g.add(new SimpleDirectedEdge(3, 8));
+        g.add(new SimpleDirectedEdge(3, 9));
 
         SubgraphIterator<DirectedEdge> iter = new SubgraphIterator<DirectedEdge>(g, 3);
         int numSubgraphs = 0;
@@ -239,12 +239,12 @@ public class SubgraphIteratorTests {
 
         // Graph from the paper
         for (int i = 1; i < 9; i++)  {
-            g.addVertex(i);
+            g.add(i);
         }
-        g.addEdge(new SimpleDirectedEdge(1, 2));
-        g.addEdge(new SimpleDirectedEdge(1, 3));
-        g.addEdge(new SimpleDirectedEdge(3, 5));
-        g.addEdge(new SimpleDirectedEdge(4, 6));
+        g.add(new SimpleDirectedEdge(1, 2));
+        g.add(new SimpleDirectedEdge(1, 3));
+        g.add(new SimpleDirectedEdge(3, 5));
+        g.add(new SimpleDirectedEdge(4, 6));
 
         SubgraphIterator<DirectedEdge> iter = new SubgraphIterator<DirectedEdge>(g, 3);
         int numSubgraphs = 0;
@@ -257,26 +257,26 @@ public class SubgraphIteratorTests {
 
     @Test public void testProblematicGraph() {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
-        g.addEdge(new SimpleDirectedEdge(0,1));
-        g.addEdge(new SimpleDirectedEdge(0,2));
-        g.addEdge(new SimpleDirectedEdge(0,3));
-        g.addEdge(new SimpleDirectedEdge(0,4));
-        g.addEdge(new SimpleDirectedEdge(1,2));
-        g.addEdge(new SimpleDirectedEdge(2,3));
-        g.addEdge(new SimpleDirectedEdge(3,4));
-        g.addEdge(new SimpleDirectedEdge(1,3));
-        g.addEdge(new SimpleDirectedEdge(4,5));
-        g.addEdge(new SimpleDirectedEdge(5,6));
-        g.addEdge(new SimpleDirectedEdge(6,4));
-        g.addEdge(new SimpleDirectedEdge(0,7));
-        g.addEdge(new SimpleDirectedEdge(6,7));
-        g.addEdge(new SimpleDirectedEdge(7,0));
-        g.addEdge(new SimpleDirectedEdge(7,6));
-        g.addEdge(new SimpleDirectedEdge(7,8));
-        g.addEdge(new SimpleDirectedEdge(8,9));
-        g.addEdge(new SimpleDirectedEdge(10,11));
-        g.addEdge(new SimpleDirectedEdge(11,12));
-        g.addEdge(new SimpleDirectedEdge(10,12));
+        g.add(new SimpleDirectedEdge(0,1));
+        g.add(new SimpleDirectedEdge(0,2));
+        g.add(new SimpleDirectedEdge(0,3));
+        g.add(new SimpleDirectedEdge(0,4));
+        g.add(new SimpleDirectedEdge(1,2));
+        g.add(new SimpleDirectedEdge(2,3));
+        g.add(new SimpleDirectedEdge(3,4));
+        g.add(new SimpleDirectedEdge(1,3));
+        g.add(new SimpleDirectedEdge(4,5));
+        g.add(new SimpleDirectedEdge(5,6));
+        g.add(new SimpleDirectedEdge(6,4));
+        g.add(new SimpleDirectedEdge(0,7));
+        g.add(new SimpleDirectedEdge(6,7));
+        g.add(new SimpleDirectedEdge(7,0));
+        g.add(new SimpleDirectedEdge(7,6));
+        g.add(new SimpleDirectedEdge(7,8));
+        g.add(new SimpleDirectedEdge(8,9));
+        g.add(new SimpleDirectedEdge(10,11));
+        g.add(new SimpleDirectedEdge(11,12));
+        g.add(new SimpleDirectedEdge(10,12));
 
         for (Integer v : g.vertices())
             System.out.println("g has vertex " + v);

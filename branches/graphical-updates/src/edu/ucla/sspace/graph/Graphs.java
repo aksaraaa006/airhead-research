@@ -39,6 +39,18 @@ public final class Graphs {
 
     private Graphs() { }
 
+    public DirectedGraph asDirectedGraph(Graph<? extends DirectedEdge> g) {
+        throw new Error();
+    }
+
+    public WeightedGraph asWeightedGraph(Graph<? extends WeightedEdge> g) {
+        throw new Error();
+    }
+
+    public <T> Multigraph<T> asMultigraph(Graph<? extends TypedEdge<T>> g) {
+        throw new Error();
+    }
+
     /**
      * Shuffles the edges of {@code g} while still preserving the <a
      * href="http://en.wikipedia.org/wiki/Degree_sequence#Degree_sequence">degree
@@ -76,17 +88,17 @@ public final class Graphs {
                 T swapped2 = e2.<T>clone(e2.from(), e1.to());
             
                 // Check that the new edges do not already exist in the graph
-                if (g.containsEdge(swapped1) 
-                        || g.containsEdge(swapped2))
+                if (g.contains(swapped1) 
+                        || g.contains(swapped2))
                     continue;
             
                 // Remove the old edges
-                g.removeEdge(e1);
-                g.removeEdge(e2);
+                g.remove(e1);
+                g.remove(e2);
                 
                 // Put in the swapped-end-point edges
-                g.addEdge(swapped1);
-                g.addEdge(swapped2);
+                g.add(swapped1);
+                g.add(swapped2);
                 
                 // Update the in-memory edges set so that if these edges are drawn
                 // again, they don't point to old edges
@@ -113,7 +125,7 @@ public final class Graphs {
         for (Integer from : g.vertices()) {
             for (Integer to : g.vertices()) {
                 Edge e = new SimpleDirectedEdge(from, to);
-                if (g.containsEdge(e))
+                if (g.contains(e))
                     sb.append('1');
                 else
                     sb.append('0');

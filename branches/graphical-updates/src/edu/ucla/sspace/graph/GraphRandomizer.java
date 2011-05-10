@@ -52,17 +52,17 @@ public class GraphRandomizer {
             T swapped2 = e2.<T>clone(e2.from(), e1.to());
             
             // Check that the new edges do not already exist in the graph
-            if (g.containsEdge(swapped1) 
-                || g.containsEdge(swapped2))
+            if (g.contains(swapped1) 
+                || g.contains(swapped2))
                 continue;
             
             // Remove the old edges
-            g.removeEdge(e1);
-            g.removeEdge(e2);
+            g.remove(e1);
+            g.remove(e2);
             
             // Put in the swapped-end-point edges
-            g.addEdge(swapped1);
-            g.addEdge(swapped2);
+            g.add(swapped1);
+            g.add(swapped2);
 
             // Update the in-memory edges set so that if these edges are drawn
             // again, they don't point to old edges
@@ -97,17 +97,17 @@ public class GraphRandomizer {
             T swapped2 = e2.<T>clone(e2.from(), e1.to());
             
             // Check that the new edges do not already exist in the graph
-            if (g.containsEdge(swapped1) 
-                || g.containsEdge(swapped2))
+            if (g.contains(swapped1) 
+                || g.contains(swapped2))
                 continue;
             
             // Remove the old edges
-            g.removeEdge(e1);
-            g.removeEdge(e2);
+            g.remove(e1);
+            g.remove(e2);
             
             // Put in the swapped-end-point edges
-            g.addEdge(swapped1);
-            g.addEdge(swapped2);
+            g.add(swapped1);
+            g.add(swapped2);
         }
     }
 
