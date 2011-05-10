@@ -395,10 +395,14 @@ public abstract class BaseSpectralCut implements EigenCut {
                                                  DoubleVector other) {
         double dot = dotProduct(v, other);
         dot -= v.get(0) * other.get(0);
-        dot /= other.get(0);
-        v.add(0, -dot);
+        if (other.get(0) != 0d) {
+            dot /= other.get(0);
+            v.add(0, -dot);
+        }
         dot = dotProduct(v, v);
-        return (dot == 0) ? v : new ScaledDoubleVector(v, 1/dot);
+        if (1/dot == 0d || dot == 0)
+            return v;
+        return new ScaledDoubleVector(v, 1/dot);
     }
 
     /**
