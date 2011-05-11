@@ -130,6 +130,15 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         return new SubgraphAdaptor(subgraph);
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
+    public DirectedGraph subview(Set<Integer> vertices) {
+        Graph<DirectedEdge> subview = super.subview(vertices);
+        return new SubviewAdaptor(subview);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -326,6 +335,133 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             return new SubgraphAdaptor(g);
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        public DirectedGraph subview(Set<Integer> vertices) {
+            Graph<DirectedEdge> g = super.subview(vertices);
+            return new SubviewAdaptor(g);
+        }
     }
 
+
+    /**
+     * A decorator over the {@link Graph} returned by {@link #subview(Set)} that
+     * extends the functionality to support the {@link DirectedGraph} interface.
+     */ 
+    private class SubviewAdaptor extends GraphAdaptor<DirectedEdge> 
+            implements DirectedGraph, java.io.Serializable  {
+
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * Constructs a new adaptor over the provided subview.
+         */
+        public SubviewAdaptor(Graph<DirectedEdge> subgraph) {
+            super(subgraph);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int inDegree(int vertex) {
+            int degree = 0;
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return 0;
+            for (DirectedEdge e : edges) {
+                if (e.to() == vertex)
+                    degree++;
+            }
+            return degree;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<? extends DirectedEdge> inEdges(int vertex) {
+            // REMINDER: this is probably best wrapped with yet another
+            // decorator class to avoid the O(n) penality of iteration over all
+            // the edges
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return null;
+
+            Set<DirectedEdge> in = new HashSet<DirectedEdge>();
+            for (DirectedEdge e : edges) {
+                if (e.to() == vertex)
+                    in.add(e);
+            }
+            return in;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int outDegree(int vertex) {
+            int degree = 0;
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return 0;
+            for (DirectedEdge e : edges) {
+                if (e.from() == vertex)
+                    degree++;
+            }
+            return degree;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<? extends DirectedEdge> outEdges(int vertex) {
+            // REMINDER: this is probably best wrapped with yet another
+            // decorator class to avoid the O(n) penality of iteration over all
+            // the edges
+            Set<DirectedEdge> edges = getAdjacencyList(vertex);
+            if (edges == null)
+                return null;
+            Set<DirectedEdge> out = new HashSet<DirectedEdge>();
+            for (DirectedEdge e : edges) {
+                if (e.from() == vertex)
+                    out.add(e);
+            }
+            return out;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<Integer> predecessors(int vertex) {
+            Set<Integer> preds = new HashSet<Integer>();
+            for (DirectedEdge e : inEdges(vertex))
+                preds.add(e.from());
+            return preds;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<Integer> successors(int vertex) {
+            Set<Integer> succs = new HashSet<Integer>();
+            for (DirectedEdge e : outEdges(vertex))
+                succs.add(e.to());
+            return succs;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public DirectedGraph subgraph(Set<Integer> vertices) {
+            Graph<DirectedEdge> g = super.subgraph(vertices);
+            return new SubgraphAdaptor(g);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public DirectedGraph subview(Set<Integer> vertices) {
+            Graph<DirectedEdge> g = super.subview(vertices);
+            return new SubviewAdaptor(g);
+        }
+    }
 }

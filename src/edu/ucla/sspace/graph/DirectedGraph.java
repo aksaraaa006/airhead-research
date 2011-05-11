@@ -79,5 +79,9 @@ public interface DirectedGraph extends Graph<DirectedEdge> {
      * {@inheritDoc}
      */
     DirectedGraph subgraph(Set<Integer> vertices);
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    DirectedGraph subview(Set<Integer> vertices);    
 }

@@ -94,7 +94,7 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
     public Set<Edge> getEdges(int vertex) {
         return (edges.contains(vertex))
             ? Collections.<Edge>singleton(new SimpleEdge(rootVertex, vertex))
-            : null;
+            : Collections.<Edge>emptySet();
     }    
 
     /**
