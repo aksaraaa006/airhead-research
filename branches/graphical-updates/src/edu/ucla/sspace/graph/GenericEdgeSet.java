@@ -22,12 +22,13 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import edu.ucla.sspace.util.OpenIntSet;
+import edu.ucla.sspace.util.IntSet;
 
 
 /**
@@ -45,11 +46,14 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
         
     private final int rootVertex;
     
-    private final Set<T> edges;
+    private final BitSet vertices;
     
+    private final Set<T> edges;
+   
     public GenericEdgeSet(int rootVertex) {
         this.rootVertex = rootVertex;
         edges = new HashSet<T>();
+        vertices = new BitSet();
     }
     
     /**
@@ -65,23 +69,14 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */
     public Set<Integer> connected() {
-        Set<Integer> v = new HashSet<Integer>();
-        for (T e : edges) {
-            v.add(e.from());
-            v.add(e.to());
-        }
-        return v;
+        return Collections.unmodifiableSet(IntSet.wrap(vertices));
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean connects(int vertex) {
-        for (T e : edges) {
-            if (vertex == e.from() || vertex == e.to())
-                return true;
-        }
-        return false;
+        return vertices.get(vertex);
     }
 
     /**
@@ -95,6 +90,8 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */
     public Set<T> getEdges(int vertex) {
+        if (!vertices.get(vertex))
+            return Collections.emptySet();
         Set<T> toReturn = new HashSet<T>();
         for (T e : edges) {
             if (vertex == e.from() || vertex == e.to())
@@ -114,6 +111,7 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */ 
     public Iterator<T> iterator() {
+        // FIX ME: remove() won't update the vertices
         return edges.iterator();
     }
     
@@ -121,7 +119,15 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */
     public boolean remove(Object o) {
-        return edges.remove(o);
+        if (edges.remove(o)) {
+            Edge e = (Edge)o;
+            if (e.from() == rootVertex)
+                vertices.set(e.to(), false);
+            else
+                vertices.set(e.from(), false);        
+            return true;
+        }
+        return false;
     }
 
     /**

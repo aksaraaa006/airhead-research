@@ -56,6 +56,18 @@ import java.util.Set;
  * the operations) should throw an {@link UnsupportedOperationException} if such
  * methods are called.
  *
+ * <p> This interface exposes two different methods to examine a portion of the
+ * graph at one time: {@link #subview(Set)} and {@link #subgraph(Set)}. The
+ * {@code Graph} instances returned from {@link #subview(Set)} differs from that
+ * of {@link #subgraph(Set)} in two important ways: <ul><li>the labeling of the
+ * vertices is retained in the subview, whereas the vertices are relabeled in
+ * the subgraph, and <li> the subview is unmodifiable (cannot add or remove
+ * vertices), whereas the subgraph is modifiable.</ul> In both cases, any
+ * changes to the edge structure will be reflected in the {@code Graph}
+ * instances returned by both methods.  Furthermore, any remove of the
+ * <i>vertices</i> in the backing graph will also remove the vertice from the
+ * subgraph and subview as well.
+ *
  * @author David Jurgens
  */
 public interface Graph<E extends Edge> {
@@ -209,6 +221,13 @@ public interface Graph<E extends Edge> {
      */
     Graph<E> subgraph(Set<Integer> vertices);
     
+    /**
+     * Returns a <i>read-only</i> view of the specified vertices in this graph,
+     * retaining their edge structure.  Any changes to the backing graph will be
+     * reflected this view.  
+     */
+    Graph<E> subview(Set<Integer> vertices);
+
     /**
      * Returns the set of vertices in this graph.
      */

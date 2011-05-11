@@ -391,6 +391,13 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public Graph<T> subview(Set<Integer> vertices) {
+        return new Subview(vertices);
+    }
+
+    /**
      * Returns a description of the graph as the sequence of its edges.
      */
     public String toString() {
@@ -1222,6 +1229,28 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             // propagated to this subgraph's vertex set.
             return new Subgraph(mapped, this);
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Graph<T> subview(Set<Integer> vertices) {
+            checkForUpdates();
+            // Calculate the indices for the requested vertices in the backing
+            // graph
+            Set<Integer> mapped = new HashSet<Integer>();
+            for (Integer v : vertices) {
+                Integer inBacking = vertexMapping.get(mapped);
+                if (inBacking == null) {
+                    throw new IllegalArgumentException("Cannot create subgraph "
+                        + "for vertex that is not present: " + v);
+                }
+                mapped.add(inBacking);
+            }
+            
+            // REMINDER: revisit whether to expose which vertices are in this
+            // subview by returning the vertices in the backing graph
+            return new Subview(mapped);
+        }
         
         public String toString() {
             return "{ vertices: " + vertices() + ", edges: " + edges() + "}";
@@ -1395,7 +1424,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                 // map so that the contains is checking for the correct set
                 T edgeInBacking = toBacking(edge);
 
-                return adjacencyList.contains(edgeInBacking);
+                return edgeInBacking != null 
+                    && adjacencyList.contains(edgeInBacking);
             }
             
             public Iterator<T> iterator() {
@@ -1739,6 +1769,652 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
                     throw new UnsupportedOperationException("cannot remove an "
                         + "edge to an adjacenct vertices using this iterator; "
                         + "use remove() instead");
+                }            
+            }
+        }        
+    }
+
+
+    /**
+     * A read-only view of selected vertices in the backing graph.
+     *
+     * All edge information is stored in the backing graph.  {@code Subview}
+     * instances only retain information on which vertices are currently
+     * represented as a part of the subgraph.  Changes to edge by other
+     * subgraphs or to the backing graph are automatically detected and
+     * incorporated at call time.
+     */
+    protected class Subview implements Graph<T> {
+        
+        /**
+         * The vertices in this subview
+         */
+        private Set<Integer> vertices;
+        
+        /**
+         * The version for the last modification seen in the backing graph.
+         * Instances can check against this value to see if the number of
+         * vertices has changed since the state of this class was last seen.
+         */
+        private int lastModSeenInBacking;
+
+        /**
+         * Creates a new subgraph from the provided set of vertices
+         */
+        public Subview(Set<Integer> vertices) {
+            this.vertices = new HashSet<Integer>(vertices);
+        }
+        
+        /**
+         * Throws an {@link UnsupportedOperationException}
+         */
+        public boolean add(int v) {
+            throw new UnsupportedOperationException(
+                "Cannot modify Graph from subview().  Use subgraph() instead.");
+        }
+    
+        /**
+         * Throws an {@link UnsupportedOperationException}
+         */
+        public boolean add(T e) {
+            throw new UnsupportedOperationException(
+                "Cannot modify Graph from subview().  Use subgraph() instead.");
+        }
+
+        /**
+         * Checks for structural changes to the backing graph and if any changes
+         * are detected, updates the view of this subview to reflect those
+         * changes.
+         */
+        private void checkForUpdates() {
+            if (lastModSeenInBacking != AbstractGraph.this.mods) {
+                Iterator<Integer> iter = vertices.iterator();
+                while (iter.hasNext()) {
+                    int v = iter.next();
+                    if (!AbstractGraph.this.contains(v))
+                        iter.remove();
+                }                
+                lastModSeenInBacking = AbstractGraph.this.mods;
+            }
+        }
+
+        /**
+         * Throws an {@link UnsupportedOperationException}
+         */
+        public void clear() {
+            throw new UnsupportedOperationException(
+                "Cannot modify Graph from subview().  Use subgraph() instead.");
+        }
+        
+        /**
+         * Throws an {@link UnsupportedOperationException}
+         */
+        public void clearEdges() {
+            throw new UnsupportedOperationException(
+                "Cannot modify Graph from subview().  Use subgraph() instead.");
+        }
+    
+        /**
+         * {@inheritDoc}
+         */
+        public boolean contains(int vertex1, int vertex2) {
+            checkForUpdates();
+            return vertices.contains(vertex1)
+                && vertices.contains(vertex2)
+                && AbstractGraph.this.contains(vertex1, vertex2);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public boolean contains(Edge e) {
+            checkForUpdates();
+            return vertices.contains(e.from())
+                && vertices.contains(e.to())
+                && AbstractGraph.this.contains(e);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public boolean contains(int v) {
+            checkForUpdates();
+            return vertices.contains(v);
+        }
+
+        /**
+         * {@inheritDoc} 
+         */
+        public int degree(int vertex) {
+            // REMINDER: optimize this if it ever get used in a hot spot
+            Set<T> edges = getAdjacencyList(vertex);
+            return (edges == null) ? 0 : edges.size();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<T> edges() {
+            checkForUpdates();
+            return new SubviewEdgeView();
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        public Set<T> getAdjacencyList(int vertex) {
+            checkForUpdates();
+            if (!vertices.contains(vertex))
+                return null;
+            EdgeSet<T> adjList = vertexToEdges.get(vertex);
+            assert adjList != null 
+                : "subgraph vertex has no EdgeSet in the backing graph";
+            return new SubviewAdjacencyListView(vertex, adjList);
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        public Set<Integer> getNeighbors(int vertex) {
+            checkForUpdates();
+            if (!vertices.contains(vertex))
+                return null;
+            EdgeSet<T> adjList = vertexToEdges.get(vertex);
+            assert adjList != null 
+                : "subgraph vertex has no EdgeSet in the backing graph";
+            return new SubviewAdjacentVerticesView(adjList.connected());
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        public Set<T> getEdges(int vertex1, int vertex2) {
+            checkForUpdates();
+            return (vertices.contains(vertex1)
+                    && vertices.contains(vertex2))
+                ? AbstractGraph.this.getEdges(vertex1, vertex2)
+                : null;
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
+        public boolean hasCycles() {
+            throw new UnsupportedOperationException("fix me");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Iterator<Integer> iterator() {
+            checkForUpdates();
+            return Collections.unmodifiableSet(vertices).iterator();
+        }
+        /**
+         * {@inheritDoc}
+         */
+        public int order() {
+            checkForUpdates();
+            return vertices.size();
+        }
+        
+        /**
+         * Throws an {@link UnsupportedOperationException}
+         */
+        public boolean remove(Edge e) {
+            throw new UnsupportedOperationException(
+                "Cannot modify Graph from subview().  Use subgraph() instead.");
+        }
+
+        /**
+         * Throws an {@link UnsupportedOperationException}
+         */
+        public boolean remove(int vertex) {
+            throw new UnsupportedOperationException(
+                "Cannot modify Graph from subview().  Use subgraph() instead.");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int size() {
+            // Because this is only a view of the backing graph, we can't keep
+            // view-local state of the number of edges.  Therefore, we have to
+            // calculate how many edges are present on the fly.
+            int numEdges = 0;
+            for (Integer v : vertices) {
+                EdgeSet<T> edgeSet = AbstractGraph.this.getEdgeSet(v);
+                // Some vertices may not have any edges so their EdgeSet will be
+                // null
+                if (edgeSet == null)
+                    continue;
+                for (Integer v2 : vertices) {
+                    for (T e : edgeSet.getEdges(v2)) {
+                        // Because the backing graph maintains symmetric edges
+                        // for all the edge sets, we need to avoid double
+                        // counting an edge.  To do this, we check whether the
+                        // vertex for the from() is less than to(), which will
+                        // only count the edges stored in the from() vertex's
+                        // EdgeSet.
+                        if ((v == e.from() && v < e.to())
+                                || (v == e.to() && v < e.from()))
+                            ++numEdges;
+                    }
+                }
+            }
+            return numEdges;
+        }
+            
+        /**
+         * {@inheritDoc}
+         */
+        public Graph<T> subgraph(Set<Integer> verts) {
+            checkForUpdates();
+            for (Integer v : verts) {
+                if (!vertices.contains(v)) {
+                    throw new IllegalArgumentException("Cannot create subgraph "
+                        + "for vertex that is not present: " + v);
+                }
+            }
+            return new Subgraph(verts);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Graph<T> subview(Set<Integer> verts) {
+            checkForUpdates();
+            for (Integer v : verts) {
+                if (!vertices.contains(v)) {
+                    throw new IllegalArgumentException("Cannot create subview "
+                        + "for vertex that is not present: " + v);
+                }
+            }
+            return new Subview(verts);
+        }
+        
+        public String toString() {
+            return "{ vertices: " + vertices() + ", edges: " + edges() + "}";
+        }
+
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<Integer> vertices() {
+            checkForUpdates();
+            return Collections.unmodifiableSet(vertices);
+        }    
+
+        /**
+         * A view for the {@code Edge} adjacency list of a vertex within a
+         * subgraph.  This class monitors for changes to edge set to update the
+         * state of this graph
+         */
+        private class SubviewAdjacencyListView extends AbstractSet<T> {
+
+            /**
+             * The adjacency list of edges in the backing graph.
+             */
+            private final Set<T> adjacencyList;
+            
+            /**
+             * The root vertex in the subview being represnted by this
+             * adjacency list. This value may be different from {@code
+             * adjacencyList.getRoot()}, which is storing vertices for the
+             * backing graph.
+             */ 
+            private final int rootInSubview;
+
+            public SubviewAdjacencyListView(int rootInSubview,
+                                             Set<T> adjacencyList) {
+                this.rootInSubview = rootInSubview;
+                this.adjacencyList = adjacencyList;                
+            }
+
+            /**
+             * Throws an {@link UnsupportedOperationException} if called.
+             */
+            public boolean add(T edge) {
+                throw new UnsupportedOperationException("Cannot modify " + 
+                    "Graph from subview().  Use subgraph() instead.");
+            }
+
+            public boolean contains(Object o) {
+                if (!(o instanceof Edge))
+                    return false;
+                Edge e = (Edge)o;
+                return vertices.contains(e.to()) 
+                    && vertices.contains(e.from())
+                    && adjacencyList.contains(e);
+            }
+            
+            public Iterator<T> iterator() {
+                return new AdjacencyListIterator();
+            }
+            
+            /**
+             * Throws an {@link UnsupportedOperationException}
+             */
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Cannot modify " + 
+                    "Graph from subview().  Use subgraph() instead.");
+            }
+
+            public int size() {
+                int sz = 0;
+                Iterator<T> it = iterator();
+                while (it.hasNext()) {
+                    it.next();
+                    sz++;
+                }
+                return sz;
+            }
+
+            /**
+             * A decorator around the iterator for the adjacency list for a
+             * vertex in a subview, which tracks edges removal to update the
+             * number of edges in the graph.
+             */
+            private class AdjacencyListIterator implements Iterator<T> {
+                
+                private final Iterator<T> edges;
+                
+                private T next;
+
+                public AdjacencyListIterator() {
+                    edges = adjacencyList.iterator();
+                    advance();
+                }
+                
+                private void advance() {
+                    next = null;
+                    while (edges.hasNext()) {
+                        T e = edges.next();
+
+                        // Skip edges between vertices not in this subview
+                        if (!vertices.contains(e.from()) 
+                               || !vertices.contains(e.to()))
+                            continue;
+
+                        next = e;
+                        break;
+                    }
+                }
+                
+                public boolean hasNext() {
+                    return next != null;
+                }
+                
+                public T next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
+                    T cur = next;
+                    advance();
+                    return cur;
+                }
+                
+                /**
+                 * Throws an {@link UnsupportedOperationException} if called.
+                 */                
+                public void remove() {
+                    throw new UnsupportedOperationException("Cannot modify " + 
+                        "Graph from subview().  Use subgraph() instead.");
+                }            
+            }
+        }
+
+        /**
+         * 
+         */
+        private class SubviewEdgeView extends AbstractSet<T> {           
+
+            public SubviewEdgeView() { }
+
+            /**
+             * Throws an {@link UnsupportedOperationException} if called.
+             */
+            public boolean add(T e) {
+                throw new UnsupportedOperationException("Cannot modify " + 
+                    "Graph from subview().  Use subgraph() instead.");
+            }
+
+            public boolean contains(T o) {
+                return Subview.this.contains(o);
+            }
+
+            public Iterator<T> iterator() {
+                return new SubviewEdgeIterator();
+            }
+
+            /**
+             * Throws an {@link UnsupportedOperationException} if called.
+             */
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Cannot modify " + 
+                    "Graph from subview().  Use subgraph() instead.");
+            }
+
+            public int size() {
+                return Subview.this.size();
+            }
+
+            /**
+             * An {@code Iterator} that combines all the iterators returned by
+             * {@link #getAdjacencyList(int)} for the vertices in this subview
+             * and filters the results to remove symmetric edges found in two
+             * lists.
+             */
+            private class SubviewEdgeIterator implements Iterator<T> {
+
+                private final Iterator<SubviewAdjacencyListView> adjacencyLists;
+
+                private Iterator<T> curIter;
+
+                private int curRoot;
+
+                private T next;
+                
+                private T cur;
+
+                /**
+                 * Creates an iterator that combines the adjacency lists
+                 * iterators for all the vertices in this subview.
+                 */
+                public SubviewEdgeIterator() {
+                    Subview.this.checkForUpdates();
+
+                    // Create a list for all the adjacency lists of the vertices
+                    // in this subview
+                    List<SubviewAdjacencyListView> lists = 
+                        new ArrayList<SubviewAdjacencyListView>(
+                            vertices.size());
+                    
+                    // Loop over all vertices in the subview and wrap their
+                    // adjacency lists
+                    for (Integer v : vertices) {
+
+                        // Get the list using the backing vertex
+                        S adjList = getEdgeSet(v);
+                        assert adjList != null : "subview modified prior to " +
+                            "iteration";
+
+                        // Wrap it to only return the edges present in this
+                        // subview
+                        SubviewAdjacencyListView subAdjList = 
+                            new SubviewAdjacencyListView(v, adjList);
+
+                        // Add the list to the total list of lists
+                        lists.add(subAdjList);
+                    }
+                    adjacencyLists = lists.iterator();
+                    advance();
+                }
+
+                private void advance() {
+                    next = null;
+                    // If there are no more elements in the current adjacency
+                    // list and there are no futher adjacency lists to use, the
+                    // iterator is finished
+                    if ((curIter == null || !curIter.hasNext()) 
+                            && !adjacencyLists.hasNext())
+                        return;
+
+                    do {
+                        // Find an edge iterator with at least one edge
+                        while ((curIter == null || !curIter.hasNext()) 
+                                   && adjacencyLists.hasNext()) {
+                            
+                            // Get the next adjacency list
+                            SubviewAdjacencyListView adjList = 
+                                adjacencyLists.next();
+                            // Record what the root vertex is for it
+                            curRoot = adjList.rootInSubview;
+                            // Set the current iterator to return this list's
+                            // edges
+                            curIter = adjList.iterator();
+                        }
+
+                        // If we didn't find one, short circuit
+                        if (curIter == null || !curIter.hasNext())
+                            return;                   
+
+                        // Get the next edge to examine
+                        T e = curIter.next();
+
+                        // The backing graph stores symmetric edges in order to
+                        // maintain the adjacency lists.  To account for this,
+                        // we toss out edges that will have their symmetric
+                        // version counted, using the edge's to and from to make
+                        // the distinction.
+                        if ((curRoot == e.from() && curRoot < e.to())
+                                || (curRoot == e.to() && curRoot < e.from()))
+                            next = e;
+                    } while (next == null); 
+                }
+
+                public boolean hasNext() {
+                    return next != null;
+                }
+
+                public T next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
+                    cur = next;
+                    advance();
+                    return cur;                    
+                }
+
+                /**
+                 * Throws an {@link UnsupportedOperationException} if called.
+                 */
+                public void remove() {
+                    throw new UnsupportedOperationException("Cannot modify " + 
+                        "Graph from subview().  Use subgraph() instead.");
+                }
+            }
+        }
+
+        /**
+         * A view of a subview's vertex's neighbors that are also in the
+         * subview.  This view monitors for additions and removals to the set in
+         * order to update the state of this {@code Subview}.
+         */
+        private class SubviewAdjacentVerticesView extends AbstractSet<Integer> {
+
+            /**
+             * The set of adjacent vertices to a vertex.  This set is itself a view
+             * to the data and is updated by the {@link EdgeList} for a vertex.
+             */
+            private Set<Integer> adjacent;
+            
+            /**
+             * Constructs a view around the set of adjacent vertices
+             */
+            public SubviewAdjacentVerticesView(Set<Integer> adjacent) {
+                this.adjacent = adjacent;
+            }
+            
+            /**
+             * Adds an edge to this vertex and adds the vertex to the graph if it
+             * was not present before.
+             */
+            public boolean add(Integer vertex) {
+                throw new UnsupportedOperationException("Cannot modify " + 
+                    "Graph from subview().  Use subgraph() instead.");
+            }
+            
+            public boolean contains(Object o) {
+                if (!(o instanceof Integer))
+                    return false;
+                Integer i = (Integer)o;
+                return vertices.contains(i) && adjacent.contains(i);
+            }
+            
+            public Iterator<Integer> iterator() {
+                return new AdjacentVerticesIterator();
+            }
+            
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Cannot modify " + 
+                    "Graph from subview().  Use subgraph() instead.");
+            }
+            
+            public int size() {
+                int sz = 0;
+                for (Integer v : adjacent) {
+                    if (vertices.contains(v))
+                        sz++;
+                }
+                return sz;
+            }
+
+            /**
+             * A decorator around the iterator for a subview's neighboring
+             * vertices set, which keeps track of which neighboring vertices are
+             * actually in this subview.
+             */
+            private class AdjacentVerticesIterator implements Iterator<Integer> {
+
+                private final Iterator<Integer> iter;
+
+                private Integer next;
+
+                public AdjacentVerticesIterator() {
+                    iter = adjacent.iterator();
+                    advance();
+                }
+                
+                /**
+                 * Finds the next adjacent vertex that is also in this subview.
+                 */
+                private void advance() {
+                    next = null;
+                    while (iter.hasNext() && next == null) {
+                        Integer v = iter.next();
+                        if (vertices.contains(v))
+                            next = v;
+                    }                    
+                }
+
+                public boolean hasNext() {
+                    return next != null;
+                }
+
+                public Integer next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
+                    Integer cur = next;
+                    advance();
+                    return cur;
+                }
+
+                /**
+                 * Throws an {@link UnsupportedOperationException} if called.
+                 */
+                public void remove() {
+                    throw new UnsupportedOperationException("Cannot modify " + 
+                        "Graph from subview().  Use subgraph() instead.");
                 }            
             }
         }        

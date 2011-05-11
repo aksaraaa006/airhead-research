@@ -173,6 +173,13 @@ public abstract class GraphAdaptor<T extends Edge> implements Graph<T> {
         return g.subgraph(vertices);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public Graph<T> subview(Set<Integer> vertices) {
+        return g.subview(vertices);
+    }
+
     public String toString() {
         return g.toString();
     }
