@@ -29,13 +29,16 @@ import java.util.Iterator;
 import java.util.Set;
 
 import edu.ucla.sspace.util.IntSet;
+import edu.ucla.sspace.util.IteratorDecorator;
 
 
 /**
  * An {@link EdgeSet} implementation that imposes no restrictions on the type of
- * edges that may be contained within.  This implemenation is fundamentally
- * {@link Edge}-based and any vertex-based operations are expected to take O(n)
- * time, where <i>n</i> is the number of edges in this set.
+ * edges that may be contained within.  This class keeps track of which vertices
+ * are in the set as well, allowing for efficient vertex-based operations.
+ *
+ * <p> Due not knowing the {@link Edge} type, this class prevents modification via
+ * adding or removing vertices.
  *
  * @author David Jurgens
  *
@@ -111,8 +114,7 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */ 
     public Iterator<T> iterator() {
-        // FIX ME: remove() won't update the vertices
-        return edges.iterator();
+        return new EdgeIterator();
     }
     
     /**
@@ -135,5 +137,32 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      */    
     public int size() {
         return edges.size();
+    }
+
+    /**
+     * A wrapper around the edge iterator that tracks removes to this set via
+     * {@link Iterator#remove()}.
+     */
+    private class EdgeIterator extends IteratorDecorator<T> {
+
+        private static final long serialVersionUID = 1L;
+        
+        public EdgeIterator() {
+            super(edges.iterator());
+        }
+        
+        public void remove() {
+            // If there's an element to remove, find out which vertex is no
+            // longer in the set and remove it.  Note that if cur == null, then
+            // the super.remove() call will throw a NoSuchElement exception for
+            // us.
+            if (cur != null) {
+                if (cur.to() == rootVertex)
+                    vertices.set(cur.from(), false);
+                else
+                    vertices.set(cur.to(), false);
+            }
+            super.remove();
+        }
     }
 }
