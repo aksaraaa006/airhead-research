@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+
 /**
  * A {@link BitSet}-backed {@link Set} implementation for storing {@code int}
  * values.  This set offers a space-efficient method for storing small, or
@@ -36,6 +37,11 @@ import java.util.Set;
  * <p> This class provides overloads of the common {@code Set} operation with
  * the primitive {@code int} and {@code Integer} values.  Callers may use the
  * primitive overloads to avoid auto-boxing the {@code int} values.
+ * Furthermore, this class provides overloads for the {@link #addAll(IntSet)
+ * addAll}, {@link #removeAll(IntSet) removeAll}, and {@link #retainAll(IntSet)
+ * retainAll} methos which operate on {@code IntSet} instances.  These
+ * overloaded versions will still operate in {@code O(n)} time, but will be
+ * <i>much</i> faster than the {@code Collection}-based versions.
  *
  * <p> This class also provides a {@link #wrap(BitSet)} method for wrapping an
  * existing {@link BitSet} as a {@link Set}, which acts as a bridge between
@@ -91,6 +97,12 @@ public class IntSet extends AbstractSet<Integer>
         return isPresent;
     }
 
+    public boolean addAll(IntSet ints) {
+        int oldSize = size();
+        bitsSet.or(ints.bitSet);
+        return oldSize != size();
+    }
+
     public boolean contains(Integer i) {
         return contains(i.intValue());
     }
@@ -116,6 +128,18 @@ public class IntSet extends AbstractSet<Integer>
         if (isPresent)
             bitSet.set(i, false);
         return isPresent;  
+    }
+
+    public boolean removeAll(IntSet ints) {
+        int oldSize = size();
+        bitsSet.andNot(ints.bitSet);
+        return oldSize != size();
+    }
+
+    public boolean retainAll(IntSet ints) {
+        int oldSize = size();
+        bitsSet.and(ints.bitSet);
+        return oldSize != size();
     }
 
     public int size() {
@@ -170,5 +194,4 @@ public class IntSet extends AbstractSet<Integer>
             cur = -1;
         }
     }
-
 }
