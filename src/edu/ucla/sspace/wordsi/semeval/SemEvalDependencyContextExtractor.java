@@ -67,7 +67,8 @@ public class SemEvalDependencyContextExtractor
     protected boolean acceptWord(DependencyTreeNode focusNode,
                                  String contextHeader,
                                  Wordsi wordsi) {
-        return focusNode.lemma().equals(contextHeader);
+        return wordsi.accepts(focusWord.node()) &&
+               focusNode.lemma().equals(contextHeader);
     }
 
     /**
