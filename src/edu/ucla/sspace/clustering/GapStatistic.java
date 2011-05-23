@@ -41,6 +41,7 @@ import edu.ucla.sspace.matrix.TfIdfDocStripedTransform;
 import edu.ucla.sspace.matrix.Transform;
 
 import edu.ucla.sspace.util.WorkerThread;
+import edu.ucla.sspace.util.ReflectionUtil;
 
 import edu.ucla.sspace.vector.CompactSparseVector;
 import edu.ucla.sspace.vector.DoubleVector;
@@ -129,6 +130,10 @@ public class GapStatistic implements Clustering {
      */
     private static final String DEFAULT_NUM_REFERENCE_DATA_SETS = "5";
 
+    private static final String DEFAULT_METHOD = 
+        "edu.ucla.sspace.clustering.criterion.H2Function";
+
+
     /**
      * A random number generator for creating reference data sets.
      */
@@ -157,6 +162,7 @@ public class GapStatistic implements Clustering {
         int numGaps = Integer.parseInt(props.getProperty(
                 NUM_REFERENCE_DATA_SETS, DEFAULT_NUM_REFERENCE_DATA_SETS));
         int numIterations = maxClusters - startSize;
+        String criterion = props.getProperty(METHOD_PROPERTY, DEFAULT_METHOD);
 
         verbose("Transforming the original data set");
         Transform tfidf = new TfIdfDocStripedTransform();
@@ -180,7 +186,7 @@ public class GapStatistic implements Clustering {
         int bestK = 0;
         // Compute the gap statistic for each iteration.
         for (int i = 0; i < numIterations; ++i) {
-            clusterIteration(i, startSize, m, gapMatrices,
+            clusterIteration(i, startSize, criterion, m, gapMatrices,
                              gapResults, gapStds, gapAssignments);
             if (bestGap >= (gapResults[i] - gapStds[i])) {
                 break;
@@ -196,12 +202,14 @@ public class GapStatistic implements Clustering {
     }
 
     private void clusterIteration(int i, int startSize, 
+                                  String methodName,
                                   Matrix matrix, Matrix[] gapMatrices, 
                                   double[] gapResults, double[] gapStds,
                                   Assignments[] gapAssignments) {
         int k = i+startSize;
         int numGaps = gapMatrices.length;
-        CriterionFunction function = new H2Function();
+        CriterionFunction function = 
+            ReflectionUtil.getObjectInstance(methodName);
         verbose("Clustering reference data for %d clusters\n", k);
 
         // Compute the score for the reference data sets with k
@@ -238,6 +246,7 @@ public class GapStatistic implements Clustering {
                 referenceScore, gap);
         gap = referenceScore - gap;
 
+        System.out.printf("k: %d gap: %f std: %f\n", i, gap, referenceStdev);
         gapResults[i] = gap;
         gapStds[i] = referenceStdev;
         gapAssignments[i] = result;
