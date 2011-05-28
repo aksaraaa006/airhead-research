@@ -99,7 +99,7 @@ public class IntSet extends AbstractSet<Integer>
 
     public boolean addAll(IntSet ints) {
         int oldSize = size();
-        bitsSet.or(ints.bitSet);
+        bitSet.or(ints.bitSet);
         return oldSize != size();
     }
 
@@ -132,13 +132,13 @@ public class IntSet extends AbstractSet<Integer>
 
     public boolean removeAll(IntSet ints) {
         int oldSize = size();
-        bitsSet.andNot(ints.bitSet);
+        bitSet.andNot(ints.bitSet);
         return oldSize != size();
     }
 
     public boolean retainAll(IntSet ints) {
         int oldSize = size();
-        bitsSet.and(ints.bitSet);
+        bitSet.and(ints.bitSet);
         return oldSize != size();
     }
 

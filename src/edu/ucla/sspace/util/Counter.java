@@ -73,6 +73,18 @@ public class Counter<T> implements Iterable<Map.Entry<T,Integer>>,
         for (T item : items)
             count(item);
     }      
+
+    /**
+     * Adds the counts from the provided {@code Counter} to the current counts,
+     * adding new elements as needed.
+     */
+    public void add(Counter<T> counter) {
+        for (Map.Entry<T,Integer> e : counter.counts.entrySet()) {
+            T t = e.getKey();
+            Integer cur = counts.get(t);
+            counts.put(t, (cur == null) ? e.getValue() : cur + e.getValue());
+        }
+    }
     
     /**
      * Counts the object, increasing its total count by 1.

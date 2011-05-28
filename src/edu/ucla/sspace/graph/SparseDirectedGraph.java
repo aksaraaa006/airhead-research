@@ -44,8 +44,9 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
+@SuppressWarnings("unchecked")
 public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirectedEdgeSet>
-        implements DirectedGraph {
+        implements DirectedGraph<DirectedEdge> {
 
     private static final long serialVersionUID = 1L;
 
@@ -131,13 +132,13 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
     }
 
 
-    /**
-     * {@inheritDoc}
-     */
-    public DirectedGraph subview(Set<Integer> vertices) {
-        Graph<DirectedEdge> subview = super.subview(vertices);
-        return new SubviewAdaptor(subview);
-    }
+//     /**
+//      * {@inheritDoc}
+//      */
+//     public DirectedGraph subview(Set<Integer> vertices) {
+//         Graph<DirectedEdge> subview = super.subview(vertices);
+//         return new SubviewAdaptor(subview);
+//     }
 
     /**
      * {@inheritDoc}
@@ -229,7 +230,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
      * interface.
      */ 
     private class SubgraphAdaptor extends GraphAdaptor<DirectedEdge> 
-            implements DirectedGraph, java.io.Serializable  {
+            implements DirectedGraph<DirectedEdge>, java.io.Serializable  {
 
         private static final long serialVersionUID = 1L;
 
@@ -258,7 +259,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         /**
          * {@inheritDoc}
          */
-        public Set<? extends DirectedEdge> inEdges(int vertex) {
+        public Set<DirectedEdge> inEdges(int vertex) {
             // REMINDER: this is probably best wrapped with yet another
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
@@ -292,7 +293,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         /**
          * {@inheritDoc}
          */
-        public Set<? extends DirectedEdge> outEdges(int vertex) {
+        public Set<DirectedEdge> outEdges(int vertex) {
             // REMINDER: this is probably best wrapped with yet another
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
@@ -335,13 +336,13 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             return new SubgraphAdaptor(g);
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        public DirectedGraph subview(Set<Integer> vertices) {
-            Graph<DirectedEdge> g = super.subview(vertices);
-            return new SubviewAdaptor(g);
-        }
+//         /**
+//          * {@inheritDoc}
+//          */
+//         public DirectedGraph subview(Set<Integer> vertices) {
+//             Graph<DirectedEdge> g = super.subview(vertices);
+//             return new SubviewAdaptor(g);
+//         }
     }
 
 
@@ -350,7 +351,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
      * extends the functionality to support the {@link DirectedGraph} interface.
      */ 
     private class SubviewAdaptor extends GraphAdaptor<DirectedEdge> 
-            implements DirectedGraph, java.io.Serializable  {
+            implements DirectedGraph<DirectedEdge>, java.io.Serializable  {
 
         private static final long serialVersionUID = 1L;
 
@@ -379,7 +380,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         /**
          * {@inheritDoc}
          */
-        public Set<? extends DirectedEdge> inEdges(int vertex) {
+        public Set<DirectedEdge> inEdges(int vertex) {
             // REMINDER: this is probably best wrapped with yet another
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
@@ -413,7 +414,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         /**
          * {@inheritDoc}
          */
-        public Set<? extends DirectedEdge> outEdges(int vertex) {
+        public Set<DirectedEdge> outEdges(int vertex) {
             // REMINDER: this is probably best wrapped with yet another
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
@@ -456,12 +457,12 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             return new SubgraphAdaptor(g);
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        public DirectedGraph subview(Set<Integer> vertices) {
-            Graph<DirectedEdge> g = super.subview(vertices);
-            return new SubviewAdaptor(g);
-        }
+//         /**
+//          * {@inheritDoc}
+//          */
+//         public DirectedGraph subview(Set<Integer> vertices) {
+//             Graph<DirectedEdge> g = super.subview(vertices);
+//             return new SubviewAdaptor(g);
+//         }
     }
 }

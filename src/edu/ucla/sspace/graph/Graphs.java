@@ -39,15 +39,17 @@ public final class Graphs {
 
     private Graphs() { }
 
-    public DirectedGraph asDirectedGraph(Graph<? extends DirectedEdge> g) {
+    public static <E extends DirectedEdge> DirectedGraph<E> asDirectedGraph(Graph<E> g) {
+        if (g == null)
+            throw new NullPointerException();
+        return new DirectedGraphAdaptor<E>(g);
+    }
+
+    public static <E extends WeightedEdge> WeightedGraph<E> asWeightedGraph(Graph<E> g) {
         throw new Error();
     }
 
-    public WeightedGraph asWeightedGraph(Graph<? extends WeightedEdge> g) {
-        throw new Error();
-    }
-
-    public <T> Multigraph<T> asMultigraph(Graph<? extends TypedEdge<T>> g) {
+    public static <T> Multigraph<T,TypedEdge<T>> asMultigraph(Graph<? extends TypedEdge<T>> g) {
         throw new Error();
     }
 
@@ -108,6 +110,43 @@ public final class Graphs {
         }
     }
 
+    /**
+     * Shuffles the edges of {@code g} while still preserving the <a
+     * href="http://en.wikipedia.org/wiki/Degree_sequence#Degree_sequence">degree
+     * sequence</a> of the graph and that edges are only swapped with those of
+     * the same type.  Each edge in the graph will attempted to be conflated
+     * with another edge in the graph the specified number of times.  If the
+     * edge cannot be swapped (possible due to the new version of the edge
+     * already existing), the attempt fails.
+     *
+     * <p> Note that the {@link Multigraph#subview(Set,Set)} method makes it
+     * possilble to shuffle the edges for only a subset of the types in the
+     * multigraph.
+     *
+     * @param g the graph whose elemets will be shuffled
+     * @param shufflesPerEdge the number of swaps to attempt per edge.
+     *
+     * @throws IllegalArgumentException if {@code shufflesPerEdge} is
+     *         non-positive
+     */
+    public static <T,E extends TypedEdge<T>> void 
+              shufflePreserveType(Multigraph<T,E> g, int shufflesPerEdge) {
+
+        if (shufflesPerEdge < 1)
+            throw new IllegalArgumentException("must shuffle at least once");
+
+        Set<Integer> vertices = g.vertices();
+        // Iterate through all of the types in the graph, shuffling only edges
+        // of that type
+        for (T type : g.edgeTypes()) {
+            Set<T> edgeType = Collections.singleton(type);
+            // Get the view of the graph that only contains edges of the
+            // specified type
+            Multigraph<T,E> graphForType = g.subgraph(vertices, edgeType);
+            // Shuffle the edges of that type only 
+            shufflePreserve(graphForType, shufflesPerEdge);
+        }
+    }
 
     /**
      * To-do

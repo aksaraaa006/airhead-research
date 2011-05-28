@@ -40,7 +40,8 @@ public class FloydsAlgorithm {
 
         // Check whether the graph has edge weights
         if (g instanceof WeightedGraph) {
-            WeightedGraph wg = (WeightedGraph)g;
+            @SuppressWarnings("unchecked")
+            WeightedGraph<WeightedEdge> wg = (WeightedGraph<WeightedEdge>)g;
             for (int i = 0; i < verts; ++i) {
                 for (int j = 0; j < verts; ++j) {
                     Double weight = Double.MAX_VALUE;

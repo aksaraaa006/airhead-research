@@ -485,6 +485,10 @@
       <!-- Example test when doing debugging of single classes 
       <test name="edu.ucla.sspace.package.Class" todir="${report.dir}"/>
       -->
+
+      <test name="edu.ucla.sspace.graph.SparseDirectedTypedEdgeSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.CombinedSetTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.DirectedMultigraphTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SamplingSubgraphIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.OpenIntSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SparseUndirectedGraphTests" todir="${report.dir}"/>

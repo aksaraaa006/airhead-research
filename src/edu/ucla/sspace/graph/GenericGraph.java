@@ -48,6 +48,5 @@ public class GenericGraph<T extends Edge>
 
     @Override protected GenericEdgeSet<T> createEdgeSet(int vertex) {
         return new GenericEdgeSet<T>(vertex);
-    }
-    
+    }    
 }

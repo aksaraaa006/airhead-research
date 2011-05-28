@@ -33,11 +33,16 @@ import edu.ucla.sspace.util.OpenIntSet;
 
 
 /**
- *
+ * An {@link EdgeSet} implementation that stores {@link TypedEdge} instances for
+ * a vertex.  This class provides additional methods beyond the {@code EdgeSet}
+ * interface for interacting with edges on the basis of their type.
  */
 public class SparseTypedEdgeSet<T> extends AbstractSet<TypedEdge<T>> 
         implements EdgeSet<TypedEdge<T>> {
         
+    /**
+     * The vertex to which all edges in the set are connected
+     */
     private final int rootVertex;
 
     private final Map<T,OpenIntSet> typeToEdges;

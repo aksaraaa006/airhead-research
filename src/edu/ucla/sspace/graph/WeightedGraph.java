@@ -35,22 +35,22 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface WeightedGraph extends Graph<WeightedEdge> {
+public interface WeightedGraph<E extends WeightedEdge> extends Graph<E> {
 
     /**
      * Returns the set of edges contained in this graph.
      */
-    @Override Set<WeightedEdge> edges();
+    @Override Set<E> edges();
 
     /**
      * Returns the set of edges connected to the provided vertex.
      */
-    @Override Set<WeightedEdge> getAdjacencyList(int vertex);
+    @Override Set<E> getAdjacencyList(int vertex);
     
     /**
      * {@inheritDoc}
      */
-    @Override Set<WeightedEdge> getEdges(int vertex1, int vertex2);
+    @Override Set<E> getEdges(int vertex1, int vertex2);
 
     /**
      * Returns the sum of the weights for all edges connected to this vertex.
@@ -61,6 +61,6 @@ public interface WeightedGraph extends Graph<WeightedEdge> {
     /**
      * {@inheritDoc}
      */
-    @Override WeightedGraph subgraph(Set<Integer> vertices);
+    @Override WeightedGraph<E> subgraph(Set<Integer> vertices);
     
 }
