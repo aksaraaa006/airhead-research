@@ -67,8 +67,28 @@ public class CombinedIterator<T> implements Iterator<T> {
      * provided collection.
      */
     public CombinedIterator(Collection<Iterator<T>> iterators) {
-	iters = new ArrayDeque<Iterator<T>>(iterators);
+        this((Queue<Iterator<T>>)(new ArrayDeque<Iterator<T>>(iterators)));
+    }
+
+    /**
+     * Constructs a {@code CombinedIterator} from all of the iterators in the
+     * provided collection.
+     */
+    private CombinedIterator(Queue<Iterator<T>> iterators) {
+	this.iters = iterators;
         advance();
+    }
+
+    /**
+     * Joins the iterators of all the provided iterables as one unified
+     * iterator.
+     */
+    public static <T> Iterator<T> join(Collection<Iterable<T>> iterables) {
+        Queue<Iterator<T>> iters = 
+            new ArrayDeque<Iterator<T>>(iterables.size());
+        for (Iterable<T> i : iterables)
+            iters.add(i.iterator());
+        return new CombinedIterator<T>(iters);
     }
 
     /**

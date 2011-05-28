@@ -21,7 +21,8 @@
 
 package edu.ucla.sspace.graph;
 
-public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
+public class SimpleDirectedTypedEdge<T> 
+        implements DirectedTypedEdge<T>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -29,20 +30,39 @@ public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
 
     private final int to;
 
-    public SimpleDirectedEdge(int from, int to) {
+    private final T type;
+
+    public SimpleDirectedTypedEdge(T edgeType, int from, int to) {
+        this.type = edgeType;
         this.from = from;
         this.to = to;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
-    public <T extends Edge> T clone(int from, int to) {
-        return (T)(new SimpleDirectedEdge(from, to));
-    }   
+    public <E extends Edge> E clone(int from, int to) {
+        return (E)(new SimpleDirectedTypedEdge(type, from, to));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public T edgeType() {
+        return type;
+    }
     
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(Object o) {
-        if (o instanceof Edge) {
-            Edge e = (Edge)o;
-            return e.from() == from && e.to() == to;
+        if (o instanceof TypedEdge) {
+            @SuppressWarnings("unchecked")
+            TypedEdge<?> e = (TypedEdge<?>)o;
+            return e.edgeType().equals(type)
+                && e.from() == from
+                && e.to() == to;
         }
         return false;
     }
@@ -51,19 +71,28 @@ public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
         return from ^ to;
     }
 
-    public DirectedEdge flip() {
-        return new SimpleDirectedEdge(to, from);
+    /**
+     * {@inheritDoc}
+     */
+    public Edge flip() {
+        return new SimpleDirectedTypedEdge<T>(type, to, from);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int from() {
         return from;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int to() { 
         return to;
     }
 
     public String toString() {
-        return "(" + from + "->" + to + ")";
+        return "(" + from + "->" + to + "):" + type;
     }
 }

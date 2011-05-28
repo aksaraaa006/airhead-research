@@ -31,13 +31,13 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public interface DirectedGraph extends Graph<DirectedEdge> {
+public interface DirectedGraph<E extends DirectedEdge> extends Graph<E> {
 
     /**
      * {@inheritDoc} If the two vertices have bidirectional edges, this set will
      * include two edges.
      */
-    @Override Set<DirectedEdge> getEdges(int vertex1, int vertex2);
+    @Override Set<E> getEdges(int vertex1, int vertex2);
 
     /**
      * Returns the number of directed edges where {@code vertex} is the head of
@@ -49,7 +49,7 @@ public interface DirectedGraph extends Graph<DirectedEdge> {
      * Returns the set of directed edges where {@code vertex} is the head of the
      * edge
      */
-    Set<? extends DirectedEdge> inEdges(int vertex);
+    Set<E> inEdges(int vertex);
 
     /**
      * Returns the number of directed edges where {@code vertex} is the tail of
@@ -61,7 +61,7 @@ public interface DirectedGraph extends Graph<DirectedEdge> {
      * Returns the set of directed edges where {@code vertex} is the tail of the
      * edge, i.e. the edge originates at {@code vertex}
      */
-    Set<? extends DirectedEdge> outEdges(int vertex);    
+    Set<E> outEdges(int vertex);    
 
     /**
      * Returns the set of vertices that point to this vertex.  That is, the set
@@ -78,10 +78,10 @@ public interface DirectedGraph extends Graph<DirectedEdge> {
     /**
      * {@inheritDoc}
      */
-    DirectedGraph subgraph(Set<Integer> vertices);
+    DirectedGraph<E> subgraph(Set<Integer> vertices);
 
-    /**
-     * {@inheritDoc}
-     */
-    DirectedGraph subview(Set<Integer> vertices);    
+//     /**
+//      * {@inheritDoc}
+//      */
+//     DirectedGraph<E> subview(Set<Integer> vertices);    
 }

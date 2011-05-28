@@ -410,7 +410,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
     private Set<Integer> findTOut(Graph<? extends Edge> g, Set<Integer> mapped) {
         Set<Integer> tOut = new HashSet<Integer>();
         if (g instanceof DirectedGraph) {
-            DirectedGraph dg = (DirectedGraph)g;
+            DirectedGraph<?> dg = (DirectedGraph)g;
             for (Integer i : mapped) {
                 for (Integer out : dg.successors(i)) {
                     if (!mapped.contains(out))
@@ -443,7 +443,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
     private Set<Integer> findTIn(Graph g, Set<Integer> mapped) {
         Set<Integer> tIn = new HashSet<Integer>();
         if (g instanceof DirectedGraph) {
-            DirectedGraph dg = (DirectedGraph)g;
+            DirectedGraph<?> dg = (DirectedGraph)g;
             for (Integer i : mapped) {
                 for (Integer in : dg.predecessors(i)) {
                     if (!mapped.contains(in))
@@ -463,21 +463,27 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      * set if {@code g} is not a directed graph.
      */
     private Set<Integer> successors(Graph g, Integer vertex) {
-        return (g instanceof DirectedGraph) 
-            ? ((DirectedGraph)g).successors(vertex)
-            : new HashSet<Integer>();
+        if (g instanceof DirectedGraph) {
+            DirectedGraph<?> dg = (DirectedGraph)g;
+            return dg.successors(vertex);
+        }
+        else
+            return new HashSet<Integer>();
     }
 
     /**
      * Returns those vertices that point to from {@code vertex} or all the
      * adjacent vertices if {@code g} is not a directed graph.
      */
-    @SuppressWarnings("unchecked") 
+    @SuppressWarnings("unchecked")
     private Set<Integer> predecessors(Graph g, Integer vertex) {
         // The DirectedGraph cast seems to change the return type of the set
         // from Set<Integer> to just Set
-        return (g instanceof DirectedGraph) 
-            ? ((DirectedGraph)g).predecessors(vertex)
-            : g.getNeighbors(vertex);
+        if (g instanceof DirectedGraph) {
+            DirectedGraph<?> dg = (DirectedGraph)g;
+            return dg.predecessors(vertex);
+        }
+        else 
+            return g.getNeighbors(vertex);
     }
 }

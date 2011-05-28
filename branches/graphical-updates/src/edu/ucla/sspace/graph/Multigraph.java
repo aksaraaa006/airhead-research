@@ -44,7 +44,7 @@ import java.util.Set;
  * 
  * @author David Jurgens
  */
-public interface Multigraph<T> extends Graph<TypedEdge<T>> {
+public interface Multigraph<T,E extends TypedEdge<T>> extends Graph<E> {
 
     /**
      * Removes all the edges in the graph with the specified edge type.
@@ -55,12 +55,12 @@ public interface Multigraph<T> extends Graph<TypedEdge<T>> {
      * Returns {@code true} if there exists an edge between {@code vertex1} and
      * {@code vertex2} of the specified type.
      */
-    boolean containsEdge(int vertex1, int vertex2, T edgeType);
+    boolean contains(int vertex1, int vertex2, T edgeType);
 
     /**
      * Returns the set of typed edges in the graph
      */
-    @Override Set<TypedEdge<T>> edges();
+    Set<E> edges();
 
     /**
      * Returns the set of edge types currently present in this graph.
@@ -70,19 +70,24 @@ public interface Multigraph<T> extends Graph<TypedEdge<T>> {
     /**
      * Returns the set of typed edges connected to the vertex.
      */
-    @Override Set<TypedEdge<T>> getAdjacencyList(int vertex);
+    Set<E> getAdjacencyList(int vertex);
 
     /**
      * Returns the set of {@link TypedEdge} instances that connect the two
      * vertices.  If no edges connect the vertices, the set will be empty but
      * non-{@code null}.
      */
-    @Override Set<TypedEdge<T>> getEdges(int vertex1, int vertex2);
+    Set<E> getEdges(int vertex1, int vertex2);
 
     /**
      * {@inheritDoc}
      */
-    @Override Multigraph<T> subgraph(Set<Integer> vertices);
+    Multigraph<T,E> subgraph(Set<Integer> vertices);
+
+//     /**
+//      * {@inheritDoc}
+//      */
+//     Multigraph<T,E> subview(Set<Integer> vertices);
 
     /**
      * Returns a subgraph of this graph containing only the specified vertices
@@ -92,6 +97,14 @@ public interface Multigraph<T> extends Graph<TypedEdge<T>> {
      * type <i>other</i> than the specified types to this subgraph will fail.
      * Implementations are free to specify whether this will be an exception
      */
-    Multigraph<T> subgraph(Set<Integer> vertices, Set<T> edgeTypes);
+    Multigraph<T,E> subgraph(Set<Integer> vertices, Set<T> edgeTypes);
+
+//     /**
+//      * Returns a subview of this graph containing only the specified vertices
+//      * and edges of the specified types.  Note that if all of the vertices are
+//      * specified, this method can be used to extract edge-type-specific versions
+//      * of this multigraph.
+//      */
+//     Multigraph<T,E> subview(Set<Integer> vertices, Set<T> edgeTypes);
         
 }

@@ -101,6 +101,25 @@ public class SparseDirectedGraphTests {
         assertTrue(g.contains(new SimpleDirectedEdge(3, 4)));
     }
 
+    @Test public void testGetEdges() {
+        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        g.add(new SimpleDirectedEdge(0, 1));
+        assertEquals(2, g.order());
+        assertEquals(1, g.size());
+        assertTrue(g.contains(new SimpleDirectedEdge(0, 1)));
+
+        Set<DirectedEdge> edges = g.getEdges(0, 1);
+        assertEquals(1, edges.size());
+        assertTrue(edges.contains(new SimpleDirectedEdge(0, 1)));
+
+        assertEquals(null, g.getEdges(0, 4));
+        assertTrue(g.add(new SimpleDirectedEdge(1, 0)));
+        edges = g.getEdges(0, 1);
+        assertEquals(2, edges.size());
+        assertTrue(edges.contains(new SimpleDirectedEdge(0, 1)));
+        assertTrue(edges.contains(new SimpleDirectedEdge(1, 0)));
+    }
+
     @Test public void testRemoveLesserVertexWithEdges() {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
 

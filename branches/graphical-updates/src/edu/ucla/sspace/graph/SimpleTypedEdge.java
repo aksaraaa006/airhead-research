@@ -42,7 +42,7 @@ public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
      */
     @SuppressWarnings("unchecked")
     public <E extends Edge> E clone(int from, int to) {
-        return (E)(new SimpleTypedEdge(type, from, to));
+        return (E)(new SimpleTypedEdge<T>(type, from, to));
     }
 
     /**
@@ -57,9 +57,11 @@ public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
      */
     public boolean equals(Object o) {
         if (o instanceof Edge) {
-            Edge e = (Edge)o;
-            // REMINDER: fix me
-            return e.from() == from && e.to() == to;
+            TypedEdge<?> e = (TypedEdge)o;
+            return e.edgeType().equals(type)
+                // Undirected vertex test
+                && ((e.from() == from && e.to() == to)
+                    || e.from() == to && e.to() == from);
         }
         return false;
     }
@@ -72,7 +74,7 @@ public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
      * {@inheritDoc}
      */
     public Edge flip() {
-        return new SimpleEdge(to, from);
+        return new SimpleTypedEdge<T>(type, to, from);
     }
 
     /**

@@ -23,6 +23,7 @@ package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -81,7 +82,7 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritDoc}  The set of vertices returned by this set is immutable.
      */
     public Set<Integer> connected() {
         return new CombinedSet();
@@ -112,12 +113,7 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
      * {@inheritDoc}
      */
     public Set<DirectedEdge> getEdges(int vertex) {
-        Set<DirectedEdge> edges = new HashSet<DirectedEdge>();
-        if (inEdges.contains(vertex))
-            edges.add(new SimpleDirectedEdge(vertex, rootVertex));
-        else if (outEdges.contains(vertex))
-            edges.add(new SimpleDirectedEdge(rootVertex, vertex));
-        return edges;
+        return new VertexEdgeSet(vertex);
     }    
 
     /**
@@ -172,6 +168,115 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
     public int size() {
         return inEdges.size() + outEdges.size();
     }
+
+    /**
+     * A wrapper around the set of edges that connect another vertex to the root
+     * vertex
+     */
+    private class VertexEdgeSet extends AbstractSet<DirectedEdge> {
+        
+        /**
+         * The vertex in the edges that is not this root vertex
+         */
+        private final int otherVertex;
+
+        public VertexEdgeSet(int otherVertex) {
+            this.otherVertex = otherVertex;
+        }
+
+        @Override public boolean add(DirectedEdge e) {
+            return ((e.to() == rootVertex && e.from() == otherVertex)
+                    || (e.from() == rootVertex && e.to() == otherVertex))
+                && SparseDirectedEdgeSet.this.add(e);
+        }
+
+        @Override public boolean contains(Object o) {
+            if (!(o instanceof DirectedEdge))
+                return false;
+            DirectedEdge e = (DirectedEdge)o;
+            return ((e.to() == rootVertex && e.from() == otherVertex)
+                    || (e.from() == rootVertex && e.to() == otherVertex))
+                && SparseDirectedEdgeSet.this.contains(e);
+        }
+
+        @Override public Iterator<DirectedEdge> iterator() {
+            return new EdgeIterator();
+        }
+
+        @Override public boolean remove(Object o) {
+            if (!(o instanceof DirectedEdge))
+                return false;
+            DirectedEdge e = (DirectedEdge)o;
+            return ((e.to() == rootVertex && e.from() == otherVertex)
+                    || (e.from() == rootVertex && e.to() == otherVertex))
+                && SparseDirectedEdgeSet.this.remove(e);
+        }
+
+        @Override public int size() {
+            int size = 0;
+            if (inEdges.contains(otherVertex))
+                size++;
+            if (outEdges.contains(otherVertex))
+                size++;
+            return size;
+        }
+
+        /**
+         * An iterator over all the edges that connect the root vertex to a
+         * single vertex
+         */
+        class EdgeIterator implements Iterator<DirectedEdge> {
+            
+            /**
+             * The next edge to return
+             */ 
+            DirectedEdge next;
+
+            /**
+             * The edge that was most recently returned or {@code null} if the
+             * edge was removed or has yet to be returned.
+             */
+            DirectedEdge cur;
+
+            boolean returnedIn;
+            boolean returnedOut;
+
+            public EdgeIterator() {
+                advance();
+            }
+
+            private void advance() {
+                next = null;
+                if (inEdges.contains(otherVertex) && !returnedIn) {
+                    next = new SimpleDirectedEdge(otherVertex, rootVertex);
+                    returnedIn = true;
+                }
+                else if (next == null && !returnedOut 
+                         && outEdges.contains(otherVertex)) {
+                    next = new SimpleDirectedEdge(rootVertex, otherVertex);
+                    returnedOut = true;
+                } 
+            }
+
+            public boolean hasNext() {
+                return next != null;
+            }
+
+            public DirectedEdge next() {
+                cur = next;
+                advance();
+                return cur;
+            }
+
+            public void remove() {
+                if (cur == null)
+                    throw new IllegalStateException();
+                SparseDirectedEdgeSet.this.remove(cur);
+                cur = null;
+            }
+        }
+    }
+
 
     /**
      * A wrapper around the set of {@link DirectedEdge} instances that either
@@ -280,12 +385,12 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
 
         private Iterator<Integer> outVertices;
         
-        private Iterator<Integer> lastRemovedFrom;
+        private Iterator<Integer> toRemoveFrom;
 
         public DirectedEdgeIterator() {
             inVertices = inEdges.iterator();
             outVertices = outEdges.iterator();
-            lastRemovedFrom = null;
+            toRemoveFrom = null;
         }
 
         public boolean hasNext() {
@@ -299,21 +404,21 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
             if (inVertices.hasNext()) {
                 from = inVertices.next();
                 to = rootVertex;
-                lastRemovedFrom = inVertices;
+                toRemoveFrom = inVertices;
             }
             else {
                 assert outVertices.hasNext() : "bad iterator logic";
                 from = rootVertex;
                 to = outVertices.next();
-                lastRemovedFrom = outVertices;
+                toRemoveFrom = outVertices;
             }
             return new SimpleDirectedEdge(from, to);
         }
 
         public void remove() {
-            if (lastRemovedFrom == null)
+            if (toRemoveFrom == null)
                 throw new IllegalStateException("No element to remove");
-            lastRemovedFrom.remove();
+            toRemoveFrom.remove();
         }
     }
 
@@ -327,10 +432,10 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
         }
 
         @Override public Iterator<Integer> iterator() {
-            List<Iterator<Integer>> iters = new ArrayList<Iterator<Integer>>();
-            iters.add(inEdges.iterator());
-            iters.add(outEdges.iterator());
-            return new CombinedIterator<Integer>(iters);
+            OpenIntSet combined = new OpenIntSet();
+            combined.addAll(inEdges);
+            combined.addAll(outEdges);
+            return Collections.unmodifiableSet(combined).iterator();
         }
 
         @Override public int size() {

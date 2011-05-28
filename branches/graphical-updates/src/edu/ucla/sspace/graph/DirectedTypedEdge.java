@@ -30,12 +30,11 @@ package edu.ucla.sspace.graph;
  *
  * @see Multigraph
  */
-public interface DirectedTypedEdge<T> extends DirectedEdge, TypedEdge {
+public interface DirectedTypedEdge<T> extends DirectedEdge, TypedEdge<T> {
 
     /**
      * Returns {@code true} if {@code o} connects the same vertices, has the
      * same edge orientation, and has edge type information that is equivalent.
      */
     boolean equals(Object o);
-
 }

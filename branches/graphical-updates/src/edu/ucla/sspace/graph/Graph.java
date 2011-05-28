@@ -154,12 +154,14 @@ public interface Graph<E extends Edge> {
     Set<E> edges();
 
     /**
-     * Returns the set of edges connected to the provided vertex.
+     * Returns the set of edges connected to the provided vertex or {@code null}
+     * if {@code vertex} is not in this graph.
      */
     Set<E> getAdjacencyList(int vertex);
 
     /**
-     * Returns the set of vertices that are connected to the specified vertex.
+     * Returns the set of vertices that are connected to the specified vertex,
+     * or {@code null} if the vertex is not in this graph.
      */
     Set<Integer> getNeighbors(int vertex);
 
@@ -221,12 +223,12 @@ public interface Graph<E extends Edge> {
      */
     Graph<E> subgraph(Set<Integer> vertices);
     
-    /**
-     * Returns a <i>read-only</i> view of the specified vertices in this graph,
-     * retaining their edge structure.  Any changes to the backing graph will be
-     * reflected this view.  
-     */
-    Graph<E> subview(Set<Integer> vertices);
+//     /**
+//      * Returns a <i>read-only</i> view of the specified vertices in this graph,
+//      * retaining their edge structure.  Any changes to the backing graph will be
+//      * reflected this view.  
+//      */
+//     Graph<E> subview(Set<Integer> vertices);
 
     /**
      * Returns the set of vertices in this graph.

@@ -1557,156 +1557,156 @@ public class SparseUndirectedGraphTests {
      *
      ******************************************************************/
 
-    @Test public void testSubview() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubview() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
-    }
+//         Graph<Edge> subview = g.subview(vertices);
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
+//     }
 
-    @Test public void testSubviewContainsVertex() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewContainsVertex() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);        
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
-        for (int i = 0; i < 5; ++i)
-            assertTrue(subview.contains(i));
-        for (int i = 5; i < 10; ++i) {
-            assertTrue(g.contains(i));
-            assertFalse(subview.contains(i));
-        }
-    }
+//         Graph<Edge> subview = g.subview(vertices);        
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
+//         for (int i = 0; i < 5; ++i)
+//             assertTrue(subview.contains(i));
+//         for (int i = 5; i < 10; ++i) {
+//             assertTrue(g.contains(i));
+//             assertFalse(subview.contains(i));
+//         }
+//     }
 
-    @Test public void testSubviewContainsEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewContainsEdge() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);        
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
-        for (int i = 0; i < 5; ++i) {
-            for (int j = i+1; j < 5; ++j) {
-                assertTrue(subview.contains(new SimpleEdge(i, j)));
-            }
-        }
+//         Graph<Edge> subview = g.subview(vertices);        
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
+//         for (int i = 0; i < 5; ++i) {
+//             for (int j = i+1; j < 5; ++j) {
+//                 assertTrue(subview.contains(new SimpleEdge(i, j)));
+//             }
+//         }
 
-        for (int i = 5; i < 10; ++i) {
-            for (int j = i+1; j < 10; ++j) {
-                Edge e = new SimpleEdge(i, j);
-                assertTrue(g.contains(e));
-                assertFalse(subview.contains(e));
-            }
-        }
-    }
+//         for (int i = 5; i < 10; ++i) {
+//             for (int j = i+1; j < 10; ++j) {
+//                 Edge e = new SimpleEdge(i, j);
+//                 assertTrue(g.contains(e));
+//                 assertFalse(subview.contains(e));
+//             }
+//         }
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewAddEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewAddEdge() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
+//         Graph<Edge> subview = g.subview(vertices);
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
 
-        // Add an edge to a new vertex
-        assertTrue(subview.add(new SimpleEdge(0, 5)));
-        assertEquals( (5 * 4) / 2 + 1, subview.size());
-        assertEquals(6, subview.order());
-        assertEquals(11, g.order());
-        assertEquals( (9*10)/2 + 1, g.size());
-    }
+//         // Add an edge to a new vertex
+//         assertTrue(subview.add(new SimpleEdge(0, 5)));
+//         assertEquals( (5 * 4) / 2 + 1, subview.size());
+//         assertEquals(6, subview.order());
+//         assertEquals(11, g.order());
+//         assertEquals( (9*10)/2 + 1, g.size());
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewRemoveEdge() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewRemoveEdge() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
+//         Graph<Edge> subview = g.subview(vertices);
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
 
-        // Remove an existing edge
-        assertTrue(subview.remove(new SimpleEdge(0, 1)));
-        assertEquals( (5 * 4) / 2 - 1, subview.size());
-        assertEquals(5, subview.order());
-        assertEquals(10, g.order());
-        assertEquals( (9*10)/2 - 1, g.size());
+//         // Remove an existing edge
+//         assertTrue(subview.remove(new SimpleEdge(0, 1)));
+//         assertEquals( (5 * 4) / 2 - 1, subview.size());
+//         assertEquals(5, subview.order());
+//         assertEquals(10, g.order());
+//         assertEquals( (9*10)/2 - 1, g.size());
 
-        // Remove a non-existent edge, which should have no effect even though
-        // the edge is present in the backing graph
-        assertFalse(subview.remove(new SimpleEdge(0, 6)));
-        assertEquals( (5 * 4) / 2 - 1, subview.size());
-        assertEquals(5, subview.order());
-        assertEquals(10, g.order());
-        assertEquals( (9*10)/2 - 1, g.size());
-    }
+//         // Remove a non-existent edge, which should have no effect even though
+//         // the edge is present in the backing graph
+//         assertFalse(subview.remove(new SimpleEdge(0, 6)));
+//         assertEquals( (5 * 4) / 2 - 1, subview.size());
+//         assertEquals(5, subview.order());
+//         assertEquals(10, g.order());
+//         assertEquals( (9*10)/2 - 1, g.size());
+//     }
 
 
     /******************************************************************
@@ -1718,104 +1718,104 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewVerticesAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewVerticesAdd() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
+//         Graph<Edge> subview = g.subview(vertices);
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
 
-        Set<Integer> test = subview.vertices();
-        assertEquals(5, test.size());
+//         Set<Integer> test = subview.vertices();
+//         assertEquals(5, test.size());
 
-        // Add a vertex 
-        assertTrue(test.add(5));
-        assertEquals(6, test.size());
-        assertEquals(6, subview.order());
-        assertEquals(11, g.order());
-        assertEquals( (5*4)/2, subview.size());
-    }
+//         // Add a vertex 
+//         assertTrue(test.add(5));
+//         assertEquals(6, test.size());
+//         assertEquals(6, subview.order());
+//         assertEquals(11, g.order());
+//         assertEquals( (5*4)/2, subview.size());
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewVerticesRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewVerticesRemove() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
+//         Graph<Edge> subview = g.subview(vertices);
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
 
-        Set<Integer> test = subview.vertices();
-        assertEquals(5, test.size());
+//         Set<Integer> test = subview.vertices();
+//         assertEquals(5, test.size());
 
-        // Add a vertex 
-        assertTrue(test.remove(0));
-        assertEquals(4, test.size());
-        assertEquals(4, subview.order());
-        assertEquals(9, g.order());
-        assertEquals( (4*3)/2, subview.size());
-    }
+//         // Add a vertex 
+//         assertTrue(test.remove(0));
+//         assertEquals(4, test.size());
+//         assertEquals(4, subview.order());
+//         assertEquals(9, g.order());
+//         assertEquals( (4*3)/2, subview.size());
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewVerticesIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewVerticesIteratorRemove() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        assertEquals(5, subview.order());
-        assertEquals( (5 * 4) / 2, subview.size());
+//         Graph<Edge> subview = g.subview(vertices);
+//         assertEquals(5, subview.order());
+//         assertEquals( (5 * 4) / 2, subview.size());
 
-        Set<Integer> test = subview.vertices();
-        assertEquals(5, test.size());
-        Iterator<Integer> it = test.iterator();
-        assertTrue(it.hasNext());
-        // Remove the first vertex returned
-        it.next();
-        it.remove();
+//         Set<Integer> test = subview.vertices();
+//         assertEquals(5, test.size());
+//         Iterator<Integer> it = test.iterator();
+//         assertTrue(it.hasNext());
+//         // Remove the first vertex returned
+//         it.next();
+//         it.remove();
         
-        assertEquals(4, test.size());
-        assertEquals(4, subview.order());
-        assertEquals(9, g.order());
-        assertEquals( (4*3)/2, subview.size());
-    }
+//         assertEquals(4, test.size());
+//         assertEquals(4, subview.order());
+//         assertEquals(9, g.order());
+//         assertEquals( (4*3)/2, subview.size());
+//     }
 
 
     /******************************************************************
@@ -1826,51 +1826,51 @@ public class SparseUndirectedGraphTests {
      *
      ******************************************************************/
 
-    @Test public void testSubviewEdges() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewEdges() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            g.add(i);
-        }
-        g.add(new SimpleEdge(0, 1));
-        g.add(new SimpleEdge(0, 2));
-        g.add(new SimpleEdge(1, 2));
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             g.add(i);
+//         }
+//         g.add(new SimpleEdge(0, 1));
+//         g.add(new SimpleEdge(0, 2));
+//         g.add(new SimpleEdge(1, 2));
 
-        assertEquals(3, g.size());
+//         assertEquals(3, g.size());
 
-        Set<Integer> verts = new HashSet<Integer>();
-        for (int i = 0; i < 3; ++i)
-            verts.add(i);
+//         Set<Integer> verts = new HashSet<Integer>();
+//         for (int i = 0; i < 3; ++i)
+//             verts.add(i);
 
-        Graph<Edge> sub = g.subview(verts);
-        assertEquals(3, sub.order());
-        assertEquals(3, sub.size());
+//         Graph<Edge> sub = g.subview(verts);
+//         assertEquals(3, sub.order());
+//         assertEquals(3, sub.size());
      
-        Set<Edge> edges = sub.edges();
-        assertEquals(3, edges.size());
-        int j = 0; 
-        Iterator<Edge> iter = edges.iterator();
-        while (iter.hasNext()) {
-            iter.next();
-            j++;
-        }
-        assertEquals(3, j);
+//         Set<Edge> edges = sub.edges();
+//         assertEquals(3, edges.size());
+//         int j = 0; 
+//         Iterator<Edge> iter = edges.iterator();
+//         while (iter.hasNext()) {
+//             iter.next();
+//             j++;
+//         }
+//         assertEquals(3, j);
 
-        verts.clear();
-        for (int i = 3; i < 6; ++i)
-            verts.add(i);
+//         verts.clear();
+//         for (int i = 3; i < 6; ++i)
+//             verts.add(i);
 
-        sub = g.subview(verts);
-        assertEquals(3, sub.order());
-        assertEquals(0, sub.size());
+//         sub = g.subview(verts);
+//         assertEquals(3, sub.order());
+//         assertEquals(0, sub.size());
     
-        edges = sub.edges();
-        assertEquals(0, edges.size());
+//         edges = sub.edges();
+//         assertEquals(0, edges.size());
 
-        iter = edges.iterator();
-        assertFalse(iter.hasNext());
-    }
+//         iter = edges.iterator();
+//         assertFalse(iter.hasNext());
+//     }
 
 
     /******************************************************************
@@ -1882,92 +1882,92 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
 
-    @Test public void testSubviewAdjacencyListContains() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewAdjacencyListContains() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        Set<Edge> adjList = subview.getAdjacencyList(0);
+//         Set<Edge> adjList = subview.getAdjacencyList(0);
 
-        for (int i = 1; i < 5; ++i)
-            assertTrue(adjList.contains(new SimpleEdge(0, i)));
+//         for (int i = 1; i < 5; ++i)
+//             assertTrue(adjList.contains(new SimpleEdge(0, i)));
 
-        for (int i = 5; i < 10; ++i)
-            assertFalse(adjList.contains(new SimpleEdge(0, i)));
-    }
+//         for (int i = 5; i < 10; ++i)
+//             assertFalse(adjList.contains(new SimpleEdge(0, i)));
+//     }
 
-    @Test public void testSubviewAdjacencyListSize() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewAdjacencyListSize() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        Set<Edge> adjList = subview.getAdjacencyList(0);
-        assertEquals(4, adjList.size());
+//         Set<Edge> adjList = subview.getAdjacencyList(0);
+//         assertEquals(4, adjList.size());
 
-        adjList = subview.getAdjacencyList(1);
-        assertEquals(4, adjList.size());
+//         adjList = subview.getAdjacencyList(1);
+//         assertEquals(4, adjList.size());
 
-        adjList = subview.getAdjacencyList(2);
-        assertEquals(4, adjList.size());
+//         adjList = subview.getAdjacencyList(2);
+//         assertEquals(4, adjList.size());
 
-        adjList = subview.getAdjacencyList(3);
-        assertEquals(4, adjList.size());
+//         adjList = subview.getAdjacencyList(3);
+//         assertEquals(4, adjList.size());
 
-        adjList = subview.getAdjacencyList(4);
-        assertEquals(4, adjList.size());
-    }
+//         adjList = subview.getAdjacencyList(4);
+//         assertEquals(4, adjList.size());
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewAdjacencyListAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewAdjacencyListAdd() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        Set<Edge> adjList = subview.getAdjacencyList(0);
-        // Add an edge to a new vertex
-        assertTrue(adjList.add(new SimpleEdge(0, 5)));
-    }
+//         Set<Edge> adjList = subview.getAdjacencyList(0);
+//         // Add an edge to a new vertex
+//         assertTrue(adjList.add(new SimpleEdge(0, 5)));
+//     }
 
     /******************************************************************
      *
@@ -1977,152 +1977,152 @@ public class SparseUndirectedGraphTests {
      *
      ******************************************************************/
 
-    @Test public void testSubviewAdjacentVertices() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewAdjacentVertices() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        Set<Integer> adjacent = subview.getNeighbors(0);
-        assertEquals(4, adjacent.size());
+//         Set<Integer> adjacent = subview.getNeighbors(0);
+//         assertEquals(4, adjacent.size());
 
-        adjacent = subview.getNeighbors(1);
-        assertEquals(4, adjacent.size());
+//         adjacent = subview.getNeighbors(1);
+//         assertEquals(4, adjacent.size());
 
-        adjacent = subview.getNeighbors(2);
-        assertEquals(4, adjacent.size());
+//         adjacent = subview.getNeighbors(2);
+//         assertEquals(4, adjacent.size());
 
-        adjacent = subview.getNeighbors(3);
-        assertEquals(4, adjacent.size());
+//         adjacent = subview.getNeighbors(3);
+//         assertEquals(4, adjacent.size());
 
-        adjacent = subview.getNeighbors(4);
-        assertEquals(4, adjacent.size());
+//         adjacent = subview.getNeighbors(4);
+//         assertEquals(4, adjacent.size());
 
-        adjacent = subview.getNeighbors(5);
-        assertEquals(null, adjacent);        
-    }
+//         adjacent = subview.getNeighbors(5);
+//         assertEquals(null, adjacent);        
+//     }
 
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewAdjacentVerticesAdd() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewAdjacentVerticesAdd() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        Set<Integer> adjacent = subview.getNeighbors(0);
-        adjacent.add(0);
-    }
+//         Set<Integer> adjacent = subview.getNeighbors(0);
+//         adjacent.add(0);
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testSubviewAdjacentVerticesRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) public void testSubviewAdjacentVerticesRemove() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        Set<Integer> adjacent = subview.getNeighbors(0);
-        adjacent.remove(0);
-    }
+//         Set<Integer> adjacent = subview.getNeighbors(0);
+//         adjacent.remove(0);
+//     }
 
-    @Test public void testSubviewAdjacentVerticesIterator() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test public void testSubviewAdjacentVerticesIterator() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
         
-        vertices.remove(0); // now is the adjacent vertices of 0
+//         vertices.remove(0); // now is the adjacent vertices of 0
 
-        Set<Integer> adjacent = subview.getNeighbors(0);
-        assertEquals(vertices, adjacent);
-        Iterator<Integer> it = adjacent.iterator();
-        int i = 0;
-        while (it.hasNext()) {
-            i++;
-            vertices.remove(it.next());
-        }
-        assertEquals(4, i);
-        assertEquals(0, vertices.size());        
-    }
+//         Set<Integer> adjacent = subview.getNeighbors(0);
+//         assertEquals(vertices, adjacent);
+//         Iterator<Integer> it = adjacent.iterator();
+//         int i = 0;
+//         while (it.hasNext()) {
+//             i++;
+//             vertices.remove(it.next());
+//         }
+//         assertEquals(4, i);
+//         assertEquals(0, vertices.size());        
+//     }
 
-    @Test(expected=UnsupportedOperationException.class) 
-    public void testSubviewAdjacentVerticesIteratorRemove() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     @Test(expected=UnsupportedOperationException.class) 
+//     public void testSubviewAdjacentVerticesIteratorRemove() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        vertices.remove(0); // now is the adjacent vertices of 0
+//         Graph<Edge> subview = g.subview(vertices);
+//         vertices.remove(0); // now is the adjacent vertices of 0
         
-        Set<Integer> adjacent = subview.getNeighbors(0);        
-        assertEquals(vertices, adjacent);
-        Iterator<Integer> it = adjacent.iterator();
-        assertTrue(it.hasNext());
-        it.next();
-        it.remove();
-    }
+//         Set<Integer> adjacent = subview.getNeighbors(0);        
+//         assertEquals(vertices, adjacent);
+//         Iterator<Integer> it = adjacent.iterator();
+//         assertTrue(it.hasNext());
+//         it.next();
+//         it.remove();
+//     }
 
     /******************************************************************
      *
@@ -2132,83 +2132,83 @@ public class SparseUndirectedGraphTests {
      *
      ******************************************************************/
 
-    public void testSubviewWhenVerticesRemovedFromBacking() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     public void testSubviewWhenVerticesRemovedFromBacking() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
+//         Graph<Edge> subview = g.subview(vertices);
 
-        g.remove(0);
-        assertEquals(4, subview.order());
-        assertEquals((3 * 4) / 2, subview.size());
+//         g.remove(0);
+//         assertEquals(4, subview.order());
+//         assertEquals((3 * 4) / 2, subview.size());
 
-        g.remove(1);
-        assertFalse(subview.contains(1));
+//         g.remove(1);
+//         assertFalse(subview.contains(1));
 
-        g.remove(2);
-        assertFalse(subview.contains(new SimpleEdge(2,3)));
-    }
+//         g.remove(2);
+//         assertFalse(subview.contains(new SimpleEdge(2,3)));
+//     }
 
-    public void testSubviewVertexIteratorWhenVerticesRemovedFromBacking() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     public void testSubviewVertexIteratorWhenVerticesRemovedFromBacking() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        Iterator<Integer> it = subview.vertices().iterator();
-        g.remove(0);
-        int i = 0;
-        while (it.hasNext())
-            assertTrue(0 != it.next());
-        assertEquals(4, i);
-    }
+//         Graph<Edge> subview = g.subview(vertices);
+//         Iterator<Integer> it = subview.vertices().iterator();
+//         g.remove(0);
+//         int i = 0;
+//         while (it.hasNext())
+//             assertTrue(0 != it.next());
+//         assertEquals(4, i);
+//     }
 
-    public void testSubviewEdgesWhenVerticesRemovedFromBacking() {
-        Graph<Edge> g = new SparseUndirectedGraph();
+//     public void testSubviewEdgesWhenVerticesRemovedFromBacking() {
+//         Graph<Edge> g = new SparseUndirectedGraph();
 
-        // fully connected
-        for (int i = 0; i < 10; i++)  {
-            for (int j = i+1; j < 10;  ++j)
-                g.add(new SimpleEdge(i, j));
-        }    
+//         // fully connected
+//         for (int i = 0; i < 10; i++)  {
+//             for (int j = i+1; j < 10;  ++j)
+//                 g.add(new SimpleEdge(i, j));
+//         }    
 
-        // (n * (n-1)) / 2
-        assertEquals( (10 * 9) / 2, g.size());
-        assertEquals(10, g.order());
+//         // (n * (n-1)) / 2
+//         assertEquals( (10 * 9) / 2, g.size());
+//         assertEquals(10, g.order());
 
-        Set<Integer> vertices = new LinkedHashSet<Integer>();
-        for (int i = 0; i < 5; ++i)
-            vertices.add(i);
+//         Set<Integer> vertices = new LinkedHashSet<Integer>();
+//         for (int i = 0; i < 5; ++i)
+//             vertices.add(i);
 
-        Graph<Edge> subview = g.subview(vertices);
-        Set<Edge> edges = subview.edges();
-        g.remove(0);
-        assertEquals((4 * 3) / 2, edges.size());
-        assertFalse(edges.contains(new SimpleEdge(0, 1)));
-    }
+//         Graph<Edge> subview = g.subview(vertices);
+//         Set<Edge> edges = subview.edges();
+//         g.remove(0);
+//         assertEquals((4 * 3) / 2, edges.size());
+//         assertFalse(edges.contains(new SimpleEdge(0, 1)));
+//     }
 }
