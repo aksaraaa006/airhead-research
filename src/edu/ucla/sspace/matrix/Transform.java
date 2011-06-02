@@ -30,8 +30,7 @@ import java.io.IOException;
  * support both a {@link Matrix} and a serialized {@link Matrix} stored in a
  * {@code File}, in one of the supported matrix formats.  Implementations are
  * strongly encouraged to implement the {@code toString} method, as many {@link
- * edu.ucla.sspace.common.SemanticSpace} implementations will use this when
- * serializing.
+ * SemanticSpace} implementations will use this when serializing.
  *
  * @author David Jurgens
  */
@@ -58,8 +57,8 @@ public interface Transform {
      * result to the file for the output matrix.
      *
      * @param inputMatrixFile a file containing a matrix in the specified format
-     * @param inputFormat the format of the input matrix, and the format in
-     *        which the output matrix will be written
+     * @param format the format of the input matrix, and the format in which the
+     *        output matrix will be written
      * @param outputMatrixFile the file to which the transformed matrix will be
      *        written
      *
@@ -70,11 +69,25 @@ public interface Transform {
                    File outputMatrixFile) throws IOException;
 
     /**
+     * Returns a transformed matrix based on the given matrix.  By default,
+     * algorithms will store the transformed values in place.  Since a few
+     * algorithms cannot be done in place, this is optional.  (optional
+     * operation).
+     *
+     * @param matrix the matrix to be transformed
+     *
+     * @return a pointer to {@code input} after it has been transformed
+     */
+    Matrix transform(Matrix input);
+
+    /**
      * Returns a transformed matrix based on the given matrix.
      *
      * @param input the matrix to be transformed
+     * @param output values transformed from {@code input} will be stored in
+     *        this matrix
      *
-     * @return the transformed version of the input matrix
+     * @return {@code output}, the transformed version of the input matrix
      */
-    Matrix transform(Matrix input);
+    Matrix transform(Matrix input, Matrix output); 
 }

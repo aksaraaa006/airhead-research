@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 David Jurgens
+ * Copyright 2011 Keith Stevens 
  *
  * This file is part of the S-Space package and is covered under the terms and
  * conditions therein.
@@ -19,6 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 package edu.ucla.sspace.matrix;
 
 import edu.ucla.sspace.matrix.MatrixIO.Format;
@@ -31,20 +32,20 @@ import java.io.File;
  * Tranforms a matrix according to the <a
  * href="http://en.wikipedia.org/wiki/Tf%E2%80%93idf">Term frequency-Inverse
  * Document Frequency</a> weighting.  The input matrix is assumed to be
- * formatted as rows representing terms and columns representing documents.
- * Each matrix cell indicates the number of times the row's word occurs within
- * the column's document.  For full details see:
+ * formatted as rows representing documents and columns representing rows.  Each
+ * matrix cell indicates the number of times the columns's word occurs within
+ * the rows's document.  For full details see:
  *
  * <ul><li style="font-family:Garamond, Georgia, serif">Spärck Jones, Karen
  *      (1972). "A statistical interpretation of term specificity and its
  *      application in retrieval". <i>Journal of Documentation</i> <b>28</b>
  *      (1): 11–21.</li></ul>
  *
- * @author David Jurgens
+ * @see TfIdfTransform
  *
- * @see LogEntropyTransform
+ * @author Keith Stevens
  */
-public class TfIdfTransform extends BaseTransform {
+public class TfIdfDocStripedTransform extends BaseTransform {
 
     /**
      * {@inheritDoc}
@@ -65,23 +66,23 @@ public class TfIdfTransform extends BaseTransform {
      * Returns the name of this transform.
      */
     public String toString() {
-        return "TF-IDF";
+        return "TF-IDF-DOC-STRIPED";
     }
 
     public class TfIdfGlobalTransform implements GlobalTransform {
 
         /**
-         * The total number of documents (columns) that each row occurs in.
+         * The total number of terms that occur in each document.
          */
         private double[] docTermCount;
 
         /**
-         * The total number of documents (columns) that each term occurs in.
+         * The total number of documents that each term occurs in.
          */
         private double[] termDocCount;
 
         /**
-         * The total number of documents (columns) present in the matrix.
+         * The total number of documents present in the matrix.
          */
         private int totalDocCount;
 
@@ -91,9 +92,9 @@ public class TfIdfTransform extends BaseTransform {
          */
         public TfIdfGlobalTransform(Matrix matrix) {
             MatrixStatistics stats =
-                TransformStatistics.extractStatistics(matrix, true, false);
-            docTermCount = stats.columnSums;
-            termDocCount = stats.rowSums;
+                TransformStatistics.extractStatistics(matrix, false, true);
+            docTermCount = stats.rowSums;
+            termDocCount = stats.columnSums;
             totalDocCount = docTermCount.length;
         }
         
@@ -103,9 +104,9 @@ public class TfIdfTransform extends BaseTransform {
          */
         public TfIdfGlobalTransform(File inputMatrixFile, Format format) {
             MatrixStatistics stats = TransformStatistics.extractStatistics(
-                    inputMatrixFile, format, true, false);
-            docTermCount = stats.columnSums;
-            termDocCount = stats.rowSums;
+                    inputMatrixFile, format, false, true);
+            docTermCount = stats.rowSums;
+            termDocCount = stats.columnSums;
             totalDocCount = docTermCount.length;
         }
 
@@ -121,9 +122,9 @@ public class TfIdfTransform extends BaseTransform {
          * @return the TF-IDF of the observed value
          */
         public double transform(int row, int column, double value) {
-            double tf = value / docTermCount[column];
+            double tf = value / docTermCount[row];
             double idf =
-                Math.log(totalDocCount / (termDocCount[row] + 1));
+                Math.log(totalDocCount / (1 + termDocCount[column]));
             return tf * idf;
         }
     }
