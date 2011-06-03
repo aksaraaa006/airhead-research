@@ -112,7 +112,7 @@ public class SparseDirectedGraphTests {
         assertEquals(1, edges.size());
         assertTrue(edges.contains(new SimpleDirectedEdge(0, 1)));
 
-        assertEquals(null, g.getEdges(0, 4));
+        assertEquals(0, g.getEdges(0, 4).size());
         assertTrue(g.add(new SimpleDirectedEdge(1, 0)));
         edges = g.getEdges(0, 1);
         assertEquals(2, edges.size());
@@ -786,7 +786,7 @@ public class SparseDirectedGraphTests {
     @Test public void testAdjacencyListNoVertex() {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
         Set<DirectedEdge> adjacencyList = g.getAdjacencyList(0);        
-        assertEquals(null, adjacencyList);
+        assertEquals(0, adjacencyList.size());
     }
 
     @Test(expected=NoSuchElementException.class)
@@ -1426,7 +1426,7 @@ public class SparseDirectedGraphTests {
         assertEquals(4, adjacent.size());
 
         adjacent = subgraph.getNeighbors(5);
-        assertEquals(null, adjacent);        
+        assertEquals(0, adjacent.size());        
     }
 
 
@@ -1546,7 +1546,7 @@ public class SparseDirectedGraphTests {
      *
      ******************************************************************/
 
-    public void testSubgraphWhenVerticesRemovedFromBacking() {
+    @Test public void testSubgraphWhenVerticesRemovedFromBacking() {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
@@ -1576,7 +1576,7 @@ public class SparseDirectedGraphTests {
         assertFalse(subgraph.contains(new SimpleDirectedEdge(2,3)));
     }
 
-    public void testSubgraphVertexIteratorWhenVerticesRemovedFromBacking() {
+    @Test public void testSubgraphVertexIteratorWhenVerticesRemovedFromBacking() {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected
@@ -1594,15 +1594,17 @@ public class SparseDirectedGraphTests {
             vertices.add(i);
 
         Graph<DirectedEdge> subgraph = g.subgraph(vertices);
-        Iterator<Integer> it = subgraph.vertices().iterator();
         g.remove(0);
+        Iterator<Integer> it = subgraph.vertices().iterator();
         int i = 0;
-        while (it.hasNext())
+        while (it.hasNext()) {
             assertTrue(0 != it.next());
+            i++;
+        }
         assertEquals(4, i);
     }
 
-    public void testSubgraphEdgesWhenVerticesRemovedFromBacking() {
+    @Test public void testSubgraphEdgesWhenVerticesRemovedFromBacking() {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
 
         // fully connected

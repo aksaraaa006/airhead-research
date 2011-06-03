@@ -52,7 +52,10 @@ import edu.ucla.sspace.util.SortedMultiMap;
  *
  * @author David Jurgens
  */
-public class VF2IsomorphismTester implements IsomorphismTester {
+public class VF2IsomorphismTester 
+        implements IsomorphismTester, java.io.Serializable {
+    
+    private static final long serialVersionUID = 1L;
 
     /**
      * Cretes an instance of the {@code VF2IsomorphismTester}.
@@ -60,18 +63,28 @@ public class VF2IsomorphismTester implements IsomorphismTester {
     public VF2IsomorphismTester() { }
 
     /**
-     * Returns {@code true} if the graphs are isomorphism of each other.
+     * {@inheritDoc}
      */
-    public boolean areIsomorphic(Graph<? extends Edge> g1, 
-                                 Graph<? extends Edge> g2) {
+    public Map<Integer,Integer> findIsomorphism(Graph<? extends Edge> g1, 
+                                                Graph<? extends Edge> g2) {
         // If there are different number of nodes, or if the difference in
         // degrees would prevent a valid mapping, short circuit early and return
         // false.
         if (g1.order() != g2.order() 
                 || g1.size() != g2.size())
-            return false;
-
+            return Collections.emptyMap();
+        
         return match(g1, g2, new HashBiMap<Integer,Integer>());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean areIsomorphic(Graph<? extends Edge> g1, Graph<? extends Edge> g2) {
+        // findIsomorphism() will only return a non-empty set if there exists a
+        // full mapping between the two graphs, so simply check for size to test
+        // whether a mapping is possible
+        return !findIsomorphism(g1, g2).isEmpty();
     }
 
     /**
@@ -88,10 +101,8 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      *        g2}.  Vertices in this mapping will not be returned as candidate
      *        pairs
      */
-    private Set<Pair<Integer>> generateCandidateMappings(
-            Graph<? extends Edge> g1, 
-            Graph<? extends Edge> g2,
-            BiMap<Integer,Integer> mapping) {
+    private Set<Pair<Integer>> generateCandidateMappings(Graph<? extends Edge> g1, Graph<? extends Edge> g2, 
+                                                         BiMap<Integer,Integer> mapping) {
 
         Set<Integer> unmappedG1Vertices = new HashSet<Integer>(g1.vertices());
         unmappedG1Vertices.removeAll(mapping.keySet());
@@ -161,14 +172,12 @@ public class VF2IsomorphismTester implements IsomorphismTester {
      * Returns {@code true} if the provided mapping can be used to generate a
      * valid isomorphism between g1 and g2.
      */
-    private boolean match(Graph<? extends Edge> g1, Graph<? extends Edge> g2,
-                          BiMap<Integer,Integer> mapping) {
+    private Map<Integer,Integer> match(Graph<? extends Edge> g1,
+                                       Graph<? extends Edge> g2, BiMap<Integer,Integer> mapping) {
         // BASE CASE: If the mapping is complete (maps all the vertices), then
         // we have a valid isomorphism, so return true.
         if (mapping.size() == g2.order()) {
-//             System.out.printf("%s%n%s%n", g1, g2);
-//             System.out.println("Found complete mapping: " + mapping);
-            return true;
+            return mapping;
         }
         
         // Generate the candidate pairs based on the set of currently unmapped
@@ -182,17 +191,17 @@ public class VF2IsomorphismTester implements IsomorphismTester {
             if (isFeasible(g1, g2, mapping, p)) {
                 // Add the candidate mapping
                 mapping.put(p.x, p.y);
-                // If the recursive match calls found that this resulted in a
-                // complete solution, then propagate the result.
-                if (match(g1, g2, mapping))
-                    return true;
-                // Otherwise, if no match was found, restore the prior mapping
-                // state in order to test the next one
-                else
+                // if no match was found, restore the prior mapping
+                // state in order to test the next one.
+                if (match(g1, g2, mapping).isEmpty())
                     mapping.remove(p.x);
+                // Otherwise, if the recursive match calls found that this
+                // resulted in a complete solution, then propagate the result.
+                else
+                    return mapping;
             }
         }
-        return false;
+        return Collections.<Integer,Integer>emptyMap();
     }
 
     private boolean rPred(Graph<? extends Edge> g1, Graph<? extends Edge> g2,
@@ -257,7 +266,7 @@ public class VF2IsomorphismTester implements IsomorphismTester {
 
         // Compute the intersection of the sucessors of n and the nodes that
         // have already been mapped
-        Set<Integer> nSucc = successors(g1, n);
+        Set<Integer> nSucc = new HashSet<Integer>(successors(g1, n));
         nSucc.retainAll(mapping.keySet());
         found_n_mapping:
         for (int nPrime : nSucc) {

@@ -68,6 +68,8 @@ import java.util.Set;
  * <i>vertices</i> in the backing graph will also remove the vertice from the
  * subgraph and subview as well.
  *
+ * @param E the type of {@link Edge} contained within this graph
+ *
  * @author David Jurgens
  */
 public interface Graph<E extends Edge> {
@@ -154,20 +156,20 @@ public interface Graph<E extends Edge> {
     Set<E> edges();
 
     /**
-     * Returns the set of edges connected to the provided vertex or {@code null}
+     * Returns the set of edges connected to the provided vertex or an empty set
      * if {@code vertex} is not in this graph.
      */
     Set<E> getAdjacencyList(int vertex);
 
     /**
      * Returns the set of vertices that are connected to the specified vertex,
-     * or {@code null} if the vertex is not in this graph.
+     * or an empty set if the vertex is not in this graph.
      */
     Set<Integer> getNeighbors(int vertex);
 
     /**
-     * Returns the {@code Edge} instances connecting the two vertices or {@code
-     * null} if the vertices are not connected.
+     * Returns the {@code Edge} instances connecting the two vertices or an
+     * empty set if the vertices are not connected.
      */
     Set<E> getEdges(int vertex1, int vertex2);
 
@@ -223,13 +225,6 @@ public interface Graph<E extends Edge> {
      */
     Graph<E> subgraph(Set<Integer> vertices);
     
-//     /**
-//      * Returns a <i>read-only</i> view of the specified vertices in this graph,
-//      * retaining their edge structure.  Any changes to the backing graph will be
-//      * reflected this view.  
-//      */
-//     Graph<E> subview(Set<Integer> vertices);
-
     /**
      * Returns the set of vertices in this graph.
      */

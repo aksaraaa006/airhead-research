@@ -23,6 +23,7 @@ package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -37,11 +38,13 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
         
     private final int rootVertex;
     
-    private final OpenIntSet edges;
+    private final// Set<Integer> edges; 
+     OpenIntSet edges;
     
     public SparseUndirectedEdgeSet(int rootVertex) {
         this.rootVertex = rootVertex;
-        edges = new OpenIntSet();
+        edges = //new HashSet<Integer>();
+            new OpenIntSet();
     }
     
     /**
@@ -57,7 +60,10 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
         else
             return false;
         
-        return edges.add(toAdd);
+//         System.out.printf("Indices to %d before adding %d: %s%n", rootVertex, toAdd, java.util.Arrays.toString(edges.buckets));
+        boolean b = edges.add(toAdd);
+//         System.out.printf("Indices to %d after adding %d: %s%n", rootVertex, toAdd, java.util.Arrays.toString(edges.buckets));
+        return b;
     }
 
     /**
@@ -81,9 +87,18 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
     public boolean contains(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-            return (e.to() == rootVertex) 
-                ? edges.contains(e.from())
-                : e.from() == rootVertex && edges.contains(e.to());
+//             return ((e.to() == rootVertex) && edges.contains(e.from()))
+//                 || (e.from() == rootVertex && edges.contains(e.to()));
+            int toFind = 0;
+            if (e.to() == rootVertex) 
+                toFind = e.from();
+            else if (e.from() == rootVertex)
+                toFind = e.to();
+            else return false;
+
+            boolean b = edges.contains(toFind);
+            // System.out.printf("Was %d in %d's indices?: %s, %s%n",  toFind, rootVertex, b, java.util.Arrays.toString(edges.buckets));
+            return b;
         }
         return false;
     }
@@ -117,9 +132,20 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
     public boolean remove(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-            return (e.to() == rootVertex) 
-                ? edges.remove(e.from())
-                : e.from() == rootVertex && edges.remove(e.to());
+//             return (e.to() == rootVertex && edges.remove(e.from()))
+//                 || (e.from() == rootVertex && edges.remove(e.to()));
+            int toRemove = 0;
+            if (e.to() == rootVertex) 
+                toRemove = e.from();
+            else if (e.from() == rootVertex)
+                toRemove = e.to();
+            else return false;
+
+//             System.out.printf("Indices to %d before removing %d: %s%n", rootVertex, toRemove, java.util.Arrays.toString(edges.buckets));
+            boolean b = edges.remove(toRemove);
+//             System.out.printf("Indices to %d after removing %d: %s%n", rootVertex, toRemove, java.util.Arrays.toString(edges.buckets));
+//             System.out.printf("Was able to remove %d? %s%n", toRemove, b);
+            return b;
         }
         return false;
     }

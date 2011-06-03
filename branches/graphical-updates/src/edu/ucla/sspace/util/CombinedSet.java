@@ -43,7 +43,7 @@ public class CombinedSet<T> extends AbstractSet<T>
      */
     private final List<Set<T>> sets;
 
-    public CombinedSet(Collection<Set<T>> sets) {
+    public CombinedSet(Collection<? extends Set<T>> sets) {
         if (sets == null)
             throw new NullPointerException("Sets cannot be null");
         this.sets = new ArrayList<Set<T>>();
@@ -118,7 +118,6 @@ public class CombinedSet<T> extends AbstractSet<T>
      * Returns the number of unique items across all sets.
      */
     public int size() {
-        System.out.println("sets: " + sets);
         // The size isn't the sum of the sets' sizes, as there may be duplicate
         // items in more than one set.  Therefore, we rely on the iterator's
         // correctness.
@@ -176,7 +175,7 @@ public class CombinedSet<T> extends AbstractSet<T>
         private void advance() {
             next = null;
             do {
-                if ((curIterator == null || !curIterator.hasNext())
+                while ((curIterator == null || !curIterator.hasNext())
                         && setsToProcess.hasNext()) {
                     curIterator = setsToProcess.next().iterator();
                     curSet++;

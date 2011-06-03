@@ -73,8 +73,9 @@ public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
     /**
      * {@inheritDoc}
      */
-    public Edge flip() {
-        return new SimpleTypedEdge<T>(type, to, from);
+    @SuppressWarnings("unchecked")
+    public <E extends Edge> E flip() {
+        return (E)(new SimpleTypedEdge<T>(type, to, from));
     }
 
     /**

@@ -67,7 +67,7 @@ public class OpenIntSet extends AbstractSet<Integer>
     /**
      * The buckets that store the non-negative values in this set.
      */
-    private int[] buckets;
+    public int[] buckets;
     
     /**
      * True if a value equal to the {@code EMPTY_MARKER} has been stored in this
@@ -96,11 +96,18 @@ public class OpenIntSet extends AbstractSet<Integer>
     /**
      * Constructs an {@code OpenIntSet} with storage for the specified number of
      * elements.
+     *
+     * @param size the number of expected elements to be contained within this
+     *        set
+     *
+     * @throw IllegalArgumentException if {@code size} is not a positive value
      */
     public OpenIntSet(int size) {
+        if (size < 1)
+            throw new IllegalArgumentException("size must be positive");
         // find the next power of two greater than the size
         int n = 1;
-        for (int i = 1; i < 32; ++i) {
+        for (int i = 2; i < 32; ++i) {
             if ((n << i) >= size) {
                 buckets = new int[n << i];
                 break;
@@ -157,7 +164,6 @@ public class OpenIntSet extends AbstractSet<Integer>
         }
 
         int curVal = buckets[bucket];
-        // System.out.printf("Index for %d: %d, currently %d%n", i, bucket, curVal);
         if (curVal == i) 
             return false;
         else {
@@ -181,15 +187,28 @@ public class OpenIntSet extends AbstractSet<Integer>
         // if i is negative.
         int slot = i & (buckets.length - 1);
         int initial = slot;
-        
-        do {
-            // If the value indicates an available space to put i (it's empty or
-            // contains a deleted value), or if the space already contains i,
-            // then return the index
-            int val = buckets[slot];
-            if (val == EMPTY_MARKER || val == DELETED_MARKER || val == i)
-                return slot;        
 
+        int firstDeletedSeen = -1;
+        do {
+            int val = buckets[slot];
+            // Record the first DELETED slot we see, but don't return until
+            // after we've progressed to either an emtpy slot or the slot with
+            // the value.  This ensures that if we somehow delete a sequence of
+            // values preceding the slot with the desired value the iteration
+            // continues.  However, by recording this slot, if we don't find the
+            // value, we can return this index to indicate whether the slot
+            // would go.
+            if (val == DELETED_MARKER && firstDeletedSeen < 0)
+                firstDeletedSeen = slot;
+            // If we found the value itself, then return the slot
+            else if (val == i)
+                return slot;  
+            // Otherwise, if we found an EMPTY slot, then check whether the
+            // value should be placed (potentially) in this slot or in a prior
+            // slot that contains a deleted value.
+            else if (val == EMPTY_MARKER) {
+                return (firstDeletedSeen < 0) ? slot : firstDeletedSeen;
+            }
         } while ((slot = (slot + 1) % buckets.length) != initial);
 
         // If the linear probe has wrapped all the way around the array and if
@@ -269,7 +288,7 @@ public class OpenIntSet extends AbstractSet<Integer>
             // If the bucket contained the value to be removed, then perform a
             // lazy delete and just mark its index as deleted.  This saves time
             // having to shift over all the elements in the table.
-            if (buckets[bucket] == i) {
+            if (bucket >= 0 && buckets[bucket] == i) {
                 buckets[bucket] = DELETED_MARKER;
                 wasPresent = true;
             }

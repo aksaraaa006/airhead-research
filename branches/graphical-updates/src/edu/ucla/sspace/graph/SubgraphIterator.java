@@ -51,15 +51,15 @@ import java.util.Set;
  *
  * @author David Jurgens
  */
-public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
-                                                         java.io.Serializable {
+public class SubgraphIterator<E extends Edge,G extends Graph<E>> 
+    implements Iterator<G>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * The graph whose subgraphs are being iterated
      */
-    private final Graph<T> g;
+    private final G g;
 
     /**
      * The size of the subgraph to return
@@ -76,7 +76,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
      * queue is periodically filled through expanding the next series of
      * subgraphs for a vertex.
      */
-    private Queue<Graph<T>> nextSubgraphs;
+    private Queue<G> nextSubgraphs;
 
     /**
      * Constructs an iterator over all the subgraphs of {@code g} with the
@@ -89,7 +89,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
      *         greater than the number of vertices of {@code g}
      * @throws NullPointerException if {@code g} is {@code null}
      */
-    public SubgraphIterator(Graph<T> g, int subgraphSize) {
+    public SubgraphIterator(G g, int subgraphSize) {
         this.g = g;
         this.subgraphSize = subgraphSize;
         if (g == null)
@@ -100,7 +100,7 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
             throw new IllegalArgumentException("size must not be greater " 
                 + "than the number of vertices in the graph");
         vertexIter = g.vertices().iterator();
-        nextSubgraphs = new ArrayDeque<Graph<T>>();
+        nextSubgraphs = new ArrayDeque<G>();
         advance();
     }
 
@@ -138,7 +138,13 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
         // If we found a set of vertices that match the required subgraph size,
         // create a snapshot of it from the original graph and 
         if (subgraph.size() == subgraphSize) {
-            Graph<T> sub = g.subgraph(subgraph);
+            // The return type of subgraph() isn't parameterized on the type of
+            // the graph itself.  However, we know that all the current
+            // interfaces confirm to the convention that the type is refined
+            // (narrowed, really), so we perform the cast here to give the user
+            // back the more specific type.
+            @SuppressWarnings("unchecked")
+            G sub = (G)g.subgraph(subgraph);
             // System.out.printf("Made subgraph of vertices %s: %s%n", subgraph, sub);
             nextSubgraphs.add(sub);
             return;
@@ -194,10 +200,10 @@ public class SubgraphIterator<T extends Edge> implements Iterator<Graph<T>>,
     /**
      * Returns the next subgraph from the backing graph.
      */ 
-    public Graph<T> next() {
+    public G next() {
         if (nextSubgraphs.isEmpty()) 
             throw new NoSuchElementException();
-        Graph<T> next = nextSubgraphs.poll();
+        G next = nextSubgraphs.poll();
         
         // If we've exhausted the current set of subgraphs, queue up more of
         // them, generated from the remaining vertices

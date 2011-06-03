@@ -42,15 +42,25 @@ public final class Graphs {
     public static <E extends DirectedEdge> DirectedGraph<E> asDirectedGraph(Graph<E> g) {
         if (g == null)
             throw new NullPointerException();
-        return new DirectedGraphAdaptor<E>(g);
+        return (g instanceof DirectedGraph)
+            ? (DirectedGraph<E>)g
+            : new DirectedGraphAdaptor<E>(g);
     }
 
     public static <E extends WeightedEdge> WeightedGraph<E> asWeightedGraph(Graph<E> g) {
         throw new Error();
     }
 
-    public static <T> Multigraph<T,TypedEdge<T>> asMultigraph(Graph<? extends TypedEdge<T>> g) {
-        throw new Error();
+    public static <T,E extends TypedEdge<T>> Multigraph<T,E> asMultigraph(Graph<E> g) {
+        if (g == null)
+            throw new NullPointerException();
+        if (g instanceof Multigraph) {
+            @SuppressWarnings("unchecked")
+            Multigraph<T,E> m = (Multigraph<T,E>)g;
+            return m;
+        }
+        else
+            return new MultigraphAdaptor<T,E>(g);
     }
 
     /**
@@ -64,39 +74,77 @@ public final class Graphs {
      * @param g the graph whose elemets will be shuffled
      * @param shufflesPerEdge the number of swaps to attempt per edge.
      *
+     * @return the total number of times an edge's endpoint was swapped with
+     *         another edge's endpoint.  At its maximum value, this will be
+     *         {@code shufflesPerEdge * g.size()} assuming that each swap was
+     *         successful.  For dense graphs, this return value will be much
+     *         less.
+     *
      * @throws IllegalArgumentException if {@code shufflesPerEdge} is
      *         non-positive
      */
-    public static <T extends Edge> void shufflePreserve(Graph<T> g, 
-                                                        int shufflesPerEdge) {
+    public static <T extends Edge> int shufflePreserve(Graph<T> g, 
+                                                       int shufflesPerEdge) {
         if (shufflesPerEdge < 1)
             throw new IllegalArgumentException("must shuffle at least once");
+
+        System.out.printf("Shuffling %d edges%n", g.size());
+        int totalShuffles = 0;
 
         List<T> edges = new ArrayList<T>(g.edges());
         int numEdges = edges.size();
         for (int i = 0; i < numEdges; ++i) {
             
             for (int swap = 0; swap < shufflesPerEdge; ++swap) {
+//                 System.out.println("Current graph: " + g);
+
                 // Pick another vertex to conflate with i that is not i
                 int j = i; 
                 while (i == j)
-                    j = (int)(Math.random() * edges.size());
+                    j = (int)(Math.random() * edges.size());                
 
                 T e1 = edges.get(i);
                 T e2 = edges.get(j);
+                
+                // For non-directed graphs, we should randomly flip the edge
+                // orientation to guard against chases where some vertices only
+                // appear on either to() or from().
+                if (!(e1 instanceof DirectedEdge) && Math.random() < .5)
+                    e1 = e1.<T>flip();
+                if (!(e2 instanceof DirectedEdge) && Math.random() < .5)
+                    e2 = e2.<T>flip();
+
+//                 System.out.printf("Swapping edges %d and %d: %s, %s...", i, j, e1, e2);
                 
                 // Swap their end points
                 T swapped1 = e1.<T>clone(e1.from(), e2.to());
                 T swapped2 = e2.<T>clone(e2.from(), e1.to());
             
                 // Check that the new edges do not already exist in the graph
-                if (g.contains(swapped1) 
-                        || g.contains(swapped2))
+                // and that they are not self edges
+                if (g.contains(swapped1)) {
+//                     System.out.println("Cannot swap. Graph already contains " + swapped1);
                     continue;
+                }
+                if (g.contains(swapped2)) {
+//                     System.out.println("Cannot swap. Graph already contains " + swapped2);
+                    continue;
+                }
+                else if (swapped1.from() == swapped1.to()
+                         || swapped2.from() == swapped2.to()) {
+//                     System.out.println("Cannot swap, self edge");
+                    continue;
+                }
+//                 System.out.println("swap successful");
+                totalShuffles++;
             
+                // System.out.printf("Removing %s and %s...%n", edges.get(i), edges.get(j));
+
                 // Remove the old edges
-                g.remove(e1);
-                g.remove(e2);
+                boolean r1 = g.remove(edges.get(i));
+                boolean r2 = g.remove(edges.get(j));
+                
+//                 System.out.println(r1 && r2);
                 
                 // Put in the swapped-end-point edges
                 g.add(swapped1);
@@ -106,8 +154,10 @@ public final class Graphs {
                 // again, they don't point to old edges
                 edges.set(i, swapped1);
                 edges.set(j, swapped2);
+                assert g.size() == numEdges : "Added an extra edge of either " + swapped1 + " or " + swapped2;
             }
         }
+        return totalShuffles;
     }
 
     /**
@@ -126,26 +176,35 @@ public final class Graphs {
      * @param g the graph whose elemets will be shuffled
      * @param shufflesPerEdge the number of swaps to attempt per edge.
      *
+     * @return the total number of times an edge's endpoint was swapped with
+     *         another edge's endpoint.  At its maximum value, this will be
+     *         {@code shufflesPerEdge * g.size()} assuming that each swap was
+     *         successful.  For dense graphs, this return value will be much
+     *         less.
+     *
      * @throws IllegalArgumentException if {@code shufflesPerEdge} is
      *         non-positive
      */
-    public static <T,E extends TypedEdge<T>> void 
+    public static <T,E extends TypedEdge<T>> int
               shufflePreserveType(Multigraph<T,E> g, int shufflesPerEdge) {
 
         if (shufflesPerEdge < 1)
             throw new IllegalArgumentException("must shuffle at least once");
 
+        int totalShuffles = 0;
         Set<Integer> vertices = g.vertices();
         // Iterate through all of the types in the graph, shuffling only edges
         // of that type
         for (T type : g.edgeTypes()) {
+            System.out.println("swapping edge of type " + type);
             Set<T> edgeType = Collections.singleton(type);
             // Get the view of the graph that only contains edges of the
             // specified type
             Multigraph<T,E> graphForType = g.subgraph(vertices, edgeType);
             // Shuffle the edges of that type only 
-            shufflePreserve(graphForType, shufflesPerEdge);
+            totalShuffles += shufflePreserve(graphForType, shufflesPerEdge);
         }
+        return totalShuffles;
     }
 
     /**
