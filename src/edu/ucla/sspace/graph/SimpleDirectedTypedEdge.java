@@ -74,8 +74,9 @@ public class SimpleDirectedTypedEdge<T>
     /**
      * {@inheritDoc}
      */
-    public Edge flip() {
-        return new SimpleDirectedTypedEdge<T>(type, to, from);
+    @SuppressWarnings("unchecked")
+    public <E extends Edge> E flip() {
+        return (E)(new SimpleDirectedTypedEdge<T>(type, to, from));
     }
 
     /**

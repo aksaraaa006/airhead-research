@@ -22,6 +22,8 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,6 +31,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.OpenIntSet;
 
 
@@ -72,7 +75,8 @@ public class SparseTypedEdgeSet<T> extends AbstractSet<TypedEdge<T>>
      * {@inheritDoc}
      */
     public Set<Integer> connected() {
-        throw new Error("fixme");
+        Collection<? extends Set<Integer>> sets = typeToEdges.values();
+        return Collections.unmodifiableSet(new CombinedSet<Integer>(sets));
     }
 
     /**

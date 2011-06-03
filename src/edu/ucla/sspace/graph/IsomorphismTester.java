@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.graph;
 
+import java.util.Map;
+
 
 /**
  * An interface for algorithms that detect whether two graphs are <a
@@ -31,7 +33,13 @@ public interface IsomorphismTester {
     /**
      * Returns {@code true} if the graphs are isomorphism of each other.
      */
-    boolean areIsomorphic(Graph<? extends Edge> g1, 
-                          Graph<? extends Edge> g2);
+    boolean areIsomorphic(Graph<? extends Edge> g1, Graph<? extends Edge> g2);
 
+    /**
+     * Returns an isomorphic mapping from the vertices in {@code g1} to the
+     * vertices in {@code g2}, or an empty {@code Map} if no such mapping
+     * exists.
+     */
+    Map<Integer,Integer> findIsomorphism(Graph<? extends Edge> g1, 
+                                         Graph<? extends Edge> g2);
 }

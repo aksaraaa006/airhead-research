@@ -111,6 +111,57 @@ public class GraphIO {
         return g;
     }
 
+
+    public static DirectedMultigraph<String> readDirectedMultigraph(File f) throws IOException {
+        Indexer<String> vertexIndexer = new Indexer<String>();
+        BufferedReader br = new BufferedReader(new FileReader(f));
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        int lineNo = 0;
+        for (String line = null; (line = br.readLine()) != null; ) {
+            ++lineNo;
+            line = line.trim();
+            if (line.startsWith("#"))
+                continue;
+            else if (line.length() == 0)
+                continue;
+            String[] arr = line.split("\\s+");
+            if (arr.length < 3) {
+                throw new IOException("Missing vertex or type on line " + lineNo);
+            }
+            int v1 = vertexIndexer.add(arr[0]);
+            int v2 = vertexIndexer.add(arr[1]);
+            String type = arr[2];
+            g.add(new SimpleDirectedTypedEdge<String>(type, v1, v2));
+        }
+        return g;
+    }
+
+    public static UndirectedMultigraph<String> readUndirectedMultigraph(File f) throws IOException {
+        Indexer<String> vertexIndexer = new Indexer<String>();
+        BufferedReader br = new BufferedReader(new FileReader(f));
+        UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
+        int lineNo = 0;
+        for (String line = null; (line = br.readLine()) != null; ) {
+            ++lineNo;
+            line = line.trim();
+            if (line.startsWith("#"))
+                continue;
+            else if (line.length() == 0)
+                continue;
+            String[] arr = line.split("\\s+");
+            if (arr.length < 3) {
+                throw new IOException("Missing vertex or type on line " + lineNo);
+            }
+            int v1 = vertexIndexer.add(arr[0]);
+            int v2 = vertexIndexer.add(arr[1]);
+            String type = arr[2];
+            g.add(new SimpleTypedEdge<String>(type, v1, v2));
+        }
+        System.out.printf("Saw %d edges, (%d nodes, %d edges)%n", lineNo, g.order(), g.size());
+        return g;
+    }
+
+
     public static Graph<DirectedEdge> readPajek(File f) throws IOException {
         Graph<DirectedEdge> g = new SparseDirectedGraph();
         int lineNo = 0;

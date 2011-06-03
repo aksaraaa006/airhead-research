@@ -97,6 +97,23 @@ public class Counter<T> implements Iterable<Map.Entry<T,Integer>>,
         return newCount;
     }
 
+    /**
+     * Counts the object, increasing its total count by the specified positive amount.
+     *
+     * @param count a positive value for the number of times the object occurred
+     *
+     * @throws IllegalArgumentException if {@code count} is not a positive value.
+     */
+    public int count(T obj, int count) {
+        if (count < 1)
+            throw new IllegalArgumentException("Count must be positive: " + count);
+        Integer oldCount = counts.get(obj);
+        int newCount = (oldCount == null) ? count : count + oldCount;
+        counts.put(obj, newCount);
+        sum += count;
+        return newCount;
+    }
+
     public boolean equals(Object o) {
         return (o instanceof Counter)
             && ((Counter)o).counts.equals(counts);

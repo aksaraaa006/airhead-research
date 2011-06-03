@@ -45,7 +45,7 @@ public class SubgraphIteratorTests {
                 g.add(new SimpleEdge(i, j));
         }    
 
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, 3);
     }
 
     @Test(expected=IllegalArgumentException.class) public void testConstructorNonpositive() {
@@ -57,11 +57,11 @@ public class SubgraphIteratorTests {
                 g.add(new SimpleEdge(i, j));
         }    
 
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, -1);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, -1);
     }
 
     @Test(expected=NullPointerException.class) public void testConstructorNull() {
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(null, 10);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(null, 10);
     }
 
     @Test(expected=IllegalArgumentException.class) public void testConstructorSizeTooLarge() {
@@ -73,7 +73,7 @@ public class SubgraphIteratorTests {
                 g.add(new SimpleEdge(i, j));
         }    
 
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 20);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, 20);
     }
 
     @Test public void testWorkedExample() {
@@ -93,7 +93,7 @@ public class SubgraphIteratorTests {
         g.add(new SimpleEdge(3, 8));
         g.add(new SimpleEdge(3, 9));
 
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -113,7 +113,7 @@ public class SubgraphIteratorTests {
         g.add(new SimpleEdge(1, 3));
         g.add(new SimpleEdge(2, 3));
 
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -130,7 +130,7 @@ public class SubgraphIteratorTests {
             g.add(i);
         }
 
-        SubgraphIterator<Edge> iter = new SubgraphIterator<Edge>(g, 3);
+        SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -156,8 +156,8 @@ public class SubgraphIteratorTests {
             }
         }
 
-        SubgraphIterator<DirectedEdge> iter = 
-            new SubgraphIterator<DirectedEdge>(g, 3);
+        SubgraphIterator<DirectedEdge,Graph<DirectedEdge>> iter = 
+            new SubgraphIterator<DirectedEdge,Graph<DirectedEdge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -225,7 +225,8 @@ public class SubgraphIteratorTests {
         g.add(new SimpleDirectedEdge(3, 8));
         g.add(new SimpleDirectedEdge(3, 9));
 
-        SubgraphIterator<DirectedEdge> iter = new SubgraphIterator<DirectedEdge>(g, 3);
+        SubgraphIterator<DirectedEdge,Graph<DirectedEdge>> iter = 
+            new SubgraphIterator<DirectedEdge,Graph<DirectedEdge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -246,7 +247,8 @@ public class SubgraphIteratorTests {
         g.add(new SimpleDirectedEdge(3, 5));
         g.add(new SimpleDirectedEdge(4, 6));
 
-        SubgraphIterator<DirectedEdge> iter = new SubgraphIterator<DirectedEdge>(g, 3);
+        SubgraphIterator<DirectedEdge,Graph<DirectedEdge>> iter = 
+            new SubgraphIterator<DirectedEdge,Graph<DirectedEdge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -281,7 +283,8 @@ public class SubgraphIteratorTests {
         for (Integer v : g.vertices())
             System.out.println("g has vertex " + v);
         
-        SubgraphIterator<DirectedEdge> iter = new SubgraphIterator<DirectedEdge>(g, 3);
+        SubgraphIterator<DirectedEdge,Graph<DirectedEdge>> iter = 
+            new SubgraphIterator<DirectedEdge,Graph<DirectedEdge>>(g, 3);
         int numSubgraphs = 0;
         while (iter.hasNext()) {
             iter.next();

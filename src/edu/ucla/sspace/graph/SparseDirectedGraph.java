@@ -22,6 +22,7 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -94,7 +95,9 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
      */
     public Set<DirectedEdge> inEdges(int vertex) {
         SparseDirectedEdgeSet edges = getEdgeSet(vertex);
-        return (edges == null) ? null : new EdgeSetDecorator(edges.inEdges());
+        return (edges == null) 
+            ? Collections.<DirectedEdge>emptySet()
+            : new EdgeSetDecorator(edges.inEdges());
     }
 
     /**
@@ -110,7 +113,9 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
      */
     public Set<DirectedEdge> outEdges(int vertex) {
         SparseDirectedEdgeSet edges = getEdgeSet(vertex);
-        return (edges == null) ? null : new EdgeSetDecorator(edges.outEdges());
+        return (edges == null) 
+            ? Collections.<DirectedEdge>emptySet() 
+            : new EdgeSetDecorator(edges.outEdges());
     }
 
     /**
@@ -247,7 +252,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         public int inDegree(int vertex) {
             int degree = 0;
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
+            if (edges.isEmpty())
                 return 0;
             for (DirectedEdge e : edges) {
                 if (e.to() == vertex)
@@ -264,8 +269,8 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
-                return null;
+            if (edges.isEmpty())
+                return Collections.<DirectedEdge>emptySet();
 
             Set<DirectedEdge> in = new HashSet<DirectedEdge>();
             for (DirectedEdge e : edges) {
@@ -281,7 +286,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         public int outDegree(int vertex) {
             int degree = 0;
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
+            if (edges.isEmpty())
                 return 0;
             for (DirectedEdge e : edges) {
                 if (e.from() == vertex)
@@ -298,8 +303,8 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
-                return null;
+            if (edges.isEmpty())
+                return Collections.<DirectedEdge>emptySet();
             Set<DirectedEdge> out = new HashSet<DirectedEdge>();
             for (DirectedEdge e : edges) {
                 if (e.from() == vertex)
@@ -368,7 +373,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         public int inDegree(int vertex) {
             int degree = 0;
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
+            if (edges.isEmpty())
                 return 0;
             for (DirectedEdge e : edges) {
                 if (e.to() == vertex)
@@ -385,8 +390,8 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
-                return null;
+            if (edges.isEmpty())
+                return Collections.<DirectedEdge>emptySet();
 
             Set<DirectedEdge> in = new HashSet<DirectedEdge>();
             for (DirectedEdge e : edges) {
@@ -402,7 +407,7 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
         public int outDegree(int vertex) {
             int degree = 0;
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
+            if (edges.isEmpty())
                 return 0;
             for (DirectedEdge e : edges) {
                 if (e.from() == vertex)
@@ -419,8 +424,8 @@ public class SparseDirectedGraph extends AbstractGraph<DirectedEdge,SparseDirect
             // decorator class to avoid the O(n) penality of iteration over all
             // the edges
             Set<DirectedEdge> edges = getAdjacencyList(vertex);
-            if (edges == null)
-                return null;
+            if (edges.isEmpty())
+                return Collections.<DirectedEdge>emptySet();
             Set<DirectedEdge> out = new HashSet<DirectedEdge>();
             for (DirectedEdge e : edges) {
                 if (e.from() == vertex)

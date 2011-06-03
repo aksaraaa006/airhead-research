@@ -707,7 +707,7 @@ public class SparseUndirectedGraphTests {
     @Test public void testAdjacencyListNoVertex() {
         Graph<Edge> g = new SparseUndirectedGraph();
         Set<Edge> adjacencyList = g.getAdjacencyList(0);        
-        assertEquals(null, adjacencyList);
+        assertEquals(0, adjacencyList.size());
     }
 
     @Test(expected=NoSuchElementException.class)
@@ -1347,7 +1347,7 @@ public class SparseUndirectedGraphTests {
         assertEquals(4, adjacent.size());
 
         adjacent = subgraph.getNeighbors(5);
-        assertEquals(null, adjacent);        
+        assertEquals(0, adjacent.size());        
     }
 
 

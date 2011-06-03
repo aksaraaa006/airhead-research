@@ -30,9 +30,14 @@ import java.util.Set;
 
 
 /**
- * A {@link BitSet}-backed {@link Set} implementation for storing {@code int}
- * values.  This set offers a space-efficient method for storing small, or
- * densly populated sets of {@code ints}.
+ * A {@link BitSet}-backed {@link Set} implementation for storing non-negative
+ * {@code int} values.  This set offers a space-efficient method for storing
+ * small, or densly populated sets of {@code ints}.  
+ *
+ * <p>Because this class only supports storing non-negative values in the set,
+ * any attempt to add a negative value will throw an {@link
+ * IllegalArgumentException}.  The {@code contains} and {@code remove} methods
+ * will also always return {@code false}.
  *
  * <p> This class provides overloads of the common {@code Set} operation with
  * the primitive {@code int} and {@code Integer} values.  Callers may use the
@@ -58,7 +63,7 @@ public class IntSet extends AbstractSet<Integer>
     private static final long serialVersionUID = 1L;
     
     /**
-     * The bitset that contains the intergers in this set
+     * The bitset that contains the non-negative intergers in this set (include 0).
      */
     private final BitSet bitSet;
 
@@ -92,11 +97,19 @@ public class IntSet extends AbstractSet<Integer>
     }
 
     public boolean add(int i) {
+        if (i < 0)
+            throw new IllegalArgumentException(
+                "Cannot store negative values in an IntSet");
         boolean isPresent = bitSet.get(i);
         bitSet.set(i);
-        return isPresent;
+        return !isPresent;
     }
 
+    /**
+     * Adds to this set all of the elements that are contained in the specified
+     * {@code IntSet} if not already present, using an {@code IntSet}-optimized
+     * process.
+     */
     public boolean addAll(IntSet ints) {
         int oldSize = size();
         bitSet.or(ints.bitSet);
@@ -108,7 +121,7 @@ public class IntSet extends AbstractSet<Integer>
     }
 
     public boolean contains(int i) {
-        return bitSet.get(i);
+        return i >= 0 && bitSet.get(i);
     }
 
     public boolean isEmpty() {
@@ -124,18 +137,28 @@ public class IntSet extends AbstractSet<Integer>
     }
     
     public boolean remove(int i) {
+        if (i < 0)
+            return false;
         boolean isPresent = bitSet.get(i);
         if (isPresent)
             bitSet.set(i, false);
         return isPresent;  
     }
 
+    /**
+     * Removes from this set all of the elements that are contained in the
+     * specified {@code IntSet} using an {@code IntSet}-optimized process.
+     */
     public boolean removeAll(IntSet ints) {
         int oldSize = size();
         bitSet.andNot(ints.bitSet);
         return oldSize != size();
     }
 
+    /**
+     * Retains only the elements in this set that are contained in the specified
+     * {@code IntSet} using an {@code IntSet}-optimized process.
+     */
     public boolean retainAll(IntSet ints) {
         int oldSize = size();
         bitSet.and(ints.bitSet);
@@ -143,7 +166,7 @@ public class IntSet extends AbstractSet<Integer>
     }
 
     public int size() {
-        return bitSet.size();
+        return bitSet.cardinality();
     }
 
     /**
@@ -176,11 +199,11 @@ public class IntSet extends AbstractSet<Integer>
         }
         
         public boolean hasNext() {
-            return next > 0;
+            return next >= 0;
         }
 
         public Integer next() {
-            if (next < 0)
+            if (!hasNext())
                 throw new NoSuchElementException();
             cur = next;
             advance();

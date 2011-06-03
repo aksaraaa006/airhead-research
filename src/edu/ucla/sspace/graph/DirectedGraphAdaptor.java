@@ -22,6 +22,7 @@
 package edu.ucla.sspace.graph;
 
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -29,11 +30,11 @@ import java.util.Set;
 
 
 /**
- * A decorator over the {@link Graph} returned by {@link #subview(Set)} that
- * extends the functionality to support the {@link DirectedGraph} interface.
+ * A decorator over a {@link Graph} with {@link DirectedEdge} edges that extends
+ * the functionality to support the {@link DirectedGraph} interface.
  */ 
 class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T> 
-    implements DirectedGraph<T>, java.io.Serializable  {
+        implements DirectedGraph<T>, java.io.Serializable  {
 
     private static final long serialVersionUID = 1L;
     
@@ -63,12 +64,11 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
      * {@inheritDoc}
      */
     public Set<T> inEdges(int vertex) {
-        // REMINDER: this is probably best wrapped with yet another
-        // decorator class to avoid the O(n) penality of iteration over all
-        // the edges
+        // REMINDER: this is probably best wrapped with yet another decorator
+        // class to avoid the O(n) penality of iteration over all the edges
         Set<T> edges = getAdjacencyList(vertex);
-        if (edges == null)
-            return null;
+        if (edges.isEmpty())
+            return Collections.<T>emptySet();
 
         Set<T> in = new HashSet<T>();
         for (T e : edges) {
@@ -84,8 +84,6 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
     public int outDegree(int vertex) {
         int degree = 0;
         Set<T> edges = getAdjacencyList(vertex);
-        if (edges == null)
-            return 0;
         for (T e : edges) {
             if (e.from() == vertex)
                 degree++;
@@ -101,8 +99,9 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
         // decorator class to avoid the O(n) penality of iteration over all
         // the edges
         Set<T> edges = getAdjacencyList(vertex);
-        if (edges == null)
-            return null;
+        if (edges.isEmpty())
+            return Collections.<T>emptySet();
+
         Set<T> out = new HashSet<T>();
         for (T e : edges) {
             if (e.from() == vertex)
@@ -115,8 +114,11 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
      * {@inheritDoc}
      */
     public Set<Integer> predecessors(int vertex) {
+        Set<T> in = inEdges(vertex);
+        if (in.isEmpty()) 
+            return Collections.<Integer>emptySet();
         Set<Integer> preds = new HashSet<Integer>();
-        for (T e : inEdges(vertex))
+        for (T e : in)
             preds.add(e.from());
         return preds;
     }
@@ -125,8 +127,11 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
      * {@inheritDoc}
      */
     public Set<Integer> successors(int vertex) {
+        Set<T> out = outEdges(vertex);
+        if (out.isEmpty())
+            return Collections.<Integer>emptySet();
         Set<Integer> succs = new HashSet<Integer>();
-        for (T e : outEdges(vertex))
+        for (T e : out)
             succs.add(e.to());
         return succs;
     }
@@ -138,12 +143,4 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
         Graph<T> g = super.subgraph(vertices);
         return new DirectedGraphAdaptor<T>(g);
     }
-
-//     /**
-//      * {@inheritDoc}
-//      */
-//     public DirectedGraph<T> subview(Set<Integer> vertices) {
-//         Graph<T> g = super.subview(vertices);
-//         return new DirectedGraphAdaptor<T>(g);
-//     }
 }

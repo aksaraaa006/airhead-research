@@ -57,9 +57,13 @@ public interface Edge {
     boolean equals(Object o);
 
     /**
-     * Returns a copy of this edge pointing in the opposite direction.
+     * Returns a copy of this edge with the {@code from} and {@code to} vertices swapped.
+     *
+     * @param T the type of the {@link Edge} instance returned.  <b>In almost
+     *        every use-case imaginable, {@code T} should be set to the type of
+     *        {@code Edge} on which this method is called.</b>
      */
-    Edge flip();
+    <T extends Edge> T flip();
 
     /**
      * Returns the index of the tail vertex

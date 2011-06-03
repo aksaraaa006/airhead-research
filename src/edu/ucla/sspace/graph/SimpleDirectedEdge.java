@@ -51,8 +51,9 @@ public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
         return from ^ to;
     }
 
-    public DirectedEdge flip() {
-        return new SimpleDirectedEdge(to, from);
+    @SuppressWarnings("unchecked")
+    public <U extends Edge> U flip() {
+        return (U)(new SimpleDirectedEdge(to, from));
     }
 
     public int from() {

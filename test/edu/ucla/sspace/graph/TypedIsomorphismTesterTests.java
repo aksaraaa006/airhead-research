@@ -31,9 +31,9 @@ import static org.junit.Assert.*;
 
 
 /**
- * Tests for the {@link VF2IsomorphismTester}
+ * Tests for the {@link TypedIsomorphismTester}
  */
-public class VF2IsomorphismTesterTests { 
+public class TypedIsomorphismTesterTests { 
 
     @Test public void testStarGraph() {
         Graph<Edge> g1 = new SparseUndirectedGraph();
@@ -50,7 +50,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(new SimpleEdge(1, 4));
         g2.add(new SimpleEdge(1, 5));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -63,7 +63,7 @@ public class VF2IsomorphismTesterTests {
         for (int i = 3; i < 6; ++i)
             g2.add(i);
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -78,7 +78,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(new SimpleEdge(3, 5));
         g2.add(new SimpleEdge(4, 5));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
 
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
@@ -96,7 +96,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(new SimpleEdge(2, 3));
         g2.add(new SimpleEdge(2, 4));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -115,7 +115,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(new SimpleEdge(2, 4));
         g2.add(new SimpleEdge(4, 5));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -136,7 +136,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(new SimpleEdge(4, 5));
         g2.add(new SimpleEdge(2, 6));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -148,7 +148,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(0);
         g2.add(1);
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertFalse(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -160,7 +160,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(0);
         g2.add(1);
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertFalse(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -202,7 +202,7 @@ public class VF2IsomorphismTesterTests {
         g2.add(new SimpleEdge(6, 7));
         g2.add(new SimpleEdge(7, 8));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -221,7 +221,22 @@ public class VF2IsomorphismTesterTests {
         assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
         assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
+        assertTrue(isoTest.areIsomorphic(g1, g2));
+    }
+
+    @Test public void testOneAlignmentTriangle() {    
+        DirectedMultigraph<String> g1 = new DirectedMultigraph<String>();
+        assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-2", 1, 2)));
+        assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-0", 2, 0)));
+
+        DirectedMultigraph<String> g2 = new DirectedMultigraph<String>();
+        assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-2", 1, 2)));
+        assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-0", 2, 0)));
+
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
@@ -239,7 +254,7 @@ public class VF2IsomorphismTesterTests {
         assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
         assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
 
-        IsomorphismTester isoTest = new VF2IsomorphismTester();
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
         assertFalse(isoTest.areIsomorphic(g1, g2));
     }
 

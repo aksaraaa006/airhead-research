@@ -42,7 +42,6 @@ public class SimpleEdge implements Edge, java.io.Serializable {
     public boolean equals(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-            // REMINDER: fix me
             return (e.from() == from && e.to() == to)
                 || (e.to() == from && e.from() == to);
         }
@@ -53,8 +52,9 @@ public class SimpleEdge implements Edge, java.io.Serializable {
         return from ^ to;
     }
 
-    public Edge flip() {
-        return new SimpleEdge(to, from);
+    @SuppressWarnings("unchecked")
+    public <T extends Edge> T flip() {        
+        return (T)(new SimpleEdge(to, from));
     }
 
     public int from() {

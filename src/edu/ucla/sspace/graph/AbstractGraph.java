@@ -152,6 +152,9 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
         if (isNew) 
             numEdges++;
         
+        assert from.contains(e) : "error in EdgeSet contains logic";
+        assert to.contains(e) : "error in EdgeSet contains logic";
+
         return isNew;
     }
 
@@ -245,7 +248,9 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      */
     public Set<T> getAdjacencyList(int vertex) {
         EdgeSet<T> e = getEdgeSet(vertex);
-        return (e == null) ? null : new AdjacencyListView(e);
+        return (e == null) 
+            ? Collections.<T>emptySet() 
+            : new AdjacencyListView(e);
     }
 
     /**
@@ -253,7 +258,9 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      */
     public Set<Integer> getNeighbors(int vertex) {
         EdgeSet<T> e = getEdgeSet(vertex);
-        return (e == null) ? null : new AdjacentVerticesView(e.connected());
+        return (e == null) 
+            ? Collections.<Integer>emptySet()
+            : new AdjacentVerticesView(e.connected());
     }
 
     /**
@@ -262,9 +269,9 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
     public Set<T> getEdges(int vertex1, int vertex2) {
         EdgeSet<T> e = getEdgeSet(vertex1);
         if (e == null)
-            return null;
+            return Collections.<T>emptySet();
         Set<T> edges = e.getEdges(vertex2);
-        return edges.isEmpty() ? null : edges;
+        return edges.isEmpty() ? Collections.<T>emptySet() : edges;
     }
 
     /**
@@ -318,11 +325,15 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
     public boolean remove(Edge e) {
         EdgeSet<T> from = getEdgeSet(e.from());
         EdgeSet<T> to = getEdgeSet(e.to());
+//         System.out.println("Removing: " + e);
+//         System.out.printf("Edges for e.from()=%d: %s%n", e.from(), from);
+//         System.out.printf("Edges for e.to()=%d: %s%n", e.to(), to);
+        
         int before = numEdges;
         if (from != null && from.remove(e)) {
             numEdges--;
             assert to.contains(e)
-                : "Error in ensuring consistent from/to edge sets";
+                : "Complementary edge set " + to + "  did not contain " + e;
             // Remove the edge from the EdgeSet for the vertex to which this
             // edge points.
             to.remove(e);
@@ -1048,8 +1059,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             checkForUpdates();
             Integer vertexInBacking = vertexMapping.get(vertex);
             if (vertexInBacking == null)
-                return null;
-            EdgeSet<T> adjList = vertexToEdges.get(vertexInBacking);
+                return Collections.<T>emptySet();
+            Set<T> adjList = vertexToEdges.get(vertexInBacking);
             assert adjList != null 
                 : "subgraph vertex has no EdgeSet in the backing graph";
             return new SubgraphAdjacencyListView(vertex, adjList);
@@ -1063,7 +1074,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             // Find the adjacency list of this vertex in the backing graph
             Integer vertexInBacking = vertexMapping.get(vertex);
             if (vertexInBacking == null)
-                return null;
+                return Collections.<Integer>emptySet();
             EdgeSet<T> adjList = vertexToEdges.get(vertexInBacking);
             assert adjList != null 
                 : "subgraph vertex has no EdgeSet in the backing graph";
@@ -1079,10 +1090,10 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             // First check whether we have the edge in this subgraph
             Integer v1 = vertexMapping.get(vertex1);
             if (v1 == null)
-                return null;
+                return Collections.<T>emptySet();
             Integer v2 = vertexMapping.get(vertex2);
             if (v2 == null)
-                return null;
+                return Collections.<T>emptySet();
         
             // If we have the vertices, get the Edge instances from the backing
             // graph, then re-map their vertices and add them to the result
@@ -1905,7 +1916,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
         public Set<T> getAdjacencyList(int vertex) {
             checkForUpdates();
             if (!vertices.contains(vertex))
-                return null;
+                return Collections.<T>emptySet();
             EdgeSet<T> adjList = vertexToEdges.get(vertex);
             assert adjList != null 
                 : "subgraph vertex has no EdgeSet in the backing graph";
@@ -1918,7 +1929,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
         public Set<Integer> getNeighbors(int vertex) {
             checkForUpdates();
             if (!vertices.contains(vertex))
-                return null;
+                return Collections.<Integer>emptySet();
             EdgeSet<T> adjList = vertexToEdges.get(vertex);
             assert adjList != null 
                 : "subgraph vertex has no EdgeSet in the backing graph";
