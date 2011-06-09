@@ -52,7 +52,8 @@ public abstract class BaseTransform implements Transform {
      */
     public void transform(File inputMatrixFile, MatrixIO.Format format, 
                           File outputMatrixFile) throws IOException {
-        GlobalTransform transform = getTransform(inputMatrixFile, format);
+        GlobalTransform transform = getTransform();
+        transform.initializeStats(inputMatrixFile, format);
         FileTransformer transformer = MatrixIO.fileTransformer(format);
         transformer.transform(inputMatrixFile, outputMatrixFile, transform);
     }
@@ -76,7 +77,8 @@ public abstract class BaseTransform implements Transform {
                     "Dimensions of the transformed matrix must match the " +
                     "input matrix");
 
-        GlobalTransform transform = getTransform(matrix);
+        GlobalTransform transform = getTransform();
+        transform.initializeStats(matrix);
 
         if (matrix instanceof SparseMatrix) {
             SparseMatrix smatrix = (SparseMatrix) matrix;
@@ -110,13 +112,7 @@ public abstract class BaseTransform implements Transform {
     }
 
     /**
-     * Returns a {@link GlobalTransform} for a {@link Matrix}.
+     * Returns a {@link GlobalTransform}.
      */
-    protected abstract GlobalTransform getTransform(Matrix matrix);
-
-    /**
-     * Returns a {@link GlobalTransform} for a File of the given format.
-     */
-    protected abstract GlobalTransform getTransform(File inputMatrixFile,
-                                                    MatrixIO.Format format);
+    protected abstract GlobalTransform getTransform();
 }

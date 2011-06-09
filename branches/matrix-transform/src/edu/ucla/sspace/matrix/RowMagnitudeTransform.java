@@ -38,16 +38,8 @@ public class RowMagnitudeTransform extends BaseTransform {
     /**
      * {@inheritDoc}
      */
-    protected GlobalTransform getTransform(Matrix matrix) {
-        return new RowMagnitudeGlobalTransform(matrix);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected GlobalTransform getTransform(File inputMatrixFile,
-                                           MatrixIO.Format format) {
-        return new RowMagnitudeGlobalTransform(inputMatrixFile, format);
+    protected GlobalTransform getTransform() {
+        return new RowMagnitudeGlobalTransform();
     }
 
     /**
@@ -65,21 +57,33 @@ public class RowMagnitudeTransform extends BaseTransform {
         private double[] rowMagnitudes;
 
         /**
-         * Creates an instance of {@code RowMagnitudeGlobalTransform} from a
-         * {@link Matrix}.
+         * {@inheritDoc}
          */
-        public RowMagnitudeGlobalTransform(Matrix matrix) {
+        public void initializeStats(Matrix matrix) {
             rowMagnitudes = new double[matrix.rows()];
             for (int r = 0; r < matrix.rows(); ++r)
                 rowMagnitudes[r] = matrix.getRowVector(r).magnitude();
         }
         
         /**
-         * Creates an instance of {@code RowMagnitudeGlobalTransform} from a
-         * {@code File} in the format {@link Format}.
+         * {@inheritDoc}
          */
-        public RowMagnitudeGlobalTransform(File inputMatrixFile,
+        public void initializeStats(File inputMatrixFile,
                                            Format format) {
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int rows() {
+            return rowMagnitudes.length;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int columns() {
+            return Integer.MAX_VALUE;
         }
 
         /**

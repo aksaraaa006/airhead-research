@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.matrix;
 
+import java.io.File;
+
+
 /**
  * An interface for matrix transformations.  Transformations that can be done
  * with either no knowledge of the given matrix or with only global knowledge,
@@ -47,6 +50,29 @@ package edu.ucla.sspace.matrix;
  * @author Keith Stevens
  */
 public interface GlobalTransform {
+
+    /**
+     * Initializes the {@link GlobalTransform] with data from {@code matrix}.
+     */
+    void initializeStats(Matrix matrix);
+
+    /**
+     * Initializes the {@link GlobalTransform] with data from {@code
+     * inputMatrix}.
+     */
+    void initializeStats(File inputMatrix, MatrixIO.Format format);
+
+    /**
+     * Returns the number of rows that can safely be processed by this {@link
+     * GlobalTransform}.
+     */
+    int rows();
+
+    /**
+     * Returns the number of columns that can safely be processed by this {@link
+     * GlobalTransform}.
+     */
+    int columns();
 
     /**
      * Returns the transformed value for a given matrix entry.

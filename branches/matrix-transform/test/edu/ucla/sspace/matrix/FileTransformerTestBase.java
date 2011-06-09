@@ -85,6 +85,20 @@ public abstract class FileTransformerTestBase {
     }
 
     private class OnePlusTransform implements GlobalTransform {
+        public void initializeStats(Matrix m) {
+        }
+
+        public void initializeStats(File f, MatrixIO.Format format) {
+        }
+
+        public int rows() {
+            return 0;
+        }
+
+        public int columns() {
+            return 0;
+        }
+
         public double transform(int row, int col, double val) {
             return val + 1;
         }

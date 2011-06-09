@@ -47,18 +47,10 @@ public class CorrelationTransform extends BaseTransform {
     /**
      * {@inheritDoc}
      */
-    protected GlobalTransform getTransform(File inputMatrixFile,
-                                           MatrixIO.Format format) {
-        return new CorrelationGlobalTransform(inputMatrixFile, format);
+    protected GlobalTransform getTransform() {
+        return new CorrelationGlobalTransform();
     }
     
-    /**
-     * {@inheritDoc}
-     */
-    protected GlobalTransform getTransform(Matrix matrix) {
-        return new CorrelationGlobalTransform(matrix);
-    }
-
     /**
      * Returns the name of this transform.
      */
@@ -87,7 +79,7 @@ public class CorrelationTransform extends BaseTransform {
          * Creates an instance of {@code CorrelationTransform} from a {@link
          * Matrix}.
          */
-        public CorrelationGlobalTransform(Matrix matrix) {
+        public void initializeStats(Matrix matrix) {
             MatrixStatistics stats =
                 TransformStatistics.extractStatistics(matrix);
             rowSums = stats.rowSums;
@@ -99,13 +91,26 @@ public class CorrelationTransform extends BaseTransform {
          * Creates an instance of {@code CorrelationTransform} from a {@code
          * File} for format {@link Format}.
          */
-        public CorrelationGlobalTransform(File inputMatrixFile,
-                                          Format format) {
+        public void initializeStats(File inputMatrixFile, Format format) {
             MatrixStatistics stats =
                 TransformStatistics.extractStatistics(inputMatrixFile, format);
             rowSums = stats.rowSums;
             colSums = stats.columnSums;
             totalSum = stats.matrixSum;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int rows() {
+            return rowSums.length;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int columns() {
+            return colSums.length;
         }
 
         /**
