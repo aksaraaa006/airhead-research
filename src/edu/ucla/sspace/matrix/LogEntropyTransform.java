@@ -76,16 +76,8 @@ public class LogEntropyTransform extends BaseTransform {
     /**
      * {@inheritDoc}
      */
-    protected GlobalTransform getTransform(File inputMatrixFile,
-                                           MatrixIO.Format format) {
-        return new LogEntropyGlobalTransform(inputMatrixFile, format);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    protected GlobalTransform getTransform(Matrix matrix) {
-        return new LogEntropyGlobalTransform(matrix);
+    protected GlobalTransform getTransform() {
+        return new LogEntropyGlobalTransform();
     }
 
     /**
@@ -107,10 +99,9 @@ public class LogEntropyTransform extends BaseTransform {
         private double[] rowEntropy;
 
         /**
-         * Creates an instance of {@code LogEntropyGlobalTransform} from a
-         * {@link Matrix}.
+         * {@inheritDoc}
          */
-        public LogEntropyGlobalTransform(Matrix matrix) {
+        public void initializeStats(Matrix matrix) {
             rowEntropy = new double[matrix.rows()];
 
             int numColumns = matrix.columns();
@@ -167,11 +158,10 @@ public class LogEntropyTransform extends BaseTransform {
         }
 
         /**
-         * Creates an instance of {@code LogEntropyGlobalTransform} from a
-         * {@link File} of format {@link Format}.
+         * {@inheritDoc}
          */
-        public LogEntropyGlobalTransform(File inputMatrixFile,
-                                         MatrixIO.Format format) {
+        public void initializeStats(File inputMatrixFile,
+                                    MatrixIO.Format format) {
             // Get the row sums.
             Map<Integer, Double> rowSums = new IntegerMap<Double>();
             Iterator<MatrixEntry> iter;
@@ -217,6 +207,20 @@ public class LogEntropyTransform extends BaseTransform {
             // Scale the entropy by the log of the number of columns.
             for (int row = 0; row < numRows; ++row)
                 rowEntropy[row] = 1 + (rowEntropy[row] / log2(numColumns));
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int rows() {
+            return rowEntropy.length;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int columns() {
+            return Integer.MAX_VALUE;
         }
 
         /**

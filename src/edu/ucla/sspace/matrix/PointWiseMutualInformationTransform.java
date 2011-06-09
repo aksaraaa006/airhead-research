@@ -35,17 +35,8 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
     /**
      * {@inheritDoc}
      */
-    protected GlobalTransform getTransform(Matrix matrix) {
-        return new PointWiseMutualInformationGlobalTransform(matrix);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected GlobalTransform getTransform(File inputMatrixFile,
-                                           MatrixIO.Format format) {
-        return new PointWiseMutualInformationGlobalTransform(
-                inputMatrixFile, format);
+    protected GlobalTransform getTransform() {
+        return new PointWiseMutualInformationGlobalTransform();
     }
 
     /**
@@ -74,10 +65,9 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
         private double matrixSum;
 
         /**
-         * Creates an instance of {@code PointWiseMutualInformationTransform}
-         * from a given {@link Matrix}.
+         * {@inheritDoc}
          */
-        public PointWiseMutualInformationGlobalTransform(Matrix matrix) {
+        public void initializeStats(Matrix matrix) {
             MatrixStatistics stats =
                 TransformStatistics.extractStatistics(matrix);
             rowCounts = stats.rowSums;
@@ -86,17 +76,29 @@ public class PointWiseMutualInformationTransform extends BaseTransform {
         }
 
         /**
-         * Creates an instance of {@code PointWiseMutualInformationTransform}
-         * from a matrix {@code File} of format {@code format}.
+         * {@inheritDoc}
          */
-        public PointWiseMutualInformationGlobalTransform(
-                File inputMatrixFile,
-                MatrixIO.Format format) {
+        public void initializeStats(File inputMatrixFile,
+                                    MatrixIO.Format format) {
             MatrixStatistics stats =
                 TransformStatistics.extractStatistics(inputMatrixFile, format);
             rowCounts = stats.rowSums;
             colCounts = stats.columnSums;
             matrixSum = stats.matrixSum;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int rows() {
+            return rowCounts.length;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int columns() {
+            return colCounts.length;
         }
 
         /**

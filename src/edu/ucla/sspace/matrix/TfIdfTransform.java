@@ -49,16 +49,8 @@ public class TfIdfTransform extends BaseTransform {
     /**
      * {@inheritDoc}
      */
-    protected GlobalTransform getTransform(Matrix matrix) {
-        return new TfIdfGlobalTransform(matrix);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected GlobalTransform getTransform(File inputMatrixFile,
-                                           MatrixIO.Format format) {
-        return new TfIdfGlobalTransform(inputMatrixFile, format);
+    protected GlobalTransform getTransform() {
+        return new TfIdfGlobalTransform();
     }
 
     /**
@@ -86,10 +78,9 @@ public class TfIdfTransform extends BaseTransform {
         private int totalDocCount;
 
         /**
-         * Creates an instance of {@code TfIdfGlobalTransform} from a {@link
-         * Matrix}.
+         * {@inheritDoc}
          */
-        public TfIdfGlobalTransform(Matrix matrix) {
+        public void initializeStats(Matrix matrix) {
             MatrixStatistics stats =
                 TransformStatistics.extractStatistics(matrix, true, false);
             docTermCount = stats.columnSums;
@@ -98,15 +89,28 @@ public class TfIdfTransform extends BaseTransform {
         }
         
         /**
-         * Creates an instance of {@code TfIdfGlobalTransform} from a {@code
-         * File} in the format {@link Format}.
+         * {@inheritDoc}
          */
-        public TfIdfGlobalTransform(File inputMatrixFile, Format format) {
+        public void initializeStats(File inputMatrixFile, Format format) {
             MatrixStatistics stats = TransformStatistics.extractStatistics(
                     inputMatrixFile, format, true, false);
             docTermCount = stats.columnSums;
             termDocCount = stats.rowSums;
             totalDocCount = docTermCount.length;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int rows() {
+            return termDocCount.length;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int columns() {
+            return docTermCount.length;
         }
 
         /**
