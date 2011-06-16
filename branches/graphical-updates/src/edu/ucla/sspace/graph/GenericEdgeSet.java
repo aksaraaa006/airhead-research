@@ -28,8 +28,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import edu.ucla.sspace.util.HashMultiMap;
 import edu.ucla.sspace.util.IntSet;
-import edu.ucla.sspace.util.IteratorDecorator;
+import edu.ucla.sspace.util.MultiMap;
 
 
 /**
@@ -49,14 +50,17 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
         
     private final int rootVertex;
     
-    private final BitSet vertices;
+//     private final BitSet vertices;
     
-    private final Set<T> edges;
+//     private final Set<T> edges;
+
+    private final MultiMap<Integer,T> vertexToEdges ;
    
     public GenericEdgeSet(int rootVertex) {
         this.rootVertex = rootVertex;
-        edges = new HashSet<T>();
-        vertices = new BitSet();
+//         edges = new HashSet<T>();
+//         vertices = new BitSet();
+        vertexToEdges = new HashMultiMap<Integer,T>();
     }
     
     /**
@@ -64,43 +68,60 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * if the non-root vertex has a greater index that this vertex.
      */
     public boolean add(T e) {
-        return (e.from() == rootVertex || e.to() == rootVertex)
-            && edges.add(e);
+//         if (e.from() == rootVertex && edges.add(e)) {
+//             connected.set(e.to());
+//             return true;
+//         }
+//         else if (e.to() == rootVertex && edges.add(e)) {
+//             connected.add(e.from());
+//             return true;
+//         }
+//         return false;
+
+        return (e.from() == rootVertex && vertexToEdges.put(e.to(), e))
+            || (e.to() == rootVertex && vertexToEdges.put(e.from(), e));
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<Integer> connected() {
-        return Collections.unmodifiableSet(IntSet.wrap(vertices));
+//         String s = "{";
+//         for (int i = vertices.nextSetBit(0); i >= 0; i = vertices.nextSetBit(i+1)) 
+//             s += i + ", ";
+//         s += "}";
+//         System.out.printf("%d connected to %d: %s%n", vertices.hashCode(), rootVertex, s);
+//         return Collections.unmodifiableSet(IntSet.wrap(vertices));
+        return Collections.unmodifiableSet(vertexToEdges.keySet());
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean connects(int vertex) {
-        return vertices.get(vertex);
+        return vertexToEdges.containsKey(vertex); //vertices.get(vertex);
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean contains(Object o) {
-        return edges.contains(o);
+        if (o instanceof Edge) {
+            Edge e = (Edge)o;
+            return (e.from() == rootVertex && vertexToEdges.containsMapping(e.to(), e))
+                || (e.to() == rootVertex && vertexToEdges.containsMapping(e.from(), e));            
+        }
+        return false;
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<T> getEdges(int vertex) {
-        if (!vertices.get(vertex))
-            return Collections.emptySet();
-        Set<T> toReturn = new HashSet<T>();
-        for (T e : edges) {
-            if (vertex == e.from() || vertex == e.to())
-                toReturn.add(e);
-        }
-        return toReturn;
+        Set<T> s = vertexToEdges.get(vertex);
+        return (s == null) 
+            ? Collections.<T>emptySet()
+            : s;
     }    
 
     /**
@@ -114,20 +135,17 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */ 
     public Iterator<T> iterator() {
-        return new EdgeIterator();
+        return vertexToEdges.values().iterator();
     }
     
     /**
      * {@inheritDoc}
      */
     public boolean remove(Object o) {
-        if (edges.remove(o)) {
+        if (o instanceof Edge) {
             Edge e = (Edge)o;
-            if (e.from() == rootVertex)
-                vertices.set(e.to(), false);
-            else
-                vertices.set(e.from(), false);        
-            return true;
+            return (e.from() == rootVertex && vertexToEdges.remove(e.to(), e))
+                || (e.to() == rootVertex && vertexToEdges.remove(e.from(), e));            
         }
         return false;
     }
@@ -136,33 +154,6 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
      * {@inheritDoc}
      */    
     public int size() {
-        return edges.size();
-    }
-
-    /**
-     * A wrapper around the edge iterator that tracks removes to this set via
-     * {@link Iterator#remove()}.
-     */
-    private class EdgeIterator extends IteratorDecorator<T> {
-
-        private static final long serialVersionUID = 1L;
-        
-        public EdgeIterator() {
-            super(edges.iterator());
-        }
-        
-        public void remove() {
-            // If there's an element to remove, find out which vertex is no
-            // longer in the set and remove it.  Note that if cur == null, then
-            // the super.remove() call will throw a NoSuchElement exception for
-            // us.
-            if (cur != null) {
-                if (cur.to() == rootVertex)
-                    vertices.set(cur.from(), false);
-                else
-                    vertices.set(cur.to(), false);
-            }
-            super.remove();
-        }
+        return vertexToEdges.range();
     }
 }

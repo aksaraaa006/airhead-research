@@ -67,7 +67,7 @@ public class OpenIntSet extends AbstractSet<Integer>
     /**
      * The buckets that store the non-negative values in this set.
      */
-    public int[] buckets;
+    private int[] buckets;
     
     /**
      * True if a value equal to the {@code EMPTY_MARKER} has been stored in this
@@ -347,8 +347,8 @@ public class OpenIntSet extends AbstractSet<Integer>
         
         public boolean hasNext() {
             return nextIndex >= 0
-                || (!returnedEmptyMarker && isEmptyMarkerValuePresent)
-                || (!returnedDeletedMarker && isDeletedMarkerValuePresent);
+                || (isEmptyMarkerValuePresent && !returnedEmptyMarker)
+                || (isDeletedMarkerValuePresent && !returnedDeletedMarker);
         }
 
         public Integer next() {

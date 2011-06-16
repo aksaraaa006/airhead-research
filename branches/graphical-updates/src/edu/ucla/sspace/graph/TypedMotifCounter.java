@@ -24,6 +24,7 @@ package edu.ucla.sspace.graph;
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.Counter;
+import edu.ucla.sspace.util.ObjectCounter;
 import edu.ucla.sspace.util.Pair;
 
 import edu.ucla.sspace.graph.isomorphism.Matcher;
@@ -39,30 +40,30 @@ import java.util.Set;
 
 
 /**
- * A special-purpose {@link Counter} that counts graphs based on <a
+ * A special-purpose {@link Counter} that counts <b>multigraphs</b> based on <a
  * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphism</a>, rather
  * than object equivalence (which may take into account vertex labeling, etc.).
  * Most commonly, isomorphism is needed when counting the number of motifs in a
  * graph and their relative occurrences.
  */
-public class MotifCounter<G extends Graph<? extends Edge>> 
+public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
         implements Counter<G>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * The isomorphism tester used to find graph equality
+     * The isomorphism tester used to find multigraph equality
      */
     private final IsomorphismTester isoTest;
 
-    private final Map<Pair<Integer>,Map<G,Integer>> orderAndSizeToGraphs;
+    private final Map<Counter<T>,Map<G,Integer>> typesToGraphs;
 
     private int sum;
     
     /**
      * Creates a new {@code MotifCounter} with the default isomorphism tester.
      */ 
-    public MotifCounter() {
+    public TypedMotifCounter() {
         this(new Matcher());
     }
 
@@ -72,9 +73,9 @@ public class MotifCounter<G extends Graph<? extends Edge>>
      * cases where an {@link IsomorphismTester} is tailored to quickly match the
      * type of motifs being counted.
      */ 
-    public MotifCounter(IsomorphismTester isoTest) {
+    public TypedMotifCounter(IsomorphismTester isoTest) {
         this.isoTest = isoTest;
-        orderAndSizeToGraphs = new HashMap<Pair<Integer>,Map<G,Integer>>();
+        typesToGraphs = new HashMap<Counter<T>,Map<G,Integer>>();
         sum = 0;
     }
 
@@ -107,11 +108,11 @@ public class MotifCounter<G extends Graph<? extends Edge>>
         if (count < 1)
             throw new IllegalArgumentException("Count must be positive");
         sum += count;
-        Pair<Integer> orderAndSize = new Pair<Integer>(g.order(), g.size());
-        Map<G,Integer> graphs = orderAndSizeToGraphs.get(orderAndSize);
+        Counter<T> typeCounts = new ObjectCounter<T>(g.edgeTypes());
+        Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) {
             graphs = new HashMap<G,Integer>();
-            orderAndSizeToGraphs.put(orderAndSize, graphs);
+            typesToGraphs.put(typeCounts, graphs);
             graphs.put(g, count);
             return count;
         }
@@ -132,10 +133,11 @@ public class MotifCounter<G extends Graph<? extends Edge>>
      * Returns the count for graphs that are isomorphic to the provided graph.
      */
     public int getCount(G g) {
-        Pair<Integer> orderAndSize = new Pair<Integer>(g.order(), g.size());
-        Map<G,Integer> graphs = orderAndSizeToGraphs.get(orderAndSize);
+        Counter<T> typeCounts = new ObjectCounter<T>(g.edgeTypes());
+        Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) 
             return 0;
+        
         for (Map.Entry<G,Integer> e : graphs.entrySet()) {
             if (isoTest.areIsomorphic(g, e.getKey())) 
                 return e.getValue();
@@ -155,8 +157,8 @@ public class MotifCounter<G extends Graph<? extends Edge>>
      * {@inheritDoc}
      */
     public Set<G> items() {
-        List<Set<G>> sets = new ArrayList<Set<G>>(orderAndSizeToGraphs.size());
-        for (Map<G,Integer> m : orderAndSizeToGraphs.values())
+        List<Set<G>> sets = new ArrayList<Set<G>>(typesToGraphs.size());
+        for (Map<G,Integer> m : typesToGraphs.values())
             sets.add(m.keySet());
         return new CombinedSet<G>(sets);
     }
@@ -166,8 +168,8 @@ public class MotifCounter<G extends Graph<? extends Edge>>
      */
     public Iterator<Map.Entry<G,Integer>> iterator() {
         List<Iterator<Map.Entry<G,Integer>>> iters = 
-            new ArrayList<Iterator<Map.Entry<G,Integer>>>(orderAndSizeToGraphs.size());
-        for (Map<G,Integer> m : orderAndSizeToGraphs.values())
+            new ArrayList<Iterator<Map.Entry<G,Integer>>>(typesToGraphs.size());
+        for (Map<G,Integer> m : typesToGraphs.values())
             iters.add(m.entrySet().iterator());
         return new CombinedIterator<Map.Entry<G,Integer>>(iters);
     }
@@ -178,7 +180,7 @@ public class MotifCounter<G extends Graph<? extends Edge>>
     public G max() {
         int maxCount = -1;
         G max = null;
-        for (Map<G,Integer> m : orderAndSizeToGraphs.values()) { 
+        for (Map<G,Integer> m : typesToGraphs.values()) { 
             for (Map.Entry<G,Integer> e : m.entrySet()) {
                 if (e.getValue() > maxCount) {
                     maxCount = e.getValue();
@@ -195,7 +197,7 @@ public class MotifCounter<G extends Graph<? extends Edge>>
     public G min() {
         int minCount = Integer.MAX_VALUE;
         G min = null;
-        for (Map<G,Integer> m : orderAndSizeToGraphs.values()) {
+        for (Map<G,Integer> m : typesToGraphs.values()) {
             for (Map.Entry<G,Integer> e : m.entrySet()) {
                 if (e.getValue() < minCount) {
                     minCount = e.getValue();
@@ -210,7 +212,7 @@ public class MotifCounter<G extends Graph<? extends Edge>>
      * {@inheritDoc}
      */
     public void reset() {
-        orderAndSizeToGraphs.clear();
+        typesToGraphs.clear();
         sum = 0;
     }
 
@@ -219,7 +221,7 @@ public class MotifCounter<G extends Graph<? extends Edge>>
      */
     public int size() {
         int sz = 0;
-        for (Map<G,Integer> m : orderAndSizeToGraphs.values())
+        for (Map<G,Integer> m : typesToGraphs.values())
             sz += m.size();
         return sz;
     }

@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
 public class MotifCounterTests { 
 
     @Test public void testIsomorphic() {
-        MotifCounter gc = new MotifCounter();
+        MotifCounter<Graph<Edge>> gc = new MotifCounter<Graph<Edge>>();
         for (int i = 0; i < 5; ++i) {
             Graph<Edge> g1 = new SparseUndirectedGraph();
             g1.add(new SimpleEdge(0, 1));
@@ -55,7 +55,7 @@ public class MotifCounterTests {
     }
 
     @Test public void testNonIsomorphic() {
-        MotifCounter gc = new MotifCounter();
+        MotifCounter<Graph<Edge>> gc = new MotifCounter<Graph<Edge>>();
         for (int i = 0; i < 2; ++i) {
             Graph<Edge> g1 = new SparseUndirectedGraph();
             g1.add(new SimpleEdge(0, 1));

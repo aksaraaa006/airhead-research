@@ -240,6 +240,45 @@ public class TypedIsomorphismTesterTests {
         assertTrue(isoTest.areIsomorphic(g1, g2));
     }
 
+    @Test public void testTwoEdgeUndirected() {    
+        UndirectedMultigraph<String> g1 = new UndirectedMultigraph<String>();
+        assertTrue(g1.add(new SimpleTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g1.add(new SimpleTypedEdge<String>("type-1", 1, 2)));
+
+        UndirectedMultigraph<String> g2 = new UndirectedMultigraph<String>();
+        assertTrue(g2.add(new SimpleTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g2.add(new SimpleTypedEdge<String>("type-1", 1, 2)));        
+
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
+        assertTrue(isoTest.areIsomorphic(g1, g2));
+    }
+
+    @Test public void testTwoEdgeUndirected2() {    
+        UndirectedMultigraph<String> g1 = new UndirectedMultigraph<String>();
+        assertTrue(g1.add(new SimpleTypedEdge<String>("type-1", 1, 0)));
+        assertTrue(g1.add(new SimpleTypedEdge<String>("type-1", 1, 2)));
+
+        UndirectedMultigraph<String> g2 = new UndirectedMultigraph<String>();
+        assertTrue(g2.add(new SimpleTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g2.add(new SimpleTypedEdge<String>("type-1", 1, 2)));        
+
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
+        assertTrue(isoTest.areIsomorphic(g1, g2));
+    }
+
+    @Test public void testTwoEdgeUndirected3() {    
+        UndirectedMultigraph<String> g1 = new UndirectedMultigraph<String>();
+        assertTrue(g1.add(new SimpleTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g1.add(new SimpleTypedEdge<String>("type-1", 1, 2)));
+
+        UndirectedMultigraph<String> g2 = new UndirectedMultigraph<String>();
+        assertTrue(g2.add(new SimpleTypedEdge<String>("type-1", 1, 0)));
+        assertTrue(g2.add(new SimpleTypedEdge<String>("type-1", 1, 2)));        
+
+        IsomorphismTester isoTest = new TypedIsomorphismTester();
+        assertTrue(isoTest.areIsomorphic(g1, g2));
+    }
+
     @Test public void testNonIsomorphicMultigraphs() {    
         DirectedMultigraph<String> g1 = new DirectedMultigraph<String>();
         assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));

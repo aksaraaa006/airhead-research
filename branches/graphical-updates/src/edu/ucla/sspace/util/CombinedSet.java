@@ -43,6 +43,18 @@ public class CombinedSet<T> extends AbstractSet<T>
      */
     private final List<Set<T>> sets;
 
+    @SuppressWarnings("unchecked")
+    public CombinedSet(Set<T>... sets) {
+        if (sets == null)
+            throw new NullPointerException("Sets cannot be null");
+        this.sets = new ArrayList<Set<T>>();
+        for (Set<T> s : sets) {
+            if (s == null)
+                throw new NullPointerException("Cannot wrap null set");
+            this.sets.add(s);
+        }
+    }
+
     public CombinedSet(Collection<? extends Set<T>> sets) {
         if (sets == null)
             throw new NullPointerException("Sets cannot be null");

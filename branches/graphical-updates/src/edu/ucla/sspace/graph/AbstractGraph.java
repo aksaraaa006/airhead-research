@@ -246,6 +246,20 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
     /**
      * {@inheritDoc}
      */
+    @Override public boolean equals(Object o) {
+        if (o instanceof Graph) {
+            Graph<?> g = (Graph<?>)o;
+            return g.order() == order()
+                && g.size() == size()
+                && g.vertices().equals(vertices())
+                && g.edges().equals(edges());                    
+        }
+        return false;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
     public Set<T> getAdjacencyList(int vertex) {
         EdgeSet<T> e = getEdgeSet(vertex);
         return (e == null) 
@@ -258,6 +272,8 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      */
     public Set<Integer> getNeighbors(int vertex) {
         EdgeSet<T> e = getEdgeSet(vertex);
+//         System.out.printf("%d AS's neighbors of %d: %s%n", System.identityHashCode(this), vertex,
+//                           (e == null)  ? null : e.connected());
         return (e == null) 
             ? Collections.<Integer>emptySet()
             : new AdjacentVerticesView(e.connected());
@@ -287,6 +303,13 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      */
     public boolean hasCycles() {
         throw new UnsupportedOperationException("fix me");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int hashCode() {
+        return vertices().hashCode();
     }
 
     /**
@@ -1051,6 +1074,20 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             checkForUpdates();
             return new SubgraphEdgeView();
         }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public boolean equals(Object o) {
+            if (o instanceof Graph) {
+                Graph<?> g = (Graph<?>)o;
+                return g.order() == order()
+                    && g.size() == size()
+                    && g.vertices().equals(vertices())
+                    && g.edges().equals(edges());                    
+            }
+            return false;
+        }
         
         /**
          * {@inheritDoc}
@@ -1109,6 +1146,13 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
          */
         public boolean hasCycles() {
             throw new UnsupportedOperationException("fix me");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int hashCode() {
+            return vertices().hashCode();
         }
 
         /**
@@ -1944,7 +1988,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
             return (vertices.contains(vertex1)
                     && vertices.contains(vertex2))
                 ? AbstractGraph.this.getEdges(vertex1, vertex2)
-                : null;
+                : Collections.<T>emptySet();
         }
         
         /**

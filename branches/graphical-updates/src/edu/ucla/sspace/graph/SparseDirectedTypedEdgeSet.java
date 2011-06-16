@@ -28,10 +28,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.OpenIntSet;
 
@@ -88,7 +90,15 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * {@inheritDoc}  The set of vertices returned by this set is immutable.
      */
     public Set<Integer> connected() {
-        return new CombinedSet();
+        int setSize = typeToInEdges.size() + typeToOutEdges.size();
+        if (setSize == 0)
+            return Collections.<Integer>emptySet();
+        List<Set<Integer>> sets = new ArrayList<Set<Integer>>(setSize);
+        for (Set<Integer> s : typeToInEdges.values())
+            sets.add(s);
+        for (Set<Integer> s : typeToOutEdges.values())
+            sets.add(s);
+        return new CombinedSet<Integer>(sets);
     }
 
     /**
@@ -162,6 +172,13 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      */
     public int getRoot() {
         return rootVertex;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isEmpty() {
+        return typeToInEdges.isEmpty() && typeToOutEdges.isEmpty();
     }
 
     /**
@@ -249,6 +266,18 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
             return ((e.to() == rootVertex && e.from() == otherVertex)
                     || (e.from() == rootVertex && e.to() == otherVertex))
                 && SparseDirectedTypedEdgeSet.this.contains(e);
+        }
+
+        @Override public boolean isEmpty() {
+            for (OpenIntSet in : typeToInEdges.values()) {
+                if (in.contains(otherVertex))
+                    return false;
+            }
+            for (OpenIntSet out : typeToOutEdges.values()) {
+                if (out.contains(otherVertex))
+                    return false;
+            }    
+            return true;
         }
 
         @Override public Iterator<DirectedTypedEdge<T>> iterator() {
@@ -398,6 +427,16 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
                 return e.from() == rootVertex
                     && SparseDirectedTypedEdgeSet.this.contains(e);
             }
+        }
+
+        @Override public boolean isEmpty() {
+            int size = 0;
+            for (Set<Integer> s : ((areInEdges) 
+                      ? typeToInEdges.values() : typeToOutEdges.values())) {
+                if (!s.isEmpty())
+                    return false;
+            }
+            return true;
         }
 
         @Override public Iterator<DirectedTypedEdge<T>> iterator() {
@@ -562,40 +601,40 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         }
     }
 
-    /**
-     *
-     */
-    private class CombinedSet extends AbstractSet<Integer> {
+//     /**
+//      *
+//      */
+//     private class CombinedSet extends AbstractSet<Integer> {
 
-        @Override public boolean contains(Object o) {
-            if (!(o instanceof Integer))
-                return false;
-            Integer i = (Integer)o;
-            for (OpenIntSet s : typeToInEdges.values())
-                if (s.contains(i))
-                    return true;
-            for (OpenIntSet s : typeToOutEdges.values())
-                if (s.contains(i))
-                    return true;
-            return false;
-        }
+//         @Override public boolean contains(Object o) {
+//             if (!(o instanceof Integer))
+//                 return false;
+//             Integer i = (Integer)o;
+//             for (OpenIntSet s : typeToInEdges.values())
+//                 if (s.contains(i))
+//                     return true;
+//             for (OpenIntSet s : typeToOutEdges.values())
+//                 if (s.contains(i))
+//                     return true;
+//             return false;
+//         }
 
-        @Override public Iterator<Integer> iterator() {
-            OpenIntSet combined = new OpenIntSet();
-            for (OpenIntSet s : typeToInEdges.values())
-                combined.addAll(s);
-            for (OpenIntSet s : typeToOutEdges.values())
-                combined.addAll(s);
-            return Collections.unmodifiableSet(combined).iterator();
-        }
+//         @Override public Iterator<Integer> iterator() {
+//             OpenIntSet combined = new OpenIntSet();
+//             for (OpenIntSet s : typeToInEdges.values())
+//                 combined.addAll(s);
+//             for (OpenIntSet s : typeToOutEdges.values())
+//                 combined.addAll(s);
+//             return Collections.unmodifiableSet(combined).iterator();
+//         }
 
-        @Override public int size() {
-            OpenIntSet combined = new OpenIntSet();
-            for (OpenIntSet s : typeToInEdges.values())
-                combined.addAll(s);
-            for (OpenIntSet s : typeToOutEdges.values())
-                combined.addAll(s);
-            return combined.size();
-        }
-    }
+//         @Override public int size() {
+//             OpenIntSet combined = new OpenIntSet();
+//             for (OpenIntSet s : typeToInEdges.values())
+//                 combined.addAll(s);
+//             for (OpenIntSet s : typeToOutEdges.values())
+//                 combined.addAll(s);
+//             return combined.size();
+//         }
+//     }
 }
