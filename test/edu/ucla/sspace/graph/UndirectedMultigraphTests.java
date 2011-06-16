@@ -702,7 +702,7 @@ public class UndirectedMultigraphTests {
     @Test public void testAdjacencyListNoVertex() {
         UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
         Set<TypedEdge<String>> adjacencyList = g.getAdjacencyList(0);        
-        assertEquals(null, adjacencyList);
+        assertEquals(0, adjacencyList.size());
     }
 
     @Test(expected=NoSuchElementException.class)
@@ -1230,6 +1230,39 @@ public class UndirectedMultigraphTests {
         assertFalse(iter.hasNext());
     }
 
+    @Test public void testSubgraphEdges2() {
+
+        UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
+
+        // fully connected
+        for (int i = 0; i < 10; i++)  {
+            for (int j = i+1; j < 10; j++)  {
+                g.add(new SimpleTypedEdge<String>("type-1", i, j));
+            }
+        }
+
+        assertEquals(45, g.size());
+
+        Set<Integer> verts = new HashSet<Integer>();
+        for (int i = 0; i < 3; ++i)
+            verts.add(i);
+
+        Multigraph<String,TypedEdge<String>> sub = g.subgraph(verts);
+        assertEquals(3, sub.order());
+        assertEquals(3, sub.size());
+     
+        Set<TypedEdge<String>> edges = sub.edges();
+        assertEquals(3, edges.size());
+
+        int j = 0; 
+        Iterator<TypedEdge<String>> iter = edges.iterator();
+        while (iter.hasNext()) {
+            iter.next();
+            j++;
+        }
+        assertEquals(3, j);
+    }
+
 
     /******************************************************************
      *
@@ -1373,7 +1406,7 @@ public class UndirectedMultigraphTests {
         assertEquals(4, adjacent.size());
 
         adjacent = subgraph.getNeighbors(5);
-        assertEquals(null, adjacent);
+        assertEquals(0, adjacent.size());
 
         
     }

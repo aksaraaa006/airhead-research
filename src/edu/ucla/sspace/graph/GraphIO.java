@@ -81,8 +81,8 @@ public class GraphIO {
             if (arr.length < 2) {
                 throw new IOException("Missing vertex on line " + lineNo);
             }
-            int v1 = vertexIndexer.add(arr[0]);
-            int v2 = vertexIndexer.add(arr[1]);
+            int v1 = vertexIndexer.index(arr[0]);
+            int v2 = vertexIndexer.index(arr[1]);
             g.add(new SimpleEdge(v1, v2));
         }
         return g;
@@ -104,8 +104,8 @@ public class GraphIO {
             if (arr.length < 2) {
                 throw new IOException("Missing vertex on line " + lineNo);
             }
-            int v1 = vertexIndexer.add(arr[0]);
-            int v2 = vertexIndexer.add(arr[1]);
+            int v1 = vertexIndexer.index(arr[0]);
+            int v2 = vertexIndexer.index(arr[1]);
             g.add(new SimpleDirectedEdge(v1, v2));
         }
         return g;
@@ -113,7 +113,12 @@ public class GraphIO {
 
 
     public static DirectedMultigraph<String> readDirectedMultigraph(File f) throws IOException {
-        Indexer<String> vertexIndexer = new Indexer<String>();
+        return readDirectedMultigraph(f, new Indexer<String>());
+    }
+
+    public static DirectedMultigraph<String> readDirectedMultigraph(
+            File f, Indexer<String> vertexIndexer) throws IOException {
+
         BufferedReader br = new BufferedReader(new FileReader(f));
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         int lineNo = 0;
@@ -128,8 +133,8 @@ public class GraphIO {
             if (arr.length < 3) {
                 throw new IOException("Missing vertex or type on line " + lineNo);
             }
-            int v1 = vertexIndexer.add(arr[0]);
-            int v2 = vertexIndexer.add(arr[1]);
+            int v1 = vertexIndexer.index(arr[0]);
+            int v2 = vertexIndexer.index(arr[1]);
             String type = arr[2];
             g.add(new SimpleDirectedTypedEdge<String>(type, v1, v2));
         }
@@ -137,7 +142,11 @@ public class GraphIO {
     }
 
     public static UndirectedMultigraph<String> readUndirectedMultigraph(File f) throws IOException {
-        Indexer<String> vertexIndexer = new Indexer<String>();
+        return readUndirectedMultigraph(f, new Indexer<String>());
+    }
+
+    public static UndirectedMultigraph<String> readUndirectedMultigraph(
+            File f, Indexer<String> vertexIndexer) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(f));
         UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
         int lineNo = 0;
@@ -152,10 +161,18 @@ public class GraphIO {
             if (arr.length < 3) {
                 throw new IOException("Missing vertex or type on line " + lineNo);
             }
-            int v1 = vertexIndexer.add(arr[0]);
-            int v2 = vertexIndexer.add(arr[1]);
+            if (arr[0].equals(arr[1])) {
+                System.out.println("skipping self edge: " + line);
+                continue;
+            }                
+            int v1 = vertexIndexer.index(arr[0]);
+            int v2 = vertexIndexer.index(arr[1]);
             String type = arr[2];
             g.add(new SimpleTypedEdge<String>(type, v1, v2));
+        }
+        if (g.order() != vertexIndexer.highestIndex() + 1) {
+            System.out.printf("%d != %d%n", g.order(), vertexIndexer.highestIndex());
+            throw new Error();
         }
         System.out.printf("Saw %d edges, (%d nodes, %d edges)%n", lineNo, g.order(), g.size());
         return g;

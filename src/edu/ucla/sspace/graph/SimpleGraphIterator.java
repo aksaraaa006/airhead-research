@@ -89,6 +89,13 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
         // more subgraphs, then pick off the next subgraph and decompose it
         if (next.isEmpty() && subgraphIterator.hasNext()) {
             Multigraph<T,E> g = subgraphIterator.next();
+//             System.out.println("next graph: " + g);
+//             if (g.toString().equals("{}")) {
+//                 System.out.printf("order %d, size %d, verts: %s, edges: %s%n", g.order(), g.size(), g.vertices(), g.edges());
+//                 System.out.println(g.getClass());
+//                 throw new Error("disconnected subgraph");
+//                 }
+
             // Find all pairs of edges, checking whether the graph is a simple
             // graph already
             boolean isSimpleAlready = true;
@@ -97,7 +104,13 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
                 for (int j : g.vertices()) {
                     if (i == j)
                         break;
-                    Set<E> edges = g.getEdges(i, j);
+                    Set<E> edges = null;
+                    try {
+                        edges = g.getEdges(i, j);
+                    } catch (NullPointerException npe) {
+                        System.out.println("Bad graph? : " + g);
+                        throw npe;
+                    }
                     int size = edges.size();
                     if (size > 0)
                         connected.add(new Pair<Integer>(i, j));
@@ -107,8 +120,10 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
             }
             // If the subgraph was already a simple graph, then just append it
             // to the list
-            if (isSimpleAlready)
+            if (isSimpleAlready) {
+                // System.out.println("next graph was already simple: " + g);
                 next.add(g);
+            }
             // Otherwise, generate a recursive call to enumerate all the
             // simple graphs from this graph
             else {
@@ -157,6 +172,7 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
             // Otherwise, this is the last vertex pair for which an edge is to
             // be selected, so add it to the current list
             else {
+                // System.out.println("Constructed next enumeration: " + m);
                 simpleGraphs.add(m);
             }                    
         }

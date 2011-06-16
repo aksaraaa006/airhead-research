@@ -33,6 +33,8 @@ public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
 
     public SimpleTypedEdge(T edgeType, int from, int to) {
         this.type = edgeType;
+        if (type == null)
+            throw new NullPointerException("edge type cannot be null");
         this.from = from;
         this.to = to;
     }

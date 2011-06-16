@@ -25,6 +25,7 @@ import java.lang.ref.WeakReference;
 
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.Set;
 
 import edu.ucla.sspace.util.CombinedSet;
@@ -118,12 +120,12 @@ public class UndirectedMultigraph<T>
         }
         // If we've added a new edge, update the local state for the vertices
         // and edge types
-        if (g.add(e)) {
-            vertices.add(e.from());
-            vertices.add(e.to());
-            return true;
-        }
-        return false;
+         if (g.add(e)) { 
+             vertices.add(e.from());
+             vertices.add(e.to());             
+             return true;
+         }
+         return false;
     }
 
     /**
@@ -215,11 +217,21 @@ public class UndirectedMultigraph<T>
     /**
      * {@inheritDoc}
      */
+    @Override public boolean equals(Object o) {
+        if (o instanceof Graph) {
+            Graph<?> g = (Graph<?>)o;
+            return g.order() == order()
+                && g.size() == size()
+                && g.vertices().equals(vertices())
+                && g.edges().equals(edges());                    
+        }
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<TypedEdge<T>> getAdjacencyList(int vertex) {
-        // By contract, if vertex is not in this graph, then we return null.
-        // However, we go ahead and construct the sets first anyway, as they are
-        // cheap to construct and the common case is to ask for vertices that
-        // are in the graph
         List<Set<TypedEdge<T>>> sets = 
             new ArrayList<Set<TypedEdge<T>>>();
         for (Graph<TypedEdge<T>> g : typeToEdges.values()) {
@@ -227,18 +239,15 @@ public class UndirectedMultigraph<T>
             if (adj != null)
                 sets.add(adj);
         }
-        return (sets.isEmpty()) ? null : 
-            new CombinedSet<TypedEdge<T>>(sets);
+        return (sets.isEmpty())
+            ? Collections.<TypedEdge<T>>emptySet()
+            : new CombinedSet<TypedEdge<T>>(sets);
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<TypedEdge<T>> getEdges(int vertex1, int vertex2) {
-        // By contract, if the two vertices do not have any edges in this graph,
-        // then we return null.  However, we go ahead and construct the sets
-        // first anyway, as they are cheap to construct and the common case is
-        // to ask for vertices that are in the graph
         List<Set<TypedEdge<T>>> sets = 
             new ArrayList<Set<TypedEdge<T>>>();
         for (Graph<TypedEdge<T>> g : typeToEdges.values()) {
@@ -247,8 +256,19 @@ public class UndirectedMultigraph<T>
                 sets.add(e);
             }
         }
-        return (sets.isEmpty()) ? null : 
+        return (sets.isEmpty()) ? Collections.<TypedEdge<T>>emptySet() : 
             new CombinedSet<TypedEdge<T>>(sets);
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public Set<TypedEdge<T>> getEdges(int vertex1, int vertex2, T t) {
+        Graph<TypedEdge<T>> g = typeToEdges.get(t);
+        return (g == null) 
+            ? Collections.<TypedEdge<T>>emptySet()
+            : g.getEdges(vertex1, vertex2);
     }
 
     /**
@@ -261,7 +281,8 @@ public class UndirectedMultigraph<T>
             if (n != null)
                 sets.add(n);
         }
-        return (sets.isEmpty()) ? null : new CombinedSet<Integer>(sets);
+        return (sets.isEmpty()) 
+            ? Collections.<Integer>emptySet() : new CombinedSet<Integer>(sets);
     }
 
     /**
@@ -269,6 +290,13 @@ public class UndirectedMultigraph<T>
      */
     public boolean hasCycles() {
         throw new Error();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int hashCode() {
+        return vertices().hashCode();
     }
 
     /**
@@ -392,10 +420,19 @@ public class UndirectedMultigraph<T>
      */
     public Multigraph<T,TypedEdge<T>> subgraph(Set<Integer> subset, 
                                                Set<T> edgeTypes) {
-         Subgraph sub = new Subgraph(edgeTypes, subset);
-         subgraphs.add(new WeakReference<Subgraph>(sub));
-         return sub;
-     }     
+        if (edgeTypes.isEmpty()) 
+           throw new IllegalArgumentException("Must specify at least one type");
+        if (!typeToEdges.keySet().containsAll(edgeTypes)) {
+            throw new IllegalArgumentException(
+                "Cannot create subgraph with more types than exist");
+        }
+        Subgraph sub = new Subgraph(edgeTypes, subset);
+        if (sub.size() == 0) {
+            throw new Error(sub +  " : " + edgeTypes);
+        }
+        subgraphs.add(new WeakReference<Subgraph>(sub));
+        return sub;
+    }     
 
     /**
      * Returns a description of the graph as the sequence of its edges.
@@ -411,7 +448,6 @@ public class UndirectedMultigraph<T>
     public Set<Integer> vertices() {
         return Collections.unmodifiableSet(vertices);
     }
-
 
     /**
      * A graph that imposes no restriction on the types of edges that may connect
@@ -543,8 +579,7 @@ public class UndirectedMultigraph<T>
                 // Only consider removing edges of the valid types
                 for (T type : validTypes) {
                     // Get all the edges for the current vertex for that type
-                    Graph<TypedEdge<T>> g = 
-                        typeToEdges.get(type);
+                    Graph<TypedEdge<T>> g = typeToEdges.get(type);
                     // Check whether each of the adjacent edges points to
                     // another vertex in this subgraph.  If so, remove it
                     for (TypedEdge<T> e : g.getAdjacencyList(v)) {
@@ -592,12 +627,10 @@ public class UndirectedMultigraph<T>
         public boolean contains(Edge e) {
             if (e instanceof TypedEdge) {
                 TypedEdge<?> te = (TypedEdge<?>)e;
-                if (!validTypes.contains(te.edgeType()))
-                    return false;
-                if (!vertexSubset.contains(e.from())
-                    || !vertexSubset.contains(e.from()))
-                    return false;
-                return UndirectedMultigraph.this.contains(e);
+                return vertexSubset.contains(e.from())
+                    && vertexSubset.contains(e.to())
+                    && validTypes.contains(te.edgeType())
+                    && UndirectedMultigraph.this.contains(e);
             }
             return false;
         }
@@ -663,12 +696,27 @@ public class UndirectedMultigraph<T>
         /**
          * {@inheritDoc}
          */
+        @Override public boolean equals(Object o) {
+            if (o instanceof Graph) {
+                Graph<?> g = (Graph<?>)o;
+            return g.order() == order()
+                && g.size() == size()
+                && g.vertices().equals(vertices())
+                && g.edges().equals(edges());                    
+            }
+            return false;
+        }
+        
+        /**
+         * {@inheritDoc}
+         */
         public Set<TypedEdge<T>> getAdjacencyList(int vertex) {
             if (!vertexSubset.contains(vertex))
-                return null;
+                return Collections.<TypedEdge<T>>emptySet();
             Set<TypedEdge<T>> adj = 
                 UndirectedMultigraph.this.getAdjacencyList(vertex);
-            return (adj == null) ? null
+            return (adj.isEmpty()) 
+                ? Collections.<TypedEdge<T>>emptySet()
                 : new SubgraphAdjacencyListView(vertex, adj);
         }
 
@@ -676,16 +724,20 @@ public class UndirectedMultigraph<T>
          * {@inheritDoc}
          */
         public Set<TypedEdge<T>> getEdges(int vertex1, int vertex2) {
-            List<Set<TypedEdge<T>>> sets = 
-                new ArrayList<Set<TypedEdge<T>>>();
+            if (!vertexSubset.contains(vertex1) 
+                    || !vertexSubset.contains(vertex2))
+                return Collections.<TypedEdge<T>>emptySet();
+
+            List<Set<TypedEdge<T>>> sets = new ArrayList<Set<TypedEdge<T>>>();
             for (T type : validTypes) {
-                Graph<TypedEdge<T>> g = typeToEdges.get(type);
-                Set<TypedEdge<T>> edges = g.getEdges(vertex1, vertex2);
-                if (edges != null)
+                Set<TypedEdge<T>> edges = 
+                    UndirectedMultigraph.this.getEdges(vertex1, vertex2, type);
+                if (!edges.isEmpty())
                     sets.add(edges);
             }
             return (sets.isEmpty()) 
-                ? null : new CombinedSet<TypedEdge<T>>(sets);
+                ? Collections.<TypedEdge<T>>emptySet() 
+                : new CombinedSet<TypedEdge<T>>(sets);
         }
 
         /**
@@ -693,10 +745,15 @@ public class UndirectedMultigraph<T>
          */
         public Set<Integer> getNeighbors(int vertex) {
             if (!vertexSubset.contains(vertex))
-                return null;
+                return Collections.<Integer>emptySet();
             Set<Integer> neighbors = 
                 UndirectedMultigraph.this.getNeighbors(vertex);
-            return new SubgraphNeighborsView(vertex, neighbors);
+            // If the set of neighbors is larger than the number of vertices in
+            // this subgraph, then just use the set of vertices
+            return new SubgraphNeighborsView(vertex, vertexSubset);
+            // (neighbors.size() > vertexSubset.size())
+            //                 ? new SubgraphNeighborsView(vertex, vertexSubset)
+            //                 : new SubgraphNeighborsView(vertex, neighbors);
         }
 
         /**
@@ -717,6 +774,13 @@ public class UndirectedMultigraph<T>
                 return edges != null;
             }
             return false;            
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public int hashCode() {
+            return vertices().hashCode();
         }
 
         /**
@@ -763,7 +827,7 @@ public class UndirectedMultigraph<T>
             if (!vertexSubset.containsAll(verts)) 
                 throw new IllegalArgumentException("provided set is not a " +
                     "subset of the vertices of this graph");
-            return new Subgraph(validTypes, verts);
+            return UndirectedMultigraph.this.subgraph(verts, validTypes);
         }
 
         /**
@@ -777,9 +841,17 @@ public class UndirectedMultigraph<T>
             if (!validTypes.containsAll(edgeTypes))
                 throw new IllegalArgumentException("provided types is not a " +
                     "subset of the edge types of this graph");
-            return new Subgraph(edgeTypes, verts);
+            return UndirectedMultigraph.this.subgraph(verts, edgeTypes);
         }
      
+        /**
+         * Returns a description of the graph as the sequence of its edges.
+         */
+        public String toString() {
+            // REMINDER: make this more efficient with a StringBuilder
+            return "{ vertices: " + vertices() + ", edges: " + edges() + "}";
+        }
+
         /**
          * {@inheritDoc}
          */
@@ -959,114 +1031,69 @@ public class UndirectedMultigraph<T>
                 return Subgraph.this.size();
             }
 
-            /**
-             * An {@code Iterator} that combines all the iterators returned by
-             * {@link #getAdjacencyList(int)} for the vertices in this subview
-             * and filters the results to remove symmetric edges found in two
-             * lists.
-             */
             private class SubgraphEdgeIterator implements Iterator<TypedEdge<T>> {
 
-                private final Iterator<SubgraphAdjacencyListView> adjacencyLists;
+                private final Queue<TypedEdge<T>> edgesToReturn;
 
-                private Iterator<TypedEdge<T>> curIter;
-
-                private int curRoot;
-
-                private TypedEdge<T> next;
+                private final Queue<Integer> remainingVertices;
                 
-                private TypedEdge<T> cur;
+                private Iterator<Integer> possibleNeighbors;
+                
+                private Integer curVertex;
 
-                /**
-                 * Creates an iterator that combines the adjacency lists
-                 * iterators for all the vertices in this subview.
-                 */
                 public SubgraphEdgeIterator() {
-                    // Create a list for all the adjacency lists of the vertices
-                    // in this subview
-                    List<SubgraphAdjacencyListView> lists = 
-                        new ArrayList<SubgraphAdjacencyListView>(
-                            vertices.size());
-                    
-                    // Loop over all vertices in the subview and wrap their
-                    // adjacency lists
-                    for (Integer v : vertices) {
-                        Set<TypedEdge<T>> adj =
-                            UndirectedMultigraph.this.getAdjacencyList(v);
-                        if (adj == null)
-                            continue;
-                        // Wrap it to only return the edges present in this
-                        // subview
-                        lists.add(new SubgraphAdjacencyListView(v, adj));
-                    }
-                    adjacencyLists = lists.iterator();
+                    remainingVertices = 
+                        new ArrayDeque<Integer>(Subgraph.this.vertices());
+                    edgesToReturn = new ArrayDeque<TypedEdge<T>>();
+                    curVertex = null;
                     advance();
                 }
-
+                
                 private void advance() {
-                    next = null;
-                    // If there are no more elements in the current adjacency
-                    // list and there are no futher adjacency lists to use, the
-                    // iterator is finished
-                    if ((curIter == null || !curIter.hasNext()) 
-                            && !adjacencyLists.hasNext())
+                    // If there are still edges from the current pair, skip
+                    // processing any further connections
+                    if (!edgesToReturn.isEmpty())
                         return;
-
+                    
                     do {
-                        // Find an edge iterator with at least one edge
-                        while ((curIter == null || !curIter.hasNext()) 
-                                   && adjacencyLists.hasNext()) {
-                            
-                            // Get the next adjacency list
-                            SubgraphAdjacencyListView adjList = 
-                                adjacencyLists.next();
-                            // Record what the root vertex is for it
-                            curRoot = adjList.root;
-                            // Set the current iterator to return this list's
-                            // edges
-                            curIter = adjList.iterator();
+                        // Find the next vertex to analyze for connections
+                        while ((possibleNeighbors == null
+                                    || !possibleNeighbors.hasNext())
+                               && !remainingVertices.isEmpty()) {
+                            // Pull off the next vertex and then use the remaining
+                            // vertices to check for connections
+                            curVertex = remainingVertices.poll();
+                            possibleNeighbors = remainingVertices.iterator();
                         }
-
-                        // If we didn't find one, short circuit
-                        if (curIter == null || !curIter.hasNext())
-                            return;                   
-
-                        // Get the next edge to examine
-                        TypedEdge<T> e = curIter.next();
-
-                        // The backing graph stores symmetric edges in order to
-                        // maintain the adjacency lists.  To account for this,
-                        // we toss out edges that will have their symmetric
-                        // version counted, using the edge's to and from to make
-                        // the distinction.
-                        if ((curRoot == e.from() && curRoot < e.to())
-                                || (curRoot == e.to() && curRoot < e.from()))
-                            next = e;
-                    } while (next == null); 
+                        
+                        // Iterate through the possible neighbors of this
+                        // vertex, stopping when we find another vertex that has
+                        // at least one edge
+                        while (edgesToReturn.isEmpty()
+                                   && possibleNeighbors.hasNext()) {
+                            Integer v = possibleNeighbors.next();
+                            edgesToReturn.addAll(getEdges(curVertex, v));
+                        }
+                    } while (edgesToReturn.isEmpty()
+                             && !remainingVertices.isEmpty());
                 }
 
                 public boolean hasNext() {
-                    return next != null;
+                    return edgesToReturn.size() > 0;
                 }
 
                 public TypedEdge<T> next() {
                     if (!hasNext())
                         throw new NoSuchElementException();
-                    cur = next;
+                    TypedEdge<T> n = edgesToReturn.poll();
                     advance();
-                    return cur;                    
+                    return n;
                 }
 
-                /**
-                 * Throws an {@link UnsupportedOperationException} if called.
-                 */
                 public void remove() {
-                    if (cur == null)
-                        throw new IllegalStateException();
-                    Subgraph.this.remove(cur);
-                    cur = null;
+                    throw new IllegalStateException();
                 }
-            }
+            }        
         }
 
         /**
@@ -1080,7 +1107,7 @@ public class UndirectedMultigraph<T>
              * The set of adjacent vertices to a vertex.  This set is itself a view
              * to the data and is updated by the {@link EdgeList} for a vertex.
              */
-            private Set<Integer> adjacent;
+            private Set<Integer> allPossibleNeighbors;
 
             private int root;
             
@@ -1089,7 +1116,7 @@ public class UndirectedMultigraph<T>
              */
             public SubgraphNeighborsView(int root, Set<Integer> adjacent) {
                 this.root = root;
-                this.adjacent = adjacent;
+                this.allPossibleNeighbors = adjacent;
             }
             
             /**
@@ -1105,9 +1132,14 @@ public class UndirectedMultigraph<T>
                 if (!(o instanceof Integer))
                     return false;
                 Integer i = (Integer)o;
-                return Subgraph.this.hasEdge(root, i);
+                return checkVertex(i);
             }
             
+            private boolean checkVertex(Integer i) {
+                return allPossibleNeighbors.contains(i)
+                    && !getEdges(root, i).isEmpty();
+            }
+
             public Iterator<Integer> iterator() {
                 return new SubgraphNeighborsIterator();
             }
@@ -1118,8 +1150,8 @@ public class UndirectedMultigraph<T>
             
             public int size() {
                 int sz = 0;
-                for (Integer v : adjacent) {
-                    if (hasEdge(root, v))
+                for (Integer v : allPossibleNeighbors) {
+                    if (checkVertex(v))
                         sz++;
                 }
                 return sz;
@@ -1137,7 +1169,7 @@ public class UndirectedMultigraph<T>
                 private Integer next;
 
                 public SubgraphNeighborsIterator() {
-                    iter = adjacent.iterator();
+                    iter = allPossibleNeighbors.iterator();
                     advance();
                 }
                 
@@ -1148,7 +1180,7 @@ public class UndirectedMultigraph<T>
                     next = null;
                     while (iter.hasNext() && next == null) {
                         Integer v = iter.next();
-                        if (Subgraph.this.hasEdge(v, root))
+                        if (checkVertex(v))
                             next = v;
                     }                    
                 }

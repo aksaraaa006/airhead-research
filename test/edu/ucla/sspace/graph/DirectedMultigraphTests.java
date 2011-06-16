@@ -702,7 +702,7 @@ public class DirectedMultigraphTests {
     @Test public void testAdjacencyListNoVertex() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         Set<DirectedTypedEdge<String>> adjacencyList = g.getAdjacencyList(0);        
-        assertEquals(null, adjacencyList);
+        assertEquals(0, adjacencyList.size());
     }
 
     @Test(expected=NoSuchElementException.class)
@@ -1373,7 +1373,7 @@ public class DirectedMultigraphTests {
         assertEquals(4, adjacent.size());
 
         adjacent = subgraph.getNeighbors(5);
-        assertEquals(null, adjacent);
+        assertEquals(0, adjacent.size());
 
         
     }

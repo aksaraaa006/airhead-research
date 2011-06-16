@@ -91,8 +91,26 @@ public class SimpleGraphIteratorTests {
         SimpleGraphIterator<String,DirectedTypedEdge<String>> iter = 
             new SimpleGraphIterator<String,DirectedTypedEdge<String>>(g, 3);
         int numSimpleGraphs = 0;
+        boolean sawType1 = false; 
+        boolean sawType2 = false; 
         while (iter.hasNext()) {
-            iter.next();
+            Multigraph<String,DirectedTypedEdge<String>> simple = iter.next();
+            assertTrue(simple.contains(1));
+            assertTrue(simple.contains(2));
+            assertTrue(simple.contains(3));
+            Set<String> types = simple.edgeTypes();
+            if (types.size() == 1) {
+                assertTrue(types.contains("type-1"));
+                assertFalse(sawType1);
+                sawType1 = true;
+            }
+            else if (types.size() == 2) {
+                assertEquals(g.edgeTypes(), types);
+                assertFalse(sawType2);
+                sawType2 = true;
+            }
+            else 
+                assertFalse(true);
             numSimpleGraphs++;
         }
         assertEquals(2, numSimpleGraphs);

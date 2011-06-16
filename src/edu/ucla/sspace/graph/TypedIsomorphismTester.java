@@ -30,9 +30,11 @@ import java.util.Set;
 import edu.ucla.sspace.util.BiMap;
 import edu.ucla.sspace.util.Counter;
 import edu.ucla.sspace.util.HashBiMap;
-import edu.ucla.sspace.util.TreeMultiMap;
+import edu.ucla.sspace.util.ObjectCounter;
+import edu.ucla.sspace.util.OpenIntSet;
 import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.util.SortedMultiMap;
+import edu.ucla.sspace.util.TreeMultiMap;
 
 
 /**
@@ -65,11 +67,16 @@ public class TypedIsomorphismTester
      */
     public Map<Integer,Integer> findIsomorphism(Graph<? extends Edge> g1, 
                                                 Graph<? extends Edge> g2) {
+        
+        //System.out.printf("\n\nChecking:%n\t%s,%n\t%s%n", g1, g2);
+        
         // If there are different number of nodes, or if the difference in
         // degrees would prevent a valid mapping, short circuit early and return
         // false.
-        if (g1.order() != g2.order() || g1.size() != g2.size())
+        if (g1.order() != g2.order() || g1.size() != g2.size()) {
+            // System.out.println("size and order differences");        
             return Collections.emptyMap();
+        }
 
         // BASE CASE: check that both graphs are Multigraph instances since
         // we'll need to be comparing edge types
@@ -81,6 +88,7 @@ public class TypedIsomorphismTester
             try {
                 return matchMultigraphs(m1, m2);
             } catch (ClassCastException cce) {
+                //System.out.println("ClassCast1");        
                 return Collections.emptyMap();
             }
         }
@@ -98,9 +106,10 @@ public class TypedIsomorphismTester
                     Graph<TypedEdge<Object>> gt2 = (Graph<TypedEdge<Object>>)g2;
                     Multigraph<?,? extends TypedEdge<?>> m1 = Graphs.asMultigraph(gt1);
                     Multigraph<?,? extends TypedEdge<?>> m2 = Graphs.asMultigraph(gt2);
-                    
+                    //System.out.println("Testing");
                     return matchMultigraphs(m1, m2);
                 } catch (ClassCastException cce) {
+                    //System.out.println("ClassCast2");
                     return Collections.emptyMap();
                 }
             }            
@@ -112,6 +121,7 @@ public class TypedIsomorphismTester
             // the match can never happen.  Note that we might want to check
             // whether the graph with edge types has only one type
             else {
+                //System.out.println("Type mismatch");
                 return Collections.emptyMap();
             }
         }
@@ -148,15 +158,83 @@ public class TypedIsomorphismTester
         // which ensures that there is at least some chance for a mapping.
         Set<?> m1types = m1.edgeTypes();
         Set<?> m2types = m2.edgeTypes();
-            boolean foundMatch = false;
-            for (Object o : m1types) {
-                // As soon as we find at least one type match, start the search
-                if (m2types.contains(o)) {
-                    return match(m1, m2, new HashBiMap<Integer,Integer>());
-                }
+        boolean foundMatch = false;
+        for (Object o : m1types) {
+            // As soon as we find at least one type match, start the search
+            if (m2types.contains(o)) {
+                return match(m1, m2, new HashBiMap<Integer,Integer>());
             }
+        }
+        //System.out.println("No shared types");        
+        return Collections.emptyMap();
+    }
 
-        return null;
+    /**
+     * Generates a set of candidate mappings from a vertex in {@code g1} to a
+     * vertex in {@code g2}, using the an existing {@code mapping} for which
+     * vertices have already been mapped.  This method applies a further constraint that two
+     * vertices may be mapped only if their in-degree and out-degree are
+     * equivalent.  Furthermore, if the two graphs contain a different number of
+     * degrees, which implies that at least one vertex is unmappable, this
+     * method returns the empty set to indicate that no mapping will satisify
+     * the isomorphism constraint.
+     *
+     * @param mapping an existing mapping from vertices in {@code g1} to {@code
+     *        g2}.  Vertices in this mapping will not be returned as candidate
+     *        pairs
+     */
+    private Set<Pair<Integer>> generateCandidateMappings2(Multigraph<?,? extends TypedEdge<?>> g1,
+                                                         Multigraph<?,? extends TypedEdge<?>> g2,
+                                                         BiMap<Integer,Integer> mapping) {
+
+        Set<Integer> unmappedG1Vertices = new HashSet<Integer>(g1.vertices());
+        unmappedG1Vertices.removeAll(mapping.keySet());
+        Set<Integer> unmappedG2Vertices = new HashSet<Integer>(g2.vertices());
+        unmappedG2Vertices.removeAll(mapping.inverse().keySet());
+
+
+        SortedMultiMap<Integer,Integer> degreeToG1Vertex
+            = new TreeMultiMap<Integer,Integer>();
+        for (Integer vertex : unmappedG1Vertices) {
+            // System.out.printf("%d in g1 has degree %d%n", vertex, g1.getNeighbors(vertex).size());
+            degreeToG1Vertex.put(g1.getNeighbors(vertex).size(), vertex);
+        }
+        
+        SortedMultiMap<Integer,Integer> degreeToG2Vertex
+            = new TreeMultiMap<Integer,Integer>();
+        for (Integer vertex : unmappedG2Vertices) {
+            //System.out.printf("%d in g2 has degree %d%n", vertex, g2.getNeighbors(vertex).size());
+            degreeToG2Vertex.put(g2.getNeighbors(vertex).size(), vertex);
+        }
+
+        Set<Pair<Integer>> candidates = new HashSet<Pair<Integer>>();
+
+        // If the number of degrees for each graphs vertices is different, then
+        // one graph has at least one vertex that cannot be mapped to the other.
+        // Therefore, prune early and return the empty set.
+        if (degreeToG2Vertex.size() != degreeToG2Vertex.size())
+            return Collections.<Pair<Integer>>emptySet();
+
+        
+        for (Integer degree : degreeToG1Vertex.keySet()) {
+            Set<Integer> g1vertices = degreeToG1Vertex.get(degree);
+            Set<Integer> g2vertices = degreeToG2Vertex.get(degree);
+
+            // If the other graph didn't have any vertices with this degree,
+            // then there won't be any full mapping, so return the empty set to
+            // save work
+            if (g2vertices == null)
+                return Collections.<Pair<Integer>>emptySet();
+            
+            // Add all pair-wise combination of vertices that have the same
+            // degree
+            for (Integer i : g1vertices)
+                for (Integer j : g2vertices)
+                    candidates.add(new Pair<Integer>(i,j));
+
+        }
+        
+        return candidates;
     }
 
     /**
@@ -177,53 +255,79 @@ public class TypedIsomorphismTester
                                                          Multigraph<?,? extends TypedEdge<?>> g2,
                                                          BiMap<Integer,Integer> mapping) {
 
-        Set<Integer> unmappedG1Vertices = new HashSet<Integer>(g1.vertices());
+        Set<Integer> unmappedG1Vertices = new OpenIntSet(g1.vertices());
         unmappedG1Vertices.removeAll(mapping.keySet());
-        Set<Integer> unmappedG2Vertices = new HashSet<Integer>(g2.vertices());
+        Set<Integer> unmappedG2Vertices = new OpenIntSet(g2.vertices());
         unmappedG2Vertices.removeAll(mapping.inverse().keySet());
 
+        OpenIntSet[] degreeToG1Vertex = new OpenIntSet[g1.order() - 1];
+        OpenIntSet[] degreeToG2Vertex = new OpenIntSet[g2.order() - 1];
+        
+        int uniqueG1degrees = 0;
+        int uniqueG2degrees = 0;
 
-        SortedMultiMap<Integer,Integer> degreeToG1Vertex
-            = new TreeMultiMap<Integer,Integer>();
         for (Integer vertex : unmappedG1Vertices) {
-            degreeToG1Vertex.put(g1.getNeighbors(vertex).size(), vertex);
+            int degree = g1.getNeighbors(vertex).size();
+            OpenIntSet verticesWithDegree = degreeToG1Vertex[degree];
+            if (verticesWithDegree == null) {
+                verticesWithDegree = new OpenIntSet();
+                degreeToG1Vertex[degree] = verticesWithDegree;
+                uniqueG1degrees++;
+            }
+            verticesWithDegree.add(vertex);
+        }
+
+        for (Integer vertex : unmappedG2Vertices) {
+            int degree = g2.getNeighbors(vertex).size();
+            OpenIntSet verticesWithDegree = degreeToG2Vertex[degree];
+            if (verticesWithDegree == null) {
+                verticesWithDegree = new OpenIntSet();
+                degreeToG2Vertex[degree] = verticesWithDegree;
+                uniqueG2degrees++;
+            }
+            verticesWithDegree.add(vertex);
         }
         
-        SortedMultiMap<Integer,Integer> degreeToG2Vertex
-            = new TreeMultiMap<Integer,Integer>();
-        for (Integer vertex : unmappedG2Vertices) {
-            degreeToG2Vertex.put(g2.getNeighbors(vertex).size(), vertex);
-        }
 
         Set<Pair<Integer>> candidates = new HashSet<Pair<Integer>>();
 
         // If the number of degrees for each graphs vertices is different, then
         // one graph has at least one vertex that cannot be mapped to the other.
         // Therefore, prune early and return the empty set.
-        if (degreeToG2Vertex.size() != degreeToG2Vertex.size())
-            return new HashSet<Pair<Integer>>(); //Collections.EMPTY_SET;
+        if (uniqueG1degrees != uniqueG2degrees)
+            return Collections.<Pair<Integer>>emptySet();
 
         
-        for (Integer degree : degreeToG1Vertex.keySet()) {
-            Set<Integer> g1vertices = degreeToG1Vertex.get(degree);
-            Set<Integer> g2vertices = degreeToG2Vertex.get(degree);
+        for (int degree = 0, seen = 0; degree < degreeToG1Vertex.length && seen < uniqueG1degrees; ++degree) {
+        
+            OpenIntSet g1vertices = degreeToG1Vertex[degree];
+            OpenIntSet g2vertices = degreeToG2Vertex[degree];
 
-            // If the other graph didn't have any vertices with this degree,
-            // then there won't be any full mapping, so return the empty set to
-            // save work
-            if (g2vertices == null)
-                return new HashSet<Pair<Integer>>(); //Collections.EMPTY_SET;
+            // If neither graph had this vertex, continue looking
+            if (g1vertices == null && g2vertices == null)
+                continue;
+
+            // If the other graph didn't have any vertices with this degree, or
+            // if they had different number of vertices with this degree, then
+            // there won't be any possible full mapping, so return the empty set
+            // to save work
+            if ((g1vertices == null || g2vertices == null)
+                    || (g1vertices.size() != g2vertices.size()))
+                return Collections.<Pair<Integer>>emptySet();
             
             // Add all pair-wise combination of vertices that have the same
             // degree
-            for (Integer i : g1vertices)
+            for (Integer i : g1vertices) 
                 for (Integer j : g2vertices)
                     candidates.add(new Pair<Integer>(i,j));
 
+            // Update that we've seen another unique degree
+            seen++;
         }
         
         return candidates;
     }
+
 
     /**
      * Returns {@code true} if adding the candidate mapping to the current
@@ -240,6 +344,17 @@ public class TypedIsomorphismTester
             && rIn(g1, g2, mapping, candidate)
             && rOut(g1, g2, mapping, candidate)
             && rNew(g1, g2, mapping, candidate);        
+//         boolean type = typeMatch(g1, g2, mapping, candidate);
+//         boolean rPred = rPred(g1, g2, mapping, candidate);
+//         boolean rSucc = rSucc(g1, g2, mapping, candidate);
+//         boolean rIn = rIn(g1, g2, mapping, candidate);
+//         boolean rOut = rOut(g1, g2, mapping, candidate);
+//         boolean rNew = rNew(g1, g2, mapping, candidate);
+        
+//         System.out.printf("%s -- type: %s, rPred: %s, rSucc: %s, rIn: %s, rOut: %s, rNew: %s%n",
+//                           candidate, type, rPred, rSucc, rIn, rOut, rNew);
+//         return type && rPred && rSucc && rIn && rOut && rNew;
+
     }
 
     /**
@@ -252,6 +367,7 @@ public class TypedIsomorphismTester
         // BASE CASE: If the mapping is complete (maps all the vertices), then
         // we have a valid isomorphism, so return true.
         if (mapping.size() == g2.order()) {
+            // System.out.printf("found lenght match: " + mapping);
             return mapping;
         }
         
@@ -264,6 +380,7 @@ public class TypedIsomorphismTester
         // would generate a valid isomorphism
         for (Pair<Integer> p : candidates) {
             if (isFeasible(g1, g2, mapping, p)) {
+                // System.out.println(p + " is feasible");
                 // Add the candidate mapping
                 mapping.put(p.x, p.y);
                 // if no match was found, restore the prior mapping
@@ -275,7 +392,10 @@ public class TypedIsomorphismTester
                 else
                     return mapping;
             }
+            //System.out.println(p + " is NOT feasible");
         }
+
+        //System.out.println("no feasible candidates");
         return Collections.<Integer,Integer>emptyMap();
     }
 
@@ -305,8 +425,8 @@ public class TypedIsomorphismTester
             Set<? extends TypedEdge<?>> edges2 = g2.getEdges(ent.getValue(), y);
             
             // Check that this mapping has the same type distribution
-            Counter<Object> edgeTypes1 = new Counter<Object>();
-            Counter<Object> edgeTypes2 = new Counter<Object>();
+            Counter<Object> edgeTypes1 = new ObjectCounter<Object>();
+            Counter<Object> edgeTypes2 = new ObjectCounter<Object>();
             for (TypedEdge<?> e : edges1)
                 edgeTypes1.count(e.edgeType());
             for (TypedEdge<?> e : edges2)
@@ -314,8 +434,9 @@ public class TypedIsomorphismTester
 
             // If the counters showed different number of types in each of the
             // connecting sets, the this candidate cannot match.
-            if (!edgeTypes1.equals(edgeTypes2))
+            if (!edgeTypes1.equals(edgeTypes2)) {
                 return false;
+            }
         }
 
         // If all the edges that are connected to this candidate have the same
@@ -520,11 +641,14 @@ public class TypedIsomorphismTester
         n1tmp.retainAll(predecessors(g1, n));
         n2tmp.retainAll(predecessors(g2, m));
 
-        if (n1tmp.size() != n2tmp.size())
+        if (n1tmp.size() != n2tmp.size()) {
+            //System.out.printf("%s != %s%n", n1tmp, n2tmp);
             return false;
+        }
 
         nodes1.retainAll(successors(g1, n));
         nodes2.retainAll(successors(g2, m));
+        // System.out.printf("%s != %s%n", nodes1.size(), nodes2.size());
         return nodes1.size() == nodes2.size();        
     }
 

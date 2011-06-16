@@ -43,13 +43,13 @@ public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
     /**
      * A mapping from each item to its index.
      */
-    private final Map<T,Integer> indices;
+    private final BiMap<T,Integer> indices;
 
     /**
      * Creates an empty {@code Indexer} with no mappings.
      */
     public Indexer() {
-        indices = new HashMap<T,Integer>();
+        indices = new HashBiMap<T,Integer>();
     }
 
     /**
@@ -58,13 +58,13 @@ public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
     public Indexer(Collection<? extends T> items) {
         this();
         for (T item : items)
-            add(item);
+            index(item);
     }
 
     /**
      * Adds the item and creates an index for it, returning that index.
      */
-    public int add(T item) {
+    public int index(T item) {
         Integer i = indices.get(item);
         if (i == null) {
             synchronized(indices) {                
@@ -96,9 +96,13 @@ public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
      * Returns the index for the item or {@code -1} if the item has not been
      * assigned an index.
      */
-    public int get(T item) {
+    public int find(T item) {
         Integer i = indices.get(item);
         return (i == null) ? -1 : i;
+    }
+
+    public int highestIndex() {
+        return indices.size() - 1;
     }
 
     /**
@@ -107,6 +111,14 @@ public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
      */
     public Iterator<Map.Entry<T,Integer>> iterator() {
         return Collections.unmodifiableSet(indices.entrySet()).iterator();
+    }
+
+    /**
+     * Returns the element to which this index is mapped or {@code null} if the
+     * index has not been mapped
+     */
+    public T lookup(int index) {
+        return indices.inverse().get(index);
     }
 
     /**
