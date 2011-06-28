@@ -98,6 +98,7 @@ public class E1Function extends BaseFunction {
         for (DoubleVector v : matrix)
             VectorMath.add(completeCentroid, v);
 
+        simToComplete = new double[centroids.length];
         for (int c = 0; c < centroids.length; ++c)
             simToComplete[c] = dotProduct(centroids[c], completeCentroid);
     }
