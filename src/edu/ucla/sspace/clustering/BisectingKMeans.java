@@ -88,7 +88,7 @@ public class BisectingKMeans implements Clustering {
         List<List<DoubleVector>> clusters = new ArrayList<List<DoubleVector>>(
                 numClusters);
         for (int c = 0; c < numClusters; ++c)
-            clusters.set(0, new ArrayList<DoubleVector>());
+            clusters.add(new ArrayList<DoubleVector>());
 
         Clustering clustering = new DirectClustering();
         // Make the first bisection.
