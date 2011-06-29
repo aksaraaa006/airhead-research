@@ -78,7 +78,9 @@ public class VectorMath {
                                    DoubleVector vector2) {
         if (vector2.length() != vector1.length())
             throw new IllegalArgumentException(
-                    "Vectors of different sizes cannot be added");
+                    "Vectors of different sizes cannot be added.  " +
+                    "Lengths are: vector1: " + vector1.length() +
+                    ", vector2: " + vector2.length());
         // If vector is a sparse vector, simply get the non zero values and
         // add them to this instance.
         if (vector2 instanceof SparseVector)
