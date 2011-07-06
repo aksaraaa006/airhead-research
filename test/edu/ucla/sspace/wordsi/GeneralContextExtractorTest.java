@@ -46,13 +46,7 @@ public class GeneralContextExtractorTest {
 
     private Map <String, SparseDoubleVector> termMap;
 
-    @Test public void testProcessDocument() {
-        ContextExtractor extractor = new GeneralContextExtractor(
-                new MockGenerator(), 5, false);
-        MockWordsi wordsi = new MockWordsi(null, extractor);
-
-        String text = "the brown foxes jumped over a cats";
-
+    protected void setupTermMap() {
         termMap = new HashMap<String, SparseDoubleVector>();
         termMap.put("the",
                     new CompactSparseVector(new double[]{0, 1, 0, 0, 1, 2, 1}));
@@ -68,6 +62,28 @@ public class GeneralContextExtractorTest {
                     new CompactSparseVector(new double[]{0, 0, 0, 1, 2, 2, 1}));
         termMap.put("cats",
                     new CompactSparseVector(new double[]{0, 1, 0, 0, 1, 2, 1}));
+    }
+
+    @Test public void testProcessDocument() {
+        ContextExtractor extractor = new GeneralContextExtractor(
+                new MockGenerator(), 5, false);
+        MockWordsi wordsi = new MockWordsi(null, extractor, null);
+
+        String text = "the brown foxes jumped over a cats";
+        setupTermMap();
+
+        extractor.processDocument(
+                new BufferedReader(new StringReader(text)), wordsi);
+        assertTrue(wordsi.called);
+    }
+
+    @Test public void testProcessDocumentWithHeader() {
+        ContextExtractor extractor = new GeneralContextExtractor(
+                new MockGenerator(), 5, true);
+        MockWordsi wordsi = new MockWordsi(null, extractor, "CHICKEN:");
+
+        String text = "CHICKEN: the brown foxes jumped over a cats";
+        setupTermMap();
 
         extractor.processDocument(
                 new BufferedReader(new StringReader(text)), wordsi);
@@ -103,10 +119,14 @@ public class GeneralContextExtractorTest {
 
         boolean called;
 
+        String expectedSecondaryKey;
+
         public MockWordsi(Set<String> acceptedWords,
-                          ContextExtractor extractor) {
+                          ContextExtractor extractor,
+                          String expectedSecondaryKey) {
             super(acceptedWords, extractor);
             called = false;
+            this.expectedSecondaryKey = expectedSecondaryKey; 
         }
                           
         public void processSpace(Properties props) {
@@ -116,7 +136,10 @@ public class GeneralContextExtractorTest {
                                         String secondaryKey,
                                         SparseDoubleVector v) {
             called = true;
-            assertEquals(primaryKey, secondaryKey);
+            if (expectedSecondaryKey != null)
+                assertEquals(expectedSecondaryKey, secondaryKey);
+            else
+                assertEquals(primaryKey, secondaryKey);
             assertTrue(termMap.containsKey(primaryKey));
             SparseDoubleVector expected = termMap.get(primaryKey);
             assertEquals(VectorIO.toString(expected), VectorIO.toString(v));
