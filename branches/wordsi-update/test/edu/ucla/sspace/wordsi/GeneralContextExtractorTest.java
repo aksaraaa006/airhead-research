@@ -48,7 +48,7 @@ public class GeneralContextExtractorTest {
 
     @Test public void testProcessDocument() {
         ContextExtractor extractor = new GeneralContextExtractor(
-                new MockGenerator(), 5);
+                new MockGenerator(), 5, false);
         MockWordsi wordsi = new MockWordsi(null, extractor);
 
         String text = "the brown foxes jumped over a cats";
@@ -76,7 +76,7 @@ public class GeneralContextExtractorTest {
 
     @Test public void testVectorLength() {
         ContextExtractor extractor = new GeneralContextExtractor(
-                new MockGenerator(), 5);
+                new MockGenerator(), 5, false);
         assertEquals(7, extractor.getVectorLength());
     }
 

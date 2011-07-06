@@ -278,7 +278,6 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
             // CoNLL formats using tabs between features.
             String[] nodeFeatures = line.split("\\s+");
 
-            /*
             // Multiple parse trees may be within the same set of lines, so in
             // order for the later parse trees to be linked correctly, we need
             // to create an offset for the parent ids.
@@ -286,7 +285,6 @@ public class CoNLLDependencyExtractor implements DependencyExtractor {
             if ((realId == 0 && nodes.size() != offset) ||
                 (realId == 1 && nodes.size() != offset && nodes.size() != offset+1))
                 offset = nodes.size();
-                */
 
             // Get the node id and the parent node id.
             int parent =

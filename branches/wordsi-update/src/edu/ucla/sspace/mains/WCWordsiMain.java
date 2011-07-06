@@ -89,10 +89,13 @@ public class WCWordsiMain extends GenericWordsiMain {
         options.addOption('G', "weightingFunction",
                           "Specifies the class that will weight " +
                           "co-occurrences based on the window distance. " +
-                          "(Default: None)",
+                          "(Default: LinearWeighting)",
                           true, "CLASSNAME", "Optional");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected void handleExtraOptions() {
         // Create the weighting function.    If one is specified by the command
         // line, create a new instance of it, otherwise default to

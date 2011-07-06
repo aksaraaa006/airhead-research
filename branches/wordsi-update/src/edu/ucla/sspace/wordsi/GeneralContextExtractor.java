@@ -54,6 +54,12 @@ public class GeneralContextExtractor implements ContextExtractor {
     private final int windowSize;
 
     /**
+     * Set to true if the first token should be considered the header of the
+     * context and be discarded..
+     */
+    private final boolean readHeader;
+
+    /**
      * Creates a new {@link GeneralContextExtracto}.
      *
      * @param generator The {@link ContextGenerator} responsible for creating
@@ -62,9 +68,11 @@ public class GeneralContextExtractor implements ContextExtractor {
      *        which compose a context
      */
     public GeneralContextExtractor(ContextGenerator generator,
-                                   int windowSize) {
+                                   int windowSize,
+                                   boolean readHeader) {
         this.generator = generator;
         this.windowSize = windowSize;
+        this.readHeader = readHeader;
     }
 
     /**
@@ -83,6 +91,16 @@ public class GeneralContextExtractor implements ContextExtractor {
 
         Iterator<String> it = IteratorFactory.tokenizeOrdered(document);
 
+        // Skip empty documents.
+        if (!it.hasNext())
+            return;
+
+        // Read the header and use it as the secondary key for wordsi, if told
+        // to do so.
+        String header = null;
+        if (readHeader)
+            header = it.next();
+
         // Fill up the words after the context so that when the real processing
         // starts, the context is fully prepared.
         for (int i = 0 ; i < windowSize && it.hasNext(); ++i)
@@ -90,23 +108,24 @@ public class GeneralContextExtractor implements ContextExtractor {
 
         // Iterate through each of the words in the context, generating context
         // vectors for each acceptable word.
-        String focusWord = null;
+        String focus = null;
         while (!nextWords.isEmpty()) {
-            focusWord = nextWords.remove();
+            focus = nextWords.remove();
+            String secondaryKey = (header == null) ? focus : header;
 
             // Advance the sliding window to the right.
             if (it.hasNext())
                 nextWords.offer(it.next());
 
             // Represent the word if wordsi is willing to process it.
-            if (wordsi.acceptWord(focusWord)) {
+            if (wordsi.acceptWord(focus)) {
                 SparseDoubleVector contextVector = generator.generateContext(
                         prevWords, nextWords);
-                wordsi.handleContextVector(focusWord, focusWord, contextVector);
+                wordsi.handleContextVector(focus, secondaryKey, contextVector);
             }
 
             // Advance the sliding window to the right.
-            prevWords.offer(focusWord);
+            prevWords.offer(focus);
             if (prevWords.size() > windowSize)
                 prevWords.remove();
         }

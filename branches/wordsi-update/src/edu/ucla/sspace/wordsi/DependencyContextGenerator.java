@@ -65,7 +65,8 @@ public interface DependencyContextGenerator {
      * returned, if a second order vector is generated, it is recommended that
      * the vector also be sparsed or have very few dimensions.
      */
-    SparseDoubleVector generateContext(DependencyTreeNode[] tree, int focusIndex);
+    SparseDoubleVector generateContext(DependencyTreeNode[] tree,
+                                        int focusIndex);
 
     /**
      * Returns the maximum number of dimensions used to represent any given

@@ -174,7 +174,8 @@ public class ArgOptions {
                 "value name must be supposed");
         }
 
-        Option o = new Option(shortName, longName, description, valueName);
+        Option o = new Option(shortName, longName, description,
+                              valueName, optionGroupName);
         
         if (shortNameToOption.containsKey(shortName) || 
             (longName != null && longNameToOption.containsKey(longName))) {
@@ -195,6 +196,42 @@ public class ArgOptions {
         }
     }
 
+    /**
+     * Removes the {@link Option} mapped by the given {@code shortName}.  This
+     * also removes the mapping from the long name if one exists.
+     *
+     * @param shortName The short name key of the option to remove.
+     */
+    public void removeOption(char shortName) {
+        Option option = shortNameToOption.remove(shortName);
+        if (option == null)
+            return;
+
+        String longName = option.longName;
+        if (longName != null)
+            longNameToOption.remove(longName);
+
+        Set<Option> groupOptions = groupToOptions.get(option.optionGroupName);
+        groupOptions.remove(option);
+    }
+
+    /**
+     * Removes the {@link Option} mapped by the given {@code longName}.  This
+     * also removes the mapping from the short name if one exists.
+     *
+     * @param longName The long name key of the option to remove.
+     */
+    public void removeOption(String longName) {
+        Option option = longNameToOption.remove(longName);
+        if (option == null)
+            return;
+
+        char shortName = option.shortName;
+        shortNameToOption.remove(shortName);
+
+        Set<Option> groupOptions = groupToOptions.get(option.optionGroupName);
+        groupOptions.remove(option);
+    }
 
     /**
      *
@@ -525,7 +562,7 @@ public class ArgOptions {
     }
 
     /**
-     * Returns the boolean value associated with the {@code shortnName} option.
+     * Returns the boolean value associated with the {@code shortName} option.
      *
      * @throws IllegalArgumentException If no value was provided for {@code
      *         shortName}
@@ -793,12 +830,16 @@ public class ArgOptions {
 
         final String valueName;
         
+        final String optionGroupName;
+
         public Option(char shortName, String longName, 
-                      String description, String valueName) {
+                      String description, String valueName,
+                      String optionGroupName) {
             this.shortName = shortName;
             this.longName = longName;
             this.description = description;
             this.valueName = valueName;
+            this.optionGroupName = optionGroupName;
         }
 
         public int compareTo(Option o) {
