@@ -91,9 +91,7 @@ public class E1Function extends BaseFunction {
     /**
      * {@inheritDoc}
      */
-    public void setup(Matrix m, int[] initialAssignments, int numClusters) {
-        super.setup(m, initialAssignments, numClusters);
-
+    protected void subSetup(Matrix m) {
         completeCentroid = new DenseDynamicMagnitudeVector(m.rows());
         for (DoubleVector v : matrix)
             VectorMath.add(completeCentroid, v);

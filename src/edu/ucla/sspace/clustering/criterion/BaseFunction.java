@@ -151,14 +151,24 @@ public abstract class BaseFunction implements CriterionFunction {
             clusterSizes[assignment]++;
         }
 
-        SparseDoubleVector empty = new CompactSparseVector(m.columns());
         // Compute the cost of each centroid.
-        for (int c = 0; c < numClusters; ++c) {
+        for (int c = 0; c < numClusters; ++c)
             centroids[c] = new DenseDynamicMagnitudeVector(
                     centroids[c].toArray());
+
+        subSetup(m);
+
+        SparseDoubleVector empty = new CompactSparseVector(m.columns());
+        for (int c = 0; c < numClusters; ++c)
             if (clusterSizes[c] != 0)
                 costs[c] = getOldCentroidScore(empty, c, clusterSizes[c]);
-        }
+    }
+
+    /**
+     * Setup any extra information needed before computing the cost values for
+     * each cluster.
+     */
+    protected void subSetup(Matrix m) {
     }
 
     /**
