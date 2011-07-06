@@ -158,6 +158,12 @@ public abstract class GenericWordsiMain extends GenericMain {
      * {@inheritDoc}
      */
     protected void addExtraOptions(ArgOptions options) {
+        // Remove some crufty options.
+        options.removeOption('Z');
+        options.removeOption('X');
+        options.removeOption('o');
+        options.removeOption('w');
+
         // Set the three runtime mode arguments.
         options.addOption('s', "streamingClustering", 
                           "Specifies the streaming clustering algorithm to " +
@@ -189,6 +195,14 @@ public abstract class GenericWordsiMain extends GenericMain {
                           "focus word must be precceded by the token given " +
                           "as the argument to this option.",
                           true, "STRING", "Evaluation Type");
+        options.addOption('N', "wordlistEvaluation",
+                          "Learned word senses are assumed to be related to " +
+                          "the senses in for other words in the " +
+                          "acceptedWords list.  This evaluation will track " +
+                          "the headers for documents which should mark " +
+                          "whether or not the focus words are being used " +
+                          "with their common sense.",
+                          false, null, "Evaluation Type");
 
         // Set the optional arguments.
         options.addOption('a', "acceptedWords",
@@ -206,6 +220,12 @@ public abstract class GenericWordsiMain extends GenericMain {
                           "after a focus word are used to form the context. " +
                           "(Default: 5)",
                           true, "INT", "Optional");
+        options.addOption('h', "useHeaderToken", 
+                          "Set to true if the first token in a context " +
+                          "should be treated as a document header. Note " +
+                          "that this is only used when -E and -P are not " +
+                          "used.",
+                          false, null, "Optional");
 
         // Set the serialization arguments.
         options.addOption('S', "save",
@@ -217,7 +237,6 @@ public abstract class GenericWordsiMain extends GenericMain {
                           "generate context vectors will be deserialized",
                           true, "FILENAME", "Serialization");
     }
-
 
     /**
      * Returns a {@link ContextExtractor}, which will be responsible for
@@ -268,6 +287,12 @@ public abstract class GenericWordsiMain extends GenericMain {
         }
     }
 
+    /**
+     * Returns a {@link ContextExtractor} that uses the given {@link
+     * ContextGenerator} which will process the corpus in the format specified
+     * by the command line.  This is just a helper function for sub-classes
+     * implementing {@link #getExtractor}.
+     */
     protected ContextExtractor contextExtractorFromGenerator(
             ContextGenerator generator) {
         // If experimentation mode is set, mark the generator as read only.
@@ -287,7 +312,8 @@ public abstract class GenericWordsiMain extends GenericMain {
                     generator, windowSize(), getPseudoWordMap());
 
         // Return a standard context extractor
-        return new GeneralContextExtractor(generator, windowSize());
+        return new GeneralContextExtractor(generator, windowSize(),
+                                           argOptions.hasOption('h'));
     }
 
     /**
@@ -321,12 +347,9 @@ public abstract class GenericWordsiMain extends GenericMain {
         ArgOptions options = argOptions;
         // Setup the assignment reporter.  When training, the assignment report
         // will only be used If the evaluation mode will be for pseudoWord.
-        boolean trackSecondaryKeys = false;
         AssignmentReporter reporter = null;
-        if (options.hasOption('P')) {
-            trackSecondaryKeys = true;
+        if (options.hasOption('P') || options.hasOption('W'))
             reporter = new PseudoWordReporter(System.out);
-        }
 
         int numClusters = options.getIntOption('c', 0);
 

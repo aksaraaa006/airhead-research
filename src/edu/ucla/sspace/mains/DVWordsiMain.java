@@ -96,6 +96,7 @@ public class DVWordsiMain extends GenericWordsiMain {
     protected void addExtraOptions(ArgOptions options) {
         super.addExtraOptions(options);
 
+        options.removeOption('f');
         options.addOption('p', "pathAcceptor",
                           "Specifies the DependencyPathAcceptor to use when " +
                           "validating paths as features. (Default: Universal)",
@@ -112,7 +113,6 @@ public class DVWordsiMain extends GenericWordsiMain {
     }
 
     /**
-     * {@inheritDoc}
      */
     protected void handleExtraOptions() {
         // Load the basis map from disk if one is specified.  Otherwise try to
@@ -158,10 +158,6 @@ public class DVWordsiMain extends GenericWordsiMain {
     }
 
     protected DependencyContextGenerator getContextGenerator() {
-        // Set to read only if in evaluation mode.
-        if (argOptions.hasOption('e'))
-            basis.setReadOnly(true);
-
         return new WordOccrrenceDependencyContextGenerator(
                 basis, getWeighter(), getAcceptor(), windowSize());
     }
@@ -172,6 +168,10 @@ public class DVWordsiMain extends GenericWordsiMain {
     protected ContextExtractor getExtractor() {
         DependencyContextGenerator generator = 
                 getContextGenerator();
+
+        // Set to read only if in evaluation mode.
+        if (argOptions.hasOption('e'))
+            generator.setReadOnly(true);
 
         // If the evaluation type is for semEval, use a
         // SemEvalDependencyContextExtractor.
