@@ -34,12 +34,24 @@ import java.util.Set;
 
 import edu.ucla.sspace.util.Indexer;
 import edu.ucla.sspace.util.LineReader;
+import edu.ucla.sspace.util.ObjectIndexer;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static edu.ucla.sspace.util.LoggerUtil.verbose;
 
 
 /**
  * A collection of static utility methods for reading and writing graphs.
  */
 public class GraphIO {
+
+    /**
+     * The logger to which clustering status updates will be written.
+     */
+    private static final Logger LOGGER =
+        Logger.getLogger(GraphIO.class.getName());
 
     public enum GraphType {
         UNDIRECTED,
@@ -66,9 +78,14 @@ public class GraphIO {
     }
 
     public static Graph<Edge> readUndirected(File f) throws IOException {
-        Indexer<String> vertexIndexer = new Indexer<String>();
+        return readUndirected(f, new ObjectIndexer<String>());
+    }
+
+    public static Graph<Edge> readUndirected(File f, Indexer<String> vertexIndexer)
+            throws IOException {        
         BufferedReader br = new BufferedReader(new FileReader(f));
-        Graph<Edge> g = new SparseUndirectedGraph();
+        Graph<Edge> g = //new GenericGraph<Edge>();
+            new SparseUndirectedGraph();
         int lineNo = 0;
         for (String line = null; (line = br.readLine()) != null; ) {
             ++lineNo;
@@ -83,15 +100,23 @@ public class GraphIO {
             }
             int v1 = vertexIndexer.index(arr[0]);
             int v2 = vertexIndexer.index(arr[1]);
-            g.add(new SimpleEdge(v1, v2));
+            g.add(new LabeledEdge(v1, v2, arr[0], arr[1]));
+            if (lineNo % 100000 == 0)
+                verbose(LOGGER, "read %d lines from %s", lineNo, f);
         }
+        // System.out.printf("Read undirected graph with %d vertices and %d edges%n", g.order(), g.size());
         return g;
     }
 
-    public static Graph<DirectedEdge> readDirected(File f) throws IOException {
-        Indexer<String> vertexIndexer = new Indexer<String>();
+    public static DirectedGraph<DirectedEdge> readDirected(File f) throws IOException {
+        return readDirected(f, new ObjectIndexer<String>());
+    }
+
+    public static DirectedGraph<DirectedEdge> readDirected(File f, Indexer<String> vertexIndexer)
+            throws IOException {        
+
         BufferedReader br = new BufferedReader(new FileReader(f));
-        Graph<DirectedEdge> g = new SparseDirectedGraph();
+        DirectedGraph<DirectedEdge> g = new SparseDirectedGraph();
         int lineNo = 0;
         for (String line = null; (line = br.readLine()) != null; ) {
             ++lineNo;
@@ -113,7 +138,7 @@ public class GraphIO {
 
 
     public static DirectedMultigraph<String> readDirectedMultigraph(File f) throws IOException {
-        return readDirectedMultigraph(f, new Indexer<String>());
+        return readDirectedMultigraph(f, new ObjectIndexer<String>());
     }
 
     public static DirectedMultigraph<String> readDirectedMultigraph(
@@ -142,7 +167,7 @@ public class GraphIO {
     }
 
     public static UndirectedMultigraph<String> readUndirectedMultigraph(File f) throws IOException {
-        return readUndirectedMultigraph(f, new Indexer<String>());
+        return readUndirectedMultigraph(f, new ObjectIndexer<String>());
     }
 
     public static UndirectedMultigraph<String> readUndirectedMultigraph(
@@ -169,6 +194,9 @@ public class GraphIO {
             int v2 = vertexIndexer.index(arr[1]);
             String type = arr[2];
             g.add(new SimpleTypedEdge<String>(type, v1, v2));
+
+            if (lineNo % 100000 == 0)
+                verbose(LOGGER, "read %d lines from %s", lineNo, f);
         }
         if (g.order() != vertexIndexer.highestIndex() + 1) {
             System.out.printf("%d != %d%n", g.order(), vertexIndexer.highestIndex());

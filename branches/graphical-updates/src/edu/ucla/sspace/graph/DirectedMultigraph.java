@@ -210,6 +210,55 @@ public class DirectedMultigraph<T>
     /**
      * {@inheritDoc}
      */
+    public DirectedMultigraph<T> copy(Set<Integer> vertices) {
+        // special case for If the called is requesting a copy of the entire
+        // graph, which is more easily handled with the copy constructor
+        if (vertices.size() == order() && vertices.equals(vertices()))
+            return new DirectedMultigraph<T>(this);
+        DirectedMultigraph<T> g = new DirectedMultigraph<T>();
+        int order = order();
+        int avgDegree = (order > 0) ? size() / order : 0;
+        boolean useAdjacencyList = vertices.size() < avgDegree;
+        for (int v : vertices) {
+            if (!contains(v))
+                throw new IllegalArgumentException(
+                    "Requested copy with non-existant vertex: " + v);
+            g.add(v);
+            // If the number of vertices being requested is expected to be
+            // lareger than the average degree, we should see fewer edges than
+            // the number of requested vertices squared.  Therefore, use the
+            // adjacency list
+            if (useAdjacencyList) {
+                for (DirectedTypedEdge<T> e : getAdjacencyList(v)) {
+                    if (vertices.contains(e.from()) 
+                            && vertices.contains(e.to()))
+                        g.add(e);
+                }
+            }
+            // If the number of requested vertices is small, then just try all
+            // pairwise comparisons, as the adjacency lists would likely contain
+            // many edges to vertices not in this subgraph
+            else {
+                for (int v2 : vertices) {
+                    if (v == v2)
+                        break;
+                    // Iterate through the type-specific graphs, checking for
+                    // edges between these two vertices.  This avoid creating a
+                    // combined set.
+                    for (DirectedGraph<DirectedTypedEdge<T>> dg
+                             : typeToEdges.values()) {
+                        for (DirectedTypedEdge<T> e : dg.getEdges(v, v2))
+                            g.add(e);
+                    }
+                }
+            }
+        }
+        return g;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public int degree(int vertex) {
         int degree = 0;
         for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
@@ -222,6 +271,16 @@ public class DirectedMultigraph<T>
      */
     public Set<DirectedTypedEdge<T>> edges() {
         return edges;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Set<DirectedTypedEdge<T>> edges(T t) {
+        Graph<DirectedTypedEdge<T>> g = typeToEdges.get(t);
+        return (g == null)
+            ? Collections.<DirectedTypedEdge<T>>emptySet()
+            : g.edges();
     }
 
     /**
@@ -490,26 +549,26 @@ public class DirectedMultigraph<T>
     /**
      * {@inheritDoc}
      */
-     public DirectedMultigraph<T> subgraph(Set<Integer> subset) {
-         Subgraph sub = new Subgraph(typeToEdges.keySet(), subset);
-         subgraphs.add(new WeakReference<Subgraph>(sub));
-         return sub;
+    public DirectedMultigraph<T> subgraph(Set<Integer> subset) {
+        Subgraph sub = new Subgraph(typeToEdges.keySet(), subset);
+        subgraphs.add(new WeakReference<Subgraph>(sub));
+        return sub;
     }
 
     /**
      * {@inheritDoc}
      */
-     public DirectedMultigraph<T> subgraph(Set<Integer> subset, Set<T> edgeTypes) {
-         if (edgeTypes.isEmpty()) 
-           throw new IllegalArgumentException("Must specify at least one type");
-         if (!typeToEdges.keySet().containsAll(edgeTypes)) {
-             throw new IllegalArgumentException(
-                 "Cannot create subgraph with more types than exist");
-         }
-         Subgraph sub = new Subgraph(edgeTypes, subset);
-         subgraphs.add(new WeakReference<Subgraph>(sub));
-         return sub;
-     }     
+    public DirectedMultigraph<T> subgraph(Set<Integer> subset, Set<T> edgeTypes) {
+        if (edgeTypes.isEmpty()) 
+            throw new IllegalArgumentException("Must specify at least one type");
+        if (!typeToEdges.keySet().containsAll(edgeTypes)) {
+            throw new IllegalArgumentException(
+                "Cannot create subgraph with more types than exist");
+        }
+        Subgraph sub = new Subgraph(edgeTypes, subset);
+        subgraphs.add(new WeakReference<Subgraph>(sub));
+        return sub;
+    }     
 
     /**
      * Returns a description of the graph as the sequence of its edges.
@@ -537,6 +596,34 @@ public class DirectedMultigraph<T>
         private static final long serialVersionUID = 1L;
         
         public TypeGraph() { }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public Graph<DirectedTypedEdge<T>> copy(Set<Integer> vertices) {
+            // special case for If the called is requesting a copy of the entire
+            // graph, which is more easily handled with the copy constructor
+            TypeGraph<T> g = new TypeGraph<T>();
+            if (vertices.size() == order() && vertices.equals(vertices())) {
+                for (int v : vertices)
+                    g.add(v);
+                for (DirectedTypedEdge<T> e : edges())
+                    g.add(e);
+            }
+            else {
+                for (int v : vertices) {
+                    if (!contains(v))
+                        throw new IllegalArgumentException(
+                            "Requested copy with non-existant vertex: " + v);
+                    g.add(v);
+                    for (DirectedTypedEdge<T> e : getAdjacencyList(v))
+                        if (vertices.contains(e.from())
+                                && vertices.contains(e.to()))
+                            g.add(e);
+                }
+            }
+            return g;
+        }
                 
         @Override protected SparseDirectedTypedEdgeSet<T> 
                 createEdgeSet(int vertex) {
@@ -756,13 +843,30 @@ public class DirectedMultigraph<T>
         /**
          * {@inheritDoc}
          */
-        public int degree(int vertex) {
-            int degree = 0;
-            for (T type : validTypes) {
-                DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(type);
-                degree += g.degree(vertex);
+        public DirectedMultigraph<T> copy(Set<Integer> vertices) {
+            // special case for If the called is requesting a copy of the entire
+            // graph, which is more easily handled with the copy constructor
+            if (vertices.size() == order() && vertices.equals(vertices()))
+                return new DirectedMultigraph<T>(this);
+            DirectedMultigraph<T> g = new DirectedMultigraph<T>();
+            for (int v : vertices) {
+                if (!contains(v))
+                    throw new IllegalArgumentException(
+                        "Requested copy with non-existant vertex: " + v);
+                g.add(v);
+                for (DirectedTypedEdge<T> e : getAdjacencyList(v)) {
+                    if (vertices.contains(e.from()) && vertices.contains(e.to()))
+                        g.add(e);
+                }
             }
-            return degree;
+            return g;            
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public int degree(int vertex) {
+            return getNeighbors(vertex).size();
         }
 
         /**
@@ -770,6 +874,13 @@ public class DirectedMultigraph<T>
          */
         public Set<DirectedTypedEdge<T>> edges() {
             return new SubgraphEdgeView();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public Set<DirectedTypedEdge<T>> edges(T t) {
+            throw new Error("implement me");
         }
 
         /**
@@ -971,9 +1082,18 @@ public class DirectedMultigraph<T>
          */
         public int size() {
             int size = 0;
-            for (DirectedTypedEdge<T> e : edges()) {
-                size++;
+            Integer[] verts = vertexSubset.toArray(new Integer[vertexSubset.size()]);
+            for (T t : validTypes) {
+                Graph<DirectedTypedEdge<T>> g  = typeToEdges.get(t);
+                for (int i = 0; i < verts.length; ++i) {
+                    for (int j = i + 1; j < verts.length; ++j) {
+                        size += g.getEdges(verts[i], verts[j]).size();
+                    }
+                }
             }
+//             for (DirectedTypedEdge<T> e : edges()) {
+//                 size++;
+//             }
             return size;
         }
 
@@ -1087,21 +1207,10 @@ public class DirectedMultigraph<T>
              */
             private class SubgraphAdjacencyListIterator 
                     implements Iterator<DirectedTypedEdge<T>> {
-            
-//                 Integer curNeighbor;
-
-//                 Iterator<Integer> remainingNeighbors;
-
-//                 T curType;
-
-//                 Iterator<T> remaingTypes;
 
                 Iterator<DirectedTypedEdge<T>> edges;
 
                 public SubgraphAdjacencyListIterator() {
-                    // remainingNeighbors = vertexSubset.iterator();
-//                     // Set up the first neighbor
-//                     advance();
                     List<Iterator<DirectedTypedEdge<T>>> iters =
                         new LinkedList<Iterator<DirectedTypedEdge<T>>>();
 
@@ -1130,173 +1239,8 @@ public class DirectedMultigraph<T>
                 public void remove() {
                     edges.remove();
                 }
-
-//                 void nextNeighbor() {
-//                     curNeighbor == null;
-//                     if (remainingNeighbors.hasNext()) {
-//                         do {
-//                             curNeighbor = remainingNeighbors.next();
-//                             remainingTypes = validTypes.iterator();
-//                         } while (curNeighbor == root 
-//                                  && remainingNeighbors.hasNext());
-//                     }
-//                     if (curNeighbor != null && curNeighbor == root)
-//                         curNeighbor == null;
-//                 }
-                
-//                 void advance() {
-//                     // Don't advance the state if there are still connections or
-//                     // the first edge
-//                     if (curEdges != null && curEdges.hasNext())
-//                         return;
-
-//                     // Base case: there are no more neighbors
-//                     if (curNeighbor == null && !remainingNeighbors.hasNext())
-//                         return;
-                    
-//                     // If there are no more types for the current neighbor, then
-//                     // try to find another one
-//                     if (remainingTypes == null || !remainingTypes.hasNext()) 
-//                         nextNeighbor();
-                    
-//                     // If we have a valid neighbor, move to the next type
-//                     if (curNeigbhor != null) {
-//                         T type = remainingTypes.next();
-//                         curEdges = 
-//                             typeToEdges.get(type).getEdges(root, curNeighbor);
-//                     }
-//                 }
-
             }
         }
-
-//         /**
-//          * A view for the {@code Edge} adjacent edges of a vertex within a
-//          * subgraph.  This class monitors for changes to edge set to update the
-//          * state of this graph
-//          */
-//         private class SubgraphAdjacencyListView 
-//                 extends AbstractSet<DirectedTypedEdge<T>> {
-
-//             /**
-//              * The adjacency list of edges in the backing graph.
-//              */
-//             private final Set<DirectedTypedEdge<T>> adjacencyList;
-            
-//             /**
-//              * The root vertex in the subgraph.
-//              */ 
-//             private final int root;
-
-//             public SubgraphAdjacencyListView(int root,
-//                     Set<DirectedTypedEdge<T>> adjacencyList) {
-//                 this.root = root;
-//                 this.adjacencyList = adjacencyList;                
-//             }
-
-//             /**
-//              * Throws an {@link UnsupportedOperationException} if called.
-//              */
-//             public boolean add(DirectedTypedEdge<T> edge) {
-//                 return (edge.from() == root 
-//                         || edge.to() == root) 
-//                     && Subgraph.this.add(edge);
-//             }
-
-//             public boolean contains(Object o) {
-//                 if (!(o instanceof Edge))
-//                     return false;
-//                 Edge e = (Edge)o;
-//                 return vertexSubset.contains(e.to()) 
-//                     && vertexSubset.contains(e.from())
-//                     && adjacencyList.contains(e);
-//             }
-            
-//             public Iterator<DirectedTypedEdge<T>> iterator() {
-//                 return new SubgraphAdjacencyListIterator();
-//             }
-            
-//             /**
-//              * Removes the edge, if present in this subgraph
-//              */
-//             public boolean remove(Object o) {
-//                 if (!(o instanceof DirectedTypedEdge))
-//                     return false;
-//                 @SuppressWarnings("unchecked")
-//                 DirectedTypedEdge<T> edge = (DirectedTypedEdge<T>)o;
-
-//                 return (edge.from() == root 
-//                         || edge.to() == root) 
-//                     && Subgraph.this.remove(edge);
-//             }
-
-//             public int size() {
-//                 int sz = 0;
-//                 Iterator<DirectedTypedEdge<T>> it = iterator();
-//                 while (it.hasNext()) {
-//                     it.next();
-//                     sz++;
-//                 }
-//                 return sz;
-//             }
-
-//             /**
-//              * A decorator around the iterator for the adjacency list for a
-//              * vertex in a subgraph, which tracks edges removal to update the
-//              * number of edges in the graph.
-//              */
-//             private class SubgraphAdjacencyListIterator 
-//                     implements Iterator<DirectedTypedEdge<T>> {
-                
-//                 private final Iterator<DirectedTypedEdge<T>> edges;
-                
-//                 private DirectedTypedEdge<T> next;
-//                 private DirectedTypedEdge<T> cur;
-
-//                 public SubgraphAdjacencyListIterator() {
-//                     edges = adjacencyList.iterator();
-//                     advance();
-//                 }
-                
-//                 private void advance() {
-//                     next = null;
-//                     while (edges.hasNext()) {
-//                         DirectedTypedEdge<T> e = edges.next();
-
-//                         // Skip edges between vertices not in this subgraph
-//                         if (!vertexSubset.contains(e.from()) 
-//                                 || !vertexSubset.contains(e.to())
-//                                 || !validTypes.contains(e.edgeType()))
-//                             continue;
-
-//                         next = e;
-//                         break;
-//                     }
-//                 }
-                
-//                 public boolean hasNext() {
-//                     return next != null;
-//                 }
-                
-//                 public DirectedTypedEdge<T> next() {
-//                     if (!hasNext())
-//                         throw new NoSuchElementException();
-//                     cur = next;
-//                     advance();
-//                     return cur;
-//                 }
-                
-//                 /**
-//                  * {@inheritDoc}
-//                  */                
-//                 public void remove() {
-//                     if (null == null)
-//                         throw new IllegalStateException();
-//                     Subgraph.this.remove(cur);
-//                     cur = null;
-//                 }            
-//             }
-//         }
 
         /**
          * A view-based class over the edges in a {@link Subgraph}.  This class

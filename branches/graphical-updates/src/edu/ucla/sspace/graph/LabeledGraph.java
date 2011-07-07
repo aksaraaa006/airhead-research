@@ -22,6 +22,7 @@
 package edu.ucla.sspace.graph;
 
 import edu.ucla.sspace.util.Indexer;
+import edu.ucla.sspace.util.ObjectIndexer;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,20 +40,20 @@ import java.util.Set;
  * vertices (i.e., edges may be added or removed).  This ensures that all vertex
  * additions or removals to the graph are made through this class.
  */
-public class LabeledGraph<L,E extends Edge,G extends Graph<E>> 
+public class LabeledGraph<L,E extends Edge> 
         extends GraphAdaptor<E> implements java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
     
-    private final G graph;
+    private final Graph<E> graph;
 
     private final Indexer<L> vertexLabels;
 
-    public LabeledGraph(G graph) {
-        this(graph, new Indexer<L>());
+    public LabeledGraph(Graph<E> graph) {
+        this(graph, new ObjectIndexer<L>());
     }
 
-    public LabeledGraph(G graph, Indexer<L> vertexLabels) {
+    public LabeledGraph(Graph<E> graph, Indexer<L> vertexLabels) {
         super(graph);
         this.graph = graph;
         this.vertexLabels = vertexLabels;
@@ -74,6 +75,18 @@ public class LabeledGraph<L,E extends Edge,G extends Graph<E>>
         // The indexer may have already had the mapping without the graph having
         // vertex, so check that the graph has the vertex
         return super.add(vertex);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public LabeledGraph<L,E> copy(Set<Integer> vertices) {
+        Graph<E> g = super.copy(vertices);
+        // Create a copy of the labels.  
+        // NOTE: this includes labels for vertices that may not be present in
+        //       the new graph.  Not sure if it's the correct behavior yet.
+        Indexer<L> labels = new ObjectIndexer<L>(vertexLabels);
+        return new LabeledGraph<L,E>(g, labels);
     }
 
     public boolean contains(L vertexLabel) {

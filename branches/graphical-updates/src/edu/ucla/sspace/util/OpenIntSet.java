@@ -103,8 +103,8 @@ public class OpenIntSet extends AbstractSet<Integer>
      * @throw IllegalArgumentException if {@code size} is not a positive value
      */
     public OpenIntSet(int size) {
-        if (size < 1)
-            throw new IllegalArgumentException("size must be positive");
+        if (size < 0)
+            throw new IllegalArgumentException("size must be non-negative");
         // find the next power of two greater than the size
         int n = 1;
         for (int i = 2; i < 32; ++i) {
@@ -125,6 +125,21 @@ public class OpenIntSet extends AbstractSet<Integer>
     public OpenIntSet(Collection<Integer> ints) {
         this(ints.size());
         addAll(ints);
+    }
+
+    /**
+     * Constructs an {@code OpenIntSet} that will contain all the values in the
+     * provided set.
+     */
+    public OpenIntSet(OpenIntSet ints) {
+        // Copy over the integer values
+        int len = ints.buckets.length;
+        buckets = new int[len];
+        System.arraycopy(ints.buckets, 0, buckets, 0, len);
+        // Then set the non-array based state
+        this.size = ints.size;
+        this.isEmptyMarkerValuePresent = ints.isEmptyMarkerValuePresent;
+        this.isDeletedMarkerValuePresent = ints.isDeletedMarkerValuePresent;
     }
 
     /**

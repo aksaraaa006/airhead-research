@@ -134,6 +134,13 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
 
     /**
      * {@inheritDoc}
+     */
+    @Override public boolean isEmpty() {
+        return inEdges().isEmpty() && outEdges.isEmpty();
+    }
+
+    /**
+     * {@inheritDoc}
      */ 
     public Iterator<DirectedEdge> iterator() {
         return new DirectedEdgeIterator();

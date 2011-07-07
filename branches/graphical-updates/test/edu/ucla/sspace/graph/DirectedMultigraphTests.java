@@ -1660,6 +1660,83 @@ public class DirectedMultigraphTests {
         assertFalse(sub.contains(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));        
     }
 
+    /****************
+     *
+     *
+     * Tests for copy()
+     *
+     *
+     ****************/
+
+    @Test public void testCopy() {
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-3",3, 4)));
+
+        DirectedMultigraph<String> copy = g.copy(g.vertices());
+        assertEquals(g.order(), copy.order());
+        assertEquals(g.size(), copy.size());
+        assertEquals(g, copy);
+
+        copy.remove(4);
+        assertEquals(4, g.order());
+        assertEquals(3, copy.order());
+    }
+
+    @Test public void testCopy1vertex() {
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-3",3, 4)));
+
+        DirectedMultigraph<String> copy = g.copy(Collections.singleton(1));
+        assertEquals(1, copy.order());
+        assertEquals(0, copy.size());
+    }
+
+    @Test public void testCopy2vertex() {
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-3",3, 4)));
+
+        Set<Integer> verts = new HashSet<Integer>();
+        Collections.addAll(verts, 0, 1);
+        DirectedMultigraph<String> copy = g.copy(verts);
+        assertEquals(2, copy.order());
+        assertEquals(2, copy.size());
+    }
+
+    @Test public void testEmptyCopy() {
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-3",3, 4)));
+
+        DirectedMultigraph<String> copy = g.copy(Collections.<Integer>emptySet());
+        assertEquals(0, copy.order());
+        assertEquals(0, copy.size());
+        assertEquals(new DirectedMultigraph<String>(), copy);
+        
+        copy.add(5);
+        assertTrue(copy.contains(5));
+        assertFalse(g.contains(5));
+    }
+
+
     /*
      * To test:
      *

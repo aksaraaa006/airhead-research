@@ -38,6 +38,11 @@ import java.util.Set;
 public interface WeightedGraph<E extends WeightedEdge> extends Graph<E> {
 
     /**
+     * {@inheritDoc}
+     */
+    @Override WeightedGraph<E> copy(Set<Integer> vertices);
+
+    /**
      * Returns the set of edges contained in this graph.
      */
     @Override Set<E> edges();
@@ -61,6 +66,5 @@ public interface WeightedGraph<E extends WeightedEdge> extends Graph<E> {
     /**
      * {@inheritDoc}
      */
-    @Override WeightedGraph<E> subgraph(Set<Integer> vertices);
-    
+    @Override WeightedGraph<E> subgraph(Set<Integer> vertices);    
 }

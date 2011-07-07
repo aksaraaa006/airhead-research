@@ -330,6 +330,9 @@ public class TreeMultiMap<K,V>
      */
     public boolean remove(Object key, Object value) {
 	Set<V> values = map.get(key);
+        // If the key was not mapped to any values
+        if (values == null)
+            return false;
 	boolean removed = values.remove(value);
 	if (removed) {
 	    range--;

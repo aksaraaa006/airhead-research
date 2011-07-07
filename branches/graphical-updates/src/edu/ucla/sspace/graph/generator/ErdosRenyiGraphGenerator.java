@@ -24,14 +24,15 @@ public class ErdosRenyiGraphGenerator implements GraphGenerator {
         if (numEdges >= (numNodes * (numNodes - 1) / 2))
             throw new IllegalArgumentException("too many edges for the number of nodes");
         Graph<Edge> g = new SparseUndirectedGraph();
+        //System.out.printf("Creating a graph with %d vertices and %d edges%n");
         // Add all the vertices
         for (int i = 0; i < numNodes; ++i)
             g.add(i);
         int added = 0;
         while (added < numEdges) {
             // Pick two vertices at random
-            int i = (int)(Math.random() * numEdges);
-            int j = (int)(Math.random() * numEdges);
+            int i = (int)(Math.random() * numNodes);
+            int j = (int)(Math.random() * numNodes);
             if (g.add(new SimpleEdge(i, j)))
                 added++;
         }

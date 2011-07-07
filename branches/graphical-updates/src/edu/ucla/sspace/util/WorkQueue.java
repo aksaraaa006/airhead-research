@@ -128,6 +128,8 @@ public class WorkQueue {
         if (latch == null)
             throw new IllegalArgumentException(
                 "Unknown task id: " + taskGroupId);
+        if (task == null)
+            throw new NullPointerException("Cannot add null tasks");                                           
         workQueue.offer(new CountingRunnable(task, latch));
     }
 
@@ -243,6 +245,8 @@ public class WorkQueue {
         int numTasks = tasks.size();
         CountDownLatch latch = new CountDownLatch(numTasks);
         for (Runnable r : tasks) {
+            if (r == null)
+                throw new NullPointerException("Cannot run null tasks");
             workQueue.offer(new CountingRunnable(r, latch));
         }
         try {
@@ -255,9 +259,10 @@ public class WorkQueue {
     }
 
     /**
-     * Returns the number of threads being used to process the enqueued tasks.
+     * Returns the number of threads that are available to this {@code
+     * WorkQueue} for processing the enqueued tasks.
      */
-    public int numThreads() {
+    public int availableThreads() {
         return threads.size();
     }
     

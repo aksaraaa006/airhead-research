@@ -58,9 +58,29 @@ public interface Multigraph<T,E extends TypedEdge<T>> extends Graph<E> {
     boolean contains(int vertex1, int vertex2, T edgeType);
 
     /**
+     * {@inheritDoc}
+     */
+    Multigraph<T,E> copy(Set<Integer> vertices);
+
+    /**
+     * Creates a copy of this graph containing only the specified number of
+     * vertices and all edges between those vertices with the specified type.
+     * If {@code vertices} is empty a new, empty graph of this instance's type
+     * is returned.  Any changes made to this graph will not be reflected in
+     * returned copy or vice-versa.
+     */
+    //Multigraph<T,E> copy(Set<Integer> vertices, T edgeType);
+
+    /**
      * Returns the set of typed edges in the graph
      */
     Set<E> edges();
+
+    /**
+     * Returns the set of edges with the corresponding type or the empty set if
+     * no edges of that exist.
+     */
+    Set<E> edges(T type);
 
     /**
      * Returns the set of edge types currently present in this graph.
@@ -84,11 +104,6 @@ public interface Multigraph<T,E extends TypedEdge<T>> extends Graph<E> {
      */
     Multigraph<T,E> subgraph(Set<Integer> vertices);
 
-//     /**
-//      * {@inheritDoc}
-//      */
-//     Multigraph<T,E> subview(Set<Integer> vertices);
-
     /**
      * Returns a subgraph of this graph containing only the specified vertices
      * and edges of the specified types.  Note that if all of the vertices are
@@ -97,14 +112,5 @@ public interface Multigraph<T,E extends TypedEdge<T>> extends Graph<E> {
      * type <i>other</i> than the specified types to this subgraph will fail.
      * Implementations are free to specify whether this will be an exception
      */
-    Multigraph<T,E> subgraph(Set<Integer> vertices, Set<T> edgeTypes);
-
-//     /**
-//      * Returns a subview of this graph containing only the specified vertices
-//      * and edges of the specified types.  Note that if all of the vertices are
-//      * specified, this method can be used to extract edge-type-specific versions
-//      * of this multigraph.
-//      */
-//     Multigraph<T,E> subview(Set<Integer> vertices, Set<T> edgeTypes);
-        
+    Multigraph<T,E> subgraph(Set<Integer> vertices, Set<T> edgeTypes);        
 }

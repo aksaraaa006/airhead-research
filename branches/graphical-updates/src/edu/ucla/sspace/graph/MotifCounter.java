@@ -26,7 +26,8 @@ import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.Counter;
 import edu.ucla.sspace.util.Pair;
 
-import edu.ucla.sspace.graph.isomorphism.Matcher;
+import edu.ucla.sspace.graph.isomorphism.IsomorphismTester;
+import edu.ucla.sspace.graph.isomorphism.VF2IsomorphismTester;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,12 +59,15 @@ public class MotifCounter<G extends Graph<? extends Edge>>
     private final Map<Pair<Integer>,Map<G,Integer>> orderAndSizeToGraphs;
 
     private int sum;
+
+    private final boolean allowNewMotifs;
     
     /**
-     * Creates a new {@code MotifCounter} with the default isomorphism tester.
+     * Creates a new {@code MotifCounter} with the default {@link
+     * IsomorphismTester} that tests for structural equivalence.
      */ 
     public MotifCounter() {
-        this(new Matcher());
+        this(new VF2IsomorphismTester());
     }
 
     /**
@@ -76,6 +80,23 @@ public class MotifCounter<G extends Graph<? extends Edge>>
         this.isoTest = isoTest;
         orderAndSizeToGraphs = new HashMap<Pair<Integer>,Map<G,Integer>>();
         sum = 0;
+        allowNewMotifs = true;
+    }
+
+    /**
+     * Creates a new {@code MotifCounter} that counts only the specified motifs.
+     * All other non-isomorphic graphs will not be counted.
+     */
+    public MotifCounter(Collection<? extends G> motifs) {
+        this.isoTest = new VF2IsomorphismTester();
+        orderAndSizeToGraphs = new HashMap<Pair<Integer>,Map<G,Integer>>();
+        sum = 0;
+        allowNewMotifs = false;
+        // Initialize with a zero count
+        for (G g : motifs) {
+            addInitial(g);
+        } 
+
     }
 
     /**
@@ -87,6 +108,26 @@ public class MotifCounter<G extends Graph<? extends Edge>>
             count(e.getKey(), e.getValue());
         }
     }
+
+    /**
+     * Fill in
+     */
+    public void addInitial(G g) {
+        Pair<Integer> orderAndSize = new Pair<Integer>(g.order(), g.size());
+        Map<G,Integer> graphs = orderAndSizeToGraphs.get(orderAndSize);
+        if (graphs == null) {
+            graphs = new HashMap<G,Integer>();
+            orderAndSizeToGraphs.put(orderAndSize, graphs);
+            graphs.put(g, 0);
+        }
+        else {
+            for (Map.Entry<G,Integer> e : graphs.entrySet()) {
+                if (isoTest.areIsomorphic(g, e.getKey()))
+                    return;
+            }
+            graphs.put(g, 0);
+        }
+    }    
 
     /**
      * Counts the isomorphic version of this graph, increasing the total by 1
@@ -110,6 +151,10 @@ public class MotifCounter<G extends Graph<? extends Edge>>
         Pair<Integer> orderAndSize = new Pair<Integer>(g.order(), g.size());
         Map<G,Integer> graphs = orderAndSizeToGraphs.get(orderAndSize);
         if (graphs == null) {
+            // If there wasn't a mapping for this graph's configuration and
+            // we're not allowing new motif instances, return 0.
+            if (!allowNewMotifs)
+                return 0;
             graphs = new HashMap<G,Integer>();
             orderAndSizeToGraphs.put(orderAndSize, graphs);
             graphs.put(g, count);
@@ -123,8 +168,13 @@ public class MotifCounter<G extends Graph<? extends Edge>>
                     return newCount;
                 }
             }
-            graphs.put(g, count);
-            return count;
+            // If the graph was not found and we can add new motifs, then do so.
+            if (allowNewMotifs) {
+                graphs.put(g, count);
+                return count;
+            }
+            else 
+                return 0;
         }
     }    
 

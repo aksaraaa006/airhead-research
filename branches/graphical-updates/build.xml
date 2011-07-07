@@ -378,6 +378,36 @@
     **
     **-->
 
+  <target name="lc-jar" depends="compile">
+    <jar destfile="${tools.dir}/lc.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Semantic Space Explorer"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.tools.LinkClusteringTool"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="fanmod-jar" depends="compile">
+    <jar destfile="${tools.dir}/fanmod.jar" basedir="classes">
+      <include name="**/*.class"/>
+      <manifest>
+	<!-- Who is building this jar? -->
+	<attribute name="Built-By" value="${user.name}"/>
+	<!-- Information about the program itself -->
+	<attribute name="Implementation-Vendor" value="AIRhead Research"/>
+	<attribute name="Implementation-Title" value="Semantic Space Explorer"/>
+	<attribute name="Implementation-Version" value="${version}"/>
+	<attribute name="Main-Class" value="edu.ucla.sspace.tools.FanmodTool"/>
+      </manifest>
+    </jar>
+  </target>
+
   <target name="sse-jar" depends="compile">
     <jar destfile="${tools.dir}/sse.jar" basedir="classes">
       <include name="**/*.class"/>
@@ -485,12 +515,17 @@
       <!-- Example test when doing debugging of single classes 
       <test name="edu.ucla.sspace.package.Class" todir="${report.dir}"/>
       -->
-      <test name="edu.ucla.sspace.graph.isomorphism.MatcherTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.graph.LabeledLinkClusteringTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.LinkClusteringTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.clustering.LinkClusteringTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.EdgeIndexerTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.util.ArrayMapTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.isomorphism.ThreeVertexIsomorphismTesterTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.isomorphism.TypedVF2IsomorphismTesterTests" todir="${report.dir}"/>
+      <test name="edu.ucla.sspace.graph.isomorphism.VF2IsomorphismTesterTests" todir="${report.dir}"/>
+
       <test name="edu.ucla.sspace.common.SimilarityTest" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.util.OpenIntSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.UndirectedMultigraphTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.graph.TypedIsomorphismTesterTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SimpleGraphIteratorTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.MotifCounterTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SparseDirectedTypedEdgeSetTests" todir="${report.dir}"/>
@@ -502,7 +537,7 @@
       <test name="edu.ucla.sspace.graph.SparseDirectedGraphTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SparseSymmetricEdgeSetTests" todir="${report.dir}"/>
       <test name="edu.ucla.sspace.graph.SubgraphIteratorTests" todir="${report.dir}"/>
-      <test name="edu.ucla.sspace.graph.VF2IsomorphismTesterTests" todir="${report.dir}"/>
+
       <!--
       <batchtest fork="yes" todir="${report.dir}">
         <fileset dir="${test.dir}">

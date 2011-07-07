@@ -21,10 +21,13 @@
 
 package edu.ucla.sspace.graph;
 
+import java.lang.reflect.Array;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 
@@ -110,16 +113,38 @@ public final class Graphs {
      * @throws IllegalArgumentException if {@code shufflesPerEdge} is
      *         non-positive
      */
-    public static <T extends Edge> int shufflePreserve(Graph<T> g, 
+    public static <E extends Edge> int shufflePreserve(Graph<E> g, 
                                                        int shufflesPerEdge) {
         if (shufflesPerEdge < 1)
             throw new IllegalArgumentException("must shuffle at least once");
+        return shuffleInternal(g, g.edges(), shufflesPerEdge);
+    }
 
-        //xSystem.out.printf("Shuffling %d edges%n", g.size());
+    /**
+     * Shuffles the edges in {@code edges} using the provided graph {@code g} to
+     * check whether the permuted edges created by the shuffling process already
+     * exist.
+     */
+    private static <E extends Edge> int shuffleInternal(
+                              Graph<E> g, Set<E> edges, int shufflesPerEdge) {
         int totalShuffles = 0;
-
-        List<T> edges = new ArrayList<T>(g.edges());
         int numEdges = edges.size();
+        if (numEdges < 2)
+            return 0;
+
+        // Copy the edges into an array so that we can easily swap them and
+        // perform random access on them without needing to do O(n) traversal to
+        // access an arbitrary edge.  Because the edge type is a generic, we
+        // have to reflectively create an array for its type.
+        E tmp = edges.iterator().next();
+        @SuppressWarnings("unchecked")
+        E[] edgeArray = (E[])Array.newInstance(tmp.getClass(), 0);
+        edgeArray = edges.toArray(edgeArray);
+//         System.out.printf("num edges: %d, array length: %d%n", numEdges, edgeArray.length);
+//         if (edgeArray.length != numEdges)
+//             System.out.println(edges);
+        Random rand = new Random();
+
         for (int i = 0; i < numEdges; ++i) {
             
             for (int swap = 0; swap < shufflesPerEdge; ++swap) {
@@ -128,24 +153,24 @@ public final class Graphs {
                 // Pick another vertex to conflate with i that is not i
                 int j = i; 
                 while (i == j)
-                    j = (int)(Math.random() * edges.size());                
+                    j = rand.nextInt(numEdges);
 
-                T e1 = edges.get(i);
-                T e2 = edges.get(j);
+                E e1 = edgeArray[i];
+                E e2 = edgeArray[j];
                 
                 // For non-directed graphs, we should randomly flip the edge
                 // orientation to guard against situations where some vertices
                 // only appear on either to() or from().
-                if (!(e1 instanceof DirectedEdge) && Math.random() < .5)
-                    e1 = e1.<T>flip();
-                if (!(e2 instanceof DirectedEdge) && Math.random() < .5)
-                    e2 = e2.<T>flip();
+                if (!(e1 instanceof DirectedEdge) && rand.nextDouble() < .5)
+                    e1 = e1.<E>flip();
+                if (!(e2 instanceof DirectedEdge) && rand.nextDouble() < .5)
+                    e2 = e2.<E>flip();
 
                 // System.out.printf("Swapping edges %d and %d: %s, %s...", i, j, e1, e2);
                 
                 // Swap their end points
-                T swapped1 = e1.<T>clone(e1.from(), e2.to());
-                T swapped2 = e2.<T>clone(e2.from(), e1.to());
+                E swapped1 = e1.<E>clone(e1.from(), e2.to());
+                E swapped2 = e2.<E>clone(e2.from(), e1.to());
             
                 // Check that the new edges do not already exist in the graph
                 // and that they are not self edges
@@ -168,8 +193,8 @@ public final class Graphs {
                 // System.out.printf("Removing %s and %s...%n", edges.get(i), edges.get(j));
 
                 // Remove the old edges
-                boolean r1 = g.remove(edges.get(i));
-                boolean r2 = g.remove(edges.get(j));
+                boolean r1 = g.remove(edgeArray[i]);
+                boolean r2 = g.remove(edgeArray[j]);
                 
 //                 System.out.println(r1 && r2);
                 
@@ -179,8 +204,8 @@ public final class Graphs {
                 
                 // Update the in-memory edges set so that if these edges are drawn
                 // again, they don't point to old edges
-                edges.set(i, swapped1);
-                edges.set(j, swapped2);
+                edgeArray[i] = swapped1;
+                edgeArray[j] = swapped2;
                 assert g.size() == numEdges 
                     : "Added an extra edge of either " + swapped1 + " or " + swapped2;
             }
@@ -224,13 +249,8 @@ public final class Graphs {
         // Iterate through all of the types in the graph, shuffling only edges
         // of that type
         for (T type : g.edgeTypes()) {
-            // System.out.println("swapping edge of type " + type);
-            Set<T> edgeType = Collections.singleton(type);
-            // Get the view of the graph that only contains edges of the
-            // specified type
-            Multigraph<T,E> graphForType = g.subgraph(vertices, edgeType);
-            // Shuffle the edges of that type only 
-            totalShuffles += shufflePreserve(graphForType, shufflesPerEdge);
+            // Shuffle the edges of the current type only 
+            totalShuffles += shuffleInternal(g, g.edges(type), shufflesPerEdge);
         }
         return totalShuffles;
     }

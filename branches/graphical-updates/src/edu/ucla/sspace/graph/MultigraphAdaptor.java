@@ -59,6 +59,21 @@ class MultigraphAdaptor<T,E extends TypedEdge<T>> extends GraphAdaptor<E>
     /**
      * {@inheritDoc}
      */
+    @Override public Multigraph<T,E> copy(Set<Integer> vertices) {
+        Graph<E> g = super.copy(vertices);
+        return new MultigraphAdaptor<T,E>(g);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Multigraph<T,E> copy(Set<Integer> vertices, T type) {
+        throw new Error("to do");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public boolean contains(int vertex1, int vertex2, T edgeType) {
         Set<E> edges = getEdges(vertex1, vertex2);
         for (E e : edges) {
@@ -76,6 +91,13 @@ class MultigraphAdaptor<T,E extends TypedEdge<T>> extends GraphAdaptor<E>
         for (E e : edges())
             types.add(e.edgeType());
         return types;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Set<E> edges(T t) {
+        throw new Error("TODO");
     }
 
     /**
