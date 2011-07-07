@@ -34,6 +34,11 @@ import java.util.Set;
 public interface DirectedGraph<E extends DirectedEdge> extends Graph<E> {
 
     /**
+     * {@inheritDoc}
+     */
+    DirectedGraph<E> copy(Set<Integer> vertices);
+
+    /**
      * {@inheritDoc} If the two vertices have bidirectional edges, this set will
      * include two edges.
      */

@@ -35,103 +35,54 @@ import java.util.Set;
  *
  * @see Counter
  */
-public class Indexer<T> implements Iterable<Map.Entry<T,Integer>>,
-                                   java.io.Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * A mapping from each item to its index.
-     */
-    private final BiMap<T,Integer> indices;
-
-    /**
-     * Creates an empty {@code Indexer} with no mappings.
-     */
-    public Indexer() {
-        indices = new HashBiMap<T,Integer>();
-    }
-
-    /**
-     * Creates an {@code Indexer} with indices for all of the provided items.
-     */
-    public Indexer(Collection<? extends T> items) {
-        this();
-        for (T item : items)
-            index(item);
-    }
+public interface Indexer<T> extends Iterable<Map.Entry<T,Integer>> {
 
     /**
      * Adds the item and creates an index for it, returning that index.
      */
-    public int index(T item) {
-        Integer i = indices.get(item);
-        if (i == null) {
-            synchronized(indices) {                
-                i = indices.get(item);
-                if (i == null) {
-                    i = indices.size();
-                    indices.put(item, i);
-                }
-            }
-        }
-        return i;
-    }
+    int index(T item);
 
     /**
      * Removes all of the item-index mappings.
      */
-    public void clear() {
-        indices.clear();
-    }
+    void clear();
 
     /**
      * Returns {@code true} if the item has a corresponding index
      */
-    public boolean contains(T item) {
-        return indices.containsKey(item);
-    }
+    boolean contains(T item);
 
     /**
      * Returns the index for the item or {@code -1} if the item has not been
      * assigned an index.
      */
-    public int find(T item) {
-        Integer i = indices.get(item);
-        return (i == null) ? -1 : i;
-    }
-
-    public int highestIndex() {
-        return indices.size() - 1;
-    }
+    int find(T item);
+    
+    /**
+     * Returns the highest index to which any element is mapped.
+     */
+    int highestIndex();
 
     /**
      * Returns an iterator over all the objects and their corresponding indices.
      * The returned iterator does not support {@code remove}.
      */
-    public Iterator<Map.Entry<T,Integer>> iterator() {
-        return Collections.unmodifiableSet(indices.entrySet()).iterator();
-    }
+    Iterator<Map.Entry<T,Integer>> iterator();
 
     /**
      * Returns the element to which this index is mapped or {@code null} if the
      * index has not been mapped
      */
-    public T lookup(int index) {
-        return indices.inverse().get(index);
-    }
+    T lookup(int index);
 
+    /**
+     * Returns an unmodifiable view from each index to the object mapped to that
+     * index.
+     */
+    Map<Integer,T> mapping();
+    
     /**
      * Returns the number of items that are mapped to indices.
      */
-    public int size() {
-        return indices.size();
-    }
-
-    /**
-     * Returns a string representation of the objects and their indices.
-     */
-    public String toString() {
-        return indices.toString();
-    }
+    int size();
 }

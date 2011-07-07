@@ -66,6 +66,27 @@ public class SparseUndirectedGraph extends AbstractGraph<Edge,SparseUndirectedEd
         for (Edge e : g.edges())
             add(e);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Graph<Edge> copy(Set<Integer> vertices) {
+        // special case for If the called is requesting a copy of the entire
+        // graph, which is more easily handled with the copy constructor
+        if (vertices.size() == order() && vertices.equals(vertices()))
+            return new SparseUndirectedGraph(this);
+        SparseUndirectedGraph g = new SparseUndirectedGraph();
+        for (int v : vertices) {
+            if (!contains(v))
+                throw new IllegalArgumentException(
+                    "Requested copy with non-existant vertex: " + v);
+            g.add(v);
+            for (Edge e : getAdjacencyList(v))
+                if (vertices.contains(e.from()) && vertices.contains(e.to()))
+                    g.add(e);
+        }
+        return g;
+    }
     
     /**
      * Creates a sparse edge set that treats all edges as symmetric.

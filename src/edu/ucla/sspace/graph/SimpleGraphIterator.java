@@ -24,6 +24,7 @@ package edu.ucla.sspace.graph;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -89,12 +90,6 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
         // more subgraphs, then pick off the next subgraph and decompose it
         if (next.isEmpty() && subgraphIterator.hasNext()) {
             Multigraph<T,E> g = subgraphIterator.next();
-//             System.out.println("next graph: " + g);
-//             if (g.toString().equals("{}")) {
-//                 System.out.printf("order %d, size %d, verts: %s, edges: %s%n", g.order(), g.size(), g.vertices(), g.edges());
-//                 System.out.println(g.getClass());
-//                 throw new Error("disconnected subgraph");
-//                 }
 
             // Find all pairs of edges, checking whether the graph is a simple
             // graph already
@@ -129,7 +124,7 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
             else {
                 // Create an empty graph which will be populated with a new edge
                 // and then copied 
-                Multigraph<T,E> m = Graphs.asMultigraph(new GenericGraph<E>());
+                Multigraph<T,E> m = g.copy(Collections.<Integer>emptySet()); //Graphs.asMultigraph(new GenericGraph<E>());
                 next.addAll(enumerateSimpleGraphs(g, connected, 0, m));
             }
         }
@@ -159,8 +154,8 @@ public class SimpleGraphIterator<T, E extends TypedEdge<T>>
         // Pick one of the edges and generate a graph from the remaining pairs
         for (E e : edges) {
             // Make a copy of the input graph and add this edge to the graph
-            Multigraph<T,E> m = 
-                Graphs.asMultigraph(new GenericGraph<E>(toCopy));
+            Multigraph<T,E> m = toCopy.copy(toCopy.vertices());
+            // Graphs.asMultigraph(new GenericGraph<E>(toCopy));
             // Add one of the edges that connects the current pair
             m.add(e);
             // If there are more pairs to connect, then make the recursive call,

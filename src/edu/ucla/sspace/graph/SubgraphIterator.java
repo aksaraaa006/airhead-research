@@ -21,6 +21,8 @@
 
 package edu.ucla.sspace.graph;
 
+import edu.ucla.sspace.util.OpenIntSet;
+
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -113,11 +115,13 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
         while (nextSubgraphs.isEmpty() && vertexIter.hasNext()) {
             Integer nextVertex = vertexIter.next();
             // Determine the set of vertices that are greater than this vertex
-            Set<Integer> extension = new HashSet<Integer>();
-            for (Integer v : g.getNeighbors(nextVertex))
+            // Set<Integer> extension = new HashSet<Integer>();
+            Set<Integer> neighbors = g.getNeighbors(nextVertex);
+            OpenIntSet extension = new OpenIntSet(); //neighbors.size());
+            for (Integer v : neighbors)
                 if (v > nextVertex)
                     extension.add(v);
-            Set<Integer> subgraph = new HashSet<Integer>();
+            OpenIntSet subgraph = new OpenIntSet();
             subgraph.add(nextVertex);
             extendSubgraph(subgraph, extension, nextVertex);
         }
@@ -133,7 +137,7 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
      *        subgraph} to expand the current subgraph
      * @param v the vertex from which the next expansion will take place
      */
-    private void extendSubgraph(Set<Integer> subgraph, Set<Integer> extension, 
+    private void extendSubgraph(OpenIntSet subgraph, OpenIntSet extension, 
                                 Integer v) {
         // If we found a set of vertices that match the required subgraph size,
         // create a snapshot of it from the original graph and 
@@ -144,7 +148,7 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             // (narrowed, really), so we perform the cast here to give the user
             // back the more specific type.
             @SuppressWarnings("unchecked")
-            G sub = (G)g.subgraph(subgraph);
+            G sub = (G)g.copy(subgraph);
             // System.out.printf("Made subgraph of vertices %s: %s%n", subgraph, sub);
             nextSubgraphs.add(sub);
             return;
@@ -162,7 +166,7 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             // N: all vertices that are adjacent to w but are not in N or the
             // neighbors of N.  In this case, N is the current subgraph's
             // vertices
-            Set<Integer> nextExtension = new HashSet<Integer>(extension);
+            OpenIntSet nextExtension = new OpenIntSet(extension);
 
             next_vertex:
             for (Integer n : g.getNeighbors(w))
@@ -176,14 +180,15 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
                         // If we find n within the neighbors of a vertex in the
                         // current subgraph, then skip the remaining checks and
                         // examine another vertex adjacent to w.
-                        if (g.getNeighbors(inCur).contains(n))
+                        // if (g.getNeighbors(inCur).contains(n))
+                        if (g.contains(inCur, n))
                             continue next_vertex;
                     }
                     // Otherwise, n is in the exclusive neighborhood of w, so
                     // add it to the future extension.
                     nextExtension.add(n);
                 }
-            Set<Integer> nextSubgraph = new HashSet<Integer>(subgraph);
+            OpenIntSet nextSubgraph = new OpenIntSet(subgraph);
             nextSubgraph.add(w);
             
             extendSubgraph(nextSubgraph, nextExtension, v);

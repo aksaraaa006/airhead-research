@@ -19,14 +19,20 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.graph;
+package edu.ucla.sspace.graph.isomorphism;
 
 import java.util.Map;
+
+import edu.ucla.sspace.graph.Edge;
+import edu.ucla.sspace.graph.Graph;
 
 
 /**
  * An interface for algorithms that detect whether two graphs are <a
  * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphic</a>.
+ * Implementations are open to define any further refinements beyond structural
+ * isomorphism, which may include: <ul> <li> node types <li> edge types <li>
+ * edge weights <li> edge directions </ul>.
  */
 public interface IsomorphismTester {
 

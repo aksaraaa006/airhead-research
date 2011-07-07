@@ -46,6 +46,26 @@ public class GenericGraph<T extends Edge>
             add(edge);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Graph<T> copy(Set<Integer> vertices) {
+        // special case for If the called is requesting a copy of the entire
+        // graph, which is more easily handled with the copy constructor
+        if (vertices.size() == order() && vertices.equals(vertices()))
+            return new GenericGraph<T>(this);
+        GenericGraph<T> g = new GenericGraph<T>();
+        for (int v : vertices) {
+            if (!contains(v))
+                throw new IllegalArgumentException(
+                    "Requested copy with non-existant vertex: " + v);
+            g.add(v);
+            for (T e : getAdjacencyList(v))
+                g.add(e);
+        }
+        return g;
+    }
+
     @Override protected GenericEdgeSet<T> createEdgeSet(int vertex) {
         return new GenericEdgeSet<T>(vertex);
     }    

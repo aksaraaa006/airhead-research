@@ -591,7 +591,7 @@ public class UndirectedMultigraphTests {
             assertTrue(control.contains(e));        
     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testEdgeViewIteratorRemove() {
+    @Test public void testEdgeViewIteratorRemove() {
         UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
         Set<TypedEdge<String>> edges = g.edges();
 
@@ -1683,6 +1683,83 @@ public class UndirectedMultigraphTests {
         assertEquals(g.order(), sub.order());       
         assertFalse(sub.contains(new SimpleTypedEdge<String>("type-2", 0, 1)));        
     }
+
+    /****************
+     *
+     *
+     * Tests for copy()
+     *
+     *
+     ****************/
+
+    @Test public void testCopy() {
+        UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-3",3, 4)));
+
+        Multigraph<String,TypedEdge<String>> copy = g.copy(g.vertices());
+        assertEquals(g.order(), copy.order());
+        assertEquals(g.size(), copy.size());
+        assertEquals(g, copy);
+
+        copy.remove(4);
+        assertEquals(4, g.order());
+        assertEquals(3, copy.order());
+    }
+
+    @Test public void testCopy1vertex() {
+        UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-3",3, 4)));
+
+        Multigraph<String,TypedEdge<String>> copy = g.copy(Collections.singleton(1));
+        assertEquals(1, copy.order());
+        assertEquals(0, copy.size());
+    }
+
+    @Test public void testCopy2vertex() {
+        UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-3",3, 4)));
+
+        Set<Integer> verts = new HashSet<Integer>();
+        Collections.addAll(verts, 0, 1);
+        Multigraph<String,TypedEdge<String>> copy = g.copy(verts);
+        assertEquals(2, copy.order());
+        assertEquals(2, copy.size());
+    }
+
+    @Test public void testEmptyCopy() {
+        UndirectedMultigraph<String> g = new UndirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-1",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-2",0, 1)));
+        assertTrue(g.add(new SimpleTypedEdge<String>("type-3", 3, 4)));
+        assertTrue(g.contains(new SimpleTypedEdge<String>("type-3",3, 4)));
+
+        Multigraph<String,TypedEdge<String>> copy = g.copy(Collections.<Integer>emptySet());
+        assertEquals(0, copy.order());
+        assertEquals(0, copy.size());
+        assertEquals(new UndirectedMultigraph<String>(), copy);
+        
+        copy.add(5);
+        assertTrue(copy.contains(5));
+        assertFalse(g.contains(5));
+    }
+
 
     /*
      * To test:

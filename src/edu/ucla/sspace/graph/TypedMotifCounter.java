@@ -27,20 +27,24 @@ import edu.ucla.sspace.util.Counter;
 import edu.ucla.sspace.util.ObjectCounter;
 import edu.ucla.sspace.util.Pair;
 
-import edu.ucla.sspace.graph.isomorphism.Matcher;
+import edu.ucla.sspace.graph.isomorphism.IsomorphismTester;
+import edu.ucla.sspace.graph.isomorphism.TypedVF2IsomorphismTester;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 
 /**
- * A special-purpose {@link Counter} that counts <b>multigraphs</b> based on <a
+ * A special-purpose {@link Counter} that counts <b>multigraphs</b> based on
+ * typed <a
  * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphism</a>, rather
  * than object equivalence (which may take into account vertex labeling, etc.).
  * Most commonly, isomorphism is needed when counting the number of motifs in a
@@ -56,15 +60,17 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */
     private final IsomorphismTester isoTest;
 
-    private final Map<Counter<T>,Map<G,Integer>> typesToGraphs;
+    private final Map<Set<T>,Map<G,Integer>> typesToGraphs;
 
     private int sum;
+
+    private final boolean allowNewMotifs;
     
     /**
      * Creates a new {@code MotifCounter} with the default isomorphism tester.
      */ 
     public TypedMotifCounter() {
-        this(new Matcher());
+        this(new TypedVF2IsomorphismTester());
     }
 
     /**
@@ -75,8 +81,24 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */ 
     public TypedMotifCounter(IsomorphismTester isoTest) {
         this.isoTest = isoTest;
-        typesToGraphs = new HashMap<Counter<T>,Map<G,Integer>>();
+        typesToGraphs = new HashMap<Set<T>,Map<G,Integer>>();
         sum = 0;
+        allowNewMotifs = true;
+    }
+
+    /**
+     * Creates a new {@code TypedMotifCounter} that counts only the specified
+     * motifs.  All other non-isomorphic graphs will not be counted.
+     */
+    public TypedMotifCounter(Collection<? extends G> motifs) {
+        this.isoTest = new TypedVF2IsomorphismTester();
+        typesToGraphs = new HashMap<Set<T>,Map<G,Integer>>();
+        sum = 0;       
+        allowNewMotifs = false;
+        // Initialize the motif mapping with all the isomorphic graphs in the
+        // provided set
+        for (G g : motifs)
+            addInitial(g);
     }
 
     /**
@@ -97,6 +119,30 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     }
 
     /**
+     * Adds an initial set of valid motifs to this counter with no counts.  This
+     * method enables the fixed-motif constructor to initialize the set of valid
+     * motifs prior to counting.
+     */
+    private void addInitial(G g) {
+        Set<T> typeCounts = g.edgeTypes();
+        Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
+        if (graphs == null) {
+            graphs = new LinkedHashMap<G,Integer>(16, .5f, true);
+            typesToGraphs.put(new HashSet<T>(typeCounts), graphs);
+            graphs.put(g, 0);
+        }
+        else {
+            for (Map.Entry<G,Integer> e : graphs.entrySet()) {
+                // If the graph is isomorphic to an existing graph we don't need
+                // to keep looking to add it.
+                if (isoTest.areIsomorphic(g, e.getKey())) 
+                    return;
+            }
+            graphs.put(g, 0);
+        }
+    }    
+
+    /**
      * Counts the isomorphic version of this graph, increasing its total count
      * by the specified positive amount.
      *
@@ -108,11 +154,15 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
         if (count < 1)
             throw new IllegalArgumentException("Count must be positive");
         sum += count;
-        Counter<T> typeCounts = new ObjectCounter<T>(g.edgeTypes());
+        Set<T> typeCounts = g.edgeTypes();
         Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) {
-            graphs = new HashMap<G,Integer>();
-            typesToGraphs.put(typeCounts, graphs);
+            // If there wasn't a mapping for this graph's configuration and
+            // we're not allowing new motif instances, return 0.
+            if (!allowNewMotifs)
+                return 0;
+            graphs = new LinkedHashMap<G,Integer>(16, .5f, true);
+            typesToGraphs.put(new HashSet<T>(typeCounts), graphs);
             graphs.put(g, count);
             return count;
         }
@@ -120,12 +170,20 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
             for (Map.Entry<G,Integer> e : graphs.entrySet()) {
                 if (isoTest.areIsomorphic(g, e.getKey())) {
                     int newCount = e.getValue() + count;
-                    e.setValue(newCount);
+                     e.setValue(newCount);
+                    // Access this particular graph in order to move it to the
+                    // front of the access list
+                    //graphs.put(e.getKey(), newCount);
                     return newCount;
                 }
             }
-            graphs.put(g, count);
-            return count;
+            // If the graph was not found and we can add new motifs, then do so.
+            if (allowNewMotifs) {
+                graphs.put(g, count);
+                return count;
+            }
+            else 
+                return 0;
         }
     }    
 
@@ -133,7 +191,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      * Returns the count for graphs that are isomorphic to the provided graph.
      */
     public int getCount(G g) {
-        Counter<T> typeCounts = new ObjectCounter<T>(g.edgeTypes());
+        Set<T> typeCounts = g.edgeTypes();
         Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) 
             return 0;
@@ -157,10 +215,14 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      * {@inheritDoc}
      */
     public Set<G> items() {
-        List<Set<G>> sets = new ArrayList<Set<G>>(typesToGraphs.size());
+//         List<Set<G>> sets = new ArrayList<Set<G>>(typesToGraphs.size());
+//         for (Map<G,Integer> m : typesToGraphs.values())
+//             sets.add(m.keySet());
+//         return new CombinedSet<G>(sets);
+        Set<G> set = new HashSet<G>();
         for (Map<G,Integer> m : typesToGraphs.values())
-            sets.add(m.keySet());
-        return new CombinedSet<G>(sets);
+            set.addAll(m.keySet());
+        return set;
     }
 
     /**

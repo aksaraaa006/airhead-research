@@ -997,13 +997,35 @@ public class SparseUndirectedGraphTests {
         Graph<Edge> subgraph = g.subgraph(vertices);
         assertEquals(5, subgraph.order());
         assertEquals( (5 * 4) / 2, subgraph.size());
+    }
+
+    @Test public void testSubgraphAddEdgeNewVertex() {
+        Graph<Edge> g = new SparseUndirectedGraph();
+
+        // fully connected
+        for (int i = 0; i < 10; i++)  {
+            for (int j = i+1; j < 10;  ++j)
+                g.add(new SimpleEdge(i, j));
+        }    
+
+        // (n * (n-1)) / 2
+        assertEquals( (10 * 9) / 2, g.size());
+        assertEquals(10, g.order());
+
+        Set<Integer> vertices = new LinkedHashSet<Integer>();
+        for (int i = 0; i < 5; ++i)
+            vertices.add(i);
+
+        Graph<Edge> subgraph = g.subgraph(vertices);
+        assertEquals(5, subgraph.order());
+        assertEquals( (5 * 4) / 2, subgraph.size());
 
         // Add an edge to a new vertex
-        assertTrue(subgraph.add(new SimpleEdge(0, 5)));
-        assertEquals( (5 * 4) / 2 + 1, subgraph.size());
-        assertEquals(6, subgraph.order());
-        assertEquals(11, g.order());
-        assertEquals( (9*10)/2 + 1, g.size());
+        assertFalse(subgraph.add(new SimpleEdge(0, 25)));
+        assertEquals( (5 * 4) / 2, subgraph.size());
+        assertEquals(5, subgraph.order());
+        assertEquals(10, g.order());
+        assertEquals( (9*10)/2, g.size());
     }
 
     @Test public void testSubgraphRemoveEdge() {
@@ -1053,7 +1075,7 @@ public class SparseUndirectedGraphTests {
      ******************************************************************/
 
 
-    @Test public void testSubgraphVerticesAdd() {
+    @Test(expected=UnsupportedOperationException.class) public void testSubgraphVerticesAdd() {
         Graph<Edge> g = new SparseUndirectedGraph();
 
         // fully connected
@@ -1085,7 +1107,7 @@ public class SparseUndirectedGraphTests {
         assertEquals( (5*4)/2, subgraph.size());
     }
 
-    @Test public void testSubgraphVerticesRemove() {
+    @Test(expected=UnsupportedOperationException.class) public void testSubgraphVerticesRemove() {
         Graph<Edge> g = new SparseUndirectedGraph();
 
         // fully connected
@@ -1117,7 +1139,7 @@ public class SparseUndirectedGraphTests {
         assertEquals( (4*3)/2, subgraph.size());
     }
 
-    @Test public void testSubgraphVerticesIteratorRemove() {
+    @Test(expected=UnsupportedOperationException.class) public void testSubgraphVerticesIteratorRemove() {
         Graph<Edge> g = new SparseUndirectedGraph();
 
         // fully connected
@@ -1300,8 +1322,31 @@ public class SparseUndirectedGraphTests {
         Graph<Edge> subgraph = g.subgraph(vertices);
         
         Set<Edge> adjList = subgraph.getAdjacencyList(0);
+    }
+
+    @Test public void testSubgraphAdjacencyListAddNewVertex() {
+        Graph<Edge> g = new SparseUndirectedGraph();
+
+        // fully connected
+        for (int i = 0; i < 10; i++)  {
+            for (int j = i+1; j < 10;  ++j)
+                g.add(new SimpleEdge(i, j));
+        }    
+
+        // (n * (n-1)) / 2
+        assertEquals( (10 * 9) / 2, g.size());
+        assertEquals(10, g.order());
+
+        Set<Integer> vertices = new LinkedHashSet<Integer>();
+        for (int i = 0; i < 5; ++i)
+            vertices.add(i);
+
+        Graph<Edge> subgraph = g.subgraph(vertices);
+        
+        Set<Edge> adjList = subgraph.getAdjacencyList(0);
         // Add an edge to a new vertex
-        assertTrue(adjList.add(new SimpleEdge(0, 5)));
+
+        assertFalse(adjList.add(new SimpleEdge(0, 5)));
     }
 
     /******************************************************************
@@ -1549,13 +1594,6 @@ public class SparseUndirectedGraphTests {
 
 
 
-    /******************************************************************
-     *
-     *
-     * Subgraph of typed tests 
-     *
-     *
-     ******************************************************************/
 
 
     /******************************************************************

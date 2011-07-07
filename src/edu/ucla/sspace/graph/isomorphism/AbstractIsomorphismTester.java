@@ -21,21 +21,38 @@
 
 package edu.ucla.sspace.graph.isomorphism;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-import edu.ucla.sspace.graph.*;
-import edu.ucla.sspace.util.*;
+import edu.ucla.sspace.graph.*; // FIX
+
+import edu.ucla.sspace.util.Pair;
 
 import static edu.ucla.sspace.graph.isomorphism.State.NULL_NODE;
 
+
+/**
+ * An abstraction of an {@link IsomorphismTester} that relies on
+ * algorithm-specific {@link State} implementations to check for edge and vertex
+ * contraints when performing isomorphism testing.  
+ *
+ * <p> This class is a an adaptation of parts of the VFLib library.
+ */
 public abstract class AbstractIsomorphismTester implements IsomorphismTester {
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean areIsomorphic(Graph<? extends Edge> g1, 
                                  Graph<? extends Edge> g2) {
         State state = makeInitialState(g1, g2);
         return match(state);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Map<Integer,Integer> findIsomorphism(Graph<? extends Edge> g1, 
                                                 Graph<? extends Edge> g2) {
         State state = makeInitialState(g1, g2);
@@ -44,6 +61,10 @@ public abstract class AbstractIsomorphismTester implements IsomorphismTester {
             : Collections.<Integer,Integer>emptyMap();
     }
 
+    /**
+     * Creates an empty {@link State} for mapping the vertices of {@code g1} to
+     * {@code g2}.
+     */
     protected abstract State makeInitialState(Graph<? extends Edge> g1, 
                                               Graph<? extends Edge> g2);
 
@@ -79,7 +100,7 @@ public abstract class AbstractIsomorphismTester implements IsomorphismTester {
      * to {@code g.order()}-1.  If the graph's vertices are already contiguous,
      * returns the original graph.
      */
-    private <E extends Edge> Graph<E> remap(Graph<E> g) {
+    protected <E extends Edge> Graph<E> remap(Graph<E> g) {
         int order = g.order();
         boolean isContiguous = true;
         for (int i : g.vertices()) {
@@ -97,22 +118,21 @@ public abstract class AbstractIsomorphismTester implements IsomorphismTester {
         }
         
         // TERRIBLE HACK:
-        Graph<E> copy = null;
-        if (g instanceof DirectedMultigraph)
-            copy = (Graph<E>)(new DirectedMultigraph<Object>());
-        else if (g instanceof UndirectedMultigraph)
-            copy = (Graph<E>)(new UndirectedMultigraph<Object>());
-        else if (g instanceof DirectedGraph)
-            copy = (Graph<E>)(new SparseDirectedGraph());
-        else
-            copy = new GenericGraph<E>();
-        boolean isMultigraph = false;
+        Graph<E> copy = g.copy(Collections.<Integer>emptySet());
+//         if (g instanceof DirectedMultigraph)
+//             copy = (Graph<E>)(new DirectedMultigraph<Object>());
+//         else if (g instanceof UndirectedMultigraph)
+//             copy = (Graph<E>)(new UndirectedMultigraph<Object>());
+//         else if (g instanceof DirectedGraph)
+//             copy = (Graph<E>)(new SparseDirectedGraph());
+//         else
+//             copy = new GenericGraph<E>();
+//         boolean isMultigraph = false;
         for (int i = 0; i < order; ++i)
             copy.add(i);
         for (E e : g.edges()) 
             copy.add(e.<E>clone(vMap.get(e.from()), vMap.get(e.to())));
         
         return copy;
-    }
-    
+    }    
 }

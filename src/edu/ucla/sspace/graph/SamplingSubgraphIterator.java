@@ -181,7 +181,7 @@ public class SamplingSubgraphIterator<T extends Edge>
         // If we found a set of vertices that match the required subgraph size,
         // create a snapshot of it from the original graph and 
         if (subgraph.size() == subgraphSize) {
-            Graph<T> sub = g.subgraph(subgraph);
+            Graph<T> sub = g.copy(subgraph);
             nextSubgraphs.add(sub);
             return;
         }

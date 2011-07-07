@@ -101,12 +101,12 @@ public class SparseTypedEdgeSet<T> extends AbstractSet<TypedEdge<T>>
         TypedEdge<T> e = (TypedEdge<T>)o;
            
         if (e.from() == rootVertex) {
-            OpenIntSet edges = getEdgesForType(e.edgeType());
-            return edges.contains(e.to());
+            OpenIntSet edges = typeToEdges.get(e.edgeType());
+            return edges != null && edges.contains(e.to());
         }
         else if (e.to() == rootVertex) {
-            OpenIntSet edges = getEdgesForType(e.edgeType());
-            return edges.contains(e.from());
+            OpenIntSet edges = typeToEdges.get(e.edgeType());
+            return edges != null && edges.contains(e.from());
         }
         return false;
     }
@@ -163,12 +163,12 @@ public class SparseTypedEdgeSet<T> extends AbstractSet<TypedEdge<T>>
         TypedEdge<T> e = (TypedEdge<T>)o;
            
         if (e.from() == rootVertex) {
-            OpenIntSet edges = getEdgesForType(e.edgeType());
-            return edges.remove(e.to());
+            OpenIntSet edges = typeToEdges.get(e.edgeType());
+            return edges != null && edges.remove(e.to());
         }
         else if (e.to() == rootVertex) {
-            OpenIntSet edges = getEdgesForType(e.edgeType());
-            return edges.remove(e.from());
+            OpenIntSet edges = typeToEdges.get(e.edgeType());
+            return edges != null && edges.remove(e.from());
         }
         return false;
     }
@@ -181,6 +181,17 @@ public class SparseTypedEdgeSet<T> extends AbstractSet<TypedEdge<T>>
         for (OpenIntSet edges : typeToEdges.values())
             sz += edges.size();
         return sz;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder(typeToEdges.size() * 16);
+        sb.append("{ from: " ).append(rootVertex).append(' ');
+        for (Map.Entry<T,OpenIntSet> e : typeToEdges.entrySet()) {
+            sb.append("{type: ").append(e.getKey()).
+                append(" to: ").append(e.getValue()).append('}');            
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
     /**

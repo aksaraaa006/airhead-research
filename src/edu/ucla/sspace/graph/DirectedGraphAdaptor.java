@@ -48,6 +48,14 @@ class DirectedGraphAdaptor<T extends DirectedEdge> extends GraphAdaptor<T>
     /**
      * {@inheritDoc}
      */
+    @Override public DirectedGraph<T> copy(Set<Integer> vertices) {
+        Graph<T> g = super.copy(vertices);
+        return new DirectedGraphAdaptor<T>(g);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public int inDegree(int vertex) {
         int degree = 0;
         Set<T> edges = getAdjacencyList(vertex);

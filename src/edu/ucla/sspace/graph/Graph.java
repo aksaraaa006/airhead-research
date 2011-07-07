@@ -143,6 +143,15 @@ public interface Graph<E extends Edge> {
     boolean contains(Edge e);
 
     /**
+     * Creates a copy of this graph containing only the specified number of
+     * vertices and all edges between those vertices.  If {@code vertices} is
+     * empty a new, empty graph of this instance's type is returned.  Any
+     * changes made to this graph will not be reflected in returned copy or
+     * vice-versa.
+     */
+    Graph<E> copy(Set<Integer> vertices);
+
+    /**
      * Returns the number of edges that connect this vertex to other vertices in
      * this graph.  If the provided vertex is not in graph, this method returns
      * {@code 0}.

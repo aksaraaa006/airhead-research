@@ -78,6 +78,13 @@ public abstract class GraphAdaptor<T extends Edge> implements Graph<T> {
     /**
      * {@inheritDoc}
      */
+    public Graph<T> copy(Set<Integer> vertices) {
+        return g.copy(vertices);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public boolean contains(int vertex) {
         return g.contains(vertex);
     }

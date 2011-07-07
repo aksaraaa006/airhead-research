@@ -126,12 +126,12 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         @SuppressWarnings("unchecked")
         DirectedTypedEdge<T> e = (DirectedTypedEdge<T>)o;
         if (e.from() == rootVertex) {
-            OpenIntSet edges = getOutEdgesForType(e.edgeType());
-            return edges.contains(e.to());
+            OpenIntSet edges = typeToOutEdges.get(e.edgeType());
+            return edges != null && edges.contains(e.to());
         }
         else if (e.to() == rootVertex) {
-            OpenIntSet edges = getInEdgesForType(e.edgeType());
-            return edges.contains(e.from());
+            OpenIntSet edges = typeToInEdges.get(e.edgeType());
+            return edges != null && edges.contains(e.from());
         }
         return false;
     }
@@ -199,16 +199,16 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         DirectedTypedEdge<T> e = (DirectedTypedEdge<T>)o;
            
         if (e.from() == rootVertex) {
-            OpenIntSet edges = getOutEdgesForType(e.edgeType());
-            boolean b = edges.remove(e.to());
+            OpenIntSet edges = typeToOutEdges.get(e.edgeType());
+            boolean b = edges != null && edges.remove(e.to());
             // If this was the last edge of that type, remove the type
             if (b && edges.isEmpty())
                 typeToOutEdges.remove(e.edgeType());
             return b;
         }
         else if (e.to() == rootVertex) {
-            OpenIntSet edges = getInEdgesForType(e.edgeType());
-            boolean b = edges.remove(e.from());
+            OpenIntSet edges = typeToInEdges.get(e.edgeType());
+            boolean b = edges != null && edges.remove(e.from());
             // If this was the last edge of that type, remove the type
             if (b && edges.isEmpty())
                 typeToInEdges.remove(e.edgeType());
