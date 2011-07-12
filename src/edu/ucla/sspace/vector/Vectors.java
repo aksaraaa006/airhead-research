@@ -367,7 +367,7 @@ public class Vectors {
             result = new DenseVector(source.length());
             for (int i = 0; i < source.length(); ++i)
                 result.set(i, source.get(i));
-        } else if (source instanceof CompactSparseVector) {
+        } else if (source instanceof SparseDoubleVector) {
             result = new CompactSparseVector(source.length());
             copyFromSparseVector(result, source);
         } else if (source instanceof AmortizedSparseVector) {

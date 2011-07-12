@@ -117,7 +117,7 @@ public class FilteredDependencyIterator implements Iterator<DependencyPath> {
         // break, since no further returned paths will be smaller.
         while (iterator.hasNext()) {
             p = iterator.next();
-            if (p.length() >= maxPathLength) {
+            if (p.length() > maxPathLength) {
                 p = null;
                 break;
             } else if (acceptor.accepts(p))

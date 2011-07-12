@@ -127,24 +127,32 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
     /**
      * The logger used to record all output
      */
-    private static final Logger LOGGER =
+    private static final Logger LOG =
         Logger.getLogger(StructuredVectorSpace.class.getName());
 
     /**
      * A mapping from terms to dimensions in a co-occcurence space.
      */
-    private StringBasisMapping termBasis;
+    private final StringBasisMapping termBasis;
 
     /**
      * A mapping from terms to their lemma co-occurrence vectors.  These vectors
      * simply represent the number of times other words have occurrend with the
      * key word using any relation link with a distance of one relation.
      */
-    private Map<String, SelectionalPreference> preferenceVectors;
+    private final Map<String, SelectionalPreference> preferenceVectors;
+
+    /**
+     * The {@link VectorCombinor} responsible for merging features between two
+     * {@link SparseDoubleVector}s.  This is used when computing the relational
+     * preference vectors for each word and for computing the contextualized
+     * vectors.
+     */
+    private final VectorCombinor combinor;
 
     /**
      * A mapping for relation tuples (head word, relation, dependent word)
-     * couting the number of times this relation has occurred in the corpus.
+     * counting the number of times this relation has occurred in the corpus.
      * Only tuples where both words are accepted by the filter are stored.  In
      * order to eliminate duplicate  counting, each relation is only counted
      * once per headword observed, i.e. a sentence with cat as a headword of
@@ -168,29 +176,43 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
      * An optional set of words that restricts the set of semantic vectors that
      * this instance will retain.
      */
-    private Set<String> semanticFilter;
+    transient private final Set<String> semanticFilter;
 
     /**
      * Create a new instance of {@code StructuredVectorSpace}.
      */
     public StructuredVectorSpace(DependencyExtractor extractor,
-                                 DependencyPathAcceptor acceptor) {
+                                 DependencyPathAcceptor acceptor,
+                                 VectorCombinor combinor) {
+        this(extractor, acceptor, combinor,
+             new StringBasisMapping(), new HashSet<String>());
+    }
+
+    /**
+     * Create a new instance of {@code StructuredVectorSpace}.
+     */
+    public StructuredVectorSpace(DependencyExtractor extractor,
+                                 DependencyPathAcceptor acceptor,
+                                 VectorCombinor combinor,
+                                 StringBasisMapping termBasis,
+                                 Set<String> semanticFilter) {
         this.parser = extractor;
         this.acceptor = acceptor;
+        this.combinor = combinor;
+        this.termBasis = termBasis;
+        this.semanticFilter = semanticFilter;
 
-        termBasis = new StringBasisMapping();
         preferenceVectors =
             new ConcurrentHashMap<String, SelectionalPreference>();
         relationVectors =
             new ConcurrentHashMap<RelationTuple, SparseDoubleVector>();
-        semanticFilter = new HashSet<String>();
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<String> getWords() {
-        return Collections.unmodifiableSet(termBasis.keySet());
+        return Collections.unmodifiableSet(preferenceVectors.keySet());
     }
 
     /**
@@ -212,7 +234,7 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
      * {@inheritDoc}
      */
     public int getVectorLength() {
-        return 0;
+        return termBasis.numDimensions();
     }
 
     /**
@@ -220,8 +242,8 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
      */
     public void processDocument(BufferedReader document) throws IOException {
         // Local maps to record occurrence counts.
-        Map<Pair<Integer>,Double> localLemmaCounts = 
-            new HashMap<Pair<Integer>,Double>();
+        Map<Pair<String>,Double> localLemmaCounts = 
+            new HashMap<Pair<String>,Double>();
         Map<RelationTuple, SparseDoubleVector> localTuples =
             new HashMap<RelationTuple, SparseDoubleVector>();
 
@@ -236,16 +258,18 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
 
             // Examine the paths for each word in the sentence.
             for (int i = 0; i < nodes.length; ++i) {
-                String focusWord = nodes[i].word();
-                int focusIndex = termBasis.getDimension(focusWord);
-
-                // Skip any filtered words.
-                if (focusWord.equals(EMPTY_STRING))
+                // Reject words that are not nouns, verbs, or adjectives.
+                if (!(nodes[i].pos().startsWith("N") ||
+                      nodes[i].pos().startsWith("J") ||
+                      nodes[i].pos().startsWith("V")))
                     continue;
+
+                String focusWord = nodes[i].word();
 
                 // Skip words that are rejected by the semantic filter.
                 if (!acceptWord(focusWord))
                     continue;
+                int focusIndex = termBasis.getDimension(focusWord);
 
                 // Create the path iterator for all acceptable paths rooted at
                 // the focus word in the sentence.
@@ -254,9 +278,16 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
 
                 while (pathIter.hasNext()) {
                     DependencyPath path = pathIter.next();
+                    DependencyTreeNode last = path.last();
+
+                    // Reject words that are not nouns, verbs, or adjectives.
+                    if (!(last.pos().startsWith("N") ||
+                          last.pos().startsWith("J") ||
+                          last.pos().startsWith("V")))
+                        continue;
 
                     // Get the feature index for the co-occurring word.
-                    String otherTerm = path.last().word();
+                    String otherTerm = last.word();
                     
                     // Skip any filtered features.
                     if (otherTerm.equals(EMPTY_STRING))
@@ -264,8 +295,7 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
 
                     int featureIndex = termBasis.getDimension(otherTerm);
 
-                    Pair<Integer> p = new Pair<Integer>(
-                            focusIndex, featureIndex);
+                    Pair<String> p = new Pair<String>(focusWord, otherTerm);
                     Double curCount = localLemmaCounts.get(p);
                     localLemmaCounts.put(p, (curCount == null)
                             ? 1 : 1 + curCount);
@@ -299,26 +329,26 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
 
         // Once the document has been processed, update the co-occurrence matrix
         // accordingly.
-        for (Map.Entry<Pair<Integer>,Double> e : localLemmaCounts.entrySet()){
+        for (Map.Entry<Pair<String>,Double> e : localLemmaCounts.entrySet()){
             // Push the local co-occurrence counts to the larger mapping.
-            Pair<Integer> p = e.getKey();
+            Pair<String> p = e.getKey();
 
             // Get the prefernce vectors for the current focus word.  If they do
             // not exist, create it in a thread safe manner.
-            String focusWord = termBasis.getDimensionDescription(p.x);
-            SelectionalPreference preference = preferenceVectors.get(focusWord);
+            SelectionalPreference preference = preferenceVectors.get(p.x);
             if (preference == null) {
                 synchronized (this) {
-                    preference = preferenceVectors.get(focusWord);
+                    preference = preferenceVectors.get(p.x);
                     if (preference == null) {
                         preference = new SelectionalPreference();
-                        preferenceVectors.put(focusWord, preference);
+                        preferenceVectors.put(p.x, preference);
                     }
                 }
             }
             // Add the local count.
             synchronized (preference) {
-                preference.lemmaVector.add(p.y, e.getValue());
+                preference.lemmaVector.add(
+                        termBasis.getDimension(p.y), e.getValue());
             }
         }
 
@@ -349,6 +379,7 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
      * {@inheritDoc}
      */
     public void processSpace(Properties properties) {
+        SparseDoubleVector empty = new CompactSparseVector();
         for (Map.Entry<RelationTuple, SparseDoubleVector> e :
                 relationVectors.entrySet()) {
             RelationTuple relation = e.getKey();
@@ -359,7 +390,7 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
             SelectionalPreference headPref = preferenceVectors.get(headWord);
 
             if (headPref == null)
-                LOGGER.fine("what the fuck");
+                LOG.fine("what the fuck");
 
             for (int index : relationCounts.getNonZeroIndices()) {
                 double frequency = relationCounts.get(index);
@@ -376,7 +407,7 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
                 depPref.addInversePreference(
                         rel, headPref.lemmaVector, frequency);
             }
-
+            e.setValue(empty);
         }
 
         // Null out all the relation tuple counts so that memory can be
@@ -397,11 +428,11 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
             return focusPref.lemmaVector;
 
         if (isFocusHeadWord)
-            return VectorMath.multiplyUnmodified(
+            return combinor.combineUnmodified(
                     focusPref.lemmaVector, 
                     secondPref.inversePreference(relation));
-        return VectorMath.multiplyUnmodified(focusPref.lemmaVector, 
-                                             secondPref.preference(relation));
+        return combinor.combineUnmodified(focusPref.lemmaVector, 
+                                          secondPref.preference(relation));
     }
 
     /**
@@ -417,7 +448,8 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
      * filter list.
      */
     private boolean acceptWord(String word) {
-        return semanticFilter.isEmpty() || semanticFilter.contains(word);
+        return !word.equals(EMPTY_STRING) && 
+               (semanticFilter.isEmpty() || semanticFilter.contains(word));
     }
 
     private class RelationTuple {
@@ -474,12 +506,12 @@ public class StructuredVectorSpace implements SemanticSpace, Serializable {
                          Map<String, SparseDoubleVector> map) {
             SparseDoubleVector preference = map.get(relation);
             if (preference == null) {
-                map.put(relation, vector);
+                map.put(relation,
+                        (SparseDoubleVector) Vectors.copyOf(vector));
                 return;
             }
 
-            preference = VectorMath.multiplyUnmodified(preference, vector);
-            map.put(relation, preference);
+            map.put(relation, combinor.combine(preference, vector));
         }
 
         public SparseDoubleVector preference(String relation) {

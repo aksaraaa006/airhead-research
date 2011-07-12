@@ -54,7 +54,7 @@
     **
     **-->
 
-  <target name="lib" depends="sspace-jar,sspace-src-jar"/>
+  <target name="lib" depends="jar,src"/>
   
   <target name="compile">
     <!-- Ensure that the build output directories are always present -->
@@ -135,8 +135,8 @@
     **-->
 
   
-  <target name="sspace-jar" depends="compile">
-    <jar destfile="${lib.dir}/sspace-lib.jar" basedir="classes">
+  <target name="jar" depends="compile">
+    <jar destfile="${bin.dir}/sspace-lib.jar" basedir="classes">
       <include name="**/*.class"/>
       <exclude name="jnt/*"/>
       <manifest>
@@ -151,8 +151,8 @@
     </jar>
   </target>
 
-  <target name="sspace-src-jar" depends="compile">
-    <jar destfile="${lib.dir}/sspace-src.jar" basedir="src">
+  <target name="src" depends="compile">
+    <jar destfile="${bin.dir}/sspace-src.jar" basedir="src">
       <include name="**/*.java"/>
       <exclude name="jnt/*"/>
       <manifest>
