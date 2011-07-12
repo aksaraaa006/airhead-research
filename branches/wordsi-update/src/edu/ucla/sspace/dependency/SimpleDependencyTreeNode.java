@@ -56,7 +56,7 @@ public class SimpleDependencyTreeNode implements DependencyTreeNode {
      * empty.
      */
     public SimpleDependencyTreeNode(String word, String pos) {
-        this(word, pos, "");
+        this(word, pos, word);
     }
 
     public SimpleDependencyTreeNode(String word, String pos, String lemma) {
@@ -103,8 +103,9 @@ public class SimpleDependencyTreeNode implements DependencyTreeNode {
     public boolean equals(Object o) {
         if (o instanceof SimpleDependencyTreeNode) {
             SimpleDependencyTreeNode n = (SimpleDependencyTreeNode)o;
-            return pos.equals(n.pos)
-                && word.equals(n.word);
+            return pos.equals(n.pos) && 
+                   word.equals(n.word) &&
+                   lemma.equals(n.lemma);
             // NOTE: testing for neighbor equality is important, i.e.
             // neighbors.equals(n.neighbors); however, both classes .equal()
             // method call the others, resulting in mutual recursion and an

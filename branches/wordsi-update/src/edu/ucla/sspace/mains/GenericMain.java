@@ -471,11 +471,20 @@ public abstract class GenericMain {
 
         System.out.println("output File: " + outputFile);
 
+        long startTime = System.currentTimeMillis();
         saveSSpace(space, outputFile);
+        long endTime = System.currentTimeMillis();
+        verbose("printed space in %.3f seconds",
+                ((endTime - startTime) / 1000d));
 
         postProcessing();
     }
 
+    /**
+     * Serializes the {@link SemanticSpace} object to {@code outputFile}.
+     * This uses {@code outputFormat} if set by the commandline.  If not, this
+     * uses the {@link SSpaceFormat} returned by {@link #getSpaceFormat}.
+     */
     protected void saveSSpace(SemanticSpace sspace, File outputFile)
       throws IOException{
         SSpaceFormat format = (argOptions.hasOption("outputFormat"))
@@ -483,12 +492,7 @@ public abstract class GenericMain {
                 argOptions.getStringOption("outputFormat").toUpperCase())
             : getSpaceFormat();
 
-        long startTime = System.currentTimeMillis();
         SemanticSpaceIO.save(sspace, outputFile, format);
-        long endTime = System.currentTimeMillis();
-
-        verbose("printed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
     }
 
     /**

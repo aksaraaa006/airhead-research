@@ -31,9 +31,10 @@ import edu.ucla.sspace.dependency.DependencyExtractorManager;
 import edu.ucla.sspace.dependency.UniversalPathAcceptor;
 
 import edu.ucla.sspace.svs.StructuredVectorSpace;
+import edu.ucla.sspace.svs.PointWiseCombinor;
+import edu.ucla.sspace.svs.VectorCombinor;
 
 import edu.ucla.sspace.util.ReflectionUtil;
-import edu.ucla.sspace.util.SerializableUtil;
 
 import java.io.File;
 import java.io.IOError;
@@ -137,25 +138,16 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
         options.addOption('a', "pathAcceptor",
                           "The DependencyPathAcceptor to use",
                           true, "CLASSNAME", "Algorithm Options");
+        options.addOption('c', "vectorCombinor",
+                          "The VectorCombinor to use",
+                          true, "CLASSNAME", "Algorithm Options");
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         StructuredVectorSpaceMain svs =  new StructuredVectorSpaceMain();
-        try {
-            svs.run(args);
-        }
-        catch (Throwable t) {
-            t.printStackTrace();
-        }
+        svs.run(args);
     }
     
-    /**
-     * {@inheritDoc}
-     */
-    protected SSpaceFormat getSpaceFormat() {
-        return SSpaceFormat.SPARSE_BINARY;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -171,9 +163,16 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
         else
             acceptor = new UniversalPathAcceptor();
 
+        VectorCombinor combinor;
+        if (argOptions.hasOption("pathAcceptor"))
+            combinor = ReflectionUtil.getObjectInstance(
+                    argOptions.getStringOption("vectorCombinor"));
+        else
+            combinor = new PointWiseCombinor();
+
         DependencyExtractor extractor = 
             DependencyExtractorManager.getDefaultExtractor();
-        return new StructuredVectorSpace(extractor, acceptor);
+        return new StructuredVectorSpace(extractor, acceptor, combinor);
     }
 
     /**
@@ -186,14 +185,7 @@ public class StructuredVectorSpaceMain extends DependencyGenericMain {
     /**
      * {@inheritDoc}
      */
-    protected void saveSSpace(SemanticSpace sspace, File outputFile)
-            throws IOException{
-        
-        long startTime = System.currentTimeMillis();
-        SerializableUtil.save(sspace, outputFile);
-        long endTime = System.currentTimeMillis();
-
-        verbose("printed space in %.3f seconds",
-                ((endTime - startTime) / 1000d));
+    protected SSpaceFormat getSpaceFormat() {
+        return SSpaceFormat.SERIALIZE;
     }
 }
