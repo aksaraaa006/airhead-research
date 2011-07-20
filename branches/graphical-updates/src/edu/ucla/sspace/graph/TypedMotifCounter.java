@@ -30,6 +30,7 @@ import edu.ucla.sspace.util.Pair;
 import edu.ucla.sspace.graph.isomorphism.IsomorphismTester;
 import edu.ucla.sspace.graph.isomorphism.TypedVF2IsomorphismTester;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,8 +39,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 
@@ -61,7 +64,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */
     private final IsomorphismTester isoTest;
 
-    private final Map<Set<T>,Map<G,Integer>> typesToGraphs;
+    private final Map<Set<T>,LinkedList<Map.Entry<G,Integer>>> typesToGraphs;
 
     private int sum;
 
@@ -82,7 +85,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */ 
     public TypedMotifCounter(IsomorphismTester isoTest) {
         this.isoTest = isoTest;
-        typesToGraphs = new HashMap<Set<T>,Map<G,Integer>>();
+        typesToGraphs = new HashMap<Set<T>,LinkedList<Map.Entry<G,Integer>>>();
         sum = 0;
         allowNewMotifs = true;
     }
@@ -93,7 +96,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */
     private TypedMotifCounter(Collection<? extends G> motifs) {
         this.isoTest = new TypedVF2IsomorphismTester();
-        typesToGraphs = new HashMap<Set<T>,Map<G,Integer>>();
+        typesToGraphs = new HashMap<Set<T>,LinkedList<Map.Entry<G,Integer>>>();
         sum = 0;       
         allowNewMotifs = false;
         // Initialize the motif mapping with all the isomorphic graphs in the
@@ -119,16 +122,27 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */
     private void addInitial(G g) {
         Set<T> typeCounts = g.edgeTypes();
-        Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
+        LinkedList<Map.Entry<G,Integer>> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) {
-            graphs = new LinkedHashMap<G,Integer>(16, .5f, true);
+            graphs = new LinkedList<Map.Entry<G,Integer>>();
             typesToGraphs.put(new HashSet<T>(typeCounts), graphs);
         }
 
-        graphs.put(g, 0);
+        graphs.add(new SimpleEntry<G,Integer>(g, 0));
     }    
 
-    public static <T,G extends Multigraph<T,? extends TypedEdge<T>>> TypedMotifCounter<T,G> asMotifs(Set<? extends G> motifs) {
+    /**
+     * Creates a new {@code TypedMotifCounter} that counts only the specified
+     * motifs.  All other non-isomorphic graphs will not be counted.  
+     *
+     * @param motifs the set of graph instance to be treats as valid motifs.
+     *        Note that this input graph is not itself checked for isomorphism.
+     *        The presence of isomorphic graphs in {@code motifs} will cause all
+     *        of the counts to be accumulated on one of the variants, while the
+     *        other will have a count of 0.
+     */
+    public static <T,G extends Multigraph<T,? extends TypedEdge<T>>>
+            TypedMotifCounter<T,G> asMotifs(Set<? extends G> motifs) {
         return new TypedMotifCounter<T,G>(motifs);
     }
 
@@ -152,31 +166,34 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
             throw new IllegalArgumentException("Count must be positive");
         sum += count;
         Set<T> typeCounts = g.edgeTypes();
-        Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
+        LinkedList<Map.Entry<G,Integer>> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) {
             // If there wasn't a mapping for this graph's configuration and
             // we're not allowing new motif instances, return 0.
             if (!allowNewMotifs)
                 return 0;
-            graphs = new LinkedHashMap<G,Integer>(16, .5f, true);
+            graphs = new LinkedList<Map.Entry<G,Integer>>();
             typesToGraphs.put(new HashSet<T>(typeCounts), graphs);
-            graphs.put(g, count);
+            graphs.add(new SimpleEntry<G,Integer>(g, count));
             return count;
         }
         else {
-            for (Map.Entry<G,Integer> e : graphs.entrySet()) {
+            Iterator<Map.Entry<G,Integer>> iter = graphs.iterator();
+            while (iter.hasNext()) {
+                Map.Entry<G,Integer> e = iter.next();
                 if (isoTest.areIsomorphic(g, e.getKey())) {
                     int newCount = e.getValue() + count;
-                     e.setValue(newCount);
-                    // Access this particular graph in order to move it to the
-                    // front of the access list
-                    //graphs.put(e.getKey(), newCount);
+                    e.setValue(newCount);                   
+                    // Move this graph from its current position to the front of
+                    // the list by in hopes it will be accessed more frequently
+                    iter.remove();
+                    graphs.addFirst(e);
                     return newCount;
                 }
             }
             // If the graph was not found and we can add new motifs, then do so.
             if (allowNewMotifs) {
-                graphs.put(g, count);
+                graphs.addFirst(new SimpleEntry<G,Integer>(g, count));
                 return count;
             }
             else 
@@ -189,11 +206,11 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */
     public int getCount(G g) {
         Set<T> typeCounts = g.edgeTypes();
-        Map<G,Integer> graphs = typesToGraphs.get(typeCounts);
+        LinkedList<Map.Entry<G,Integer>> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) 
             return 0;
         
-        for (Map.Entry<G,Integer> e : graphs.entrySet()) {
+        for (Map.Entry<G,Integer> e : graphs) {
             if (isoTest.areIsomorphic(g, e.getKey())) 
                 return e.getValue();
         }
@@ -212,13 +229,13 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      * {@inheritDoc}
      */
     public Set<G> items() {
-//         List<Set<G>> sets = new ArrayList<Set<G>>(typesToGraphs.size());
-//         for (Map<G,Integer> m : typesToGraphs.values())
+//         LinkedList<Set<G>> sets = new ArrayLinkedList<Set<G>>(typesToGraphs.size());
+//         for (LinkedList<Map.Entry<G,Integer>> m : typesToGraphs.values())
 //             sets.add(m.keySet());
 //         return new CombinedSet<G>(sets);
 
 //         Set<G> set = new HashSet<G>();
-//         for (Map<G,Integer> m : typesToGraphs.values())
+//         for (LinkedList<Map.Entry<G,Integer>> m : typesToGraphs.values())
 //             set.addAll(m.keySet());
 //         return set;
         return new Items();
@@ -230,8 +247,8 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     public Iterator<Map.Entry<G,Integer>> iterator() {
         List<Iterator<Map.Entry<G,Integer>>> iters = 
             new ArrayList<Iterator<Map.Entry<G,Integer>>>(typesToGraphs.size());
-        for (Map<G,Integer> m : typesToGraphs.values())
-            iters.add(m.entrySet().iterator());
+        for (LinkedList<Map.Entry<G,Integer>> list : typesToGraphs.values())
+            iters.add(list.iterator());
         return new CombinedIterator<Map.Entry<G,Integer>>(iters);
     }
     
@@ -241,8 +258,8 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     public G max() {
         int maxCount = -1;
         G max = null;
-        for (Map<G,Integer> m : typesToGraphs.values()) { 
-            for (Map.Entry<G,Integer> e : m.entrySet()) {
+        for (LinkedList<Map.Entry<G,Integer>> graphs : typesToGraphs.values()) { 
+            for (Map.Entry<G,Integer> e : graphs) {
                 if (e.getValue() > maxCount) {
                     maxCount = e.getValue();
                     max = e.getKey();
@@ -258,8 +275,8 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     public G min() {
         int minCount = Integer.MAX_VALUE;
         G min = null;
-        for (Map<G,Integer> m : typesToGraphs.values()) {
-            for (Map.Entry<G,Integer> e : m.entrySet()) {
+        for (LinkedList<Map.Entry<G,Integer>> graphs : typesToGraphs.values()) {
+            for (Map.Entry<G,Integer> e : graphs) {
                 if (e.getValue() < minCount) {
                     minCount = e.getValue();
                     min = e.getKey();
@@ -282,7 +299,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      */
     public int size() {
         int sz = 0;
-        for (Map<G,Integer> m : typesToGraphs.values())
+        for (LinkedList<Map.Entry<G,Integer>> m : typesToGraphs.values())
             sz += m.size();
         return sz;
     }
@@ -297,22 +314,57 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     class Items extends AbstractSet<G> {
 
         public boolean contains(G graph) {
-            for (Map<G,Integer> m : typesToGraphs.values())
-                if (m.containsKey(graph))
+            Set<T> typeCounts = graph.edgeTypes();
+            LinkedList<Map.Entry<G,Integer>> graphs = typesToGraphs.get(typeCounts);
+            if (graphs == null)
+                return false;
+            for (Map.Entry<G,Integer> e : graphs) {
+                if (e.getKey().equals(graph))
                     return true;
+            }
             return false;
         }
 
         public Iterator<G> iterator() {
-            List<Iterator<G>> iters = 
-                new ArrayList<Iterator<G>>(typesToGraphs.size());
-            for (Map<G,Integer> m : typesToGraphs.values())
-                iters.add(m.keySet().iterator());
-            return new CombinedIterator<G>(iters);
+            return new MotifIter();
         }
 
         public int size() {
             return TypedMotifCounter.this.size();
+        }
+        
+        private class MotifIter implements Iterator<G> {
+
+            Iterator<LinkedList<Map.Entry<G,Integer>>> graphs;
+
+            Iterator<Map.Entry<G,Integer>> curIter;
+
+            public MotifIter() {
+                graphs = typesToGraphs.values().iterator();
+                advance();
+            }
+
+            private void advance() {
+                while ((curIter == null || !curIter.hasNext()) 
+                           && graphs.hasNext())
+                    curIter = graphs.next().iterator();
+            }
+
+            public boolean hasNext() {
+                return curIter.hasNext();
+            }
+
+            public G next() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+                Map.Entry<G,Integer> e = curIter.next();
+                advance();
+                return e.getKey();
+            }
+
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
         }
         
     }

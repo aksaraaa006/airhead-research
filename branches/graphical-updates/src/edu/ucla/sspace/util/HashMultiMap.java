@@ -28,6 +28,7 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -121,7 +122,8 @@ public class HashMultiMap<K,V> implements MultiMap<K,V>, Serializable {
      * {@inheritDoc}
      */
     public Set<V> get(Object key) {
-        return map.get(key);
+        Set<V> vals = map.get(key);
+        return (vals == null) ? Collections.<V>emptySet() : vals;
     }
 
     /**

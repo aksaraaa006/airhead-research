@@ -34,14 +34,14 @@ public class SparseDirectedTypedEdgeSetTests {
 
     @Test public void testConstructor() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         assertEquals(0, edges.size());
         assertTrue(edges.isEmpty());
     }
 
     @Test public void testAdd() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         // Single add
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
         assertEquals(1, edges.size());
@@ -70,7 +70,7 @@ public class SparseDirectedTypedEdgeSetTests {
 
     @Test public void testContains() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         // Single add
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
@@ -88,7 +88,7 @@ public class SparseDirectedTypedEdgeSetTests {
 
     @Test public void testGetEdges() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         // Single add
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
@@ -104,7 +104,7 @@ public class SparseDirectedTypedEdgeSetTests {
 
     @Test public void testConnected() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         // Single add
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
@@ -132,7 +132,7 @@ public class SparseDirectedTypedEdgeSetTests {
 
     @Test public void testIterator() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         // Single add
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
@@ -157,7 +157,7 @@ public class SparseDirectedTypedEdgeSetTests {
 
     @Test public void testIteratorInAndOutEdges() {
         SparseDirectedTypedEdgeSet<String> edges = 
-            new SparseDirectedTypedEdgeSet<String>(0);
+            new SparseDirectedTypedEdgeSet<String>(0, "type-1");
         // Single add
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
         assertTrue(edges.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));

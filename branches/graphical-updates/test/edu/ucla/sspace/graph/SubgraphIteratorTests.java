@@ -95,11 +95,110 @@ public class SubgraphIteratorTests {
 
         SubgraphIterator<Edge,Graph<Edge>> iter = new SubgraphIterator<Edge,Graph<Edge>>(g, 3);
         int numSubgraphs = 0;
+        Set<Graph<Edge>> test = new HashSet<Graph<Edge>>();
         while (iter.hasNext()) {
-            iter.next();
+            assertTrue(test.add(iter.next()));
             numSubgraphs++;
         }
         assertEquals(16, numSubgraphs);
+
+        Set<Graph<Edge>> control = new HashSet<Graph<Edge>>();
+        // 1
+        Graph<Edge> c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 2));
+        c.add(new SimpleEdge(2, 3));
+        c.add(new SimpleEdge(1, 3));
+        assertTrue(test.contains(c));
+
+        // 2
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 2));
+        c.add(new SimpleEdge(1, 4));
+        assertTrue(test.contains(c));
+
+        // 3
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 2));
+        c.add(new SimpleEdge(1, 5));
+        assertTrue(test.contains(c));
+
+        // 4
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 2));
+        c.add(new SimpleEdge(2, 6));
+        assertTrue(test.contains(c));
+
+        // 5
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 2));
+        c.add(new SimpleEdge(2, 7));
+        assertTrue(test.contains(c));
+
+        // 6
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 3));
+        c.add(new SimpleEdge(1, 4));
+        assertTrue(test.contains(c));
+
+        // 7
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 3));
+        c.add(new SimpleEdge(1, 5));
+        assertTrue(test.contains(c));
+
+        // 8
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 3));
+        c.add(new SimpleEdge(3, 8));
+        assertTrue(test.contains(c));
+
+        // 9
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 3));
+        c.add(new SimpleEdge(3, 9));
+        control.add(c);
+
+        // 10
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(1, 4));
+        c.add(new SimpleEdge(1, 5));
+        control.add(c);
+
+        // 11
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(3, 2));
+        c.add(new SimpleEdge(2, 6));
+        control.add(c);
+
+        // 12
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(3, 2));
+        c.add(new SimpleEdge(3, 7));
+        control.add(c);
+
+        // 13
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(3, 2));
+        c.add(new SimpleEdge(3, 8));
+        control.add(c);
+
+        // 14
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(3, 2));
+        c.add(new SimpleEdge(3, 9));
+        control.add(c);
+
+        // 15
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(6, 2));
+        c.add(new SimpleEdge(2, 7));
+        control.add(c);
+
+        // 16
+        c = new SparseUndirectedGraph();
+        c.add(new SimpleEdge(9, 3));
+        c.add(new SimpleEdge(3, 8));
+        control.add(c);
     }
 
     @Test public void testOneSubgraph() {

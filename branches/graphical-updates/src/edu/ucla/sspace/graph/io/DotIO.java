@@ -24,6 +24,7 @@ package edu.ucla.sspace.graph.io;
 import edu.ucla.sspace.graph.DirectedEdge;
 import edu.ucla.sspace.graph.DirectedGraph;
 import edu.ucla.sspace.graph.DirectedMultigraph;
+import edu.ucla.sspace.graph.DirectedTypedEdge;
 import edu.ucla.sspace.graph.Multigraph;
 import edu.ucla.sspace.graph.Graph;
 import edu.ucla.sspace.graph.SimpleDirectedEdge;
@@ -120,6 +121,12 @@ public class DotIO {
         ColorGenerator cg = new ColorGenerator();
         for (T type : g.edgeTypes())
             edgeColors.put(type, cg.next());
+        this.writeUndirectedMultigraph(g, f, edgeColors);
+    }
+
+    public <T,E extends TypedEdge<T>> void writeUndirectedMultigraph(
+                        Multigraph<T,E> g, File f, Map<T,Color> edgeColors) 
+                        throws IOException {
         PrintWriter pw = new PrintWriter(f);
         pw.println("graph g {");
         // Write the vertices, which may be disconnected
@@ -131,6 +138,36 @@ public class DotIO {
                 edgeColors.get(e.edgeType()).getRGB());            
             hexColor = hexColor.substring(2, hexColor.length());
             pw.printf("  %d -- %d [label=\"%s\", color=\"#%s\"]%n", e.from(), e.to(),
+                      e.edgeType(), hexColor);
+        }
+        pw.println("}");
+        pw.close();
+    }
+
+    public <T,E extends DirectedTypedEdge<T>> void writeDirectedMultigraph(
+                        Multigraph<T,E> g, File f) throws IOException {
+        Map<T,Color> edgeColors = new HashMap<T,Color>();
+        ColorGenerator cg = new ColorGenerator();
+        for (T type : g.edgeTypes())
+            edgeColors.put(type, cg.next());
+        this.writeDirectedMultigraph(g, f, edgeColors);
+    }
+
+    public <T,E extends DirectedTypedEdge<T>> void writeDirectedMultigraph(
+            Multigraph<T,E> g, File f, Map<T,Color> edgeColors) 
+            throws IOException {
+    
+        PrintWriter pw = new PrintWriter(f);
+        pw.println("digraph g {");
+        // Write the vertices, which may be disconnected
+        for (int v : g.vertices()) {
+            pw.println("  " + v + ";");
+        }
+        for (E e : g.edges()) {
+            String hexColor = Integer.toHexString(
+                edgeColors.get(e.edgeType()).getRGB());            
+            hexColor = hexColor.substring(2, hexColor.length());
+            pw.printf("  %d -> %d [label=\"%s\", color=\"#%s\"]%n", e.from(), e.to(),
                       e.edgeType(), hexColor);
         }
         pw.println("}");

@@ -61,8 +61,9 @@ public class DirectedMultigraph<T>
      * A mapping from an edge type to the graph that contains all edges with
      * that type.
      */
-    private final Map<T,DirectedGraph<DirectedTypedEdge<T>>> typeToEdges;
-
+    //private final Map<T,Graph<DirectedTypedEdge<T>>> typeToEdges;
+    private final Map<T,DirectedTypedGraph<T>> typeToEdges;
+    
     // private final IntSet vertices;
     private final Set<Integer> vertices;
 
@@ -87,8 +88,8 @@ public class DirectedMultigraph<T>
      * Creates an empty graph with node edges
      */
     public DirectedMultigraph() { 
-        typeToEdges = new HashMap<T,DirectedGraph<DirectedTypedEdge<T>>>();
-        // vertices = new IntSet();
+        typeToEdges = //new HashMap<T,Graph<DirectedTypedEdge<T>>>();
+            new HashMap<T,DirectedTypedGraph<T>>();
         vertices = new HashSet<Integer>();
         edges = new EdgeView();
         subgraphs = new ArrayList<WeakReference<Subgraph>>();
@@ -106,18 +107,6 @@ public class DirectedMultigraph<T>
             add(e);
     }    
 
-//     /**
-//      * Creates a directed multigraph with a copy of all the vertices and edges
-//      * in {@code g}.
-//      */
-//     public DirectedMultigraph(Multigraph<? extends T,? extends DirectedTypedEdge<T>> g) {
-//         this();
-//         for (Integer v : g.vertices())
-//             add(v);
-//         for (DirectedTypedEdge<T> e : g.edges())
-//             add(e);
-//     }    
-
     /**
      * {@inheritDoc}
      */
@@ -126,14 +115,10 @@ public class DirectedMultigraph<T>
     }
 
     public boolean add(DirectedTypedEdge<T> e) {
-        DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(e.edgeType());
+        DirectedTypedGraph<T> g = typeToEdges.get(e.edgeType());
         if (g == null) {
-            Graph<DirectedTypedEdge<T>> f = new TypeGraph<T>();
-            g = Graphs.asDirectedGraph(f);
+            g = new DirectedTypedGraph<T>(e.edgeType());
             typeToEdges.put(e.edgeType(), g);
-            // Update the edge view so that it is aware of the edges that are
-            // now present in this graph
-            edges.update();
         }
         // If we've added a new edge, update the local state for the vertices
         // and edge types
@@ -151,7 +136,6 @@ public class DirectedMultigraph<T>
     public void clear() {
         typeToEdges.clear();
         vertices.clear();
-        edges.update();
     }
 
     /**
@@ -159,7 +143,6 @@ public class DirectedMultigraph<T>
      */
     public void clearEdges() { 
         typeToEdges.clear();
-        edges.update();
     }
 
     /**
@@ -167,7 +150,6 @@ public class DirectedMultigraph<T>
      */
     public void clearEdges(T edgeType) { 
         typeToEdges.remove(edgeType);
-        edges.update();
     }
 
     /**
@@ -181,7 +163,7 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public boolean contains(Edge e) {
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
             if (g.contains(e))
                 return true;
         return false;
@@ -191,7 +173,7 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public boolean contains(int vertex1, int vertex2) {
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
             if (g.contains(vertex1, vertex2))
                 return true;
         return false;
@@ -201,7 +183,7 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public boolean contains(int vertex1, int vertex2, T edgeType) {
-        DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(edgeType);
+        Graph<DirectedTypedEdge<T>> g = typeToEdges.get(edgeType);
         if (g != null)
             return g.contains(vertex1, vertex2);
         return false;
@@ -245,7 +227,7 @@ public class DirectedMultigraph<T>
                     // Iterate through the type-specific graphs, checking for
                     // edges between these two vertices.  This avoid creating a
                     // combined set.
-                    for (DirectedGraph<DirectedTypedEdge<T>> dg
+                    for (Graph<DirectedTypedEdge<T>> dg
                              : typeToEdges.values()) {
                         for (DirectedTypedEdge<T> e : dg.getEdges(v, v2))
                             g.add(e);
@@ -261,7 +243,7 @@ public class DirectedMultigraph<T>
      */
     public int degree(int vertex) {
         int degree = 0;
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
             degree += g.degree(vertex);
         return degree;
     }
@@ -310,7 +292,7 @@ public class DirectedMultigraph<T>
     public Set<DirectedTypedEdge<T>> getAdjacencyList(int vertex) {
         List<Set<DirectedTypedEdge<T>>> sets = 
             new ArrayList<Set<DirectedTypedEdge<T>>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
             Set<DirectedTypedEdge<T>> adj = g.getAdjacencyList(vertex);
             if (!adj.isEmpty())
                 sets.add(adj);
@@ -326,7 +308,7 @@ public class DirectedMultigraph<T>
     public Set<DirectedTypedEdge<T>> getEdges(int vertex1, int vertex2) {
         List<Set<DirectedTypedEdge<T>>> sets = 
             new ArrayList<Set<DirectedTypedEdge<T>>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
             Set<DirectedTypedEdge<T>> e = g.getEdges(vertex1, vertex2);
             if (!e.isEmpty()) {
                 sets.add(e);
@@ -342,7 +324,7 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public Set<DirectedTypedEdge<T>> getEdges(int vertex1, int vertex2, T t) {
-        DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(t);
+        Graph<DirectedTypedEdge<T>> g = typeToEdges.get(t);
         return (g == null) 
             ? Collections.<DirectedTypedEdge<T>>emptySet()
             : g.getEdges(vertex1, vertex2);
@@ -353,7 +335,7 @@ public class DirectedMultigraph<T>
      */
     public Set<Integer> getNeighbors(int vertex) {
         List<Set<Integer>> sets = new ArrayList<Set<Integer>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
             Set<Integer> n = g.getNeighbors(vertex);
             if (!n.isEmpty())
                 sets.add(n);
@@ -382,8 +364,12 @@ public class DirectedMultigraph<T>
      */
     public int inDegree(int vertex) {
         int inDegree = 0;
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
-            inDegree += g.inDegree(vertex);
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+            for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex)) {
+                if (e.to() == vertex)
+                    inDegree++;
+            }
+        }        
         return inDegree;
     }
 
@@ -391,11 +377,19 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public Set<DirectedTypedEdge<T>> inEdges(int vertex) {
-        List<Set<DirectedTypedEdge<T>>> sets = 
-            new ArrayList<Set<DirectedTypedEdge<T>>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
-            sets.add(g.inEdges(vertex));
-        return new CombinedSet<DirectedTypedEdge<T>>(sets);
+//         List<Set<DirectedTypedEdge<T>>> sets = 
+//             new ArrayList<Set<DirectedTypedEdge<T>>>();
+//         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
+//             sets.add(g.inEdges(vertex));
+//         return new CombinedSet<DirectedTypedEdge<T>>(sets);
+        Set<DirectedTypedEdge<T>> in = new HashSet<DirectedTypedEdge<T>>();
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+            for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex)) {
+                if (e.to() == vertex)
+                    in.add(e);
+            }
+        }
+        return in;
     }
 
     /**
@@ -410,8 +404,12 @@ public class DirectedMultigraph<T>
      */
     public int outDegree(int vertex) {
         int outDegree = 0;
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
-            outDegree += g.outDegree(vertex);
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+            for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex)) {
+                if (e.from() == vertex)
+                    outDegree++;
+            }
+        }
         return outDegree;
     }
 
@@ -419,21 +417,55 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public Set<DirectedTypedEdge<T>> outEdges(int vertex) {
-        List<Set<DirectedTypedEdge<T>>> sets = 
-            new ArrayList<Set<DirectedTypedEdge<T>>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
-            sets.add(g.outEdges(vertex));
-        return new CombinedSet<DirectedTypedEdge<T>>(sets);
+//         List<Set<DirectedTypedEdge<T>>> sets = 
+//             new ArrayList<Set<DirectedTypedEdge<T>>>();
+//         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
+//             sets.add(g.outEdges(vertex));
+//         return new CombinedSet<DirectedTypedEdge<T>>(sets);
+        Set<DirectedTypedEdge<T>> out = new HashSet<DirectedTypedEdge<T>>();
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+            for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex)) {
+                if (e.from() == vertex)
+                    out.add(e);
+            }
+        }
+        return out;
     }
 
     /**
      * {@inheritDoc}
      */
     public Set<Integer> predecessors(int vertex) {
-        List<Set<Integer>> sets = new ArrayList<Set<Integer>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
-            sets.add(g.predecessors(vertex));
-        return new CombinedSet<Integer>(sets);
+//         List<Set<Integer>> sets = new ArrayList<Set<Integer>>();
+//         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
+//             sets.add(g.predecessors(vertex));
+//         return new CombinedSet<Integer>(sets);
+
+//         Set<Integer> preds = new HashSet<Integer>();
+//         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+//             for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex))
+//                 if (e.to() == vertex)
+//                     preds.add(e.from());
+//         }
+
+        Set<Integer> preds = new HashSet<Integer>();
+         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+             Set<DirectedTypedEdge<T>> edges = g.getEdgeSet(vertex);
+             if (edges != null) {
+                 for (DirectedTypedEdge<T> e : edges)
+                     if (e.to() == vertex)
+                         preds.add(e.from());
+             }
+        }
+
+//         Set<Integer> preds = new HashSet<Integer>();
+//         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+//             SparseDirectedTypedEdgeSet<T> edges = g.getEdgeSet(vertex);
+//             if (edges != null)
+//                 preds.addAll(edges.predecessors());
+//         }
+        
+        return preds;
     }
 
     /**
@@ -443,19 +475,17 @@ public class DirectedMultigraph<T>
         // If we can remove the vertex from the global set, then at least one of
         // the type-specific graphs has this vertex.
         if (vertices.remove(vertex)) {
-            Iterator<Map.Entry<T,DirectedGraph<DirectedTypedEdge<T>>>> it = 
+            Iterator<Map.Entry<T,DirectedTypedGraph<T>>> it = 
                 typeToEdges.entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<T,DirectedGraph<DirectedTypedEdge<T>>> e = it.next();
-                DirectedGraph<DirectedTypedEdge<T>> g = e.getValue();
+                Map.Entry<T,DirectedTypedGraph<T>> e = it.next();
+                Graph<DirectedTypedEdge<T>> g = e.getValue();
                 // Check whether removing this vertex has caused us to remove
                 // the last edge for this type in the graph.  If so, the graph
                 // no longer has this type and we need to update the state.
                 if (g.remove(vertex) && g.size() == 0) {
                     // Get rid of the type mapping
                     it.remove(); 
-                    // Update the state of the edge view
-                    edges.update();
                 }
             }
             // Update any of the subgraphs that had this vertex to notify them
@@ -490,11 +520,11 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public boolean remove(DirectedTypedEdge<T> edge) {
-        Iterator<Map.Entry<T,DirectedGraph<DirectedTypedEdge<T>>>> it = 
+        Iterator<Map.Entry<T,DirectedTypedGraph<T>>> it = 
             typeToEdges.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<T,DirectedGraph<DirectedTypedEdge<T>>> e = it.next();
-            DirectedGraph<DirectedTypedEdge<T>> g = e.getValue();
+            Map.Entry<T,DirectedTypedGraph<T>> e = it.next();
+            Graph<DirectedTypedEdge<T>> g = e.getValue();
             if (g.remove(edge)) {
                 // Check whether we've just removed the last edge for this type
                 // in the graph.  If so, the graph no longer has this type and
@@ -502,8 +532,6 @@ public class DirectedMultigraph<T>
                 if (g.size() == 0) {
                     // Get rid of the type mapping
                     it.remove(); 
-                    // Update the state of the edge view
-                    edges.update();
 
                     // Remove this edge type from all the subgraphs as well
                     Iterator<WeakReference<Subgraph>> sIt = subgraphs.iterator();
@@ -531,7 +559,7 @@ public class DirectedMultigraph<T>
      */
     public int size() {
         int size = 0;
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
+        for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
             size += g.size();
         return size;
     }
@@ -540,10 +568,34 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public Set<Integer> successors(int vertex) {
-        List<Set<Integer>> sets = new ArrayList<Set<Integer>>();
-        for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
-            sets.add(g.successors(vertex));
-        return new CombinedSet<Integer>(sets);
+//         List<Set<Integer>> sets = new ArrayList<Set<Integer>>();
+//         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
+//             sets.add(g.successors(vertex));
+//         return new CombinedSet<Integer>(sets);
+
+        Set<Integer> succs = new HashSet<Integer>();
+//         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
+//             for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex))
+//                 if (e.from() == vertex)
+//                     succs.add(e.to());
+//         }
+
+         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+             Set<DirectedTypedEdge<T>> edges = g.getEdgeSet(vertex);
+             if (edges != null) {
+                 for (DirectedTypedEdge<T> e : edges)
+                     if (e.from() == vertex)
+                         succs.add(e.to());
+             }
+         }
+
+//          for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+//              SparseDirectedTypedEdgeSet<T> edges = g.getEdgeSet(vertex);
+//              if (edges != null)
+//                  succs.addAll(edges.successors());
+//          }
+
+        return succs;
     }
 
     /**
@@ -587,15 +639,19 @@ public class DirectedMultigraph<T>
 
 
     /**
-     * A graph that imposes no restriction on the types of edges that may connect
-     * its vertices.
+     * The subset of this multigraph that contains edges of a single type.  This
+     * graph class enables the multigraph to quickly partition itself by type.
      */
-    class TypeGraph<T> extends AbstractGraph<DirectedTypedEdge<T>,
+    class DirectedTypedGraph<T> extends AbstractGraph<DirectedTypedEdge<T>,
                                                 SparseDirectedTypedEdgeSet<T>> {
         
         private static final long serialVersionUID = 1L;
         
-        public TypeGraph() { }
+        private final T type;
+
+        public DirectedTypedGraph(T type) {
+            this.type = type;
+        }
 
         /**
          * {@inheritDoc}
@@ -603,7 +659,7 @@ public class DirectedMultigraph<T>
         @Override public Graph<DirectedTypedEdge<T>> copy(Set<Integer> vertices) {
             // special case for If the called is requesting a copy of the entire
             // graph, which is more easily handled with the copy constructor
-            TypeGraph<T> g = new TypeGraph<T>();
+            DirectedTypedGraph<T> g = new DirectedTypedGraph<T>(type);
             if (vertices.size() == order() && vertices.equals(vertices())) {
                 for (int v : vertices)
                     g.add(v);
@@ -627,8 +683,12 @@ public class DirectedMultigraph<T>
                 
         @Override protected SparseDirectedTypedEdgeSet<T> 
                 createEdgeSet(int vertex) {
-            return new SparseDirectedTypedEdgeSet<T>(vertex);
+            return new SparseDirectedTypedEdgeSet<T>(vertex, type);
         }        
+
+        @Override public SparseDirectedTypedEdgeSet<T> getEdgeSet(int vertex) {
+            return super.getEdgeSet(vertex);
+        }
     }
 
     /**
@@ -639,11 +699,7 @@ public class DirectedMultigraph<T>
      */
     class EdgeView extends AbstractSet<DirectedTypedEdge<T>> {
 
-        private CombinedSet<DirectedTypedEdge<T>> backing;
-
-        public EdgeView() {
-            update();
-        }
+        public EdgeView() { }
 
         public boolean add(DirectedTypedEdge<T> e) {
             // Calling the backing graph's add will route the edge to the
@@ -652,35 +708,32 @@ public class DirectedMultigraph<T>
         }
 
         public boolean contains(Object o) {
-            return backing.contains(o);
+            return (o instanceof DirectedTypedEdge) 
+                && DirectedMultigraph.this.contains((DirectedTypedEdge<?>)o);
         }
 
         public Iterator<DirectedTypedEdge<T>> iterator() {
-            return backing.iterator();
+            List<Iterator<DirectedTypedEdge<T>>> iters = 
+                new ArrayList<Iterator<DirectedTypedEdge<T>>>(typeToEdges.size());
+            for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
+                iters.add(g.edges().iterator());
+            return new CombinedIterator<DirectedTypedEdge<T>>(iters);
         }
-
-
+        
+        @SuppressWarnings("unchecked")
         public boolean remove(Object o) {
-            return backing.remove(o);
+            if (o instanceof DirectedTypedEdge) {
+                DirectedTypedEdge<?> e = (DirectedTypedEdge<?>)o;
+                return DirectedMultigraph.this.typeToEdges.
+                           containsKey(e.edgeType())
+                    && DirectedMultigraph.this.remove((DirectedTypedEdge<T>)o);
+            }
+            return false;
         }
 
         public int size() {
-            return backing.size();
-        }
-
-        /**
-         * Completely updates the set of edges maintained by this view by
-         * iterating over the type-graphs and storing their corresponding edge
-         * sets.
-         */
-        private void update() {
-            List<Set<DirectedTypedEdge<T>>> sets = 
-                new ArrayList<Set<DirectedTypedEdge<T>>>();
-            for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
-                sets.add(g.edges());
-            }
-            backing = new CombinedSet<DirectedTypedEdge<T>>(sets);
-        }
+            return DirectedMultigraph.this.size();
+        }    
     }
 
     /**
@@ -725,13 +778,7 @@ public class DirectedMultigraph<T>
                 throw new UnsupportedOperationException(
                     "Cannot add new vertex to subgraph");
 
-            DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(e.edgeType());
-            if (g == null) {
-                Graph<DirectedTypedEdge<T>> f = new TypeGraph<T>();
-                g = Graphs.asDirectedGraph(f);
-                typeToEdges.put(e.edgeType(), g);
-            }
-            return g.add(e);
+            return DirectedMultigraph.this.add(e);
         }
 
         /**
@@ -751,7 +798,7 @@ public class DirectedMultigraph<T>
                 // Only consider removing edges of the valid types
                 for (T type : validTypes) {
                     // Get all the edges for the current vertex for that type
-                    DirectedGraph<DirectedTypedEdge<T>> g = 
+                    Graph<DirectedTypedEdge<T>> g = 
                         typeToEdges.get(type);
                     // Check whether each of the adjacent edges points to
                     // another vertex in this subgraph.  If so, remove it
@@ -772,7 +819,7 @@ public class DirectedMultigraph<T>
          */
         public void clearEdges(T edgeType) { 
             // Get all the edges for the current vertex for the type
-            DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(edgeType);
+            Graph<DirectedTypedEdge<T>> g = typeToEdges.get(edgeType);
             for (Integer v : vertexSubset) {
                 // Check whether each of the adjacent edges points to another vertex
                 // in this subgraph.  If so, remove it
@@ -836,7 +883,7 @@ public class DirectedMultigraph<T>
                     || !vertexSubset.contains(vertex2))
                 return false;
 
-            DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(edgeType);
+            Graph<DirectedTypedEdge<T>> g = typeToEdges.get(edgeType);
             return g.contains(vertex1, vertex2);
         }
 
@@ -985,9 +1032,9 @@ public class DirectedMultigraph<T>
          */
         public int inDegree(int vertex) {
             int inDegree = 0;
-            for (T type : validTypes) {
-                DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(type);
-                inDegree += g.inDegree(vertex);
+            for (DirectedTypedEdge<T> e : getAdjacencyList(vertex)) {
+                if (e.to() == vertex)
+                    inDegree++;
             }
             return inDegree;
         }
@@ -1023,9 +1070,9 @@ public class DirectedMultigraph<T>
          */
         public int outDegree(int vertex) {
             int outDegree = 0;
-            for (T type : validTypes) {
-                DirectedGraph<DirectedTypedEdge<T>> g = typeToEdges.get(type);
-                outDegree += g.outDegree(vertex);
+            for (DirectedTypedEdge<T> e : getAdjacencyList(vertex)) {
+                if (e.from() == vertex)
+                    outDegree++;
             }
             return outDegree;
         }
@@ -1191,7 +1238,7 @@ public class DirectedMultigraph<T>
                     if (v == root)
                         continue;
                     for (T type : validTypes) {
-                        DirectedGraph<DirectedTypedEdge<T>> g = 
+                        Graph<DirectedTypedEdge<T>> g = 
                             typeToEdges.get(type);
                         Set<DirectedTypedEdge<T>> edges = g.getEdges(v, root);
                         sz += edges.size();
@@ -1218,7 +1265,7 @@ public class DirectedMultigraph<T>
                         if (v == root)
                             continue;
                         for (T type : validTypes) {
-                            DirectedGraph<DirectedTypedEdge<T>> g = 
+                            Graph<DirectedTypedEdge<T>> g = 
                                 typeToEdges.get(type);
                             Set<DirectedTypedEdge<T>> edges = g.getEdges(v, root);
                             if (!edges.isEmpty())
@@ -1391,7 +1438,7 @@ public class DirectedMultigraph<T>
             }
             
             private boolean checkVertex(Integer i) {
-                for (DirectedGraph<DirectedTypedEdge<T>> g : typeToEdges.values())
+                for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values())
                     if (g.contains(i, root))
                         return true;
                 return false;

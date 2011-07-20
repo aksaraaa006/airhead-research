@@ -26,6 +26,7 @@ import edu.ucla.sspace.common.ArgOptions;
 import edu.ucla.sspace.graph.DirectedEdge;
 import edu.ucla.sspace.graph.DirectedGraph;
 import edu.ucla.sspace.graph.DirectedMultigraph;
+import edu.ucla.sspace.graph.DirectedTypedEdge;
 import edu.ucla.sspace.graph.Edge;
 import edu.ucla.sspace.graph.Fanmod;
 import edu.ucla.sspace.graph.Graph;
@@ -60,6 +61,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -156,7 +158,56 @@ public class FanmodTool {
             if (isMultigraph && isDirected) {
                 DirectedMultigraph<String> dm = 
                     GraphIO.readDirectedMultigraph(f, vertexLabels);
-                throw new Error();
+                boolean findSimpleMotifs = opts.hasOption('s');
+                Map<Multigraph<String,DirectedTypedEdge<String>>,Fanmod.Result> 
+                    motifToZScore = fanmod.findMotifs( 
+                      dm, findSimpleMotifs, motifSize, numRandomGraphs, filter);
+                info(LOGGER, "found %d motifs with z-score above %f%n", 
+                     motifToZScore.size(), minZScore);
+                if (opts.hasOption('H')) {
+                    File baseDir = new File(opts.getStringOption('H'));
+                    DotIO dio = new DotIO();
+                    
+                    // Generate a consistent set of edge colors to user across
+                    // all the motif visualizations
+                    Map<String,Color> edgeColors = new HashMap<String,Color>();
+                    ColorGenerator cg = new ColorGenerator();
+                    for (String type : dm.edgeTypes())
+                        edgeColors.put(type, cg.next());
+
+                    PrintWriter pw = new PrintWriter(new File(baseDir, "index.html"));
+                    PrintWriter imgScript = new PrintWriter(new File(baseDir, "img-script.sh"));
+                    imgScript.println("#!/bin/bash");
+                    pw.println("<html>");
+                    pw.println("<head><script src=\"http://www.kryogenix.org/code/browser/sorttable/sorttable.js\"></script></head>");
+                    // pw.println("<head><script src=\"sorttable.js\"></script></head>");
+                    pw.println("<body><table border=\"2\" class=\"sortable\">");
+                    pw.println("  <tr>" + 
+                               "<td><h1><u>Motif</u></h1></td>" +
+                               "<td><h1><u>Count</u></h1></td>" +
+                               "<td><h1><u>Z-Score</u></h1></td>" +
+                               "<td><h1><u>Mean Count in Random Graphs</u></h1></td>" +
+                               "<td><h1><u>StdDev in Random Graphs</u></h1></td>" +
+                               "</tr>");
+                    int graphNum = 0;
+                    for (Map.Entry<Multigraph<String,DirectedTypedEdge<String>>,Fanmod.Result> e :
+                             motifToZScore.entrySet()) {
+                        File dotFile = new File(baseDir, "graph-" + (graphNum++) + ".dot");
+                        dio.writeDirectedMultigraph(e.getKey(), dotFile, edgeColors);
+                        String imgFile = dotFile.getName();
+                        imgFile = imgFile.substring(0, imgFile.length() - 3) + "gif";
+                        imgScript.printf("dot -Tgif %s -o %s%n", dotFile.getName(), imgFile);
+                        int count = e.getValue().count;
+                        double zScore = e.getValue().statistic;
+                        double mean = e.getValue().meanCountInNullModel;
+                        double stddev = e.getValue().stddevInNullModel;
+                        pw.printf("  <tr><td><img src=\"%s\"></td><td>%d</td><td>%f</td><td>%f</td><td>%f</td></tr>%n",
+                                  imgFile, count, zScore, mean, stddev);
+                    }
+                    pw.println("</table></body></html>");
+                    imgScript.close();
+                    pw.close();
+                }
             }
 
             else if (isMultigraph) {
@@ -171,10 +222,20 @@ public class FanmodTool {
                 if (opts.hasOption('H')) {
                     File baseDir = new File(opts.getStringOption('H'));
                     DotIO dio = new DotIO();
+                    // Generate a consistent set of edge colors to user across
+                    // all the motif visualizations
+                    Map<String,Color> edgeColors = new HashMap<String,Color>();
+                    ColorGenerator cg = new ColorGenerator();
+                    for (String type : um.edgeTypes())
+                        edgeColors.put(type, cg.next());
+
                     PrintWriter pw = new PrintWriter(new File(baseDir, "index.html"));
                     PrintWriter imgScript = new PrintWriter(new File(baseDir, "img-script.sh"));
                     imgScript.println("#!/bin/bash");
-                    pw.println("<html><body><table border=2>");
+                    pw.println("<html>");
+                    pw.println("<head><script src=\"http://www.kryogenix.org/code/browser/sorttable/sorttable.js\"></script></head>");
+                    // pw.println("<head><script src=\"sorttable.js\"></script></head>");
+                    pw.println("<body><table border=\"2\" class=\"sortable\">");
                     pw.println("  <tr>" + 
                                "<td><h1><u>Motif</u></h1></td>" +
                                "<td><h1><u>Count</u></h1></td>" +
@@ -186,10 +247,10 @@ public class FanmodTool {
                     for (Map.Entry<Multigraph<String,TypedEdge<String>>,Fanmod.Result> e :
                              motifToZScore.entrySet()) {
                         File dotFile = new File(baseDir, "graph-" + (graphNum++) + ".dot");
-                        dio.writeUndirectedMultigraph(e.getKey(), dotFile);
-                        String imgFile = dotFile.getPath();
+                        dio.writeUndirectedMultigraph(e.getKey(), dotFile, edgeColors);
+                        String imgFile = dotFile.getName();
                         imgFile = imgFile.substring(0, imgFile.length() - 3) + "gif";
-                        imgScript.printf("dot -Tgif %s -o %s%n", dotFile.getPath(), imgFile);
+                        imgScript.printf("dot -Tgif %s -o %s%n", dotFile.getName(), imgFile);
                         int count = e.getValue().count;
                         double zScore = e.getValue().statistic;
                         double mean = e.getValue().meanCountInNullModel;

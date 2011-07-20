@@ -276,7 +276,7 @@ public class LinkClustering implements java.io.Serializable {
 
                             if ((i - divisionStart) % 10000 == 0)
                                 verbose(LOGGER, "Computing density of partition"
-                                        + "%d/%d", divisionStart, 
+                                        + " %d/%d", divisionStart, 
                                         mergeOrder.size());
                                                         
                             // Sum the densitites for each partition in this
