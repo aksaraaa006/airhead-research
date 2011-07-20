@@ -36,7 +36,12 @@ import java.util.Set;
 import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.OpenIntSet;
+import edu.ucla.sspace.util.MultiMap;
+import edu.ucla.sspace.util.HashMultiMap;
 
+import gnu.trove.decorator.TIntSetDecorator;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.iterator.TIntIterator;
 
 /**
  * An {@link EdgeSet} implementation that stores {@link TypedEdge} instances for
@@ -50,24 +55,27 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * The vertex to which all edges in the set are connected
      */
     private final int rootVertex;
+
+    private final T type;
     
     /**
      * A mapping from a type to the set of incoming edges
      */
-    private final Map<T,OpenIntSet> typeToInEdges;
+    private final TIntHashSet inEdges;
 
     /**
      * A mapping from a type to the set of outgoing edges
      */
-    private final Map<T,OpenIntSet> typeToOutEdges;
+    private final TIntHashSet outEdges;
         
     /**
      * Creates a new {@code SparseDirectedTypedEdgeSet} for the specfied vertex.
      */
-    public SparseDirectedTypedEdgeSet(int rootVertex) {
+    public SparseDirectedTypedEdgeSet(int rootVertex, T type) {
         this.rootVertex = rootVertex;
-        typeToInEdges = new HashMap<T,OpenIntSet>();
-        typeToOutEdges = new HashMap<T,OpenIntSet>();
+        this.type = type;
+        inEdges = new TIntHashSet();
+        outEdges = new TIntHashSet();
     }
     
     /**
@@ -75,14 +83,12 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * if the non-root vertex has a greater index that this vertex.
      */
     public boolean add(DirectedTypedEdge<T> e) {
-        if (e.from() == rootVertex) {
-            OpenIntSet edges = getOutEdgesForType(e.edgeType());
-            return edges.add(e.to());
-        }
-        else if (e.to() == rootVertex) {
-            OpenIntSet edges = getInEdgesForType(e.edgeType());
-            return edges.add(e.from());
-        }
+        if (!e.edgeType().equals(type))
+            return false;
+        else if (e.from() == rootVertex) 
+            return outEdges.add(e.to());
+        else if (e.to() == rootVertex) 
+            return inEdges.add(e.from());
         return false;
     }
 
@@ -90,30 +96,25 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * {@inheritDoc}  The set of vertices returned by this set is immutable.
      */
     public Set<Integer> connected() {
-        int setSize = typeToInEdges.size() + typeToOutEdges.size();
-        if (setSize == 0)
-            return Collections.<Integer>emptySet();
-        List<Set<Integer>> sets = new ArrayList<Set<Integer>>(setSize);
-        for (Set<Integer> s : typeToInEdges.values())
-            sets.add(s);
-        for (Set<Integer> s : typeToOutEdges.values())
-            sets.add(s);
-        return new CombinedSet<Integer>(sets);
+        Set<Integer> connected = new HashSet<Integer>();
+        TIntIterator in = inEdges.iterator();
+        while (in.hasNext())
+            connected.add(in.next());
+        TIntIterator out = outEdges.iterator();
+        while (out.hasNext())
+            connected.add(out.next());
+        return connected;
+//         Collection<Set<Integer>> sets = new ArrayList<Set<Integer>>(2);
+//         sets.add(inEdges);
+//         sets.add(outEdges);
+//         return new CombinedSet<Integer>(sets);
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean connects(int vertex) {
-        for (OpenIntSet edges : typeToInEdges.values()) {
-            if (edges.contains(vertex))
-                return true;
-        }
-        for (OpenIntSet edges : typeToOutEdges.values()) {
-            if (edges.contains(vertex))
-                return true;
-        }
-        return false;
+        return inEdges.contains(vertex) || outEdges.contains(vertex);
     }
 
     /**
@@ -122,17 +123,15 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
     public boolean contains(Object o) {
         if (!(o instanceof DirectedTypedEdge))
             return false;
-
         @SuppressWarnings("unchecked")
         DirectedTypedEdge<T> e = (DirectedTypedEdge<T>)o;
-        if (e.from() == rootVertex) {
-            OpenIntSet edges = typeToOutEdges.get(e.edgeType());
-            return edges != null && edges.contains(e.to());
-        }
-        else if (e.to() == rootVertex) {
-            OpenIntSet edges = typeToInEdges.get(e.edgeType());
-            return edges != null && edges.contains(e.from());
-        }
+
+        if (!e.edgeType().equals(type))
+            return false;
+        else if (e.from() == rootVertex) 
+            return outEdges.contains(e.to());
+        else if (e.to() == rootVertex)
+            return inEdges.contains(e.from());
         return false;
     }
 
@@ -140,32 +139,8 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * {@inheritDoc}
      */
     public Set<DirectedTypedEdge<T>> getEdges(int vertex) {
-        return new VertexEdgeSet(vertex);
+        return new EdgesForVertex(vertex);
     }    
-
-    /**
-     * Returns the set of incoming edges that have the specified type.
-     */
-    private OpenIntSet getInEdgesForType(T type) {
-        OpenIntSet edges = typeToInEdges.get(type);
-        if (edges == null) {
-            edges = new OpenIntSet();
-            typeToInEdges.put(type, edges);
-        }
-        return edges;
-    }
-
-    /**
-     * Returns the set of outgoing edges that have the specified type.
-     */
-    private OpenIntSet getOutEdgesForType(T type) {
-        OpenIntSet edges = typeToOutEdges.get(type);
-        if (edges == null) {
-            edges = new OpenIntSet();
-            typeToOutEdges.put(type, edges);
-        }
-        return edges;
-    }
 
     /**
      * {@inheritDoc}
@@ -175,10 +150,18 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
     }
 
     /**
+     * Returns the set of edges that point to the vertex associated with this
+     * edge set.
+     */
+//     public Set<DirectedTypedEdge<T>> inEdges() {
+//         return new InEdges();
+//     }
+
+    /**
      * {@inheritDoc}
      */
     public boolean isEmpty() {
-        return typeToInEdges.isEmpty() && typeToOutEdges.isEmpty();
+        return inEdges.isEmpty() && outEdges.isEmpty();
     }
 
     /**
@@ -186,6 +169,22 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      */ 
     public Iterator<DirectedTypedEdge<T>> iterator() {
         return new DirectedTypedEdgeIterator();
+    }
+
+    /**
+     * Returns the set of edges that originate from the vertex associated with
+     * this edge set.
+     */
+//     public Set<DirectedTypedEdge<T>> outEdges() {
+//         return new OutEdges();
+//     }
+
+    public Set<Integer> predecessors() {
+        return new TIntSetDecorator(inEdges);
+    }
+
+    public Set<Integer> successors() {
+        return new TIntSetDecorator(outEdges);
     }
     
     /**
@@ -197,23 +196,13 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
 
         @SuppressWarnings("unchecked")
         DirectedTypedEdge<T> e = (DirectedTypedEdge<T>)o;
-           
-        if (e.from() == rootVertex) {
-            OpenIntSet edges = typeToOutEdges.get(e.edgeType());
-            boolean b = edges != null && edges.remove(e.to());
-            // If this was the last edge of that type, remove the type
-            if (b && edges.isEmpty())
-                typeToOutEdges.remove(e.edgeType());
-            return b;
-        }
-        else if (e.to() == rootVertex) {
-            OpenIntSet edges = typeToInEdges.get(e.edgeType());
-            boolean b = edges != null && edges.remove(e.from());
-            // If this was the last edge of that type, remove the type
-            if (b && edges.isEmpty())
-                typeToInEdges.remove(e.edgeType());
-            return b;
-        }
+
+        if (!e.edgeType().equals(type))
+            return false;
+        else if (e.from() == rootVertex) 
+            return outEdges.remove(e.to());
+        else if (e.to() == rootVertex) 
+            return inEdges.remove(e.from());
         return false;
     }
 
@@ -221,35 +210,28 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * {@inheritDoc}
      */    
     public int size() {
-        int sz = 0;
-        for (OpenIntSet edges : typeToInEdges.values())
-            sz += edges.size();
-        for (OpenIntSet edges : typeToOutEdges.values())
-            sz += edges.size();
-        return sz;
+        return inEdges.size() + outEdges.size();
     }
 
     /**
      * Returns the set of types contained within this set
      */
     public Set<T> types() {
-        Set<T> t = new HashSet<T>(typeToInEdges.keySet());
-        t.addAll(typeToOutEdges.keySet());
-        return t;
+        return Collections.<T>singleton(type);
     }
 
     /**
      * A wrapper around the set of edges that connect another vertex to the root
      * vertex
      */
-    private class VertexEdgeSet extends AbstractSet<DirectedTypedEdge<T>> {
+    private class EdgesForVertex extends AbstractSet<DirectedTypedEdge<T>> {
         
         /**
          * The vertex in the edges that is not this root vertex
          */
         private final int otherVertex;
 
-        public VertexEdgeSet(int otherVertex) {
+        public EdgesForVertex(int otherVertex) {
             this.otherVertex = otherVertex;
         }
 
@@ -269,15 +251,7 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         }
 
         @Override public boolean isEmpty() {
-            for (OpenIntSet in : typeToInEdges.values()) {
-                if (in.contains(otherVertex))
-                    return false;
-            }
-            for (OpenIntSet out : typeToOutEdges.values()) {
-                if (out.contains(otherVertex))
-                    return false;
-            }    
-            return true;
+            return !SparseDirectedTypedEdgeSet.this.connects(otherVertex);
         }
 
         @Override public Iterator<DirectedTypedEdge<T>> iterator() {
@@ -294,16 +268,12 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         }
 
         @Override public int size() {
-            int size = 0;
-            for (OpenIntSet in : typeToInEdges.values()) {
-                if (in.contains(otherVertex))
-                    size++;
-            }
-            for (OpenIntSet out : typeToOutEdges.values()) {
-                if (out.contains(otherVertex))
-                    size++;
-            }    
-            return size;
+            int sz = 0;
+            if (inEdges.contains(otherVertex))
+                sz++;
+            if (outEdges.contains(otherVertex))
+                sz++;
+            return sz;
         }
 
         /**
@@ -312,16 +282,6 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
          */
         class EdgeIterator implements Iterator<DirectedTypedEdge<T>> {
             
-            /**
-             * The types that may correspond to in edges
-             */
-            Iterator<Map.Entry<T,OpenIntSet>> inEdges;
-
-            /**
-             * The types that may correspond to in edges
-             */
-            Iterator<Map.Entry<T,OpenIntSet>> outEdges;
-
             /**
              * The next edge to return
              */ 
@@ -333,26 +293,24 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
              */
             DirectedTypedEdge<T> cur;
 
+            boolean returnedIn;
+            boolean returnedOut;
+
             public EdgeIterator() {
-                inEdges = typeToInEdges.entrySet().iterator();
-                outEdges = typeToOutEdges.entrySet().iterator();
                 advance();
             }
 
             private void advance() {
                 next = null;
-                while (inEdges.hasNext() && next == null) {
-                    Map.Entry<T,OpenIntSet> e = inEdges.next();
-                    if (e.getValue().contains(otherVertex))
-                        next = new SimpleDirectedTypedEdge<T>(
-                           e.getKey(), otherVertex, rootVertex);
+                if (inEdges.contains(otherVertex) && !returnedIn) {
+                    next = new SimpleDirectedTypedEdge<T>(type, otherVertex, rootVertex);
+                    returnedIn = true;
                 }
-                while (next == null && outEdges.hasNext()) {
-                    Map.Entry<T,OpenIntSet> e = outEdges.next();
-                    if (e.getValue().contains(otherVertex))
-                        next = new SimpleDirectedTypedEdge<T>(
-                            e.getKey(), rootVertex, otherVertex);
-                }
+                else if (next == null && !returnedOut 
+                         && outEdges.contains(otherVertex)) {
+                    next = new SimpleDirectedTypedEdge<T>(type, rootVertex, otherVertex);
+                    returnedOut = true;
+                } 
             }
 
             public boolean hasNext() {
@@ -375,138 +333,6 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
     }
 
     /**
-     * A wrapper around the set of {@link DirectedTypedEdge} instances that
-     * either point to the root (the in-edges) or originate from the root
-     * (out-edges).  This class is a utility to expose both edges sets while
-     * allowing modifications to the returned sets to be reflected in this
-     * {@code SparseTypedDirectedEdgeSet}.
-     *
-     * @see #inEdges()
-     * @see #outEdges()
-     */
-    private class EdgeSetWrapper extends AbstractSet<DirectedTypedEdge<T>> {
-        
-        /**
-         * The set of vertices linked to the root vertex according the {@code
-         * areInEdge} property
-         */
-        private final Map<T,Set<Integer>> vertices;
-
-        /**
-         * {@code true} if the edges being wraped are in-edges (point to the
-         * root), or {@code false} if the edges are out-edges (originate from
-         * the root).
-         */
-        private final boolean areInEdges;
-
-        public EdgeSetWrapper(Map<T,Set<Integer>> vertices, boolean areInEdges) {
-            this.vertices = vertices;
-            this.areInEdges = areInEdges;
-        }
-
-        @Override public boolean add(DirectedTypedEdge<T> e) {
-            if (areInEdges) {
-                return e.to() == rootVertex
-                    && SparseDirectedTypedEdgeSet.this.add(e);
-            }
-            else {
-                return e.from() == rootVertex
-                    && SparseDirectedTypedEdgeSet.this.add(e);
-            }
-        }
-
-        @Override public boolean contains(Object o) {
-            if (!(o instanceof DirectedTypedEdge))
-                return false;
-            DirectedTypedEdge<?> e = (DirectedTypedEdge)o;
-            if (areInEdges) {
-                return e.to() == rootVertex
-                    && SparseDirectedTypedEdgeSet.this.contains(e);
-            }
-            else {
-                return e.from() == rootVertex
-                    && SparseDirectedTypedEdgeSet.this.contains(e);
-            }
-        }
-
-        @Override public boolean isEmpty() {
-            int size = 0;
-            for (Set<Integer> s : ((areInEdges) 
-                      ? typeToInEdges.values() : typeToOutEdges.values())) {
-                if (!s.isEmpty())
-                    return false;
-            }
-            return true;
-        }
-
-        @Override public Iterator<DirectedTypedEdge<T>> iterator() {
-            Map<T,OpenIntSet> m = (areInEdges) ? typeToInEdges: typeToOutEdges;
-            Collection<Iterator<DirectedTypedEdge<T>>> iters = 
-                new ArrayList<Iterator<DirectedTypedEdge<T>>>(m.size());
-            for (Map.Entry<T,OpenIntSet> e : m.entrySet())
-                iters.add(new EdgeSetWrapperIterator(e.getKey(), 
-                                                     e.getValue().iterator()));
-            return new CombinedIterator<DirectedTypedEdge<T>>(iters);
-        }
-
-        @Override public boolean remove(Object o) {
-            if (!(o instanceof DirectedTypedEdge))
-                return false;
-            DirectedTypedEdge<?> e = (DirectedTypedEdge)o;
-            if (areInEdges) {
-                return e.to() == rootVertex
-                    && SparseDirectedTypedEdgeSet.this.remove(e);
-            }
-            else {
-                return e.from() == rootVertex
-                    && SparseDirectedTypedEdgeSet.this.remove(e);
-            }
-        }
-
-        @Override public int size() {
-            int size = 0;
-            for (Set<Integer> s : ((areInEdges) 
-                      ? typeToInEdges.values() : typeToOutEdges.values())) {
-                size += s.size();
-            }
-            return size;
-        }
-
-        public class EdgeSetWrapperIterator 
-                implements Iterator<DirectedTypedEdge<T>> {
-            
-            private final Iterator<Integer> iter;
-            
-            /**
-             * The type of edges returned by this iterator
-             */
-            private final T curType;
-
-            public EdgeSetWrapperIterator(T curType, Iterator<Integer> iter) {
-                this.iter = iter;
-                this.curType = curType;
-            }
-
-            public boolean hasNext() {
-                return iter.hasNext();
-            }
-
-            public DirectedTypedEdge<T> next() {
-                return (areInEdges) 
-                    ? new SimpleDirectedTypedEdge<T>(curType, iter.next(),
-                                                     rootVertex)
-                    : new SimpleDirectedTypedEdge<T>(curType, rootVertex, 
-                                                     iter.next());
-            }
-
-            public void remove() {
-                iter.remove();
-            }
-        }
-
-    }
-
-    /**
      * An iterator over the edges in this set that constructs {@link
      * DirectedTypedEdge} instances as it traverses through the set of connected
      * vertices.
@@ -514,29 +340,19 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
     private class DirectedTypedEdgeIterator implements Iterator<DirectedTypedEdge<T>> {
 
         /**
-         * An iterator over the types being returned
-         */
-        private Iterator<T> typeIter;
-        
-        /**
          * An iterator over the incoming edges for the current type
          */
-        private Iterator<Integer> curInEdges;
+        private TIntIterator in;
 
         /**
          * An iterator over the outgoing edges for the current type
          */
-        private Iterator<Integer> curOutEdges;
-
-        /**
-         * The current edge type being returned
-         */
-        private T curType;
+        private TIntIterator out;
 
         /**
          * The iterator on which remove() should be called
          */
-        private Iterator<Integer> toRemoveFrom;
+        private TIntIterator toRemoveFrom;
 
         /**
          * The next edge to return.  This field is updated by {@link advance()}
@@ -544,42 +360,24 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         private DirectedTypedEdge<T> next;
         
         public DirectedTypedEdgeIterator() {
-            typeIter = types().iterator();
+            in = inEdges.iterator();
+            out = outEdges.iterator();
             advance();
         }
 
         private void advance() {
             next = null;           
-
-            // Loop until we find an edge to return or we run out of information
-            // for constructing edges
-            do {
-                // If we have an in-edge
-                if (curInEdges != null && curInEdges.hasNext()) {
-                    toRemoveFrom = curInEdges;
-                    next = new SimpleDirectedTypedEdge<T>(
-                        curType, curInEdges.next(), rootVertex);
-                }
-                // If we have an out-edge
-                else if (curOutEdges != null && curOutEdges.hasNext()) {
-                    toRemoveFrom = curOutEdges;
-                    next = new SimpleDirectedTypedEdge<T>(
-                        curType, rootVertex, curOutEdges.next());
-                }
-                // If we have neither an in-edge or an out-edge for the current
-                // type, but still have more types for which there are edges
-                else if (typeIter.hasNext()) {
-                    curType = typeIter.next();
-                    OpenIntSet in = typeToInEdges.get(curType);
-                    OpenIntSet out = typeToOutEdges.get(curType);
-                    curInEdges = (in == null) ? null : in.iterator();
-                    curOutEdges = (out == null) ? null : out.iterator();
-                }
-                // In the base case, we have no edge iterators and the type
-                // iterator is out of elements, so we can stop looking
-                else
-                    break;
-            } while (next == null);
+            
+            while (in.hasNext() && next == null) {
+                int v = in.next();
+                next = new SimpleDirectedTypedEdge<T>(
+                    type, v, rootVertex);
+            }
+            while (next == null && out.hasNext()) {
+                int v = out.next();
+                next = new SimpleDirectedTypedEdge<T>(
+                    type, rootVertex, v);
+            }
         }
 
         public boolean hasNext() {
@@ -587,7 +385,7 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         }
 
         public DirectedTypedEdge<T> next() {
-            if (!hasNext())
+            if (next == null)
                 throw new NoSuchElementException();
             DirectedTypedEdge<T> n = next;
             advance();
@@ -595,46 +393,10 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
         }
 
         public void remove() {
-            if (toRemoveFrom == null)
-                throw new IllegalStateException("No element to remove");
-            toRemoveFrom.remove();
+            throw new UnsupportedOperationException();
+//             if (toRemoveFrom == null)
+//                 throw new IllegalStateException("No element to remove");
+//             toRemoveFrom.remove();
         }
     }
-
-//     /**
-//      *
-//      */
-//     private class CombinedSet extends AbstractSet<Integer> {
-
-//         @Override public boolean contains(Object o) {
-//             if (!(o instanceof Integer))
-//                 return false;
-//             Integer i = (Integer)o;
-//             for (OpenIntSet s : typeToInEdges.values())
-//                 if (s.contains(i))
-//                     return true;
-//             for (OpenIntSet s : typeToOutEdges.values())
-//                 if (s.contains(i))
-//                     return true;
-//             return false;
-//         }
-
-//         @Override public Iterator<Integer> iterator() {
-//             OpenIntSet combined = new OpenIntSet();
-//             for (OpenIntSet s : typeToInEdges.values())
-//                 combined.addAll(s);
-//             for (OpenIntSet s : typeToOutEdges.values())
-//                 combined.addAll(s);
-//             return Collections.unmodifiableSet(combined).iterator();
-//         }
-
-//         @Override public int size() {
-//             OpenIntSet combined = new OpenIntSet();
-//             for (OpenIntSet s : typeToInEdges.values())
-//                 combined.addAll(s);
-//             for (OpenIntSet s : typeToOutEdges.values())
-//                 combined.addAll(s);
-//             return combined.size();
-//         }
-//     }
 }

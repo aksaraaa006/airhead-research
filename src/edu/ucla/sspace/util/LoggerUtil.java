@@ -75,6 +75,25 @@ public final class LoggerUtil {
     /**
      * Prints {@link Level#FINE} messages to the provided {@link Logger}.
      */
+    public static void veryVerbose(Logger log, String format, Object... args) {
+        if (log.isLoggable(Level.FINER)) {
+            StackTraceElement[] callStack = 
+                Thread.currentThread().getStackTrace();
+            // Index 0 is Thread.getStackTrace()
+            // Index 1 is this method
+            // Index 2 is the caller
+            // Index 3 and beyond we don't care about
+            StackTraceElement caller = callStack[2];
+            String callingClass = caller.getClassName();
+            String callingMethod = caller.getMethodName();
+            log.logp(Level.FINER, callingClass, callingMethod, 
+                     String.format(format, args));
+        }
+    }
+
+    /**
+     * Prints {@link Level#FINE} messages to the provided {@link Logger}.
+     */
     public static void verbose(Logger log, String format, Object... args) {
         if (log.isLoggable(Level.FINE)) {
             StackTraceElement[] callStack = 
@@ -95,8 +114,19 @@ public final class LoggerUtil {
      * Prints {@link Level#INFO} messages to the provided {@link Logger}.
      */
     public static void info(Logger log, String format, Object... args) {
-        if (log.isLoggable(Level.INFO))
-            log.info(String.format(format, args));
+        if (log.isLoggable(Level.INFO)) {
+            StackTraceElement[] callStack = 
+                Thread.currentThread().getStackTrace();
+            // Index 0 is Thread.getStackTrace()
+            // Index 1 is this method
+            // Index 2 is the caller
+            // Index 3 and beyond we don't care about
+            StackTraceElement caller = callStack[2];
+            String callingClass = caller.getClassName();
+            String callingMethod = caller.getMethodName();
+            log.logp(Level.INFO, callingClass, callingMethod, 
+                     String.format(format, args));
+        }
     }
 
     /** 

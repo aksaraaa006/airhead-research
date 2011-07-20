@@ -192,8 +192,12 @@ public class UndirectedMultigraph<T>
     public Multigraph<T,TypedEdge<T>> copy(Set<Integer> vertices) {
         // special case for If the called is requesting a copy of the entire
         // graph, which is more easily handled with the copy constructor
-        if (vertices.size() == order() && vertices.equals(vertices()))
-            return new UndirectedMultigraph<T>(this);
+        if (vertices.size() == order() && vertices.equals(vertices())) {
+            Multigraph<T,TypedEdge<T>> g = new UndirectedMultigraph<T>(this);
+            assert g.size() == size() : "missing vertices";
+            assert g.order() == order() : "missing edges";
+            return g;
+        }
         UndirectedMultigraph<T> g = new UndirectedMultigraph<T>();
         int order = order();
         int avgDegree = (order > 0) ? size() / order : 0;
@@ -234,6 +238,8 @@ public class UndirectedMultigraph<T>
                 }
             }
         }
+        assert g.size() == size() : "missing vertices";
+        assert g.order() == order() : "missing edges";
         return g;
     }
 

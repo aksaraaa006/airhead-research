@@ -104,7 +104,8 @@ public class GraphIO {
             if (lineNo % 100000 == 0)
                 verbose(LOGGER, "read %d lines from %s", lineNo, f);
         }
-        // System.out.printf("Read undirected graph with %d vertices and %d edges%n", g.order(), g.size());
+        verbose(LOGGER, "Read undirected graph with %d vertices and %d edges", 
+                g.order(), g.size());
         return g;
     }
 
@@ -133,6 +134,8 @@ public class GraphIO {
             int v2 = vertexIndexer.index(arr[1]);
             g.add(new SimpleDirectedEdge(v1, v2));
         }
+        verbose(LOGGER, "Read directed graph with %d vertices and %d edges", 
+                g.order(), g.size());
         return g;
     }
 
@@ -162,7 +165,15 @@ public class GraphIO {
             int v2 = vertexIndexer.index(arr[1]);
             String type = arr[2];
             g.add(new SimpleDirectedTypedEdge<String>(type, v1, v2));
+
+            if (lineNo % 100000 == 0) {
+                verbose(LOGGER, "read %d lines from %s, graph now has %d " + 
+                        "vertices, %d edges, and %d types", lineNo, f, 
+                        g.order(), g.size(), g.edgeTypes().size());
+            }
         }
+        verbose(LOGGER, "Read directed multigraph with %d vertices, %d edges, and %d types", 
+                g.order(), g.size(), g.edgeTypes().size());
         return g;
     }
 
@@ -195,14 +206,18 @@ public class GraphIO {
             String type = arr[2];
             g.add(new SimpleTypedEdge<String>(type, v1, v2));
 
-            if (lineNo % 100000 == 0)
-                verbose(LOGGER, "read %d lines from %s", lineNo, f);
+            if (lineNo % 100000 == 0) {
+                verbose(LOGGER, "read %d lines from %s, graph now has %d " + 
+                        "vertices, %d edges, and %d types", lineNo, f, 
+                        g.order(), g.size(), g.edgeTypes().size());
+            }
         }
         if (g.order() != vertexIndexer.highestIndex() + 1) {
             System.out.printf("%d != %d%n", g.order(), vertexIndexer.highestIndex());
             throw new Error();
         }
-        System.out.printf("Saw %d edges, (%d nodes, %d edges)%n", lineNo, g.order(), g.size());
+        verbose(LOGGER, "Read undirected multigraph with %d vertices, %d edges, and %d types", 
+                g.order(), g.size(), g.edgeTypes().size());
         return g;
     }
 

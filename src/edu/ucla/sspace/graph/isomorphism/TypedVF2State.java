@@ -521,7 +521,8 @@ public class TypedVF2State implements State {
      * {@inheritDoc}
      */
     public void backTrack() {
-        assert coreLen - origCoreLen <= 1;
+//         assert coreLen - origCoreLen <= 1 : "coreLen - origCoreLen ("
+//             + (coreLen - origCoreLen) + ") > 1";
         assert addedNode1 != NULL_NODE;
         
         if (origCoreLen < coreLen) {

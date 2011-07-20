@@ -25,6 +25,7 @@ import java.lang.reflect.Array;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -128,6 +129,7 @@ public final class Graphs {
     private static <E extends Edge> int shuffleInternal(
                               Graph<E> g, Set<E> edges, int shufflesPerEdge) {
         int totalShuffles = 0;
+        int origSize = g.size();
         int numEdges = edges.size();
         if (numEdges < 2)
             return 0;
@@ -206,7 +208,7 @@ public final class Graphs {
                 // again, they don't point to old edges
                 edgeArray[i] = swapped1;
                 edgeArray[j] = swapped2;
-                assert g.size() == numEdges 
+                assert g.size() == origSize 
                     : "Added an extra edge of either " + swapped1 + " or " + swapped2;
             }
         }
@@ -245,13 +247,22 @@ public final class Graphs {
             throw new IllegalArgumentException("must shuffle at least once");
 
         int totalShuffles = 0;
-        Set<Integer> vertices = g.vertices();
+        int order = g.order();
+        int size = g.size();
+        
         // Iterate through all of the types in the graph, shuffling only edges
-        // of that type
-        for (T type : g.edgeTypes()) {
+        // of that type.  The shuffling process per type could potentially alter
+        // the state of the map's type mapping.  Therefore, copy the set of edge
+        // types prior to mutating the map in order to avoid a
+        // ConcurrentModificationException
+        Set<T> types = new HashSet<T>(g.edgeTypes());
+        for (T type : types) {
             // Shuffle the edges of the current type only 
             totalShuffles += shuffleInternal(g, g.edges(type), shufflesPerEdge);
         }
+
+        assert order == g.order() : "Changed the number of vertices";
+        assert size == g.size() : "Changed the number of edges";
         return totalShuffles;
     }
 

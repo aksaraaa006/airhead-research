@@ -591,7 +591,7 @@ public class DirectedMultigraphTests {
             assertTrue(control.contains(e));        
     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testEdgeViewIteratorRemove() {
+    @Test public void testEdgeViewIteratorRemove() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         Set<DirectedTypedEdge<String>> edges = g.edges();
 
