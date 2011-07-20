@@ -66,6 +66,21 @@ public class ScaledDoubleVector implements DoubleVector {
     }
 
     /**
+     * Returns the vector whose values are scaled by this instance
+     */
+    public DoubleVector getBackingVector() {
+        return vector;
+    }
+
+    /**
+     * Returns the scalar multiple used by this instance to change the values of
+     * the backing vector
+     */
+    public double getScalar() {
+        return scale;
+    }
+
+    /**
      * {@inheritDoc}
      */
     public Double getValue(int index) {

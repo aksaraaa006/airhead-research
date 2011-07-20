@@ -154,7 +154,7 @@ public class RowMaskedMatrix implements Matrix {
             if (j < 0 || j >= matrix.rows())
                 throw new IllegalArgumentException("Cannot specify a row " +
                     "outside the original matrix dimensions:" + j);
-            rowToReal[i++] = j;
+            rowToReal[i] = j;
         }
         rows = rowToReal.length;
     }
