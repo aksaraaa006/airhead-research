@@ -21,6 +21,10 @@
 
 package edu.ucla.sspace.graph;
 
+/**
+ * An implementation of an edge that is both a {@link DirectedEdge} and a {@link
+ * TypedEdge}.
+ */
 public class SimpleDirectedTypedEdge<T> 
         implements DirectedTypedEdge<T>, java.io.Serializable {
 
@@ -54,7 +58,9 @@ public class SimpleDirectedTypedEdge<T>
     }
     
     /**
-     * {@inheritDoc}
+     * Returns {@code true} if {@code o} is an {@link Edge} whose vertices are
+     * oriented in the same way as this edge and the edge has the same edge
+     * type.  That is, the from and to vertices are identical.
      */
     public boolean equals(Object o) {
         if (o instanceof TypedEdge) {

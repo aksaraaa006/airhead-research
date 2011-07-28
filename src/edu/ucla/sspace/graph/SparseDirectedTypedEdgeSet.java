@@ -39,7 +39,8 @@ import edu.ucla.sspace.util.OpenIntSet;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.HashMultiMap;
 
-import gnu.trove.decorator.TIntSetDecorator;
+import gnu.trove.TDecorators;
+import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import gnu.trove.iterator.TIntIterator;
 
@@ -49,7 +50,9 @@ import gnu.trove.iterator.TIntIterator;
  * interface for interacting with edges on the basis of their type.
  */
 public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge<T>> 
-        implements EdgeSet<DirectedTypedEdge<T>> {
+        implements EdgeSet<DirectedTypedEdge<T>>, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
         
     /**
      * The vertex to which all edges in the set are connected
@@ -96,14 +99,21 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
      * {@inheritDoc}  The set of vertices returned by this set is immutable.
      */
     public Set<Integer> connected() {
-        Set<Integer> connected = new HashSet<Integer>();
-        TIntIterator in = inEdges.iterator();
-        while (in.hasNext())
-            connected.add(in.next());
-        TIntIterator out = outEdges.iterator();
-        while (out.hasNext())
-            connected.add(out.next());
-        return connected;
+        TIntHashSet connected = 
+            new TIntHashSet(Math.max(inEdges.size(), outEdges.size()));
+        connected.addAll(inEdges);
+        connected.addAll(outEdges);
+        return TDecorators.wrap(connected);
+
+//         Set<Integer> connected = new HashSet<Integer>();
+//         TIntIterator in = inEdges.iterator();
+//         while (in.hasNext())
+//             connected.add(in.next());
+//         TIntIterator out = outEdges.iterator();
+//         while (out.hasNext())
+//             connected.add(out.next());
+//         return connected;
+
 //         Collection<Set<Integer>> sets = new ArrayList<Set<Integer>>(2);
 //         sets.add(inEdges);
 //         sets.add(outEdges);
@@ -180,11 +190,19 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
 //     }
 
     public Set<Integer> predecessors() {
-        return new TIntSetDecorator(inEdges);
+        return TDecorators.wrap(inEdges);
+    }
+
+    TIntSet predecessorsPrimitive() {
+        return inEdges;
     }
 
     public Set<Integer> successors() {
-        return new TIntSetDecorator(outEdges);
+        return TDecorators.wrap(outEdges);
+    }
+
+    TIntSet successorsPrimitive() {
+        return outEdges;
     }
     
     /**

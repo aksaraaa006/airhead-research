@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.graph;
 
+/**
+ * An implementation of {@link DirectedEdge}
+ */
 public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -34,11 +37,19 @@ public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
         this.to = to;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     public <T extends Edge> T clone(int from, int to) {
         return (T)(new SimpleDirectedEdge(from, to));
     }   
-    
+
+    /**
+     * Returns {@code true} if {@code o} is an {@link Edge} whose vertices are
+     * oriented in the same way as this edge.  That is, the from and to vertices
+     * are identical.
+     */
     public boolean equals(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
@@ -47,23 +58,38 @@ public class SimpleDirectedEdge implements DirectedEdge, java.io.Serializable {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode() {
         return from ^ to;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     public <U extends Edge> U flip() {
         return (U)(new SimpleDirectedEdge(to, from));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int from() {
         return from;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int to() { 
         return to;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString() {
         return "(" + from + "->" + to + ")";
     }

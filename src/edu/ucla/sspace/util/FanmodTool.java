@@ -51,6 +51,7 @@ import edu.ucla.sspace.util.LineReader;
 import edu.ucla.sspace.util.LoggerUtil;
 import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.ObjectIndexer;
+import edu.ucla.sspace.util.SerializableUtil;
 import edu.ucla.sspace.util.TreeMultiMap;
 
 import java.awt.Color;
@@ -62,6 +63,7 @@ import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -90,34 +92,40 @@ public class FanmodTool {
         
         opts.addOption('h', "help", "Generates a help message and exits",
                           false, null, "Program Options");
-//         opts.addOption('w', "weighted", "Uses a weighted edge simiarity",
-//                           false, null, "Program Options");
-        opts.addOption('H', "makeHtml", "Generates an HTML rendering" +
-                       "of the significant motifs",
-                       true, "DIR", "Program Options");
-        opts.addOption('r', "randomGraphs", "The number of random graphs" +
-                       " to use for the null model (default: 1000)",
-                       true, "INT", "Program Options");
-        opts.addOption('z', "motifSize", "The number of vertices in the" +
-                       " identified motifs (default: 3)",
-                       true, "INT", "Program Options");
-        opts.addOption('m', "loadAsMultigraph", "Loads the input graph as " +
-                       "a multigraph",
-                       false, null, "Program Options");
-        opts.addOption('s', "useSimpleMotifs", "If searching for motifs in a " +
-                       "multigraph, counts only simple graphs as motifs",
-                       false, null, "Program Options");
-        opts.addOption('d', "loadAsDirectedGraph", "Loads the input graph as " +
-                       "a directed graph",
-                       false, null, "Program Options");
         opts.addOption('v', "verbose", "Turns on verbose output",
                           false, null, "Program Options");
         opts.addOption('V', "verbVerbose", "Turns on very verbose output",
                           false, null, "Program Options");
 
+        opts.addOption('r', "randomGraphs", "The number of random graphs" +
+                       " to use for the null model (default: 1000)",
+                       true, "INT", "Algorithm Options");
+        opts.addOption('z', "motifSize", "The number of vertices in the" +
+                       " identified motifs (default: 3)",
+                       true, "INT", "Algorithm Options");
+        opts.addOption('s', "useSimpleMotifs", "If searching for motifs in a " +
+                       "multigraph, counts only simple graphs as motifs",
+                       false, null, "Algorithm Options");
+
+//         opts.addOption('w', "weighted", "Uses a weighted edge simiarity",
+//                           false, null, "Input Options");
+        opts.addOption('d', "loadAsDirectedGraph", "Loads the input graph as " +
+                       "a directed graph",
+                       false, null, "Input Options");
+        opts.addOption('m', "loadAsMultigraph", "Loads the input graph as " +
+                       "a multigraph",
+                       false, null, "Input Options");
+
+        opts.addOption('o', "outputFormat", "The type of format to use " +
+                       "when writing the graphs (default: serialized)",
+                       true, "FORMAT", "Output Options");        
+        opts.addOption('H', "makeHtml", "Generates an HTML rendering" +
+                       "of the significant motifs",
+                       true, "DIR", "Output Options");
+
         opts.parseOptions(args);
 
-        if (opts.numPositionalArgs() < 2 || opts.hasOption("help")) {
+        if (opts.numPositionalArgs() < 3 || opts.hasOption("help")) {
             usage(opts);
             return;
         }
@@ -208,6 +216,16 @@ public class FanmodTool {
                     imgScript.close();
                     pw.close();
                 }
+                
+                info(LOGGER, "writing final motifs to %s", 
+                     opts.getPositionalArg(2));
+                // Write the results to file
+                File output = new File(opts.getPositionalArg(2));
+                // Copy the motifs to a new HashSet to avoid writing the result
+                // as a KeySet, which includes the fanmod result values.
+                SerializableUtil.save(
+                    new HashSet<Multigraph<String,
+                        DirectedTypedEdge<String>>>(motifToZScore.keySet()), output);
             }
 
             else if (isMultigraph) {
@@ -261,6 +279,17 @@ public class FanmodTool {
                     pw.println("</table></body></html>");
                     imgScript.close();
                     pw.close();
+
+                    info(LOGGER, "writing final motifs to %s", 
+                         opts.getPositionalArg(2));
+                    // Write the results to file
+                    File output = new File(opts.getPositionalArg(2));
+                    // Copy the motifs to a new HashSet to avoid writing the result
+                    // as a KeySet, which includes the fanmod result values.
+                    SerializableUtil.save(
+                        new HashSet<Multigraph<String,TypedEdge<String>>>(
+                            motifToZScore.keySet()), output);
+
                 }
             }
 

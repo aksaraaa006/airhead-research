@@ -26,12 +26,25 @@ import java.util.Set;
 import edu.ucla.sspace.matrix.ArrayMatrix;
 import edu.ucla.sspace.matrix.Matrix;
 
+/**
+ * An implementation of the <a
+ * href="http://en.wikipedia.org/wiki/Floyd-Warshall_algorithm">Floyd-Warshall</a>
+ * algorithm for computing all the pair-wise shortest paths in O(n<sup>3</sup>)
+ * time.  
+ */
 public class FloydsAlgorithm {
 
     public FloydsAlgorithm() { }
 
+    /**
+     * Computes the pair-wise shortest paths between the vertices in {@code g},
+     * returning a matrix of the path lengths.
+     */
     public Matrix computeAllPairsDistance(Graph<? extends Edge> g) {
         int verts = g.order();
+
+        // NOTE: this code is going to break if the graph does not have
+        // contiguous indices starting at 0.  Perhaps perform a compaction step?
 
         // dm = shorthand for distanceMatrix
         Matrix dm = new ArrayMatrix(verts, verts);
@@ -79,5 +92,4 @@ public class FloydsAlgorithm {
         }
         return dm;
     }
-
 }

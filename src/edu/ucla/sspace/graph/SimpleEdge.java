@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.graph;
 
+/**
+ * An implementation of an undirected {@link Edge}.
+ */
 public class SimpleEdge implements Edge, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -34,11 +37,18 @@ public class SimpleEdge implements Edge, java.io.Serializable {
         this.to = to;
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     public <T extends Edge> T clone(int from, int to) {
         return (T)(new SimpleEdge(from, to));
     }   
     
+    /**
+     * Returns {@code true} if {@code o} is an {@link Edge} with the same
+     * vertices (independent of that edge's orientation).
+     */
     public boolean equals(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
@@ -48,23 +58,38 @@ public class SimpleEdge implements Edge, java.io.Serializable {
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode() {
         return from ^ to;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     public <T extends Edge> T flip() {        
         return (T)(new SimpleEdge(to, from));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int from() {
         return from;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int to() { 
         return to;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString() {
         return "(" + from + "<-->" + to + ")";
     }

@@ -142,16 +142,11 @@ public final class Graphs {
         @SuppressWarnings("unchecked")
         E[] edgeArray = (E[])Array.newInstance(tmp.getClass(), 0);
         edgeArray = edges.toArray(edgeArray);
-//         System.out.printf("num edges: %d, array length: %d%n", numEdges, edgeArray.length);
-//         if (edgeArray.length != numEdges)
-//             System.out.println(edges);
         Random rand = new Random();
 
         for (int i = 0; i < numEdges; ++i) {
             
             for (int swap = 0; swap < shufflesPerEdge; ++swap) {
-//                 System.out.println("Current graph: " + g);
-
                 // Pick another vertex to conflate with i that is not i
                 int j = i; 
                 while (i == j)
@@ -168,37 +163,23 @@ public final class Graphs {
                 if (!(e2 instanceof DirectedEdge) && rand.nextDouble() < .5)
                     e2 = e2.<E>flip();
 
-                // System.out.printf("Swapping edges %d and %d: %s, %s...", i, j, e1, e2);
-                
                 // Swap their end points
                 E swapped1 = e1.<E>clone(e1.from(), e2.to());
                 E swapped2 = e2.<E>clone(e2.from(), e1.to());
             
                 // Check that the new edges do not already exist in the graph
                 // and that they are not self edges
-                if (g.contains(swapped1)) {
-                    //System.out.println("Cannot swap. Graph already contains " + swapped1);
+                if (g.contains(swapped1) || g.contains(swapped2))
                     continue;
-                }
-                if (g.contains(swapped2)) {
-                    //System.out.println("Cannot swap. Graph already contains " + swapped2);
-                    continue;
-                }
                 else if (swapped1.from() == swapped1.to()
                          || swapped2.from() == swapped2.to()) {
-                    //System.out.println("Cannot swap, self edge");
                     continue;
                 }
-                //System.out.println("swap successful");
                 totalShuffles++;
             
-                // System.out.printf("Removing %s and %s...%n", edges.get(i), edges.get(j));
-
                 // Remove the old edges
                 boolean r1 = g.remove(edgeArray[i]);
                 boolean r2 = g.remove(edgeArray[j]);
-                
-//                 System.out.println(r1 && r2);
                 
                 // Put in the swapped-end-point edges
                 g.add(swapped1);
@@ -208,8 +189,8 @@ public final class Graphs {
                 // again, they don't point to old edges
                 edgeArray[i] = swapped1;
                 edgeArray[j] = swapped2;
-                assert g.size() == origSize 
-                    : "Added an extra edge of either " + swapped1 + " or " + swapped2;
+                assert g.size() == origSize : "Added an extra edge of either "
+                    + swapped1 + " or " + swapped2;
             }
         }
         return totalShuffles;

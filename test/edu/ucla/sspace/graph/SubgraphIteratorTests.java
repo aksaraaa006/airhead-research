@@ -391,5 +391,4 @@ public class SubgraphIteratorTests {
         }
         assertEquals(25, numSubgraphs);        
     }
-
 }
