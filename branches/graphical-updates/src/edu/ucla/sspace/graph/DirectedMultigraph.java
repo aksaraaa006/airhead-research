@@ -40,11 +40,17 @@ import java.util.Set;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.CombinedSet;
+import edu.ucla.sspace.util.DisjointSets;
 import edu.ucla.sspace.util.IntSet;
 import edu.ucla.sspace.util.OpenIntSet;
 
+import gnu.trove.TDecorators;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
+
 /**
- *
+ * A directed multigraph implementation.  
  *
  * @param T a class type whose values are used to distinguish between edge types
  * 
@@ -61,17 +67,15 @@ public class DirectedMultigraph<T>
      * A mapping from an edge type to the graph that contains all edges with
      * that type.
      */
-    //private final Map<T,Graph<DirectedTypedEdge<T>>> typeToEdges;
     private final Map<T,DirectedTypedGraph<T>> typeToEdges;
-    
-    // private final IntSet vertices;
-    private final Set<Integer> vertices;
 
     /**
-     * An interal view of the total set of edges across each of the
-     * type-specific graphs
+     * The set of vertices in this mutligraph.  This set is maintained
+     * independently of the vertex sets in the type-specific edge graphs to
+     * provide a fast, type independent state of which vertices are in the
+     * graph.
      */
-    private EdgeView edges;
+    private final TIntSet vertices;
 
     /**
      * A collection of all the subgraphs that have been returned from this
@@ -90,8 +94,7 @@ public class DirectedMultigraph<T>
     public DirectedMultigraph() { 
         typeToEdges = //new HashMap<T,Graph<DirectedTypedEdge<T>>>();
             new HashMap<T,DirectedTypedGraph<T>>();
-        vertices = new HashSet<Integer>();
-        edges = new EdgeView();
+        vertices = new TIntHashSet();
         subgraphs = new ArrayList<WeakReference<Subgraph>>();
     }
 
@@ -192,16 +195,16 @@ public class DirectedMultigraph<T>
     /**
      * {@inheritDoc}
      */
-    public DirectedMultigraph<T> copy(Set<Integer> vertices) {
+    public DirectedMultigraph<T> copy(Set<Integer> toCopy) {
         // special case for If the called is requesting a copy of the entire
         // graph, which is more easily handled with the copy constructor
-        if (vertices.size() == order() && vertices.equals(vertices()))
+        if (toCopy.size() == order() && toCopy.equals(vertices()))
             return new DirectedMultigraph<T>(this);
         DirectedMultigraph<T> g = new DirectedMultigraph<T>();
         int order = order();
         int avgDegree = (order > 0) ? size() / order : 0;
-        boolean useAdjacencyList = vertices.size() < avgDegree;
-        for (int v : vertices) {
+        boolean useAdjacencyList = toCopy.size() > avgDegree;
+        for (int v : toCopy) {
             if (!contains(v))
                 throw new IllegalArgumentException(
                     "Requested copy with non-existant vertex: " + v);
@@ -211,17 +214,35 @@ public class DirectedMultigraph<T>
             // the number of requested vertices squared.  Therefore, use the
             // adjacency list
             if (useAdjacencyList) {
-                for (DirectedTypedEdge<T> e : getAdjacencyList(v)) {
-                    if (vertices.contains(e.from()) 
-                            && vertices.contains(e.to()))
-                        g.add(e);
+                // Iterate through the type-specific graphs, checking for edges
+                // between these two vertices.  This avoid creating a combined
+                // set.
+                for (DirectedTypedGraph<T> dg : typeToEdges.values()) {
+                    // Pull out the edge set for this vertex from the graph,
+                    // which will serve as our adjacency list
+                    SparseDirectedTypedEdgeSet<T> adj = dg.getEdgeSet(v);
+                    if (adj == null)
+                        continue;
+                    // Iterate over the connected vertices, rather than edges to
+                    // avoid creating unnecessary edge types
+                    for (Integer v2 : adj.connected()) {
+                        // Avoid unnecessary iteration and edge adding by
+                        // enforcing that the other vertex's index must be
+                        // greater.  Then check that the other vertex is in the
+                        // set
+                        if (v < v2 && toCopy.contains(v2)) {
+                            // Add all the edges that connect these two
+                            for (DirectedTypedEdge<T> e : adj.getEdges(v2))
+                                g.add(e);
+                        }
+                    }
                 }
             }
             // If the number of requested vertices is small, then just try all
             // pairwise comparisons, as the adjacency lists would likely contain
             // many edges to vertices not in this subgraph
             else {
-                for (int v2 : vertices) {
+                for (int v2 : toCopy) {
                     if (v == v2)
                         break;
                     // Iterate through the type-specific graphs, checking for
@@ -252,7 +273,7 @@ public class DirectedMultigraph<T>
      * Returns the set of typed edges in the graph
      */
     public Set<DirectedTypedEdge<T>> edges() {
-        return edges;
+        return new EdgeView();
     }
 
     /**
@@ -313,10 +334,18 @@ public class DirectedMultigraph<T>
             if (!e.isEmpty()) {
                 sets.add(e);
             }
-        }
-        return (sets.isEmpty()) 
-            ? Collections.<DirectedTypedEdge<T>>emptySet()
-            : new CombinedSet<DirectedTypedEdge<T>>(sets);
+        }        
+        if (sets.isEmpty()) 
+            return Collections.<DirectedTypedEdge<T>>emptySet();
+        // If we only had edges of a single type between the vertices, don't
+        // bother wrapping the set.
+        else if (sets.size() == 1)
+            return sets.iterator().next();
+        // Since we know that the sets are disjoint from each other by virtue of
+        // having different edge types, return a DisjointSets, rather than a
+        // CombinedSet, which has better performance
+        else
+            return new DisjointSets<DirectedTypedEdge<T>>(sets);
     }
 
 
@@ -448,15 +477,24 @@ public class DirectedMultigraph<T>
 //                     preds.add(e.from());
 //         }
 
-        Set<Integer> preds = new HashSet<Integer>();
-         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
-             Set<DirectedTypedEdge<T>> edges = g.getEdgeSet(vertex);
-             if (edges != null) {
-                 for (DirectedTypedEdge<T> e : edges)
-                     if (e.to() == vertex)
-                         preds.add(e.from());
-             }
+        // Set<Integer> preds = new HashSet<Integer>();
+        TIntHashSet preds = new TIntHashSet();
+
+//         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+//             Set<DirectedTypedEdge<T>> edges = g.getEdgeSet(vertex);
+//             if (edges != null) {
+//                 for (DirectedTypedEdge<T> e : edges)
+//                     if (e.to() == vertex)
+//                         preds.add(e.from());
+//             }
+//         }
+
+        for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+            SparseDirectedTypedEdgeSet<T> edges = g.getEdgeSet(vertex);
+             if (edges != null) 
+                 preds.addAll(edges.predecessorsPrimitive());
         }
+
 
 //         Set<Integer> preds = new HashSet<Integer>();
 //         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
@@ -465,7 +503,7 @@ public class DirectedMultigraph<T>
 //                 preds.addAll(edges.predecessors());
 //         }
         
-        return preds;
+        return TDecorators.wrap(preds);
     }
 
     /**
@@ -573,21 +611,31 @@ public class DirectedMultigraph<T>
 //             sets.add(g.successors(vertex));
 //         return new CombinedSet<Integer>(sets);
 
-        Set<Integer> succs = new HashSet<Integer>();
+
 //         for (Graph<DirectedTypedEdge<T>> g : typeToEdges.values()) {
 //             for (DirectedTypedEdge<T> e : g.getAdjacencyList(vertex))
 //                 if (e.from() == vertex)
 //                     succs.add(e.to());
 //         }
 
-         for (DirectedTypedGraph<T> g : typeToEdges.values()) {
-             Set<DirectedTypedEdge<T>> edges = g.getEdgeSet(vertex);
-             if (edges != null) {
-                 for (DirectedTypedEdge<T> e : edges)
-                     if (e.from() == vertex)
-                         succs.add(e.to());
-             }
-         }
+        //Set<Integer> succs = new HashSet<Integer>();
+        TIntHashSet succs = new TIntHashSet();
+
+//          for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+//              Set<DirectedTypedEdge<T>> edges = g.getEdgeSet(vertex);
+//              if (edges != null) {
+//                  for (DirectedTypedEdge<T> e : edges)
+//                      if (e.from() == vertex)
+//                          succs.add(e.to());
+//              }
+//          }
+
+
+        for (DirectedTypedGraph<T> g : typeToEdges.values()) {
+            SparseDirectedTypedEdgeSet<T> edges = g.getEdgeSet(vertex);
+             if (edges != null) 
+                 succs.addAll(edges.successorsPrimitive());
+        }
 
 //          for (DirectedTypedGraph<T> g : typeToEdges.values()) {
 //              SparseDirectedTypedEdgeSet<T> edges = g.getEdgeSet(vertex);
@@ -595,7 +643,7 @@ public class DirectedMultigraph<T>
 //                  succs.addAll(edges.successors());
 //          }
 
-        return succs;
+         return TDecorators.wrap(succs);
     }
 
     /**
@@ -634,7 +682,7 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public Set<Integer> vertices() {
-        return Collections.unmodifiableSet(vertices);
+        return Collections.unmodifiableSet(TDecorators.wrap(vertices));
     }
 
 
@@ -980,9 +1028,17 @@ public class DirectedMultigraph<T>
                 if (!edges.isEmpty())
                     sets.add(edges);
             }
-            return (sets.isEmpty()) 
-                ? Collections.<DirectedTypedEdge<T>>emptySet() 
-                : new CombinedSet<DirectedTypedEdge<T>>(sets);
+            if (sets.isEmpty()) 
+                return Collections.<DirectedTypedEdge<T>>emptySet();
+            // If we only had edges of a single type between the vertices, don't
+            // bother wrapping the set.
+            else if (sets.size() == 1)
+                return sets.iterator().next();
+            // Since we know that the sets are disjoint from each other by
+            // virtue of having different edge types, return a DisjointSets,
+            // rather than a CombinedSet, which has better performance
+            else
+                return new DisjointSets<DirectedTypedEdge<T>>(sets);
         }
 
         /**
@@ -991,13 +1047,7 @@ public class DirectedMultigraph<T>
         public Set<Integer> getNeighbors(int vertex) {
             if (!vertexSubset.contains(vertex))
                 return Collections.<Integer>emptySet();
-//             Set<Integer> neighbors = 
-//                 DirectedMultigraph.this.getNeighbors(vertex);
-//             // If the set of neighbors is larger than the number of vertices in
-//             // this subgraph, then just use the set of vertices
-//             return (neighbors.size() > vertexSubset.size())
             return new SubgraphNeighborsView(vertex, vertexSubset);
-                // : new SubgraphNeighborsView(vertex, neighbors);
         }
 
         /**

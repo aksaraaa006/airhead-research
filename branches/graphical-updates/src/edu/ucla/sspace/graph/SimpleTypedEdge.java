@@ -21,6 +21,9 @@
 
 package edu.ucla.sspace.graph;
 
+/**
+ * An implementation of a {@link TypedEdge}.
+ */
 public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -55,7 +58,9 @@ public class SimpleTypedEdge<T> implements TypedEdge<T>, java.io.Serializable {
     }
     
     /**
-     * {@inheritDoc}
+     * Returns {@code true} if {@code o} is an {@link TypedEdge} with the same
+     * edge type and has the same vertices (independent of that edge's
+     * orientation).
      */
     public boolean equals(Object o) {
         if (o instanceof Edge) {

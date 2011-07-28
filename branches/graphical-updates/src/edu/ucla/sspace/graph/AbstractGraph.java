@@ -53,13 +53,14 @@ import edu.ucla.sspace.util.OpenIntSet;
  *
  * <p> This class support all optional {@link Graph} methods provided that the
  * {@link EdgeSet} implementations used by the subclass also support them.
- * Furthermore, all methods that return collections of {@link Edge} instance can
- * be used to modify the state of this graph by any of their respective mutation
- * methods (e.g., adding or removing {@code Edge} instances).  In addition,
- * changes to the set of vertices returned by {@link #vertices()} has the same
- * effect as adding and removing vertices to this graph.  Subclasses that wish
- * to avoid this behavior may override these calls and wrap this classes return
- * value in a {@link Collections#unmodifiableSet(Set)}.
+ * Furthermore, all methods that return non-empty collections of {@link Edge}
+ * instance can be used to modify the state of this graph by any of their
+ * respective mutation methods (e.g., adding or removing {@code Edge}
+ * instances).  In addition, changes to the set of vertices returned by {@link
+ * #vertices()} has the same effect as adding and removing vertices to this
+ * graph.  Subclasses that wish to avoid this behavior may override these calls
+ * and wrap this classes return value in a {@link
+ * Collections#unmodifiableSet(Set)}.
  *
  * @author David Jurgens
  */
@@ -109,8 +110,7 @@ public abstract class AbstractGraph<T extends Edge,S extends EdgeSet<T>>
      */
     public AbstractGraph() {
         mods = 0;
-        vertexToEdges = // new IntegerMap<EdgeSet<T>>();
-            new HashMap<Integer,S>();
+        vertexToEdges = new HashMap<Integer,S>();
         subgraphs = new ArrayList<WeakReference<Subgraph>>();
     }    
 

@@ -29,6 +29,9 @@ import edu.ucla.sspace.graph.*; // FIX
 
 import edu.ucla.sspace.util.Pair;
 
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+
 import static edu.ucla.sspace.graph.isomorphism.State.NULL_NODE;
 
 
@@ -111,23 +114,14 @@ public abstract class AbstractIsomorphismTester implements IsomorphismTester {
         }
         if (isContiguous)
             return g;
+
         // Map the vertices to a contiguous range
-        Map<Integer,Integer> vMap = new HashMap<Integer,Integer>();
-        for (int i : g.vertices()) {
-            vMap.put(i, vMap.size());
-        }
+        TIntIntMap vMap = new TIntIntHashMap(g.order());
+        int j = 0;
+        for (int i : g.vertices()) 
+            vMap.put(i, j++);
         
-        // TERRIBLE HACK:
         Graph<E> copy = g.copy(Collections.<Integer>emptySet());
-//         if (g instanceof DirectedMultigraph)
-//             copy = (Graph<E>)(new DirectedMultigraph<Object>());
-//         else if (g instanceof UndirectedMultigraph)
-//             copy = (Graph<E>)(new UndirectedMultigraph<Object>());
-//         else if (g instanceof DirectedGraph)
-//             copy = (Graph<E>)(new SparseDirectedGraph());
-//         else
-//             copy = new GenericGraph<E>();
-//         boolean isMultigraph = false;
         for (int i = 0; i < order; ++i)
             copy.add(i);
         for (E e : g.edges()) 

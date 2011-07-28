@@ -32,9 +32,11 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-import gnu.trove.decorator.TIntSetDecorator;
-import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.TDecorators;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.stack.TIntStack;
+import gnu.trove.stack.array.TIntArrayStack;
 
 // Logger helper methods
 import static edu.ucla.sspace.util.LoggerUtil.info;
@@ -84,16 +86,22 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
     private final int subgraphSize;
 
     /**
-     * An interator over the vertices of {@code g}.
+     * An interator over the vertices of {@code g}, which are each used to a
+     * seed to generate sequences of subgraphs
      */
     private Iterator<Integer> vertexIter;
 
     /**
-     * An internal queue of the next sequence of subgraphs to return.  This
-     * queue is periodically filled through expanding the next series of
-     * subgraphs for a vertex.
+     * The current pseudo-iterator for all the subgraphs that can be generated
+     * from a particular vertex
      */
-    private Queue<G> nextSubgraphs;
+    private Extension ext;
+
+    /**
+     * The next subgraph to return or {@code null} if no further subgraphs
+     * remain
+     */
+    private G next;    
 
     /**
      * Constructs an iterator over all the subgraphs of {@code g} with the
@@ -117,25 +125,25 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             throw new IllegalArgumentException("size must not be greater " 
                 + "than the number of vertices in the graph");
         vertexIter = g.vertices().iterator();
-//         nextSubgraphs = new ArrayDeque<G>();
-         advance();
+        advance();
     }
 
-    private Extension ext;
-
-    private G next;
-    
+    /**
+     * Advances the state of this iterating, updating {@code next} to be the
+     * next graph to return or {@code null} if no further subgraphs remain.
+     */
     private void advance() {
         next = null;
         while (next == null) {
-            if (!vertexIter.hasNext())
-                return;
             // If 
             if (ext != null) {
                 next = ext.next();
                 if (next != null)
                     return;
             }
+            if (!vertexIter.hasNext())
+                return;
+
             // Otherwise the extension is null or there are no more remaining
             // subgraphs in it, so create a new 
             Integer nextVertex = vertexIter.next();
@@ -145,7 +153,9 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
         }
     }
 
-    public boolean hasNext() { return next != null; }
+    public boolean hasNext() { 
+        return next != null; 
+    }
 
     public G next() { 
         if (!hasNext()) 
@@ -156,132 +166,6 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
     }
 
     /**
-     * If the {@code nextSubgraphs} queue is empty, expands the graph frontier
-     * of the next available vertex, if one exists, and the subgraphs reachable
-     * from it to the queue.
-     */
-    private void advance2() {
-        while (nextSubgraphs.isEmpty() && vertexIter.hasNext()) {
-            Integer nextVertex = vertexIter.next();
-            veryVerbose(LOGGER, "Loading next round of subgraphs starting " +
-                    "from vertex %d", nextVertex);
-            // Determine the set of vertices that are greater than this vertex
-            // Set<Integer> extension = new HashSet<Integer>();
-            Set<Integer> neighbors = g.getNeighbors(nextVertex);
-            TIntHashSet extension = new TIntHashSet(); //neighbors.size());
-            for (Integer v : neighbors)
-                if (v > nextVertex)
-                    extension.add(v);
-            TIntHashSet subgraph = new TIntHashSet();
-            subgraph.add(nextVertex);
-            extendSubgraph(subgraph, extension, nextVertex);
-        }
-    }
-
-    /**
-     * For the set of vertices in {@code subgraph}, and the next set of
-     * reachable vertices in {@code extension}, creates the non-duplicated
-     * subgraphs and adds them to {@code nextSubgraphs}.
-     *
-     * @param subgraph the current set of vertices making up the subgraph
-     * @param extension the set of vertices that may be added to {@code
-     *        subgraph} to expand the current subgraph
-     * @param v the vertex from which the next expansion will take place
-     */
-    private void extendSubgraph(TIntHashSet vertsInSubgraph, 
-                                TIntHashSet extension, 
-                                Integer v) {
-
-        TIntIterator iter = extension.iterator();
-        while (extension.size() > 0) {
-            // Choose and remove an aribitrary vertex from the extension            
-            Integer w = iter.next();
-            iter.remove();
-            
-            // If we found a set of vertices that match the required subgraph
-            // size, create a snapshot of it from the original graph and
-            if (vertsInSubgraph.size() + 1 == subgraphSize) {
-                vertsInSubgraph.add(w);
-                // The return type of copy() isn't parameterized on the type of
-                // the graph itself.  However, we know that all the current
-                // interfaces confirm to the convention that the type is refined
-                // (narrowed, really), so we perform the cast here to give the
-                // user back the more specific type.
-
-                @SuppressWarnings("unchecked")
-                G sub = (G)g.copy(new TIntSetDecorator(vertsInSubgraph));
-                nextSubgraphs.add(sub);
-                // If the extension is loading many subgraphs, let the user know
-                if (nextSubgraphs.size() % 10000 == 0)
-                    veryVerbose(LOGGER, "Loaded %d subgraphs so far", 
-                                nextSubgraphs.size());
-            }
-
-            else {
-                // The next extension is formed from all edges to vertices whose
-                // indices are greater than the currently selected vertex, w,
-                // and that point to a vertex in the exclusive neighborhood of
-                // w.  The exclusive neighborhood is defined relative to a set
-                // of vertices N: all vertices that are adjacent to w but are
-                // not in N or the neighbors of N.  In this case, N is the
-                // current subgraph's vertices
-                TIntHashSet nextExtension = new TIntHashSet(extension);
-
-                next_vertex:
-                for (Integer n : g.getNeighbors(w))
-                    // Perform the fast vertex value test and check for whether
-                    // the vertex is currently in the subgraph
-                    if (n > v && !vertsInSubgraph.contains(n)) {
-                        // Then perform the most expensive
-                        // exclusive-neighborhood test that looks at the
-                        // neighbors of the vertices in the current subgraph
-                        TIntIterator subIter = vertsInSubgraph.iterator();
-                        while (subIter.hasNext()) {
-                            int inCur = subIter.next();
-                            // If we find n within the neighbors of a vertex in
-                            // the current subgraph, then skip the remaining
-                            // checks and examine another vertex adjacent to w.
-                            if (g.contains(inCur, n))
-                                continue next_vertex;
-                        }
-                        // Otherwise, n is in the exclusive neighborhood of w,
-                        // so add it to the future extension.
-                        nextExtension.add(n);
-                    }
-                
-                vertsInSubgraph.add(w);
-                extendSubgraph(vertsInSubgraph, nextExtension, v);
-            }
-
-            // Once all the potential subgraphs have been enumerated, remove the
-            // added vertex from the set of vertices currently in this subgraph.
-            vertsInSubgraph.remove(w);
-        }
-    }
-
-    /**
-     * Returns {@code true} if there are more subgraphs to return
-     */
-    public boolean hasNext2() {
-        return !nextSubgraphs.isEmpty();
-    }
-
-    /**
-     * Returns the next subgraph from the backing graph.
-     */ 
-    public G next2() {
-        if (nextSubgraphs.isEmpty()) 
-            throw new NoSuchElementException();
-        G next = nextSubgraphs.poll();
-        
-        // If we've exhausted the current set of subgraphs, queue up more of
-        // them, generated from the remaining vertices
-        if (nextSubgraphs.isEmpty())
-            advance();
-        return next;
-    }
-
-    /**
      * Throws an {@link UnsupportedOperationException} if called.
      */ 
     public void remove() {
@@ -289,21 +173,42 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             "Cannot remove subgraphs during iteration");
     }
 
+    /**
+     * This class is a pseudo-iterator for generate a sequence of subgraph
+     * extensions from a seed vertex in the input graph.  Interally the class
+     * represents the enumeration state using a stack of possible subgraphs,
+     * which avoids the memory intensive recursive implementation.
+     */
     class Extension {
         
-        final int v;
+        /**
+         * The vertex in the graph from which subgraph extensions are generated
+         */
+        private final int v;
 
-        Deque<Integer> vertsInSubgraph;
+        /**
+         * The current set of vertices in the subgraph.  Note that although this
+         * is a {@code Deque}, it is maintained as a set.  A deque is used to
+         * quickly push and pop vertices out of the set based on insertion order.
+         */
+        private final Deque<Integer> vertsInSubgraph;
 
-        Deque<TIntHashSet> extensionStack;
+        /**
+         * A stack of sets of vertices that can be potentially combined to
+         * generate new subgraphs.
+         */
+        private final Deque<TIntHashSet> extensionStack;
 
+        /**
+         * Creates a new extension for the provided vertex in the backing graph
+         */
         public Extension(int v) {
             this.v = v;
             vertsInSubgraph = new ArrayDeque<Integer>();
             extensionStack = new ArrayDeque<TIntHashSet>();
 
             Set<Integer> neighbors = g.getNeighbors(v);
-            TIntHashSet extension = new TIntHashSet(); //neighbors.size());
+            TIntHashSet extension = new TIntHashSet();
             for (Integer u : neighbors)
                 if (u > v)
                     extension.add(u);
@@ -312,6 +217,10 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             extensionStack.push(extension);
         }
         
+        /**
+         * Returns the next graph in enumeration or {@code null} if no further
+         * graphs can be generated from this {@code Extension}'s seed vertex.
+         */
         public G next() {
             // Load the next set of extensions to the current subgraph
             TIntHashSet curExtension = extensionStack.peek();
@@ -344,7 +253,7 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             // really), so we perform the cast here to give the user back the
             // more specific type.
             @SuppressWarnings("unchecked")
-            G next = (G)g.copy(new HashSet<Integer>(vertsInSubgraph));
+                G next = (G)g.copy(new HashSet<Integer>(vertsInSubgraph));
 
             // Remove the most recently added vertex from the set of vertices so
             // that the next call to next() can add its vertex
@@ -360,6 +269,14 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             return next;            
         }
 
+        /**
+         * Loads the next set of vertices that can be potentially in the
+         * subgraph, updating the {@code extensionStack} as necessary.  This
+         * method is somewhat equivalent to a recursive call of
+         * enumerateSubgraph, but minimizes the state that needs to be
+         * maintained.  If no possible extensions remain, the {@code
+         * extensionStack} will be empty upon this method's return.
+         */
         private void loadNextExtension() {
             // Get the set of vertices that are on the top of the stack
             // currently
@@ -375,7 +292,6 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             Integer w = iter.next();
             iter.remove();
 
-
             // The next extension is formed from all edges to vertices whose
             // indices are greater than the currently selected vertex, w,
             // and that point to a vertex in the exclusive neighborhood of
@@ -384,7 +300,6 @@ public class SubgraphIterator<E extends Edge,G extends Graph<E>>
             // not in N or the neighbors of N.  In this case, N is the
             // current subgraph's vertices
             TIntHashSet nextExtension = new TIntHashSet(extension);
-
             next_vertex:
             for (Integer n : g.getNeighbors(w)) {
                 // Perform the fast vertex value test and check for whether

@@ -83,10 +83,6 @@ public class Statistics {
         return entropy;
     }
 
-    public static int factorial(int i) {
-        return -1;
-    }
-
     /**
      * Returns the base-2 logarithm of {@code d}.
      */
