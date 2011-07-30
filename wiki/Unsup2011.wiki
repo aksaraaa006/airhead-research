@@ -1,0 +1,157 @@
+#summary A description of the experiments run for [https://sites.google.com/site/emnlpworkshop2011unsupnlp/ UNSUP 2011] workshop.
+
+<wiki:toc max_depth="2" />
+
+A full description and results may be found in the workshop paper.
+
+
+= Abstract =
+
+Word Sense Induction (WSI) is an unsupervised learning approach to discovering
+the different senses of a word from its contextual uses.  A core challenge to
+WSI approaches is distinguishing between related and possibly similar senses of
+a word.  Current WSI evaluation techniques have yet to analyze the specific
+impact of similarity on accuracy.  Therefore, we present a new WSI evaluation
+that quantifies the relationship between the relatedness of a word's senses and
+the ability of a WSI algorithm to distinguish between them.  Furthermore, we
+perform an analysis on sense confusions in SemEval-2 WSI task according to sense
+similarity.  Both analyses for a representative selection of clustering-based
+WSI approaches reveals that performance is most sensitive to the clustering
+algorithm and not the lexical features used.
+
+= Introduction =
+
+Automatically learn the different senses of words and then label instances of
+the word with their correct sense.  Word Sense Induction is an unsupervised form
+of Word Sense Disambiguation
+
+== Problem Statement ==
+
+Discovering the multiple senses is frequently confounded by the relationships
+between a word’s senses.  While homonyms such as “bass” or “bank” have unrelated
+senses, many polysemous words have interrelated senses, with lexicographers
+often in disagreement for the number of fine-grained senses (Palmer et al.,
+2007).
+ 	
+The difficulty of automatically distinguishing and learning such senses is
+proportional to their similarity because of the increasing likelihood of the two
+senses sharing similar contexts.  Sense similarity is a known challenge for Word
+Sense Disambiguation (Chugur et al., 2002; McCarthy, 2006).
+ 	
+Our contribution is quantifying how sense similarity affects sense induction,
+where senses are associated with an automatically selected set of features.
+
+== Example Problem == 
+
+Which sense of“won”is present in the following sentence?
+
+ * The sprinter won the  gold medal with a world record time.
+
+ #  be the winner in a contest or competition; be victorious
+ #  acquire, win, gain 
+ #  gain, advance, win, pull ahead, make headway, get ahead
+ #  succeed, win, come through, deliver the goods
+
+The high similarity of some senses increases the difficulty of automatically
+inducing such senses from example contexts
+
+= Lexical Features =
+
+Context can be modeled in many ways.  We selected four types of lexical
+features, representative of many WSI models.
+
+ # Word Co-occurrence
+ # Word Ordering
+ # Parts of Speech
+ # Dependency Relations
+
+= Clustering Algorithms = 
+
+We selected four clustering algorithms according to three criteria:
+
+ # previously applied to text analysis
+ # efficiently handles large data sets
+ # automatically selects the number of clusters
+
+= Experiment 1: Similarity-based Pseudo-word Discrimination =
+
+== Summary == 
+
+Pseudo-word discrimination creates an artificial data set where two words are
+replaced throughout a corpus with a pseudo-word.  The task is decide which of
+the original words was present given the pseudo-word.  We create pseudo-words
+from words with varying degrees of semantic similarity to test how
+discrimination accuracy is affected.
+
+== Experimental Setup == 
+
+5,000 pseudo-words were created from noun pairs.  Each pair had 5,000 contexts
+randomly drawn from a 2009 part of speech tagged Wikipedia snapshot.  Semantic
+similarity was approximated using lexical similarity.  Each clustering and
+feature combination was tested by five-fold cross validation through inducing
+senses using 4,000 pseudo-word contexts and then labeling the remaining 1,000.
+
+== Replciation Instructions ==
+
+_to be added_
+
+== Results == 
+
+[http://airhead-research.googlecode.com/svn/wiki/images/unsup2011-experiment1-results.png]
+
+Figures (a) through (e) illustrate the pseudo-word discrimination accuracy of
+each clustering and feature combination.  The baseline accuracy is 50% when
+always picking the same word.
+
+== Conclusion == 
+
+Pseudo-word discrimination accuracy is most affected by the clustering
+algorithm, rather than the lexical feature.  Accuracy is also moderately
+inversely correlated with feature density.  Surprisingly, K-means with the Gap
+Statistic nearly always converged to a single cluster, for all features.
+
+= Experiment 2: Error Analysis on SemEval-2 WSI Task =
+
+== Summary == 
+
+The SemEval-2 WSI task includes a supervised evaluation where induced senses are
+mapped to OntoNotes senses and then used to label unseen contexts.  We test for
+the effects of sense similarity by analyzing the similarity of incorrect sense
+assignments.  A similarity bias will be evidenced by similar senses being more
+likely to be incorrectly selected than dissimilar senses.
+
+== Experimental Setup == 
+
+Each clustering and feature combination was evaluated on the supervised
+evaluation of the WSI task.  For all incorrect sense assignments with more than
+two options, we recorded the similarity of the incorrectly assigned sense and
+the correct sense.  OntoNotes sense similarity was calculated by mapping each
+OntoNotes sense to a set of WordNet 3.0 senses and then taking either the
+average or maximum Jiang and Conrath similarity from all pair-wise combinations
+of senses between the sets.  Null models were calculated by considering the same
+set instances with incorrect sense assignments and randomly picking the
+incorrectly assigned sense.
+
+== Replciation Instructions ==
+
+_to be added_
+
+== Results == 
+
+[http://airhead-research.googlecode.com/svn/wiki/images/unsup2011-experiment2-results.png]
+
+Similarities were binned at the 0.02 level to create an error distribution.
+Figures (a) through (d) illustrate the error distributions for all clustering
+algorithms on the 5-word window lexical features.  All other models had similar
+distribution.
+
+== Conclusion ==
+
+The error distributions reveal a significant bias for all cluster and feature
+combinations where more similar senses were incorrectly selected.  We measured
+whether this shift was different from the null model using the G-test for
+goodness of fit.  All models had a statistically significant deviance from the
+null model.  A further analysis showed a strong correlation of 0.66 between
+cluster purity and goodness of fit with the null model, implying that models
+that maximize cluster purity, such as those using Clustering by Committee, are
+less affected by sense similarity.
