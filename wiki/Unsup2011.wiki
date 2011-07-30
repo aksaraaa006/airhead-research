@@ -1,8 +1,10 @@
-#summary A description of the experiments run for [https://sites.google.com/site/emnlpworkshop2011unsupnlp/ UNSUP 2011] workshop.
+#summary A description of the experiments run for UNSUP 2011 workshop.
 
 <wiki:toc max_depth="2" />
 
-A full description and results may be found in the workshop paper.
+A full description and results may be found in the workshop paper.  More details
+on the UNSUP 2011 workship may be found on its
+[https://sites.google.com/site/emnlpworkshop2011unsupnlp/ site].
 
 
 = Abstract =
@@ -135,7 +137,7 @@ incorrectly assigned sense.
 == Replciation Instructions ==
 
 _to be added_
-
+    
 == Results == 
 
 [http://airhead-research.googlecode.com/svn/wiki/images/unsup2011-experiment2-results.png]
