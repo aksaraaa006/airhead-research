@@ -80,7 +80,7 @@ public class DirectedMultigraphTests {
 
     @Test public void testAddEdge() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
-        g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
         assertEquals(2, g.order());
         assertEquals(1, g.size());
         assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
@@ -181,10 +181,11 @@ public class DirectedMultigraphTests {
         assertEquals(control.size(), g.edges().size());
         int returned = 0;
         for (Edge e : g.edges()) {
-            assertTrue(control.contains(e));
+            assertTrue(control.remove(e));
             returned++;
         }
-        assertEquals(control.size(), returned);
+        assertEquals(g.size(), returned);
+        assertEquals(0, control.size());
     }
 
     @Test public void testEdgeIteratorSmall() {
@@ -240,6 +241,7 @@ public class DirectedMultigraphTests {
         Set<DirectedTypedEdge<String>> test = g.getAdjacencyList(0);
         assertEquals(control, test);
     }
+
     @Test public void testAdjacencyListSize() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
 
@@ -289,7 +291,7 @@ public class DirectedMultigraphTests {
         assertEquals(99, g.size());
     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testAdjacentEdgesAdd() {
+    public void testAdjacentEdgesAdd() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         Set<DirectedTypedEdge<String>> control = new HashSet<DirectedTypedEdge<String>>();
         for (int i = 1; i <= 100; ++i) {
@@ -659,7 +661,7 @@ public class DirectedMultigraphTests {
         assertEquals( (10 * 9) / 2 - 1, g.size());
     }
 
-    @Test(expected=UnsupportedOperationException.class) public void testAdjacencyListAddEdge() {
+    public void testAdjacencyListAddEdge() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         for (int i = 0; i < 10; ++i)
             for (int j = i + 2; j < 10; ++j)
@@ -978,7 +980,7 @@ public class DirectedMultigraphTests {
         // fully connected
         for (int i = 0; i < 10; i++)  {
             for (int j = i+1; j < i+2 && j < 10; ++j)
-                g.add(new SimpleDirectedTypedEdge<String>("type-1",i, j));
+                assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",i, j)));
         }    
 
         assertEquals(9, g.size());
@@ -1668,7 +1670,7 @@ public class DirectedMultigraphTests {
      *
      ****************/
 
-    @Test public void testCopy() {
+    @Test public void testCopyAllVertices() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
         assertTrue(g.contains(new SimpleDirectedTypedEdge<String>("type-1",0, 1)));
@@ -1716,6 +1718,44 @@ public class DirectedMultigraphTests {
         assertEquals(2, copy.order());
         assertEquals(2, copy.size());
     }
+
+
+    @Test public void testCopy3vertexTriangle() {
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 1, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2", 1, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 1, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2", 2, 0)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 2, 3)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
+
+        Set<Integer> verts = new HashSet<Integer>();
+        Collections.addAll(verts, 0, 1, 2);
+        DirectedMultigraph<String> copy = g.copy(verts);
+        assertEquals(3, copy.order());
+        assertEquals(7, copy.size());
+    }
+
+    @Test public void testCopy3vertexVee() {
+        DirectedMultigraph<String> g = new DirectedMultigraph<String>();
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 1)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 1, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-2", 1, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 1, 2)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-1", 2, 3)));
+        assertTrue(g.add(new SimpleDirectedTypedEdge<String>("type-3", 3, 4)));
+
+        Set<Integer> verts = new HashSet<Integer>();
+        Collections.addAll(verts, 0, 1, 2);
+        DirectedMultigraph<String> copy = g.copy(verts);
+        assertEquals(3, copy.order());
+        assertEquals(5, copy.size());
+    }
+
 
     @Test public void testEmptyCopy() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();

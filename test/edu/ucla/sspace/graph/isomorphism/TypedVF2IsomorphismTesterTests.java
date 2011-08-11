@@ -279,4 +279,25 @@ public class TypedVF2IsomorphismTesterTests {
         assertFalse(isoTest.areIsomorphic(g1, g2));
     }
 
+    @Test public void testIsomorphicVertexMapping() {    
+        DirectedMultigraph<String> g1 = new DirectedMultigraph<String>();
+        assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-1", 0, 1)));
+        assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-2", 0, 2)));
+        assertTrue(g1.add(new SimpleDirectedTypedEdge<String>("type-3", 1, 2)));
+
+        DirectedMultigraph<String> g2 = new DirectedMultigraph<String>();
+        assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-1", 3, 4)));
+        assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-2", 3, 5)));
+        assertTrue(g2.add(new SimpleDirectedTypedEdge<String>("type-3", 4, 5)));
+
+        IsomorphismTester isoTest = new TypedVF2IsomorphismTester();
+        assertTrue(isoTest.areIsomorphic(g1, g2));
+        Map<Integer,Integer> vMap = isoTest.findIsomorphism(g1, g2);
+        System.out.println(vMap);
+        assertEquals(3, vMap.size());
+        assertEquals(Integer.valueOf(3), vMap.get(0));
+        assertEquals(Integer.valueOf(4), vMap.get(1));
+        assertEquals(Integer.valueOf(5), vMap.get(2));
+    }
+
 }

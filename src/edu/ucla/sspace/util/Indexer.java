@@ -53,6 +53,11 @@ public interface Indexer<T> extends Iterable<Map.Entry<T,Integer>> {
     boolean contains(T item);
 
     /**
+     * Returns an unmodifiable view of the items currently mapped to indices
+     */
+    Set<T> items();
+
+    /**
      * Returns the index for the item or {@code -1} if the item has not been
      * assigned an index.
      */

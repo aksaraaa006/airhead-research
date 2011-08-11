@@ -24,6 +24,7 @@ package edu.ucla.sspace.graph.isomorphism;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -289,18 +290,21 @@ public class TypedVF2State implements State {
             Set<? extends TypedEdge<?>> te1 = (Set<? extends TypedEdge<?>>)e1;
             @SuppressWarnings("unchecked")
             Set<? extends TypedEdge<?>> te2 = (Set<? extends TypedEdge<?>>)e2;
-            
-            // Check that this mapping has the same type distribution
-            Counter<Object> edgeTypes1 = new ObjectCounter<Object>();
-            Counter<Object> edgeTypes2 = new ObjectCounter<Object>();
+
+            // Fill a set with the edge types of the first list of edges.
+            Set<Object> types1 = new HashSet<Object>();
             for (TypedEdge<?> e : te1)
-                edgeTypes1.count(e.edgeType());
-            for (TypedEdge<?> e : te2)
-                edgeTypes2.count(e.edgeType());          
-            
-            // If the counters showed different number of types in each of the
-            // connecting sets, the this candidate cannot match.
-            return edgeTypes1.equals(edgeTypes2);
+                types1.add(e.edgeType());
+
+            // Then check if all the other set's types are contained within
+            for (TypedEdge<?> e : te2) {
+                if (!types1.contains(e.edgeType()))
+                    return false;
+            }
+            // Because the sets are the same size, if we made it through the
+            // other edge set without finding a difference, then the set are
+            // equivalent.
+            return true;
         }
         return true;
     }
@@ -502,7 +506,7 @@ public class TypedVF2State implements State {
      */
     public Map<Integer,Integer> getVertexMapping() {
         Map<Integer,Integer> vertexMapping = new HashMap<Integer,Integer>();
-        for (int i = 0, j = 0; i < n1; ++i) {
+        for (int i = 0; i < core1.length; ++i) {
             if (core1[i] != NULL_NODE) {
                 vertexMapping.put(i, core1[i]);
             }

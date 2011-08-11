@@ -30,13 +30,13 @@ import java.util.Set;
 
 
 /** 
- * A utility class for mapping a set of objects to unique indices.  The indices
- * returned by this class will always being at {@code 0}.
+ * A utility class for mapping a set of objects to unique indices based on
+ * object equality.  The indices returned by this class will always being at
+ * {@code 0}.
  *
  * @see Counter
  */
-public class ObjectIndexer<T> implements Indexer<T>,
-                                         java.io.Serializable {
+public class ObjectIndexer<T> implements Indexer<T>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -71,7 +71,43 @@ public class ObjectIndexer<T> implements Indexer<T>,
     }
 
     /**
-     * Adds the item and creates an index for it, returning that index.
+     * {@inheritDoc}
+     */
+    public void clear() {
+        indices.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean contains(T item) {
+        return indices.containsKey(item);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Set<T> items() {
+        return Collections.unmodifiableSet(indices.keySet());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int find(T item) {
+        Integer i = indices.get(item);
+        return (i == null) ? -1 : i;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int highestIndex() {
+        return indices.size() - 1;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public int index(T item) {
         Integer i = indices.get(item);
@@ -88,65 +124,35 @@ public class ObjectIndexer<T> implements Indexer<T>,
     }
 
     /**
-     * Removes all of the item-index mappings.
-     */
-    public void clear() {
-        indices.clear();
-    }
-
-    /**
-     * Returns {@code true} if the item has a corresponding index
-     */
-    public boolean contains(T item) {
-        return indices.containsKey(item);
-    }
-
-    /**
-     * Returns the index for the item or {@code -1} if the item has not been
-     * assigned an index.
-     */
-    public int find(T item) {
-        Integer i = indices.get(item);
-        return (i == null) ? -1 : i;
-    }
-
-    public int highestIndex() {
-        return indices.size() - 1;
-    }
-
-    /**
-     * Returns an iterator over all the objects and their corresponding indices.
-     * The returned iterator does not support {@code remove}.
+     * {@inheritDoc} The returned iterator does not support {@code remove}.
      */
     public Iterator<Map.Entry<T,Integer>> iterator() {
         return Collections.unmodifiableSet(indices.entrySet()).iterator();
     }
 
     /**
-     * Returns the element to which this index is mapped or {@code null} if the
-     * index has not been mapped
+     * {@inheritDoc}
      */
     public T lookup(int index) {
         return indices.inverse().get(index);
     }
 
     /**
-     * Returns an unmodifiable view from each index to the object mapped to that
-     * index.
+     * {@inheritDoc}
      */
     public Map<Integer,T> mapping() {
         return Collections.unmodifiableMap(indices.inverse());
     }
     
     /**
-     * Returns the number of items that are mapped to indices.
+     * {@inheritDoc}
      */
     public int size() {
         return indices.size();
     }
 
     /**
-     * Returns a string representation of the objects and their indices.
+     * {@inheritDoc}
      */
     public String toString() {
         return indices.toString();

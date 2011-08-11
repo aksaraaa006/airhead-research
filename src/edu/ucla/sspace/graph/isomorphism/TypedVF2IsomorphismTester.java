@@ -62,6 +62,6 @@ public class TypedVF2IsomorphismTester extends AbstractIsomorphismTester {
      */ 
     protected State makeInitialState(Graph<? extends Edge> g1, 
                                      Graph<? extends Edge> g2) {
-        return new TypedVF2State(remap(g1), remap(g2));
+        return new TypedVF2State(g1, g2);
     }
 }

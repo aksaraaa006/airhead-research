@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.graph;
+package edu.ucla.sspace.graph.isomorphism;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.CombinedSet;
@@ -27,8 +27,9 @@ import edu.ucla.sspace.util.Counter;
 import edu.ucla.sspace.util.ObjectCounter;
 import edu.ucla.sspace.util.Pair;
 
-import edu.ucla.sspace.graph.isomorphism.IsomorphismTester;
-import edu.ucla.sspace.graph.isomorphism.TypedVF2IsomorphismTester;
+import edu.ucla.sspace.graph.Graphs;
+import edu.ucla.sspace.graph.Multigraph;
+import edu.ucla.sspace.graph.TypedEdge;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.AbstractSet;
@@ -54,7 +55,7 @@ import java.util.Set;
  * Most commonly, isomorphism is needed when counting the number of motifs in a
  * graph and their relative occurrences.
  */
-public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
+public class TypedIsomorphicGraphCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
         implements Counter<G>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -73,7 +74,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     /**
      * Creates a new {@code MotifCounter} with the default isomorphism tester.
      */ 
-    public TypedMotifCounter() {
+    public TypedIsomorphicGraphCounter() {
         this(new TypedVF2IsomorphismTester());
     }
 
@@ -83,7 +84,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      * cases where an {@link IsomorphismTester} is tailored to quickly match the
      * type of motifs being counted.
      */ 
-    public TypedMotifCounter(IsomorphismTester isoTest) {
+    public TypedIsomorphicGraphCounter(IsomorphismTester isoTest) {
         this.isoTest = isoTest;
         typesToGraphs = new HashMap<Set<T>,LinkedList<Map.Entry<G,Integer>>>();
         sum = 0;
@@ -91,10 +92,10 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     }
 
     /**
-     * Creates a new {@code TypedMotifCounter} that counts only the specified
+     * Creates a new {@code TypedIsomorphicGraphCounter} that counts only the specified
      * motifs.  All other non-isomorphic graphs will not be counted.
      */
-    private TypedMotifCounter(Collection<? extends G> motifs) {
+    private TypedIsomorphicGraphCounter(Collection<? extends G> motifs) {
         this.isoTest = new TypedVF2IsomorphismTester();
         typesToGraphs = new HashMap<Set<T>,LinkedList<Map.Entry<G,Integer>>>();
         sum = 0;       
@@ -132,7 +133,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
     }    
 
     /**
-     * Creates a new {@code TypedMotifCounter} that counts only the specified
+     * Creates a new {@code TypedIsomorphicGraphCounter} that counts only the specified
      * motifs.  All other non-isomorphic graphs will not be counted.  
      *
      * @param motifs the set of graph instance to be treats as valid motifs.
@@ -142,8 +143,8 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      *        other will have a count of 0.
      */
     public static <T,G extends Multigraph<T,? extends TypedEdge<T>>>
-            TypedMotifCounter<T,G> asMotifs(Set<? extends G> motifs) {
-        return new TypedMotifCounter<T,G>(motifs);
+            TypedIsomorphicGraphCounter<T,G> asMotifs(Set<? extends G> motifs) {
+        return new TypedIsomorphicGraphCounter<T,G>(motifs);
     }
 
     /**
@@ -161,10 +162,23 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
      *
      * @throws IllegalArgumentException if {@code count} is not a positive value.
      */
+    @SuppressWarnings("unchecked")
     public int count(G g, int count) {
         if (count < 1)
             throw new IllegalArgumentException("Count must be positive");
         sum += count;
+
+        // We could potentially be comparing the graph to many, many other
+        // graphs, where each step requires that the graph be converted to a
+        // canonical, packed form.  Therefore, do this once ahead of time so
+        // that we don't do it for each graph it is compared with
+        //
+        // NOTE: for some reason, we can't suppress the warning for just this
+        // line, so I had to put the annotation on the whole method... -jurgens
+        g = (G)(Graphs.pack(g));
+
+        // Use the flat type distribution as a rough filter for avoiding
+        // unnecessary isomorphic tests
         Set<T> typeCounts = g.edgeTypes();
         LinkedList<Map.Entry<G,Integer>> graphs = typesToGraphs.get(typeCounts);
         if (graphs == null) {
@@ -330,7 +344,7 @@ public class TypedMotifCounter<T,G extends Multigraph<T,? extends TypedEdge<T>>>
         }
 
         public int size() {
-            return TypedMotifCounter.this.size();
+            return TypedIsomorphicGraphCounter.this.size();
         }
         
         private class MotifIter implements Iterator<G> {

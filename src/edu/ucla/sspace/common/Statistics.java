@@ -34,7 +34,8 @@ import edu.ucla.sspace.util.IntegerMap;
 
 
 /**
- * A collection of static methods for statistical analysis.
+ * A collection of static methods for statistical analysis and basic numeric
+ * computation.
  */
 public class Statistics {
 
@@ -246,5 +247,35 @@ public class Statistics {
             sum += d2 * d2;
         }
         return Math.sqrt(sum / values.length);
+    }
+
+    /**
+     * Returns the sum of the collection of numbers
+     */
+    public static double sum(Collection<? extends Number> values) {
+        double sum = 0d;
+        for (Number n : values)
+            sum += n.doubleValue();
+        return sum;
+    }
+
+    /**
+     * Returns the sum of the values in the int array
+     */
+    public static int sum(int[] values) {
+        int sum = 0;
+        for (int i : values) 
+            sum += i;        
+        return sum;
+    }
+
+    /**
+     * Returns the sum of the values in the double array
+     */
+    public static double sum(double[] values) {
+        double sum = 0d;
+        for (double d : values) 
+            sum += d;
+        return sum;
     }
 }

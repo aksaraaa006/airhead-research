@@ -27,6 +27,7 @@ import edu.ucla.sspace.util.ObjectIndexer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -60,6 +61,9 @@ class EdgeIndexer implements Indexer<Edge> {
         // 0...
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public int index(Edge e) {
         int index = find(e);
         if (index == -1)
@@ -68,14 +72,23 @@ class EdgeIndexer implements Indexer<Edge> {
         return index;
     }    
 
+    /**
+     * {@inheritDoc}
+     */
     public void clear() {
         throw new Error();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean contains(Edge e) {
         return g.contains(e);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public int find(Edge e) {
         int v = (e.from() < e.to()) ? e.from() : e.to();
         // The starting index is based on the number of edges seen prior to
@@ -97,20 +110,39 @@ class EdgeIndexer implements Indexer<Edge> {
         return -1;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int getStartingIndex(int vertex) {
         if (vertex < 0 || vertex >= g.order())
             throw new IllegalArgumentException("Invalid vertex: " + vertex);
         return (vertex == 0) ? 0 : vertexToEdgeSum[vertex-1];
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int highestIndex() {
         return g.size() - 1;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Iterator<Map.Entry<Edge,Integer>> iterator() {
         throw new Error();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public Set<Edge> items() {
+        throw new Error();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Edge lookup(int edgeIndex) {
         int v = Arrays.binarySearch(vertexToEdgeSum, edgeIndex);
         // v is positive if the edgeIndex is the first edge for the next vertex
@@ -145,10 +177,16 @@ class EdgeIndexer implements Indexer<Edge> {
             "Requested an edge for an invalid index: " + edgeIndex);
     }
     
+    /**
+     * {@inheritDoc}
+     */
     public Map<Integer,Edge> mapping() {
         throw new Error();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int size() {
         return g.size();
     }

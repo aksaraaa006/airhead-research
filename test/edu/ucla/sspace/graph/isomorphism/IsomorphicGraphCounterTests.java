@@ -19,10 +19,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.graph;
+package edu.ucla.sspace.graph.isomorphism;
 
 import java.util.*;
 
+import edu.ucla.sspace.graph.*;
 import edu.ucla.sspace.util.OpenIntSet;
 
 import org.junit.Ignore;
@@ -32,12 +33,12 @@ import static org.junit.Assert.*;
 
 
 /**
- * Tests for the {@link MotifCounter} class
+ * Tests for the {@link IsomorphicGraphCounter} class
  */
-public class MotifCounterTests { 
+public class IsomorphicGraphCounterTests { 
 
     @Test public void testIsomorphic() {
-        MotifCounter<Graph<Edge>> gc = new MotifCounter<Graph<Edge>>();
+        IsomorphicGraphCounter<Graph<Edge>> gc = new IsomorphicGraphCounter<Graph<Edge>>();
         for (int i = 0; i < 5; ++i) {
             Graph<Edge> g1 = new SparseUndirectedGraph();
             g1.add(new SimpleEdge(0, 1));
@@ -55,7 +56,7 @@ public class MotifCounterTests {
     }
 
     @Test public void testNonIsomorphic() {
-        MotifCounter<Graph<Edge>> gc = new MotifCounter<Graph<Edge>>();
+        IsomorphicGraphCounter<Graph<Edge>> gc = new IsomorphicGraphCounter<Graph<Edge>>();
         for (int i = 0; i < 2; ++i) {
             Graph<Edge> g1 = new SparseUndirectedGraph();
             g1.add(new SimpleEdge(0, 1));

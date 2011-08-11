@@ -19,15 +19,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package edu.ucla.sspace.graph;
+package edu.ucla.sspace.graph.isomorphism;
 
 import edu.ucla.sspace.util.CombinedIterator;
 import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.Counter;
 import edu.ucla.sspace.util.Pair;
 
-import edu.ucla.sspace.graph.isomorphism.IsomorphismTester;
-import edu.ucla.sspace.graph.isomorphism.VF2IsomorphismTester;
+import edu.ucla.sspace.graph.Edge;
+import edu.ucla.sspace.graph.Graph;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,9 +44,11 @@ import java.util.Set;
  * href="http://en.wikipedia.org/wiki/Graph_isomorphism">isomorphism</a>, rather
  * than object equivalence (which may take into account vertex labeling, etc.).
  * Most commonly, isomorphism is needed when counting the number of motifs in a
- * graph and their relative occurrences.
+ * graph and their relative occurrences.  This class allows the isomorhism test
+ * to be provided by the user, which can enfornce further refinements on
+ * isomorphism (such as vertex and ege types).
  */
-public class MotifCounter<G extends Graph<? extends Edge>> 
+public class IsomorphicGraphCounter<G extends Graph<? extends Edge>> 
         implements Counter<G>, java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -63,20 +65,20 @@ public class MotifCounter<G extends Graph<? extends Edge>>
     private final boolean allowNewMotifs;
     
     /**
-     * Creates a new {@code MotifCounter} with the default {@link
+     * Creates a new {@code IsomorphicGraphCounter} with the default {@link
      * IsomorphismTester} that tests for structural equivalence.
      */ 
-    public MotifCounter() {
+    public IsomorphicGraphCounter() {
         this(new VF2IsomorphismTester());
     }
 
     /**
-     * Creates a new {@code MotifCounter} with the specified isomorphism tester.
+     * Creates a new {@code IsomorphicGraphCounter} with the specified isomorphism tester.
      * Most users will not need this constructor, which is intended for special
      * cases where an {@link IsomorphismTester} is tailored to quickly match the
      * type of motifs being counted.
      */ 
-    public MotifCounter(IsomorphismTester isoTest) {
+    public IsomorphicGraphCounter(IsomorphismTester isoTest) {
         this.isoTest = isoTest;
         orderAndSizeToGraphs = new HashMap<Pair<Integer>,Map<G,Integer>>();
         sum = 0;
@@ -84,10 +86,10 @@ public class MotifCounter<G extends Graph<? extends Edge>>
     }
 
     /**
-     * Creates a new {@code MotifCounter} that counts only the specified motifs.
+     * Creates a new {@code IsomorphicGraphCounter} that counts only the specified motifs.
      * All other non-isomorphic graphs will not be counted.
      */
-    public MotifCounter(Collection<? extends G> motifs) {
+    public IsomorphicGraphCounter(Collection<? extends G> motifs) {
         this.isoTest = new VF2IsomorphismTester();
         orderAndSizeToGraphs = new HashMap<Pair<Integer>,Map<G,Integer>>();
         sum = 0;
