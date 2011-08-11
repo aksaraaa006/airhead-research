@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+
 
 /**
  * A collection of static utility methods for interacting with {@link Graph}
@@ -67,32 +70,37 @@ public final class Graphs {
             return new MultigraphAdaptor<T,E>(g);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <E extends Edge> Graph<?> newInstance(Graph<E> g) {
-        if (g instanceof Multigraph) {
-            if (g instanceof DirectedGraph) {
-                if (g instanceof WeightedGraph)
-                    throw new Error("missing graph type");
-                else
-                    return new DirectedMultigraph();
+    /**
+     * Creates a copy of the provided graph where all vertices are remapped to a
+     * contiguous range from 0 to {@code g.order()}-1.  If the graph's vertices
+     * are already contiguous, returns the original graph.
+     */
+    public static <E extends Edge> Graph<E> pack(Graph<E> g) {
+        int order = g.order();
+        boolean isContiguous = true;
+        for (int i : g.vertices()) {
+            if (i >= order) {
+                isContiguous = false;
+                break;
             }
-            else if (g instanceof WeightedGraph) 
-                throw new Error("missing graph type");
-            else
-                return new UndirectedMultigraph<E>();
         }
-        else if (g instanceof DirectedGraph) {
-            if (g instanceof WeightedGraph)
-                throw new Error("missing graph type");
-            else
-                return new SparseDirectedGraph();
-                
-        }
-        else if (g instanceof WeightedGraph) {
-            throw new Error("missing graph type");
-        }
-        else return new SparseUndirectedGraph();
-    }
+        if (isContiguous) 
+            return g;        
+
+        // Map the vertices to a contiguous range
+        TIntIntMap vMap = new TIntIntHashMap(g.order());
+        int j = 0;
+        for (int i : g.vertices()) 
+            vMap.put(i, j++);
+        
+        Graph<E> copy = g.copy(Collections.<Integer>emptySet());
+        for (int i = 0; i < order; ++i)
+            copy.add(i);
+        for (E e : g.edges()) 
+            copy.add(e.<E>clone(vMap.get(e.from()), vMap.get(e.to())));
+        
+        return copy;
+    }    
     
     /**
      * Shuffles the edges of {@code g} while still preserving the <a

@@ -107,6 +107,17 @@ public class FanmodTool {
                        "multigraph, counts only simple graphs as motifs",
                        false, null, "Algorithm Options");
 
+        opts.addOption('Z', "minZScore", "The minimum Z-Score for any motif" +
+                       " in the original network to be used for computing " +
+                       "modularity (default: 1)",
+                       true, "DOUBLE", "Algorithm Options");
+        opts.addOption('O', "minOccurrences", "The minimum number of occurrences"
+                       + " for any motif" +
+                       " in the original network to be used for computing " +
+                       "modularity (default: 1)",
+                       true, "INT", "Algorithm Options");
+
+
 //         opts.addOption('w', "weighted", "Uses a weighted edge simiarity",
 //                           false, null, "Input Options");
         opts.addOption('d', "loadAsDirectedGraph", "Loads the input graph as " +
@@ -125,7 +136,7 @@ public class FanmodTool {
 
         opts.parseOptions(args);
 
-        if (opts.numPositionalArgs() < 3 || opts.hasOption("help")) {
+        if (opts.numPositionalArgs() < 2 || opts.hasOption("help")) {
             usage(opts);
             return;
         }
@@ -148,16 +159,18 @@ public class FanmodTool {
         int numRandomGraphs = (opts.hasOption('r')) 
             ? opts.getIntOption('r') : 1000;
 
-        double minZScore = -1;
-        try {
-            minZScore = Double.parseDouble(opts.getPositionalArg(1));
-        } catch (NumberFormatException nfe) {
-            throw new IllegalArgumentException("Not a valid double: " + 
-                                               opts.getPositionalArg(1));
-        }
-        Fanmod.MotifFilter filter = new Fanmod.ZScoreFilter(minZScore);
-        info(LOGGER, "retaining motifs with a z-score at or above " +minZScore);
-        
+        double minZScore = opts.hasOption('Z')
+            ? opts.getDoubleOption('Z')
+            : 1d;
+        int minOccurrences = opts.hasOption('O')
+            ? opts.getIntOption('O')
+            : 1;
+        Fanmod.MotifFilter filter = 
+            new Fanmod.FrequencyAndZScoreFilter(minOccurrences, minZScore);
+
+        info(LOGGER, "retaining motifs occurring at least %d times with a " +
+             "z-score at or above %f", minOccurrences, minZScore);
+       
         boolean isMultigraph = opts.hasOption('m');
         boolean isDirected = opts.hasOption('d');
         Fanmod fanmod = new Fanmod();
@@ -174,6 +187,9 @@ public class FanmodTool {
                      motifToZScore.size(), minZScore);
                 if (opts.hasOption('H')) {
                     File baseDir = new File(opts.getStringOption('H'));
+                    // Check that we can create output in that directory
+                    if (!baseDir.exists())
+                        baseDir.mkdir();
                     DotIO dio = new DotIO();
                     
                     // Generate a consistent set of edge colors to user across
@@ -218,9 +234,9 @@ public class FanmodTool {
                 }
                 
                 info(LOGGER, "writing final motifs to %s", 
-                     opts.getPositionalArg(2));
+                     opts.getPositionalArg(1));
                 // Write the results to file
-                File output = new File(opts.getPositionalArg(2));
+                File output = new File(opts.getPositionalArg(1));
                 // Copy the motifs to a new HashSet to avoid writing the result
                 // as a KeySet, which includes the fanmod result values.
                 SerializableUtil.save(
@@ -239,6 +255,9 @@ public class FanmodTool {
                      motifToZScore.size(), minZScore);
                 if (opts.hasOption('H')) {
                     File baseDir = new File(opts.getStringOption('H'));
+                    // Check that we can create output in that directory
+                    if (!baseDir.exists())
+                        baseDir.mkdir();
                     DotIO dio = new DotIO();
                     // Generate a consistent set of edge colors to user across
                     // all the motif visualizations
@@ -281,9 +300,9 @@ public class FanmodTool {
                     pw.close();
 
                     info(LOGGER, "writing final motifs to %s", 
-                         opts.getPositionalArg(2));
+                         opts.getPositionalArg(1));
                     // Write the results to file
-                    File output = new File(opts.getPositionalArg(2));
+                    File output = new File(opts.getPositionalArg(1));
                     // Copy the motifs to a new HashSet to avoid writing the result
                     // as a KeySet, which includes the fanmod result values.
                     SerializableUtil.save(
@@ -316,7 +335,7 @@ public class FanmodTool {
     private static void usage(ArgOptions options) {
         System.out.println(
             "Fanmod 1.0, " +
-            "usage: java -jar fanmod.jar [options] input.graph min-z-score output.txt \n\n" 
+            "usage: java -jar fanmod.jar [options] input.graph output.serialized \n\n" 
             + options.prettyPrint() +
             "\nThe edge file format is:\n" +
             "   vertex1 vertex2 [edge_label]\n" +

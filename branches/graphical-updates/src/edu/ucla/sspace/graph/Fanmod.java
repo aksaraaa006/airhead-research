@@ -23,6 +23,7 @@ package edu.ucla.sspace.graph;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,19 +31,19 @@ import java.util.Set;
 
 import edu.ucla.sspace.common.Statistics;
 
+import edu.ucla.sspace.graph.isomorphism.IsomorphicGraphCounter;
 import edu.ucla.sspace.graph.isomorphism.IsomorphicSet;
 import edu.ucla.sspace.graph.isomorphism.IsomorphismTester;
 import edu.ucla.sspace.graph.isomorphism.ThreeVertexIsomorphismTester;
+import edu.ucla.sspace.graph.isomorphism.TypedIsomorphicGraphCounter;
 import edu.ucla.sspace.graph.isomorphism.TypedVF2IsomorphismTester;
 
 import edu.ucla.sspace.util.Counter;
 import edu.ucla.sspace.util.ObjectCounter;
 import edu.ucla.sspace.util.WorkQueue;
 
-
 import java.util.logging.Logger;
 import java.util.logging.Level;
-
 
 // Logger helper methods
 import static edu.ucla.sspace.util.LoggerUtil.info;
@@ -57,7 +58,7 @@ public class Fanmod {
     private static final Logger LOGGER = 
         Logger.getLogger(Fanmod.class.getName());
 
-    private static final WorkQueue q = new WorkQueue(4);
+    private static final WorkQueue q = new WorkQueue(8);
 
     public Fanmod() { }
 
@@ -67,7 +68,7 @@ public class Fanmod {
                        MotifFilter filter) {
 
         Counter<Multigraph<T,E>> inGraph = 
-            new TypedMotifCounter<T,Multigraph<T,E>>();
+            new TypedIsomorphicGraphCounter<T,Multigraph<T,E>>();
 
         verbose(LOGGER, "Counting all the %smotifs of size %d in the input",
                 (findSimpleMotifs) ? "simple " : "", motifSize);
@@ -98,16 +99,28 @@ public class Fanmod {
         // Create a data structure to hold the motif counts for each of the
         // random models.  We need the counts separately in order to calcuate
         // the mean and stanard deviation for the Z score.
-        final List<TypedMotifCounter<T,Multigraph<T,E>>> nullModelCounts = 
-            new ArrayList<TypedMotifCounter<T,Multigraph<T,E>>>();
+        final List<TypedIsomorphicGraphCounter<T,Multigraph<T,E>>> nullModelCounts = 
+            new ArrayList<TypedIsomorphicGraphCounter<T,Multigraph<T,E>>>();
         
+        // As we search through the null models for these motifs, the
+        // isomorphism tester will likely need the graphs in a packed format
+        // with a contiguous vertex ordering starting at 0.  Therefore, we remap
+        // all of the potential motifs here so that the counters are initialized
+        // with the most efficient set of motifs for fast testing.
+        Set<Multigraph<T,E>> canonical = new HashSet<Multigraph<T,E>>();
+        for (Multigraph<T,E> m : inGraph.items()) {
+            @SuppressWarnings("unchecked")
+            Multigraph<T,E> packed = (Multigraph<T,E>)(Graphs.pack(m));
+            canonical.add(packed);
+        }
+
         // Initialize all the null models' counters ahead of time so they can
         // access the list in a thread-safe manner
         for (int j = 0; j < numRandomGraphs; ++j) {
             // Create a graph counter that will record how many times the motifs
             // in the original network appear in the randomized networks
-            nullModelCounts.add(TypedMotifCounter.asMotifs(inGraph.items()));
-            //new TypedMotifCounter<T,Multigraph<T,E>>(inGraph.items()));
+            nullModelCounts.add(
+                TypedIsomorphicGraphCounter.asMotifs(canonical));
         }
          
         Object taskKey = q.registerTaskGroup(numRandomGraphs);
@@ -118,8 +131,8 @@ public class Fanmod {
                     public void run() {                       
                         verbose(LOGGER, "Computing random model %d", j_);
                         // Create a counter for this graph's motif counts
-                        TypedMotifCounter<T,Multigraph<T,E>> nullModelCounter =
-                            nullModelCounts.get(j_);
+                        TypedIsomorphicGraphCounter<T,Multigraph<T,E>> 
+                            nullModelCounter = nullModelCounts.get(j_);
                 
                         // Make a thread-local copy of the graph, which will be
                         // randomized and used to find the motif counts in the
@@ -175,10 +188,11 @@ public class Fanmod {
 
         // Sum the counts.  Because the specific motif instances used by each of
         // the null models are identical to each other (and non-isomorphic), we
-        // can just use an ObjectCounter to sum their values
+        // can just use a HashMap to hold all the count values.  We use a
+        // HashMap rather than a Counter in order to get the standard deviation
         Map<Multigraph<T,E>,List<Integer>> motifCounts = 
             new HashMap<Multigraph<T,E>,List<Integer>>();
-        for (TypedMotifCounter<T,Multigraph<T,E>> mc : nullModelCounts) {
+        for (TypedIsomorphicGraphCounter<T,Multigraph<T,E>> mc : nullModelCounts) {
             for (Map.Entry<Multigraph<T,E>,Integer> motifAndCount : mc) {
                 Multigraph<T,E> motif = motifAndCount.getKey();
                 int count = motifAndCount.getValue();
@@ -197,19 +211,25 @@ public class Fanmod {
         
         // For each of the motifs, calcuate its Z-Score using the random models.
         for (Map.Entry<Multigraph<T,E>,Integer> motifAndCount : inGraph) {
-            Multigraph<T,E> motif = motifAndCount.getKey();
-            //verbose(LOGGER, "Computing statistics for motif %s", motif);
-            int count = motifAndCount.getValue();
             
-            List<Integer> counts = motifCounts.get(motif);
+            // NOTE: the null models use a packed representation (for
+            // efficiency) so in order to access the counts, we have to do a bit
+            // of extra work to cover the in-graph motifs to the packed format
+            Multigraph<T,E> motif = motifAndCount.getKey();
+            @SuppressWarnings("unchecked")
+            Multigraph<T,E> packed = (Multigraph<T,E>)(Graphs.pack(motif));
+
+            int count = motifAndCount.getValue();
+            // NOTE: use packed instead of motif because of the difference from
+            // the null model
+            List<Integer> counts = motifCounts.get(packed);
 
             // Calcuate the statistics for the counts
             double mean = Statistics.mean(counts);
             double stddev = Statistics.stddev(counts);
-            System.out.printf("count: %d, mean: %f, stddev: %f%n", count, mean, stddev);
 
             if (filter.accepts(count, mean, stddev)) {
-                motifToResult.put(motif, new Result(count, mean, stddev,
+                motifToResult.put(packed, new Result(count, mean, stddev,
                                   filter.getStatistic(count, mean, stddev)));
             }
         }
@@ -223,7 +243,7 @@ public class Fanmod {
             findMotifs(final Graph<E> g, final int motifSize, 
                        int numRandomGraphs, MotifFilter filter) {
 
-        Counter<Graph<E>> inGraph = new MotifCounter<Graph<E>>();
+        Counter<Graph<E>> inGraph = new IsomorphicGraphCounter<Graph<E>>();
         
         // Select the iterator based on whether the used has asked us to find
         // motifs that are simple graphs, or motifs that are possibly
@@ -239,8 +259,8 @@ public class Fanmod {
         // Create a data structure to hold the motif counts for each of the
         // random models.  We need the counts separately in order to calcuate
         // the mean and stanard deviation for the Z score.
-        final List<MotifCounter<Graph<E>>> nullModelCounts = 
-            new ArrayList<MotifCounter<Graph<E>>>();
+        final List<IsomorphicGraphCounter<Graph<E>>> nullModelCounts = 
+            new ArrayList<IsomorphicGraphCounter<Graph<E>>>();
         
         // Initialize all the null models' counters ahead of time so they can
         // access the list in a thread-safe manner
@@ -248,7 +268,7 @@ public class Fanmod {
             // Create a graph counter that will record how many times the motifs
             // in the original network appear in the randomized networks
             nullModelCounts.add(
-                new MotifCounter<Graph<E>>(inGraph.items()));
+                new IsomorphicGraphCounter<Graph<E>>(inGraph.items()));
         }
          
         Object taskKey = q.registerTaskGroup(numRandomGraphs);
@@ -259,7 +279,7 @@ public class Fanmod {
                     public void run() {                       
                         verbose(LOGGER, "Computing random model %d", j_);
                         // Create a counter for this graph's motif counts
-                        MotifCounter<Graph<E>> nullModelCounter =
+                        IsomorphicGraphCounter<Graph<E>> nullModelCounter =
                             nullModelCounts.get(j_);
                 
                         // Make a thread-local copy of the graph, which will be
@@ -310,7 +330,7 @@ public class Fanmod {
             int count = motifAndCount.getValue();
             int[] counts = new int[numRandomGraphs];
             int i = 0;
-            for (MotifCounter<Graph<E>> mc : nullModelCounts)
+            for (IsomorphicGraphCounter<Graph<E>> mc : nullModelCounts)
                 counts[i++] = mc.getCount(motif);
             // Calcuate the statistics for the counts
             double mean = Statistics.mean(counts);
@@ -393,4 +413,29 @@ public class Fanmod {
             return actualFrequency;
         }
     }
+
+    public static class FrequencyAndZScoreFilter implements MotifFilter {
+
+        private final int minFrequency;
+
+        private final double minZscore;
+
+        public FrequencyAndZScoreFilter(int minFrequency, double minZscore) {
+            this.minFrequency = minFrequency;
+            this.minZscore = minZscore;
+        }
+        
+        public boolean accepts(int actualFrequency, double expectedValue,
+                               double standardDeviation) {
+            double zScore = (actualFrequency - expectedValue) 
+                / standardDeviation;
+            return actualFrequency >= minFrequency && zScore >= minZscore;
+        }
+
+        public double getStatistic(int actualFrequency, double expectedValue,
+                                   double standardDeviation) {
+            return (actualFrequency - expectedValue) / standardDeviation;
+        }
+    }
+
 }
