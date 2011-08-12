@@ -26,49 +26,57 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * An object that maps a key to one or more values.  A map cannot contain
- * duplicate keys and each key cannot map to duplicate values.
+ * An object that maps a key to one or more values.  A multimap cannot contain
+ * duplicate keys and each key cannot map to duplicate values.  
+ *
+ * <p> Unlike a {@link Map}, the return value of {@link #get(Object) get} will
+ * return the empty set, if the key is not mapped to any value.  This enables
+ * safe enumerate over the values mapped to any potential key without the need
+ * for a {@code null} check.
  *
  * @see Map
  */
 public interface MultiMap<K,V> {
 
     /**
-     * Removes all of the mappings from this multi-map.
+     * Removes all of the mappings from this multimap.
      */
     public void clear();
 
     /**
-     * Returns {@code true} if this multi-map contains a mapping for the
+     * Returns {@code true} if this multimap contains a mapping for the
      * specified key.
      */
     public boolean containsKey(Object key);
 
     /**
-     * Returns {@code true} if this multi-map contains from any key to the
+     * Returns {@code true} if this multimap contains from any key to the
      * specified value.
      */
     public boolean containsValue(Object key);
 
     /**
      * Returns a {@link Set} view of all the key-value mappings contained in
-     * this multi-map.
+     * this multimap.
      */
     public Set<Map.Entry<K,V>> entrySet();
 
     /**
-     * Returns {@code true} if this multi-map maps one or more keys to the specified
-     * value.
+     * Returns the set of values to which this key is mapped or the empty set if
+     * the key is not mapped to any values.
+     *
+     * @return the set of values to which this key is mapped or the empty set if
+     *         the key is not mapped to any values
      */
     public Set<V> get(Object key);
 
     /**
-     * Returns {@code true} if this multi-map contains no mappings.
+     * Returns {@code true} if this multimap contains no mappings.
      */
     public boolean isEmpty();
 
     /**
-     * Returns a {@link Set} view of the mappings contained in this multi-map.
+     * Returns a {@link Set} view of the mappings contained in this multimap.
      */
     public Set<K> keySet();
 
@@ -108,7 +116,7 @@ public interface MultiMap<K,V> {
     public boolean putMulti(K key, Collection<V> values);
 
     /**
-     * Removes the mapping for a key from this multi-map if it is present
+     * Removes the mapping for a key from this multimap if it is present
      */
     public Set<V> remove(K key);
 
@@ -135,7 +143,7 @@ public interface MultiMap<K,V> {
 
     /**
      * Returns the number of keys that are mapped to one or more values in this
-     * multi-map.
+     * multimap.
      *
      * @see #range()
      */
