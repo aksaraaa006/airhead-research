@@ -71,12 +71,11 @@ public class SerializableUtil {
      *
      * @return the object that was serialized in the file
      */
-    @SuppressWarnings("unchecked")
     public static <T> T load(File file, Class<T> type) {
         try {
             FileInputStream fis = new FileInputStream(file);
             ObjectInputStream inStream = new ObjectInputStream(fis);
-            T object = (T) inStream.readObject();
+            T object = type.cast(inStream.readObject());
             inStream.close();
             return object;
         } catch (IOException ioe) {
