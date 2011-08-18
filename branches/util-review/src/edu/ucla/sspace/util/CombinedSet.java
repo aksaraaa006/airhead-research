@@ -31,7 +31,17 @@ import java.util.Set;
 
 
 /**
+ * A view around one or more {@link Set} instances, which are then presented as
+ * a single {@link Set}.  This class provides a way to take multiple, possibly
+ * overlapping, sets and treat them as a single instance for subsequent
+ * operations without having to add the together or create a new {@code Set}
+ * instance.
  *
+ * <p> All methods run in time linear to the number of sets in the instance.
+ * Iterating over a {@code CombinedSet} is {@code O(|sets| * |elements|)},
+ * rather than linear in the number of elements.
+ *
+ * @see DisjointSets
  */
 public class CombinedSet<T> extends AbstractSet<T> 
         implements java.io.Serializable {
@@ -43,18 +53,9 @@ public class CombinedSet<T> extends AbstractSet<T>
      */
     private final List<Set<T>> sets;
 
-    @SuppressWarnings("unchecked")
-    public CombinedSet(Set<T>... sets) {
-        if (sets == null)
-            throw new NullPointerException("Sets cannot be null");
-        this.sets = new ArrayList<Set<T>>();
-        for (Set<T> s : sets) {
-            if (s == null)
-                throw new NullPointerException("Cannot wrap null set");
-            this.sets.add(s);
-        }
-    }
-
+    /**
+     * Creates a wrapper around the provided sets, treating them as a single set
+     */
     public CombinedSet(Collection<? extends Set<T>> sets) {
         if (sets == null)
             throw new NullPointerException("Sets cannot be null");
@@ -127,7 +128,9 @@ public class CombinedSet<T> extends AbstractSet<T>
     }
 
     /**
-     * Returns the number of unique items across all sets.
+     * Returns the number of unique items across all sets.  Note that this is
+     * not a constant time operation, but rather is linear in the number of sets
+     * that are combined.
      */
     public int size() {
         // The size isn't the sum of the sets' sizes, as there may be duplicate

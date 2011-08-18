@@ -31,7 +31,18 @@ import java.util.Set;
 
 
 /**
+ * A view around one or more <i>disjoint</i> {@link Set} instances, which are
+ * then presented as a single {@link Set}.  This class provides a way to take
+ * multiple disjoint sets and treat them as a single instance for subsequent
+ * operations without having to add the together or create a new {@code Set}
+ * instance.
  *
+ * <p> All methods run in time linear to the number of sets in the instance.
+ * Unlike a {@link CombinedSet}, iterating over a {@code DisjointSets} is linear
+ * in the number of elements in all sets, with no penalty for the number of sets
+ * in the instance.
+ *
+ * @see CombinedSet
  */
 public class DisjointSets<T> extends AbstractSet<T> 
         implements java.io.Serializable {
@@ -43,18 +54,9 @@ public class DisjointSets<T> extends AbstractSet<T>
      */
     private final List<Set<T>> sets;
 
-    @SuppressWarnings("unchecked")
-    public DisjointSets(Set<T>... sets) {
-        if (sets == null)
-            throw new NullPointerException("Sets cannot be null");
-        this.sets = new ArrayList<Set<T>>();
-        for (Set<T> s : sets) {
-            if (s == null)
-                throw new NullPointerException("Cannot wrap null set");
-            this.sets.add(s);
-        }
-    }
-
+    /**
+     * Creates a wrapper around the disjoint sets
+     */
     public DisjointSets(Collection<? extends Set<T>> sets) {
         if (sets == null)
             throw new NullPointerException("Sets cannot be null");
@@ -64,6 +66,24 @@ public class DisjointSets<T> extends AbstractSet<T>
                 throw new NullPointerException("Cannot wrap null set");
             this.sets.add(s);
         }
+        assert areDisjoint() : "sets are not disjoint";
+    }
+
+    /**
+     * A utility method of handling the assertion code, which returns true if
+     * the sets are disjoint.
+     */
+    private boolean areDisjoint() {
+        for (Set<T> s1 : sets) {
+            for (Set<T> s2 : sets) {
+                if (s1 == s2)
+                    break;
+                for (T t : s1)
+                    if (s2.contains(t))
+                        return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -76,6 +96,7 @@ public class DisjointSets<T> extends AbstractSet<T>
         if (set == null)
             throw new NullPointerException("set cannot be null");
         sets.add(set);
+        assert areDisjoint() : "sets are not disjoint";
     }
     
     /**
@@ -131,7 +152,9 @@ public class DisjointSets<T> extends AbstractSet<T>
     }
 
     /**
-     * Returns the number of unique items across all sets.
+     * Returns the number of unique items across all sets. Note that this is not
+     * a constant time operation, but rather is linear in the number of sets
+     * that are represented by this instance.
      */
     public int size() {
         // Since the sets are disjoint, we can simple sum their sizes

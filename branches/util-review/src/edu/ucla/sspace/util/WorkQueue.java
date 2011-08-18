@@ -150,7 +150,6 @@ public class WorkQueue {
         try {
             while(!latch.await(5, TimeUnit.SECONDS))
                 ;
-            //System.out.println("cur count: " + latch.getCount());
             // Once finished, remove the key so it can be associated with a new
             // task
             taskKeyToLatch.remove(taskGroupId);

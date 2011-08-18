@@ -46,6 +46,7 @@ import java.util.Set;
  * <p> This class is not thread safe.
  *
  * @author David Jurgens
+ * @see IntSet
  */
 public class OpenIntSet extends AbstractSet<Integer> 
         implements java.io.Serializable {
@@ -232,6 +233,10 @@ public class OpenIntSet extends AbstractSet<Integer>
         return -1;           
     }
     
+    /**
+     * Returns {@code true} if {@code o} is an integer value that this set
+     * contains, or {@code false} if this set does not.
+     */
     @Override public boolean contains(Object o) {
         if (o instanceof Integer)
             return contains(((Integer)o).intValue());
@@ -239,6 +244,10 @@ public class OpenIntSet extends AbstractSet<Integer>
             throw new ClassCastException();
     }
 
+    /**
+     * Returns {@code true} if this set contains the integer value, or {@code
+     * false} if this set does not.
+     */
     public boolean contains(int i) {
         // Special cases for the two marker values
         if (i == EMPTY_MARKER)
@@ -252,6 +261,9 @@ public class OpenIntSet extends AbstractSet<Integer>
         return bucket >= 0 && buckets[bucket] == i;
     }
 
+    /**
+     * Clears the elements of this set
+     */
     @Override public void clear() {
         Arrays.fill(buckets, 0);
         isEmptyMarkerValuePresent = false;
@@ -259,14 +271,23 @@ public class OpenIntSet extends AbstractSet<Integer>
         size = 0;
     }
 
+    /**
+     * Returns {@code true} if this set contains no elements
+     */
     @Override public boolean isEmpty() {
         return size == 0;
     }
 
+    /**
+     * Returns an iterator over the elements in this set
+     */
     public Iterator<Integer> iterator() {
         return new IntIterator();
     }
 
+    /**
+     * Resizes the internal table to the next power of 2.
+     */
     private void rebuildTable() {
         int newSize = buckets.length << 1;
         int[] newBuckets = new int[newSize];
@@ -282,10 +303,19 @@ public class OpenIntSet extends AbstractSet<Integer>
         buckets = newBuckets;
     }
 
-    public boolean remove(Integer i) {
-        return remove(i.intValue());
+    /**
+     * Removes the value of {@code o} from this set, returning {@code true} if
+     * this set was modified as a result.
+     */
+    @Override public boolean remove(Object o) {
+        return (o instanceof Integer) 
+            ? remove(((Integer)o).intValue()) : false;
     }
     
+    /**
+     * Removes the integer {@code i} from this set, returning {@code true} if
+     * this set was modified as a result.
+     */
     public boolean remove(int i) {
         boolean wasPresent = false;
         // Special cases for the two marker values
@@ -315,17 +345,39 @@ public class OpenIntSet extends AbstractSet<Integer>
         return wasPresent;
     }
 
+    /**
+     * Returns the number of elements in this set.
+     */
     public int size() {
         return size;
     }
 
+    /**
+     * An iterator class for enumerating the elements in the table.
+     */
     private class IntIterator implements Iterator<Integer> {
         
+        /**
+         * The value that was just returned.
+         */
         int cur;
-        int next;
-        int nextIndex;
-        boolean alreadyRemoved;
 
+        /**
+         * The next value to return
+         */
+        int next;
+
+        /**
+         * The index where the value we will return next is located.  If there
+         * is no next value, this is {@code -1}.
+         */ 
+        int nextIndex;
+
+        /**
+         * {@code true} if the current value was already removed.
+         */
+        boolean alreadyRemoved;
+        
         boolean returnedEmptyMarker = false;
         boolean returnedDeletedMarker = false;
 
@@ -341,12 +393,16 @@ public class OpenIntSet extends AbstractSet<Integer>
         }
 
         private void advance() {
+            // Check for the edge cases where this set has an int value
+            // equivalent to the empty marker or the deleted marker values.
             if (!returnedEmptyMarker && isEmptyMarkerValuePresent) {
                 next = EMPTY_MARKER;
             }
             else if (!returnedDeletedMarker && isDeletedMarkerValuePresent) {
                 next = DELETED_MARKER;
             }
+            // Otherwise, just search through the buckets until we find a value
+            // that isn't empty or hasn't been deleted.
             else {
                 int j = nextIndex + 1;
                 while (j < buckets.length && 
@@ -354,7 +410,10 @@ public class OpenIntSet extends AbstractSet<Integer>
                         || buckets[j] == DELETED_MARKER)) {
                     ++j;
                 }
-                    
+                
+                // Update the next index we should look at and the value.  If
+                // there were no further values, then set the index to negative
+                // so we know we went off the end.
                 nextIndex = (j == buckets.length) ? -1 : j;
                 next = (nextIndex >= 0) ? buckets[nextIndex] : -1;
             }
@@ -370,6 +429,8 @@ public class OpenIntSet extends AbstractSet<Integer>
             if (!hasNext())
                 throw new NoSuchElementException();
             cur = next;
+            // Update that we returned one of the marker values if that's the
+            // value to be returned next.
             if (next == EMPTY_MARKER) {
                 returnedEmptyMarker = true;
             }
@@ -389,5 +450,4 @@ public class OpenIntSet extends AbstractSet<Integer>
             OpenIntSet.this.remove(cur);
         }
     }
-
 }
