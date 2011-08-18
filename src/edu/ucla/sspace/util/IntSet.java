@@ -37,7 +37,7 @@ import java.util.Set;
  * <p>Because this class only supports storing non-negative values in the set,
  * any attempt to add a negative value will throw an {@link
  * IllegalArgumentException}.  The {@code contains} and {@code remove} methods
- * will also always return {@code false}.
+ * will also always return {@code false} for negative values.
  *
  * <p> This class provides overloads of the common {@code Set} operation with
  * the primitive {@code int} and {@code Integer} values.  Callers may use the
@@ -56,6 +56,7 @@ import java.util.Set;
  * of the optional methods.
  *
  * @author David Jurgens
+ * @see OpenIntSet
  */
 public class IntSet extends AbstractSet<Integer> 
         implements java.io.Serializable {
@@ -92,10 +93,22 @@ public class IntSet extends AbstractSet<Integer>
             bitSet.set(i);
     }
 
+    /**
+     * Adds the integer value to this set, returning {@code true} if this set
+     * was modified as a result.  
+     *
+     * @throws IllegalArgumentException if {@code i} is negative
+     */
     public boolean add(Integer i) {
         return add(i.intValue());
     }
 
+    /**
+     * Adds the integer value to this set, returning {@code true} if this set
+     * was modified as a result.  
+     *
+     * @throws IllegalArgumentException if {@code i} is negative
+     */
     public boolean add(int i) {
         if (i < 0)
             throw new IllegalArgumentException(
@@ -116,26 +129,48 @@ public class IntSet extends AbstractSet<Integer>
         return oldSize != size();
     }
 
+    /**
+     * Returns {@code true} if this set contains the integer value, or {@code
+     * false} if this set does not or if {@code i} is negative.
+     */
     public boolean contains(Integer i) {
         return contains(i.intValue());
     }
 
+    /**
+     * Returns {@code true} if this set contains the integer value, or {@code
+     * false} if this set does not or if {@code i} is negative.
+     */
     public boolean contains(int i) {
         return i >= 0 && bitSet.get(i);
     }
 
+    /**
+     * Returns {@code true} if this set contains no elements.
+     */
     public boolean isEmpty() {
         return bitSet.isEmpty();
     }
 
+    /**
+     * Returns an iterator over this set of integers.
+     */  
     public Iterator<Integer> iterator() {
         return new BitSetIterator();
     }
 
+    /**
+     * Removes {@code i} from this set, returning {@code true} if this set was
+     * modified as a result.
+     */
     public boolean remove(Integer i) {
         return remove(i.intValue());
     }
     
+    /**
+     * Removes {@code i} from this set, returning {@code true} if this set was
+     * modified as a result.
+     */
     public boolean remove(int i) {
         if (i < 0)
             return false;
@@ -165,6 +200,9 @@ public class IntSet extends AbstractSet<Integer>
         return oldSize != size();
     }
 
+    /**
+     * Returns the number of elements in this set.
+     */
     public int size() {
         return bitSet.cardinality();
     }

@@ -30,8 +30,13 @@ import java.util.Set;
 
 
 /** 
- * A utility class for mapping a set of objects to unique indices.  The indices
- * returned by this class will always being at {@code 0}.
+ * A utility class for mapping a set of objects to canonical array indices.  The
+ * indices returned by this class will always begin at {@code 0}, with every
+ * index being used up to the last index of {@code #highestIndex()
+ * highestIndex}.
+ *
+ * <p> Implementations may further refine the notion of object equivalence on the
+ * basis of more type information.
  *
  * @see Counter
  */
@@ -64,7 +69,8 @@ public interface Indexer<T> extends Iterable<Map.Entry<T,Integer>> {
     int find(T item);
     
     /**
-     * Returns the highest index to which any element is mapped.
+     * Returns the highest index to which any element is mapped or {@code -1} if
+     * this {@code Indexer} is empty.
      */
     int highestIndex();
 

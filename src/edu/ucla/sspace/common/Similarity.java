@@ -1879,7 +1879,6 @@ public class Similarity {
                 double bj = b.get(j);
 
                 // Check for ties
-                boolean atie = ai == aj;
                 if (ai == aj) {
                     tiesInA.add(i, 1);
                     foundTies = true;
@@ -1965,7 +1964,6 @@ public class Similarity {
                 int bj = b.get(j);
 
                 // Check for ties
-                boolean atie = ai == aj;
                 if (ai == aj) {
                     tiesInA.add(i, 1);
                     foundTies = true;

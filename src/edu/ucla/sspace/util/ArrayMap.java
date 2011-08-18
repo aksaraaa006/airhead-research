@@ -54,6 +54,9 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The backing array.
+     */
     private final T[] array;
 
     /**
@@ -64,24 +67,44 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
      */ 
     private int size;
 
+    /**
+     * Creates a {@link Map} over the non-{@code null} values in the provided a
+     * array to their corresponding indices up to the specified size.  Array
+     * elements with indices beyond the size of the map will not be included in
+     * this mapping.  The values of the array are copied internally so changes
+     * to this map will not be reflected in the array and vice versa.
+     */
     public ArrayMap(T[] array, int sizeOfMap) {
-        // Make a copy?
+        if (array == null)
+            throw new NullPointerException();
         this.array = Arrays.copyOf(array, sizeOfMap);
         size = -1;
     }
 
+    /**
+     * Creates a {@link Map} over the non-{@code null} values in the provided a
+     * array to their corresponding indices.  The values of the array are copied
+     * internally so changes to this map will not be reflected in the array and
+     * vice versa.
+     */
     public ArrayMap(T[] array) {
         if (array == null)
             throw new NullPointerException();
-        // Make a copy?
-        this.array = array;
+        this.array = Arrays.copy(array);
         size = -1;
     }
-
+    
+    /**
+     * Returns the contents of this map as a {@code Set} of key-value entries.
+     */
     public Set<Map.Entry<Integer,T>> entrySet() {
         return new EntrySet();
     }
 
+    /**
+     * Returns {@code true} if key is an {@code Integer} and is mapped to a
+     * non-{@code null} value in this map, {@code false} otherwise.
+     */
     @Override public boolean containsKey(Object key) {
         if (key instanceof Integer) {
             Integer i = (Integer)key;
@@ -90,13 +113,23 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
         return false;
     }
 
-    @Override public boolean containsValue(Object key) {
+    /**
+     * Returns {@code true} if the provided value is mapped to a key in this
+     * map.
+     */
+    @Override public boolean containsValue(Object value) {
+        if (value == null)
+            return false;
         for (T t : array)
-            if (t != null && t.equals(key))
+            if (t != null && t.equals(value))
                 return true;
         return false;
     }
 
+    /**
+     * Returns the value mapped to the provided key, or {@code null} if no such
+     * value was found for the key.
+     */
     @Override public T get(Object key) {
         if (key instanceof Integer) {
             Integer i = (Integer)key;
@@ -115,6 +148,8 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
     }
 
     /**  
+     * Associates the integer key with the value, returning the old value or
+     * {@code null} if this is a new mapping.
      * 
      * @throws IllegalArgumentException if {@code key} < 0 or {@code key} >
      * maxKey(), or if {@code value} is {@code null}.
@@ -134,6 +169,10 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
         return t;
     }
 
+    /**
+     * Removes the key and its associated value, if any, from this mapping
+     * returning the previous mapped value.
+     */
     @Override public T remove(Object key) {
         if (key instanceof Integer) {
             Integer i = (Integer)key;
@@ -148,6 +187,9 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
         return null;
     }
 
+    /**
+     * Returns the number of key-value mappings contained in this map.
+     */
     @Override public int size() {
         if (size == -1) {
             size = 0;
@@ -155,7 +197,6 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
                 if (t != null)
                     size++;
             }
-            System.out.printf("array: %s, size: %d%n", Arrays.toString(array), size);
         }
         return size;
     }
@@ -226,7 +267,5 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
                 throw new UnsupportedOperationException();
             }
         }
-
     }
-
 }
