@@ -90,7 +90,7 @@ public class ArrayMap<T> extends AbstractMap<Integer,T>
     public ArrayMap(T[] array) {
         if (array == null)
             throw new NullPointerException();
-        this.array = Arrays.copy(array);
+        this.array = Arrays.copyOf(array, array.length);
         size = -1;
     }
     
