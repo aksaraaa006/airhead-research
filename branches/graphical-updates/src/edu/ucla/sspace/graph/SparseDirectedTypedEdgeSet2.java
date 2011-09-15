@@ -45,11 +45,13 @@ import edu.ucla.sspace.util.MultiMap;
 import edu.ucla.sspace.util.HashMultiMap;
 
 import gnu.trove.TDecorators;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.procedure.TIntObjectProcedure;
@@ -65,35 +67,39 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
 
     private static final long serialVersionUID = 1L;
 
+
+    /////
+    //
+    // IMPLEMENTATION NOTE: This class stores a set of types associated each
+    // each in coming and outgoing edge's vertex.  Rather than storing the set
+    // of types as a Set<T>, the set is represented in a compact form using a
+    // BitSet, where each bit corresponds to a type index.  Given the potential
+    // for a huge number of edge sets in any give graph, having each set
+    // maintain its own type-to-bit-index mapping wastes a significant amount of
+    // space -- especially if the sets are all using the same types.  Therefore,
+    // we use a class-level cache of mapping the types to indices with two
+    // global static variables.  This results in a significant space savings.
+    // However, because these are static variables, their mapping state needs to
+    // be preserved upon serialization, which leads to a (rather complex) custom
+    // serialization code.
+    //
+    ////
+
+    /**
+     * A mapping from indices to their corresponding types 
+     */
     private static final List<Object> TYPES = new ArrayList<Object>();
 
-//     private static final TObjectIntMap<Object> /*Map<Object,Integer>*/ TYPE_INDICES = 
-//         // new HashMap<Object,Integer>();
-//         new TObjectIntHashMap<Object>();
-
-//     private static int index(Object o) {
-//         if (TYPE_INDICES.containsKey(o))
-//             return TYPE_INDICES.get(o);
-//         else {
-//             synchronized (TYPE_INDICES) {
-//                 // check that another thread did not already update the index
-//                 if (TYPE_INDICES.containsKey(o))
-//                     return TYPE_INDICES.get(o);
-//                 else {
-//                     int j = TYPE_INDICES.size();
-//                     TYPE_INDICES.put(o, j);
-//                     TYPES.add(o);
-//                     return j;
-//                 }
-//             }
-//         }
-//     }
-
+    /**
+     * The mapping from types to their indices
+     */
     private static final Map<Object,Integer> TYPE_INDICES = 
          new HashMap<Object,Integer>();
 
+    /**
+     * Returns the index for the given type, creating a new index if necessary
+     */
     private static int index(Object o) {
-        // System.out.println("TYPES: " + TYPES);
         Integer i = TYPE_INDICES.get(o);
         if (i == null) {
             synchronized (TYPE_INDICES) {
@@ -105,7 +111,6 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
                     int j = TYPE_INDICES.size();
                     TYPE_INDICES.put(o, j);
                     TYPES.add(o);
-                    //System.out.println("TYPES: " + TYPES);
                     return j;
                 }
             }
@@ -128,8 +133,20 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
      */
     private final TIntObjectHashMap<BitSet> outEdges;
 
+    /**
+     * The set of vertices that are connected to the root vertex (its
+     * neighbors).  Although this set could be computed by unioning the keyset
+     * of {@code inEdges} and {@code outEdges}, representing it as its own data
+     * structure offers significantly faster iteration over the set returned by
+     * {@link #connected()}.
+     */
     private final TIntHashSet connected;
 
+    /**
+     * The number of edges in this set.  Note that this is different than the
+     * size of {@code connected}, which doesn't include bidirectional
+     * connections.
+     */
     private int size;
         
     /**
@@ -155,28 +172,39 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
         return false;
     }
 
+    /**
+     * Adds an edge to the spectied set that connectes t{@code i} according to
+     * the given type, or returns {@code false} if the edge already existed.
+     */
     private boolean add(TIntObjectHashMap<BitSet> edges, int i, T type) {
         BitSet types = edges.get(i);
+        // If there weren't any edges to this vertex, then special case the
+        // creation and return true.
         if (types == null) {
             types = new BitSet();
             edges.put(i, types);
             types.set(index(type));
             connected.add(i);
             size++;
-            //System.out.printf("Size %d: TYPES: %s%n", size, TYPES);
             return true;
         }
+        // Otherwise, lookup the type's index and see if it already exists in
+        // the bitset, indicating the edge does too
         int index = index(type);
         if (!types.get(index)) {
             types.set(index);
             connected.add(i);
             size++;
-            //System.out.printf("Size %d: TYPES: %s%n", size, TYPES);
             return true;            
         }
+        // If the type was already there, then return false because the edge
+        // already exists
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void clear() {
         inEdges.clear();
         outEdges.clear();
@@ -265,6 +293,9 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
 //         return set;
 //     }
 
+    /**
+     * Removes all edges to {@code v}.
+     */
     public boolean disconnect(int v) {
         if (connected.remove(v)) {
             BitSet b = inEdges.remove(v);
@@ -278,6 +309,9 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public Set<DirectedTypedEdge<T>> getEdges(final T type) {    
         if (!TYPE_INDICES.containsKey(type))
             return Collections.<DirectedTypedEdge<T>>emptySet();
@@ -469,30 +503,78 @@ public class SparseDirectedTypedEdgeSet2<T> extends AbstractSet<DirectedTypedEdg
                 }
             }
         }
-        // Check if the indices we have are a subset of the current type indices
-        else if (typeIndices.size() < TYPE_INDICES.size()) {
-            // TODO
+        // Check if the indices we have are a subset or superset of the current
+        // type indices
+        else {
+            boolean foundMismatch = false;
+            for (Map.Entry<Object,Integer> e : typeIndices.entrySet()) {
+                Object o = e.getKey();
+                int oldIndex = e.getValue();
+                Integer curIndex = TYPE_INDICES.get(o);
+                // If the current index is null, then map it to what this has,
+                // which is possibly beyond the range of the current set of
+                // types.  Note that our type mapping isn't invalidated yet by
+                // this action, so we don't need to remap.
+                if (curIndex == null) {
+                    // Grow the TYPES list until there is room for this
+                    // additional index                    
+                    while (TYPES.size() <= oldIndex) 
+                        TYPES.add(null);
+                    TYPES.set(oldIndex, o);
+                    TYPE_INDICES.put(o, oldIndex);
+                }
+                else if (curIndex != oldIndex) {
+                    foundMismatch = true;
+                }
+            }
+            // If we were successfully able to add the indices we have without
+            // disturbing the existing mapping, or our indices were just a
+            // subset of the existing ones, then we don't need to remap the
+            // total set of indices.
+            if (!foundMismatch)
+                needToRemapIndices = false;
         }
 
         // If the state of this set's type is inconsistent with the current type
         // mapping, then update the mapping with any missing types and then
         // reset all of its BitSet contents with the correct indices
         if (needToRemapIndices) {
-            // TODO: Update the type mapping with our (potentially) new types
-            // and then change the type-marker bits for all the vertices so that
-            // they correspond to the new indices.  We should use index() for
-            // this so that the VALUES List is updated as well.            
-            throw new IllegalStateException("HALP");
+            TIntIntMap typeRemapping = new TIntIntHashMap();
+            for (Map.Entry<Object,Integer> e : typeIndices.entrySet()) {
+                Object o = e.getKey();
+                int oldIndex = e.getValue();
+                // NOTE: the else {} case above may have added several of our
+                // types that weren't inconsistent, so this may be an identity
+                // mapping for some types, which is nice.
+                typeRemapping.put(oldIndex, index(o));
+            }
+            // Remap all the in-edges vertices' types...
+            for (TIntObjectIterator<BitSet> it = inEdges.iterator(); it.hasNext(); ) {
+                it.advance();
+                int v = it.key();
+                BitSet oldIndices = it.value();
+                BitSet newIndices = new BitSet();
+                for (int i = oldIndices.nextSetBit(0); i >= 0; 
+                         i = oldIndices.nextSetBit(i+1)) {
+                    newIndices.set(typeRemapping.get(i));
+                }
+                it.setValue(newIndices);
+            }
+            // Remap all the in-edges vertices' types...
+            for (TIntObjectIterator<BitSet> it = outEdges.iterator(); it.hasNext(); ) {
+                it.advance();
+                int v = it.key();
+                BitSet oldIndices = it.value();
+                BitSet newIndices = new BitSet();
+                for (int i = oldIndices.nextSetBit(0); i >= 0; 
+                         i = oldIndices.nextSetBit(i+1)) {
+                    newIndices.set(typeRemapping.get(i));
+                }
+                it.setValue(newIndices);
+            }
         }
     }
-//      private class InEdgesForVertex extends AbstractSet<DirectedTypedEdge<T>> {
 
-//      }
-
-//      private class OutEdgesForVertex extends AbstractSet<DirectedTypedEdge<T>> {
-   
-//      }
-    
 
     /**
      * A wrapper around the set of edges that connect another vertex to the root

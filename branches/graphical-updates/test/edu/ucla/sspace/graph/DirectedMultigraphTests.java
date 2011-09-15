@@ -62,6 +62,42 @@ public class DirectedMultigraphTests {
         assertTrue(g.contains(1));
     }
 
+    @Test public void testEquals() {
+        DirectedMultigraph<String> g1 = new DirectedMultigraph<String>();
+        DirectedMultigraph<String> g2 = new DirectedMultigraph<String>();
+        for (int i = 0; i < 10; ++i) {
+            for (int j = i + 1; j < 10; ++j) {
+                g1.add(new SimpleDirectedTypedEdge<String>("type-1",i, j));
+                g2.add(new SimpleDirectedTypedEdge<String>("type-1",i, j));
+            }
+        }
+        assertEquals(g1, g2);
+
+        g1 = new DirectedMultigraph<String>();
+        g2 = new DirectedMultigraph<String>();
+        for (int i = 0; i < 10; ++i) {
+            for (int j = i + 1; j < 10; ++j) {
+                g1.add(new SimpleDirectedTypedEdge<String>("type-1",i, j));
+                g2.add(new SimpleDirectedTypedEdge<String>("type-1",j, i));
+            }
+        }
+
+        assertFalse(g1.equals(g2));
+        assertFalse(g2.equals(g1));
+    }
+
+    @Test public void testEqualGeneric() {
+        DirectedMultigraph<String> g1 = new DirectedMultigraph<String>();
+        Graph<DirectedTypedEdge<String>> g2 = new GenericGraph<DirectedTypedEdge<String>>();
+        for (int i = 0; i < 10; ++i) {
+            for (int j = i + 1; j < 10; ++j) {
+                g1.add(new SimpleDirectedTypedEdge<String>("type-1",i, j));
+                g2.add(new SimpleDirectedTypedEdge<String>("type-1",i, j));
+            }
+        }
+        assertEquals(g1, g2);
+    }
+
     @Test public void testContainsEdge() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         for (int i = 0; i < 100; ++i)
@@ -291,7 +327,7 @@ public class DirectedMultigraphTests {
         assertEquals(99, g.size());
     }
 
-    public void testAdjacentEdgesAdd() {
+    @Test public void testAdjacentEdgesAdd() {
         DirectedMultigraph<String> g = new DirectedMultigraph<String>();
         Set<DirectedTypedEdge<String>> control = new HashSet<DirectedTypedEdge<String>>();
         for (int i = 1; i <= 100; ++i) {

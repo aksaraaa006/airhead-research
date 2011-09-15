@@ -80,7 +80,7 @@ public class WorkQueue {
     private final List<Thread> threads;
 
     /**
-     * The queue from which worker threads run word-word comparisons
+     * The queue from which worker threads draw jobs to execute
      */
     private final BlockingQueue<Runnable> workQueue;
 

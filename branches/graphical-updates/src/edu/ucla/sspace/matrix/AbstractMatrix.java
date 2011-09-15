@@ -180,4 +180,20 @@ public abstract class AbstractMatrix implements Matrix {
         }
         return m;
     }
+
+    /**
+     * Returns a string descritpion of the matrix in its dense format, with one
+     * line per row and all column values specified.
+     */
+    public String toString() {
+        StringBuilder sb = new StringBuilder(rows() * columns() * 2); 
+        for (int r = 0; r < rows(); ++r) {
+            sb.append("[");
+            for (int c = 0; c < columns(); ++c) {
+                sb.append(' ').append(get(r, c));
+            }
+            sb.append(" ]\n");
+        }
+        return sb.toString();
+    }
 }

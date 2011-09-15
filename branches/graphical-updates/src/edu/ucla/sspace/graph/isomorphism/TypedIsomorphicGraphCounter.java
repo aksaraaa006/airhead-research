@@ -166,7 +166,6 @@ public class TypedIsomorphicGraphCounter<T,G extends Multigraph<T,? extends Type
     public int count(G g, int count) {
         if (count < 1)
             throw new IllegalArgumentException("Count must be positive");
-        sum += count;
 
         // We could potentially be comparing the graph to many, many other
         // graphs, where each step requires that the graph be converted to a
@@ -186,6 +185,7 @@ public class TypedIsomorphicGraphCounter<T,G extends Multigraph<T,? extends Type
             // we're not allowing new motif instances, return 0.
             if (!allowNewMotifs)
                 return 0;
+            sum += count;
             graphs = new LinkedList<Map.Entry<G,Integer>>();
             typesToGraphs.put(new HashSet<T>(typeCounts), graphs);
             graphs.add(new SimpleEntry<G,Integer>(g, count));
@@ -202,11 +202,13 @@ public class TypedIsomorphicGraphCounter<T,G extends Multigraph<T,? extends Type
                     // the list by in hopes it will be accessed more frequently
                     iter.remove();
                     graphs.addFirst(e);
+                    sum += count;
                     return newCount;
                 }
             }
             // If the graph was not found and we can add new motifs, then do so.
             if (allowNewMotifs) {
+                sum += count;
                 graphs.addFirst(new SimpleEntry<G,Integer>(g, count));
                 return count;
             }
@@ -325,6 +327,19 @@ public class TypedIsomorphicGraphCounter<T,G extends Multigraph<T,? extends Type
         return sum;
     }
 
+    public String toString() {
+        StringBuilder sb = new StringBuilder("{");
+        for (LinkedList<Map.Entry<G,Integer>> m : typesToGraphs.values()) {
+            for (Map.Entry<G,Integer> e : m) {
+                if (e.getValue() > 0)
+                    sb.append(e.getKey()).append(':').append(e.getValue())
+                        .append(' ');
+            }
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+    
     class Items extends AbstractSet<G> {
 
         public boolean contains(G graph) {
