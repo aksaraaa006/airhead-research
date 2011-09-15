@@ -573,6 +573,7 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 
@@ -605,6 +606,7 @@ public class Similarity {
             xSqSum += (x * x);
             ySqSum += (y * y);
         }
+
         return numerator / Math.sqrt(xSqSum * ySqSum);
     }
 

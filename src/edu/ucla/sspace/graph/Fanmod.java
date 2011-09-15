@@ -51,17 +51,71 @@ import static edu.ucla.sspace.util.LoggerUtil.verbose;
 
 
 /**
+ * A complete re-implementation of the <a
+ * href="http://theinf1.informatik.uni-jena.de/~wernicke/motifs/">FANMOD</a>
+ * tool for finding motifs in graphs.  This implementation does not use the
+ * motif subgraph counting described in the original paper due to supporting
+ * multigraph-based motifs.  Furthermore, this implementation uses an equivalent
+ * but <i>non-recursive</i> implementation of the ESU method described in the
+ * paper for enumerate all the possible subgraphs of a fixed size in a graph.
  *
+ * <p> The FANMOD method works by counting the number of subgraphs of the
+ * specified size in the input graph.  Then it generates a number of random
+ * graphs that preserve the properties of the original graph (its degree and
+ * type sequence).  These random graphs create null model of the expected graph
+ * distribution, which can then be compared with the actual distribution to
+ * identify which subgraphs count as motifs.  Typically, a subgraph is a motif
+ * if its frequency its greater than one standard deviation away from the
+ * expected value (i.e., a <a
+ * href=">http://en.wikipedia.org/wiki/Standard_score">Z-score</a> greater than
+ * 1).
+ *
+ * <p> This implementation provides some flexibility in letting the user
+ * identify which subgraphs should count as motifs based on their distribution
+ * in the graph and null model.  A {@link MotifFilter} exposes the three main
+ * parameters, a subgraph's actual frequency, its expected frequency, and its
+ * standard deviation in the null model, which are then used to decide wither a
+ * subgraph is a motif.  Typically a {@link ZScoreFilter} is used with a value
+ * of {@code 1}.  However, callers may also filter with minimum frequency or
+ * based on other attributes.
+ * 
+ * @see SubgraphIterator
  */
 public class Fanmod {
 
     private static final Logger LOGGER = 
         Logger.getLogger(Fanmod.class.getName());
 
-    private static final WorkQueue q = new WorkQueue(8);
+    /**
+     * The internal queue for multithreading the null-model counting
+     */
+    private static final WorkQueue q = new WorkQueue();
 
+    /**
+     * Creates a new Fanmod instance
+     */
     public Fanmod() { }
 
+    /**
+     * Finds motifs in the input graph according to the specified parameters.
+     *
+     * @param g the graph that contains motifs to be found
+     * @param findSimpleMotifs {@code true} if the subgraphs must be <a
+     *        href="http://en.wikipedia.org/wiki/Simple_graph#Simple_graph">simple
+     *        graphs</a>, i.e., graphs that contain no parallel edges.  These
+     *        motifs are created by sampling all possible simple graphs from the
+     *        multigraph.  For example, a three node subgraph with four edges would
+     *        generate four potential simple graph motifs.
+     * @param motifSize the number of vertices in the motif
+     * @param numRandomGraphs the number of random graphs to generate from {@g},
+     *        which have the same graph properties, and which will be used to
+     *        create the null model.
+     * @param filter a {@link MotifFilter} used to specify which subgraphs are
+     *        significant and constitute motifs
+     *
+     * @return a mapping from each motif to a {@link Result} which describes
+     *         that motifs distribution and stastics in the null mode.
+     */
     public <T,E extends TypedEdge<T>> Map<Multigraph<T,E>,Result> 
             findMotifs(final Multigraph<T,E> g, final boolean findSimpleMotifs,
                        final int motifSize, int numRandomGraphs, 
@@ -192,7 +246,9 @@ public class Fanmod {
         // HashMap rather than a Counter in order to get the standard deviation
         Map<Multigraph<T,E>,List<Integer>> motifCounts = 
             new HashMap<Multigraph<T,E>,List<Integer>>();
+        int counterIndex = 0;
         for (TypedIsomorphicGraphCounter<T,Multigraph<T,E>> mc : nullModelCounts) {
+            info(LOGGER, "Updating results for counter %d%n", counterIndex++);
             for (Map.Entry<Multigraph<T,E>,Integer> motifAndCount : mc) {
                 Multigraph<T,E> motif = motifAndCount.getKey();
                 int count = motifAndCount.getValue();
@@ -239,6 +295,20 @@ public class Fanmod {
         return motifToResult;
     }
 
+    /**
+     * Finds motifs in the input graph according to the specified parameters.
+     *
+     * @param g the graph that contains motifs to be found
+     * @param motifSize the number of vertices in the motif
+     * @param numRandomGraphs the number of random graphs to generate from {@g},
+     *        which have the same graph properties, and which will be used to
+     *        create the null model.
+     * @param filter a {@link MotifFilter} used to specify which subgraphs are
+     *        significant and constitute motifs
+     *
+     * @return a mapping from each motif to a {@link Result} which describes
+     *         that motifs distribution and stastics in the null mode.
+     */
     public <E extends Edge> Map<Graph<E>,Result> 
             findMotifs(final Graph<E> g, final int motifSize, 
                        int numRandomGraphs, MotifFilter filter) {
@@ -345,12 +415,33 @@ public class Fanmod {
         return motifToResult;
     }
 
+    // NOTE: probably need something more reasonable here as output?
 
+    /**
+     * The result of computing a motif's distribution in the graph and null
+     * model
+     */
     public static class Result {
 
+        /**
+         * The motif's count in the graph
+         */
         public final int count;
+
+        /**
+         * The expected value of motif's count in the null model
+         */
         public final double meanCountInNullModel;
+
+        /**
+         * The standard deviation of motif's counts in the null model
+         */
         public final double stddevInNullModel;
+
+        /**
+         * The statistic value generated by the {@link MotifFilter} for deciding
+         * if the associated subgraph is a motif.
+         */
         public final double statistic;
         
         public Result(int count, 
@@ -365,10 +456,24 @@ public class Fanmod {
 
     }
 
+    /**
+     * An interface for performing some computation on a subgraph's frequency
+     * information to deicide whether its occurrences constitute it being a
+     * motif.
+     */
     public static interface MotifFilter {
         
+        /**
+         * Returns {@code true} if the information on the subgraph's frequencies
+         * indicate that it is a motif
+         */
         boolean accepts(int actualFrequency, double expectedValue,
                         double standardDeviation);
+
+        /**
+         * Returns the value used by this filter to identify whether a subgraph
+         * is a motif, which could be the Z-score, for example.
+         */
         double getStatistic(int actualFrequency, double expectedValue,
                             double standardDeviation);
 

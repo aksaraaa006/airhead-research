@@ -58,8 +58,8 @@ public interface Indexer<T> extends Iterable<Map.Entry<T,Integer>> {
     Set<T> items();
 
     /**
-     * Returns the index for the item or {@code -1} if the item has not been
-     * assigned an index.
+     * Returns the index for the item or a negative value corresponding to the
+     * index the object would have been assigned if it had been added.
      */
     int find(T item);
     

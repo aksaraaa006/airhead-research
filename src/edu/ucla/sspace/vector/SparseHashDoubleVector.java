@@ -28,21 +28,41 @@ import java.io.Serializable;
 
 import java.util.Iterator;
 
+import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.iterator.TIntDoubleIterator;
+
 
 /**
- * A {@code SparseVector} implementation backed by a {@code HashMap}.  This
- * provides amoritized constant time access to all get and set operations, while
- * using more space than the {@link CompactSparseVector} or {@link
- * AmortizedSparseVector} classes.
+ * A {@code SparseVector} implementation where index pairs are hashed to store
+ * the corresponding value.  This provides amoritized constant time access to
+ * all get and set operations, while using more space than the {@link
+ * CompactSparseVector} or {@link AmortizedSparseVector} classes.
  *
  * <p> See {@see SparseHashArray} for implementation details.
  *
  * @author David Jurgens
  */
-public class SparseHashDoubleVector extends SparseHashVector<Double>
+public class SparseHashDoubleVector // extends SparseHashVector<Double>
         implements SparseDoubleVector, Iterable<DoubleEntry>, Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * The backing storage for this vector
+     */
+    private final TIntDoubleMap vector;
+
+    /**
+     * The length of this vector
+     */
+    private final int length;
+
+    /**
+     * The magnitude of the vector or -1 if the value is currently invalid needs
+     * to be recomputed
+     */
+    private double magnitude;
 
     /**
      * Creates a new vector of the specified length
@@ -50,7 +70,9 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
      * @param length the length of this vector
      */
     public SparseHashDoubleVector(int length) {
-        super(length);
+        this.length = length;
+        vector = new TIntDoubleHashMap();
+        magnitude = -1;
     }
 
     /**
@@ -61,23 +83,23 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
      * @param values the intial values for this vector to have
      */
     public SparseHashDoubleVector(double[] values) {
-        super(values.length);
+        this(values.length);
         for (int i = 0; i < values.length; ++i)
             if (values[i] != 0)
-                vector.set(i, values[i]);
+                vector.put(i, values[i]);
     }
 
     public SparseHashDoubleVector(DoubleVector values) {
-        super(values.length());
+        this(values.length());
         if (values instanceof SparseVector) {
             int[] nonZeros = ((SparseVector) values).getNonZeroIndices();
             for (int index : nonZeros)
-                vector.set(index, values.get(index));
+                vector.put(index, values.get(index));
         } else {
             for (int index = 0; index < values.length(); ++index) {
                 double value = values.get(index);
                 if (value != 0d)
-                    vector.set(index, value);
+                    vector.put(index, value);
             }
         }
     }
@@ -86,17 +108,28 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
      * {@inheritDoc}
      */
     public double add(int index, double delta) {
-        double val = get(index);
-        set(index, val + delta);
-        return val + delta;
+        double val = vector.get(index);
+        double sum = val + delta;
+        if (sum == 0)
+            vector.remove(index);
+        else
+            vector.put(index, sum);
+        magnitude = -1;
+        return sum;
     }
 
     /**
      * {@inheritDoc}
      */
     public double get(int index) {
-        Number d = vector.get(index);
-        return (d == null) ? 0 : d.doubleValue();
+        return vector.get(index);
+    }
+
+    /** 
+     * {@inheritDoc}
+     */
+    public int[] getNonZeroIndices() {
+        return vector.keys();
     }
 
     /**
@@ -118,17 +151,52 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
     /**
      * {@inheritDoc}
      */
-    public void set(int index, double value) {        
-        set(index, Double.valueOf(value));
+    public int length() {
+        return length;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public double magnitude() {
+        // Check whether the current magnitude is valid and if not, recompute it
+        if (magnitude < 0) {
+            magnitude = 0;
+            for (int nz : getNonZeroIndices()) {
+                double d = vector.get(nz);
+                magnitude += d * d;
+            }
+            magnitude = Math.sqrt(magnitude);
+        }
+        return magnitude;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, double value) {
+        vector.put(index, value);
+        magnitude = -1;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void set(int index, Number value) {
+        vector.put(index, value.doubleValue());
+        magnitude = -1;
     }
 
     /**
      * {@inheritDoc}
      */
     public double[] toArray() {
-        double[] array = new double[length()];
-        for (int i : vector.getElementIndices())
-            array[i] = vector.get(i).doubleValue();
+        double[] array = new double[length];
+        TIntDoubleIterator iter = vector.iterator();
+        for (int i = vector.size(); i-- > 0; ) {
+            iter.advance();
+            array[iter.key()] = iter.value();
+        }
         return array;
     }
 
@@ -138,7 +206,7 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
      */
     class DoubleIterator implements Iterator<DoubleEntry> {
 
-        Iterator<ObjectEntry<Number>> it;
+        private final TIntDoubleIterator it;
 
         public DoubleIterator() {
             it = vector.iterator();
@@ -149,10 +217,10 @@ public class SparseHashDoubleVector extends SparseHashVector<Double>
         }
 
         public DoubleEntry next() {
-            final ObjectEntry<Number> e = it.next();
+            it.advance();
             return new DoubleEntry() {
-                public int index() { return e.index(); }
-                public double value() { return e.value().doubleValue(); }
+                public int index() { return it.key(); }
+                public double value() { return it.value(); }
             };
         }
 

@@ -43,6 +43,7 @@ import edu.ucla.sspace.util.CombinedSet;
 import edu.ucla.sspace.util.DisjointSets;
 import edu.ucla.sspace.util.IntSet;
 import edu.ucla.sspace.util.OpenIntSet;
+import edu.ucla.sspace.util.SetDecorator;
 
 import gnu.trove.TDecorators;
 import gnu.trove.set.TIntSet;
@@ -87,6 +88,8 @@ public class DirectedMultigraph<T>
      * happen if this list contained strong references).
      */
     private Collection<WeakReference<Subgraph>> subgraphs;
+
+    private int size;
     
     /**
      * Creates an empty graph with node edges
@@ -95,6 +98,7 @@ public class DirectedMultigraph<T>
         types = new HashSet<T>();
         vertexToEdges = new TIntObjectHashMap<SparseDirectedTypedEdgeSet2<T>>();
         subgraphs = new ArrayList<WeakReference<Subgraph>>();
+        size = 0;
     }
 
     /**
@@ -134,6 +138,7 @@ public class DirectedMultigraph<T>
                 vertexToEdges.put(e.to(), to);
             }
             to.add(e);
+            size++;
             return true;
         }
         return false;
@@ -145,6 +150,7 @@ public class DirectedMultigraph<T>
     public void clear() {
         vertexToEdges.clear();
         types.clear();
+        size = 0;
     }
 
     /**
@@ -156,6 +162,7 @@ public class DirectedMultigraph<T>
         for (SparseDirectedTypedEdgeSet2<T> edges 
                  : vertexToEdges.valueCollection())
             edges.clear();
+        size = 0;
     }
 
     /**
@@ -272,7 +279,25 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     @Override public boolean equals(Object o) {
-        if (o instanceof Graph) {
+        if (o instanceof DirectedMultigraph) {
+            DirectedMultigraph<?> dm = (DirectedMultigraph<?>)(o);
+            if (dm.types.equals(types)) {
+                return vertexToEdges.equals(dm.vertexToEdges);
+            }
+            return false;
+        }
+        else if (o instanceof Multigraph) {
+            @SuppressWarnings("unchecked")
+            Multigraph<?,TypedEdge<?>> m = (Multigraph<?,TypedEdge<?>>)o;
+            if (m.edgeTypes().equals(types)) {
+                return m.order() == order()
+                    && m.size() == size()
+                    && m.vertices().equals(vertices())
+                    && m.edges().equals(edges());
+            }
+            return false;
+        }
+        else if (o instanceof Graph) {
             Graph<?> g = (Graph<?>)o;
             return g.order() == order()
                 && g.size() == size()
@@ -289,7 +314,7 @@ public class DirectedMultigraph<T>
         SparseDirectedTypedEdgeSet2<T> edges = vertexToEdges.get(vertex);
         return (edges == null) 
             ? Collections.<DirectedTypedEdge<T>>emptySet()
-            : edges;
+            : new EdgeListWrapper(edges);
     }
 
     /**
@@ -331,7 +356,7 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public int hashCode() {
-        return vertices().hashCode();
+        return vertexToEdges.keySet().hashCode() ^ (types.hashCode() * size);
     }
 
     /**
@@ -351,7 +376,7 @@ public class DirectedMultigraph<T>
         SparseDirectedTypedEdgeSet2<T> edges = vertexToEdges.get(vertex);
         return (edges == null) 
             ? Collections.<DirectedTypedEdge<T>>emptySet()
-            : edges.incoming();
+            : new EdgeListWrapper(edges.incoming());
     }
 
     /**
@@ -378,7 +403,7 @@ public class DirectedMultigraph<T>
         SparseDirectedTypedEdgeSet2<T> edges = vertexToEdges.get(vertex);
         return (edges == null) 
             ? Collections.<DirectedTypedEdge<T>>emptySet()
-            : edges.outgoing();
+            : new EdgeListWrapper(edges.outgoing());
     }
 
     /**
@@ -399,6 +424,7 @@ public class DirectedMultigraph<T>
         // the type-specific graphs has this vertex.
         SparseDirectedTypedEdgeSet2<T> edges = vertexToEdges.remove(vertex);
         if (edges != null) {
+            size -= edges.size();
             for (int other : edges.connected()) {
                 vertexToEdges.get(other).disconnect(vertex);
             }
@@ -442,7 +468,7 @@ public class DirectedMultigraph<T>
         SparseDirectedTypedEdgeSet2<T> edges = vertexToEdges.get(edge.to());
         if (edges != null && edges.remove(edge)) {
             vertexToEdges.get(edge.from()).remove(edge);
-
+            size--;
             // Check whether we've just removed the last edge for this type
             // in the graph.  If so, the graph no longer has this type and
             // we need to update the state.
@@ -471,9 +497,10 @@ public class DirectedMultigraph<T>
      * {@inheritDoc}
      */
     public int size() {
-        CountingProcedure count = new CountingProcedure();
-        vertexToEdges.forEachValue(count);
-        return count.count / 2;
+        return size;
+//         CountingProcedure count = new CountingProcedure();
+//         vertexToEdges.forEachValue(count);
+//         return count.count / 2;
     }
 
     private class CountingProcedure 
@@ -613,6 +640,61 @@ public class DirectedMultigraph<T>
             }
         }
     }
+
+    /**
+     * A wrapper around a set of of edges that automatically decrements the size
+     * of this graph when an edge is removed from it.
+     *
+     * @see DirectedMultigraph#inEdges(int)
+     * @see DirectedMultigraph#outEdges(int)
+     */
+    class EdgeListWrapper extends SetDecorator<DirectedTypedEdge<T>> {
+
+        private static final long serialVersionUID = 1L;
+
+        public EdgeListWrapper(Set<DirectedTypedEdge<T>> set) {
+            super(set);
+        }
+
+        @Override public boolean add(DirectedTypedEdge<T> e) {
+            return DirectedMultigraph.this.add(e);
+        }
+
+        @Override public boolean addAll(Collection<? extends DirectedTypedEdge<T>> c) {
+            boolean added = false;
+            for (DirectedTypedEdge<T> e : c) {
+                if (DirectedMultigraph.this.add(e)) 
+                    added = true;
+            }
+            return added;
+        }
+
+        @Override public boolean remove(Object o) {
+            if (o instanceof DirectedTypedEdge) {
+                @SuppressWarnings("unchecked")
+                DirectedTypedEdge<T> e = (DirectedTypedEdge<T>)o;
+                return DirectedMultigraph.this.remove(e);
+            }
+            return false;
+        }
+
+        @Override public boolean removeAll(Collection<?> c) {
+            boolean removed = false;
+            for (Object o : c) {
+                if (o instanceof DirectedTypedEdge) {
+                    @SuppressWarnings("unchecked")
+                    DirectedTypedEdge<T> e = (DirectedTypedEdge<T>)o;
+                    if (DirectedMultigraph.this.remove(e)) 
+                        removed = true;
+                }
+            }
+            return removed;
+        }
+
+        @Override public boolean retainAll(Collection<?> c) {
+            throw new Error("FIXME");
+        }
+    } 
 
     /**
      * An implementation for handling the subgraph behavior.
@@ -860,7 +942,7 @@ public class DirectedMultigraph<T>
          * {@inheritDoc}
          */
         public int hashCode() {
-            return vertices().hashCode();
+            return vertices().hashCode() ^ (types.hashCode() * size());
         }
 
         /**

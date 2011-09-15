@@ -21,6 +21,7 @@
 
 package edu.ucla.sspace.graph.isomorphism;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -52,6 +53,12 @@ public class TypedIsomorphicGraphIndexer<T,G extends Multigraph<T,? extends Type
     public TypedIsomorphicGraphIndexer() {
         isoTest = new TypedVF2IsomorphismTester();
         graphIndices = new HashMap<G,Integer>();
+    }
+
+    public TypedIsomorphicGraphIndexer(Collection<? extends G> c) {
+        this();
+        for (G g : c)
+            index(g);
     }
 
     /**

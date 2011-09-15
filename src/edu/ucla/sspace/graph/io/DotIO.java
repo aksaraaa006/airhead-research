@@ -59,9 +59,16 @@ public class DotIO {
 
     private final Indexer<String> indexer;
 
-    Pattern UNDIRECTED_EDGE = Pattern.compile("\\s*([\\-\\w]+)\\s*--\\s*([\\-\\w]+)\\s*(\\[.*\\])\\s*;");
-    Pattern DIRECTED_EDGE = //Pattern.compile("\\s*([\\-\\w]+)\\s*->\\s*([\\-\\w]+)\\s*(\\[.*\\])\\s*;");
+    private final Pattern UNDIRECTED_EDGE = Pattern.compile("\\s*([\\-\\w]+)\\s*--\\s*([\\-\\w]+)\\s*(\\[.*\\])\\s*;");
+    private final Pattern DIRECTED_EDGE = //Pattern.compile("\\s*([\\-\\w]+)\\s*->\\s*([\\-\\w]+)\\s*(\\[.*\\])\\s*;");
         Pattern.compile("\\s*([\\-\\w]+)\\s*->\\s*([\\-\\w]+)\\s*;");
+
+    /**
+     * A mapping from an edge type to the color used to illustrate it
+     */
+    private static final Map<Object,Color> EDGE_COLORS =
+        new HashMap<Object,Color>();
+
 
     public DotIO() {
         this(new ObjectIndexer<String>());
