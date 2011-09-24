@@ -112,6 +112,13 @@ public class SparseDirectedEdgeSet extends AbstractSet<DirectedEdge>
     /**
      * {@inheritDoc}
      */
+    public boolean disconnect(int vertex) {
+        return inEdges.remove(vertex) | outEdges.remove(vertex);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<DirectedEdge> getEdges(int vertex) {
         return new VertexEdgeSet(vertex);
     }    

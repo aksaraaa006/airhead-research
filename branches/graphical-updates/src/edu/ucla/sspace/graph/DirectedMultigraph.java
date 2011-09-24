@@ -67,7 +67,10 @@ public class DirectedMultigraph<T>
                java.io.Serializable {
     
     private static final long serialVersionUID = 1L;
-
+   
+    /**
+     * The set of types contained in this graph.
+     */
     private final Set<T> types;
     
     /**
@@ -89,6 +92,9 @@ public class DirectedMultigraph<T>
      */
     private Collection<WeakReference<Subgraph>> subgraphs;
 
+    /**
+     * The number of edges contained in this graph.
+     */
     private int size;
     
     /**
@@ -124,6 +130,9 @@ public class DirectedMultigraph<T>
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean add(DirectedTypedEdge<T> e) {
         SparseDirectedTypedEdgeSet2<T> from = vertexToEdges.get(e.from());
         if (from == null) {
@@ -145,7 +154,7 @@ public class DirectedMultigraph<T>
     }
 
     /**
-     * InheritDoc
+     * {@inheritDoc}
      */
     public void clear() {
         vertexToEdges.clear();
@@ -472,6 +481,9 @@ public class DirectedMultigraph<T>
             // Check whether we've just removed the last edge for this type
             // in the graph.  If so, the graph no longer has this type and
             // we need to update the state.
+
+            // TODO !!
+
 
             // Remove this edge type from all the subgraphs as well
             Iterator<WeakReference<Subgraph>> sIt = subgraphs.iterator();

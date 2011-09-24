@@ -100,6 +100,13 @@ public class SparseSymmetricEdgeSet extends AbstractSet<Edge>
     /**
      * {@inheritDoc}
      */
+    public boolean disconnect(int vertex) {
+        return edges.remove(vertex);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<Edge> getEdges(int vertex) {
         return (edges.contains(vertex))
             ? Collections.<Edge>singleton(new SimpleEdge(rootVertex, vertex))

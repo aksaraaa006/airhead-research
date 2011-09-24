@@ -56,6 +56,11 @@ public interface EdgeSet<T extends Edge> extends Set<T> {
     boolean connects(int vertex);
 
     /**
+     * Removes all edges instances that connect to the specified vertex.
+     */
+    boolean disconnect(int vertex);
+
+    /**
      * Returns the set of {@link Edge} instances that connect the root vertex
      * with this vertex or an empty set if no such edges exist.
      */

@@ -181,6 +181,14 @@ public class IsomorphicGraphCounter<G extends Graph<? extends Edge>>
     }    
 
     /**
+     * {@inheritDoc}
+     */
+    public void countAll(Collection<? extends G> c) {
+        for (G g : c)
+            count(g);
+    }
+
+    /**
      * Returns the count for graphs that are isomorphic to the provided graph.
      */
     public int getCount(G g) {
