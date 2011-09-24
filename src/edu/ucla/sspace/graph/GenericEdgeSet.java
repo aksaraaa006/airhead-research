@@ -102,6 +102,14 @@ public class GenericEdgeSet<T extends Edge> extends AbstractSet<T>
         return vertexToEdges.containsKey(vertex); //vertices.get(vertex);
     }
 
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean disconnect(int vertex) {
+        return vertexToEdges.remove(vertex) != null;
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -148,6 +148,13 @@ public class SparseDirectedTypedEdgeSet<T> extends AbstractSet<DirectedTypedEdge
     /**
      * {@inheritDoc}
      */
+    public boolean disconnect(int vertex) {
+        return inEdges.remove(vertex) | outEdges.remove(vertex);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<DirectedTypedEdge<T>> getEdges(int vertex) {
         return new EdgesForVertex(vertex);
     }    

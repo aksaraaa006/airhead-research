@@ -23,6 +23,8 @@ package edu.ucla.sspace.util;
 
 import edu.ucla.sspace.vector.IntegerVector;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -55,7 +57,8 @@ public class SerializableUtil {
     public static void save(Object o, File file) {
         try {
             FileOutputStream fos = new FileOutputStream(file);
-            ObjectOutputStream outStream = new ObjectOutputStream(fos);
+            ObjectOutputStream outStream = 
+                new ObjectOutputStream(new BufferedOutputStream(fos));
             outStream.writeObject(o);
             outStream.close();
         } catch (IOException ioe) {
@@ -74,7 +77,8 @@ public class SerializableUtil {
     public static <T> T load(File file, Class<T> type) {
         try {
             FileInputStream fis = new FileInputStream(file);
-            ObjectInputStream inStream = new ObjectInputStream(fis);
+            ObjectInputStream inStream = 
+                new ObjectInputStream(new BufferedInputStream(fis));
             T object = type.cast(inStream.readObject());
             inStream.close();
             return object;
@@ -89,7 +93,8 @@ public class SerializableUtil {
     public static <T> T load(File file) {
         try {
             FileInputStream fis = new FileInputStream(file);
-            ObjectInputStream inStream = new ObjectInputStream(fis);
+            ObjectInputStream inStream = 
+                new ObjectInputStream(new BufferedInputStream(fis));
             T object = (T) inStream.readObject();
             inStream.close();
             return object;

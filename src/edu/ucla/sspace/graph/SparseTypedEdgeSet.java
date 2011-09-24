@@ -114,6 +114,13 @@ public class SparseTypedEdgeSet<T> extends AbstractSet<TypedEdge<T>>
     /**
      * {@inheritDoc}
      */
+    public boolean disconnect(int vertex) {
+        throw new Error();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public Set<TypedEdge<T>> getEdges(int vertex) {
         Set<TypedEdge<T>> output = new HashSet<TypedEdge<T>>();
         for (Map.Entry<T,OpenIntSet> e : typeToEdges.entrySet()) {

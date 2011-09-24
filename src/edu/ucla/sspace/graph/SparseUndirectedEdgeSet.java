@@ -27,24 +27,31 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import edu.ucla.sspace.util.OpenIntSet;
+import gnu.trove.TDecorators;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 
 
 /**
- *
+ * A {@link EdgeSet} implementation for holding {@link Edge} instances.
  */
 public class SparseUndirectedEdgeSet extends AbstractSet<Edge> 
         implements EdgeSet<Edge> {
         
+    /**
+     * The vertex that is connected to all the edges in this set
+     */
     private final int rootVertex;
-    
-    private final// Set<Integer> edges; 
-     OpenIntSet edges;
+
+    /**
+     * The set of vertices to which the root vertex is connected
+     */
+    private final TIntSet edges;
     
     public SparseUndirectedEdgeSet(int rootVertex) {
         this.rootVertex = rootVertex;
-        edges = //new HashSet<Integer>();
-            new OpenIntSet();
+        edges = new TIntHashSet();
     }
     
     /**
@@ -59,10 +66,7 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
             toAdd = e.from();
         else
             return false;
-        
-//         System.out.printf("Indices to %d before adding %d: %s%n", rootVertex, toAdd, java.util.Arrays.toString(edges.buckets));
         boolean b = edges.add(toAdd);
-//         System.out.printf("Indices to %d after adding %d: %s%n", rootVertex, toAdd, java.util.Arrays.toString(edges.buckets));
         return b;
     }
 
@@ -70,7 +74,13 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
      * {@inheritDoc}
      */
     public Set<Integer> connected() {
-        // REMINDER: wrap to prevent adding self edges?
+        return TDecorators.wrap(edges);
+    }
+
+    /**
+     * Returns the set of connected vertices using the internal Trove-based API.
+     */
+    TIntSet connectedPrimitive() {
         return edges;
     }
 
@@ -87,8 +97,6 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
     public boolean contains(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-//             return ((e.to() == rootVertex) && edges.contains(e.from()))
-//                 || (e.from() == rootVertex && edges.contains(e.to()));
             int toFind = 0;
             if (e.to() == rootVertex) 
                 toFind = e.from();
@@ -97,10 +105,16 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
             else return false;
 
             boolean b = edges.contains(toFind);
-            // System.out.printf("Was %d in %d's indices?: %s, %s%n",  toFind, rootVertex, b, java.util.Arrays.toString(edges.buckets));
             return b;
         }
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean disconnect(int vertex) {
+        return edges.remove(vertex);
     }
 
     /**
@@ -132,19 +146,13 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
     public boolean remove(Object o) {
         if (o instanceof Edge) {
             Edge e = (Edge)o;
-//             return (e.to() == rootVertex && edges.remove(e.from()))
-//                 || (e.from() == rootVertex && edges.remove(e.to()));
             int toRemove = 0;
             if (e.to() == rootVertex) 
                 toRemove = e.from();
             else if (e.from() == rootVertex)
                 toRemove = e.to();
             else return false;
-
-//             System.out.printf("Indices to %d before removing %d: %s%n", rootVertex, toRemove, java.util.Arrays.toString(edges.buckets));
             boolean b = edges.remove(toRemove);
-//             System.out.printf("Indices to %d after removing %d: %s%n", rootVertex, toRemove, java.util.Arrays.toString(edges.buckets));
-//             System.out.printf("Was able to remove %d? %s%n", toRemove, b);
             return b;
         }
         return false;
@@ -163,7 +171,7 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
      */
     private class EdgeIterator implements Iterator<Edge> {
 
-        private Iterator<Integer> otherVertices;
+        private TIntIterator otherVertices;
         
         public EdgeIterator() {
             otherVertices = edges.iterator();
@@ -174,7 +182,7 @@ public class SparseUndirectedEdgeSet extends AbstractSet<Edge>
         }
 
         public Edge next() {
-            Integer i = otherVertices.next();
+            int i = otherVertices.next();
             return new SimpleEdge(rootVertex, i);
         }
 

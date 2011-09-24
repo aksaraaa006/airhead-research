@@ -113,6 +113,14 @@ public class ObjectCounter<T> implements Counter<T>, java.io.Serializable {
         return newCount;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void countAll(Collection<? extends T> c) {
+        for (T t : c)
+            count(t);
+    }
+
     public boolean equals(Object o) {
         if (o instanceof Counter) {
             Counter<?> c = (Counter<?>)o;
