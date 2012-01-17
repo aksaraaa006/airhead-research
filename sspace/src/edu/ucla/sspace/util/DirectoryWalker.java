@@ -119,8 +119,9 @@ public class DirectoryWalker implements Iterable<File> {
 
         public FileIterator() {
             files = new ArrayDeque<File>();
-            for (File f : baseDir.listFiles(filter)) {
-                files.offer(f);
+            for (File f : baseDir.listFiles()) {
+                if (filter.accept(f) || f.isDirectory())
+                    files.offer(f);
             }
             advance();            
         }

@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.IOError;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +38,7 @@ import java.util.Set;
 
 
 /**
- * A collection of static methods for processing text.
+ * A collection of static methods for handling {@link String}-related tasks.
  *
  * @author David Jurgens
  */
@@ -45,7 +47,7 @@ public class StringUtils {
     /**
      * Uninstantiable
      */ 
-    private StringUtils() {}
+    private StringUtils() { }
     
     /**
      * A mapping from HTML codes for escaped special characters to their unicode
@@ -54,10 +56,16 @@ public class StringUtils {
     private static final Map<String,String> HTML_CODES
 	= new HashMap<String,String>();
 
+    /**
+     * A mapping from Latin-1 codes for escaped special characters to their
+     * unicode character equivalents.
+     */
     private static final Map<String,String> LATIN1_CODES
 	= new HashMap<String,String>();
 
-
+    /*
+     * Static block for loading the HTML and Latin-1 code mappings
+     */
     static {
 	HTML_CODES.put("&nbsp;"," ");
 	HTML_CODES.put("&Agrave;","À");
@@ -218,6 +226,54 @@ public class StringUtils {
         }
     }
     
+    /**
+     * Joins the strings in the collection together as one string with a space
+     * between each.
+     */
+    public String join(Collection<String> strings) {
+        StringBuilder sb = new StringBuilder(strings.size() * 8);
+        Iterator<String> it = strings.iterator();
+        while (it.hasNext()) {
+            sb.append(it.next());
+            if (it.hasNext())
+                sb.append(' ');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Joins the strings in the collection together as one string with the
+     * specified delimeter between each.
+     */
+    public String join(Collection<String> strings, String delimeter) {
+        StringBuilder sb = new StringBuilder(strings.size() * 8);
+        Iterator<String> it = strings.iterator();
+        while (it.hasNext()) {
+            sb.append(it.next());
+            if (it.hasNext())
+                sb.append(delimeter);
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Loads each line of the file as a string and returns the set of unique
+     * strings contained with in the file.
+     *
+     * @throws IOError in an error occurs while reading the file
+     */
+    public static Set<String> loadAsSet(File f) {
+        Set<String> strings = new HashSet<String>();
+        try {            
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            for (String line = null; (line = br.readLine()) != null; )
+                strings.add(line);
+        } catch (IOException ioe) {
+            throw new IOError(ioe);
+        }
+        return strings;
+    }
+
     /**
      * Returns the provided string where all HTML special characters
      * (e.g. <pre>&nbsp;</pre>) have been replaced with their utf8 equivalents.

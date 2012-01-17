@@ -53,6 +53,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.Properties;
 
+import java.util.logging.Logger;
+
+import static edu.ucla.sspace.util.LoggerUtil.info;
+import static edu.ucla.sspace.util.LoggerUtil.verbose;
+
 
 /**
  * An implementation of the Direct K-Means clustering available in the 
@@ -77,6 +82,9 @@ import java.util.Properties;
  * @author Keith Stevens
  */
 public class DirectClustering implements Clustering {
+
+    private static final Logger LOGGER = 
+        Logger.getLogger(DirectClustering.class.getName());
 
     /**
      * A property prefix for specifiying options when using {@link
@@ -191,6 +199,7 @@ public class DirectClustering implements Clustering {
         int[] bestAssignment = null;
         double bestScore = (criterion.isMaximize()) ? 0 : Double.MAX_VALUE;
         for (int i = 0; i < numRepetitions; ++i) {
+            verbose(LOGGER, "Beginning iteration %d/%d", i+1, numRepetitions);
             clusterIteration(matrix, numClusters, seedType, criterion);
             if (criterion.isMaximize()) {
                 if (criterion.score() > bestScore) {

@@ -28,6 +28,7 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -131,6 +132,13 @@ public class TreeMultiMap<K,V>
 	range = -1;
 	recalculateRange = true;
 	this.parent = parent;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Map<K,Set<V>> asMap() {
+        return Collections.<K,Set<V>>unmodifiableMap(map);
     }
 
     /**

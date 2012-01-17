@@ -364,8 +364,11 @@ public abstract class BaseFunction implements CriterionFunction {
             return magnitude;
         } else {
             double magnitude = 0;
-            for (int i = 0; i < c.length(); ++i)
-                magnitude += Math.pow(c.get(i) + v.get(i), 2);
+            int length = c.length();
+            for (int i = 0; i < length; ++i) {
+                double d = c.get(i) + v.get(i);
+                magnitude += d * d;
+            }
             return magnitude;
         }
     }
