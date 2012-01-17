@@ -73,7 +73,10 @@ import java.util.logging.Logger;
  * @see SemanticSpaceUtils
  * @see SemanticSpaceUtils.SSpaceFormat
  */
-public class StaticSemanticSpace implements SemanticSpace {
+public class StaticSemanticSpace 
+        implements SemanticSpace, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private static final Logger LOGGER = 
         Logger.getLogger(StaticSemanticSpace.class.getName());

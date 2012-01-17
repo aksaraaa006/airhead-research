@@ -219,6 +219,36 @@ public class Statistics {
     }
 
     /**
+     * Returns the <a
+     * href="http://en.wikipedia.org/wiki/Standard_error_(statistics)">standard
+     * error</a> of the values in collection.
+     */
+    public static double stderr(Collection<? extends Number> values) {
+        return sampleStddev(values) / 
+            Math.sqrt(values.size());
+    } 
+
+    /**
+     * Returns the <a
+     * href="http://en.wikipedia.org/wiki/Standard_error_(statistics)">standard
+     * error</a> of the values in the {@code int} array
+     */
+    public static double stderr(int[] values) {
+        return sampleStddev(values) / 
+            Math.sqrt(values.length);
+    }  
+
+    /**
+     * Returns the <a
+     * href="http://en.wikipedia.org/wiki/Standard_error_(statistics)">standard
+     * error</a> of the values in the {@code double} array
+     */
+    public static double stderr(double[] values) {
+        return sampleStddev(values) / 
+            Math.sqrt(values.length);
+    }  
+
+    /**
      * Returns the standard deviation of the values in the int array
      */
     public static double stddev(int[] values) {
@@ -242,5 +272,58 @@ public class Statistics {
             sum += d2 * d2;
         }
         return Math.sqrt(sum / values.length);
+    }
+
+    /**
+     * Returns the <a
+     * href="http://en.wikipedia.org/wiki/Standard_deviation#With_sample_standard_deviation">sample
+     * standard deviation</a> of the collection of numbers
+     */
+    public static double sampleStddev(Collection<? extends Number> values) {
+        if (values.size() < 2)
+            throw new IllegalArgumentException("Must have at least two values");
+
+        double mean = mean(values);
+        double sum = 0d;
+        for (Number n : values) {
+            double d = n.doubleValue() - mean;
+            sum += d*d;
+        }
+        return Math.sqrt(sum / (values.size() - 1));
+    }
+
+    /**
+     * Returns the <a
+     * href="http://en.wikipedia.org/wiki/Standard_deviation#With_sample_standard_deviation">sample
+     * standard deviation</a> of the values in the int array
+     */
+    public static double sampleStddev(int[] values) {
+        if (values.length < 2)
+            throw new IllegalArgumentException("Must have at least two values");
+
+        double mean = mean(values);
+        double sum = 0d;
+        for (int i : values) {
+            double d = i - mean;
+            sum += d*d;
+        }
+        return Math.sqrt(sum / (values.length - 1));
+    }
+
+    /**
+     * Returns the <a
+     * href="http://en.wikipedia.org/wiki/Standard_deviation#With_sample_standard_deviation">sample
+     * standard deviation</a> of the values in the double array
+     */
+    public static double sampleStddev(double[] values) {
+        if (values.length < 2)
+            throw new IllegalArgumentException("Must have at least two values");
+        double mean = mean(values);
+        double sum = 0d;
+        for (double d : values) {
+            double d2 = d - mean;
+            sum += d2 * d2;
+        }
+        return Math.sqrt(sum / (values.length - 1));
     }
 }

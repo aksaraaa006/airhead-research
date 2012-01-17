@@ -202,14 +202,20 @@ public class SimpleDependencyPath implements DependencyPath {
      * Returns the path in order with words and relations space delimited.
      */
     public String toString() {
-        int size = length();
+        int size = length() + 1;
         StringBuilder sb = new StringBuilder(8 * size);
         sb.append('[');
-        for (int i = 0; i < size; ++i) {
-            sb.append(getNode(i).word());
-            if (i + i < size)
-                sb.append(' ').append(getRelation(i)).append(' ');
-        }
+//         for (int i = 0; i < size; ++i) {
+//             sb.append(getNode(i).word());
+//             if (i + i < size)
+//                 sb.append(' ').append(getRelation(i)).append(' ');
+//         }
+        sb.append(getNode(0).word());
+        for (int i = 1; i < size; ++i)
+            sb.append(' ')
+                .append(getRelation(i-1))
+                .append(' ').append(getNode(i).word());
+
         return sb.append(']').toString();
     }
 }

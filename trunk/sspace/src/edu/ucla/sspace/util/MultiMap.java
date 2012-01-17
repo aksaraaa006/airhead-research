@@ -34,6 +34,12 @@ import java.util.Set;
 public interface MultiMap<K,V> {
 
     /**
+     * Returns a read-only {@link Map}-based view of the contents of this {@code
+     * MultiMap}.
+     */
+    public Map<K,Set<V>> asMap();
+
+    /**
      * Removes all of the mappings from this multi-map.
      */
     public void clear();

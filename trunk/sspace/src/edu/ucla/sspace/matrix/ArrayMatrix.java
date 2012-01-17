@@ -35,7 +35,9 @@ import java.io.RandomAccessFile;
  *
  * @author David Jurgens
  */
-public class ArrayMatrix implements Matrix {
+public class ArrayMatrix implements Matrix, java.io.Serializable {
+
+    private static final long serialVersionUID = 1L;
     
     /**
      * The number of rows stored in this {@code ArrayMatrix}.
